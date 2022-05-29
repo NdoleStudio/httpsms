@@ -58,5 +58,6 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           channelId: live
+          entryPoint: './web'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}'
           projectId: httpsms-86c51
