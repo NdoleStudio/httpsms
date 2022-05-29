@@ -6,8 +6,8 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - web',
-    title: 'web',
+    titleTemplate: '%s - HTTP SMS API',
+    title: 'Messages',
     htmlAttrs: {
       lang: 'en',
     },

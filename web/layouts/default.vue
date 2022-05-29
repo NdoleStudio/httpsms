@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <v-navigation-drawer v-model="drawer" fixed app>
+    <v-navigation-drawer  v-if="$vuetify.breakpoint.lgAndUp" :width="400" fixed app>
       <v-list>
         <v-list-item
           v-for="(item, i) in items"
@@ -9,6 +9,7 @@
           router
           exact
         >
+
           <v-list-item-action>
             <v-icon>{{ item.icon }}</v-icon>
           </v-list-item-action>
