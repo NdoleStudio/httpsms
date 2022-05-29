@@ -22,6 +22,7 @@ steps:
         --port=8000
 options:
   substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
 
 substitutions:
   _SERVICE_NAME: http-sms-api
