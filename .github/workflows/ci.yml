@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+
 defaults:
   run:
     working-directory: ./web
@@ -51,3 +49,14 @@ jobs:
 
       - name: Run tests 🧪
         run: yarn test
+
+      - name: Build 🏗️
+        run: yarn generate
+
+      - name: Deploy 🚀
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          channelId: live
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}'
+          projectId: httpsms-86c51
