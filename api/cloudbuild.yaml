@@ -1,6 +1,6 @@
 steps:
   - name: "gcr.io/kaniko-project/executor:latest"
-    id: "build-and-push"
+    id: "Build Image and Push"
     dir: "api"
     args:
       - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA"
