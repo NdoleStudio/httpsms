@@ -1,10 +1,6 @@
 <template>
   <v-app dark>
-    <v-navigation-drawer
-      :width="400"
-      fixed
-      app
-    >
+    <v-navigation-drawer :width="400" fixed app>
       <v-list>
         <v-list-item
           v-for="(item, i) in items"
