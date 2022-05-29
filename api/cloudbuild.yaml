@@ -1,6 +1,6 @@
 steps:
   - name: "gcr.io/kaniko-project/executor:latest"
-    id: "Build Image and Push"
+    id: "Build image and push"
     dir: "api"
     args:
       - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA"
@@ -10,7 +10,7 @@ steps:
       - "--build-arg=GIT_COMMIT=$COMMIT_SHA"
       - "--snapshotMode=time"
 
-  - id: "Deploy to Cloud Run"
+  - id: "Deploy to cloud run"
     name: "gcr.io/cloud-builders/gcloud"
     entrypoint: "bash"
     args:
