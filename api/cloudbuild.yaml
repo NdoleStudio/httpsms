@@ -1,20 +1,20 @@
 steps:
-  - name: 'gcr.io/kaniko-project/executor:latest'
-    id: 'build-and-push'
-    dir: 'backend'
+  - name: "gcr.io/kaniko-project/executor:latest"
+    id: "build-and-push"
+    dir: "api"
     args:
-      - '--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
-      - '--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest'
-      - '--dockerfile=Dockerfile'
-      - '--context=.'
-      - '--build-arg=GIT_COMMIT=$COMMIT_SHA'
-      - '--snapshotMode=time'
+      - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA"
+      - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest"
+      - "--dockerfile=Dockerfile"
+      - "--context=."
+      - "--build-arg=GIT_COMMIT=$COMMIT_SHA"
+      - "--snapshotMode=time"
 
-  - id: 'Deploy to Cloud Run'
-    name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
+  - id: "Deploy to Cloud Run"
+    name: "gcr.io/cloud-builders/gcloud"
+    entrypoint: "bash"
     args:
-      - '-c'
+      - "-c"
       - |
         gcloud run deploy $_SERVICE_NAME \
         --image=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA \
