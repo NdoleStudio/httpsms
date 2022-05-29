@@ -1,0 +1,28 @@
+<template>
+  <v-sheet
+    class="pa-4 d-flex"
+    :elevation="$vuetify.breakpoint.lgAndUp ? 0 : 2"
+    :color="$vuetify.breakpoint.lgAndUp ? 'grey darken-4' : 'primary'"
+  >
+    <div>
+      <v-toolbar-title>+1 800 555-0199</v-toolbar-title>
+      <p class="text--secondary mb-n1">Estonia</p>
+    </div>
+    <v-spacer></v-spacer>
+    <v-tooltip bottom>
+      <template #activator="{ on, attrs }">
+        <v-btn icon text v-bind="attrs" v-on="on">
+          <v-icon>mdi-dots-vertical</v-icon>
+        </v-btn>
+      </template>
+      <span>More Options</span>
+    </v-tooltip>
+  </v-sheet>
+</template>
+
+<script lang="ts">
+import { Vue, Component } from 'vue-property-decorator'
+
+@Component
+export default class MessageThreadHeader extends Vue {}
+</script>
