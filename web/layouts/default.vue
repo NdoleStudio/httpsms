@@ -1,7 +1,7 @@
 <template>
   <v-app dark>
     <v-navigation-drawer
-      :width="500"
+      :width="400"
       v-model="drawer"
       :mini-variant="miniVariant"
       :clipped="clipped"
