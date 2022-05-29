@@ -54,7 +54,7 @@ jobs:
         run: yarn generate
 
       - name: Deploy 🚀
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           channelId: live
