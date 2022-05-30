@@ -1,11 +1,12 @@
 package main
 
 import (
+	"log"
+
 	_ "github.com/NdoleStudio/http-sms-manager/docs"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
-	"log"
 )
 
 // @title HTTP SMS API
