@@ -3,27 +3,35 @@ package main
 import (
 	"log"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/di"
+
 	_ "github.com/NdoleStudio/http-sms-manager/docs"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 )
 
-// @title HTTP SMS API
-// @version 1.0
-// @description Sample API to send messages using android sms manager via HTTP
-// @termsOfService http://swagger.io/terms/
-// @contact.name HTTP SMS Support
+// @title       HTTP SMS API
+// @version     1.0
+// @description API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP
+//
+// @contact.name  HTTP SMS Support
 // @contact.email supportd@httpsms.com
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host api.httpsms.com
-// @BasePath /
+//
+// @license.name MIT
+// @license.url  https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
+//
+// @host     api.httpsms.com
+// @BasePath /v1
 func main() {
 	app := fiber.New()
 
-	// log requests/responses
 	app.Use(logger.New())
+
+	container := di.NewContainer()
+
+	apiV1 := app.Group("v1")
+	apiV1.Post("/messages/send", container.MessageHandler().Send)
 
 	app.Get("/*", swagger.HandlerDefault)
 
