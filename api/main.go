@@ -23,7 +23,7 @@ import (
 // @host     api.httpsms.com
 // @BasePath /v1
 func main() {
-	di.LoadEnv()
+	// di.LoadEnv()
 
 	app := fiber.New()
 
