@@ -14,6 +14,7 @@ require (
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
 	github.com/rs/zerolog v1.26.1
 	github.com/swaggo/swag v1.8.2
+	github.com/thedevsaddam/govalidator v1.9.10
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/trace v1.7.0
 	gorm.io/driver/postgres v1.3.7
