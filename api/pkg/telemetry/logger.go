@@ -11,11 +11,14 @@ type Logger interface {
 	// WithString creates a new structured logger instance with a key value pair
 	WithString(key string, value string) Logger
 
+	// WithBool creates a new structured logger instance with a key value pair
+	WithBool(key string, value bool) Logger
+
 	// Info logs a new message with information level.
 	Info(value string)
 
 	// Warn logs a new message with warning level.
-	Warn(value string)
+	Warn(err error)
 
 	// Trace logs a new message with trace level.
 	Trace(value string)

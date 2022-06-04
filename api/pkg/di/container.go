@@ -5,39 +5,69 @@ import (
 	"os"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/handlers"
+	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 )
 
 // Container is used to resolve services at runtime
 type Container struct {
-	logger         telemetry.Logger
-	messageHandler *handlers.MessageHandler
+	projectID string
+	logger    telemetry.Logger
 }
 
 // NewContainer creates a new dependency injection container
-func NewContainer() (container *Container) {
+func NewContainer(projectID string) (container *Container) {
 	return &Container{
-		logger: logger().WithService(fmt.Sprintf("%T", container)),
+		projectID: projectID,
+		logger:    logger().WithService(fmt.Sprintf("%T", container)),
 	}
 }
 
 // Logger creates a new instance of telemetry.Logger
-func (container Container) Logger() (l telemetry.Logger) {
-	container.logger.Debug(fmt.Sprintf("creating %T", l))
+func (container Container) Logger() telemetry.Logger {
+	container.logger.Debug("creating telemetry.Logger")
 	return logger()
+}
+
+// Tracer creates a new instance of telemetry.Tracer
+func (container Container) Tracer() (t telemetry.Tracer) {
+	container.logger.Debug("creating telemetry.Tracer")
+	return telemetry.NewOtelLogger(
+		container.projectID,
+		container.Logger(),
+	)
+}
+
+// MessageHandlerValidator creates a new instance of validators.MessageHandlerValidator
+func (container *Container) MessageHandlerValidator() (validator *validators.MessageHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewMessageHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// MessageService creates a new instance of services.MessageService
+func (container *Container) MessageService() (service *services.MessageService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewMessageService(
+		container.Logger(),
+		container.Tracer(),
+	)
 }
 
 // MessageHandler creates a new instance of handlers.MessageHandler
 func (container *Container) MessageHandler() (handler *handlers.MessageHandler) {
-	if container.messageHandler != nil {
-		return container.messageHandler
-	}
-
 	container.logger.Debug(fmt.Sprintf("creating %T", handler))
-
-	return handlers.NewMessageHandler()
+	return handlers.NewMessageHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageHandlerValidator(),
+		container.MessageService(),
+	)
 }
 
 func logger() telemetry.Logger {

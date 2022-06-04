@@ -29,8 +29,8 @@ func (logger *zerologLogger) Info(value string) {
 }
 
 // Warn logs a new message with warning level.
-func (logger *zerologLogger) Warn(value string) {
-	logger.zerolog.Warn().Msg(value)
+func (logger *zerologLogger) Warn(err error) {
+	logger.zerolog.Warn().Err(err).Send()
 }
 
 // Trace logs a new message with trace level.
@@ -51,4 +51,9 @@ func (logger *zerologLogger) Error(err error) {
 // WithString creates a new structured logger instance with a key value pair
 func (logger *zerologLogger) WithString(key string, value string) Logger {
 	return NewZerologLogger(logger.zerolog.With().Str(key, value))
+}
+
+// WithBool creates a new structured logger instance with a key value pair
+func (logger *zerologLogger) WithBool(key string, value bool) Logger {
+	return NewZerologLogger(logger.zerolog.With().Bool(key, value))
 }

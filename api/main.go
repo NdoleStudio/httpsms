@@ -28,7 +28,7 @@ func main() {
 
 	app.Use(logger.New())
 
-	container := di.NewContainer()
+	container := di.NewContainer("http-sms")
 
 	apiV1 := app.Group("v1")
 	apiV1.Post("/messages/send", container.MessageHandler().Send)
