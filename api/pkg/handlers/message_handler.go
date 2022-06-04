@@ -43,6 +43,9 @@ func NewMessageHandler(
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  responses.MessageResponse
+// @Success      400  {object}  responses.BadRequest
+// @Success      422  {object}  responses.UnprocessableEntity
+// @Success      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]
 func (h *MessageHandler) Send(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)

@@ -9,11 +9,11 @@ import (
 // handler is the base struct for handling requests
 type handler struct{}
 
-func (h *handler) responseBadRequest(c *fiber.Ctx, payload any) error {
+func (h *handler) responseBadRequest(c *fiber.Ctx, err error) error {
 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 		"status":  "error",
 		"message": "The request isn't properly formed",
-		"data":    payload,
+		"data":    err,
 	})
 }
 
