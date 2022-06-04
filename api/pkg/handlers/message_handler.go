@@ -74,5 +74,5 @@ func (h *MessageHandler) Send(c *fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseOK(c, "Outgoing message added to queue", message)
+	return h.responseOK(c, "message added to queue", message)
 }
