@@ -25,4 +25,7 @@ type Logger interface {
 
 	// Debug logs a new message with debug level.
 	Debug(value string)
+
+	// Fatal logs a new message with fatal level.
+	Fatal(err error)
 }

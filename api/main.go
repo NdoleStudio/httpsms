@@ -3,9 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/di"
-
 	_ "github.com/NdoleStudio/http-sms-manager/docs"
+	"github.com/NdoleStudio/http-sms-manager/pkg/di"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
@@ -24,6 +23,8 @@ import (
 // @host     api.httpsms.com
 // @BasePath /v1
 func main() {
+	di.LoadEnv()
+
 	app := fiber.New()
 
 	app.Use(logger.New())

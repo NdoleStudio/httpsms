@@ -43,6 +43,11 @@ func (logger *zerologLogger) Debug(value string) {
 	logger.zerolog.Debug().Msg(value)
 }
 
+// Fatal logs a new message with fatal level.
+func (logger *zerologLogger) Fatal(err error) {
+	logger.zerolog.Fatal().Err(err).Send()
+}
+
 // Error logs an error
 func (logger *zerologLogger) Error(err error) {
 	logger.zerolog.Error().Err(err).Send()
