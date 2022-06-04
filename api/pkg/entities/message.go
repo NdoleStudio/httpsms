@@ -47,7 +47,7 @@ type Message struct {
 	Status  MessageStatus `json:"status"`
 
 	// SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
-	SendDuration time.Duration `json:"send_time"`
+	SendDuration *int64 `json:"send_time"`
 
 	RequestReceivedAt time.Time  `json:"request_received_at"`
 	CreatedAt         time.Time  `json:"created_at"`
@@ -56,4 +56,6 @@ type Message struct {
 	LastAttemptedAt   *time.Time `json:"last_attempted_at"`
 	SentAt            *time.Time `json:"sent_at"`
 	ReceivedAt        *time.Time `json:"received_at"`
+
+	FailureReason *string `json:"failure_reason"`
 }

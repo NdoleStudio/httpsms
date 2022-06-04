@@ -1,6 +1,10 @@
 package requests
 
-import "github.com/NdoleStudio/http-sms-manager/pkg/services"
+import (
+	"time"
+
+	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+)
 
 // MessageSend is the payload for sending and SMS message
 type MessageSend struct {
@@ -10,10 +14,12 @@ type MessageSend struct {
 }
 
 // ToMessageSendParams converts MessageSend to services.MessageSendParams
-func (input MessageSend) ToMessageSendParams() services.MessageSendParams {
+func (input MessageSend) ToMessageSendParams(source string) services.MessageSendParams {
 	return services.MessageSendParams{
-		From:    input.From,
-		To:      input.To,
-		Content: input.Content,
+		Source:            source,
+		From:              input.From,
+		RequestReceivedAt: time.Now().UTC(),
+		To:                input.To,
+		Content:           input.Content,
 	}
 }

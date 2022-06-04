@@ -42,6 +42,7 @@ func NewMessageHandler(
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
+// @Param        payload   body requests.MessageSend  true  "Send message request payload"
 // @Success      200  {object}  responses.MessageResponse
 // @Success      400  {object}  responses.BadRequest
 // @Success      422  {object}  responses.UnprocessableEntity
@@ -66,7 +67,7 @@ func (h *MessageHandler) Send(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending message")
 	}
 
-	message, err := h.service.Send(ctx, request.ToMessageSendParams())
+	message, err := h.service.SendMessage(ctx, request.ToMessageSendParams(c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

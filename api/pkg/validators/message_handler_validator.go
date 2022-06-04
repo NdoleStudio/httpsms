@@ -28,13 +28,13 @@ func NewMessageHandlerValidator(
 }
 
 // ValidateMessageSend validates the requests.MessageSend request
-func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context, request requests.MessageSend) url.Values {
+func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, request requests.MessageSend) url.Values {
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
 			"to": []string{
 				"required",
-				"regex:^\\+[1-9]\\d{1,14}$",
+				"regex:^\\+[1-9]\\d{10,14}$",
 			},
 			"from": []string{
 				"required",
@@ -56,5 +56,5 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 		},
 	})
 
-	return v.Validate()
+	return v.ValidateStruct()
 }
