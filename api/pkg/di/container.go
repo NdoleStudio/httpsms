@@ -109,7 +109,6 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.EventListenerLog{})))
 	}
 
-	db.Migrator().HasIndex(&entities.MessageThread{}, "")
 	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageThread{})))
 	}
