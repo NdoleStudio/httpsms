@@ -14,4 +14,7 @@ type MessageRepository interface {
 
 	// Load an entities.Message by ID
 	Load(ctx context.Context, messageID uuid.UUID) (*entities.Message, error)
+
+	// GetOutstanding fetches list of outstanding []entities.Message
+	GetOutstanding(ctx context.Context, take int) (*[]entities.Message, error)
 }

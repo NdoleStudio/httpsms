@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/events"
@@ -36,6 +37,89 @@ func NewMessageService(
 		repository:      repository,
 		eventDispatcher: eventDispatcher,
 	}
+}
+
+// MessageGetOutstandingParams parameters for sending a new message
+type MessageGetOutstandingParams struct {
+	Source string
+	Take   int
+}
+
+// GetOutstanding fetches messages that still to be sent to the phone
+func (service *MessageService) GetOutstanding(ctx context.Context, params MessageGetOutstandingParams) (*[]entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	messages, err := service.repository.GetOutstanding(ctx, params.Take)
+	if err != nil {
+		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Take)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] outstanding messages", len(*messages)))
+	return service.handleOutstandingMessages(ctx, params.Source, messages), nil
+}
+
+func (service *MessageService) handleOutstandingMessages(ctx context.Context, source string, messages *[]entities.Message) *[]entities.Message {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	var wg sync.WaitGroup
+	results := make([]entities.Message, 0, len(*messages))
+	var lock sync.Mutex
+
+	for _, message := range *messages {
+		wg.Add(1)
+		go func(ctx context.Context, message entities.Message) {
+			defer wg.Done()
+
+			event, err := service.createMessagePhoneSendingEvent(source, events.MessagePhoneSendingPayload{ID: message.ID})
+			if err != nil {
+				msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
+				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+				return
+			}
+
+			ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
+
+			if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+				msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
+				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+				return
+			}
+
+			ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
+
+			resultMessage, err := service.repository.Load(ctx, message.ID)
+			if err != nil {
+				msg := fmt.Sprintf("cannot load message with id [%s]", message.ID)
+				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+				return
+			}
+
+			ctxLogger.Info(fmt.Sprintf("loaded message [%s]", message.ID))
+
+			lock.Lock()
+			defer lock.Unlock()
+			results = append(results, *resultMessage)
+		}(ctx, message)
+	}
+
+	wg.Wait()
+	return &results
+}
+
+// MessageSendParams parameters for sending a new message
+type MessageSendParams struct {
+	From              string
+	To                string
+	Content           string
+	Source            string
+	RequestReceivedAt time.Time
 }
 
 // SendMessage a new message
@@ -81,6 +165,16 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	return message, nil
 }
 
+// MessageStoreParams are parameters for creating a new message
+type MessageStoreParams struct {
+	From              string
+	To                string
+	Content           string
+	ID                uuid.UUID
+	Source            string
+	RequestReceivedAt time.Time
+}
+
 // StoreMessage a new message
 func (service *MessageService) StoreMessage(ctx context.Context, params MessageStoreParams) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
@@ -114,15 +208,23 @@ func (service *MessageService) StoreMessage(ctx context.Context, params MessageS
 	return message, nil
 }
 
-func (service *MessageService) createMessageAPISentEvent(source string, payload events.MessageAPISentPayload) (event cloudevents.Event, err error) {
-	event = cloudevents.NewEvent()
+func (service *MessageService) createMessageAPISentEvent(source string, payload events.MessageAPISentPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessageAPISent, source, payload)
+}
+
+func (service *MessageService) createMessagePhoneSendingEvent(source string, payload events.MessagePhoneSendingPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessagePhoneSending, source, payload)
+}
+
+func (service *MessageService) createEvent(eventType string, source string, payload any) (cloudevents.Event, error) {
+	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
-	event.SetType(events.EventTypeMessageAPISent)
+	event.SetType(eventType)
 	event.SetTime(time.Now().UTC())
 	event.SetID(uuid.New().String())
 
-	if err = event.SetData(cloudevents.ApplicationJSON, payload); err != nil {
+	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {
 		msg := fmt.Sprintf("cannot encode %T [%#+v] as JSON", payload, payload)
 		return event, stacktrace.Propagate(err, msg)
 	}

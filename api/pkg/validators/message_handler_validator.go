@@ -58,3 +58,19 @@ func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, 
 
 	return v.ValidateStruct()
 }
+
+// ValidateMessageOutstanding validates the requests.MessageOutstanding request
+func (validator MessageHandlerValidator) ValidateMessageOutstanding(_ context.Context, request requests.MessageOutstanding) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"take": []string{
+				"required",
+				"numeric",
+				"min:1",
+				"max:20",
+			},
+		},
+	})
+	return v.ValidateStruct()
+}

@@ -56,3 +56,10 @@ func (h *handler) responseOK(c *fiber.Ctx, message string, data interface{}) err
 		"data":    data,
 	})
 }
+
+func (h *handler) pluralize(value string, count int) string {
+	if count == 1 {
+		return value
+	}
+	return value + "s"
+}

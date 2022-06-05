@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/cloudevents/sdk-go/v2 v2.10.0
+	github.com/cockroachdb/cockroach-go/v2 v2.2.11
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/fiber/v2 v2.34.0
@@ -55,7 +56,7 @@ require (
 	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.13.0 // indirect
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
+	golang.org/x/crypto v0.0.0-20220517005047-85d78b3ac167 // indirect
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect

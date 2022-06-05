@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	_ "github.com/NdoleStudio/http-sms-manager/docs"
 	"github.com/NdoleStudio/http-sms-manager/pkg/di"
 	"github.com/gofiber/fiber/v2"
@@ -23,7 +21,7 @@ import (
 // @host     api.httpsms.com
 // @BasePath /v1
 func main() {
-	// di.LoadEnv()
+	di.LoadEnv()
 
 	app := fiber.New()
 
@@ -32,9 +30,10 @@ func main() {
 	container := di.NewContainer("http-sms")
 
 	apiV1 := app.Group("v1")
-	apiV1.Post("/messages/send", container.MessageHandler().Send)
+	apiV1.Post("/messages/send", container.MessageHandler().PostSend)
+	apiV1.Get("/messages/outstanding", container.MessageHandler().GetOutstanding)
 
 	app.Get("/*", swagger.HandlerDefault)
 
-	log.Println(app.Listen(":8000"))
+	container.Logger().Info(app.Listen(":8000").Error())
 }
