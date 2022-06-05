@@ -199,13 +199,46 @@ func (service *MessageService) StoreMessage(ctx context.Context, params MessageS
 		ReceivedAt:        nil,
 	}
 
-	if err := service.repository.Save(ctx, message); err != nil {
+	if err := service.repository.Store(ctx, message); err != nil {
 		msg := fmt.Sprintf("cannot save message with id [%s]", params.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the repository", message.ID))
 	return message, nil
+}
+
+// HandleMessageSendingParams are parameters for registering a new message being sent
+type HandleMessageSendingParams struct {
+	ID        uuid.UUID
+	Timestamp time.Time
+}
+
+// HandleMessageSending handles when a message is being sent
+func (service *MessageService) HandleMessageSending(ctx context.Context, params HandleMessageSendingParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message, err := service.repository.Load(ctx, params.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if !message.IsSending() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected %s", message.Status, entities.MessageStatusSending)
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+	}
+
+	if err = service.repository.Update(ctx, message.AddSendAttempt(params.Timestamp)); err != nil {
+		msg := fmt.Sprintf("cannot update message with id [%s] after sending", message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] in the repository after adding send attempt", message.ID))
+	return nil
 }
 
 func (service *MessageService) createMessageAPISentEvent(source string, payload events.MessageAPISentPayload) (cloudevents.Event, error) {

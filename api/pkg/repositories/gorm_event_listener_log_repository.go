@@ -31,7 +31,7 @@ func NewGormEventListenerLogRepository(
 }
 
 // Save a new entities.Message
-func (repository *gormEventListenerLogRepository) Save(ctx context.Context, message *entities.EventListenerLog) error {
+func (repository *gormEventListenerLogRepository) Store(ctx context.Context, message *entities.EventListenerLog) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 

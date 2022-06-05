@@ -9,8 +9,11 @@ import (
 
 // MessageRepository loads and persists an entities.Message
 type MessageRepository interface {
-	// Save a new entities.Message
-	Save(ctx context.Context, message *entities.Message) error
+	// Store a new entities.Message
+	Store(ctx context.Context, message *entities.Message) error
+
+	// Update a new entities.Message
+	Update(ctx context.Context, message *entities.Message) error
 
 	// Load an entities.Message by ID
 	Load(ctx context.Context, messageID uuid.UUID) (*entities.Message, error)

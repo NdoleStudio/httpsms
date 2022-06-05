@@ -59,3 +59,16 @@ type Message struct {
 
 	FailureReason *string `json:"failure_reason"`
 }
+
+// IsSending determines if a message is being sent
+func (message Message) IsSending() bool {
+	return message.Status == MessageStatusSending
+}
+
+// AddSendAttempt configures a Message for sending
+func (message *Message) AddSendAttempt(timestamp time.Time) *Message {
+	message.Status = MessageStatusSending
+	message.LastAttemptedAt = &timestamp
+	message.OrderTimestamp = timestamp
+	return message
+}
