@@ -183,7 +183,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Success      400  		{object}  	responses.BadRequest
 // @Success      422  		{object} 	responses.UnprocessableEntity
 // @Success      500  		{object}  	responses.InternalServerError
-// @Router       /messages/:messageID/events [post]
+// @Router       /messages/{messageID}/events [post]
 func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()

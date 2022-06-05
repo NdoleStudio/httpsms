@@ -21,7 +21,6 @@ func (h *handler) responseInternalServerError(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 		"status":  "error",
 		"message": "We ran into an internal error while handling the request.",
-		"data":    nil,
 	})
 }
 
@@ -29,7 +28,6 @@ func (h *handler) responseForbidden(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 		"status":  "error",
 		"message": fiber.ErrForbidden.Message,
-		"data":    nil,
 	})
 }
 
@@ -45,7 +43,6 @@ func (h *handler) responseNotFound(c *fiber.Ctx, message string) error {
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 		"status":  "error",
 		"message": message,
-		"data":    nil,
 	})
 }
 
