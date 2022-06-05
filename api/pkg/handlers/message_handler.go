@@ -36,6 +36,13 @@ func NewMessageHandler(
 	}
 }
 
+// RegisterRoutes registers the routes for the MessageHandler
+func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
+	router.Post("/messages/send", h.PostSend)
+	router.Get("/messages/outstanding", h.GetOutstanding)
+	router.Get("/messages", h.Index)
+}
+
 // PostSend a new entities.Message
 // @Summary      Send a new SMS message
 // @Description  Add a new SMS message to be sent by the android phone
@@ -83,7 +90,7 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        take	query  int  false  "number of outstanding messages to return"	minimum(1)	maximum(10)
+// @Param        limit	query  int  false  "number of outstanding messages to return"	minimum(1)	maximum(10)
 // @Success      200 	{object}	responses.MessagesResponse
 // @Success      400	{object}	responses.BadRequest
 // @Success      422	{object}	responses.UnprocessableEntity
@@ -115,5 +122,50 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseOK(c, fmt.Sprintf("fetch %d %s", len(*messages), h.pluralize("message", len(*messages))), messages)
+	return h.responseOK(c, fmt.Sprintf("fetched %d %s", len(*messages), h.pluralize("message", len(*messages))), messages)
+}
+
+// Index returns messages sent between 2 phone numbers
+// @Summary      Get messages which are sent between 2 phone numbers
+// @Description  Get list of messages which are sent between 2 phone numbers. It will be sorted by timestamp in descending order.
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        from	query  string  	true 	"from phone number" 				example(+18005550199)
+// @Param        to		query  string  	true 	"to phone number" 					example(+18005550100)
+// @Param        skip	query  int  	false	"number of messages to skip"		minimum(0)
+// @Param        query	query  string  	true 	"filter messages containing query"
+// @Param        limit	query  int  	false	"number of messages to return"		minimum(1)	maximum(20)
+// @Success      200 	{object}	responses.MessagesResponse
+// @Success      400	{object}	responses.BadRequest
+// @Success      422	{object}	responses.UnprocessableEntity
+// @Success      500	{object}	responses.InternalServerError
+// @Router       /messages [get]
+func (h *MessageHandler) Index(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageIndex
+	if err := c.QueryParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateMessageIndex(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while fetching messages [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching messages")
+	}
+
+	messages, err := h.service.GetMessages(ctx, request.ToGetParams())
+	if err != nil {
+		msg := fmt.Sprintf("cannot get messgaes with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("fetched %d %s", len(*messages), h.pluralize("message", len(*messages))), messages)
 }

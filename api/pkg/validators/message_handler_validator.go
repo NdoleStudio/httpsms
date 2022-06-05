@@ -10,6 +10,10 @@ import (
 	"github.com/thedevsaddam/govalidator"
 )
 
+const (
+	phoneNumberRule = "regex:^\\+[1-9]\\d{1,14}$"
+)
+
 // MessageHandlerValidator validates models used in handlers.MessageHandler
 type MessageHandlerValidator struct {
 	logger telemetry.Logger
@@ -34,11 +38,11 @@ func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, 
 		Rules: govalidator.MapData{
 			"to": []string{
 				"required",
-				"regex:^\\+[1-9]\\d{10,14}$",
+				phoneNumberRule,
 			},
 			"from": []string{
 				"required",
-				"regex:^\\+[1-9]\\d{1,14}$",
+				phoneNumberRule,
 			},
 			"content": []string{
 				"required",
@@ -64,11 +68,45 @@ func (validator MessageHandlerValidator) ValidateMessageOutstanding(_ context.Co
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
-			"take": []string{
+			"limit": []string{
 				"required",
 				"numeric",
 				"min:1",
 				"max:20",
+			},
+		},
+	})
+	return v.ValidateStruct()
+}
+
+// ValidateMessageIndex validates the requests.MessageIndex request
+func (validator MessageHandlerValidator) ValidateMessageIndex(_ context.Context, request requests.MessageIndex) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"limit": []string{
+				"required",
+				"numeric",
+				"min:1",
+				"max:20",
+			},
+			"skip": []string{
+				"required",
+				"numeric",
+				"min:0",
+			},
+			"from": []string{
+				"required",
+				"min:1",
+			},
+			"to": []string{
+				"required",
+				phoneNumberRule,
+			},
+		},
+		Messages: map[string][]string{
+			"to": {
+				"regex:The 'to' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})

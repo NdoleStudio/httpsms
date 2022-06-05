@@ -34,6 +34,25 @@ func NewGormMessageRepository(
 	}
 }
 
+// Index entities.Message between 2 parties
+func (repository *gormMessageRepository) Index(ctx context.Context, from string, to string, params IndexParams) (*[]entities.Message, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	query := repository.db.Where("\"from\" = ?", from).Where("\"to\" = ?", to)
+	if len(params.Query) > 0 {
+		query = query.Where("content ILIKE ?", params.Query)
+	}
+
+	messages := new([]entities.Message)
+	if err := query.Order("order_timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&messages).Error; err != nil {
+		msg := fmt.Sprintf("cannot fetch messges from [%s] to [%s] and params [%+#v]", from, to, params)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return messages, nil
+}
+
 // Store a new entities.Message
 func (repository *gormMessageRepository) Store(ctx context.Context, message *entities.Message) error {
 	ctx, span := repository.tracer.Start(ctx)

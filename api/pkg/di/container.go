@@ -9,6 +9,7 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/NdoleStudio/http-sms-manager/pkg/listeners"
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/palantir/stacktrace"
 
 	"gorm.io/driver/postgres"
@@ -27,6 +28,7 @@ import (
 type Container struct {
 	projectID       string
 	db              *gorm.DB
+	app             *fiber.App
 	eventDispatcher *services.EventDispatcher
 	logger          telemetry.Logger
 }
@@ -37,8 +39,29 @@ func NewContainer(projectID string) (container *Container) {
 		projectID: projectID,
 		logger:    logger().WithService(fmt.Sprintf("%T", container)),
 	}
-	container.RegisterMessageListener()
+
+	container.RegisterMessageListeners()
+	container.RegisterMessageRoutes()
+
 	return container
+}
+
+// App creates a new instance of fiber.App
+func (container *Container) App() (app *fiber.App) {
+	if container.app != nil {
+		return container.app
+	}
+
+	container.logger.Debug(fmt.Sprintf("creating %T", app))
+
+	app = fiber.New()
+
+	if os.Getenv("APP_HTTP_LOGGER") == "true" {
+		app.Use(fiberLogger.New())
+	}
+
+	container.app = app
+	return app
 }
 
 // Logger creates a new instance of telemetry.Logger
@@ -171,8 +194,8 @@ func (container *Container) MessageHandler() (handler *handlers.MessageHandler) 
 	)
 }
 
-// RegisterMessageListener creates a new instance of listeners.MessageListener
-func (container *Container) RegisterMessageListener() (listener *listeners.MessageListener) {
+// RegisterMessageListeners creates a new instance of listeners.MessageListener
+func (container *Container) RegisterMessageListeners() (listener *listeners.MessageListener) {
 	container.logger.Debug(fmt.Sprintf("registering %T", listener))
 	listener, routes := listeners.NewMessageListener(
 		container.Logger(),
@@ -186,6 +209,12 @@ func (container *Container) RegisterMessageListener() (listener *listeners.Messa
 	}
 
 	return listener
+}
+
+// RegisterMessageRoutes creates a new instance of handler.MessageHandler
+func (container *Container) RegisterMessageRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
+	container.MessageHandler().RegisterRoutes(container.App().Group("v1"))
 }
 
 func logger() telemetry.Logger {

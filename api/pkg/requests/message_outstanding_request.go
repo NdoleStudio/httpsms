@@ -9,13 +9,13 @@ import (
 
 // MessageOutstanding is the payload fetching outstanding entities.Message
 type MessageOutstanding struct {
-	Take string `json:"take" query:"take"`
+	Limit string `json:"limit" query:"limit"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
 func (input *MessageOutstanding) Sanitize() MessageOutstanding {
-	if strings.TrimSpace(input.Take) == "" {
-		input.Take = "1"
+	if strings.TrimSpace(input.Limit) == "" {
+		input.Limit = "1"
 	}
 	return *input
 }
@@ -24,12 +24,12 @@ func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 func (input *MessageOutstanding) ToGetOutstandingParams(source string) services.MessageGetOutstandingParams {
 	return services.MessageGetOutstandingParams{
 		Source: source,
-		Take:   input.getTake(),
+		Limit:  input.getLimit(),
 	}
 }
 
-// getTake gets the take as a string
-func (input *MessageOutstanding) getTake() int {
-	val, _ := strconv.Atoi(input.Take)
+// getLimit gets the take as a string
+func (input *MessageOutstanding) getLimit() int {
+	val, _ := strconv.Atoi(input.Limit)
 	return val
 }

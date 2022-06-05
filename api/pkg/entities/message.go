@@ -40,24 +40,23 @@ const (
 // Message represents a message sent between 2 phone numbers
 type Message struct {
 	ID      uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;"`
-	From    string        `json:"from"`
-	To      string        `json:"to"`
-	Content string        `json:"content"`
-	Type    MessageType   `json:"type"`
-	Status  MessageStatus `json:"status"`
+	From    string        `json:"from" gorm:"index:idx__messages__from__to" example:"+18005550199"`
+	To      string        `json:"to" gorm:"index:idx__messages__from__to" example:"+18005550100"`
+	Content string        `json:"content" example:"This is a sample text message"`
+	Type    MessageType   `json:"type" example:"mobile-terminated"`
+	Status  MessageStatus `json:"status" gorm:"index:idx__messages__status" example:"pending"`
 
 	// SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
-	SendDuration *int64 `json:"send_time"`
+	SendDuration *int64 `json:"send_time" example:"2022-06-05T14:26:01.520828+03:00"`
 
-	RequestReceivedAt time.Time  `json:"request_received_at"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
-	OrderTimestamp    time.Time  `json:"order_timestamp"`
-	LastAttemptedAt   *time.Time `json:"last_attempted_at"`
-	SentAt            *time.Time `json:"sent_at"`
-	ReceivedAt        *time.Time `json:"received_at"`
-
-	FailureReason *string `json:"failure_reason"`
+	RequestReceivedAt time.Time  `json:"request_received_at" example:"2022-06-05T14:26:01.520828+03:00"`
+	CreatedAt         time.Time  `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
+	UpdatedAt         time.Time  `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
+	OrderTimestamp    time.Time  `json:"order_timestamp" gorm:"index:idx__messages__order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
+	LastAttemptedAt   *time.Time `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	SentAt            *time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	ReceivedAt        *time.Time `json:"received_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	FailureReason     *string    `json:"failure_reason"`
 }
 
 // IsSending determines if a message is being sent

@@ -42,7 +42,7 @@ func NewMessageService(
 // MessageGetOutstandingParams parameters for sending a new message
 type MessageGetOutstandingParams struct {
 	Source string
-	Take   int
+	Limit  int
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
@@ -52,14 +52,38 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	messages, err := service.repository.GetOutstanding(ctx, params.Take)
+	messages, err := service.repository.GetOutstanding(ctx, params.Limit)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Take)
+		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Limit)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] outstanding messages", len(*messages)))
 	return service.handleOutstandingMessages(ctx, params.Source, messages), nil
+}
+
+// MessageGetParams parameters for sending a new message
+type MessageGetParams struct {
+	repositories.IndexParams
+	From string
+	To   string
+}
+
+// GetMessages fetches sent between 2 phone numbers
+func (service *MessageService) GetMessages(ctx context.Context, params MessageGetParams) (*[]entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	messages, err := service.repository.Index(ctx, params.From, params.To, params.IndexParams)
+	if err != nil {
+		msg := fmt.Sprintf("could not fetch messages with parms [%+#v]", params)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(*messages), params))
+	return messages, nil
 }
 
 func (service *MessageService) handleOutstandingMessages(ctx context.Context, source string, messages *[]entities.Message) *[]entities.Message {

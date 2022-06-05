@@ -35,4 +35,4 @@ ENV ZONEINFO=/zoneinfo.zip
 
 EXPOSE 8000
 
-ENTRYPOINT ["./http-sms"]
+ENTRYPOINT ["./http-sms", "--dotenv=false"]
