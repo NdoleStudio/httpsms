@@ -115,3 +115,24 @@ func (validator MessageHandlerValidator) ValidateMessageIndex(_ context.Context,
 	})
 	return v.ValidateStruct()
 }
+
+// ValidateMessageEvent validates the requests.MessageEvent request
+func (validator MessageHandlerValidator) ValidateMessageEvent(_ context.Context, request requests.MessageEvent) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"sent_at": []string{
+				"required",
+			},
+			"event_name": []string{
+				"required",
+				"in:SENT",
+			},
+			"messageID": []string{
+				"required",
+				"uuid",
+			},
+		},
+	})
+	return v.ValidateStruct()
+}

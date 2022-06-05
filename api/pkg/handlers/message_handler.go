@@ -41,6 +41,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Post("/messages/send", h.PostSend)
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
+	router.Post("/messages/:messageID/event", h.PostEvent)
 }
 
 // PostSend a new entities.Message
@@ -168,4 +169,47 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, fmt.Sprintf("fetched %d %s", len(*messages), h.pluralize("message", len(*messages))), messages)
+}
+
+// PostEvent registers an event on a message
+// @Summary      Store an event for a message on the mobile phone
+// @Description  Use this endpoint to send events for a message when it is failed, sent or delivered by the mobile phone.
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param 		 messageID 	path		string 							true 	"ID of the message" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Param        payload   	body 		requests.MessageEvent  			true 	"Payload of the event emitted."
+// @Success      200  		{object} 	responses.MessageResponse
+// @Success      400  		{object}  	responses.BadRequest
+// @Success      422  		{object} 	responses.UnprocessableEntity
+// @Success      500  		{object}  	responses.InternalServerError
+// @Router       /messages/:messageID/event [post]
+func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageEvent
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	request.MessageID = c.Params("messageID")
+	if errors := h.validator.ValidateMessageEvent(ctx, request); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while storing event [%s] for message [%s]", spew.Sdump(errors), c.Body(), request.MessageID)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
+	}
+
+	message, err := h.service.StoreEvent(ctx, request.ToMessageStoreEventParams(c.OriginalURL()))
+	if err != nil {
+		msg := fmt.Sprintf("cannot store event for message [%s] with paylod [%s]", request.MessageID, c.Body())
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "message event stored successfully", message)
 }
