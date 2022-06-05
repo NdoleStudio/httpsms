@@ -147,7 +147,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 
 	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
-		Timestamp: event.Time(),
+		Timestamp: payload.Timestamp,
 	}
 
 	if err = listener.service.HandleMessageSent(ctx, handleParams); err != nil {

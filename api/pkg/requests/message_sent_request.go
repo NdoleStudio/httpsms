@@ -12,7 +12,7 @@ import (
 // MessageEvent is the payload for sending and SMS message
 type MessageEvent struct {
 	// Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
-	Timestamp time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	Timestamp time.Time `json:"timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
 
 	// EventName is the type of event
 	// * SENT: is emitted when a message is sent by the mobile phone (only SENT is implemented)

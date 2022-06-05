@@ -111,7 +111,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 	updateParams := services.MessageThreadUpdateParams{
 		Owner:     payload.From,
 		Contact:   payload.To,
-		Timestamp: event.Time(),
+		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
 	}

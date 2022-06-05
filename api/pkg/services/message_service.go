@@ -125,10 +125,11 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 	defer span.End()
 
 	event, err := service.createMessagePhoneSentEvent(params.Source, events.MessagePhoneSentPayload{
-		ID:      message.ID,
-		From:    message.From,
-		To:      message.To,
-		Content: message.Content,
+		ID:        message.ID,
+		From:      message.From,
+		Timestamp: params.Timestamp,
+		To:        message.To,
+		Content:   message.Content,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
