@@ -39,6 +39,7 @@ func NewMessageThreadListener(
 	return l, map[string]events.EventListener{
 		events.EventTypeMessageAPISent:      l.OnMessageAPISent,
 		events.EventTypeMessagePhoneSending: l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:    l.OnMessagePhoneSent,
 	}
 }
 
@@ -75,6 +76,33 @@ func (listener *MessageThreadListener) OnMessagePhoneSending(ctx context.Context
 	defer span.End()
 
 	var payload events.MessagePhoneSendingPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	updateParams := services.MessageThreadUpdateParams{
+		Owner:     payload.From,
+		Contact:   payload.To,
+		Timestamp: event.Time(),
+		Content:   payload.Content,
+		MessageID: payload.ID,
+	}
+
+	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnMessagePhoneSent handles the events.EventTypeMessagePhoneSent event
+func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessagePhoneSentPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

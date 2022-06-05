@@ -39,6 +39,7 @@ func NewMessageListener(
 	return l, map[string]events.EventListener{
 		events.EventTypeMessageAPISent:      l.OnMessageAPISent,
 		events.EventTypeMessagePhoneSending: l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:    l.OnMessagePhoneSent,
 	}
 }
 
@@ -107,13 +108,50 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	handleParams := services.HandleMessageSendingParams{
+	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
 		Timestamp: event.Time(),
 	}
 
 	if err = listener.service.HandleMessageSending(ctx, handleParams); err != nil {
 		msg := fmt.Sprintf("cannot handle sending for message with ID [%s] for event with ID [%s]", handleParams.ID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+}
+
+// OnMessagePhoneSent handles the events.EventTypeMessagePhoneSent event
+func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	handled, err := listener.repository.Has(ctx, event.ID(), listener.signature(event))
+	if err != nil {
+		msg := fmt.Sprintf("cannot verify if event [%s] has been handled by [%T]", event.ID(), listener.signature(event))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger := listener.tracer.CtxLogger(listener.logger, span)
+
+	if handled {
+		ctxLogger.Info(fmt.Sprintf("event [%s] has already been handled by [%s]", event.ID(), listener.signature(event)))
+		return nil
+	}
+
+	var payload events.MessagePhoneSentPayload
+	if err = event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	handleParams := services.HandleMessageParams{
+		ID:        payload.ID,
+		Timestamp: event.Time(),
+	}
+
+	if err = listener.service.HandleMessageSent(ctx, handleParams); err != nil {
+		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

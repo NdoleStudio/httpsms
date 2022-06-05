@@ -41,7 +41,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Post("/messages/send", h.PostSend)
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
-	router.Post("/messages/:messageID/event", h.PostEvent)
+	router.Post("/messages/:messageID/events", h.PostEvent)
 }
 
 // PostSend a new entities.Message
@@ -183,7 +183,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Success      400  		{object}  	responses.BadRequest
 // @Success      422  		{object} 	responses.UnprocessableEntity
 // @Success      500  		{object}  	responses.InternalServerError
-// @Router       /messages/:messageID/event [post]
+// @Router       /messages/:messageID/events [post]
 func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()

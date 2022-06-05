@@ -72,6 +72,16 @@ func (message Message) IsSending() bool {
 	return message.Status == MessageStatusSending
 }
 
+// Sent registers a message as sent
+func (message *Message) Sent(timestamp time.Time) *Message {
+	sendDuration := timestamp.UnixNano() - message.RequestReceivedAt.UnixNano()
+	message.SentAt = &timestamp
+	message.Status = MessageStatusSent
+	message.OrderTimestamp = timestamp
+	message.SendDuration = &sendDuration
+	return message
+}
+
 // AddSendAttempt configures a Message for sending
 func (message *Message) AddSendAttempt(timestamp time.Time) *Message {
 	message.Status = MessageStatusSending

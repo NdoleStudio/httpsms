@@ -226,7 +226,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	event, err := service.createMessageAPISentEvent(params.Source, eventPayload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event)
+		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -293,14 +293,14 @@ func (service *MessageService) StoreMessage(ctx context.Context, params MessageS
 	return message, nil
 }
 
-// HandleMessageSendingParams are parameters for registering a new message being sent
-type HandleMessageSendingParams struct {
+// HandleMessageParams are parameters for handling a message event
+type HandleMessageParams struct {
 	ID        uuid.UUID
 	Timestamp time.Time
 }
 
 // HandleMessageSending handles when a message is being sent
-func (service *MessageService) HandleMessageSending(ctx context.Context, params HandleMessageSendingParams) error {
+func (service *MessageService) HandleMessageSending(ctx context.Context, params HandleMessageParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -323,6 +323,33 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] in the repository after adding send attempt", message.ID))
+	return nil
+}
+
+// HandleMessageSent handles when a message is has been sent by a mobile phone
+func (service *MessageService) HandleMessageSent(ctx context.Context, params HandleMessageParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message, err := service.repository.Load(ctx, params.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if !message.IsSending() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected %s", message.Status, entities.MessageStatusSending)
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+	}
+
+	if err = service.repository.Update(ctx, message.Sent(params.Timestamp)); err != nil {
+		msg := fmt.Sprintf("cannot update message with id [%s] as sent", message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
 	return nil
 }
 
