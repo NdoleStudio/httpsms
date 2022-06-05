@@ -202,7 +202,6 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	}
 
 	request.MessageID = c.Params("messageID")
-	spew.Dump(request)
 	if errors := h.validator.ValidateMessageEvent(ctx, request); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while storing event [%s] for message [%s]", spew.Sdump(errors), c.Body(), request.MessageID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
@@ -214,10 +213,16 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", request.MessageID))
 	}
 
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", request.MessageID)
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
 	message, err = h.service.StoreEvent(ctx, message, request.ToMessageStoreEventParams(c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store event for message [%s] with paylod [%s]", request.MessageID, c.Body())
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return h.responseInternalServerError(c)
 	}
 

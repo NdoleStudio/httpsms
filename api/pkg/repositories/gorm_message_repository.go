@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm/clause"
@@ -73,7 +74,13 @@ func (repository *gormMessageRepository) Load(ctx context.Context, messageID uui
 	defer span.End()
 
 	message := new(entities.Message)
-	if err := repository.db.First(message, messageID).Error; err != nil {
+	err := repository.db.First(message, messageID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("message with ID [%s] does not exist", message.ID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
 		msg := fmt.Sprintf("cannot load message with ID [%s]", messageID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

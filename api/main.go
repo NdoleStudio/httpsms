@@ -18,6 +18,7 @@ import (
 // @license.url  https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
 //
 // @host     api.httpsms.com
+// @schemes  https
 // @BasePath /v1
 func main() {
 	if len(os.Args) == 1 {
