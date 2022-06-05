@@ -47,7 +47,7 @@ type Message struct {
 	Status  MessageStatus `json:"status" gorm:"index:idx__messages__status" example:"pending"`
 
 	// SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
-	SendDuration *int64 `json:"send_time" example:"2022-06-05T14:26:01.520828+03:00"`
+	SendDuration *int64 `json:"send_time" example:"133414"`
 
 	RequestReceivedAt time.Time  `json:"request_received_at" example:"2022-06-05T14:26:01.520828+03:00"`
 	CreatedAt         time.Time  `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
