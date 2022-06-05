@@ -3,6 +3,9 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/google/uuid"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
@@ -52,9 +55,9 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 // @Produce      json
 // @Param        payload   body requests.MessageSend  true  "PostSend message request payload"
 // @Success      200  {object}  responses.MessageResponse
-// @Success      400  {object}  responses.BadRequest
-// @Success      422  {object}  responses.UnprocessableEntity
-// @Success      500  {object}  responses.InternalServerError
+// @Failure      400  {object}  responses.BadRequest
+// @Failure      422  {object}  responses.UnprocessableEntity
+// @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]
 func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
@@ -93,9 +96,9 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // @Produce      json
 // @Param        limit	query  int  false  "Number of outstanding messages to return"	minimum(1)	maximum(10)
 // @Success      200 	{object}	responses.MessagesResponse
-// @Success      400	{object}	responses.BadRequest
-// @Success      422	{object}	responses.UnprocessableEntity
-// @Success      500	{object}	responses.InternalServerError
+// @Failure      400	{object}	responses.BadRequest
+// @Failure      422	{object}	responses.UnprocessableEntity
+// @Failure      500	{object}	responses.InternalServerError
 // @Router       /messages/outstanding [get]
 func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
@@ -138,9 +141,9 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 // @Param        query	query  string  	false 	"filter messages containing query"
 // @Param        limit	query  int  	false	"number of messages to return"		minimum(1)	maximum(20)
 // @Success      200 	{object}	responses.MessagesResponse
-// @Success      400	{object}	responses.BadRequest
-// @Success      422	{object}	responses.UnprocessableEntity
-// @Success      500	{object}	responses.InternalServerError
+// @Failure      400	{object}	responses.BadRequest
+// @Failure      422	{object}	responses.UnprocessableEntity
+// @Failure      500	{object}	responses.InternalServerError
 // @Router       /messages [get]
 func (h *MessageHandler) Index(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
@@ -180,9 +183,10 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Param 		 messageID 	path		string 							true 	"ID of the message" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
 // @Param        payload   	body 		requests.MessageEvent  			true 	"Payload of the event emitted."
 // @Success      200  		{object} 	responses.MessageResponse
-// @Success      400  		{object}  	responses.BadRequest
-// @Success      422  		{object} 	responses.UnprocessableEntity
-// @Success      500  		{object}  	responses.InternalServerError
+// @Failure      400  		{object}  	responses.BadRequest
+// @Failure 	 404		{object}	responses.NotFound
+// @Failure      422  		{object} 	responses.UnprocessableEntity
+// @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/{messageID}/events [post]
 func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
@@ -205,7 +209,12 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
-	message, err := h.service.StoreEvent(ctx, request.ToMessageStoreEventParams(c.OriginalURL()))
+	message, err := h.service.GetMessage(ctx, uuid.MustParse(request.MessageID))
+	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", request.MessageID))
+	}
+
+	message, err = h.service.StoreEvent(ctx, message, request.ToMessageStoreEventParams(c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store event for message [%s] with paylod [%s]", request.MessageID, c.Body())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

@@ -11,6 +11,12 @@ type InternalServerError struct {
 	Message string `json:"message" example:"We ran into an internal error while handling the request."`
 }
 
+// NotFound is the response with status code is 404
+type NotFound struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"cannot find message with ID [32343a19-da5e-4b1b-a767-3298a73703ca]"`
+}
+
 // BadRequest is the response with status code is 400
 type BadRequest struct {
 	Status  string `json:"status" example:"error"`

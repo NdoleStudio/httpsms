@@ -52,9 +52,9 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router) {
 // @Param        query	query  string  	false 	"filter message threads containing query"
 // @Param        limit	query  int  	false	"number of messages to return"				minimum(1)	maximum(20)
 // @Success      200 	{object}	responses.MessageThreadsResponse
-// @Success      400	{object}	responses.BadRequest
-// @Success      422	{object}	responses.UnprocessableEntity
-// @Success      500	{object}	responses.InternalServerError
+// @Failure      400	{object}	responses.BadRequest
+// @Failure      422	{object}	responses.UnprocessableEntity
+// @Failure      500	{object}	responses.InternalServerError
 // @Router       /message-threads [get]
 func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
