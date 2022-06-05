@@ -9,18 +9,18 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/NdoleStudio/http-sms-manager/pkg/listeners"
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/gofiber/fiber/v2"
 	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/swagger"
 	"github.com/palantir/stacktrace"
-
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/handlers"
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
-	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
+	"gorm.io/driver/postgres"
 	gormLogger "gorm.io/gorm/logger"
 )
 
@@ -42,6 +42,7 @@ func NewContainer(projectID string) (container *Container) {
 
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
+	container.RegisterSwaggerRoutes()
 
 	return container
 }
@@ -215,6 +216,12 @@ func (container *Container) RegisterMessageListeners() (listener *listeners.Mess
 func (container *Container) RegisterMessageRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
 	container.MessageHandler().RegisterRoutes(container.App().Group("v1"))
+}
+
+// RegisterSwaggerRoutes registers routes for swagger
+func (container *Container) RegisterSwaggerRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
+	container.App().Get("/*", swagger.HandlerDefault)
 }
 
 func logger() telemetry.Logger {

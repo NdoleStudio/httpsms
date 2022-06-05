@@ -85,12 +85,12 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 }
 
 // GetOutstanding returns entities.Message which are still to be sent by the mobile phone
-// @Summary      Get messages which are to be sent
+// @Summary      Get outstanding messages
 // @Description  Get list of messages which are outstanding to be sent by the phone
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        limit	query  int  false  "number of outstanding messages to return"	minimum(1)	maximum(10)
+// @Param        limit	query  int  false  "Number of outstanding messages to return"	minimum(1)	maximum(10)
 // @Success      200 	{object}	responses.MessagesResponse
 // @Success      400	{object}	responses.BadRequest
 // @Success      422	{object}	responses.UnprocessableEntity
@@ -131,10 +131,10 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        from	query  string  	true 	"from phone number" 				example(+18005550199)
-// @Param        to		query  string  	true 	"to phone number" 					example(+18005550100)
+// @Param        from	query  string  	true 	"from phone number" 				default(+18005550199)
+// @Param        to		query  string  	true 	"to phone number" 					default(+18005550100)
 // @Param        skip	query  int  	false	"number of messages to skip"		minimum(0)
-// @Param        query	query  string  	true 	"filter messages containing query"
+// @Param        query	query  string  	false 	"filter messages containing query"
 // @Param        limit	query  int  	false	"number of messages to return"		minimum(1)	maximum(20)
 // @Success      200 	{object}	responses.MessagesResponse
 // @Success      400	{object}	responses.BadRequest
