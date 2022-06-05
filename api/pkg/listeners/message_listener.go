@@ -12,7 +12,7 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
-// MessageListener handles cloud events which need to update the messages table
+// MessageListener handles cloud events which need to update entities.Message
 type MessageListener struct {
 	listener
 	logger  telemetry.Logger

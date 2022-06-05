@@ -28,7 +28,7 @@ func NewGormMessageRepository(
 	db *gorm.DB,
 ) MessageRepository {
 	return &gormMessageRepository{
-		logger: logger.WithService(fmt.Sprintf("%T", &gormEventRepository{})),
+		logger: logger.WithService(fmt.Sprintf("%T", &gormMessageRepository{})),
 		tracer: tracer,
 		db:     db,
 	}
@@ -41,7 +41,8 @@ func (repository *gormMessageRepository) Index(ctx context.Context, from string,
 
 	query := repository.db.Where("\"from\" = ?", from).Where("\"to\" = ?", to)
 	if len(params.Query) > 0 {
-		query = query.Where("content ILIKE ?", params.Query)
+		queryPattern := "%" + params.Query + "%"
+		query = query.Where("content ILIKE ?", queryPattern)
 	}
 
 	messages := new([]entities.Message)

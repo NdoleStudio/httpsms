@@ -1,0 +1,130 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/google/uuid"
+	"github.com/palantir/stacktrace"
+)
+
+// MessageThreadService is handles message requests
+type MessageThreadService struct {
+	logger     telemetry.Logger
+	tracer     telemetry.Tracer
+	repository repositories.MessageThreadRepository
+}
+
+// NewMessageThreadService creates a new MessageThreadService
+func NewMessageThreadService(
+	logger telemetry.Logger,
+	tracer telemetry.Tracer,
+	repository repositories.MessageThreadRepository,
+) (s *MessageThreadService) {
+	return &MessageThreadService{
+		logger:     logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:     tracer,
+		repository: repository,
+	}
+}
+
+// MessageThreadUpdateParams are parameters for updating a thread
+type MessageThreadUpdateParams struct {
+	Owner     string
+	Contact   string
+	Content   string
+	MessageID uuid.UUID
+	Timestamp time.Time
+}
+
+// UpdateThread updates a thread between 2 parties when a timestamp changes
+func (service *MessageThreadService) UpdateThread(ctx context.Context, params MessageThreadUpdateParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	thread, err := service.repository.Load(ctx, params.Owner, params.Contact)
+	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		ctxLogger.Info(fmt.Sprintf("cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact))
+		return service.createThread(ctx, params)
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() {
+		ctxLogger.Info(fmt.Sprintf("thread [%s] has timestamp [%s] which is greater than timestamp [%s] for message [%s]", thread.ID, thread.OrderTimestamp, params.Timestamp, params.MessageID))
+		return nil
+	}
+
+	if err = service.repository.Update(ctx, thread.Update(params.Timestamp, params.MessageID, params.Content)); err != nil {
+		msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s]", thread.ID, thread.LastMessageID))
+	return nil
+}
+
+func (service *MessageThreadService) createThread(ctx context.Context, params MessageThreadUpdateParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	thread := &entities.MessageThread{
+		ID:                 uuid.New(),
+		Owner:              params.Owner,
+		Contact:            params.Contact,
+		LastMessageContent: params.Content,
+		LastMessageID:      params.MessageID,
+		CreatedAt:          time.Now().UTC(),
+		UpdatedAt:          time.Now().UTC(),
+		OrderTimestamp:     params.Timestamp,
+	}
+
+	if err := service.repository.Store(ctx, thread); err != nil {
+		msg := fmt.Sprintf("cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf(
+		"created thread [%s] for message ID [%s] with owner [%s] and contact [%s]",
+		thread.ID,
+		thread.LastMessageID,
+		thread.Owner,
+		thread.Contact,
+	))
+
+	return nil
+}
+
+// MessageThreadGetParams parameters fetching threads
+type MessageThreadGetParams struct {
+	repositories.IndexParams
+	Owner string
+}
+
+// GetThreads fetches threads for an owner
+func (service *MessageThreadService) GetThreads(ctx context.Context, params MessageThreadGetParams) (*[]entities.MessageThread, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	threads, err := service.repository.Index(ctx, params.Owner, params.IndexParams)
+	if err != nil {
+		msg := fmt.Sprintf("could not fetch messages threads for params [%+#v]", params)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] threads with params [%+#v]", len(*threads), params))
+	return threads, nil
+}

@@ -10,4 +10,7 @@ import (
 type EventRepository interface {
 	// Save a new entities.Message
 	Save(ctx context.Context, event cloudevents.Event) error
+
+	// FetchAll returns all cloudevents.Event ordered by time in ascending order
+	FetchAll(ctx context.Context) (*[]cloudevents.Event, error)
 }

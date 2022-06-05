@@ -44,7 +44,7 @@ func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudeven
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	dispatcher.publish(ctx, event)
+	dispatcher.Publish(ctx, event)
 	return nil
 }
 
@@ -54,17 +54,11 @@ func (dispatcher *EventDispatcher) Subscribe(eventType string, listener events.E
 		dispatcher.listeners[eventType] = []events.EventListener{}
 	}
 
-	// remove duplicates
-	for _, existing := range dispatcher.listeners[eventType] {
-		if fmt.Sprintf("%T", existing) == fmt.Sprintf("%T", listener) {
-			return
-		}
-	}
-
 	dispatcher.listeners[eventType] = append(dispatcher.listeners[eventType], listener)
 }
 
-func (dispatcher *EventDispatcher) publish(ctx context.Context, event cloudevents.Event) {
+// Publish an event to subscribers
+func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevents.Event) {
 	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
 

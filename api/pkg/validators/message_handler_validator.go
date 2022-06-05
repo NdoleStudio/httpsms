@@ -99,6 +99,9 @@ func (validator MessageHandlerValidator) ValidateMessageIndex(_ context.Context,
 				"required",
 				"min:1",
 			},
+			"query": []string{
+				"max:100",
+			},
 			"to": []string{
 				"required",
 				phoneNumberRule,

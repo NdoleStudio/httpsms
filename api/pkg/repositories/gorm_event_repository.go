@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -44,6 +45,29 @@ func NewGormEventRepository(
 		tracer: tracer,
 		db:     db,
 	}
+}
+
+// FetchAll returns all cloudevents.Event ordered by time in ascending order
+func (repository *gormEventRepository) FetchAll(ctx context.Context) (*[]cloudevents.Event, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	var events []GormEvent
+	if err := repository.db.Order("time ASC").Find(&events).Error; err != nil {
+		msg := fmt.Sprintf("cannot fetch all cloudevents")
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	results := make([]cloudevents.Event, 0, len(events))
+	for _, event := range events {
+		var cloudevent cloudevents.Event
+		if err := json.Unmarshal(event.Data, &cloudevent); err != nil {
+			msg := fmt.Sprintf("cannot unmarshal [%s] into [%T]", event.Data, cloudevent)
+			return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+		results = append(results, cloudevent)
+	}
+	return &results, nil
 }
 
 // Save saves a new cloudevents.Event

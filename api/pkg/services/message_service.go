@@ -101,7 +101,12 @@ func (service *MessageService) handleOutstandingMessages(ctx context.Context, so
 		go func(ctx context.Context, message entities.Message) {
 			defer wg.Done()
 
-			event, err := service.createMessagePhoneSendingEvent(source, events.MessagePhoneSendingPayload{ID: message.ID})
+			event, err := service.createMessagePhoneSendingEvent(source, events.MessagePhoneSendingPayload{
+				ID:      message.ID,
+				From:    message.From,
+				To:      message.To,
+				Content: message.Content,
+			})
 			if err != nil {
 				msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
 				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))

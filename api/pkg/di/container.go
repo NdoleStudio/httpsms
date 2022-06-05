@@ -42,6 +42,10 @@ func NewContainer(projectID string) (container *Container) {
 
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
+
+	container.RegisterMessageThreadRoutes()
+	container.RegisterMessageThreadListeners()
+
 	container.RegisterSwaggerRoutes()
 
 	return container
@@ -105,6 +109,11 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.EventListenerLog{})))
 	}
 
+	db.Migrator().HasIndex(&entities.MessageThread{}, "")
+	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageThread{})))
+	}
+
 	return container.db
 }
 
@@ -121,6 +130,26 @@ func (container *Container) Tracer() (t telemetry.Tracer) {
 func (container *Container) MessageHandlerValidator() (validator *validators.MessageHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
 	return validators.NewMessageHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// MessageThreadHandler creates a new instance of handlers.MessageThreadHandler
+func (container *Container) MessageThreadHandler() (h *handlers.MessageThreadHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", h))
+	return handlers.NewMessageThreadHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageThreadHandlerValidator(),
+		container.MessageThreadService(),
+	)
+}
+
+// MessageThreadHandlerValidator creates a new instance of validators.MessageThreadHandlerValidator
+func (container *Container) MessageThreadHandlerValidator() (validator *validators.MessageThreadHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewMessageThreadHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
 	)
@@ -153,6 +182,16 @@ func (container *Container) MessageRepository() (repository repositories.Message
 	)
 }
 
+// MessageThreadRepository creates a new instance of repositories.MessageThreadRepository
+func (container *Container) MessageThreadRepository() (repository repositories.MessageThreadRepository) {
+	container.logger.Debug("creating GORM repositories.MessageThreadRepository")
+	return repositories.NewGormMessageThreadRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
 // EventRepository creates a new instance of repositories.EventRepository
 func (container *Container) EventRepository() (repository repositories.EventRepository) {
 	container.logger.Debug("creating GORM repositories.EventRepository")
@@ -173,14 +212,13 @@ func (container *Container) EventListenerLogRepository() (repository repositorie
 	)
 }
 
-// MessageService creates a new instance of services.MessageService
-func (container *Container) MessageService() (service *services.MessageService) {
+// MessageThreadService creates a new instance of services.MessageService
+func (container *Container) MessageThreadService() (service *services.MessageThreadService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
-	return services.NewMessageService(
+	return services.NewMessageThreadService(
 		container.Logger(),
 		container.Tracer(),
-		container.MessageRepository(),
-		container.EventDispatcher(),
+		container.MessageThreadRepository(),
 	)
 }
 
@@ -195,10 +233,10 @@ func (container *Container) MessageHandler() (handler *handlers.MessageHandler) 
 	)
 }
 
-// RegisterMessageListeners creates a new instance of listeners.MessageListener
-func (container *Container) RegisterMessageListeners() (listener *listeners.MessageListener) {
-	container.logger.Debug(fmt.Sprintf("registering %T", listener))
-	listener, routes := listeners.NewMessageListener(
+// RegisterMessageListeners registers event listeners for listeners.MessageListener
+func (container *Container) RegisterMessageListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.MessageListener{}))
+	_, routes := listeners.NewMessageListener(
 		container.Logger(),
 		container.Tracer(),
 		container.MessageService(),
@@ -208,14 +246,44 @@ func (container *Container) RegisterMessageListeners() (listener *listeners.Mess
 	for event, handler := range routes {
 		container.EventDispatcher().Subscribe(event, handler)
 	}
-
-	return listener
 }
 
-// RegisterMessageRoutes creates a new instance of handler.MessageHandler
+// RegisterMessageThreadListeners registers event listeners for listeners.MessageThreadListener
+func (container *Container) RegisterMessageThreadListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.MessageThreadListener{}))
+	_, routes := listeners.NewMessageThreadListener(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageThreadService(),
+		container.EventListenerLogRepository(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// MessageService creates a new instance of services.MessageService
+func (container *Container) MessageService() (service *services.MessageService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewMessageService(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageRepository(),
+		container.EventDispatcher(),
+	)
+}
+
+// RegisterMessageRoutes registers routes for the /messages prefix
 func (container *Container) RegisterMessageRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
 	container.MessageHandler().RegisterRoutes(container.App().Group("v1"))
+}
+
+// RegisterMessageThreadRoutes registers routes for the /message-threads prefix
+func (container *Container) RegisterMessageThreadRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageThreadHandler{}))
+	container.MessageThreadHandler().RegisterRoutes(container.App().Group("v1"))
 }
 
 // RegisterSwaggerRoutes registers routes for swagger
