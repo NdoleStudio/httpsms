@@ -44,7 +44,6 @@ func (validator *MessageThreadHandlerValidator) ValidateMessageThreadIndex(_ con
 				"min:0",
 			},
 			"query": []string{
-				"required",
 				"max:100",
 			},
 			"owner": []string{
