@@ -39,7 +39,7 @@ const (
 
 // Message represents a message sent between 2 phone numbers
 type Message struct {
-	ID      uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;"`
+	ID      uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 	From    string        `json:"from" gorm:"index:idx__messages__from__to" example:"+18005550199"`
 	To      string        `json:"to" gorm:"index:idx__messages__from__to" example:"+18005550100"`
 	Content string        `json:"content" example:"This is a sample text message"`
