@@ -2,3 +2,4 @@ docs
 .env
 *main.exe
 tmp
+$path
