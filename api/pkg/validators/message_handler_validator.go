@@ -31,6 +31,41 @@ func NewMessageHandlerValidator(
 	}
 }
 
+// ValidateMessageReceive validates the requests.MessageReceive request
+func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Context, request requests.MessageReceive) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"to": []string{
+				"required",
+				phoneNumberRule,
+			},
+			"from": []string{
+				"required",
+				phoneNumberRule,
+			},
+			"content": []string{
+				"required",
+				"min:1",
+				"max:500",
+			},
+			"timestamp": []string{
+				"required",
+			},
+		},
+		Messages: map[string][]string{
+			"to": {
+				"regex: The 'to' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
+			},
+			"from": {
+				"regex: The 'from' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
+			},
+		},
+	})
+
+	return v.ValidateStruct()
+}
+
 // ValidateMessageSend validates the requests.MessageSend request
 func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, request requests.MessageSend) url.Values {
 	v := govalidator.New(govalidator.Options{

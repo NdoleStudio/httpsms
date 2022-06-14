@@ -228,3 +228,44 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 
 	return h.responseOK(c, "message event stored successfully", message)
 }
+
+// PostReceive receives a new entities.Message
+// @Summary      Receive a new SMS message from a mobile phone
+// @Description  Add a new message received from a mobile phone
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        payload   body requests.MessageReceive  true  "Received message request payload"
+// @Success      200  {object}  responses.MessageResponse
+// @Failure      400  {object}  responses.BadRequest
+// @Failure      422  {object}  responses.UnprocessableEntity
+// @Failure      500  {object}  responses.InternalServerError
+// @Router       /messages/receive [post]
+func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageReceive
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateMessageReceive(ctx, request); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while receiving message")
+	}
+
+	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(c.OriginalURL()))
+	if err != nil {
+		msg := fmt.Sprintf("cannot receive message with paylod [%s]", c.Body())
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "message received successfully", message)
+}

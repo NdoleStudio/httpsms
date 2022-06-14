@@ -37,9 +37,10 @@ func NewMessageListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:      l.OnMessageAPISent,
-		events.EventTypeMessagePhoneSending: l.OnMessagePhoneSending,
-		events.EventTypeMessagePhoneSent:    l.OnMessagePhoneSent,
+		events.EventTypeMessageAPISent:       l.OnMessageAPISent,
+		events.EventTypeMessagePhoneSending:  l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:     l.OnMessagePhoneSent,
+		events.EventTypeMessagePhoneReceived: l.OnMessagePhoneReceived,
 	}
 }
 
@@ -68,15 +69,14 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 	}
 
 	storeParams := services.MessageStoreParams{
-		From:              payload.From,
-		To:                payload.To,
-		Content:           payload.Content,
-		ID:                payload.ID,
-		Source:            event.Source(),
-		RequestReceivedAt: payload.RequestReceivedAt,
+		From:      payload.From,
+		To:        payload.To,
+		Content:   payload.Content,
+		ID:        payload.ID,
+		Timestamp: payload.RequestReceivedAt,
 	}
 
-	if _, err = listener.service.StoreMessage(ctx, storeParams); err != nil {
+	if _, err = listener.service.StoreSentMessage(ctx, storeParams); err != nil {
 		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -152,6 +152,46 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 
 	if err = listener.service.HandleMessageSent(ctx, handleParams); err != nil {
 		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+}
+
+// OnMessagePhoneReceived handles the events.EventTypeMessageAPISent event
+func (listener *MessageListener) OnMessagePhoneReceived(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	handled, err := listener.repository.Has(ctx, event.ID(), listener.signature(event))
+	if err != nil {
+		msg := fmt.Sprintf("cannot verify if event [%s] has been handled by [%T]", event.ID(), listener.signature(event))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger := listener.tracer.CtxLogger(listener.logger, span)
+
+	if handled {
+		ctxLogger.Info(fmt.Sprintf("event [%s] has already been handled by [%s]", event.ID(), listener.signature(event)))
+		return nil
+	}
+
+	var payload events.MessageAPISentPayload
+	if err = event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	storeParams := services.MessageStoreParams{
+		From:      payload.From,
+		To:        payload.To,
+		Content:   payload.Content,
+		ID:        payload.ID,
+		Timestamp: payload.RequestReceivedAt,
+	}
+
+	if _, err = listener.service.StoreReceivedMessage(ctx, storeParams); err != nil {
+		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

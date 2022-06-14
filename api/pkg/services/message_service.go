@@ -130,6 +130,58 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 	return service.repository.Load(ctx, params.MessageID)
 }
 
+// MessageReceiveParams parameters registering a message event
+type MessageReceiveParams struct {
+	From      string
+	To        string
+	Content   string
+	Timestamp time.Time
+	Source    string
+}
+
+// ReceiveMessage handles message received by a mobile phone
+func (service *MessageService) ReceiveMessage(ctx context.Context, params MessageReceiveParams) (*entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	eventPayload := events.MessagePhoneReceivedPayload{
+		ID:        uuid.New(),
+		From:      params.From,
+		To:        params.To,
+		Timestamp: params.Timestamp,
+		Content:   params.Content,
+	}
+
+	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.ID))
+
+	event, err := service.createMessagePhoneReceivedEvent(params.Source, eventPayload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s]", event.Type(), event.ID(), eventPayload.ID))
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched succesfully", event.ID()))
+
+	message, err := service.repository.Load(ctx, eventPayload.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load message with ID [%s] in the repository", eventPayload.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the repository", message.ID))
+
+	return message, nil
+}
+
 func (service *MessageService) handleMessageSentEvent(ctx context.Context, params MessageStorePhoneEventParams, message *entities.Message) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -263,16 +315,15 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 // MessageStoreParams are parameters for creating a new message
 type MessageStoreParams struct {
-	From              string
-	To                string
-	Content           string
-	ID                uuid.UUID
-	Source            string
-	RequestReceivedAt time.Time
+	From      string
+	To        string
+	Content   string
+	ID        uuid.UUID
+	Timestamp time.Time
 }
 
-// StoreMessage a new message
-func (service *MessageService) StoreMessage(ctx context.Context, params MessageStoreParams) (*entities.Message, error) {
+// StoreSentMessage a new message
+func (service *MessageService) StoreSentMessage(ctx context.Context, params MessageStoreParams) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -285,14 +336,44 @@ func (service *MessageService) StoreMessage(ctx context.Context, params MessageS
 		Content:           params.Content,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,
-		RequestReceivedAt: params.RequestReceivedAt,
+		RequestReceivedAt: params.Timestamp,
 		CreatedAt:         time.Now().UTC(),
 		UpdatedAt:         time.Now().UTC(),
-		OrderTimestamp:    params.RequestReceivedAt,
+		OrderTimestamp:    params.Timestamp,
 		SendDuration:      nil,
 		LastAttemptedAt:   nil,
 		SentAt:            nil,
 		ReceivedAt:        nil,
+	}
+
+	if err := service.repository.Store(ctx, message); err != nil {
+		msg := fmt.Sprintf("cannot save message with id [%s]", params.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the repository", message.ID))
+	return message, nil
+}
+
+// StoreReceivedMessage a new message
+func (service *MessageService) StoreReceivedMessage(ctx context.Context, params MessageStoreParams) (*entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message := &entities.Message{
+		ID:                params.ID,
+		From:              params.From,
+		To:                params.To,
+		Content:           params.Content,
+		Type:              entities.MessageTypeMobileOriginated,
+		Status:            entities.MessageStatusReceived,
+		RequestReceivedAt: params.Timestamp,
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
+		OrderTimestamp:    params.Timestamp,
+		ReceivedAt:        &params.Timestamp,
 	}
 
 	if err := service.repository.Store(ctx, message); err != nil {
@@ -366,6 +447,10 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 
 func (service *MessageService) createMessageAPISentEvent(source string, payload events.MessageAPISentPayload) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessageAPISent, source, payload)
+}
+
+func (service *MessageService) createMessagePhoneReceivedEvent(source string, payload events.MessagePhoneReceivedPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessagePhoneReceived, source, payload)
 }
 
 func (service *MessageService) createMessagePhoneSendingEvent(source string, payload events.MessagePhoneSendingPayload) (cloudevents.Event, error) {

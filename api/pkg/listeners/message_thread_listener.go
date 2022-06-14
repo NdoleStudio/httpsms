@@ -37,9 +37,10 @@ func NewMessageThreadListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:      l.OnMessageAPISent,
-		events.EventTypeMessagePhoneSending: l.OnMessagePhoneSending,
-		events.EventTypeMessagePhoneSent:    l.OnMessagePhoneSent,
+		events.EventTypeMessageAPISent:       l.OnMessageAPISent,
+		events.EventTypeMessagePhoneSending:  l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:     l.OnMessagePhoneSent,
+		events.EventTypeMessagePhoneReceived: l.OnMessagePhoneReceived,
 	}
 }
 
@@ -112,6 +113,33 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 		Owner:     payload.From,
 		Contact:   payload.To,
 		Timestamp: payload.Timestamp,
+		Content:   payload.Content,
+		MessageID: payload.ID,
+	}
+
+	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnMessagePhoneReceived handles the events.EventTypeMessagePhoneReceived event
+func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessagePhoneReceivedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	updateParams := services.MessageThreadUpdateParams{
+		Owner:     payload.To,
+		Contact:   payload.From,
+		Timestamp: event.Time(),
 		Content:   payload.Content,
 		MessageID: payload.ID,
 	}
