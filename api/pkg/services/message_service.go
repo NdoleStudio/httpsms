@@ -65,8 +65,8 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 // MessageGetParams parameters for sending a new message
 type MessageGetParams struct {
 	repositories.IndexParams
-	From string
-	To   string
+	Owner   string
+	Contact string
 }
 
 // GetMessages fetches sent between 2 phone numbers
@@ -76,7 +76,7 @@ func (service *MessageService) GetMessages(ctx context.Context, params MessageGe
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	messages, err := service.repository.Index(ctx, params.From, params.To, params.IndexParams)
+	messages, err := service.repository.Index(ctx, params.Owner, params.Contact, params.IndexParams)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages with parms [%+#v]", params)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -132,8 +132,8 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 
 // MessageReceiveParams parameters registering a message event
 type MessageReceiveParams struct {
-	From      string
-	To        string
+	Contact   string
+	Owner     string
 	Content   string
 	Timestamp time.Time
 	Source    string
@@ -148,8 +148,8 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	eventPayload := events.MessagePhoneReceivedPayload{
 		ID:        uuid.New(),
-		From:      params.From,
-		To:        params.To,
+		Owner:     params.Owner,
+		Contact:   params.Contact,
 		Timestamp: params.Timestamp,
 		Content:   params.Content,
 	}
@@ -188,9 +188,9 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 
 	event, err := service.createMessagePhoneSentEvent(params.Source, events.MessagePhoneSentPayload{
 		ID:        message.ID,
-		From:      message.From,
+		Owner:     message.Owner,
 		Timestamp: params.Timestamp,
-		To:        message.To,
+		Contact:   message.Contact,
 		Content:   message.Content,
 	})
 	if err != nil {
@@ -222,8 +222,8 @@ func (service *MessageService) handleOutstandingMessages(ctx context.Context, so
 
 			event, err := service.createMessagePhoneSendingEvent(source, events.MessagePhoneSendingPayload{
 				ID:      message.ID,
-				From:    message.From,
-				To:      message.To,
+				Owner:   message.Owner,
+				Contact: message.Contact,
 				Content: message.Content,
 			})
 			if err != nil {
@@ -263,8 +263,8 @@ func (service *MessageService) handleOutstandingMessages(ctx context.Context, so
 
 // MessageSendParams parameters for sending a new message
 type MessageSendParams struct {
-	From              string
-	To                string
+	Owner             string
+	Contact           string
 	Content           string
 	Source            string
 	RequestReceivedAt time.Time
@@ -279,8 +279,8 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	eventPayload := events.MessageAPISentPayload{
 		ID:                uuid.New(),
-		From:              params.From,
-		To:                params.To,
+		Owner:             params.Owner,
+		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
 	}
@@ -315,8 +315,8 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 // MessageStoreParams are parameters for creating a new message
 type MessageStoreParams struct {
-	From      string
-	To        string
+	Owner     string
+	Contact   string
 	Content   string
 	ID        uuid.UUID
 	Timestamp time.Time
@@ -331,8 +331,8 @@ func (service *MessageService) StoreSentMessage(ctx context.Context, params Mess
 
 	message := &entities.Message{
 		ID:                params.ID,
-		From:              params.From,
-		To:                params.To,
+		Owner:             params.Owner,
+		Contact:           params.Contact,
 		Content:           params.Content,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,
@@ -364,8 +364,8 @@ func (service *MessageService) StoreReceivedMessage(ctx context.Context, params 
 
 	message := &entities.Message{
 		ID:                params.ID,
-		From:              params.From,
-		To:                params.To,
+		Owner:             params.Owner,
+		Contact:           params.Contact,
 		Content:           params.Content,
 		Type:              entities.MessageTypeMobileOriginated,
 		Status:            entities.MessageStatusReceived,

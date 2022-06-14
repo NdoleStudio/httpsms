@@ -17,9 +17,9 @@ type MessageSend struct {
 func (input MessageSend) ToMessageSendParams(source string) services.MessageSendParams {
 	return services.MessageSendParams{
 		Source:            source,
-		From:              input.From,
+		Owner:             input.From,
 		RequestReceivedAt: time.Now().UTC(),
-		To:                input.To,
+		Contact:           input.To,
 		Content:           input.Content,
 	}
 }

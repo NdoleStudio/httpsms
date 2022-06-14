@@ -48,8 +48,8 @@ const (
 // Message represents a message sent between 2 phone numbers
 type Message struct {
 	ID      uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	From    string        `json:"from" gorm:"index:idx_messages_from__to" example:"+18005550199"`
-	To      string        `json:"to" gorm:"index:idx_messages_from__to" example:"+18005550100"`
+	Owner   string        `json:"owner" gorm:"index:idx_messages_owner__contact" example:"+18005550199"`
+	Contact string        `json:"contact" gorm:"index:idx_messages_owner__contact" example:"+18005550100"`
 	Content string        `json:"content" example:"This is a sample text message"`
 	Type    MessageType   `json:"type" example:"mobile-terminated"`
 	Status  MessageStatus `json:"status" gorm:"index:idx_messages_status" example:"pending"`

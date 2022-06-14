@@ -19,9 +19,9 @@ type MessageReceive struct {
 func (input MessageReceive) ToMessageReceiveParams(source string) services.MessageReceiveParams {
 	return services.MessageReceiveParams{
 		Source:    source,
-		From:      input.From,
+		Contact:   input.From,
 		Timestamp: input.Timestamp,
-		To:        input.To,
+		Owner:     input.To,
 		Content:   input.Content,
 	}
 }

@@ -69,8 +69,8 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 	}
 
 	storeParams := services.MessageStoreParams{
-		From:      payload.From,
-		To:        payload.To,
+		Owner:     payload.Owner,
+		Contact:   payload.Contact,
 		Content:   payload.Content,
 		ID:        payload.ID,
 		Timestamp: payload.RequestReceivedAt,
@@ -176,18 +176,18 @@ func (listener *MessageListener) OnMessagePhoneReceived(ctx context.Context, eve
 		return nil
 	}
 
-	var payload events.MessageAPISentPayload
+	var payload events.MessagePhoneReceivedPayload
 	if err = event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	storeParams := services.MessageStoreParams{
-		From:      payload.From,
-		To:        payload.To,
+		Owner:     payload.Owner,
+		Contact:   payload.Contact,
 		Content:   payload.Content,
 		ID:        payload.ID,
-		Timestamp: payload.RequestReceivedAt,
+		Timestamp: payload.Timestamp,
 	}
 
 	if _, err = listener.service.StoreReceivedMessage(ctx, storeParams); err != nil {

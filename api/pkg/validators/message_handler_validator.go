@@ -49,9 +49,6 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 				"min:1",
 				"max:500",
 			},
-			"timestamp": []string{
-				"required",
-			},
 		},
 		Messages: map[string][]string{
 			"to": {

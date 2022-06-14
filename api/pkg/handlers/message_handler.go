@@ -42,6 +42,7 @@ func NewMessageHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Post("/messages/send", h.PostSend)
+	router.Post("/messages/receive", h.PostReceive)
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
 	router.Post("/messages/:messageID/events", h.PostEvent)
@@ -135,15 +136,15 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        from	query  string  	true 	"from phone number" 				default(+18005550199)
-// @Param        to		query  string  	true 	"to phone number" 					default(+18005550100)
-// @Param        skip	query  int  	false	"number of messages to skip"		minimum(0)
-// @Param        query	query  string  	false 	"filter messages containing query"
-// @Param        limit	query  int  	false	"number of messages to return"		minimum(1)	maximum(20)
-// @Success      200 	{object}	responses.MessagesResponse
-// @Failure      400	{object}	responses.BadRequest
-// @Failure      422	{object}	responses.UnprocessableEntity
-// @Failure      500	{object}	responses.InternalServerError
+// @Param        owner		query  string  	true 	"the owner's phone number" 			default(+18005550199)
+// @Param        contact	query  string  	true 	"the contact's phone number" 		default(+18005550100)
+// @Param        skip		query  int  	false	"number of messages to skip"		minimum(0)
+// @Param        query		query  string  	false 	"filter messages containing query"
+// @Param        limit		query  int  	false	"number of messages to return"		minimum(1)	maximum(20)
+// @Success      200 		{object}	responses.MessagesResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages [get]
 func (h *MessageHandler) Index(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)

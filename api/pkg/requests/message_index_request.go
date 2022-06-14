@@ -11,11 +11,11 @@ import (
 
 // MessageIndex is the payload fetching entities.Message sent between 2 numbers
 type MessageIndex struct {
-	Skip  string `json:"skip" query:"skip"`
-	To    string `json:"to" query:"to"`
-	From  string `json:"from" query:"from"`
-	Query string `json:"query" query:"query"`
-	Limit string `json:"limit" query:"limit"`
+	Skip    string `json:"skip" query:"skip"`
+	Contact string `json:"contact" query:"to"`
+	Owner   string `json:"owner" query:"from"`
+	Query   string `json:"query" query:"query"`
+	Limit   string `json:"limit" query:"limit"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -26,8 +26,8 @@ func (input *MessageIndex) Sanitize() MessageIndex {
 
 	input.Query = strings.TrimSpace(input.Query)
 
-	input.From = input.sanitizeAddress(input.From)
-	input.To = input.sanitizeAddress(input.To)
+	input.Owner = input.sanitizeAddress(input.Owner)
+	input.Contact = input.sanitizeAddress(input.Contact)
 
 	input.Skip = strings.TrimSpace(input.Skip)
 	if input.Skip == "" {
@@ -45,8 +45,8 @@ func (input *MessageIndex) ToGetParams() services.MessageGetParams {
 			Query: input.Query,
 			Limit: input.getInt(input.Limit),
 		},
-		From: input.From,
-		To:   input.To,
+		Owner:   input.Owner,
+		Contact: input.Contact,
 	}
 }
 

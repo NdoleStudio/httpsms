@@ -36,19 +36,19 @@ func NewGormMessageRepository(
 }
 
 // Index entities.Message between 2 parties
-func (repository *gormMessageRepository) Index(ctx context.Context, from string, to string, params IndexParams) (*[]entities.Message, error) {
+func (repository *gormMessageRepository) Index(ctx context.Context, owner string, contact string, params IndexParams) (*[]entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("\"from\" = ?", from).Where("\"to\" = ?", to)
+	query := repository.db.Where("owner = ?", owner).Where("contact =  ?", contact)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
-		query = query.Where("content ILIKE ?", queryPattern)
+		query.Where("content ILIKE ?", queryPattern)
 	}
 
 	messages := new([]entities.Message)
 	if err := query.Order("order_timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&messages).Error; err != nil {
-		msg := fmt.Sprintf("cannot fetch messges from [%s] to [%s] and params [%+#v]", from, to, params)
+		msg := fmt.Sprintf("cannot fetch messges with owner [%s] and contact [%s] and params [%+#v]", owner, contact, params)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

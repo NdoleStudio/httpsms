@@ -12,8 +12,8 @@ const EventTypeMessagePhoneSent = "message.phone.sent"
 // MessagePhoneSentPayload is the payload of the EventTypeMessagePhoneSent event
 type MessagePhoneSentPayload struct {
 	ID        uuid.UUID `json:"id"`
-	From      string    `json:"from"`
-	To        string    `json:"to"`
+	Owner     string    `json:"owner"`
+	Contact   string    `json:"contact"`
 	Timestamp time.Time `json:"timestamp"`
 	Content   string    `json:"content"`
 }
