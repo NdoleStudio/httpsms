@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
@@ -83,6 +84,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		ID:                 uuid.New(),
 		Owner:              params.Owner,
 		Contact:            params.Contact,
+		Color:              service.getColor(),
 		LastMessageContent: params.Content,
 		LastMessageID:      params.MessageID,
 		CreatedAt:          time.Now().UTC(),
@@ -104,6 +106,29 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	))
 
 	return nil
+}
+
+func (service *MessageThreadService) getColor() string {
+	colors := []string{
+		"deep-purple",
+		"indigo",
+		"blue",
+		"red",
+		"pink",
+		"purple",
+		"light-blue",
+		"cyan",
+		"teal",
+		"green",
+		"light-green",
+		"lime",
+		"yellow",
+		"amber",
+		"orange",
+		"deep-orange",
+		"brown",
+	}
+	return colors[rand.Intn(len(colors))]
 }
 
 // MessageThreadGetParams parameters fetching threads

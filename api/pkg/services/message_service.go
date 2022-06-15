@@ -118,6 +118,10 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 	switch params.EventName {
 	case entities.MessageEventNameSent:
 		err = service.handleMessageSentEvent(ctx, params, message)
+	case entities.MessageEventNameDelivered:
+		err = service.handleMessageDeliveredEvent(ctx, params, message)
+	case entities.MessageEventNameFailed:
+		err = service.handleMessageFailedEvent(ctx, params, message)
 	default:
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.NewError(fmt.Sprintf("cannot handle message event [%s]", params.EventName)))
 	}
@@ -187,6 +191,52 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 	defer span.End()
 
 	event, err := service.createMessagePhoneSentEvent(params.Source, events.MessagePhoneSentPayload{
+		ID:        message.ID,
+		Owner:     message.Owner,
+		Timestamp: params.Timestamp,
+		Contact:   message.Contact,
+		Content:   message.Content,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+	return nil
+}
+
+func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, params MessageStorePhoneEventParams, message *entities.Message) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	event, err := service.createMessagePhoneDeliveredEvent(params.Source, events.MessagePhoneDeliveredPayload{
+		ID:        message.ID,
+		Owner:     message.Owner,
+		Timestamp: params.Timestamp,
+		Contact:   message.Contact,
+		Content:   message.Content,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+	return nil
+}
+
+func (service *MessageService) handleMessageFailedEvent(ctx context.Context, params MessageStorePhoneEventParams, message *entities.Message) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	event, err := service.createMessagePhoneFailedEvent(params.Source, events.MessagePhoneFailedPayload{
 		ID:        message.ID,
 		Owner:     message.Owner,
 		Timestamp: params.Timestamp,
@@ -418,7 +468,7 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 	return nil
 }
 
-// HandleMessageSent handles when a message is has been sent by a mobile phone
+// HandleMessageSent handles when a message has been sent by a mobile phone
 func (service *MessageService) HandleMessageSent(ctx context.Context, params HandleMessageParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -445,6 +495,60 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 	return nil
 }
 
+// HandleMessageFailed handles when a message could not be sent by a mobile phone
+func (service *MessageService) HandleMessageFailed(ctx context.Context, params HandleMessageParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message, err := service.repository.Load(ctx, params.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if !message.IsSent() || message.IsSending() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s,%s]", message.Status, entities.MessageStatusSending, entities.MessageStatusSent)
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+	}
+
+	if err = service.repository.Update(ctx, message.Failed(params.Timestamp)); err != nil {
+		msg := fmt.Sprintf("cannot update message with id [%s] as sent", message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
+	return nil
+}
+
+// HandleMessageDelivered handles when a message is has been delivered by a mobile phone
+func (service *MessageService) HandleMessageDelivered(ctx context.Context, params HandleMessageParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message, err := service.repository.Load(ctx, params.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if !message.IsSent() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected %s", message.Status, entities.MessageStatusSent)
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+	}
+
+	if err = service.repository.Update(ctx, message.Delivered(params.Timestamp)); err != nil {
+		msg := fmt.Sprintf("cannot update message with id [%s] as sent", message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
+	return nil
+}
+
 func (service *MessageService) createMessageAPISentEvent(source string, payload events.MessageAPISentPayload) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessageAPISent, source, payload)
 }
@@ -459,6 +563,14 @@ func (service *MessageService) createMessagePhoneSendingEvent(source string, pay
 
 func (service *MessageService) createMessagePhoneSentEvent(source string, payload events.MessagePhoneSentPayload) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessagePhoneSent, source, payload)
+}
+
+func (service *MessageService) createMessagePhoneFailedEvent(source string, payload events.MessagePhoneFailedPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessagePhoneFailed, source, payload)
+}
+
+func (service *MessageService) createMessagePhoneDeliveredEvent(source string, payload events.MessagePhoneDeliveredPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessagePhoneDelivered, source, payload)
 }
 
 func (service *MessageService) createEvent(eventType string, source string, payload any) (cloudevents.Event, error) {

@@ -37,10 +37,12 @@ func NewMessageListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:       l.OnMessageAPISent,
-		events.EventTypeMessagePhoneSending:  l.OnMessagePhoneSending,
-		events.EventTypeMessagePhoneSent:     l.OnMessagePhoneSent,
-		events.EventTypeMessagePhoneReceived: l.OnMessagePhoneReceived,
+		events.EventTypeMessageAPISent:        l.OnMessageAPISent,
+		events.EventTypeMessagePhoneSending:   l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
+		events.EventTypeMessagePhoneDelivered: l.OnMessagePhoneDelivered,
+		events.EventTypeMessagePhoneFailed:    l.OnMessagePhoneFailed,
+		events.EventTypeMessagePhoneReceived:  l.OnMessagePhoneReceived,
 	}
 }
 
@@ -151,6 +153,80 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 	}
 
 	if err = listener.service.HandleMessageSent(ctx, handleParams); err != nil {
+		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+}
+
+// OnMessagePhoneDelivered handles the events.EventTypeMessagePhoneDelivered event
+func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	handled, err := listener.repository.Has(ctx, event.ID(), listener.signature(event))
+	if err != nil {
+		msg := fmt.Sprintf("cannot verify if event [%s] has been handled by [%T]", event.ID(), listener.signature(event))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger := listener.tracer.CtxLogger(listener.logger, span)
+
+	if handled {
+		ctxLogger.Info(fmt.Sprintf("event [%s] has already been handled by [%s]", event.ID(), listener.signature(event)))
+		return nil
+	}
+
+	var payload events.MessagePhoneDeliveredPayload
+	if err = event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	handleParams := services.HandleMessageParams{
+		ID:        payload.ID,
+		Timestamp: payload.Timestamp,
+	}
+
+	if err = listener.service.HandleMessageDelivered(ctx, handleParams); err != nil {
+		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+}
+
+// OnMessagePhoneFailed handles the events.EventTypeMessagePhoneFailed event
+func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	handled, err := listener.repository.Has(ctx, event.ID(), listener.signature(event))
+	if err != nil {
+		msg := fmt.Sprintf("cannot verify if event [%s] has been handled by [%T]", event.ID(), listener.signature(event))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger := listener.tracer.CtxLogger(listener.logger, span)
+
+	if handled {
+		ctxLogger.Info(fmt.Sprintf("event [%s] has already been handled by [%s]", event.ID(), listener.signature(event)))
+		return nil
+	}
+
+	var payload events.MessagePhoneFailedPayload
+	if err = event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	handleParams := services.HandleMessageParams{
+		ID:        payload.ID,
+		Timestamp: payload.Timestamp,
+	}
+
+	if err = listener.service.HandleMessageFailed(ctx, handleParams); err != nil {
 		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
+
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
@@ -155,7 +158,11 @@ func (validator MessageHandlerValidator) ValidateMessageEvent(_ context.Context,
 		Rules: govalidator.MapData{
 			"event_name": []string{
 				"required",
-				"in:SENT",
+				"in:" + strings.Join([]string{
+					entities.MessageEventNameSent,
+					entities.MessageEventNameFailed,
+					entities.MessageEventNameDelivered,
+				}, ","),
 			},
 			"messageID": []string{
 				"required",
