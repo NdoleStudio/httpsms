@@ -17,6 +17,11 @@ func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 	if strings.TrimSpace(input.Limit) == "" {
 		input.Limit = "1"
 	}
+
+	if input.Limit != "1" {
+		input.Limit = "2"
+	}
+
 	return *input
 }
 
