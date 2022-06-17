@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@nuxtjs/axios": "^5.13.6",
+    "@nuxtjs/dotenv": "^1.4.1",
     "core-js": "^3.19.3",
     "dotenv": "^16.0.1",
     "nuxt": "^2.15.8",
