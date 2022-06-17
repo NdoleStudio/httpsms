@@ -62,6 +62,8 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
+	ctxLogger.Info(c.OriginalURL())
+
 	var request requests.MessageThreadIndex
 	if err := c.QueryParser(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)

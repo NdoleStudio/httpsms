@@ -130,14 +130,14 @@ func (validator MessageHandlerValidator) ValidateMessageIndex(_ context.Context,
 				"numeric",
 				"min:0",
 			},
-			"from": []string{
+			"contact": []string{
 				"required",
 				"min:1",
 			},
 			"query": []string{
 				"max:100",
 			},
-			"to": []string{
+			"owner": []string{
 				"required",
 				phoneNumberRule,
 			},

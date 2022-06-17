@@ -52,12 +52,14 @@ jobs:
 
       - name: Build 🏗️
         run: yarn generate
+        env:
+          BASE_URL: https://api.httpsms.com
 
       - name: Deploy 🚀
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
           channelId: live
-          entryPoint: './web'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}'
+          entryPoint: "./web"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}"
           projectId: httpsms-86c51

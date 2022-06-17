@@ -12,8 +12,8 @@ import (
 // MessageIndex is the payload fetching entities.Message sent between 2 numbers
 type MessageIndex struct {
 	Skip    string `json:"skip" query:"skip"`
-	Contact string `json:"contact" query:"to"`
-	Owner   string `json:"owner" query:"from"`
+	Contact string `json:"contact" query:"contact"`
+	Owner   string `json:"owner" query:"owner"`
 	Query   string `json:"query" query:"query"`
 	Limit   string `json:"limit" query:"limit"`
 }

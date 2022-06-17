@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gofiber/fiber/v2/middleware/cors"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/NdoleStudio/http-sms-manager/pkg/listeners"
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
@@ -64,6 +66,9 @@ func (container *Container) App() (app *fiber.App) {
 	if os.Getenv("APP_HTTP_LOGGER") == "true" {
 		app.Use(fiberLogger.New())
 	}
+
+	// Default config
+	app.Use(cors.New())
 
 	container.app = app
 	return app

@@ -53,7 +53,7 @@ func (validator *MessageThreadHandlerValidator) ValidateMessageThreadIndex(_ con
 		},
 		Messages: map[string][]string{
 			"owner": {
-				"regex:The 'owner' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
+				"regex:The owner field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})
