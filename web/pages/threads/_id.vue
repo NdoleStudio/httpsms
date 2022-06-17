@@ -34,7 +34,7 @@
               v-if="!isMT(message)"
               :color="$store.getters.getThread.color"
             >
-              <v-icon small> mdi-account</v-icon>
+              <v-icon> mdi-account</v-icon>
             </v-avatar>
             <div>
               <v-card
