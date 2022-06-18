@@ -12,7 +12,7 @@
           </v-list-item-avatar>
           <v-list-item-content>
             <v-list-item-title>
-              {{ thread.contact }}
+              {{ thread.contact | phoneNumber }}
             </v-list-item-title>
             <v-list-item-subtitle>
               {{ thread.last_message_content }}

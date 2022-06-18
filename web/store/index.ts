@@ -54,6 +54,12 @@ export const mutations = {
   },
 }
 
+export type SendMessageRequest = {
+  from: string
+  to: string
+  content: string
+}
+
 export const actions = {
   async loadThreads(context: ActionContext<State, State>) {
     const response = await axios.get('/v1/message-threads', {
@@ -62,6 +68,17 @@ export const actions = {
       },
     })
     context.commit('setThreads', response.data.data)
+  },
+
+  async sendMessage(
+    context: ActionContext<State, State>,
+    request: SendMessageRequest
+  ) {
+    await axios.post('/v1/messages/send', request)
+    await Promise.all([
+      context.dispatch('loadThreadMessages', context.getters.getThread.id),
+      context.dispatch('loadThreads'),
+    ])
   },
 
   setThreadId(context: ActionContext<State, State>, threadId: string | null) {

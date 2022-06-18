@@ -5,7 +5,9 @@
     :color="$vuetify.breakpoint.lgAndUp ? 'grey darken-4' : 'primary'"
   >
     <div>
-      <v-toolbar-title>+1 800 555-0199</v-toolbar-title>
+      <v-toolbar-title>
+        {{ $store.getters.getOwner | phoneNumber }}
+      </v-toolbar-title>
       <p class="text--secondary mb-n1">Estonia</p>
     </div>
     <v-spacer></v-spacer>
