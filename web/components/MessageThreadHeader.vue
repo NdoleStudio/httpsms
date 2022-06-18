@@ -5,7 +5,7 @@
     :color="$vuetify.breakpoint.lgAndUp ? 'grey darken-4' : 'primary'"
   >
     <div>
-      <nuxt-link to="/">
+      <nuxt-link to="/" class="text-decoration-none text--primary">
         <v-toolbar-title>
           {{ $store.getters.getOwner | phoneNumber }}
         </v-toolbar-title>
