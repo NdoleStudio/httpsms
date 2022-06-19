@@ -41,8 +41,10 @@ func NewMessageService(
 
 // MessageGetOutstandingParams parameters for sending a new message
 type MessageGetOutstandingParams struct {
-	Source string
-	Limit  int
+	Source    string
+	Owner     string
+	Timestamp time.Time
+	Limit     int
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
@@ -57,6 +59,8 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Limit)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
+
+	go service.registerHeartbeatEvent(ctx, len(*messages), params)
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] outstanding messages", len(*messages)))
 	return service.handleOutstandingMessages(ctx, params.Source, messages), nil
@@ -253,6 +257,28 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 	return nil
+}
+
+func (service *MessageService) registerHeartbeatEvent(ctx context.Context, quantity int, params MessageGetOutstandingParams) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	event, err := service.createHeartbeatPhoneOutstandingEvent(params.Source, events.HeartbeatPhoneOutstandingPayload{
+		Owner:     params.Owner,
+		Timestamp: params.Timestamp,
+		Quantity:  quantity,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for owner [%s]", events.EventTypeHeartbeatPhoneOutstanding, params.Owner)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+	}
 }
 
 func (service *MessageService) handleOutstandingMessages(ctx context.Context, source string, messages *[]entities.Message) *[]entities.Message {
@@ -567,6 +593,10 @@ func (service *MessageService) createMessagePhoneSentEvent(source string, payloa
 
 func (service *MessageService) createMessagePhoneFailedEvent(source string, payload events.MessagePhoneFailedPayload) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessagePhoneFailed, source, payload)
+}
+
+func (service *MessageService) createHeartbeatPhoneOutstandingEvent(source string, payload events.HeartbeatPhoneOutstandingPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeHeartbeatPhoneOutstanding, source, payload)
 }
 
 func (service *MessageService) createMessagePhoneDeliveredEvent(source string, payload events.MessagePhoneDeliveredPayload) (cloudevents.Event, error) {
