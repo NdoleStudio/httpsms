@@ -89,6 +89,7 @@
         @submit.prevent="sendMessage"
       >
         <v-textarea
+          ref="messageInput"
           v-model="formMessage"
           :disabled="submitting"
           :rows="2"
@@ -180,9 +181,12 @@ export default class ThreadsIndex extends Vue {
 
     this.formMessage = ''
     this.submitting = false
-    ;(this.$refs.form as any).reset()
 
-    this.$nextTick(this.scrollToElement)
+    this.$nextTick(() => {
+      ;(this.$refs.messageInput as any).$refs.input.focus()
+      this.scrollToElement()
+      ;(this.$refs.form as any).reset()
+    })
   }
 }
 </script>
