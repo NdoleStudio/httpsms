@@ -44,7 +44,7 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router) {
 // Index returns message threads for a phone number
 // @Summary      Get message threads for a phone number
 // @Description  Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order.
-// @Tags         MessageThreads
+// @Tags         Message Threads
 // @Accept       json
 // @Produce      json
 // @Param        owner	query  string  	true 	"owner phone number" 						default(+18005550199)

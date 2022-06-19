@@ -44,7 +44,7 @@ func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router) {
 // Index returns the heartbeats of a phone number
 // @Summary      Get heartbeats of an owner phone number
 // @Description  Get the last time a phone number requested for outstanding messages. It will be sorted by timestamp in descending order.
-// @Tags         Messages
+// @Tags         Heartbeats
 // @Accept       json
 // @Produce      json
 // @Param        owner		query  string  	true 	"the owner's phone number" 			default(+18005550199)
