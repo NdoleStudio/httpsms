@@ -22,7 +22,7 @@ func main() {
 		if err != nil {
 			log.Fatal(stacktrace.Propagate(err, "cannot create json payload"))
 		}
-		response, err := client.Post("http://api.httpsms.com/messages/send", "application/json", bytes.NewBuffer(payload))
+		response, err := client.Post("https://api.httpsms.com/v1/messages/send", "application/json", bytes.NewBuffer(payload))
 		if err != nil {
 			log.Fatal(stacktrace.Propagate(err, "cannot perform http request"))
 		}
