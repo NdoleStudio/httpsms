@@ -38,7 +38,7 @@ func NewHeartbeatHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/heartbeat", h.Index)
+	router.Get("/heartbeats", h.Index)
 }
 
 // Index returns the heartbeats of a phone number

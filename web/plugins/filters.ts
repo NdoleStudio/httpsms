@@ -8,3 +8,16 @@ Vue.filter('phoneNumber', (value: string): string => {
   }
   return value
 })
+
+Vue.filter('phoneCountry', (value: string): string => {
+  const phoneNumber = parsePhoneNumber(value)
+  if (phoneNumber && phoneNumber.country) {
+    const regionNames = new Intl.DisplayNames(undefined, { type: 'region' })
+    return regionNames.of(phoneNumber.country) ?? 'earth'
+  }
+  return 'Earth'
+})
+
+Vue.filter('timestamp', (value: string): string => {
+  return new Date(value).toLocaleString()
+})

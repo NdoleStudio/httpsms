@@ -2,17 +2,23 @@ import { ActionContext } from 'vuex'
 import axios from '~/plugins/axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
+import { Heartbeat } from '~/models/heartbeat'
+import { compile } from 'vue-template-compiler'
 
 type State = {
   owner: string
   threads: Array<MessageThread>
   threadId: string | null
+  heartbeat: null | Heartbeat
+  pooling: boolean
   threadMessages: Array<Message>
 }
 
 export const state = (): State => ({
   threads: [],
   threadId: null,
+  heartbeat: null,
+  pooling: false,
   threadMessages: [],
   owner: '+37259139660',
 })
@@ -40,6 +46,14 @@ export const getters = {
     }
     return thread
   },
+
+  getHeartbeat(state: State): Heartbeat | null {
+    return state.heartbeat
+  },
+
+  getPolling(state: State): boolean {
+    return state.pooling
+  },
 }
 
 export const mutations = {
@@ -51,6 +65,12 @@ export const mutations = {
   },
   setThreadMessages(state: State, payload: Array<Message>) {
     state.threadMessages = payload
+  },
+  setHeartbeat(state: State, payload: Heartbeat | null) {
+    state.heartbeat = payload
+  },
+  setPooling(state: State, payload: boolean) {
+    state.pooling = payload
   },
 }
 
@@ -68,6 +88,26 @@ export const actions = {
       },
     })
     context.commit('setThreads', response.data.data)
+  },
+
+  async getHeartbeat(context: ActionContext<State, State>) {
+    const response = await axios.get('/v1/heartbeats', {
+      params: {
+        limit: 1,
+        owner: context.getters.getOwner,
+      },
+    })
+
+    if (response.data.data.length > 0) {
+      context.commit('setHeartbeat', response.data.data[0])
+      return
+    }
+
+    context.commit('setHeartbeat', null)
+  },
+
+  setPolling(context: ActionContext<State, State>, status: boolean) {
+    context.commit('setPooling', status)
   },
 
   async sendMessage(

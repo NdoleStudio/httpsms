@@ -29,7 +29,39 @@ import { Vue, Component } from 'vue-property-decorator'
 @Component
 export default class DefaultLayout extends Vue {
   mounted() {
-    this.$store.dispatch('loadThreads')
+    Promise.all([
+      this.$store.dispatch('loadThreads'),
+      this.$store.dispatch('getHeartbeat'),
+    ])
+    this.startPoller()
+  }
+
+  startPoller() {
+    setInterval(async () => {
+      await this.$store.dispatch('setPolling', true)
+
+      const promises = []
+      if (this.$store.getters.getOwner) {
+        promises.push(
+          this.$store.dispatch('loadThreads'),
+          this.$store.dispatch('getHeartbeat')
+        )
+      }
+
+      if (this.$store.getters.hasThread) {
+        promises.push(
+          this.$store.dispatch(
+            'loadThreadMessages',
+            this.$store.getters.getThread.id
+          )
+        )
+      }
+      await Promise.all(promises)
+
+      setTimeout(() => {
+        this.$store.dispatch('setPolling', false)
+      }, 1000)
+    }, 10000)
   }
 }
 </script>
