@@ -1,7 +1,6 @@
 package di
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"log"
@@ -23,7 +22,6 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/handlers"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
-	zlg "github.com/mark-ignacio/zerolog-gcp"
 	"github.com/rs/zerolog"
 	"gorm.io/driver/postgres"
 	gormLogger "gorm.io/gorm/logger"
@@ -376,16 +374,17 @@ func logger() telemetry.Logger {
 
 	var writer io.Writer = zerolog.ConsoleWriter{Out: os.Stderr}
 	if !isLocal() {
-		gcpWriter, err := zlg.NewCloudLoggingWriter(
-			context.Background(),
-			os.Getenv("GCP_PROJECT_ID"),
-			fmt.Sprintf("projects/%s/logs/run.googleapis.com%%2Fstderr", os.Getenv("GCP_PROJECT_ID")),
-			zlg.CloudLoggingOptions{},
-		)
-		if err != nil {
-			log.Fatal("could not create a CloudLoggingWriter")
-		}
-		writer = gcpWriter
+		writer = os.Stderr
+		//gcpWriter, err := zlg.NewCloudLoggingWriter(
+		//	context.Background(),
+		//	os.Getenv("GCP_PROJECT_ID"),
+		//	fmt.Sprintf("projects/%s/logs/run.googleapis.com%%2Fstderr", os.Getenv("GCP_PROJECT_ID")),
+		//	zlg.CloudLoggingOptions{},
+		//)
+		//if err != nil {
+		//	log.Fatal("could not create a CloudLoggingWriter")
+		//}
+		//writer = gcpWriter
 	}
 
 	return telemetry.NewZerologLogger(zerolog.New(writer).With().Fields(fields).Timestamp().CallerWithSkipFrameCount(3))
