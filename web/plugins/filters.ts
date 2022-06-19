@@ -12,6 +12,7 @@ Vue.filter('phoneNumber', (value: string): string => {
 Vue.filter('phoneCountry', (value: string): string => {
   const phoneNumber = parsePhoneNumber(value)
   if (phoneNumber && phoneNumber.country) {
+    // @ts-ignore
     const regionNames = new Intl.DisplayNames(undefined, { type: 'region' })
     return regionNames.of(phoneNumber.country) ?? 'earth'
   }
