@@ -3,12 +3,15 @@ package requests
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 )
 
 // MessageOutstanding is the payload fetching outstanding entities.Message
 type MessageOutstanding struct {
+	request
+	Owner string `json:"owner" query:"owner"`
 	Limit string `json:"limit" query:"limit"`
 }
 
@@ -16,6 +19,11 @@ type MessageOutstanding struct {
 func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 	if strings.TrimSpace(input.Limit) == "" {
 		input.Limit = "1"
+	}
+
+	input.Owner = input.sanitizeAddress(input.Owner)
+	if input.Owner == "" {
+		input.Owner = "+37259139660"
 	}
 
 	if input.Limit != "1" {
@@ -26,10 +34,12 @@ func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 }
 
 // ToGetOutstandingParams converts request to services.MessageGetOutstandingParams
-func (input *MessageOutstanding) ToGetOutstandingParams(source string) services.MessageGetOutstandingParams {
+func (input *MessageOutstanding) ToGetOutstandingParams(source string, timestamp time.Time) services.MessageGetOutstandingParams {
 	return services.MessageGetOutstandingParams{
-		Source: source,
-		Limit:  input.getLimit(),
+		Source:    source,
+		Owner:     input.Owner,
+		Timestamp: timestamp,
+		Limit:     input.getLimit(),
 	}
 }
 

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
 	"github.com/google/uuid"
@@ -95,16 +96,18 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        limit	query  int  false  "Number of outstanding messages to return"	minimum(1)	maximum(10)
-// @Success      200 	{object}	responses.MessagesResponse
-// @Failure      400	{object}	responses.BadRequest
-// @Failure      422	{object}	responses.UnprocessableEntity
-// @Failure      500	{object}	responses.InternalServerError
+// @Param        owner	query  string  	true 							"The owner's phone number" 					default(+18005550199)
+// @Param        limit	query  int  	false  							"Number of outstanding messages to fetch"	minimum(1)	maximum(10)
+// @Success      200 	{object}		responses.MessagesResponse
+// @Failure      400	{object}		responses.BadRequest
+// @Failure      422	{object}		responses.UnprocessableEntity
+// @Failure      500	{object}		responses.InternalServerError
 // @Router       /messages/outstanding [get]
 func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
+	timestamp := time.Now().UTC()
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageOutstanding
@@ -120,7 +123,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching outstanding messages")
 	}
 
-	messages, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL()))
+	messages, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), timestamp))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get messgaes with URL [%s]", c.OriginalURL())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

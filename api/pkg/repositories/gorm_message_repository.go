@@ -102,7 +102,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
-func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, take int) (*[]entities.Message, error) {
+func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, owner string, take int) (*[]entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -114,6 +114,7 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, tak
 				Where(
 					"id IN (?)",
 					tx.Model(&entities.Message{}).
+						Where("owner = ?", owner).
 						Where("status = ?", entities.MessageStatusPending).
 						Order("request_received_at ASC").
 						Select("id").

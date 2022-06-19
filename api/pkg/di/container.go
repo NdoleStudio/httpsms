@@ -1,7 +1,9 @@
 package di
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -21,6 +23,7 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/handlers"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
+	zlg "github.com/mark-ignacio/zerolog-gcp"
 	"github.com/rs/zerolog"
 	"gorm.io/driver/postgres"
 	gormLogger "gorm.io/gorm/logger"
@@ -48,6 +51,10 @@ func NewContainer(projectID string) (container *Container) {
 	container.RegisterMessageThreadRoutes()
 	container.RegisterMessageThreadListeners()
 
+	container.RegisterHeartbeatRoutes()
+	container.RegisterHeartbeatListeners()
+
+	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
 
 	return container
@@ -139,6 +146,26 @@ func (container *Container) MessageHandlerValidator() (validator *validators.Mes
 	)
 }
 
+// HeartbeatHandler creates a new instance of handlers.HeartbeatHandler
+func (container *Container) HeartbeatHandler() (h *handlers.HeartbeatHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", h))
+	return handlers.NewHeartbeatHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.HeartbeatHandlerValidator(),
+		container.HeartbeatService(),
+	)
+}
+
+// HeartbeatHandlerValidator creates a new instance of validators.HeartbeatHandlerValidator
+func (container *Container) HeartbeatHandlerValidator() (validator *validators.HeartbeatHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewHeartbeatHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
 // MessageThreadHandler creates a new instance of handlers.MessageThreadHandler
 func (container *Container) MessageThreadHandler() (h *handlers.MessageThreadHandler) {
 	container.logger.Debug(fmt.Sprintf("creating %T", h))
@@ -216,6 +243,16 @@ func (container *Container) EventListenerLogRepository() (repository repositorie
 	)
 }
 
+// HeartbeatService creates a new instance of services.HeartbeatService
+func (container *Container) HeartbeatService() (service *services.HeartbeatService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewHeartbeatService(
+		container.Logger(),
+		container.Tracer(),
+		container.HeartbeatRepository(),
+	)
+}
+
 // MessageThreadService creates a new instance of services.MessageService
 func (container *Container) MessageThreadService() (service *services.MessageThreadService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -267,6 +304,20 @@ func (container *Container) RegisterMessageThreadListeners() {
 	}
 }
 
+// RegisterHeartbeatListeners registers event listeners for listeners.HeartbeatListener
+func (container *Container) RegisterHeartbeatListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.HeartbeatListener{}))
+	_, routes := listeners.NewHeartbeatListener(
+		container.Logger(),
+		container.Tracer(),
+		container.HeartbeatService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
 // MessageService creates a new instance of services.MessageService
 func (container *Container) MessageService() (service *services.MessageService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -290,10 +341,26 @@ func (container *Container) RegisterMessageThreadRoutes() {
 	container.MessageThreadHandler().RegisterRoutes(container.App().Group("v1"))
 }
 
+// RegisterHeartbeatRoutes registers routes for the /heartbeats prefix
+func (container *Container) RegisterHeartbeatRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.HeartbeatHandler{}))
+	container.HeartbeatHandler().RegisterRoutes(container.App().Group("v1"))
+}
+
 // RegisterSwaggerRoutes registers routes for swagger
 func (container *Container) RegisterSwaggerRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
 	container.App().Get("/*", swagger.HandlerDefault)
+}
+
+// HeartbeatRepository registers a new instance of repositories.HeartbeatRepository
+func (container *Container) HeartbeatRepository() repositories.HeartbeatRepository {
+	container.logger.Debug("creating GORM repositories.HeartbeatRepository")
+	return repositories.NewGormHeartbeatRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
 }
 
 func logger() telemetry.Logger {
@@ -302,11 +369,24 @@ func logger() telemetry.Logger {
 		"pid":      os.Getpid(),
 		"hostname": hostname,
 	}
-	return telemetry.NewZerologLogger(
-		zerolog.New(
-			zerolog.ConsoleWriter{
-				Out: os.Stderr,
-			},
-		).With().Fields(fields).Timestamp().CallerWithSkipFrameCount(3),
-	)
+
+	var writer io.Writer = zerolog.ConsoleWriter{Out: os.Stderr}
+	if !isLocal() {
+		gcpWriter, err := zlg.NewCloudLoggingWriter(
+			context.Background(),
+			os.Getenv("GCP_PROJECT_ID"),
+			fmt.Sprintf("projects/%s/logs/run.googleapis.com%%2Fstderr", os.Getenv("GCP_PROJECT_ID")),
+			zlg.CloudLoggingOptions{},
+		)
+		if err != nil {
+			log.Fatal("could not create a CloudLoggingWriter")
+		}
+		writer = gcpWriter
+	}
+
+	return telemetry.NewZerologLogger(zerolog.New(writer).With().Fields(fields).Timestamp().CallerWithSkipFrameCount(3))
+}
+
+func isLocal() bool {
+	return os.Getenv("ENV") == "local"
 }

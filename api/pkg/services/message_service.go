@@ -54,7 +54,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	messages, err := service.repository.GetOutstanding(ctx, params.Limit)
+	messages, err := service.repository.GetOutstanding(ctx, params.Owner, params.Limit)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Limit)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
