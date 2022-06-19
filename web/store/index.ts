@@ -3,7 +3,6 @@ import axios from '~/plugins/axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
-import { compile } from 'vue-template-compiler'
 
 type State = {
   owner: string
