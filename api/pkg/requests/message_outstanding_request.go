@@ -26,10 +26,6 @@ func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 		input.Owner = "+37259139660"
 	}
 
-	if input.Limit != "1" {
-		input.Limit = "2"
-	}
-
 	return *input
 }
 
