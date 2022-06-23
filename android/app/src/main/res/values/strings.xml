@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">HttpSMS</string>
+    <string name="nextRefreshTime">23/06/2022 18:58:30</string>
+    <string name="phone_number">+1 800 555 0100</string>
+    <string name="menuIconDescription">Menu Icon</string>
+    <string name="menuIconName">More</string>
 </resources>
