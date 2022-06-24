@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.util.*
 
 
@@ -60,6 +61,13 @@ class MainActivity : AppCompatActivity() {
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.READ_PHONE_STATE
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.SEND_SMS
+            ) != PackageManager.PERMISSION_GRANTED
+            && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECEIVE_SMS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             // You can directly ask for the permission.
@@ -67,10 +75,14 @@ class MainActivity : AppCompatActivity() {
             requestPermissionLauncher.launch(Manifest.permission.READ_SMS)
             requestPermissionLauncher.launch(Manifest.permission.READ_PHONE_NUMBERS)
             requestPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+            requestPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+            requestPermissionLauncher.launch(Manifest.permission.RECEIVE_SMS)
+
         }
 
         val phoneNumber = telephonyManager.line1Number  ?: "NO_PHONE_NUMBER"
         Log.d(logTag, phoneNumber)
         return phoneNumber
     }
+
 }
