@@ -8,20 +8,15 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.nfc.Tag
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import java.util.*
 
 
@@ -48,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         requestPermission(this, Manifest.permission.SEND_SMS)
         requestPermission(this, Manifest.permission.RECEIVE_SMS)
-        requestPermission(this, Manifest.permission.READ_PHONE_NUMBERS)
+        requestPermission(this, READ_PHONE_NUMBERS)
         requestPermission(this, Manifest.permission.READ_PHONE_STATE)
         requestPermission(this, Manifest.permission.RECEIVE_SMS)
 

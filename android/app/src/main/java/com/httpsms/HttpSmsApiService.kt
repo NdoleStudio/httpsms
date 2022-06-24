@@ -8,11 +8,17 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URI
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.logging.Level
+import java.util.logging.Logger.*
 
 
 class HttpSmsApiService {
     private val baseURL = URI("https://eooi9srbmxw09ng.m.pipedream.net")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+
+    init {
+        getLogger(OkHttpClient::class.java.name).level = Level.FINE
+    }
 
     fun getOutstandingMessages(): List<Message> {
         val client = OkHttpClient()
@@ -28,10 +34,12 @@ class HttpSmsApiService {
                 Log.e(TAG, "cannot decode payload [${response.body}]")
                 return listOf()
             }
+            response.close()
             return payload
         }
 
         Log.e(TAG, "invalid response with code [${response.code}] and payload [${response.body}]")
+        response.close()
         return listOf()
     }
 
@@ -74,6 +82,7 @@ class HttpSmsApiService {
         }
 
         val message = ResponseMessage.fromJson(response.body!!.string())
+        response.close()
         Log.i(TAG, "received message stored successfully for message with ID [${message?.data?.id}]" )
     }
 
@@ -102,6 +111,8 @@ class HttpSmsApiService {
            Log.e(TAG, "error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             return
         }
+
+        response.close()
         Log.i(TAG, "[$event] event sent successfully for message with ID [$messageId]" )
     }
 
