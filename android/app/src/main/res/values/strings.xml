@@ -4,4 +4,5 @@
     <string name="phone_number">+1 800 555 0100</string>
     <string name="menuIconDescription">Menu Icon</string>
     <string name="menuIconName">More</string>
+    <string name="notification_channel_default">com.httpsms.notification.default</string>
 </resources>

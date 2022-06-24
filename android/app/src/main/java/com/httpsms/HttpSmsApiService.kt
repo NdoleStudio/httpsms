@@ -6,15 +6,12 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URI
-import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 
 class HttpSmsApiService {
-    private val baseURL = URI("https://httpsms.free.beeceptor.com")
+    private val baseURL = URI("https://eooi9srbmxw09ng.m.pipedream.net")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     fun getOutstandingMessages(): List<Message> {
@@ -29,7 +26,7 @@ class HttpSmsApiService {
             val payload =  ResponseMessagesOutstanding.fromJson(response.body!!.string())?.data
             if (payload == null) {
                 Log.e(TAG, "cannot decode payload [${response.body}]")
-                return listOf();
+                return listOf()
             }
             return payload
         }
@@ -50,11 +47,41 @@ class HttpSmsApiService {
         sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
+    fun receive(from: String, to: String, content: String, timestamp: ZonedDateTime) {
+        val client = OkHttpClient()
+
+        val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
+        val timestampString = formatter.format(timestamp).replace("+", "Z")
+
+        val body = """
+            {
+              "content": "$content",
+              "from": "$from",
+              "timestamp": "$timestampString",
+              "to": "$to"
+            }
+        """.trimIndent()
+
+        val request: Request = Request.Builder()
+            .url(baseURL.resolve("/v1/messages/receive").toURL())
+            .post(body.toRequestBody(jsonMediaType))
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            Log.e(TAG, "error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]}]")
+            return
+        }
+
+        val message = ResponseMessage.fromJson(response.body!!.string())
+        Log.i(TAG, "received message stored successfully for message with ID [${message?.data?.id}]" )
+    }
+
 
     private fun sendEvent(messageId: String, event: String, timestamp: ZonedDateTime, reason: String? = null) {
         val client = OkHttpClient()
 
-        val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ");
+        val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
         val timestampString = formatter.format(timestamp).replace("+", "Z")
 
         val body = """
@@ -63,11 +90,11 @@ class HttpSmsApiService {
               "reason": "$reason"
               "timestamp": "$timestampString"
             }
-        """.trimIndent().toRequestBody(jsonMediaType)
+        """.trimIndent()
 
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/messages/${messageId}/events").toURL())
-            .post(body)
+            .post(body.toRequestBody(jsonMediaType))
             .build()
 
         val response = client.newCall(request).execute()

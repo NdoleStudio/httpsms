@@ -3,6 +3,8 @@ package com.httpsms
 import android.Manifest
 import android.Manifest.permission.READ_PHONE_NUMBERS
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -42,12 +44,28 @@ class MainActivity : AppCompatActivity() {
         val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
         titleText.text = PhoneNumberUtils.formatNumber(phoneNumber, Locale.getDefault().country)
 
+        createChannel()
+
         requestPermission(this, Manifest.permission.SEND_SMS)
         requestPermission(this, Manifest.permission.RECEIVE_SMS)
         requestPermission(this, Manifest.permission.READ_PHONE_NUMBERS)
         requestPermission(this, Manifest.permission.READ_PHONE_STATE)
         requestPermission(this, Manifest.permission.RECEIVE_SMS)
 
+    }
+
+
+    private fun createChannel() {
+        // Create the NotificationChannel
+        val name = getString(R.string.notification_channel_default)
+        val descriptionText = getString(R.string.notification_channel_default)
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val mChannel = NotificationChannel(name, name, importance)
+        mChannel.description = descriptionText
+        // Register the channel with the system; you can't change the importance
+        // or other notification behaviors after this
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(mChannel)
     }
 
     @SuppressLint("HardwareIds")
