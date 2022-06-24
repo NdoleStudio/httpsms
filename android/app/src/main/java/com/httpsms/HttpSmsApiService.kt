@@ -20,11 +20,11 @@ class HttpSmsApiService {
         getLogger(OkHttpClient::class.java.name).level = Level.FINE
     }
 
-    fun getOutstandingMessages(): List<Message> {
+    fun getOutstandingMessages(owner: String): List<Message> {
         val client = OkHttpClient()
 
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/messages/outstanding").toURL())
+            .url(baseURL.resolve("/v1/messages/outstanding?owner=${owner}").toURL())
             .build()
 
         val response = client.newCall(request).execute()

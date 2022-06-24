@@ -6,17 +6,16 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
-import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.google.android.material.switchmaterial.SwitchMaterial
 import java.util.*
 
 
@@ -29,16 +28,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val intent = Intent("testing")
-        intent.putExtra(Constants.KEY_MESSAGE_ID, "123")
-
-        Log.w(TAG, "message id = [${intent.getStringExtra(Constants.KEY_MESSAGE_ID)}]")
-
-        val phoneNumber = getPhoneNumber(this)
-
-        val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
-        titleText.text = PhoneNumberUtils.formatNumber(phoneNumber, Locale.getDefault().country)
-
         createChannel()
 
         requestPermission(this, Manifest.permission.SEND_SMS)
@@ -47,8 +36,22 @@ class MainActivity : AppCompatActivity() {
         requestPermission(this, Manifest.permission.READ_PHONE_STATE)
         requestPermission(this, Manifest.permission.RECEIVE_SMS)
 
+        setOwner(getPhoneNumber(this))
+        setActiveStatus(this)
     }
 
+    private fun setActiveStatus(context: Context) {
+        val switch = findViewById<SwitchMaterial>(R.id.cardSwitch)
+        switch.isChecked = Settings.getActiveStatus(context)
+        switch.setOnCheckedChangeListener{
+            _, isChecked -> Settings.setActiveStatusAsync(context, isChecked)
+        }
+    }
+
+    private fun setOwner(phoneNumber: String) {
+        val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
+        titleText.text = PhoneNumberUtils.formatNumber(phoneNumber, Locale.getDefault().country)
+    }
 
     private fun createChannel() {
         // Create the NotificationChannel
@@ -77,9 +80,14 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.READ_PHONE_STATE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            return "NO_PHONE_NUMBER";
+            return "NO_PHONE_NUMBER"
         }
-        return telephonyManager.line1Number  ?: "NO_PHONE_NUMBER"
+
+        if (telephonyManager.line1Number != null) {
+            Settings.setOwnerAsync(context, telephonyManager.line1Number)
+        }
+
+        return telephonyManager.line1Number ?: "NO_PHONE_NUMBER"
     }
 
     private fun requestPermission(context: Context, permission: String) {
@@ -99,7 +107,11 @@ class MainActivity : AppCompatActivity() {
                     toast.show()
                 }
             }
-        if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                permission
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             // You can directly ask for the permission.
             // The registered ActivityResultCallback gets the result of this request.
             requestPermissionLauncher.launch(permission)

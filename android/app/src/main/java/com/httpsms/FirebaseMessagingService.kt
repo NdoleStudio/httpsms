@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
+import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -17,19 +18,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     // [START receive_message]
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        // TODO(developer): Handle FCM messages here.
-        // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "From: ${remoteMessage.from}")
-
+        Log.d(TAG, MyFirebaseMessagingService::onMessageReceived.name)
         scheduleJob()
-
-        // Check if message contains a notification payload.
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-        }
-
-        // Also if you intend on generating your own notifications as a result of a received FCM
-        // message, here is where that should be initiated. See sendNotification method below.
     }
     // [END receive_message]
 
@@ -61,7 +51,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // [END dispatch_job]
     }
     private fun sendRegistrationToServer(token: String?) {
-        // TODO: Implement this method to send token to your app server.
         Log.d(TAG, "sendRegistrationTokenToServer($token)")
     }
 
@@ -71,7 +60,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     internal class SendSmsWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
         override fun doWork(): Result {
-            val message = getMessage() ?: return Result.failure()
+            val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
+            val message = getMessage(owner) ?: return Result.failure()
 
             registerReceivers()
 
@@ -84,12 +74,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return Result.success()
         }
 
-        private fun getMessage(): Message? {
-            Log.i(TAG, "fetching message")
-            val messages = HttpSmsApiService().getOutstandingMessages()
+        private fun getMessage(owner: String): Message? {
+            Log.d(TAG, "fetching message")
+            val messages = HttpSmsApiService().getOutstandingMessages(owner)
 
             if (messages.isNotEmpty()) {
-                Log.i(TAG, "fetched message with ID [${messages.first().id}]")
+                Log.d(TAG, "fetched message with ID [${messages.first().id}]")
                 return messages.first()
             }
 
@@ -98,9 +88,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         private fun sendMessage(message: Message, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
-            Log.i(TAG, "sending SMS for message with ID [${message.id}]")
+            Log.d(TAG, "sending SMS for message with ID [${message.id}]")
             SmsManagerService().sendMessage(this.applicationContext, message, sentIntent, deliveredIntent)
-            Log.i(TAG, "sent SMS for message with ID [${message.id}]")
+            Log.d(TAG, "sent SMS for message with ID [${message.id}]")
         }
 
 
@@ -119,8 +109,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private fun createPendingIntent(message: Message, action: String): PendingIntent {
             val intent = Intent(action)
             intent.putExtra(Constants.KEY_MESSAGE_ID, message.id)
-
-            Log.w(TAG, "message id = [${intent.getStringExtra(Constants.KEY_MESSAGE_ID)}]")
 
             return PendingIntent.getBroadcast(
                 this.applicationContext,

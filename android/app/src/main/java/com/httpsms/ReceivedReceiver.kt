@@ -28,13 +28,17 @@ class ReceivedReceiver: BroadcastReceiver()
             smsBody += smsMessage.messageBody
         }
 
-        handleMessageReceived(smsSender, "+37259139660" ,smsBody)
+        handleMessageReceived(
+            smsSender,
+            Settings.getOwner(context) ?: Settings.DEFAULT_PHONE_NUMBER,
+            smsBody
+        )
     }
 
     private fun handleMessageReceived(from: String, to : String, content: String) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
         Thread {
-            Log.i(TAG, "sending received message from [${from}]")
+            Log.i(TAG, "forwarding received message from [${from}]")
             HttpSmsApiService().receive(from, to, content, timestamp)
         }.start()
     }
