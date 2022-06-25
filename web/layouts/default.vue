@@ -31,7 +31,7 @@ export default class DefaultLayout extends Vue {
   poller: number | null = null
 
   get hasDrawer(): boolean {
-    return !['login'].includes(this.$route.name ?? '')
+    return !['login', 'index'].includes(this.$route.name ?? '')
   }
 
   mounted() {
