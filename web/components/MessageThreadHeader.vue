@@ -41,9 +41,9 @@
       </div>
     </div>
     <v-spacer></v-spacer>
-    <v-tooltip bottom>
+    <v-tooltip bottom :open-on-click="true">
       <template #activator="{ on, attrs }">
-        <v-btn icon text v-bind="attrs" v-on="on">
+        <v-btn icon text v-bind="attrs" v-on="on" @click.prevent>
           <v-icon>mdi-dots-vertical</v-icon>
         </v-btn>
       </template>

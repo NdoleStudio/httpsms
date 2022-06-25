@@ -22,8 +22,11 @@
   "dependencies": {
     "@nuxtjs/axios": "^5.13.6",
     "@nuxtjs/dotenv": "^1.4.1",
+    "@nuxtjs/firebase": "^8.2.2",
     "core-js": "^3.19.3",
     "dotenv": "^16.0.1",
+    "firebase": "^9.8.4",
+    "firebaseui": "^6.0.1",
     "libphonenumber-js": "^1.10.6",
     "nuxt": "^2.15.8",
     "vue": "^2.6.14",

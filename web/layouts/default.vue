@@ -1,7 +1,7 @@
 <template>
   <v-app dark>
     <v-navigation-drawer
-      v-if="$vuetify.breakpoint.lgAndUp"
+      v-if="$vuetify.breakpoint.lgAndUp && hasDrawer"
       :width="400"
       fixed
       app
@@ -28,6 +28,12 @@ import { Vue, Component } from 'vue-property-decorator'
 
 @Component
 export default class DefaultLayout extends Vue {
+  poller: number | null = null
+
+  get hasDrawer(): boolean {
+    return !['login'].includes(this.$route.name ?? '')
+  }
+
   mounted() {
     Promise.all([
       this.$store.dispatch('loadThreads'),
@@ -36,8 +42,14 @@ export default class DefaultLayout extends Vue {
     this.startPoller()
   }
 
+  beforeDestroy(): void {
+    if (this.poller) {
+      clearInterval(this.poller)
+    }
+  }
+
   startPoller() {
-    setInterval(async () => {
+    this.poller = window.setInterval(async () => {
       await this.$store.dispatch('setPolling', true)
 
       const promises = []

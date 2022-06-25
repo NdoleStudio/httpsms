@@ -45,12 +45,30 @@ export default {
     '@nuxtjs/axios',
     // Simple usage
     '@nuxtjs/dotenv',
+    [
+      '@nuxtjs/firebase',
+      {
+        config: {
+          apiKey: 'AIzaSyClL8AX2H_F77_n8yu5FgLzBmJTiSM0NsQ',
+          authDomain: 'httpsms-86c51.firebaseapp.com',
+          projectId: 'httpsms-86c51',
+          storageBucket: 'httpsms-86c51.appspot.com',
+          messagingSenderId: '877524083399',
+          appId: '1:877524083399:web:430d6a29a0d808946514e2',
+          measurementId: 'G-EZ5W9DVK8T',
+        },
+        services: {
+          auth: true,
+          analytics: true,
+        },
+      },
+    ],
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
   axios: {
     // Workaround to avoid enforcing hard-coded localhost:3000: https://github.com/nuxt-community/axios-module/issues/308
-    baseURL: '/',
+    baseURL: process.env.BASE_URL || 'http://localhost:8000',
   },
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
@@ -70,6 +88,10 @@ export default {
         },
       },
     },
+  },
+
+  router: {
+    middleware: ['user'],
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build

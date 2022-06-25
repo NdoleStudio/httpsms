@@ -1,15 +1,38 @@
 import { ActionContext } from 'vuex'
-import axios from '~/plugins/axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
+import axios from '~/plugins/axios'
 
-type State = {
+const defaultNotificationTimeout = 3000
+
+type NotificationType = 'error' | 'success' | 'info'
+
+export interface Notification {
+  message: string
+  timeout: number
+  active: boolean
+  type: NotificationType
+}
+
+export interface NotificationRequest {
+  message: string
+  type: NotificationType
+}
+
+export type User = {
+  id: string
+}
+
+export type State = {
   owner: string
+  user: User | null
+  loadingUser: boolean
   threads: Array<MessageThread>
   threadId: string | null
   heartbeat: null | Heartbeat
   pooling: boolean
+  notification: Notification
   threadMessages: Array<Message>
 }
 
@@ -20,12 +43,37 @@ export const state = (): State => ({
   pooling: false,
   threadMessages: [],
   owner: '+37259139660',
+  user: null,
+  notification: {
+    active: false,
+    message: '',
+    type: 'success',
+    timeout: defaultNotificationTimeout,
+  },
+  loadingUser: false,
 })
+
+export type AppData = {
+  url: string
+  name: string
+}
 
 export const getters = {
   getThreads(state: State): Array<MessageThread> {
     return state.threads
   },
+
+  getAppData(): AppData {
+    let url = process.env.APP_URL as string
+    if (url.length > 0 && url[url.length - 1] === '/') {
+      url = url.substring(0, url.length - 1)
+    }
+    return {
+      url,
+      name: process.env.APP_NAME as string,
+    }
+  },
+
   getOwner(state: State): string {
     return state.owner
   },
@@ -53,6 +101,10 @@ export const getters = {
   getPolling(state: State): boolean {
     return state.pooling
   },
+
+  getNotification(state: State): Notification {
+    return state.notification
+  },
 }
 
 export const mutations = {
@@ -70,6 +122,24 @@ export const mutations = {
   },
   setPooling(state: State, payload: boolean) {
     state.pooling = payload
+  },
+  setLoadingUser(state: State, payload: boolean) {
+    state.loadingUser = payload
+  },
+  setUser(state: State, payload: User | null) {
+    state.user = payload
+  },
+  setNotification(state: State, notification: NotificationRequest) {
+    state.notification = {
+      ...state.notification,
+      active: true,
+      message: notification.message,
+      type: notification.type,
+      timeout: Math.floor(Math.random() * 100) + defaultNotificationTimeout, // Reset the timeout
+    }
+  },
+  disableNotification(state: State) {
+    state.notification.active = false
   },
 }
 
@@ -124,6 +194,17 @@ export const actions = {
     context.commit('setThreadId', threadId)
   },
 
+  addNotification(
+    context: ActionContext<State, State>,
+    request: NotificationRequest
+  ) {
+    context.commit('setNotification', request)
+  },
+
+  disableNotification(context: ActionContext<State, State>) {
+    context.commit('disableNotification')
+  },
+
   async loadThreadMessages(
     context: ActionContext<State, State>,
     threadId: string | null
@@ -136,5 +217,13 @@ export const actions = {
       },
     })
     context.commit('setThreadMessages', response.data.data)
+  },
+
+  async setLoadingUser(context: ActionContext<State, State>, loading: boolean) {
+    await context.commit('setLoadingUser', loading)
+  },
+
+  setUser(context: ActionContext<State, State>, user: User | null) {
+    context.commit('setUser', user)
   },
 }
