@@ -123,72 +123,82 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
+import Vue from 'vue'
 import { InputValidationRules } from 'vuetify'
 import { Message } from '~/models/message'
 import { SendMessageRequest } from '~/store'
 
-@Component
-export default class ThreadsIndex extends Vue {
-  formMessage = ''
-  formMessageRules: InputValidationRules = [
-    (v) => !!v || 'Message is required',
-    (v) => (v && v.length <= 320) || 'Message must be less than 320 characters',
-  ]
+export default Vue.extend({
+  middleware: ['auth'],
+  data() {
+    const formMessageRules: InputValidationRules = [
+      (v) => !!v || 'Message is required',
+      (v) =>
+        (v && v.length <= 320) || 'Message must be less than 320 characters',
+    ]
+    return {
+      formMessage: '',
+      formMessageRules,
+      submitting: false,
+    }
+  },
 
-  submitting = false
+  computed: {
+    messages(): Array<Message> {
+      return [...this.$store.getters.getThreadMessages].reverse()
+    },
+  },
 
-  async mounted(): Promise<void> {
+  async mounted() {
     await this.$store.dispatch('loadThreads')
     await this.$store.dispatch('loadThreadMessages', this.$route.params.id)
     this.scrollToElement()
-  }
+  },
 
-  get messages(): Array<Message> {
-    return [...this.$store.getters.getThreadMessages].reverse()
-  }
+  methods: {
+    isPending(message: Message): boolean {
+      return ['sending', 'pending'].includes(message.status)
+    },
 
-  isPending(message: Message): boolean {
-    return ['sending', 'pending'].includes(message.status)
-  }
+    isMT(message: Message): boolean {
+      return message.type === 'mobile-terminated'
+    },
 
-  isMT(message: Message): boolean {
-    return message.type === 'mobile-terminated'
-  }
+    scrollToElement() {
+      const el: Element = this.$refs.messageBody as Element
+      el.scrollTop = el.scrollHeight + 120
+    },
 
-  scrollToElement() {
-    const el: Element = this.$refs.messageBody as Element
-    el.scrollTop = el.scrollHeight + 120
-  }
+    async sendMessage(event: KeyboardEvent) {
+      if (event.shiftKey) {
+        return
+      }
 
-  async sendMessage(event: KeyboardEvent) {
-    if (event.shiftKey) {
-      return
-    }
+      if (!(this.$refs.form as any).validate()) {
+        return
+      }
 
-    if (!(this.$refs.form as any).validate()) {
-      return
-    }
+      this.submitting = true
 
-    this.submitting = true
-    const request: SendMessageRequest = {
-      from: this.$store.getters.getOwner,
-      to: this.$store.getters.getThread.contact,
-      content: this.formMessage,
-    }
+      const request: SendMessageRequest = {
+        from: this.$store.getters.getOwner,
+        to: this.$store.getters.getThread.contact,
+        content: this.formMessage,
+      }
 
-    await this.$store.dispatch('sendMessage', request)
+      await this.$store.dispatch('sendMessage', request)
 
-    this.formMessage = ''
-    this.submitting = false
+      this.formMessage = ''
+      this.submitting = false
 
-    this.$nextTick(() => {
-      ;(this.$refs.messageInput as any).$refs.input.focus()
-      this.scrollToElement()
-      ;(this.$refs.form as any).reset()
-    })
-  }
-}
+      this.$nextTick(() => {
+        ;(this.$refs.messageInput as any).$refs.input.focus()
+        this.scrollToElement()
+        ;(this.$refs.form as any).reset()
+      })
+    },
+  },
+})
 </script>
 
 <style lang="scss">

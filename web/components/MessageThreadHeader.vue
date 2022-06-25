@@ -22,7 +22,7 @@
         <p class="text--secondary mb-n1">
           {{ $store.getters.getOwner | phoneCountry }}
         </p>
-        <v-tooltip v-if="$store.getters.getHeartbeat" right>
+        <v-tooltip v-if="$store.getters.getHeartbeat" right open-on-click>
           <template #activator="{ on, attrs }">
             <v-btn
               x-small
@@ -30,6 +30,7 @@
               color="success"
               class="ml-2 mt-1 mb-n1"
               icon
+              @click.prevent
               v-on="on"
             >
               <v-icon x-small>mdi-circle</v-icon>
@@ -41,14 +42,41 @@
       </div>
     </div>
     <v-spacer></v-spacer>
-    <v-tooltip bottom :open-on-click="true">
-      <template #activator="{ on, attrs }">
-        <v-btn icon text v-bind="attrs" v-on="on" @click.prevent>
+    <v-menu offset-y>
+      <template #activator="{ on }">
+        <v-btn icon text v-on="on">
           <v-icon>mdi-dots-vertical</v-icon>
         </v-btn>
       </template>
-      <span>More Options</span>
-    </v-tooltip>
+      <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
+        <v-list-item-group>
+          <v-list-item :to="{ name: 'index' }">
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>mdi-account-cog</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  Settings
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-list-item @click.prevent="logout">
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>mdi-logout</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  Logout
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list-item-group>
+      </v-list>
+    </v-menu>
   </v-sheet>
 </template>
 
@@ -56,5 +84,15 @@
 import { Vue, Component } from 'vue-property-decorator'
 
 @Component
-export default class MessageThreadHeader extends Vue {}
+export default class MessageThreadHeader extends Vue {
+  logout(): void {
+    this.$fire.auth.signOut().then(() => {
+      this.$store.dispatch('addNotification', {
+        type: 'info',
+        message: 'You have successfully logged out',
+      })
+      this.$router.push({ name: 'login' })
+    })
+  }
+}
 </script>

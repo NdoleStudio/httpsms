@@ -28,7 +28,5 @@ import Vue from 'vue'
 import { Component } from 'vue-property-decorator'
 
 @Component
-export default class Login extends Vue {
-  layout: string = 'auth'
-}
+export default class Login extends Vue {}
 </script>

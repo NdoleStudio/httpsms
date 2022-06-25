@@ -4,9 +4,7 @@ import { User as StateUser } from '~/store'
 import { setAuthHeader } from '~/plugins/axios'
 
 export default async function (context: Context) {
-  await context.store.dispatch('setLoadingUser', true)
   await setUser(context)
-  await context.store.dispatch('setLoadingUser', false)
 }
 
 const setUser = (context: Context): Promise<User | null> => {

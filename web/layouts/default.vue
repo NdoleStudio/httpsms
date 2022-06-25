@@ -35,10 +35,6 @@ export default class DefaultLayout extends Vue {
   }
 
   mounted() {
-    Promise.all([
-      this.$store.dispatch('loadThreads'),
-      this.$store.dispatch('getHeartbeat'),
-    ])
     this.startPoller()
   }
 

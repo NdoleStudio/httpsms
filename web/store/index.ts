@@ -27,7 +27,6 @@ export type User = {
 export type State = {
   owner: string
   user: User | null
-  loadingUser: boolean
   threads: Array<MessageThread>
   threadId: string | null
   heartbeat: null | Heartbeat
@@ -50,7 +49,6 @@ export const state = (): State => ({
     type: 'success',
     timeout: defaultNotificationTimeout,
   },
-  loadingUser: false,
 })
 
 export type AppData = {
@@ -72,6 +70,10 @@ export const getters = {
       url,
       name: process.env.APP_NAME as string,
     }
+  },
+
+  getUser(state: State): User | null {
+    return state.user
   },
 
   getOwner(state: State): string {
@@ -122,9 +124,6 @@ export const mutations = {
   },
   setPooling(state: State, payload: boolean) {
     state.pooling = payload
-  },
-  setLoadingUser(state: State, payload: boolean) {
-    state.loadingUser = payload
   },
   setUser(state: State, payload: User | null) {
     state.user = payload
@@ -217,10 +216,6 @@ export const actions = {
       },
     })
     context.commit('setThreadMessages', response.data.data)
-  },
-
-  async setLoadingUser(context: ActionContext<State, State>, loading: boolean) {
-    await context.commit('setLoadingUser', loading)
   },
 
   setUser(context: ActionContext<State, State>, user: User | null) {
