@@ -1,26 +1,32 @@
 <template>
   <div>
-    <v-app-bar elevation="4">
-      <h2
-        class="text--primary"
-        :class="{
-          'text-h4': $vuetify.breakpoint.lgAndUp,
-          'text-h5': $vuetify.breakpoint.mdAndDown,
-        }"
-      >
-        <v-icon :large="$vuetify.breakpoint.mdAndDown">mdi-forum</v-icon>
-        Http SMS
-      </h2>
-      <v-spacer></v-spacer>
-      <v-btn
-        exact-path
-        class="primary"
-        :large="$vuetify.breakpoint.lgAndUp"
-        :to="{ name: 'login' }"
-      >
-        Get Started
-        <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
-      </v-btn>
+    <v-app-bar elevation="0" color="#121212" height="100px">
+      <v-container>
+        <v-row>
+          <v-col class="w-full d-flex">
+            <h2
+              class="text--primary"
+              :class="{
+                'text-h4': $vuetify.breakpoint.lgAndUp,
+                'text-h5': $vuetify.breakpoint.mdAndDown,
+              }"
+            >
+              <v-icon :large="$vuetify.breakpoint.mdAndDown">mdi-forum</v-icon>
+              Http SMS
+            </h2>
+            <v-spacer></v-spacer>
+            <v-btn
+              exact-path
+              class="primary"
+              :large="$vuetify.breakpoint.lgAndUp"
+              :to="{ name: 'login' }"
+            >
+              Get Started
+              <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-container>
     </v-app-bar>
     <v-container class="pb-16">
       <v-row :class="{ 'py-16': $vuetify.breakpoint.lgAndUp }">
