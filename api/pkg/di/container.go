@@ -1,11 +1,17 @@
 package di
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	firebase "firebase.google.com/go"
+	"firebase.google.com/go/auth"
+	"github.com/NdoleStudio/http-sms-manager/pkg/middlewares"
+	"google.golang.org/api/option"
 
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
@@ -52,6 +58,8 @@ func NewContainer(projectID string) (container *Container) {
 	container.RegisterHeartbeatRoutes()
 	container.RegisterHeartbeatListeners()
 
+	container.RegisterUserRoutes()
+
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
 
@@ -74,6 +82,10 @@ func (container *Container) App() (app *fiber.App) {
 
 	// Default config
 	app.Use(cors.New())
+
+	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
+	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
+	app.Use(middlewares.Authenticated(container.Tracer()))
 
 	container.app = app
 	return app
@@ -128,6 +140,34 @@ func (container *Container) DB() (db *gorm.DB) {
 	}
 
 	return container.db
+}
+
+// FirebaseApp creates a new instance of firebase.App
+func (container *Container) FirebaseApp() (app *firebase.App) {
+	container.logger.Debug(fmt.Sprintf("creating %T", app))
+	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
+	if err != nil {
+		msg := "cannot initialize firebase application"
+		container.logger.Fatal(stacktrace.Propagate(err, msg))
+	}
+	return app
+}
+
+// FirebaseAuthClient creates a new instance of auth.Client
+func (container *Container) FirebaseAuthClient() (client *auth.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+	authClient, err := container.FirebaseApp().Auth(context.Background())
+	if err != nil {
+		msg := "cannot initialize firebase auth client"
+		container.logger.Fatal(stacktrace.Propagate(err, msg))
+	}
+	return authClient
+}
+
+// FirebaseCredentials returns firebase credentials as bytes.
+func (container *Container) FirebaseCredentials() []byte {
+	container.logger.Debug("creating firebase credentials")
+	return []byte(os.Getenv("FIREBASE_CREDENTIALS"))
 }
 
 // Tracer creates a new instance of telemetry.Tracer
@@ -255,6 +295,16 @@ func (container *Container) HeartbeatService() (service *services.HeartbeatServi
 	)
 }
 
+// UserService creates a new instance of services.UserService
+func (container *Container) UserService() (service *services.UserService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewUserService(
+		container.Logger(),
+		container.Tracer(),
+		container.UserRepository(),
+	)
+}
+
 // MessageThreadService creates a new instance of services.MessageService
 func (container *Container) MessageThreadService() (service *services.MessageThreadService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -273,6 +323,16 @@ func (container *Container) MessageHandler() (handler *handlers.MessageHandler) 
 		container.Tracer(),
 		container.MessageHandlerValidator(),
 		container.MessageService(),
+	)
+}
+
+// UserHandler creates a new instance of handlers.MessageHandler
+func (container *Container) UserHandler() (handler *handlers.UserHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+	return handlers.NewUserHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.UserService(),
 	)
 }
 
@@ -349,6 +409,12 @@ func (container *Container) RegisterHeartbeatRoutes() {
 	container.HeartbeatHandler().RegisterRoutes(container.App().Group("v1"))
 }
 
+// RegisterUserRoutes registers routes for the /users prefix
+func (container *Container) RegisterUserRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
+	container.UserHandler().RegisterRoutes(container.App().Group("v1"))
+}
+
 // RegisterSwaggerRoutes registers routes for swagger
 func (container *Container) RegisterSwaggerRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
@@ -359,6 +425,16 @@ func (container *Container) RegisterSwaggerRoutes() {
 func (container *Container) HeartbeatRepository() repositories.HeartbeatRepository {
 	container.logger.Debug("creating GORM repositories.HeartbeatRepository")
 	return repositories.NewGormHeartbeatRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// UserRepository registers a new instance of repositories.UserRepository
+func (container *Container) UserRepository() repositories.UserRepository {
+	container.logger.Debug("creating GORM repositories.UserRepository")
+	return repositories.NewGormUserRepository(
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),

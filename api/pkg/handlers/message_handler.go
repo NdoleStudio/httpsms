@@ -59,6 +59,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 // @Param        payload   body requests.MessageSend  true  "PostSend message request payload"
 // @Success      200  {object}  responses.MessageResponse
 // @Failure      400  {object}  responses.BadRequest
+// @Failure 	 403    {object}		responses.Unauthorized
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]

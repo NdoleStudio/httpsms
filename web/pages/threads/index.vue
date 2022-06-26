@@ -26,6 +26,9 @@
 
 <script>
 export default {
-  name: 'IndexPage',
+  middleware: ['auth'],
+  mounted() {
+    this.$store.dispatch('loadThreads')
+  },
 }
 </script>

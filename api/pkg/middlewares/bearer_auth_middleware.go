@@ -14,6 +14,7 @@ import (
 
 // BearerAuth authenticates a user based on the bearer token
 func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *auth.Client) fiber.Handler {
+	logger = logger.WithService("middlewares.BearerAuth")
 	return func(c *fiber.Ctx) error {
 		_, span := tracer.StartFromFiberCtx(c, "middlewares.BearerAuth")
 		defer span.End()
@@ -40,12 +41,13 @@ func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *au
 		span.AddEvent(fmt.Sprintf("[%s] token is valid", bearerScheme))
 
 		authUser := entities.AuthUser{
-			ID: entities.UserID(token.Claims["user_id"].(string)),
+			Email: token.Claims["email"].(string),
+			ID:    entities.UserID(token.Claims["user_id"].(string)),
 		}
 
 		c.Locals(ContextKeyAuthUserID, authUser)
 
-		ctxLogger.Info(fmt.Sprintf("[%s] set successfully for user with ID [%s]", authUser, authUser.ID))
+		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
 		return c.Next()
 	}
 }

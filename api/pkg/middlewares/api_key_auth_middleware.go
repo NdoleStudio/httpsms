@@ -11,6 +11,8 @@ import (
 
 // APIKeyAuth authenticates a user from the X-API-Key header
 func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository repositories.UserRepository) fiber.Handler {
+	logger = logger.WithService("middlewares.APIKeyAuth")
+
 	return func(c *fiber.Ctx) error {
 		ctx, span := tracer.StartFromFiberCtx(c, "middlewares.APIKeyAuth")
 		defer span.End()
@@ -18,7 +20,7 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 		ctxLogger := tracer.CtxLogger(logger, span)
 
 		apiKey := c.Get(authHeaderAPIKey)
-		if len(apiKey) > 0 {
+		if len(apiKey) == 0 {
 			span.AddEvent(fmt.Sprintf("the request header has no [%s] api key", authHeaderAPIKey))
 			return c.Next()
 		}
@@ -31,7 +33,7 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 
 		c.Locals(ContextKeyAuthUserID, authUser)
 
-		ctxLogger.Info(fmt.Sprintf("[%s] set successfully for user with ID [%s]", authUser, authUser.ID))
+		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
 
 		return c.Next()
 	}

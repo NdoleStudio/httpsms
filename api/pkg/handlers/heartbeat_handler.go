@@ -54,6 +54,7 @@ func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router) {
 // @Param        limit		query  int  	false	"number of heartbeats to return"	minimum(1)	maximum(20)
 // @Success      200 		{object}	responses.HeartbeatsResponse
 // @Failure      400		{object}	responses.BadRequest
+// @Failure 	 403    {object}		responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /heartbeats [get]
