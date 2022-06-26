@@ -1,12 +1,23 @@
 <template>
   <div>
     <v-app-bar elevation="4">
-      <h2 class="text--primary text-h4">
-        <v-icon large>mdi-forum</v-icon>
+      <h2
+        class="text--primary"
+        :class="{
+          'text-h4': $vuetify.breakpoint.lgAndUp,
+          'text-h5': $vuetify.breakpoint.mdAndDown,
+        }"
+      >
+        <v-icon :large="$vuetify.breakpoint.mdAndDown">mdi-forum</v-icon>
         Http SMS
       </h2>
       <v-spacer></v-spacer>
-      <v-btn exact-path class="primary" large :to="{ name: 'login' }">
+      <v-btn
+        exact-path
+        class="primary"
+        :large="$vuetify.breakpoint.lgAndUp"
+        :to="{ name: 'login' }"
+      >
         Get Started
         <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
       </v-btn>
@@ -54,16 +65,14 @@
             class="mt-4"
             :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }"
           >
-            <v-icon color="secondary darken-2">mdi-check-circle</v-icon>
+            <v-icon color="teal darken-2">mdi-check-circle</v-icon>
             Free to use
-            <v-icon class="ml-4" color="secondary darken-2"
-              >mdi-check-circle</v-icon
-            >
+            <v-icon class="ml-4" color="teal darken-2">mdi-check-circle</v-icon>
             100% Open Source
           </div>
           <v-divider
             v-if="$vuetify.breakpoint.mdAndDown"
-            class="mt-6 mr-16 secondary"
+            class="mt-6 mr-16 teal"
             :class="{ 'ml-16': $vuetify.breakpoint.mdAndDown }"
           ></v-divider>
         </v-col>
