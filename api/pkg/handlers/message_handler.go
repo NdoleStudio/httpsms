@@ -52,6 +52,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 // PostSend a new entities.Message
 // @Summary      Send a new SMS message
 // @Description  Add a new SMS message to be sent by the android phone
+// @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
@@ -61,6 +62,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]
+// @Security	 ApiKeyAuth
 func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
@@ -93,6 +95,7 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // GetOutstanding returns entities.Message which are still to be sent by the mobile phone
 // @Summary      Get outstanding messages
 // @Description  Get list of messages which are outstanding to be sent by the phone
+// @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
@@ -136,6 +139,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 // Index returns messages sent between 2 phone numbers
 // @Summary      Get messages which are sent between 2 phone numbers
 // @Description  Get list of messages which are sent between 2 phone numbers. It will be sorted by timestamp in descending order.
+// @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
@@ -181,6 +185,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // PostEvent registers an event on a message
 // @Summary      Store an event for a message on the mobile phone
 // @Description  Use this endpoint to send events for a message when it is failed, sent or delivered by the mobile phone.
+// @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
@@ -192,6 +197,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/{messageID}/events [post]
+// @Security	 ApiKeyAuth
 func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
@@ -236,6 +242,7 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 // PostReceive receives a new entities.Message
 // @Summary      Receive a new SMS message from a mobile phone
 // @Description  Add a new message received from a mobile phone
+// @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json

@@ -22,7 +22,13 @@
         <p class="text--secondary mb-n1">
           {{ $store.getters.getOwner | phoneCountry }}
         </p>
-        <v-tooltip v-if="$store.getters.getHeartbeat" right open-on-click>
+        <v-tooltip
+          v-if="$store.getters.getHeartbeat"
+          right
+          :open-on-focus="false"
+          :open-on-hover="true"
+          open-on-click
+        >
           <template #activator="{ on, attrs }">
             <v-btn
               x-small
@@ -30,7 +36,6 @@
               color="success"
               class="ml-2 mt-1 mb-n1"
               icon
-              @click.prevent
               v-on="on"
             >
               <v-icon x-small>mdi-circle</v-icon>
@@ -50,7 +55,7 @@
       </template>
       <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
         <v-list-item-group>
-          <v-list-item :to="{ name: 'index' }">
+          <v-list-item :to="{ name: 'index' }" exact>
             <v-list-item-icon class="pl-2">
               <v-icon dense>mdi-account-cog</v-icon>
             </v-list-item-icon>

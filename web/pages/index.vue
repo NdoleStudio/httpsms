@@ -11,7 +11,7 @@
         <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
       </v-btn>
     </v-app-bar>
-    <v-container>
+    <v-container class="pb-16">
       <v-row :class="{ 'py-16': $vuetify.breakpoint.lgAndUp }">
         <v-col
           cols="12"
@@ -35,11 +35,12 @@
               class="mt-4 mb-4"
               :to="{ name: 'login' }"
             >
-              <v-icon v-if="$vuetify.breakpoint.lgAndUp" large>mdi-send</v-icon>
+              <v-icon v-if="$vuetify.breakpoint.lgAndUp">mdi-send</v-icon>
               Get Started
             </v-btn>
             <v-btn
               large
+              color="default"
               target="_blank"
               class="mt-4 mb-4 ml-4"
               :href="$store.getters.getAppData.githubUrl"
@@ -76,7 +77,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <v-footer fixed>
+    <v-footer absolute>
       <v-container class="text-center">
         <v-row justify="center" no-gutters>
           <v-col cols="12">
@@ -109,8 +110,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { Component } from 'vue-property-decorator'
 
-@Component
-export default class Index extends Vue {}
+export default Vue.extend({
+  middleware: ['guest'],
+})
 </script>

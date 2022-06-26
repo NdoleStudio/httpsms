@@ -83,42 +83,46 @@
             </v-col>
           </v-row>
         </div>
-        <v-form
-          ref="form"
-          class="fixed-bottom d-flex"
-          lazy-validation
-          @submit.prevent="sendMessage"
-        >
-          <v-textarea
-            ref="messageInput"
-            v-model="formMessage"
-            :disabled="submitting"
-            :rows="2"
-            filled
-            class="no-scrollbar"
-            :rules="formMessageRules"
-            placeholder="Type your message here"
-            rounded
-            @keydown.enter="sendMessage"
-          ></v-textarea>
-          <v-btn
-            :disabled="submitting"
-            type="submit"
-            color="primary"
-            class="pa-5 white--text ml-2 mt-1"
-            fab
-          >
-            <v-progress-circular
-              v-if="submitting"
-              indeterminate
-              style="position: absolute"
-              :size="20"
-              :width="3"
-              color="pink"
-            ></v-progress-circular>
-            <v-icon>mdi-send</v-icon>
-          </v-btn>
-        </v-form>
+        <v-footer absolute padless color="#121212">
+          <v-container class="pb-0">
+            <v-form
+              ref="form"
+              class="d-flex"
+              lazy-validation
+              @submit.prevent="sendMessage"
+            >
+              <v-textarea
+                ref="messageInput"
+                v-model="formMessage"
+                :disabled="submitting"
+                :rows="2"
+                filled
+                class="no-scrollbar"
+                :rules="formMessageRules"
+                placeholder="Type your message here"
+                rounded
+                @keydown.enter="sendMessage"
+              ></v-textarea>
+              <v-btn
+                :disabled="submitting"
+                type="submit"
+                color="primary"
+                class="pa-5 white--text ml-2 mt-1"
+                fab
+              >
+                <v-progress-circular
+                  v-if="submitting"
+                  indeterminate
+                  style="position: absolute"
+                  :size="20"
+                  :width="3"
+                  color="pink"
+                ></v-progress-circular>
+                <v-icon>mdi-send</v-icon>
+              </v-btn>
+            </v-form>
+          </v-container>
+        </v-footer>
       </v-container>
     </div>
   </v-container>
@@ -204,13 +208,6 @@ export default Vue.extend({
 </script>
 
 <style lang="scss">
-.fixed-bottom {
-  width: 96%;
-  max-width: 1761px;
-  position: fixed;
-  bottom: 0;
-}
-
 .messages-body {
   padding-top: 50px;
   width: 96%;

@@ -20,6 +20,10 @@ import (
 // @host     api.httpsms.com
 // @schemes  https
 // @BasePath /v1
+//
+// @securitydefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
 func main() {
 	if len(os.Args) == 1 {
 		di.LoadEnv()
