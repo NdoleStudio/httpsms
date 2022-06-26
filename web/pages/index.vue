@@ -6,7 +6,7 @@
         Http SMS
       </h2>
       <v-spacer></v-spacer>
-      <v-btn class="primary" large :to="{ name: 'login' }">
+      <v-btn exact-path class="primary" large :to="{ name: 'login' }">
         Get Started
         <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
       </v-btn>
@@ -32,6 +32,7 @@
             <v-btn
               color="primary"
               large
+              exact-path
               class="mt-4 mb-4"
               :to="{ name: 'login' }"
             >

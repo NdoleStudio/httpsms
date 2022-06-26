@@ -67,8 +67,8 @@ export default class FirebaseAuth extends Vue {
       signInSuccessUrl: this.$store.getters.getAppData.url,
       signInOptions: [
         // Leave the lines as is for the providers you want to offer your users.
-        ProviderId.GOOGLE,
         ProviderId.GITHUB,
+        ProviderId.GOOGLE,
         ProviderId.PASSWORD,
       ],
       // Terms of service url.
