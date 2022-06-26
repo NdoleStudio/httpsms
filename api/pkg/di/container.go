@@ -139,6 +139,14 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
 	}
 
+	if err = db.AutoMigrate(&entities.User{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Phone{})))
+	}
+
 	return container.db
 }
 
@@ -228,6 +236,15 @@ func (container *Container) MessageThreadHandlerValidator() (validator *validato
 	)
 }
 
+// PhoneHandlerValidator creates a new instance of validators.PhoneHandlerValidator
+func (container *Container) PhoneHandlerValidator() (validator *validators.PhoneHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewPhoneHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
 // EventDispatcher creates a new instance of services.EventDispatcher
 func (container *Container) EventDispatcher() (dispatcher *services.EventDispatcher) {
 	if container.eventDispatcher != nil {
@@ -249,6 +266,16 @@ func (container *Container) EventDispatcher() (dispatcher *services.EventDispatc
 func (container *Container) MessageRepository() (repository repositories.MessageRepository) {
 	container.logger.Debug("creating GORM repositories.MessageRepository")
 	return repositories.NewGormMessageRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// PhoneRepository creates a new instance of repositories.PhoneRepository
+func (container *Container) PhoneRepository() (repository repositories.PhoneRepository) {
+	container.logger.Debug("creating GORM repositories.PhoneRepository")
+	return repositories.NewGormPhoneRepository(
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
@@ -295,6 +322,16 @@ func (container *Container) HeartbeatService() (service *services.HeartbeatServi
 	)
 }
 
+// PhoneService creates a new instance of services.PhoneService
+func (container *Container) PhoneService() (service *services.PhoneService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewPhoneService(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneRepository(),
+	)
+}
+
 // UserService creates a new instance of services.UserService
 func (container *Container) UserService() (service *services.UserService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -333,6 +370,17 @@ func (container *Container) UserHandler() (handler *handlers.UserHandler) {
 		container.Logger(),
 		container.Tracer(),
 		container.UserService(),
+	)
+}
+
+// PhoneHandler creates a new instance of handlers.PhoneHandler
+func (container *Container) PhoneHandler() (handler *handlers.PhoneHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+	return handlers.NewPhoneHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneService(),
+		container.PhoneHandlerValidator(),
 	)
 }
 
@@ -407,6 +455,12 @@ func (container *Container) RegisterMessageThreadRoutes() {
 func (container *Container) RegisterHeartbeatRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.HeartbeatHandler{}))
 	container.HeartbeatHandler().RegisterRoutes(container.App().Group("v1"))
+}
+
+// RegisterPhoneRoutes registers routes for the /phone prefix
+func (container *Container) RegisterPhoneRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.PhoneHandler{}))
+	container.PhoneHandler().RegisterRoutes(container.App().Group("v1"))
 }
 
 // RegisterUserRoutes registers routes for the /users prefix

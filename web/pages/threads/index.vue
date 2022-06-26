@@ -26,6 +26,7 @@
 
 <script>
 export default {
+  name: 'ThreadsIndex',
   middleware: ['auth'],
   mounted() {
     this.$store.dispatch('loadThreads')

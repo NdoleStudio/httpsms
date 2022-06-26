@@ -30,7 +30,7 @@ func NewGormUserRepository(
 	db *gorm.DB,
 ) UserRepository {
 	return &gormUserRepository{
-		logger: logger.WithService(fmt.Sprintf("%T", &gormHeartbeatRepository{})),
+		logger: logger.WithService(fmt.Sprintf("%T", &gormUserRepository{})),
 		tracer: tracer,
 		db:     db,
 	}

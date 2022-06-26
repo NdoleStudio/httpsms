@@ -6,8 +6,8 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
 )
 
-// HeartbeatIndex is the payload for fetching entities.Heartbeat of a phone number
-type HeartbeatIndex struct {
+// PhoneIndex is the payload fetching registered phones
+type PhoneIndex struct {
 	request
 	Skip  string `json:"skip" query:"skip"`
 	Owner string `json:"owner" query:"owner"`
@@ -16,7 +16,7 @@ type HeartbeatIndex struct {
 }
 
 // Sanitize sets defaults to MessageOutstanding
-func (input *HeartbeatIndex) Sanitize() HeartbeatIndex {
+func (input *PhoneIndex) Sanitize() PhoneIndex {
 	if strings.TrimSpace(input.Limit) == "" {
 		input.Limit = "1"
 	}
@@ -30,7 +30,7 @@ func (input *HeartbeatIndex) Sanitize() HeartbeatIndex {
 }
 
 // ToIndexParams converts HeartbeatIndex to repositories.IndexParams
-func (input *HeartbeatIndex) ToIndexParams() repositories.IndexParams {
+func (input *PhoneIndex) ToIndexParams() repositories.IndexParams {
 	return repositories.IndexParams{
 		Skip:  input.getInt(input.Skip),
 		Query: input.Query,

@@ -184,7 +184,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 }
 
 // PostEvent registers an event on a message
-// @Summary      Store an event for a message on the mobile phone
+// @Summary      Upsert an event for a message on the mobile phone
 // @Description  Use this endpoint to send events for a message when it is failed, sent or delivered by the mobile phone.
 // @Security	 ApiKeyAuth
 // @Tags         Messages

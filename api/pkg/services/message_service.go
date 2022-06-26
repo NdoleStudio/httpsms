@@ -43,6 +43,7 @@ func NewMessageService(
 type MessageGetOutstandingParams struct {
 	Source    string
 	Owner     string
+	UserID    entities.UserID
 	Timestamp time.Time
 	Limit     int
 }

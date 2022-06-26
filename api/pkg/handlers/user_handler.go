@@ -39,10 +39,10 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 // @Summary      Get current user
 // @Description  Get details of the currently authenticated user
 // @Security	 ApiKeyAuth
-// @Tags         Messages
+// @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Success      200 	{object}		responses.MessagesResponse
+// @Success      200 	{object}		responses.UserResponse
 // @Failure      400	{object}		responses.BadRequest
 // @Failure 	 403    {object}		responses.Unauthorized
 // @Failure      422	{object}		responses.UnprocessableEntity

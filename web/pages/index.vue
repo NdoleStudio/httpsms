@@ -62,8 +62,8 @@
             100% Open Source
           </div>
           <v-divider
-            class="mt-6 mr-16 secondary"
             v-if="$vuetify.breakpoint.mdAndDown"
+            class="mt-6 mr-16 secondary"
             :class="{ 'ml-16': $vuetify.breakpoint.mdAndDown }"
           ></v-divider>
         </v-col>
@@ -113,6 +113,7 @@
 import Vue from 'vue'
 
 export default Vue.extend({
+  name: 'LandingPage',
   middleware: ['guest'],
 })
 </script>
