@@ -7,7 +7,7 @@
         xl="3"
         :class="{ 'mt-n16': $vuetify.breakpoint.lgAndUp }"
       >
-        <h3 class="text-h2 text-center mb-4">Login</h3>
+        <h3 class="text-h3 text-center mb-4">Login or Sign Up</h3>
         <v-card max-width="360" class="mx-auto">
           <v-card-text class="px-0">
             <no-ssr>

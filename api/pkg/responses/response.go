@@ -30,3 +30,10 @@ type UnprocessableEntity struct {
 	Message string              `json:"message" example:"validation errors while sending message"`
 	Data    map[string][]string `json:"data"`
 }
+
+// Unauthorized is the response with status code is 403
+type Unauthorized struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"You are not authorized to carry out this request."`
+	Data    string `json:"data" example:"Make sure your API key is set in the [X-API-Key] header in the request"`
+}

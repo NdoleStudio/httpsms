@@ -3,6 +3,9 @@ package handlers
 import (
 	"net/url"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/http-sms-manager/pkg/middlewares"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,6 +24,14 @@ func (h *handler) responseInternalServerError(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 		"status":  "error",
 		"message": "We ran into an internal error while handling the request.",
+	})
+}
+
+func (h *handler) responseUnauthorized(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		"status":  "error",
+		"message": "You are not authorized to carry out this request.",
+		"data":    "Make sure your API key is set in the [X-API-Key] header in the request",
 	})
 }
 
@@ -59,4 +70,15 @@ func (h *handler) pluralize(value string, count int) string {
 		return value
 	}
 	return value + "s"
+}
+
+func (h *handler) userFromContext(c *fiber.Ctx) entities.AuthUser {
+	if tokenUser, ok := c.Locals(middlewares.ContextKeyAuthUserID).(entities.AuthUser); ok && !tokenUser.IsNoop() {
+		return tokenUser
+	}
+	panic("user does not exist in context.")
+}
+
+func (h *handler) userIDFomContext(c *fiber.Ctx) entities.UserID {
+	return h.userFromContext(c).ID
 }
