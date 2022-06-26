@@ -48,7 +48,7 @@ export default {
       {
         config: {
           apiKey: 'AIzaSyClL8AX2H_F77_n8yu5FgLzBmJTiSM0NsQ',
-          authDomain: 'httpsms-86c51.firebaseapp.com',
+          authDomain: 'httpsms.com',
           projectId: 'httpsms-86c51',
           storageBucket: 'httpsms-86c51.appspot.com',
           messagingSenderId: '877524083399',
