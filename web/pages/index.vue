@@ -71,14 +71,14 @@
             class="mt-4"
             :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }"
           >
-            <v-icon color="teal darken-2">mdi-check-circle</v-icon>
+            <v-icon color="success">mdi-check-circle</v-icon>
             Free to use
-            <v-icon class="ml-4" color="teal darken-2">mdi-check-circle</v-icon>
+            <v-icon class="ml-4" color="success">mdi-check-circle</v-icon>
             100% Open Source
           </div>
           <v-divider
             v-if="$vuetify.breakpoint.mdAndDown"
-            class="mt-6 mr-16 teal"
+            class="mt-6 mr-16 success"
             :class="{ 'ml-16': $vuetify.breakpoint.mdAndDown }"
           ></v-divider>
         </v-col>
