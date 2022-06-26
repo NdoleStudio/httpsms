@@ -1,5 +1,5 @@
 <template>
-  <v-app dark>
+  <v-app>
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.lgAndUp && hasDrawer"
       :width="400"
@@ -12,13 +12,7 @@
       </template>
     </v-navigation-drawer>
     <v-main>
-      <v-container
-        fluid
-        class="pa-0"
-        :fill-height="$vuetify.breakpoint.lgAndUp"
-      >
-        <Nuxt />
-      </v-container>
+      <Nuxt />
     </v-main>
   </v-app>
 </template>

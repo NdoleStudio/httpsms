@@ -46,7 +46,7 @@ export default class FirebaseAuth extends Vue {
             message: 'Login successfull!',
             type: 'success',
           } as NotificationRequest)
-          this.$router.push({ name: 'index' })
+          this.$router.push({ name: 'threads' })
           return false
         },
         uiShown: () => {

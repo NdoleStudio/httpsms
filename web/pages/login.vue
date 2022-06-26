@@ -1,5 +1,5 @@
 <template>
-  <v-container fill-height fluid>
+  <v-container fluid class="pa-0" fill-height>
     <v-row align="center" justify="center">
       <v-col
         cols="12"
@@ -25,8 +25,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { Component } from 'vue-property-decorator'
 
-@Component
-export default class Login extends Vue {}
+export default Vue.extend({
+  middleware: ['guest'],
+})
 </script>

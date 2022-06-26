@@ -54,6 +54,8 @@ export const state = (): State => ({
 export type AppData = {
   url: string
   name: string
+  documentationUrl: string
+  githubUrl: string
 }
 
 export const getters = {
@@ -68,6 +70,8 @@ export const getters = {
     }
     return {
       url,
+      documentationUrl: process.env.APP_DOCUMENTATION_URL as string,
+      githubUrl: process.env.APP_GITHUB_URL as string,
       name: process.env.APP_NAME as string,
     }
   },

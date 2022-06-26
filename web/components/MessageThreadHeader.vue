@@ -87,11 +87,12 @@ import { Vue, Component } from 'vue-property-decorator'
 export default class MessageThreadHeader extends Vue {
   logout(): void {
     this.$fire.auth.signOut().then(() => {
+      this.$store.dispatch('setUser', null)
       this.$store.dispatch('addNotification', {
         type: 'info',
         message: 'You have successfully logged out',
       })
-      this.$router.push({ name: 'login' })
+      this.$router.push({ name: 'index' })
     })
   }
 }
