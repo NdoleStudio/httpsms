@@ -156,6 +156,7 @@ export default Vue.extend({
   },
 
   async mounted() {
+    await this.$store.dispatch('loadPhones')
     await this.$store.dispatch('loadThreads')
     await this.$store.dispatch('loadThreadMessages', this.$route.params.id)
     this.scrollToElement()

@@ -46,7 +46,8 @@ export default class DefaultLayout extends Vue {
       if (this.$store.getters.getOwner) {
         promises.push(
           this.$store.dispatch('loadThreads'),
-          this.$store.dispatch('getHeartbeat')
+          this.$store.dispatch('getHeartbeat'),
+          this.$store.dispatch('loadPhones', true)
         )
       }
 

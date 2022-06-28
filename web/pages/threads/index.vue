@@ -30,6 +30,7 @@ export default {
   middleware: ['auth'],
   mounted() {
     this.$store.dispatch('loadThreads')
+    this.$store.dispatch('loadPhones')
   },
 }
 </script>

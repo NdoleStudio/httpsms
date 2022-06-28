@@ -3,6 +3,7 @@ import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
 import axios from '~/plugins/axios'
+import { Phone } from '~/models/phone'
 
 const defaultNotificationTimeout = 3000
 
@@ -27,6 +28,7 @@ export type User = {
 export type State = {
   owner: string
   user: User | null
+  phones: Array<Phone>
   threads: Array<MessageThread>
   threadId: string | null
   heartbeat: null | Heartbeat
@@ -41,6 +43,7 @@ export const state = (): State => ({
   heartbeat: null,
   pooling: false,
   threadMessages: [],
+  phones: [],
   owner: '+37259139660',
   user: null,
   notification: {
@@ -82,6 +85,10 @@ export const getters = {
 
   getOwner(state: State): string {
     return state.owner
+  },
+
+  getPhones(state: State): Array<Phone> {
+    return state.phones
   },
 
   hasThread(state: State): boolean {
@@ -144,6 +151,15 @@ export const mutations = {
   disableNotification(state: State) {
     state.notification.active = false
   },
+
+  setPhones(state: State, payload: Array<Phone>) {
+    state.phones = payload
+
+    const owner = payload.find((x) => x.phone_number === state.owner)
+    if (!owner && state.phones.length > 0) {
+      state.owner = state.phones[0].phone_number
+    }
+  },
 }
 
 export type SendMessageRequest = {
@@ -160,6 +176,14 @@ export const actions = {
       },
     })
     context.commit('setThreads', response.data.data)
+  },
+
+  async loadPhones(context: ActionContext<State, State>, force: boolean) {
+    if (context.getters.getPhones.length > 0 && !force) {
+      return
+    }
+    const response = await axios.get('/v1/phones')
+    context.commit('setPhones', response.data.data)
   },
 
   async getHeartbeat(context: ActionContext<State, State>) {

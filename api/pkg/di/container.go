@@ -85,10 +85,21 @@ func (container *Container) App() (app *fiber.App) {
 
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
-	app.Use(middlewares.Authenticated(container.Tracer()))
 
 	container.app = app
 	return app
+}
+
+// AuthenticatedMiddleware creates a new instance of middlewares.Authenticated
+func (container *Container) AuthenticatedMiddleware() fiber.Handler {
+	container.logger.Debug("creating middlewares.Authenticated")
+	return middlewares.Authenticated(container.Tracer())
+}
+
+// AuthRouter creates router for authenticated requests
+func (container *Container) AuthRouter() fiber.Router {
+	container.logger.Debug("creating authRouter")
+	return container.App().Group("v1").Use(container.AuthenticatedMiddleware())
 }
 
 // Logger creates a new instance of telemetry.Logger
@@ -442,31 +453,31 @@ func (container *Container) MessageService() (service *services.MessageService) 
 // RegisterMessageRoutes registers routes for the /messages prefix
 func (container *Container) RegisterMessageRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
-	container.MessageHandler().RegisterRoutes(container.App().Group("v1"))
+	container.MessageHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterMessageThreadRoutes registers routes for the /message-threads prefix
 func (container *Container) RegisterMessageThreadRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageThreadHandler{}))
-	container.MessageThreadHandler().RegisterRoutes(container.App().Group("v1"))
+	container.MessageThreadHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterHeartbeatRoutes registers routes for the /heartbeats prefix
 func (container *Container) RegisterHeartbeatRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.HeartbeatHandler{}))
-	container.HeartbeatHandler().RegisterRoutes(container.App().Group("v1"))
+	container.HeartbeatHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterPhoneRoutes registers routes for the /phone prefix
 func (container *Container) RegisterPhoneRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.PhoneHandler{}))
-	container.PhoneHandler().RegisterRoutes(container.App().Group("v1"))
+	container.PhoneHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterUserRoutes registers routes for the /users prefix
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
-	container.UserHandler().RegisterRoutes(container.App().Group("v1"))
+	container.UserHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterSwaggerRoutes registers routes for swagger
