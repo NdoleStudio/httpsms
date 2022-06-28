@@ -6,10 +6,12 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +28,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        Log.d(TAG, "on create")
+
+        redirectToLogin()
+
         setContentView(R.layout.activity_main)
 
         createChannel()
@@ -38,6 +45,20 @@ class MainActivity : AppCompatActivity() {
 
         setOwner(getPhoneNumber(this))
         setActiveStatus(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "on activity resume")
+        redirectToLogin()
+    }
+
+    private fun redirectToLogin() {
+        if (Settings.isLoggedIn(this)) {
+            return
+        }
+        val switchActivityIntent = Intent(this, LoginActivity::class.java)
+        startActivity(switchActivityIntent)
     }
 
     private fun setActiveStatus(context: Context) {

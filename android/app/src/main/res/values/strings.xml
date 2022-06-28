@@ -5,4 +5,7 @@
     <string name="menuIconDescription">Menu Icon</string>
     <string name="menuIconName">More</string>
     <string name="notification_channel_default">com.httpsms.notification.default</string>
+    <string name="sign_in_button">Login With API Key</string>
+    <string name="text_area_api_key">API Key</string>
+    <string name="img_http_sms_logo">HTTP Sms Logo</string>
 </resources>

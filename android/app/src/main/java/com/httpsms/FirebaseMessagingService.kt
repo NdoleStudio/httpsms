@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
-import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -50,8 +49,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .enqueue(work)
         // [END dispatch_job]
     }
-    private fun sendRegistrationToServer(token: String?) {
+    private fun sendRegistrationToServer(token: String) {
         Log.d(TAG, "sendRegistrationTokenToServer($token)")
+        Settings.setApiKeyAsync(this, token)
+
+        if (Settings.isLoggedIn(this)) {
+            Log.d(TAG, "updating phone with new fcm token")
+            HttpSmsApiService().updatePhone(Settings.getPhoneOrDefault(this), token)
+        }
     }
 
     companion object {

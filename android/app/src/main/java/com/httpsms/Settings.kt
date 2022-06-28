@@ -9,6 +9,8 @@ object Settings {
 
     private const val SETTINGS_OWNER = "SETTINGS_OWNER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
+    private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
+    private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
 
     fun getOwner(context: Context): String? {
         Log.d(TAG, Settings::getOwner.name)
@@ -24,6 +26,10 @@ object Settings {
 
         Log.d(TAG, "owner: [$owner]")
         return owner
+    }
+
+    fun getPhoneOrDefault(context: Context): String {
+        return getOwner(context) ?: return DEFAULT_PHONE_NUMBER
     }
 
     fun setOwnerAsync(context: Context, owner: String) {
@@ -52,6 +58,50 @@ object Settings {
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
             .putBoolean(this.SETTINGS_ACTIVE, status)
+            .apply()
+    }
+
+    fun isLoggedIn(context: Context): Boolean {
+       return getApiKey(context) != null
+    }
+
+    fun getApiKey(context: Context): String?{
+        Log.d(TAG, Settings::getApiKey.name)
+
+        val activeStatus = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getString(this.SETTINGS_API_KEY,null)
+
+        Log.d(TAG, "API_KEY: [$activeStatus]")
+        return activeStatus
+    }
+
+    fun setApiKeyAsync(context: Context, apiKey: String) {
+        Log.d(TAG, Settings::setApiKeyAsync.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(this.SETTINGS_API_KEY, apiKey)
+            .apply()
+    }
+
+    fun getFcmToken(context: Context): String?{
+        Log.d(TAG, Settings::getFcmToken.name)
+
+        val activeStatus = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getString(this.SETTINGS_FCM_TOKEN,null)
+
+        Log.d(TAG, "API_KEY: [$activeStatus]")
+        return activeStatus
+    }
+
+    fun setFcmToken(context: Context, apiKey: String) {
+        Log.d(TAG, Settings::setApiKeyAsync.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(this.SETTINGS_FCM_TOKEN, apiKey)
             .apply()
     }
 

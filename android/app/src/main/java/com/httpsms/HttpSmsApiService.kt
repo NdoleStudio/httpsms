@@ -116,6 +116,32 @@ class HttpSmsApiService {
         Log.i(TAG, "[$event] event sent successfully for message with ID [$messageId]" )
     }
 
+
+    fun updatePhone(phoneNumber: String, fcmToken: String) {
+        val client = OkHttpClient()
+
+        val body = """
+            {
+              "fcm_token": "$fcmToken",
+              "phone_number": "$phoneNumber"
+            }
+        """.trimIndent()
+
+        val request: Request = Request.Builder()
+            .url(baseURL.resolve("/v1/phones").toURL())
+            .put(body.toRequestBody(jsonMediaType))
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            Log.e(TAG, "error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
+            return
+        }
+
+        response.close()
+        Log.i(TAG, "fcm token sent successfully for phone [$phoneNumber]" )
+    }
+
     companion object {
         private val TAG = HttpSmsApiService::class.simpleName
     }
