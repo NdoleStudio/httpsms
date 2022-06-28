@@ -55,7 +55,7 @@ func (h *PhoneHandler) RegisterRoutes(router fiber.Router) {
 // @Param        limit		query  int  	false	"number of phones to return"		minimum(1)	maximum(20)
 // @Success      200 		{object}	responses.PhonesResponse
 // @Failure      400		{object}	responses.BadRequest
-// @Failure 	 403    	{object}	responses.Unauthorized
+// @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phones [get]
@@ -98,7 +98,7 @@ func (h *PhoneHandler) Index(c *fiber.Ctx) error {
 // @Param        payload   	body 		requests.PhoneUpsert  			true 	"Payload of new phone number."
 // @Success      200 		{object}	responses.PhoneResponse
 // @Failure      400		{object}	responses.BadRequest
-// @Failure 	 403    	{object}	responses.Unauthorized
+// @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phones [put]

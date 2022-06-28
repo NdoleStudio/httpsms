@@ -55,7 +55,7 @@
       </template>
       <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
         <v-list-item-group>
-          <v-list-item :to="{ name: 'index' }" exact>
+          <v-list-item :to="{ name: 'settings' }" exact>
             <v-list-item-icon class="pl-2">
               <v-icon dense>mdi-account-cog</v-icon>
             </v-list-item-icon>
@@ -92,7 +92,7 @@ import { Vue, Component } from 'vue-property-decorator'
 export default class MessageThreadHeader extends Vue {
   logout(): void {
     this.$fire.auth.signOut().then(() => {
-      this.$store.dispatch('setUser', null)
+      this.$store.dispatch('setAuthUser', null)
       this.$store.dispatch('addNotification', {
         type: 'info',
         message: 'You have successfully logged out',

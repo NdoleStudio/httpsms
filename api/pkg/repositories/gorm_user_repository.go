@@ -110,7 +110,7 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 		return user, nil
 	}
 
-	apiKey, err := repository.generateAPIKey(255)
+	apiKey, err := repository.generateAPIKey(64)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "cannot generate apiKey")
 	}

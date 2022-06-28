@@ -4,6 +4,7 @@ import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
 import axios from '~/plugins/axios'
 import { Phone } from '~/models/phone'
+import { User } from '~/models/user'
 
 const defaultNotificationTimeout = 3000
 
@@ -21,12 +22,13 @@ export interface NotificationRequest {
   type: NotificationType
 }
 
-export type User = {
+export type AuthUser = {
   id: string
 }
 
 export type State = {
   owner: string
+  authUser: AuthUser | null
   user: User | null
   phones: Array<Phone>
   threads: Array<MessageThread>
@@ -44,8 +46,9 @@ export const state = (): State => ({
   pooling: false,
   threadMessages: [],
   phones: [],
-  owner: '+37259139660',
   user: null,
+  owner: '+37259139660',
+  authUser: null,
   notification: {
     active: false,
     message: '',
@@ -77,6 +80,10 @@ export const getters = {
       githubUrl: process.env.APP_GITHUB_URL as string,
       name: process.env.APP_NAME as string,
     }
+  },
+
+  getAuthUser(state: State): AuthUser | null {
+    return state.authUser
   },
 
   getUser(state: State): User | null {
@@ -136,8 +143,8 @@ export const mutations = {
   setPooling(state: State, payload: boolean) {
     state.pooling = payload
   },
-  setUser(state: State, payload: User | null) {
-    state.user = payload
+  setAuthUser(state: State, payload: AuthUser | null) {
+    state.authUser = payload
   },
   setNotification(state: State, notification: NotificationRequest) {
     state.notification = {
@@ -151,7 +158,6 @@ export const mutations = {
   disableNotification(state: State) {
     state.notification.active = false
   },
-
   setPhones(state: State, payload: Array<Phone>) {
     state.phones = payload
 
@@ -159,6 +165,9 @@ export const mutations = {
     if (!owner && state.phones.length > 0) {
       state.owner = state.phones[0].phone_number
     }
+  },
+  setUser(state: State, payload: User | null) {
+    state.user = payload
   },
 }
 
@@ -184,6 +193,11 @@ export const actions = {
     }
     const response = await axios.get('/v1/phones')
     context.commit('setPhones', response.data.data)
+  },
+
+  async loadUser(context: ActionContext<State, State>) {
+    const response = await axios.get('/v1/users/me')
+    context.commit('setUser', response.data.data)
   },
 
   async getHeartbeat(context: ActionContext<State, State>) {
@@ -246,7 +260,7 @@ export const actions = {
     context.commit('setThreadMessages', response.data.data)
   },
 
-  setUser(context: ActionContext<State, State>, user: User | null) {
-    context.commit('setUser', user)
+  setAuthUser(context: ActionContext<State, State>, user: AuthUser | null) {
+    context.commit('setAuthUser', user)
   },
 }

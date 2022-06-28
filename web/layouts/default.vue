@@ -11,8 +11,9 @@
         <message-thread></message-thread>
       </template>
     </v-navigation-drawer>
-    <v-main>
+    <v-main :class="{ 'has-drawer': hasDrawer && $vuetify.breakpoint.lgAndUp }">
       <Nuxt />
+      <toast></toast>
     </v-main>
   </v-app>
 </template>
@@ -25,7 +26,7 @@ export default class DefaultLayout extends Vue {
   poller: number | null = null
 
   get hasDrawer(): boolean {
-    return !['login', 'index'].includes(this.$route.name ?? '')
+    return !['login', 'index', 'settings'].includes(this.$route.name ?? '')
   }
 
   mounted() {
@@ -80,6 +81,12 @@ html {
   }
   .h-full {
     height: 100%;
+  }
+
+  .has-drawer {
+    .v-snack {
+      padding-left: 400px;
+    }
   }
 }
 </style>

@@ -44,7 +44,7 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 // @Produce      json
 // @Success      200 	{object}		responses.UserResponse
 // @Failure      400	{object}		responses.BadRequest
-// @Failure 	 403    {object}		responses.Unauthorized
+// @Failure 	 401    {object}		responses.Unauthorized
 // @Failure      422	{object}		responses.UnprocessableEntity
 // @Failure      500	{object}		responses.InternalServerError
 // @Router       /users/me [get]

@@ -59,7 +59,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 // @Param        payload   body requests.MessageSend  true  "PostSend message request payload"
 // @Success      200  {object}  responses.MessageResponse
 // @Failure      400  {object}  responses.BadRequest
-// @Failure 	 403    {object}		responses.Unauthorized
+// @Failure 	 401  {object}	responses.Unauthorized
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]
@@ -104,6 +104,7 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // @Param        limit	query  int  	false  							"Number of outstanding messages to fetch"	minimum(1)	maximum(10)
 // @Success      200 	{object}		responses.MessagesResponse
 // @Failure      400	{object}		responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422	{object}		responses.UnprocessableEntity
 // @Failure      500	{object}		responses.InternalServerError
 // @Router       /messages/outstanding [get]
@@ -151,6 +152,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 // @Param        limit		query  int  	false	"number of messages to return"		minimum(1)	maximum(20)
 // @Success      200 		{object}	responses.MessagesResponse
 // @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages [get]
@@ -194,6 +196,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Param        payload   	body 		requests.MessageEvent  			true 	"Payload of the event emitted."
 // @Success      200  		{object} 	responses.MessageResponse
 // @Failure      400  		{object}  	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure 	 404		{object}	responses.NotFound
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError

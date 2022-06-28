@@ -1,6 +1,6 @@
 import { Context } from '@nuxt/types'
 import { User, Auth } from 'firebase/auth'
-import { User as StateUser } from '~/store'
+import { AuthUser as StateUser } from '~/store'
 import { setAuthHeader } from '~/plugins/axios'
 
 export default async function (context: Context) {
@@ -19,7 +19,7 @@ const setUser = (context: Context): Promise<User | null> => {
           }
           setAuthHeader(await user.getIdToken())
         }
-        context.store.dispatch('setUser', stateUser).finally(() => {
+        context.store.dispatch('setAuthUser', stateUser).finally(() => {
           resolve(user)
         })
       },
