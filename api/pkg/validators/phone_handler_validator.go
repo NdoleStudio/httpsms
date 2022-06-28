@@ -46,10 +46,6 @@ func (validator *PhoneHandlerValidator) ValidateIndex(_ context.Context, request
 			"query": []string{
 				"max:100",
 			},
-			"owner": []string{
-				"required",
-				phoneNumberRule,
-			},
 		},
 	})
 	return v.ValidateStruct()

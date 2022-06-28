@@ -10,7 +10,6 @@ import (
 type PhoneIndex struct {
 	request
 	Skip  string `json:"skip" query:"skip"`
-	Owner string `json:"owner" query:"owner"`
 	Query string `json:"query" query:"query"`
 	Limit string `json:"limit" query:"limit"`
 }
@@ -21,7 +20,6 @@ func (input *PhoneIndex) Sanitize() PhoneIndex {
 		input.Limit = "1"
 	}
 	input.Query = strings.TrimSpace(input.Query)
-	input.Owner = input.sanitizeAddress(input.Owner)
 	input.Skip = strings.TrimSpace(input.Skip)
 	if input.Skip == "" {
 		input.Skip = "0"

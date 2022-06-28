@@ -45,7 +45,6 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 			},
 			"from": []string{
 				"required",
-				phoneNumberRule,
 			},
 			"content": []string{
 				"required",
@@ -56,9 +55,6 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 		Messages: map[string][]string{
 			"to": {
 				"regex: The 'to' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
-			},
-			"from": {
-				"regex: The 'from' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})

@@ -60,6 +60,8 @@ func NewContainer(projectID string) (container *Container) {
 
 	container.RegisterUserRoutes()
 
+	container.RegisterPhoneRoutes()
+
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
 
