@@ -8,4 +8,5 @@
     <string name="sign_in_button">Login With API Key</string>
     <string name="text_area_api_key">API Key</string>
     <string name="img_http_sms_logo">HTTP Sms Logo</string>
+    <string name="get_your_api_key">Open\nhttpsms.com/settings\nto get your API key</string>
 </resources>

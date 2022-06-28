@@ -11,7 +11,7 @@
         <v-card max-width="360" class="mx-auto">
           <v-card-text class="px-0">
             <no-ssr>
-              <firebase-auth></firebase-auth>
+              <firebase-auth :to="to"></firebase-auth>
             </no-ssr>
           </v-card-text>
         </v-card>
@@ -29,5 +29,15 @@ import Vue from 'vue'
 export default Vue.extend({
   name: 'LoginIndex',
   middleware: ['guest'],
+  data() {
+    return {
+      to: '/',
+    }
+  },
+  mounted() {
+    if (this.$route.query.to) {
+      this.to = this.$route.query.to as string
+    }
+  },
 })
 </script>

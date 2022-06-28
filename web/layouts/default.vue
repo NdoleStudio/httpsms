@@ -44,7 +44,7 @@ export default class DefaultLayout extends Vue {
       await this.$store.dispatch('setPolling', true)
 
       const promises = []
-      if (this.$store.getters.getOwner) {
+      if (this.$store.getters.getUser && this.$store.getters.getOwner) {
         promises.push(
           this.$store.dispatch('loadThreads'),
           this.$store.dispatch('getHeartbeat'),
@@ -52,7 +52,7 @@ export default class DefaultLayout extends Vue {
         )
       }
 
-      if (this.$store.getters.hasThread) {
+      if (this.$store.getters.hasThread && this.$store.getters.getUser) {
         promises.push(
           this.$store.dispatch(
             'loadThreadMessages',

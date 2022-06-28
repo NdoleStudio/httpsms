@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
+import { Vue, Component, Prop } from 'vue-property-decorator'
 import { ProviderId } from 'firebase/auth'
 import { auth } from 'firebaseui'
 import { NotificationRequest } from '~/store'
@@ -22,6 +22,8 @@ import { NotificationRequest } from '~/store'
 export default class FirebaseAuth extends Vue {
   ui: auth.AuthUI | null = null
   firebaseUIInitialized = false
+
+  @Prop({ required: false, type: String, default: '/' }) to!: string
 
   beforeDestroy(): void {
     if (this.ui) {
@@ -46,7 +48,7 @@ export default class FirebaseAuth extends Vue {
             message: 'Login successfull!',
             type: 'success',
           } as NotificationRequest)
-          this.$router.push({ name: 'threads' })
+          this.$router.push({ path: this.to })
           return false
         },
         uiShown: () => {
