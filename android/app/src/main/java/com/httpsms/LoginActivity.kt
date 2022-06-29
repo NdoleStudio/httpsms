@@ -13,6 +13,7 @@ import timber.log.Timber
 class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        redirectToMain()
         setContentView(R.layout.activity_login)
         registerListeners()
     }
