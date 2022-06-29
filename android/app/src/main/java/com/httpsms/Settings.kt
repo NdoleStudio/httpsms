@@ -1,8 +1,8 @@
 package com.httpsms
 
 import android.content.Context
-import android.util.Log
 import androidx.preference.PreferenceManager
+import timber.log.Timber
 
 object Settings {
     const val DEFAULT_PHONE_NUMBER = "NO_PHONE_NUMBER"
@@ -13,18 +13,18 @@ object Settings {
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
 
     fun getOwner(context: Context): String? {
-        Log.d(TAG, Settings::getOwner.name)
+        Timber.d(Settings::getOwner.name)
 
         val owner = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_OWNER, null)
 
         if (owner == null) {
-            Log.e(TAG, "cannot get owner from preference [${this.SETTINGS_OWNER}]")
+            Timber.e("cannot get owner from preference [${this.SETTINGS_OWNER}]")
             return null
         }
 
-        Log.d(TAG, "owner: [$owner]")
+        Timber.d("owner: [$owner]")
         return owner
     }
 
@@ -33,7 +33,7 @@ object Settings {
     }
 
     fun setOwnerAsync(context: Context, owner: String) {
-        Log.d(TAG, Settings::getOwner.name)
+        Timber.d(Settings::getOwner.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
@@ -42,18 +42,18 @@ object Settings {
     }
 
     fun getActiveStatus(context: Context): Boolean {
-        Log.d(TAG, Settings::getActiveStatus.name)
+        Timber.d(Settings::getActiveStatus.name)
 
         val activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getBoolean(this.SETTINGS_ACTIVE,false)
 
-        Log.d(TAG, "active status: [$activeStatus]")
+        Timber.d("active status: [$activeStatus]")
         return activeStatus
     }
 
     fun setActiveStatusAsync(context: Context, status: Boolean) {
-        Log.d(TAG, Settings::setActiveStatusAsync.name)
+        Timber.d(Settings::setActiveStatusAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
@@ -66,18 +66,18 @@ object Settings {
     }
 
     fun getApiKey(context: Context): String?{
-        Log.d(TAG, Settings::getApiKey.name)
+        Timber.d(Settings::getApiKey.name)
 
         val activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_API_KEY,null)
 
-        Log.d(TAG, "API_KEY: [$activeStatus]")
+        Timber.d("API_KEY: [$activeStatus]")
         return activeStatus
     }
 
     fun setApiKeyAsync(context: Context, apiKey: String) {
-        Log.d(TAG, Settings::setApiKeyAsync.name)
+        Timber.d(Settings::setApiKeyAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
@@ -86,24 +86,22 @@ object Settings {
     }
 
     fun getFcmToken(context: Context): String?{
-        Log.d(TAG, Settings::getFcmToken.name)
+        Timber.d(Settings::getFcmToken.name)
 
         val activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_FCM_TOKEN,null)
 
-        Log.d(TAG, "API_KEY: [$activeStatus]")
+        Timber.d("API_KEY: [$activeStatus]")
         return activeStatus
     }
 
     fun setFcmToken(context: Context, apiKey: String) {
-        Log.d(TAG, Settings::setApiKeyAsync.name)
+        Timber.d(Settings::setApiKeyAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
             .putString(this.SETTINGS_FCM_TOKEN, apiKey)
             .apply()
     }
-
-    private val TAG = Settings::class.simpleName
 }

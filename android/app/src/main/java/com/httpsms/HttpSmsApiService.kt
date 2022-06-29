@@ -5,6 +5,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import timber.log.Timber
 import java.net.URI
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -31,14 +32,14 @@ class HttpSmsApiService {
         if (response.isSuccessful) {
             val payload =  ResponseMessagesOutstanding.fromJson(response.body!!.string())?.data
             if (payload == null) {
-                Log.e(TAG, "cannot decode payload [${response.body}]")
+                Timber.e("cannot decode payload [${response.body}]")
                 return listOf()
             }
             response.close()
             return payload
         }
 
-        Log.e(TAG, "invalid response with code [${response.code}] and payload [${response.body}]")
+        Timber.e("invalid response with code [${response.code}] and payload [${response.body}]")
         response.close()
         return listOf()
     }
@@ -77,13 +78,13 @@ class HttpSmsApiService {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            Log.e(TAG, "error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]}]")
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]}]")
             return
         }
 
         val message = ResponseMessage.fromJson(response.body!!.string())
         response.close()
-        Log.i(TAG, "received message stored successfully for message with ID [${message?.data?.id}]" )
+        Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
     }
 
 
@@ -108,12 +109,12 @@ class HttpSmsApiService {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-           Log.e(TAG, "error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
+           Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             return
         }
 
         response.close()
-        Log.i(TAG, "[$event] event sent successfully for message with ID [$messageId]" )
+        Timber.i( "[$event] event sent successfully for message with ID [$messageId]" )
     }
 
 
@@ -134,15 +135,11 @@ class HttpSmsApiService {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            Log.e(TAG, "error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
             return
         }
 
         response.close()
-        Log.i(TAG, "fcm token sent successfully for phone [$phoneNumber]" )
-    }
-
-    companion object {
-        private val TAG = HttpSmsApiService::class.simpleName
+        Timber.i("fcm token sent successfully for phone [$phoneNumber]" )
     }
 }

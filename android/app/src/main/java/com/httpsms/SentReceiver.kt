@@ -5,15 +5,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.telephony.SmsManager
-import android.util.Log
+import timber.log.Timber
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 internal class SentReceiver : BroadcastReceiver() {
-    companion object {
-        private val TAG = SentReceiver::class.simpleName
-    }
-
     override fun onReceive(context: Context, intent: Intent) {
         when (resultCode) {
             Activity.RESULT_OK -> handleMessageSent(intent.getStringExtra(Constants.KEY_MESSAGE_ID))
@@ -28,9 +24,9 @@ internal class SentReceiver : BroadcastReceiver() {
     private fun handleMessageSent(messageId: String?) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
         Thread {
-            Log.i(TAG, "sent message with ID [${messageId}]")
+            Timber.d("sent message with ID [${messageId}]")
             if (messageId == null) {
-                Log.e(TAG, "cannot handle event because the message ID is null")
+                Timber.e("cannot handle event because the message ID is null")
                 return@Thread
             }
             HttpSmsApiService().sendSentEvent(messageId,timestamp)
@@ -40,9 +36,9 @@ internal class SentReceiver : BroadcastReceiver() {
     private fun handleMessageFailed(messageId: String?, reason: String) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
         Thread {
-            Log.i(TAG, "message with ID [${messageId}] not sent with reason [$reason]")
+            Timber.i("message with ID [${messageId}] not sent with reason [$reason]")
             if (messageId == null) {
-                Log.e(TAG, "cannot handle event because the message ID is null")
+                Timber.e("cannot handle event because the message ID is null")
                 return@Thread
             }
             HttpSmsApiService().sendFailedEvent(messageId, timestamp, reason)

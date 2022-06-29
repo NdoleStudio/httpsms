@@ -4,20 +4,20 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.util.Log
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import timber.log.Timber
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     // [START receive_message]
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.d(TAG, MyFirebaseMessagingService::onMessageReceived.name)
+        Timber.d(MyFirebaseMessagingService::onMessageReceived.name)
         scheduleJob()
     }
     // [END receive_message]
@@ -29,7 +29,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
      * FCM registration token is initially generated so this is where you would retrieve the token.
      */
     override fun onNewToken(token: String) {
-        Log.d(TAG, "Refreshed token: $token")
+        Timber.d("Refreshed token: $token")
 
         // If you want to send messages to this application instance or
         // manage this apps subscriptions on the server side, send the
@@ -50,11 +50,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // [END dispatch_job]
     }
     private fun sendRegistrationToServer(token: String) {
-        Log.d(TAG, "sendRegistrationTokenToServer($token)")
+        Timber.d("sendRegistrationTokenToServer($token)")
         Settings.setApiKeyAsync(this, token)
 
         if (Settings.isLoggedIn(this)) {
-            Log.d(TAG, "updating phone with new fcm token")
+            Timber.d("updating phone with new fcm token")
             HttpSmsApiService().updatePhone(Settings.getPhoneOrDefault(this), token)
         }
     }
@@ -80,22 +80,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         private fun getMessage(owner: String): Message? {
-            Log.d(TAG, "fetching message")
+            Timber.d("fetching message")
             val messages = HttpSmsApiService().getOutstandingMessages(owner)
 
             if (messages.isNotEmpty()) {
-                Log.d(TAG, "fetched message with ID [${messages.first().id}]")
+                Timber.d("fetched message with ID [${messages.first().id}]")
                 return messages.first()
             }
 
-            Log.e(TAG, "cannot get message from API")
+            Timber.e("cannot get message from API")
             return null
         }
 
         private fun sendMessage(message: Message, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
-            Log.d(TAG, "sending SMS for message with ID [${message.id}]")
+            Timber.d("sending SMS for message with ID [${message.id}]")
             SmsManagerService().sendMessage(this.applicationContext, message, sentIntent, deliveredIntent)
-            Log.d(TAG, "sent SMS for message with ID [${message.id}]")
+            Timber.d("sent SMS for message with ID [${message.id}]")
         }
 
 
