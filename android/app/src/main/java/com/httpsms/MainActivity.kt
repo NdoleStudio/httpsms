@@ -11,25 +11,21 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
-import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.material.switchmaterial.SwitchMaterial
+import timber.log.Timber
 import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
-    companion object {
-        private val TAG = MyFirebaseMessagingService::class.simpleName
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Log.d(TAG, "on create")
+        initTimber()
 
         redirectToLogin()
 
@@ -49,8 +45,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        Log.d(TAG, "on activity resume")
+        Timber.d( "on activity resume")
         redirectToLogin()
+    }
+
+    private fun initTimber() {
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
     }
 
     private fun redirectToLogin() {
