@@ -5,7 +5,7 @@ import androidx.preference.PreferenceManager
 import timber.log.Timber
 
 object Settings {
-    const val DEFAULT_PHONE_NUMBER = "NO_PHONE_NUMBER"
+    private const val DEFAULT_PHONE_NUMBER = "66836863" // NOT_FOUND :)
 
     private const val SETTINGS_OWNER = "SETTINGS_OWNER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
@@ -28,7 +28,7 @@ object Settings {
         return owner
     }
 
-    fun getPhoneOrDefault(context: Context): String {
+    fun getOwnerOrDefault(context: Context): String {
         return getOwner(context) ?: return DEFAULT_PHONE_NUMBER
     }
 
@@ -65,15 +65,19 @@ object Settings {
        return getApiKey(context) != null
     }
 
-    fun getApiKey(context: Context): String?{
+    private fun getApiKey(context: Context): String?{
         Timber.d(Settings::getApiKey.name)
 
-        val activeStatus = PreferenceManager
+        val apiKey = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_API_KEY,null)
 
-        Timber.d("API_KEY: [$activeStatus]")
-        return activeStatus
+        Timber.d("API_KEY: [$apiKey]")
+        return apiKey
+    }
+
+    fun getApiKeyOrDefault(context:Context): String {
+        return getApiKey(context) ?: ""
     }
 
     fun setApiKeyAsync(context: Context, apiKey: String) {
@@ -96,7 +100,7 @@ object Settings {
         return activeStatus
     }
 
-    fun setFcmToken(context: Context, apiKey: String) {
+    fun setFcmTokenAsync(context: Context, apiKey: String) {
         Timber.d(Settings::setApiKeyAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)

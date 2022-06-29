@@ -60,7 +60,7 @@ func (repository *gormUserRepository) Update(ctx context.Context, user *entities
 	return nil
 }
 
-func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey string) (*entities.AuthUser, error) {
+func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey string) (entities.AuthUser, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -68,15 +68,15 @@ func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey s
 	err := repository.db.Where("api_key = ?", apiKey).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with api key [%s] does not exist", apiKey)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return entities.AuthUser{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load user with api key [%s]", apiKey)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return entities.AuthUser{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return &entities.AuthUser{
+	return entities.AuthUser{
 		ID:    user.ID,
 		Email: user.Email,
 	}, nil
@@ -86,10 +86,10 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	message := new(entities.User)
-	err := repository.db.First(message, userID).Error
+	user := new(entities.User)
+	err := repository.db.First(user, userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with ID [%s] does not exist", message.ID)
+		msg := fmt.Sprintf("user with ID [%s] does not exist", user.ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 
@@ -98,7 +98,7 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return message, nil
+	return user, nil
 }
 
 func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser entities.AuthUser) (*entities.User, error) {

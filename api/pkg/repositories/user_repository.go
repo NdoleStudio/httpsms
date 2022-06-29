@@ -15,7 +15,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *entities.User) error
 
 	// LoadAuthUser fetches an entities.AuthUser by apiKey
-	LoadAuthUser(ctx context.Context, apiKey string) (*entities.AuthUser, error)
+	LoadAuthUser(ctx context.Context, apiKey string) (entities.AuthUser, error)
 
 	// Load an entities.User by entities.UserID
 	Load(ctx context.Context, userID entities.UserID) (*entities.User, error)

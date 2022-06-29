@@ -12,36 +12,36 @@ import java.time.ZonedDateTime
 internal class SentReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (resultCode) {
-            Activity.RESULT_OK -> handleMessageSent(intent.getStringExtra(Constants.KEY_MESSAGE_ID))
-            SmsManager.RESULT_ERROR_GENERIC_FAILURE -> handleMessageFailed(intent.getStringExtra(Constants.KEY_MESSAGE_ID), "GENERIC_FAILURE")
-            SmsManager.RESULT_ERROR_NO_SERVICE -> handleMessageFailed(intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NO_SERVICE")
-            SmsManager.RESULT_ERROR_NULL_PDU -> handleMessageFailed(intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NULL_PDU")
-            SmsManager.RESULT_ERROR_RADIO_OFF -> handleMessageFailed(intent.getStringExtra(Constants.KEY_MESSAGE_ID), "RADIO_OFF")
-            else -> handleMessageFailed(intent.getStringExtra(Constants.KEY_MESSAGE_ID), "UNKNOWN")
+            Activity.RESULT_OK -> handleMessageSent(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID))
+            SmsManager.RESULT_ERROR_GENERIC_FAILURE -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "GENERIC_FAILURE")
+            SmsManager.RESULT_ERROR_NO_SERVICE -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NO_SERVICE")
+            SmsManager.RESULT_ERROR_NULL_PDU -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NULL_PDU")
+            SmsManager.RESULT_ERROR_RADIO_OFF -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "RADIO_OFF")
+            else -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "UNKNOWN")
         }
     }
 
-    private fun handleMessageSent(messageId: String?) {
+    private fun handleMessageSent(context: Context, messageId: String?) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
+        if (!Receiver.isValid(context, messageId)) {
+            return
+        }
+
         Thread {
             Timber.d("sent message with ID [${messageId}]")
-            if (messageId == null) {
-                Timber.e("cannot handle event because the message ID is null")
-                return@Thread
-            }
-            HttpSmsApiService().sendSentEvent(messageId,timestamp)
+            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).sendSentEvent(messageId!!,timestamp)
         }.start()
     }
 
-    private fun handleMessageFailed(messageId: String?, reason: String) {
+    private fun handleMessageFailed(context: Context, messageId: String?, reason: String) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
+        if (!Receiver.isValid(context, messageId)) {
+            return
+        }
+
         Thread {
             Timber.i("message with ID [${messageId}] not sent with reason [$reason]")
-            if (messageId == null) {
-                Timber.e("cannot handle event because the message ID is null")
-                return@Thread
-            }
-            HttpSmsApiService().sendFailedEvent(messageId, timestamp, reason)
+            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).sendFailedEvent(messageId!!, timestamp, reason)
         }.start()
     }
 }

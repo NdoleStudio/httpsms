@@ -4,7 +4,8 @@
 
 package com.httpsms
 
-import com.beust.klaxon.*
+import com.beust.klaxon.Json
+import com.beust.klaxon.Klaxon
 
 private val klaxon = Klaxon()
 
@@ -14,7 +15,7 @@ data class ResponseMessagesOutstanding (
     val status: String
 ) {
     companion object {
-        public fun fromJson(json: String) = klaxon.parse<ResponseMessagesOutstanding>(json)
+        fun fromJson(json: String) = klaxon.parse<ResponseMessagesOutstanding>(json)
     }
 }
 
@@ -24,7 +25,7 @@ data class ResponseMessage (
     val status: String
 ) {
     companion object {
-        public fun fromJson(json: String) = klaxon.parse<ResponseMessage>(json)
+        fun fromJson(json: String) = klaxon.parse<ResponseMessage>(json)
     }
 }
 

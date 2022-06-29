@@ -51,22 +51,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
     private fun sendRegistrationToServer(token: String) {
         Timber.d("sendRegistrationTokenToServer($token)")
-        Settings.setApiKeyAsync(this, token)
+        Settings.setFcmTokenAsync(this, token)
 
         if (Settings.isLoggedIn(this)) {
             Timber.d("updating phone with new fcm token")
-            HttpSmsApiService().updatePhone(Settings.getPhoneOrDefault(this), token)
+            HttpSmsApiService(Settings.getApiKeyOrDefault(this)).updatePhone(Settings.getOwnerOrDefault(this), token)
         }
-    }
 
-    companion object {
-        private val TAG = MyFirebaseMessagingService::class.simpleName
     }
 
     internal class SendSmsWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
         override fun doWork(): Result {
             val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
-            val message = getMessage(owner) ?: return Result.failure()
+            val message = getMessage(applicationContext, owner) ?: return Result.failure()
 
             registerReceivers()
 
@@ -79,9 +76,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return Result.success()
         }
 
-        private fun getMessage(owner: String): Message? {
+        private fun getMessage(context: Context, owner: String): Message? {
             Timber.d("fetching message")
-            val messages = HttpSmsApiService().getOutstandingMessages(owner)
+            val messages = HttpSmsApiService(Settings.getApiKeyOrDefault(context)).getOutstandingMessages(owner)
 
             if (messages.isNotEmpty()) {
                 Timber.d("fetched message with ID [${messages.first().id}]")

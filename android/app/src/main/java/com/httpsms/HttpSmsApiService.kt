@@ -1,6 +1,5 @@
 package com.httpsms
 
-import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -10,11 +9,12 @@ import java.net.URI
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.logging.Level
-import java.util.logging.Logger.*
+import java.util.logging.Logger.getLogger
 
 
-class HttpSmsApiService {
-    private val baseURL = URI("https://eooi9srbmxw09ng.m.pipedream.net")
+class HttpSmsApiService(private val apiKey: String) {
+    private val apiKeyHeader = "X-API-KEY"
+    private val baseURL = URI("https://api.httpsms.com")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     init {
@@ -26,6 +26,7 @@ class HttpSmsApiService {
 
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/messages/outstanding?owner=${owner}").toURL())
+            .header(apiKeyHeader, apiKey)
             .build()
 
         val response = client.newCall(request).execute()
@@ -74,6 +75,7 @@ class HttpSmsApiService {
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/messages/receive").toURL())
             .post(body.toRequestBody(jsonMediaType))
+            .header(apiKeyHeader, apiKey)
             .build()
 
         val response = client.newCall(request).execute()
@@ -105,6 +107,7 @@ class HttpSmsApiService {
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/messages/${messageId}/events").toURL())
             .post(body.toRequestBody(jsonMediaType))
+            .header(apiKeyHeader, apiKey)
             .build()
 
         val response = client.newCall(request).execute()
@@ -131,6 +134,7 @@ class HttpSmsApiService {
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/phones").toURL())
             .put(body.toRequestBody(jsonMediaType))
+            .header(apiKeyHeader, apiKey)
             .build()
 
         val response = client.newCall(request).execute()
@@ -141,5 +145,26 @@ class HttpSmsApiService {
 
         response.close()
         Timber.i("fcm token sent successfully for phone [$phoneNumber]" )
+    }
+
+
+    fun validateApiKey(): String? {
+        val client = OkHttpClient()
+
+        val request: Request = Request.Builder()
+            .url(baseURL.resolve("/v1/users/me").toURL())
+            .header(apiKeyHeader, apiKey)
+            .get()
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
+            return "Cannot validate the API key. Check if it is correct and try again."
+        }
+
+        response.close()
+        Timber.i("api key [$apiKey] is valid" )
+        return null
     }
 }

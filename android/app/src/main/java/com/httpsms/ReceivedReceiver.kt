@@ -25,17 +25,18 @@ class ReceivedReceiver: BroadcastReceiver()
         }
 
         handleMessageReceived(
+            context,
             smsSender,
-            Settings.getOwner(context) ?: Settings.DEFAULT_PHONE_NUMBER,
+            Settings.getOwnerOrDefault(context),
             smsBody
         )
     }
 
-    private fun handleMessageReceived(from: String, to : String, content: String) {
+    private fun handleMessageReceived(context: Context, from: String, to : String, content: String) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
         Thread {
             Timber.i("forwarding received message from [${from}]")
-            HttpSmsApiService().receive(from, to, content, timestamp)
+            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).receive(from, to, content, timestamp)
         }.start()
     }
 }
