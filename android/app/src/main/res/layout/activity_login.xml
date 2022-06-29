@@ -92,7 +92,7 @@
             android:indeterminate="true"
             android:layout_marginTop="4dp"
             app:indicatorColor="@color/pink_500"
-            app:layout_constraintTop_toBottomOf="@+id/button"
+            app:layout_constraintTop_toBottomOf="@+id/loginButton"
             tools:layout_editor_absoluteX="16dp" />
     </LinearLayout>
 

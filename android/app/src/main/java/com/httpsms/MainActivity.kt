@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import timber.log.Timber
 import java.util.*
@@ -41,6 +42,8 @@ class MainActivity : AppCompatActivity() {
 
         setOwner(getPhoneNumber(this))
         setActiveStatus(this)
+        registerListeners()
+        refreshToken()
     }
 
     override fun onResume() {
@@ -49,10 +52,24 @@ class MainActivity : AppCompatActivity() {
         redirectToLogin()
     }
 
+    private fun refreshToken() {
+
+    }
+
     private fun initTimber() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+    }
+
+    private fun registerListeners() {
+        findViewById<MaterialButton>(R.id.mainLogoutButton).setOnClickListener { onLogoutClick() }
+    }
+
+    private fun onLogoutClick() {
+        Timber.d("logout button clicked")
+        Settings.setApiKeyAsync(this, null)
+        redirectToLogin()
     }
 
     private fun redirectToLogin() {

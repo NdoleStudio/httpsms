@@ -80,7 +80,7 @@ object Settings {
         return getApiKey(context) ?: ""
     }
 
-    fun setApiKeyAsync(context: Context, apiKey: String) {
+    fun setApiKeyAsync(context: Context, apiKey: String?) {
         Timber.d(Settings::setApiKeyAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
