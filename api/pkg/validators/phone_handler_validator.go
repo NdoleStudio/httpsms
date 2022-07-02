@@ -68,7 +68,7 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 		},
 		Messages: map[string][]string{
 			"phone_number": {
-				"regex: The phone_number field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
+				"regex:The phone_number field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})
