@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         setOwner(getPhoneNumber(this))
         setActiveStatus(this)
         registerListeners()
-        refreshToken()
+        refreshToken(this)
     }
 
     override fun onResume() {
@@ -52,8 +52,40 @@ class MainActivity : AppCompatActivity() {
         redirectToLogin()
     }
 
-    private fun refreshToken() {
-        Timber.e("FCM TOKEN: ${Settings.getFcmToken(this)}")
+    private fun refreshToken(context: Context) {
+        if(!Settings.hasOwner(context)) {
+            Timber.w("cannot refresh token because owner does not exist")
+            return
+        }
+
+        if (Settings.getFcmToken(context) == null) {
+            Timber.w("cannot refresh token because token does not exist")
+            return
+        }
+
+        Timber.i("FCM TOKEN: ${Settings.getFcmToken(context)}")
+
+        val updateTimestamp = Settings.getFcmTokenLastUpdateTimestamp(context)
+        Timber.e("FCM_TOKEN_UPDATE_TIMESTAMP: $updateTimestamp")
+
+        val interval = 24 * 60 * 60 * 1000 // 1 day
+        val currentTimeStamp = System.currentTimeMillis()
+
+        if (currentTimeStamp - updateTimestamp < interval) {
+            Timber.i("update interval [${currentTimeStamp - updateTimestamp}] < 24 hours [$interval]")
+            return
+        }
+
+        Thread {
+            val updated = HttpSmsApiService(Settings.getApiKeyOrDefault(context))
+                .updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "")
+            if (updated) {
+                Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
+                Timber.i("fcm token uploaded successfully")
+                return@Thread
+            }
+            Timber.e("could not update fcm token")
+        }.start()
     }
 
     private fun initTimber() {

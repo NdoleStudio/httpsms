@@ -14,6 +14,11 @@ object Receiver {
             Timber.w("cannot handle message with id [$messageId] because the user is not logged in")
             return false
         }
+
+        if (!Settings.getActiveStatus(context)) {
+            Timber.w("cannot handle message with id [$messageId] because the user is not active")
+            return false
+        }
         return true
     }
 }

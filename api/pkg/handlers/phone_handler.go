@@ -40,7 +40,7 @@ func NewPhoneHandler(
 // RegisterRoutes registers the routes for the PhoneHandler
 func (h *PhoneHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/phones", h.Index)
-	router.Put("/phones/:phoneID", h.Upsert)
+	router.Put("/phones", h.Upsert)
 }
 
 // Index returns the phones of a user

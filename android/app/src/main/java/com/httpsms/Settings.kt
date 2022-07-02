@@ -11,6 +11,7 @@ object Settings {
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
+    private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
 
     fun getOwner(context: Context): String? {
         Timber.d(Settings::getOwner.name)
@@ -28,12 +29,38 @@ object Settings {
         return owner
     }
 
+    fun hasOwner(context: Context): Boolean {
+        return getOwner(context) != null
+    }
+
     fun getOwnerOrDefault(context: Context): String {
         return getOwner(context) ?: return DEFAULT_PHONE_NUMBER
     }
 
+    fun getFcmTokenLastUpdateTimestamp(context: Context): Long {
+        Timber.d(Settings::getFcmTokenLastUpdateTimestamp.name)
+
+        val timestamp = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getLong(this.SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP,0)
+
+        Timber.d("active status: [$timestamp]")
+        return timestamp
+    }
+
+
+    fun setFcmTokenLastUpdateTimestampAsync(context: Context, timestamp: Long) {
+        Timber.d(Settings::setFcmTokenLastUpdateTimestampAsync.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putLong(this.SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP, timestamp)
+            .apply()
+    }
+
+
     fun setOwnerAsync(context: Context, owner: String) {
-        Timber.d(Settings::getOwner.name)
+        Timber.d(Settings::setOwnerAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()

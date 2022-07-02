@@ -126,7 +126,7 @@ class HttpSmsApiService(private val apiKey: String) {
     }
 
 
-    fun updatePhone(phoneNumber: String, fcmToken: String) {
+    fun updatePhone(phoneNumber: String, fcmToken: String): Boolean {
         val client = OkHttpClient()
 
         val body = """
@@ -145,11 +145,12 @@ class HttpSmsApiService(private val apiKey: String) {
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
-            return
+            return false
         }
 
         response.close()
         Timber.i("fcm token sent successfully for phone [$phoneNumber]" )
+        return  true
     }
 
 

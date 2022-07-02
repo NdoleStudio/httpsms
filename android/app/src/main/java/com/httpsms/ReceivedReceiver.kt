@@ -40,6 +40,11 @@ class ReceivedReceiver: BroadcastReceiver()
             return
         }
 
+        if (!Settings.getActiveStatus(context)) {
+            Timber.w("user is not active")
+            return
+        }
+
         Thread {
             Timber.i("forwarding received message from [${from}]")
             HttpSmsApiService(Settings.getApiKeyOrDefault(context)).receive(from, to, content, timestamp)

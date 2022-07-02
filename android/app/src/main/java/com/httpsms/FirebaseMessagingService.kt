@@ -67,6 +67,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 return Result.failure()
             }
 
+            if (!Settings.getActiveStatus(applicationContext)) {
+                Timber.w("user is not active, stopping processing")
+                return Result.failure()
+            }
+
             val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
             val message = getMessage(applicationContext, owner) ?: return Result.failure()
 
