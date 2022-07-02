@@ -123,7 +123,7 @@ object Settings {
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_FCM_TOKEN,null)
 
-        Timber.d("API_KEY: [$activeStatus]")
+        Timber.d("FCM_TOKEN: [$activeStatus]")
         return activeStatus
     }
 

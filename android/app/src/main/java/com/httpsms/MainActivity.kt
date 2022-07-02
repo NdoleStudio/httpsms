@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         Timber.d( "on activity resume")
         redirectToLogin()
+        refreshToken(this)
     }
 
     private fun refreshToken(context: Context) {
@@ -68,10 +69,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        Timber.i("FCM TOKEN: ${Settings.getFcmToken(context)}")
-
         val updateTimestamp = Settings.getFcmTokenLastUpdateTimestamp(context)
-        Timber.e("FCM_TOKEN_UPDATE_TIMESTAMP: $updateTimestamp")
+        Timber.d("FCM_TOKEN_UPDATE_TIMESTAMP: $updateTimestamp")
 
         val interval = 24 * 60 * 60 * 1000 // 1 day
         val currentTimeStamp = System.currentTimeMillis()
