@@ -34,11 +34,7 @@ class MainActivity : AppCompatActivity() {
 
         createChannel()
 
-        requestPermission(this, Manifest.permission.SEND_SMS)
-        requestPermission(this, Manifest.permission.RECEIVE_SMS)
-        requestPermission(this, READ_PHONE_NUMBERS)
-        requestPermission(this, Manifest.permission.READ_PHONE_STATE)
-        requestPermission(this, Manifest.permission.RECEIVE_SMS)
+        requestPermissions(this)
 
         setOwner(getPhoneNumber(this))
         setActiveStatus(this)
@@ -121,8 +117,35 @@ class MainActivity : AppCompatActivity() {
         val switch = findViewById<SwitchMaterial>(R.id.cardSwitch)
         switch.isChecked = Settings.getActiveStatus(context)
         switch.setOnCheckedChangeListener{
-            _, isChecked -> Settings.setActiveStatusAsync(context, isChecked)
+            _, isChecked ->
+            run {
+                if (isChecked && !hasAllPermissions(context)) {
+                    Toast.makeText(context, "PERMISSIONS_NOT_GRANTED", Toast.LENGTH_SHORT).show()
+                } else {
+                    Settings.setActiveStatusAsync(context, isChecked)
+                }
+            }
         }
+    }
+
+    private fun hasAllPermissions(context: Context): Boolean {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.SEND_SMS
+            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                context,
+                READ_PHONE_NUMBERS
+            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECEIVE_SMS
+            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_PHONE_STATE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            return true
+        }
+        return false
     }
 
     private fun setOwner(phoneNumber: String) {
@@ -157,41 +180,35 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.READ_PHONE_STATE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            return "NO_PHONE_NUMBER"
+            return Settings.getOwnerOrDefault(this)
         }
 
         if (telephonyManager.line1Number != null) {
             Settings.setOwnerAsync(context, telephonyManager.line1Number)
         }
 
-        return telephonyManager.line1Number ?: "NO_PHONE_NUMBER"
+        return telephonyManager.line1Number ?: Settings.getOwnerOrDefault(this)
     }
 
-    private fun requestPermission(context: Context, permission: String) {
-        // Register the permissions callback, which handles the user's response to the
-        // system permissions dialog. Save the return value, an instance of
-        // ActivityResultLauncher. You can use either a val, as shown in this snippet,
-        // or a late init var in your onAttach() or onCreate() method.
-        val requestPermissionLauncher =
-            registerForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { isGranted: Boolean ->
-                if (isGranted) {
-                    val toast = Toast.makeText(context, "Granted", Toast.LENGTH_SHORT)
-                    toast.show()
-                } else {
-                    val toast = Toast.makeText(context, "NOT Granted", Toast.LENGTH_LONG)
-                    toast.show()
-                }
-            }
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                permission
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // You can directly ask for the permission.
-            // The registered ActivityResultCallback gets the result of this request.
-            requestPermissionLauncher.launch(permission)
+    private fun requestPermissions(context:Context) {
+        if(!Settings.isLoggedIn(context)) {
+            return
         }
+
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            permissions.entries.forEach {
+                Timber.d("${it.key} = ${it.value}")
+                setOwner(getPhoneNumber(context))
+            }
+        }
+
+        requestPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.SEND_SMS,
+                Manifest.permission.RECEIVE_SMS,
+                READ_PHONE_NUMBERS,
+                Manifest.permission.READ_PHONE_STATE
+            )
+        )
     }
 }

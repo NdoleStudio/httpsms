@@ -25,7 +25,7 @@ object Settings {
             return null
         }
 
-        Timber.d("owner: [$owner]")
+        Timber.d("SETTINGS_OWNER: [$owner]")
         return owner
     }
 
@@ -44,7 +44,7 @@ object Settings {
             .getDefaultSharedPreferences(context)
             .getLong(this.SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP,0)
 
-        Timber.d("active status: [$timestamp]")
+        Timber.d("SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP: [$timestamp]")
         return timestamp
     }
 
@@ -75,7 +75,7 @@ object Settings {
             .getDefaultSharedPreferences(context)
             .getBoolean(this.SETTINGS_ACTIVE,false)
 
-        Timber.d("active status: [$activeStatus]")
+        Timber.d("SETTINGS_ACTIVE: [$activeStatus]")
         return activeStatus
     }
 
@@ -99,7 +99,7 @@ object Settings {
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_API_KEY,null)
 
-        Timber.d("API_KEY: [$apiKey]")
+        Timber.d("SETTINGS_API_KEY: [$apiKey]")
         return apiKey
     }
 
@@ -123,7 +123,7 @@ object Settings {
             .getDefaultSharedPreferences(context)
             .getString(this.SETTINGS_FCM_TOKEN,null)
 
-        Timber.d("FCM_TOKEN: [$activeStatus]")
+        Timber.d("SETTINGS_FCM_TOKEN: [$activeStatus]")
         return activeStatus
     }
 
