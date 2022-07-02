@@ -6,14 +6,14 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    compileSdk 31
 
     buildToolsVersion "32.0.0"
 
     defaultConfig {
         applicationId "com.httpsms"
         minSdk 30
-        targetSdk 32
+        targetSdk 30
         versionCode 1
         versionName "1.0"
 

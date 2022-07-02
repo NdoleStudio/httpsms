@@ -37,12 +37,12 @@ data class Message (
     val createdAt: String,
 
     @Json(name = "failure_reason")
-    val failureReason: String,
+    val failureReason: String?,
 
     val id: String,
 
     @Json(name = "last_attempted_at")
-    val lastAttemptedAt: String,
+    val lastAttemptedAt: String?,
 
     @Json(name = "order_timestamp")
     val orderTimestamp: String,
@@ -50,16 +50,16 @@ data class Message (
     val owner: String,
 
     @Json(name = "received_at")
-    val receivedAt: String,
+    val receivedAt: String?,
 
     @Json(name = "request_received_at")
     val requestReceivedAt: String,
 
     @Json(name = "send_time")
-    val sendTime: Long,
+    val sendTime: Long?,
 
     @Json(name = "sent_at")
-    val sentAt: String,
+    val sentAt: String?,
 
     val status: String,
     val type: String,

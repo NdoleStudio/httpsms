@@ -34,6 +34,12 @@ class ReceivedReceiver: BroadcastReceiver()
 
     private fun handleMessageReceived(context: Context, from: String, to : String, content: String) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
+
+        if (!Settings.isLoggedIn(context)) {
+            Timber.w("user is not logged in")
+            return
+        }
+
         Thread {
             Timber.i("forwarding received message from [${from}]")
             HttpSmsApiService(Settings.getApiKeyOrDefault(context)).receive(from, to, content, timestamp)

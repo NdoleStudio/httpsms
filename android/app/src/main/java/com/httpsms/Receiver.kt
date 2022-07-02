@@ -10,7 +10,7 @@ object Receiver {
             return false
         }
 
-        if (Settings.isLoggedIn(context)) {
+        if (!Settings.isLoggedIn(context)) {
             Timber.w("cannot handle message with id [$messageId] because the user is not logged in")
             return false
         }

@@ -62,6 +62,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     internal class SendSmsWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
         override fun doWork(): Result {
+            if (!Settings.isLoggedIn(applicationContext)) {
+                Timber.w("user is not logged in, stopping processing")
+                return Result.failure()
+            }
+
             val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
             val message = getMessage(applicationContext, owner) ?: return Result.failure()
 

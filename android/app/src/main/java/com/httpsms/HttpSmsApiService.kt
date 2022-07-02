@@ -96,10 +96,15 @@ class HttpSmsApiService(private val apiKey: String) {
         val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
         val timestampString = formatter.format(timestamp).replace("+", "Z")
 
+        var reasonString = "null"
+        if (reason != null) {
+            reasonString = "\"$reason\""
+        }
+
         val body = """
             {
               "event_name": "$event",
-              "reason": "$reason"
+              "reason": $reasonString,
               "timestamp": "$timestampString"
             }
         """.trimIndent()

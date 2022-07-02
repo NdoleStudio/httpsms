@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshToken() {
-
+        Timber.e("FCM TOKEN: ${Settings.getFcmToken(this)}")
     }
 
     private fun initTimber() {
