@@ -44,6 +44,7 @@ class LoginActivity : AppCompatActivity() {
                     apiKeyLayout.error = authResult
                     return@run
                 }
+                Timber.d("login successfully redirecting to main view")
                 Settings.setApiKeyAsync(this, apiKey.text.toString())
                 redirectToMain()
             }

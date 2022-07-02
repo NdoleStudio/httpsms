@@ -53,6 +53,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshToken(context: Context) {
+        if(!Settings.isLoggedIn(context)) {
+            Timber.w("cannot refresh token because owner is not logged in")
+            return
+        }
+
         if(!Settings.hasOwner(context)) {
             Timber.w("cannot refresh token because owner does not exist")
             return
@@ -104,12 +109,13 @@ class MainActivity : AppCompatActivity() {
         redirectToLogin()
     }
 
-    private fun redirectToLogin() {
+    private fun redirectToLogin():Boolean {
         if (Settings.isLoggedIn(this)) {
-            return
+            return false
         }
         val switchActivityIntent = Intent(this, LoginActivity::class.java)
         startActivity(switchActivityIntent)
+        return true
     }
 
     private fun setActiveStatus(context: Context) {

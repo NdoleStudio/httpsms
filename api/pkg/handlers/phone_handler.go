@@ -109,7 +109,7 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.PhoneUpsert
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.BodyParser(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
