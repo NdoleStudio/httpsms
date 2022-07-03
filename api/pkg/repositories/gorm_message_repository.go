@@ -116,8 +116,9 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, own
 					tx.Model(&entities.Message{}).
 						Where("owner = ?", owner).
 						Where(
-							repository.db.Where("status = ?", entities.MessageStatusPending).
-								Or("status = ? AND age(now(), last_attempted_at) >  ?", entities.MessageStatusSending, "15 minutes"),
+							repository.db.
+								Where("status = ?", entities.MessageStatusPending).
+								Where("age(now(), created_at) < ?", "5 minutes"),
 						).
 						Order("request_received_at ASC").
 						Select("id").

@@ -101,21 +101,32 @@
                   <v-tooltip bottom>
                     <template #activator="{ on, attrs }">
                       <div v-bind="attrs" v-on="on">
+                        <v-icon
+                          v-if="isExpired(message)"
+                          color="primary"
+                          class="mt-n6"
+                          >mdi-alert</v-icon
+                        >
                         <v-progress-circular
-                          v-if="isPending(message)"
+                          v-else-if="isPending(message)"
                           indeterminate
                           :size="14"
                           :width="1"
                           class="mt-n2"
-                          color="primary"
+                          :color="
+                            message.status === 'pending' ? 'primary' : 'warning'
+                          "
                         ></v-progress-circular>
                         <v-icon
-                          v-if="message.status === 'delivered'"
+                          v-else-if="message.status === 'delivered'"
                           color="primary"
                           class="mt-n6"
                           >mdi-check-all</v-icon
                         >
-                        <v-icon v-if="message.status === 'sent'" class="mt-n6">
+                        <v-icon
+                          v-else-if="message.status === 'sent'"
+                          class="mt-n6"
+                        >
                           mdi-check
                         </v-icon>
                       </div>
@@ -217,6 +228,13 @@ export default Vue.extend({
   methods: {
     isPending(message: Message): boolean {
       return ['sending', 'pending'].includes(message.status)
+    },
+
+    isExpired(message: Message): boolean {
+      return (
+        new Date().getTime() - new Date(message.created_at).getTime() >
+        5 * 60 * 1000
+      ) // 5 minutes
     },
 
     isMT(message: Message): boolean {
