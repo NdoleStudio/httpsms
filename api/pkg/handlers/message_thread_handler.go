@@ -117,6 +117,7 @@ func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
+	request.MessageThreadID = c.Params("messageThreadID")
 	if errors := h.validator.ValidateUpdate(ctx, request); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating message thread [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
