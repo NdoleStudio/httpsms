@@ -539,7 +539,7 @@ func (service *MessageService) HandleMessageFailed(ctx context.Context, params H
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSent() || message.IsSending() {
+	if !message.IsSent() && !message.IsSending() {
 		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s,%s]", message.Status, entities.MessageStatusSending, entities.MessageStatusSent)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
