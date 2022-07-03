@@ -2,10 +2,10 @@ package repositories
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
