@@ -1,37 +1,77 @@
 <template>
-  <v-list two-line class="px-0 py-0" subheader>
+  <div>
     <v-progress-linear
       v-if="$store.getters.getLoadingThreads"
       color="primary"
       indeterminate
     ></v-progress-linear>
-    <v-list-item-group>
-      <template v-for="thread in threads">
-        <v-list-item
-          :key="thread.id"
-          :to="'/threads/' + thread.id"
-          class="py-1"
-        >
-          <v-list-item-avatar :color="thread.color">
-            <v-icon dark> mdi-account </v-icon>
-          </v-list-item-avatar>
-          <v-list-item-content>
-            <v-list-item-title>
-              {{ thread.contact | phoneNumber }}
-            </v-list-item-title>
-            <v-list-item-subtitle>
-              {{ thread.last_message_content }}
-            </v-list-item-subtitle>
-          </v-list-item-content>
-          <v-list-item-action>
-            <v-list-item-action-text>
-              {{ threadDate(thread.order_timestamp) }}
-            </v-list-item-action-text>
-          </v-list-item-action>
-        </v-list-item>
-      </template>
-    </v-list-item-group>
-  </v-list>
+    <v-sheet
+      v-if="!$store.getters.getLoadingThreads && threads.length === 0"
+      class="text-center mt-8 mx-3"
+      :color="$vuetify.breakpoint.mdAndDown ? '#121212' : '#363636'"
+    >
+      <div v-if="$vuetify.breakpoint.mdAndDown">
+        <v-img
+          class="mx-auto mb-4"
+          max-width="80%"
+          contain
+          :src="require('assets/img/person-texting.svg')"
+        ></v-img>
+        <p v-if="$store.getters.getOwner" class="text--secondary">
+          Start sending messages
+        </p>
+      </div>
+      <v-btn
+        v-if="$store.getters.getOwner"
+        class="primary"
+        :to="{ name: 'messages' }"
+      >
+        <v-icon>mdi-plus</v-icon>
+        New Message
+      </v-btn>
+    </v-sheet>
+    <div v-if="$store.getters.getPhones.length === 0" class="px-4 text-center">
+      <p>
+        Install the mobile app on your android phone to start sending messages
+      </p>
+      <v-btn class="primary" :href="$store.getters.getAppData.appDownloadUrl">
+        <v-icon>mdi-download</v-icon>
+        Install App
+      </v-btn>
+    </div>
+    <v-list two-line class="px-0 py-0" subheader>
+      <v-list-item-group>
+        <template v-for="thread in threads">
+          <v-list-item
+            :key="thread.id"
+            :to="'/threads/' + thread.id"
+            class="py-1"
+            :class="{
+              'px-6': $vuetify.breakpoint.mdAndDown,
+              'px-3': $vuetify.breakpoint.lgAndUp,
+            }"
+          >
+            <v-list-item-avatar :color="thread.color">
+              <v-icon dark> mdi-account </v-icon>
+            </v-list-item-avatar>
+            <v-list-item-content>
+              <v-list-item-title>
+                {{ thread.contact | phoneNumber }}
+              </v-list-item-title>
+              <v-list-item-subtitle>
+                {{ thread.last_message_content }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <v-list-item-action>
+              <v-list-item-action-text>
+                {{ threadDate(thread.order_timestamp) }}
+              </v-list-item-action-text>
+            </v-list-item-action>
+          </v-list-item>
+        </template>
+      </v-list-item-group>
+    </v-list>
+  </div>
 </template>
 
 <script lang="ts">

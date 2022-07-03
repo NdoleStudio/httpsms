@@ -1,5 +1,5 @@
 import firebase from 'firebase/compat'
-import Vuetify from 'vuetify/lib'
+import { Framework } from 'vuetify'
 
 interface Firebase {
   auth: firebase.auth.Auth
@@ -14,7 +14,7 @@ export interface SelectItem {
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $vuetify: typeof Vuetify
+    $vuetify: Framework
     $fire: Firebase
   }
 }

@@ -64,6 +64,7 @@ export const state = (): State => ({
 export type AppData = {
   url: string
   name: string
+  appDownloadUrl: string
   documentationUrl: string
   githubUrl: string
 }
@@ -80,6 +81,7 @@ export const getters = {
     }
     return {
       url,
+      appDownloadUrl: process.env.APP_DOWNLOAD_URL as string,
       documentationUrl: process.env.APP_DOCUMENTATION_URL as string,
       githubUrl: process.env.APP_GITHUB_URL as string,
       name: process.env.APP_NAME as string,
@@ -211,6 +213,11 @@ export type SendMessageRequest = {
 
 export const actions = {
   async loadThreads(context: ActionContext<State, State>) {
+    if (context.getters.getOwner === null) {
+      await context.commit('setThreads', [])
+      return
+    }
+
     const response = await axios.get('/v1/message-threads', {
       params: {
         owner: context.getters.getOwner,

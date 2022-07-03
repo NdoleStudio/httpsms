@@ -2,14 +2,17 @@
   <v-sheet
     class="pa-4 d-flex"
     :elevation="$vuetify.breakpoint.lgAndUp ? 0 : 2"
-    :color="$vuetify.breakpoint.lgAndUp ? 'grey darken-4' : 'primary'"
+    :color="$vuetify.breakpoint.lgAndUp ? 'grey darken-4' : 'black'"
   >
-    <div>
+    <div :class="{ 'px-2': $vuetify.breakpoint.mdAndDown }">
       <v-toolbar-title>
-        <div class="d-flex" style="width: 225px">
+        <div class="d-flex pt-2" style="width: 225px">
           <v-select
             outlined
             dense
+            :disabled="owners.length === 0"
+            placeholder="Phone Numbers"
+            :class="{ 'mb-n6': !$store.getters.getOwner }"
             :items="owners"
             :value="$store.getters.getOwner"
             @change="onOwnerChanged"
@@ -27,7 +30,7 @@
           </div>
         </div>
       </v-toolbar-title>
-      <div class="d-flex mt-n4">
+      <div v-if="$store.getters.getOwner" class="d-flex mt-n4">
         <p class="text--secondary mb-n1">
           {{ $store.getters.getOwner | phoneCountry }}
         </p>
@@ -58,12 +61,28 @@
     <v-spacer></v-spacer>
     <v-menu offset-y>
       <template #activator="{ on }">
-        <v-btn icon text v-on="on">
+        <v-btn icon text class="mt-2" v-on="on">
           <v-icon>mdi-dots-vertical</v-icon>
         </v-btn>
       </template>
       <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
         <v-list-item-group>
+          <v-list-item
+            v-if="$store.getters.getOwner"
+            :to="{ name: 'messages' }"
+            exact
+          >
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>mdi-plus</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  New Message
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
           <v-list-item :to="{ name: 'settings' }" exact>
             <v-list-item-icon class="pl-2">
               <v-icon dense>mdi-account-cog</v-icon>
@@ -72,6 +91,22 @@
               <v-list-item-title class="pr-16 py-1">
                 <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
                   Settings
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-list-item
+            v-if="$store.getters.getOwner"
+            :href="$store.getters.getAppData.appDownloadUrl"
+            exact
+          >
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>mdi-download</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  Install App
                 </span>
               </v-list-item-title>
             </v-list-item-content>
@@ -111,7 +146,6 @@ export default class MessageThreadHeader extends Vue {
   }
 
   async onOwnerChanged(owner: string) {
-    console.log('owner changed')
     await this.$store.dispatch('setOwner', owner)
     if (this.$route.name !== 'threads') {
       await this.$store.dispatch('setThreadId', null)
