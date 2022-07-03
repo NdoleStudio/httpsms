@@ -19,6 +19,19 @@ type gormPhoneRepository struct {
 	db     *gorm.DB
 }
 
+// NewGormPhoneRepository creates the GORM version of the PhoneRepository
+func NewGormPhoneRepository(
+	logger telemetry.Logger,
+	tracer telemetry.Tracer,
+	db *gorm.DB,
+) PhoneRepository {
+	return &gormPhoneRepository{
+		logger: logger.WithService(fmt.Sprintf("%T", &gormPhoneRepository{})),
+		tracer: tracer,
+		db:     db,
+	}
+}
+
 func (repository *gormPhoneRepository) Upsert(ctx context.Context, phone *entities.Phone) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -56,6 +69,26 @@ func (repository *gormPhoneRepository) Upsert(ctx context.Context, phone *entiti
 	return nil
 }
 
+// Load a phone based on entities.UserID and phoneNumber
+func (repository *gormPhoneRepository) Load(ctx context.Context, userID entities.UserID, phoneNumber string) (*entities.Phone, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	phone := new(entities.Phone)
+	err := repository.db.Where("user_id = ?", userID).Where("phone_number = ?", phoneNumber).First(phone).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("phone with userID [%s] and phoneNumber [%s] does not exist", userID, phoneNumber)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot load phone phone with userID [%s] and phoneNumber [%s]", userID, phoneNumber)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return phone, nil
+}
+
 func (repository *gormPhoneRepository) Index(ctx context.Context, userID entities.UserID, params IndexParams) (*[]entities.Phone, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -73,17 +106,4 @@ func (repository *gormPhoneRepository) Index(ctx context.Context, userID entitie
 	}
 
 	return phones, nil
-}
-
-// NewGormPhoneRepository creates the GORM version of the PhoneRepository
-func NewGormPhoneRepository(
-	logger telemetry.Logger,
-	tracer telemetry.Tracer,
-	db *gorm.DB,
-) PhoneRepository {
-	return &gormPhoneRepository{
-		logger: logger.WithService(fmt.Sprintf("%T", &gormPhoneRepository{})),
-		tracer: tracer,
-		db:     db,
-	}
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/thedevsaddam/govalidator"
@@ -30,7 +30,7 @@ func NewHeartbeatHandlerValidator(
 }
 
 // ValidateIndex validates the requests.HeartbeatIndex request
-func (validator *HeartbeatHandlerValidator) ValidateIndex(_ context.Context, request services.HeartbeatIndex) url.Values {
+func (validator *HeartbeatHandlerValidator) ValidateIndex(_ context.Context, request requests.HeartbeatIndex) url.Values {
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
