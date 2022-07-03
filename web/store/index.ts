@@ -30,6 +30,7 @@ export type State = {
   owner: string | null
   loadingThreads: boolean
   loadingMessages: boolean
+  archivedThreads: boolean
   authUser: AuthUser | null
   user: User | null
   phones: Array<Phone>
@@ -46,6 +47,7 @@ export const state = (): State => ({
   threadId: null,
   heartbeat: null,
   loadingThreads: true,
+  archivedThreads: false,
   loadingMessages: true,
   pooling: false,
   threadMessages: [],

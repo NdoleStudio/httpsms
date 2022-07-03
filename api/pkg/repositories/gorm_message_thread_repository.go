@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"gorm.io/gorm/clause"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
@@ -59,7 +61,7 @@ func (repository *gormMessageThreadRepository) Update(ctx context.Context, threa
 	return nil
 }
 
-// Load a thread between 2 users
+// LoadByOwnerContact a thread between 2 users
 func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Context, owner string, contact string) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -80,12 +82,33 @@ func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Co
 	return thread, nil
 }
 
-// Index message threads for an owner
-func (repository *gormMessageThreadRepository) Index(ctx context.Context, owner string, params IndexParams) (*[]entities.MessageThread, error) {
+// Load an entities.MessageThread by ID
+func (repository *gormMessageThreadRepository) Load(ctx context.Context, ID uuid.UUID) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("owner = ?", owner)
+	thread := new(entities.MessageThread)
+
+	err := repository.db.First(thread, ID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("thread with id [%s] not found", ID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("thread with id [%s]", ID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return thread, nil
+}
+
+// Index message threads for an owner
+func (repository *gormMessageThreadRepository) Index(ctx context.Context, owner string, isArchived bool, params IndexParams) (*[]entities.MessageThread, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	query := repository.db.Where("owner = ?", owner).Where("is_archived = ?", isArchived)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where(
