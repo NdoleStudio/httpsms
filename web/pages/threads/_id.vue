@@ -20,7 +20,12 @@
           <span>Message Options</span>
         </v-tooltip>
       </v-app-bar>
-      <v-container>
+      <v-progress-linear
+        v-if="$store.getters.getLoadingMessages"
+        color="primary"
+        indeterminate
+      ></v-progress-linear>
+      <v-container v-if="$store.getters.hasThread">
         <div ref="messageBody" class="messages-body no-scrollbar">
           <v-row v-for="message in messages" :key="message.id">
             <v-col
@@ -158,6 +163,12 @@ export default Vue.extend({
   async mounted() {
     await this.$store.dispatch('loadPhones')
     await this.$store.dispatch('loadThreads')
+
+    if (!this.$store.getters.hasThreadId(this.$route.params.id)) {
+      await this.$router.push({ name: 'threads' })
+      return
+    }
+
     await this.$store.dispatch('loadThreadMessages', this.$route.params.id)
     this.scrollToElement()
   },

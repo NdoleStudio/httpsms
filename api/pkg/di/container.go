@@ -258,6 +258,15 @@ func (container *Container) PhoneHandlerValidator() (validator *validators.Phone
 	)
 }
 
+// UserHandlerValidator creates a new instance of validators.UserHandlerValidator
+func (container *Container) UserHandlerValidator() (validator *validators.UserHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewUserHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
 // EventDispatcher creates a new instance of services.EventDispatcher
 func (container *Container) EventDispatcher() (dispatcher *services.EventDispatcher) {
 	if container.eventDispatcher != nil {
@@ -382,6 +391,7 @@ func (container *Container) UserHandler() (handler *handlers.UserHandler) {
 	return handlers.NewUserHandler(
 		container.Logger(),
 		container.Tracer(),
+		container.UserHandlerValidator(),
 		container.UserService(),
 	)
 }

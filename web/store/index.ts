@@ -27,7 +27,9 @@ export type AuthUser = {
 }
 
 export type State = {
-  owner: string
+  owner: string | null
+  loadingThreads: boolean
+  loadingMessages: boolean
   authUser: AuthUser | null
   user: User | null
   phones: Array<Phone>
@@ -43,11 +45,13 @@ export const state = (): State => ({
   threads: [],
   threadId: null,
   heartbeat: null,
+  loadingThreads: true,
+  loadingMessages: true,
   pooling: false,
   threadMessages: [],
   phones: [],
   user: null,
-  owner: '+37259139660',
+  owner: null,
   authUser: null,
   notification: {
     active: false,
@@ -82,6 +86,10 @@ export const getters = {
     }
   },
 
+  hasThreadId: (state: State) => (threadId: string) => {
+    return state.threads.find((x) => x.id === threadId) !== undefined
+  },
+
   getAuthUser(state: State): AuthUser | null {
     return state.authUser
   },
@@ -90,8 +98,16 @@ export const getters = {
     return state.user
   },
 
-  getOwner(state: State): string {
+  getOwner(state: State): string | null {
     return state.owner
+  },
+
+  getActivePhone(state: State): Phone | null {
+    return (
+      state.phones.find((x: Phone) => {
+        return x.phone_number === state.owner
+      }) ?? null
+    )
   },
 
   getPhones(state: State): Array<Phone> {
@@ -99,7 +115,15 @@ export const getters = {
   },
 
   hasThread(state: State): boolean {
-    return state.threadId != null
+    return state.threadId != null && !state.loadingThreads
+  },
+
+  getLoadingThreads(state: State): boolean {
+    return state.loadingThreads
+  },
+
+  getLoadingMessages(state: State): boolean {
+    return state.loadingMessages
   },
 
   getThreadMessages(state: State): Array<Message> {
@@ -130,12 +154,14 @@ export const getters = {
 export const mutations = {
   setThreads(state: State, payload: Array<MessageThread>) {
     state.threads = [...payload]
+    state.loadingThreads = false
   },
   setThreadId(state: State, payload: string | null) {
     state.threadId = payload
   },
   setThreadMessages(state: State, payload: Array<Message>) {
     state.threadMessages = payload
+    state.loadingMessages = false
   },
   setHeartbeat(state: State, payload: Heartbeat | null) {
     state.heartbeat = payload
@@ -169,6 +195,12 @@ export const mutations = {
   setUser(state: State, payload: User | null) {
     state.user = payload
   },
+
+  setOwner(state: State, payload: string) {
+    state.owner = payload
+    state.loadingThreads = true
+    state.loadingMessages = true
+  },
 }
 
 export type SendMessageRequest = {
@@ -184,14 +216,14 @@ export const actions = {
         owner: context.getters.getOwner,
       },
     })
-    context.commit('setThreads', response.data.data)
+    await context.commit('setThreads', response.data.data)
   },
 
   async loadPhones(context: ActionContext<State, State>, force: boolean) {
     if (context.getters.getPhones.length > 0 && !force) {
       return
     }
-    const response = await axios.get('/v1/phones')
+    const response = await axios.get('/v1/phones', { params: { limit: 100 } })
     context.commit('setPhones', response.data.data)
   },
 
@@ -260,7 +292,41 @@ export const actions = {
     context.commit('setThreadMessages', response.data.data)
   },
 
-  setAuthUser(context: ActionContext<State, State>, user: AuthUser | null) {
-    context.commit('setAuthUser', user)
+  async setAuthUser(
+    context: ActionContext<State, State>,
+    user: AuthUser | null
+  ) {
+    const userChanged = user?.id !== context.getters.getAuthUser?.id
+
+    await context.commit('setAuthUser', user)
+
+    if (userChanged && user !== null) {
+      await Promise.all([
+        context.dispatch('loadUser'),
+        context.dispatch('loadPhones'),
+      ])
+
+      const phone = context.getters.getPhones.find(
+        (x: Phone) => x.id === context.getters.getUser.active_phone_id
+      )
+      if (phone) {
+        await context.dispatch('setOwner', phone.phone_number)
+      }
+    }
+  },
+
+  async setOwner(context: ActionContext<State, State>, owner: string) {
+    await context.commit('setOwner', owner)
+
+    const phone = context.getters.getActivePhone as Phone | null
+    if (!phone) {
+      return
+    }
+
+    const response = await axios.put('/v1/users/me', {
+      active_phone_id: phone.id,
+    })
+
+    context.commit('setUser', response.data.data)
   },
 }

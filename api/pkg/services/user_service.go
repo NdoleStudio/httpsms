@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
@@ -42,5 +43,34 @@ func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	return user, nil
+}
+
+// UserUpdateParams are parameters for updating an entities.User
+type UserUpdateParams struct {
+	ActivePhoneID uuid.UUID
+}
+
+// Update an entities.User
+func (service *UserService) Update(ctx context.Context, authUser entities.AuthUser, params UserUpdateParams) (*entities.User, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	user, err := service.repository.LoadOrStore(ctx, authUser)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with from [%+#v]", user, authUser)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	user.ActivePhoneID = &params.ActivePhoneID
+
+	if err = service.repository.Update(ctx, user); err != nil {
+		msg := fmt.Sprintf("cannot save user with id [%s]", user.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("user saved with id [%s] in the repository", user.ID))
 	return user, nil
 }

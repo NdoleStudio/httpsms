@@ -5,20 +5,29 @@
     :color="$vuetify.breakpoint.lgAndUp ? 'grey darken-4' : 'primary'"
   >
     <div>
-      <nuxt-link to="/" class="text-decoration-none text--primary">
-        <v-toolbar-title>
-          {{ $store.getters.getOwner | phoneNumber }}
-          <v-progress-circular
-            v-if="$store.getters.getPolling"
-            indeterminate
-            :size="14"
-            :width="1"
-            class="mt-n1"
-            color="success"
-          ></v-progress-circular>
-        </v-toolbar-title>
-      </nuxt-link>
-      <div class="d-flex">
+      <v-toolbar-title>
+        <div class="d-flex" style="width: 225px">
+          <v-select
+            outlined
+            dense
+            :items="owners"
+            :value="$store.getters.getOwner"
+            @change="onOwnerChanged"
+          >
+          </v-select>
+          <div style="width: 50px">
+            <v-progress-circular
+              v-if="$store.getters.getPolling"
+              indeterminate
+              :size="20"
+              :width="1"
+              class="mt-3 ml-2"
+              color="success"
+            ></v-progress-circular>
+          </div>
+        </div>
+      </v-toolbar-title>
+      <div class="d-flex mt-n4">
         <p class="text--secondary mb-n1">
           {{ $store.getters.getOwner | phoneCountry }}
         </p>
@@ -87,9 +96,32 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
+import { SelectItem } from '~/types'
+import { Phone } from '~/models/phone'
 
 @Component
 export default class MessageThreadHeader extends Vue {
+  get owners(): Array<SelectItem> {
+    return this.$store.getters.getPhones.map((phone: Phone): SelectItem => {
+      return {
+        text: this.$options.filters?.phoneNumber(phone.phone_number),
+        value: phone.phone_number,
+      }
+    })
+  }
+
+  async onOwnerChanged(owner: string) {
+    console.log('owner changed')
+    await this.$store.dispatch('setOwner', owner)
+    if (this.$route.name !== 'threads') {
+      await this.$store.dispatch('setThreadId', null)
+      await this.$router.push({ name: 'threads' })
+      return
+    }
+
+    await this.$store.dispatch('loadThreads')
+  }
+
   logout(): void {
     this.$fire.auth.signOut().then(() => {
       this.$store.dispatch('setAuthUser', null)

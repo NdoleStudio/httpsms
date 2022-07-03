@@ -1,5 +1,10 @@
 <template>
   <v-list two-line class="px-0 py-0" subheader>
+    <v-progress-linear
+      v-if="$store.getters.getLoadingThreads"
+      color="primary"
+      indeterminate
+    ></v-progress-linear>
     <v-list-item-group>
       <template v-for="thread in threads">
         <v-list-item

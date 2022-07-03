@@ -3,7 +3,6 @@ package com.httpsms
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -75,8 +74,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
             val message = getMessage(applicationContext, owner) ?: return Result.failure()
 
-            registerReceivers()
-
             sendMessage(
                 message,
                 createPendingIntent(message, SmsManagerService.ACTION_SMS_SENT),
@@ -103,19 +100,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             Timber.d("sending SMS for message with ID [${message.id}]")
             SmsManagerService().sendMessage(this.applicationContext, message, sentIntent, deliveredIntent)
             Timber.d("sent SMS for message with ID [${message.id}]")
-        }
-
-
-        private fun registerReceivers() {
-            this.applicationContext.registerReceiver(
-                SentReceiver(),
-                IntentFilter(SmsManagerService.ACTION_SMS_SENT)
-            )
-
-            this.applicationContext.registerReceiver(
-                DeliveredReceiver(),
-                IntentFilter(SmsManagerService.ACTION_SMS_DELIVERED)
-            )
         }
 
         private fun createPendingIntent(message: Message, action: String): PendingIntent {
