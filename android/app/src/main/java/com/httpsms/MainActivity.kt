@@ -214,9 +214,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        Timber.e("requesting permissions")
+
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
-                Timber.d("${it.key} = ${it.value}")
+                Timber.e("${it.key} = ${it.value}")
                 setOwner(getPhoneNumber(context))
             }
         }
@@ -226,8 +228,11 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.SEND_SMS,
                 Manifest.permission.RECEIVE_SMS,
                 READ_PHONE_NUMBERS,
+                Manifest.permission.READ_SMS,
                 Manifest.permission.READ_PHONE_STATE
             )
         )
+
+        Timber.e("creating luncher")
     }
 }
