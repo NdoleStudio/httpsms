@@ -3,6 +3,8 @@ package requests
 import (
 	"strings"
 
+	"github.com/nyaruka/phonenumbers"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 )
@@ -17,14 +19,15 @@ type PhoneUpsert struct {
 // Sanitize sets defaults to MessageOutstanding
 func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 	input.FcmToken = strings.TrimSpace(input.FcmToken)
-	input.PhoneNumber = strings.TrimSpace(input.PhoneNumber)
+	input.PhoneNumber = input.sanitizeAddress(input.PhoneNumber)
 	return *input
 }
 
 // ToUpsertParams converts PhoneUpsert to services.PhoneUpsertParams
 func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser) services.PhoneUpsertParams {
+	phone, _ := phonenumbers.Parse(input.PhoneNumber, phonenumbers.UNKNOWN_REGION)
 	return services.PhoneUpsertParams{
-		PhoneNumber: input.PhoneNumber,
+		PhoneNumber: *phone,
 		FcmToken:    input.FcmToken,
 		UserID:      user.ID,
 	}

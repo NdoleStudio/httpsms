@@ -12,6 +12,7 @@ import (
 
 // HeartbeatHandlerValidator validates models used in handlers.HeartbeatHandler
 type HeartbeatHandlerValidator struct {
+	validator
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 }
@@ -49,11 +50,6 @@ func (validator *HeartbeatHandlerValidator) ValidateIndex(_ context.Context, req
 			"owner": []string{
 				"required",
 				phoneNumberRule,
-			},
-		},
-		Messages: map[string][]string{
-			"to": {
-				"regex:The 'to' field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})

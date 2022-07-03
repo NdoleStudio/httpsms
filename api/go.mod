@@ -13,6 +13,7 @@ require (
 	github.com/gofiber/swagger v0.0.1
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.4.0
+	github.com/nyaruka/phonenumbers v1.1.0
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
 	github.com/rs/zerolog v1.26.1
 	github.com/swaggo/swag v1.8.2

@@ -12,6 +12,7 @@ import (
 
 // UserHandlerValidator validates models used in handlers.UserHandler
 type UserHandlerValidator struct {
+	validator
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 }

@@ -12,6 +12,7 @@ import (
 
 // PhoneHandlerValidator validates models used in handlers.PhoneHandler
 type PhoneHandlerValidator struct {
+	validator
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 }
@@ -64,11 +65,6 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 				"required",
 				"min:1",
 				"max:1000",
-			},
-		},
-		Messages: map[string][]string{
-			"phone_number": {
-				"regex:The phone_number field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})

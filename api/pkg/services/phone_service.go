@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nyaruka/phonenumbers"
+
 	"github.com/google/uuid"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
@@ -53,7 +55,7 @@ func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthUs
 
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
-	PhoneNumber string
+	PhoneNumber phonenumbers.PhoneNumber
 	FcmToken    string
 	UserID      entities.UserID
 }
@@ -69,7 +71,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		ID:          uuid.New(),
 		UserID:      params.UserID,
 		FcmToken:    &params.FcmToken,
-		PhoneNumber: params.PhoneNumber,
+		PhoneNumber: phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}

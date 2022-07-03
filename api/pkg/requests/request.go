@@ -3,6 +3,8 @@ package requests
 import (
 	"strconv"
 	"strings"
+
+	"github.com/nyaruka/phonenumbers"
 )
 
 type request struct{}
@@ -13,6 +15,11 @@ func (input *request) sanitizeAddress(value string) string {
 	if len(value) > 0 && value[0] == ' ' {
 		value = strings.Replace(value, " ", "+", 1)
 	}
+
+	if number, err := phonenumbers.Parse(value, phonenumbers.UNKNOWN_REGION); err == nil {
+		value = phonenumbers.Format(number, phonenumbers.E164)
+	}
+
 	return value
 }
 

@@ -12,6 +12,7 @@ import (
 
 // MessageThreadHandlerValidator validates models used in handlers.MessageThreadHandler
 type MessageThreadHandlerValidator struct {
+	validator
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 }
@@ -49,11 +50,6 @@ func (validator *MessageThreadHandlerValidator) ValidateMessageThreadIndex(_ con
 			"owner": []string{
 				"required",
 				phoneNumberRule,
-			},
-		},
-		Messages: map[string][]string{
-			"owner": {
-				"regex:The owner field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164",
 			},
 		},
 	})

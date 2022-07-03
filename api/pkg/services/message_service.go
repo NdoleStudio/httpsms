@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nyaruka/phonenumbers"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/events"
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -142,7 +144,7 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 // MessageReceiveParams parameters registering a message event
 type MessageReceiveParams struct {
 	Contact   string
-	Owner     string
+	Owner     phonenumbers.PhoneNumber
 	Content   string
 	Timestamp time.Time
 	Source    string
@@ -157,7 +159,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	eventPayload := events.MessagePhoneReceivedPayload{
 		ID:        uuid.New(),
-		Owner:     params.Owner,
+		Owner:     phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:   params.Contact,
 		Timestamp: params.Timestamp,
 		Content:   params.Content,
@@ -340,8 +342,8 @@ func (service *MessageService) handleOutstandingMessages(ctx context.Context, so
 
 // MessageSendParams parameters for sending a new message
 type MessageSendParams struct {
-	Owner             string
-	Contact           string
+	Owner             phonenumbers.PhoneNumber
+	Contact           phonenumbers.PhoneNumber
 	Content           string
 	Source            string
 	RequestReceivedAt time.Time
@@ -356,8 +358,8 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	eventPayload := events.MessageAPISentPayload{
 		ID:                uuid.New(),
-		Owner:             params.Owner,
-		Contact:           params.Contact,
+		Owner:             phonenumbers.Format(&params.Owner, phonenumbers.E164),
+		Contact:           phonenumbers.Format(&params.Contact, phonenumbers.E164),
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
 	}
