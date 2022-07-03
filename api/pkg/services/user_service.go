@@ -12,7 +12,7 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 )
 
-// UserService is handles heartbeat requests
+// UserService is handles user requests
 type UserService struct {
 	logger     telemetry.Logger
 	tracer     telemetry.Tracer
@@ -71,6 +71,6 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthUs
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("user saved with id [%s] in the repository", user.ID))
+	ctxLogger.Info(fmt.Sprintf("user saved with id [%s] in the userRepository", user.ID))
 	return user, nil
 }

@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
@@ -64,7 +63,7 @@ func (h *HeartbeatHandler) Index(c *fiber.Ctx) error {
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
-	var request requests.HeartbeatIndex
+	var request services.HeartbeatIndex
 	if err := c.QueryParser(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))

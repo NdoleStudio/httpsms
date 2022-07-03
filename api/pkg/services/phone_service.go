@@ -81,6 +81,6 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("phone saved with id [%s] in the repository", phone.ID))
+	ctxLogger.Info(fmt.Sprintf("phone saved with id [%s] in the userRepository", phone.ID))
 	return phone, nil
 }

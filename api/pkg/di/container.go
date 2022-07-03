@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"firebase.google.com/go/messaging"
+
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"github.com/NdoleStudio/http-sms-manager/pkg/middlewares"
@@ -61,6 +63,8 @@ func NewContainer(projectID string) (container *Container) {
 	container.RegisterUserRoutes()
 
 	container.RegisterPhoneRoutes()
+
+	container.RegisterNotificationListeners()
 
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
@@ -183,6 +187,17 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
 	}
 	return authClient
+}
+
+// FirebaseMessagingClient creates a new instance of messaging.Client
+func (container *Container) FirebaseMessagingClient() (client *messaging.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+	messagingClient, err := container.FirebaseApp().Messaging(context.Background())
+	if err != nil {
+		msg := "cannot initialize firebase messaging client"
+		container.logger.Fatal(stacktrace.Propagate(err, msg))
+	}
+	return messagingClient
 }
 
 // FirebaseCredentials returns firebase credentials as bytes.
@@ -437,6 +452,20 @@ func (container *Container) RegisterMessageThreadListeners() {
 	}
 }
 
+// RegisterNotificationListeners registers event listeners for listeners.NotificationListener
+func (container *Container) RegisterNotificationListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.NotificationListener{}))
+	_, routes := listeners.NewNotificationListener(
+		container.Logger(),
+		container.Tracer(),
+		container.NotificationService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
 // RegisterHeartbeatListeners registers event listeners for listeners.HeartbeatListener
 func (container *Container) RegisterHeartbeatListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.HeartbeatListener{}))
@@ -459,6 +488,17 @@ func (container *Container) MessageService() (service *services.MessageService) 
 		container.Tracer(),
 		container.MessageRepository(),
 		container.EventDispatcher(),
+	)
+}
+
+// NotificationService creates a new instance of services.NotificationService
+func (container *Container) NotificationService() (service *services.NotificationService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewNotificationService(
+		container.Logger(),
+		container.Tracer(),
+		container.FirebaseMessagingClient(),
+		container.PhoneRepository(),
 	)
 }
 

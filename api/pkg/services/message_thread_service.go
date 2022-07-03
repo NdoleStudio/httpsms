@@ -112,6 +112,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		ID:                 uuid.New(),
 		Owner:              params.Owner,
 		Contact:            params.Contact,
+		IsArchived:         false,
 		Color:              service.getColor(),
 		LastMessageContent: params.Content,
 		LastMessageID:      params.MessageID,

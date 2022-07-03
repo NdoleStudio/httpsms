@@ -184,11 +184,11 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	message, err := service.repository.Load(ctx, eventPayload.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s] in the repository", eventPayload.ID)
+		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the repository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the userRepository", message.ID))
 
 	return message, nil
 }
@@ -346,6 +346,7 @@ type MessageSendParams struct {
 	Contact           phonenumbers.PhoneNumber
 	Content           string
 	Source            string
+	UserID            entities.UserID
 	RequestReceivedAt time.Time
 }
 
@@ -358,6 +359,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	eventPayload := events.MessageAPISentPayload{
 		ID:                uuid.New(),
+		UserID:            params.UserID,
 		Owner:             phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:           phonenumbers.Format(&params.Contact, phonenumbers.E164),
 		RequestReceivedAt: params.RequestReceivedAt,
@@ -383,11 +385,11 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	message, err := service.repository.Load(ctx, eventPayload.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s] in the repository", eventPayload.ID)
+		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the repository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the userRepository", message.ID))
 
 	return message, nil
 }
@@ -430,7 +432,7 @@ func (service *MessageService) StoreSentMessage(ctx context.Context, params Mess
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the repository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the userRepository", message.ID))
 	return message, nil
 }
 
@@ -460,7 +462,7 @@ func (service *MessageService) StoreReceivedMessage(ctx context.Context, params 
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the repository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the userRepository", message.ID))
 	return message, nil
 }
 
@@ -493,7 +495,7 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message with id [%s] in the repository after adding send attempt", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] in the userRepository after adding send attempt", message.ID))
 	return nil
 }
 

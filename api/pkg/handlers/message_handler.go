@@ -83,7 +83,7 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending message")
 	}
 
-	message, err := h.service.SendMessage(ctx, request.ToMessageSendParams(c.OriginalURL()))
+	message, err := h.service.SendMessage(ctx, request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
