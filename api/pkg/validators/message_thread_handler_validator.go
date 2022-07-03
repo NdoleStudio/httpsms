@@ -55,3 +55,18 @@ func (validator *MessageThreadHandlerValidator) ValidateMessageThreadIndex(_ con
 	})
 	return v.ValidateStruct()
 }
+
+// ValidateUpdate validates requests.UserUpdate
+func (validator *MessageThreadHandlerValidator) ValidateUpdate(_ context.Context, request requests.MessageThreadUpdate) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"messageThreadID": []string{
+				"required",
+				"uuid",
+			},
+		},
+	})
+
+	return v.ValidateStruct()
+}

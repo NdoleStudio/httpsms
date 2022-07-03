@@ -60,7 +60,7 @@ func (repository *gormMessageThreadRepository) Update(ctx context.Context, threa
 }
 
 // Load a thread between 2 users
-func (repository *gormMessageThreadRepository) Load(ctx context.Context, owner string, contact string) (*entities.MessageThread, error) {
+func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Context, owner string, contact string) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 

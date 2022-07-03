@@ -78,7 +78,7 @@ func (h *UserHandler) Show(c *fiber.Ctx) error {
 // @Summary      Update a user
 // @Description  Updates the details of the currently authenticated user
 // @Security	 ApiKeyAuth
-// @Tags         Phones
+// @Tags         Users
 // @Accept       json
 // @Produce      json
 // @Param        payload   	body 		requests.UserUpdate  			true 	"Payload of user details to update"
@@ -104,7 +104,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	if errors := h.validator.ValidateUpdate(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
-		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching phones")
+		return h.responseUnprocessableEntity(c, errors, "validation errors while updating user")
 	}
 
 	user, err := h.service.Update(ctx, h.userFromContext(c), request.ToUpdateParams())

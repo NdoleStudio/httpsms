@@ -49,7 +49,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	thread, err := service.repository.Load(ctx, params.Owner, params.Contact)
+	thread, err := service.repository.LoadByOwnerContact(ctx, params.Owner, params.Contact)
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact))
 		return service.createThread(ctx, params)
@@ -72,6 +72,34 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 
 	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s]", thread.ID, thread.LastMessageID))
 	return nil
+}
+
+// MessageThreadStatusParams are parameters for updating a thread status
+type MessageThreadStatusParams struct {
+	IsArchived      bool
+	MessageThreadID uuid.UUID
+}
+
+// UpdateStatus updates a thread between an owner and a contact
+func (service *MessageThreadService) UpdateStatus(ctx context.Context, params MessageThreadStatusParams) (*entities.MessageThread, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	thread, err := service.repository.Load(ctx, params.MessageThreadID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find thread with id [%s]", params.MessageThreadID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.repository.Update(ctx, thread.UpdateArchive(params.IsArchived)); err != nil {
+		msg := fmt.Sprintf("cannot update message thread with id [%s] with archive status [%t]", thread.ID, params.IsArchived)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with archive status [%t]", thread.ID, thread.IsArchived))
+	return thread, nil
 }
 
 func (service *MessageThreadService) createThread(ctx context.Context, params MessageThreadUpdateParams) error {
@@ -134,7 +162,8 @@ func (service *MessageThreadService) getColor() string {
 // MessageThreadGetParams parameters fetching threads
 type MessageThreadGetParams struct {
 	repositories.IndexParams
-	Owner string
+	IsArchived bool
+	Owner      string
 }
 
 // GetThreads fetches threads for an owner
@@ -144,7 +173,7 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	threads, err := service.repository.Index(ctx, params.Owner, params.IndexParams)
+	threads, err := service.repository.Index(ctx, params.Owner, params.IsArchived, params.IndexParams)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages threads for params [%+#v]", params)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

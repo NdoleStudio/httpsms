@@ -28,3 +28,9 @@ func (thread *MessageThread) Update(timestamp time.Time, messageID uuid.UUID, co
 	thread.LastMessageContent = content
 	return thread
 }
+
+// UpdateArchive sets a message thread as archived
+func (thread *MessageThread) UpdateArchive(isArchived bool) *MessageThread {
+	thread.IsArchived = isArchived
+	return thread
+}

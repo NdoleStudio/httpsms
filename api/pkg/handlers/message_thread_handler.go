@@ -39,6 +39,7 @@ func NewMessageThreadHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/message-threads", h.Index)
+	router.Put("/message-threads/:messageThreadID", h.Update)
 }
 
 // Index returns message threads for a phone number
@@ -87,4 +88,47 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, fmt.Sprintf("fetched %d message %s", len(*threads), h.pluralize("thread", len(*threads))), threads)
+}
+
+// Update an entities.MessageThread
+// @Summary      Update a message thread
+// @Description  Updates the details of a message thread
+// @Security	 ApiKeyAuth
+// @Tags         Message Threads
+// @Accept       json
+// @Produce      json
+// @Param        payload   	body 		requests.MessageThreadUpdate 	true 	"Payload of message thread details to update"
+// @Success      200 		{object}	responses.PhoneResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /message-threads/{messageThreadID} [put]
+func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageThreadUpdate
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateUpdate(ctx, request); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while updating message thread [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while updating message thread")
+	}
+
+	thread, err := h.service.UpdateStatus(ctx, request.ToUpdateParams())
+	if err != nil {
+		msg := fmt.Sprintf("cannot update message thread with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "message thread updated successfully", thread)
 }
