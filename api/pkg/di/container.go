@@ -120,6 +120,8 @@ func (container *Container) DB() (db *gorm.DB) {
 		return container.db
 	}
 
+	container.logger.Debug(fmt.Sprintf("creating %T", db))
+
 	gl := gormLogger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), gormLogger.Config{
 		SlowThreshold:             200 * time.Millisecond,
 		LogLevel:                  gormLogger.Info,
@@ -127,7 +129,6 @@ func (container *Container) DB() (db *gorm.DB) {
 		Colorful:                  true,
 	})
 
-	container.logger.Debug(fmt.Sprintf("creating %T", db))
 	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{Logger: gl})
 	if err != nil {
 		container.logger.Fatal(err)

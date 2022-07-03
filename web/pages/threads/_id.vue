@@ -103,8 +103,8 @@
                       <div v-bind="attrs" v-on="on">
                         <v-icon
                           v-if="isExpired(message)"
-                          color="primary"
-                          class="mt-n6"
+                          color="error"
+                          class="mt-n2"
                           >mdi-alert</v-icon
                         >
                         <v-progress-circular
@@ -131,7 +131,9 @@
                         </v-icon>
                       </div>
                     </template>
-                    <span>{{ message.status }}</span>
+                    <span>
+                      {{ isExpired(message) ? 'expired' : message.status }}
+                    </span>
                   </v-tooltip>
                 </div>
               </div>
