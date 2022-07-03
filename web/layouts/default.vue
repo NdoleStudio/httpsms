@@ -32,6 +32,7 @@ export default class DefaultLayout extends Vue {
   mounted() {
     this.startPoller()
     if (this.$route.name !== 'index') {
+      this.$store.dispatch('setNextRoute', this.$route.path)
       this.$router.push({ name: 'index' })
     }
   }

@@ -28,6 +28,7 @@ export type AuthUser = {
 
 export type State = {
   owner: string | null
+  nextRoute: string | null
   loadingThreads: boolean
   loadingMessages: boolean
   archivedThreads: boolean
@@ -46,6 +47,7 @@ export const state = (): State => ({
   threads: [],
   threadId: null,
   heartbeat: null,
+  nextRoute: null,
   loadingThreads: true,
   archivedThreads: false,
   loadingMessages: true,
@@ -128,6 +130,10 @@ export const getters = {
 
   getLoadingMessages(state: State): boolean {
     return state.loadingMessages
+  },
+
+  getNextRoute(state: State): string | null {
+    return state.nextRoute
   },
 
   getThreadMessages(state: State): Array<Message> {
@@ -218,6 +224,10 @@ export const mutations = {
     state.archivedThreads = false
     state.owner = null
   },
+
+  setNextRoute(state: State, payload: string | null) {
+    state.nextRoute = payload
+  },
 }
 
 export type SendMessageRequest = {
@@ -250,6 +260,10 @@ export const actions = {
     if (context.getters.getPhones.length > 0 && !force) {
       return
     }
+    if (!context.getters.authUser) {
+      return
+    }
+
     const response = await axios.get('/v1/phones', { params: { limit: 100 } })
     context.commit('setPhones', response.data.data)
   },
@@ -309,6 +323,10 @@ export const actions = {
     context.commit('disableNotification')
   },
 
+  setNextRoute(context: ActionContext<State, State>, payload: string | null) {
+    context.commit('setNextRoute', payload)
+  },
+
   async loadThreadMessages(
     context: ActionContext<State, State>,
     threadId: string | null
@@ -325,9 +343,13 @@ export const actions = {
 
   async setAuthUser(
     context: ActionContext<State, State>,
-    user: AuthUser | null
+    user: AuthUser | null | undefined
   ) {
     const userChanged = user?.id !== context.getters.getAuthUser?.id
+
+    if (user === undefined) {
+      user = null
+    }
 
     await context.commit('setAuthUser', user)
 

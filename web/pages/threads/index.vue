@@ -28,9 +28,14 @@
 export default {
   name: 'ThreadsIndex',
   middleware: ['auth'],
-  mounted() {
-    this.$store.dispatch('loadThreads')
-    this.$store.dispatch('loadPhones')
+  async mounted() {
+    if (!this.$store.getters.getAuthUser) {
+      await this.$store.dispatch('setNextRoute', this.$route.path)
+      await this.$router.push({ name: 'index' })
+      return
+    }
+    await this.$store.dispatch('loadThreads')
+    await this.$store.dispatch('loadPhones')
   },
 }
 </script>

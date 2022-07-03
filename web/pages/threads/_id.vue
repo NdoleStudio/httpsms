@@ -215,6 +215,12 @@ export default Vue.extend({
   },
 
   async mounted() {
+    if (!this.$store.getters.getAuthUser) {
+      await this.$store.dispatch('setNextRoute', this.$route.path)
+      await this.$router.push({ name: 'index' })
+      return
+    }
+
     await this.$store.dispatch('loadPhones')
     await this.$store.dispatch('loadThreads')
 

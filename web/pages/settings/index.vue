@@ -67,6 +67,11 @@ export default {
     },
   },
   mounted() {
+    if (!this.$store.getters.getAuthUser) {
+      this.$store.dispatch('setNextRoute', this.$route.path)
+      this.$router.push({ name: 'index' })
+      return
+    }
     this.$store.dispatch('loadUser')
   },
 }

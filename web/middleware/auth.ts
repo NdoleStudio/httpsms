@@ -1,15 +1,11 @@
 import { Context, Middleware } from '@nuxt/types'
-import { NotificationRequest } from '~/store'
 
-const authMiddleware: Middleware = async (context: Context) => {
+const authMiddleware: Middleware = (context: Context) => {
   if (context.store.getters.getAuthUser === null) {
-    const notification: NotificationRequest = {
-      message: 'Login to continue',
-      type: 'info',
+    if (context.store.getters.getNextRoute) {
+      context.redirect('/login', { to: context.route.path })
+      context.store.dispatch('setNextRoute', null)
     }
-    await context.store.dispatch('addNotification', notification)
-
-    context.redirect('/login', { to: context.route.path })
   }
 }
 

@@ -8,6 +8,7 @@ export default async function (context: Context) {
 }
 
 const setUser = (context: Context): Promise<User | null> => {
+  console.log('running user')
   return new Promise((resolve, reject) => {
     const unsubscribe = (context.app.$fire.auth as Auth).onAuthStateChanged(
       async (user) => {
