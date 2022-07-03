@@ -157,6 +157,7 @@ func (service *MessageThreadService) getColor() string {
 		"deep-orange",
 		"brown",
 	}
+	rand.Seed(time.Now().UnixNano())
 	return colors[rand.Intn(len(colors))]
 }
 
