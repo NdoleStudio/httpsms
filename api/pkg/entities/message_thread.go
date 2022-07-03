@@ -11,6 +11,7 @@ type MessageThread struct {
 	ID                 uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703ca"`
 	Owner              string    `json:"owner" example:"+18005550199"`
 	Contact            string    `json:"contact" example:"+18005550100"`
+	IsArchived         bool      `json:"is_archived" example:"false"`
 	UserID             UserID    `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Color              string    `json:"color" example:"indigo"`
 	LastMessageContent string    `json:"last_message_content" example:"This is a sample message content"`

@@ -13,10 +13,6 @@ import (
 	"github.com/thedevsaddam/govalidator"
 )
 
-const (
-	phoneNumberRule = "phoneNumber"
-)
-
 // MessageHandlerValidator validates models used in handlers.MessageHandler
 type MessageHandlerValidator struct {
 	validator
