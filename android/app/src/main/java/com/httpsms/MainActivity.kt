@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         refreshToken(this)
     }
 
-    fun registerReceivers(context: Context) {
+    private fun registerReceivers(context: Context) {
         context.registerReceiver(
             this.sentReceiver,
             IntentFilter(SmsManagerService.ACTION_SMS_SENT)
@@ -119,6 +119,7 @@ class MainActivity : AppCompatActivity() {
     private fun onLogoutClick() {
         Timber.d("logout button clicked")
         Settings.setApiKeyAsync(this, null)
+        Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
         redirectToLogin()
     }
 
