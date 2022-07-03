@@ -260,9 +260,6 @@ export const actions = {
     if (context.getters.getPhones.length > 0 && !force) {
       return
     }
-    if (!context.getters.authUser) {
-      return
-    }
 
     const response = await axios.get('/v1/phones', { params: { limit: 100 } })
     context.commit('setPhones', response.data.data)
