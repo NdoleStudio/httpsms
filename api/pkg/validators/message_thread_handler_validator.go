@@ -44,6 +44,10 @@ func (validator *MessageThreadHandlerValidator) ValidateMessageThreadIndex(_ con
 				"numeric",
 				"min:0",
 			},
+			"is_archived": []string{
+				"required",
+				"in:true,false",
+			},
 			"query": []string{
 				"max:100",
 			},

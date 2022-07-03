@@ -150,6 +150,10 @@ export const getters = {
     return state.pooling
   },
 
+  getIsArchived(state: State): boolean {
+    return state.archivedThreads
+  },
+
   getNotification(state: State): Notification {
     return state.notification
   },
@@ -205,6 +209,15 @@ export const mutations = {
     state.loadingThreads = true
     state.loadingMessages = true
   },
+
+  setArchivedThreads(state: State, payload: boolean) {
+    state.archivedThreads = payload
+  },
+
+  resetState(state: State) {
+    state.archivedThreads = false
+    state.owner = null
+  },
 }
 
 export type SendMessageRequest = {
@@ -223,9 +236,14 @@ export const actions = {
     const response = await axios.get('/v1/message-threads', {
       params: {
         owner: context.getters.getOwner,
+        is_archived: context.getters.getIsArchived,
       },
     })
     await context.commit('setThreads', response.data.data)
+  },
+
+  async toggleArchive(context: ActionContext<State, State>) {
+    await context.commit('setArchivedThreads', !context.getters.getIsArchived)
   },
 
   async loadPhones(context: ActionContext<State, State>, force: boolean) {
@@ -239,6 +257,10 @@ export const actions = {
   async loadUser(context: ActionContext<State, State>) {
     const response = await axios.get('/v1/users/me')
     context.commit('setUser', response.data.data)
+  },
+
+  resetState(context: ActionContext<State, State>) {
+    context.commit('resetState', false)
   },
 
   async getHeartbeat(context: ActionContext<State, State>) {
@@ -337,5 +359,16 @@ export const actions = {
     })
 
     context.commit('setUser', response.data.data)
+  },
+
+  async updateThread(
+    context: ActionContext<State, State>,
+    payload: { threadId: string; isArchived: boolean }
+  ) {
+    await axios.put(`/v1/message-threads/${payload.threadId}`, {
+      is_archived: payload.isArchived,
+    })
+    await context.commit('setArchivedThreads', payload.isArchived)
+    await context.dispatch('loadThreads')
   },
 }

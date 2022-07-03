@@ -24,6 +24,28 @@ func (input *request) sanitizeAddress(value string) string {
 }
 
 // getLimit gets the take as a string
+func (input *request) sanitizeBool(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "1" || strings.ToLower(value) == "true" {
+		value = "true"
+	}
+
+	if value == "0" || strings.ToLower(value) == "false" {
+		value = "false"
+	}
+
+	return value
+}
+
+// getLimit gets the take as a string
+func (input *request) getBool(value string) bool {
+	if value == "true" {
+		return true
+	}
+	return false
+}
+
+// getLimit gets the take as a string
 func (input *request) getInt(value string) int {
 	val, _ := strconv.Atoi(value)
 	return val

@@ -11,10 +11,11 @@ import (
 // MessageThreadIndex is the payload fetching entities.MessageThread sent between 2 numbers
 type MessageThreadIndex struct {
 	request
-	Skip  string `json:"skip" query:"skip"`
-	Query string `json:"query" query:"query"`
-	Limit string `json:"limit" query:"limit"`
-	Owner string `json:"owner" query:"owner"`
+	IsArchived string `json:"is_archived" query:"is_archived" example:"false"`
+	Skip       string `json:"skip" query:"skip"`
+	Query      string `json:"query" query:"query"`
+	Limit      string `json:"limit" query:"limit"`
+	Owner      string `json:"owner" query:"owner"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -23,8 +24,12 @@ func (input *MessageThreadIndex) Sanitize() MessageThreadIndex {
 		input.Limit = "20"
 	}
 
-	input.Query = strings.TrimSpace(input.Query)
+	if strings.TrimSpace(input.IsArchived) == "" {
+		input.IsArchived = "false"
+	}
 
+	input.IsArchived = input.sanitizeBool(input.IsArchived)
+	input.Query = strings.TrimSpace(input.Query)
 	input.Owner = input.sanitizeAddress(input.Owner)
 
 	input.Skip = strings.TrimSpace(input.Skip)
@@ -43,6 +48,7 @@ func (input *MessageThreadIndex) ToGetParams() services.MessageThreadGetParams {
 			Query: input.Query,
 			Limit: input.getInt(input.Limit),
 		},
-		Owner: input.Owner,
+		IsArchived: input.getBool(input.IsArchived),
+		Owner:      input.Owner,
 	}
 }

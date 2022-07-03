@@ -11,14 +11,53 @@
           </span>
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-tooltip left>
-          <template #activator="{ on, attrs }">
-            <v-btn icon text v-bind="attrs" v-on="on">
+        <v-menu offset-y>
+          <template #activator="{ on }">
+            <v-btn icon text class="mt-2" v-on="on">
               <v-icon>mdi-dots-vertical</v-icon>
             </v-btn>
           </template>
-          <span>Message Options</span>
-        </v-tooltip>
+          <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
+            <v-list-item-group v-model="selectedMenuItem">
+              <v-list-item
+                v-if="
+                  $store.getters.hasThread &&
+                  !$store.getters.getThread.is_archived
+                "
+                @click.prevent="archiveThread"
+              >
+                <v-list-item-icon class="pl-2">
+                  <v-icon dense>mdi-package-down</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content class="ml-n3">
+                  <v-list-item-title class="pr-16 py-1">
+                    <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                      Archive
+                    </span>
+                  </v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
+              <v-list-item
+                v-if="
+                  $store.getters.hasThread &&
+                  $store.getters.getThread.is_archived
+                "
+                @click.prevent="unArchiveThread"
+              >
+                <v-list-item-icon class="pl-2">
+                  <v-icon dense>mdi-package-up</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content class="ml-n3">
+                  <v-list-item-title class="pr-16 py-1">
+                    <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                      Unarchive
+                    </span>
+                  </v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+        </v-menu>
       </v-app-bar>
       <v-progress-linear
         v-if="$store.getters.getLoadingMessages"
@@ -143,14 +182,16 @@ export default Vue.extend({
   middleware: ['auth'],
   data() {
     const formMessageRules: InputValidationRules = [
-      (v) => !!v || 'Message is required',
       (v) =>
-        (v && v.length <= 320) || 'Message must be less than 320 characters',
+        v === '' ||
+        (v && v.length <= 320) ||
+        'Message must be less than 320 characters',
     ]
     return {
       formMessage: '',
       formMessageRules,
       submitting: false,
+      selectedMenuItem: -1,
     }
   },
 
@@ -185,6 +226,26 @@ export default Vue.extend({
     scrollToElement() {
       const el: Element = this.$refs.messageBody as Element
       el.scrollTop = el.scrollHeight + 120
+    },
+
+    archiveThread() {
+      this.$store.dispatch('updateThread', {
+        threadId: this.$store.getters.getThread.id,
+        isArchived: true,
+      })
+      setTimeout(() => {
+        this.selectedMenuItem = -1
+      }, 1000)
+    },
+
+    unArchiveThread() {
+      this.$store.dispatch('updateThread', {
+        threadId: this.$store.getters.getThread.id,
+        isArchived: false,
+      })
+      setTimeout(() => {
+        this.selectedMenuItem = -1
+      }, 1000)
     },
 
     async sendMessage(event: KeyboardEvent) {

@@ -5,8 +5,18 @@
       color="primary"
       indeterminate
     ></v-progress-linear>
+    <div
+      v-if="!$store.getters.getLoadingThreads && $store.getters.getIsArchived"
+      class="warning py-1 text-center text-uppercase text-subtitle-1"
+    >
+      Archived Messages
+    </div>
     <v-sheet
-      v-if="!$store.getters.getLoadingThreads && threads.length === 0"
+      v-if="
+        !$store.getters.getLoadingThreads &&
+        threads.length === 0 &&
+        !$store.getters.getIsArchived
+      "
       class="text-center mt-8 mx-3"
       :color="$vuetify.breakpoint.mdAndDown ? '#121212' : '#363636'"
     >

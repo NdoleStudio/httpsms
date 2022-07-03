@@ -108,7 +108,14 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, owner 
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("owner = ?", owner).Where("is_archived = ?", isArchived)
+	query := repository.db.Where("owner = ?", owner)
+
+	if isArchived {
+		query.Where("is_archived = ?", isArchived)
+	} else {
+		query.Where(repository.db.Where("is_archived = ?", isArchived).Or("is_archived IS NULL"))
+	}
+
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where(

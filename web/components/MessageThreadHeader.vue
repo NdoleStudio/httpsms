@@ -66,7 +66,33 @@
         </v-btn>
       </template>
       <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
-        <v-list-item-group>
+        <v-list-item-group v-model="selectedMenuItem">
+          <v-list-item @click.prevent="toggleArchive">
+            <v-list-item-icon class="pl-2">
+              <v-icon v-if="!$store.getters.getIsArchived" dense
+                >mdi-package-down</v-icon
+              >
+              <v-icon v-if="$store.getters.getIsArchived" dense
+                >mdi-package-up</v-icon
+              >
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span
+                  v-if="!$store.getters.getIsArchived"
+                  :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }"
+                >
+                  Archived
+                </span>
+                <span
+                  v-if="$store.getters.getIsArchived"
+                  :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }"
+                >
+                  Unarchived
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
           <v-list-item
             v-if="$store.getters.getOwner"
             :to="{ name: 'messages' }"
@@ -136,6 +162,7 @@ import { Phone } from '~/models/phone'
 
 @Component
 export default class MessageThreadHeader extends Vue {
+  selectedMenuItem = -1
   get owners(): Array<SelectItem> {
     return this.$store.getters.getPhones.map((phone: Phone): SelectItem => {
       return {
@@ -156,9 +183,25 @@ export default class MessageThreadHeader extends Vue {
     await this.$store.dispatch('loadThreads')
   }
 
+  async toggleArchive() {
+    await this.$store.dispatch('toggleArchive')
+
+    setTimeout(() => {
+      this.selectedMenuItem = -1
+    }, 1000)
+
+    if (this.$route.name !== 'threads') {
+      await this.$store.dispatch('setThreadId', null)
+      await this.$router.push({ name: 'threads' })
+      return
+    }
+    await this.$store.dispatch('loadThreads')
+  }
+
   logout(): void {
     this.$fire.auth.signOut().then(() => {
       this.$store.dispatch('setAuthUser', null)
+      this.$store.dispatch('resetState')
       this.$store.dispatch('addNotification', {
         type: 'info',
         message: 'You have successfully logged out',
