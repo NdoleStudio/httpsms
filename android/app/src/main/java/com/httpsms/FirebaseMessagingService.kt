@@ -71,8 +71,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 return Result.failure()
             }
 
-            Receiver.registerReceivers(applicationContext)
-
             val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
             val message = getMessage(applicationContext, owner) ?: return Result.failure()
 

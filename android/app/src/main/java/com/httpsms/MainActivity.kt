@@ -7,6 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
@@ -23,6 +24,9 @@ import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
+    private val sentReceiver = SentReceiver()
+    private val deliveredReceiver = DeliveredReceiver()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -40,7 +44,8 @@ class MainActivity : AppCompatActivity() {
         setActiveStatus(this)
         registerListeners()
         refreshToken(this)
-        Receiver.registerReceivers(this)
+
+        registerReceivers(this)
     }
 
     override fun onResume() {
@@ -48,6 +53,18 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
+    }
+
+    fun registerReceivers(context: Context) {
+        context.registerReceiver(
+            this.sentReceiver,
+            IntentFilter(SmsManagerService.ACTION_SMS_SENT)
+        )
+        context.registerReceiver(
+            this.deliveredReceiver,
+            IntentFilter(SmsManagerService.ACTION_SMS_DELIVERED)
+        )
+        Settings.setReceiverRegistered(context, true)
     }
 
     private fun refreshToken(context: Context) {

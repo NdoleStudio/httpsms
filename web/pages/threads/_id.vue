@@ -135,23 +135,23 @@
               lazy-validation
               @submit.prevent="sendMessage"
             >
-              <v-textarea
+              <v-text-field
                 ref="messageInput"
                 v-model="formMessage"
                 :disabled="submitting"
-                :rows="2"
+                :rows="1"
                 filled
                 class="no-scrollbar"
                 :rules="formMessageRules"
                 placeholder="Type your message here"
                 rounded
                 @keydown.enter="sendMessage"
-              ></v-textarea>
+              ></v-text-field>
               <v-btn
                 :disabled="submitting"
                 type="submit"
                 color="primary"
-                class="pa-5 white--text ml-2 mt-1"
+                class="white--text ml-2"
                 fab
               >
                 <v-progress-circular

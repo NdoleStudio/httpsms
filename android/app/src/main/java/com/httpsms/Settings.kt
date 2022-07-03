@@ -11,6 +11,7 @@ object Settings {
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
+    private const val SETTINGS_RECEIVER_REGISTERED = "SETTINGS_RECEIVER_REGISTERED"
     private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
 
     fun getOwner(context: Context): String? {
@@ -133,6 +134,26 @@ object Settings {
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
             .putString(this.SETTINGS_FCM_TOKEN, apiKey)
+            .apply()
+    }
+
+    fun getReceiverRegistered(context: Context): Boolean{
+        Timber.d(Settings::getReceiverRegistered.name)
+
+        val receiverRegistered = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getBoolean(this.SETTINGS_RECEIVER_REGISTERED,false)
+
+        Timber.d("SETTINGS_RECEIVER_REGISTERED: [$receiverRegistered]")
+        return receiverRegistered
+    }
+
+    fun setReceiverRegistered(context: Context, registered: Boolean) {
+        Timber.d(Settings::setReceiverRegistered.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(this.SETTINGS_RECEIVER_REGISTERED, registered)
             .apply()
     }
 }
