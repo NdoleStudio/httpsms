@@ -4,6 +4,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.apache.commons.text.StringEscapeUtils
 import timber.log.Timber
 import java.net.URI
 import java.time.ZonedDateTime
@@ -63,9 +64,10 @@ class HttpSmsApiService(private val apiKey: String) {
         val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
         val timestampString = formatter.format(timestamp).replace("+", "Z")
 
+
         val body = """
             {
-              "content": "$content",
+              "content": "${StringEscapeUtils.escapeJson(content)}",
               "from": "$from",
               "timestamp": "$timestampString",
               "to": "$to"
@@ -80,7 +82,7 @@ class HttpSmsApiService(private val apiKey: String) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]}]")
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
             return
         }
 
