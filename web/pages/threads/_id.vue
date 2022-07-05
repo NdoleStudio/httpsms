@@ -165,7 +165,7 @@
                 @keydown.enter="sendMessage"
               ></v-text-field>
               <v-btn
-                :disabled="submitting"
+                :disabled="submitting || !contactIsPhoneNumber"
                 type="submit"
                 color="primary"
                 class="white--text ml-2"
