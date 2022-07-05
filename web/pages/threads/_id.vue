@@ -240,8 +240,9 @@ export default Vue.extend({
 
     isExpired(message: Message): boolean {
       return (
+        this.isPending(message) &&
         new Date().getTime() - new Date(message.created_at).getTime() >
-        5 * 60 * 1000
+          5 * 60 * 1000
       ) // 5 minutes
     },
 
