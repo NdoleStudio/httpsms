@@ -193,8 +193,8 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
-		Owner:     payload.Contact,
-		Contact:   payload.Owner,
+		Owner:     payload.Owner,
+		Contact:   payload.Contact,
 		Timestamp: event.Time(),
 		Content:   payload.Content,
 		MessageID: payload.ID,
