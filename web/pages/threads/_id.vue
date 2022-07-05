@@ -151,12 +151,16 @@
               <v-text-field
                 ref="messageInput"
                 v-model="formMessage"
-                :disabled="submitting"
+                :disabled="submitting || !contactIsPhoneNumber"
                 :rows="1"
                 filled
                 class="no-scrollbar"
                 :rules="formMessageRules"
-                placeholder="Type your message here"
+                :placeholder="
+                  contactIsPhoneNumber
+                    ? 'Type your message here'
+                    : 'You cannot send messages to ' + contact
+                "
                 rounded
                 @keydown.enter="sendMessage"
               ></v-text-field>
@@ -188,6 +192,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import { InputValidationRules } from 'vuetify'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 import { Message } from '~/models/message'
 import { SendMessageRequest } from '~/store'
 
@@ -211,6 +216,12 @@ export default Vue.extend({
   computed: {
     messages(): Array<Message> {
       return [...this.$store.getters.getThreadMessages].reverse()
+    },
+    contactIsPhoneNumber(): boolean {
+      return isValidPhoneNumber(this.$store.getters.getThread.contact)
+    },
+    contact(): string {
+      return this.$store.getters.getThread.contact
     },
   },
 
