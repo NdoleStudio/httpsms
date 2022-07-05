@@ -1,7 +1,10 @@
 import Vue from 'vue'
-import { parsePhoneNumber } from 'libphonenumber-js'
+import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js'
 
 Vue.filter('phoneNumber', (value: string): string => {
+  if (!isValidPhoneNumber(value)) {
+    return value
+  }
   const phoneNumber = parsePhoneNumber(value)
   if (phoneNumber) {
     return phoneNumber.formatInternational()
