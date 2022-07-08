@@ -53,7 +53,6 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header s
 		span.SetAttributes(attribute.Key("clientVersion").String(c.Get(clientVersionHeader)))
 
 		c.Locals(telemetry.TracerContextKey, trace.ContextWithSpan(newCtx, span))
-		ctxLogger.Trace(fmt.Sprintf("context set key [%s] url[%s] method [%s]", telemetry.TracerContextKey, c.OriginalURL(), c.Method()))
 
 		// Go to next middleware:
 		response := c.Next()
