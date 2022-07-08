@@ -574,7 +574,6 @@ func logger(skipFrameCount int) telemetry.Logger {
 	return telemetry.NewZerologLogger(
 		os.Getenv("GCP_PROJECT_ID"),
 		fields,
-		3,
 		logDriver(skipFrameCount),
 		nil,
 	)
