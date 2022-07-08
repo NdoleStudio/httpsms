@@ -75,7 +75,7 @@ func (logger *zerologLogger) Fatal(err error) {
 
 // Error logs an error
 func (logger *zerologLogger) Error(err error) {
-	logger.decorateEvent(logger.zerolog.Fatal()).Err(err).Send()
+	logger.decorateEvent(logger.zerolog.Error()).Err(err).Send()
 }
 
 // WithSpan adds a spanContext to a logger

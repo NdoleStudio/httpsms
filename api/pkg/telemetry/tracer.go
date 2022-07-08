@@ -7,6 +7,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	// TracerContextKey stores the fiber trace context
+	TracerContextKey = "tracer.context.key"
+)
+
 // Tracer is used for tracing
 type Tracer interface {
 	// StartFromFiberCtx creates a spanContext and a context.Context containing the newly-created spanContext.

@@ -2,8 +2,11 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"strings"
+
+	"github.com/palantir/stacktrace"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/attribute"
@@ -24,10 +27,15 @@ func NewOtelLogger(projectID string, logger Logger) Tracer {
 	}
 }
 
-func (tracer *otelTracer) StartFromFiberCtx(_ *fiber.Ctx, name ...string) (context.Context, trace.Span) {
-	ctx, span := trace.NewNoopTracerProvider().Tracer(tracer.projectID).Start(context.Background(), getName(name...))
-	defer span.End()
-	return tracer.Start(ctx, getName(name...))
+func (tracer *otelTracer) StartFromFiberCtx(c *fiber.Ctx, name ...string) (context.Context, trace.Span) {
+	parentCtx, ok := c.Locals(TracerContextKey).(context.Context)
+	if !ok {
+		tracer.logger.Error(stacktrace.NewError(fmt.Sprintf("could not get trace from context with key [%s] url[%s] method [%s]", TracerContextKey, c.OriginalURL(), c.Method())))
+		ctx, span := trace.NewNoopTracerProvider().Tracer("").Start(context.Background(), "")
+		defer span.End()
+		parentCtx = ctx
+	}
+	return tracer.Start(parentCtx, getName(name...))
 }
 
 func (tracer *otelTracer) CtxLogger(logger Logger, span trace.Span) Logger {

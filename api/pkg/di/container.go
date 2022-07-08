@@ -7,9 +7,18 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
 	"firebase.google.com/go/messaging"
+	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/trace"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
@@ -51,6 +60,8 @@ func NewContainer(projectID string) (container *Container) {
 		logger:    logger(3).WithService(fmt.Sprintf("%T", container)),
 	}
 
+	container.InitializeTraceProvider("0.0.1", os.Getenv("GCP_PROJECT_ID"))
+
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
 
@@ -85,6 +96,8 @@ func (container *Container) App() (app *fiber.App) {
 	if os.Getenv("APP_HTTP_LOGGER") == "true" {
 		app.Use(fiberLogger.New())
 	}
+
+	app.Use(middlewares.OtelTraceContext(container.Tracer(), container.Logger(), "X-Cloud-Trace-Context", os.Getenv("GCP_PROJECT_ID")))
 
 	// Default config
 	app.Use(cors.New())
@@ -564,11 +577,73 @@ func (container *Container) UserRepository() repositories.UserRepository {
 	)
 }
 
+// InitializeTraceProvider initializes the open telemetry trace provider
+func (container *Container) InitializeTraceProvider(version string, namespace string) func() {
+	if isLocal() {
+		return container.initializeJaegerTraceProvider(version, namespace)
+	}
+	return container.initializeGoogleTraceProvider(version, namespace)
+}
+
+func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {
+	container.logger.Debug("initializing google trace provider")
+
+	exporter, err := cloudtrace.New(cloudtrace.WithProjectID(os.Getenv("GCP_PROJECT_ID")))
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create cloud trace exporter"))
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithResource(container.InitializeOtelResources(version, namespace)),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	return func() {
+		_ = exporter.Shutdown(context.Background())
+	}
+}
+
+func (container *Container) initializeJaegerTraceProvider(version string, namespace string) (flush func()) {
+	container.logger.Debug("initializing jaeger trace provider")
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(os.Getenv("JAEGER_COLLECTOR_ENDPOINT"))))
+	if err != nil {
+		container.logger.Error(stacktrace.Propagate(err, "could not create jaeger exporter"))
+	}
+	tp := trace.NewTracerProvider(
+		// Always be sure to batch in production.
+		trace.WithBatcher(exp),
+		trace.WithSampler(trace.AlwaysSample()),
+		// Record information about this application in a resource.
+		trace.WithResource(container.InitializeOtelResources(version, namespace)),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return func() {
+		_ = exp.Shutdown(context.Background())
+	}
+}
+
+// InitializeOtelResources initializes open telemetry resources
+func (container *Container) InitializeOtelResources(version string, namespace string) *resource.Resource {
+	return resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(namespace),
+		semconv.ServiceNamespaceKey.String(namespace),
+		semconv.ServiceVersionKey.String(version),
+		semconv.ServiceInstanceIDKey.String(hostName()),
+		attribute.String("service.environment", os.Getenv("ENV")),
+	)
+}
+
 func logger(skipFrameCount int) telemetry.Logger {
-	hostname, _ := os.Hostname()
 	fields := map[string]string{
 		"pid":      strconv.Itoa(os.Getpid()),
-		"hostname": hostname,
+		"hostname": hostName(),
 	}
 
 	return telemetry.NewZerologLogger(
@@ -610,6 +685,14 @@ func jsonLogger(skipFrameCount int) *zerodriver.Logger {
 
 	zl := zerolog.New(os.Stderr).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
 	return &zerodriver.Logger{Logger: &zl}
+}
+
+func hostName() string {
+	h, err := os.Hostname()
+	if err != nil {
+		h = strconv.Itoa(os.Getpid())
+	}
+	return h
 }
 
 func consoleLogger(skipFrameCount int) *zerodriver.Logger {
