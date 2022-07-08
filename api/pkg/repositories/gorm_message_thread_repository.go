@@ -40,7 +40,7 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Clauses(clause.OnConflict{DoNothing: true}).Create(thread).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(thread).Error; err != nil {
 		msg := fmt.Sprintf("cannot save message thread with ID [%s]", thread.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -53,7 +53,7 @@ func (repository *gormMessageThreadRepository) Update(ctx context.Context, threa
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Save(thread).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Save(thread).Error; err != nil {
 		msg := fmt.Sprintf("cannot update message thread thread with ID [%s]", thread.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -68,7 +68,7 @@ func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Co
 
 	thread := new(entities.MessageThread)
 
-	err := repository.db.Where("owner = ?", owner).Where("contact = ?", contact).First(thread).Error
+	err := repository.db.WithContext(ctx).Where("owner = ?", owner).Where("contact = ?", contact).First(thread).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("thread with owner [%s] and contact [%s] does not exist", owner, contact)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -89,7 +89,7 @@ func (repository *gormMessageThreadRepository) Load(ctx context.Context, ID uuid
 
 	thread := new(entities.MessageThread)
 
-	err := repository.db.First(thread, ID).Error
+	err := repository.db.WithContext(ctx).First(thread, ID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("thread with id [%s] not found", ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -108,7 +108,7 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, owner 
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("owner = ?", owner)
+	query := repository.db.WithContext(ctx).Where("owner = ?", owner)
 
 	if isArchived {
 		query.Where("is_archived = ?", isArchived)

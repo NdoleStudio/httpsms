@@ -40,7 +40,7 @@ func (repository *gormUserRepository) Store(ctx context.Context, user *entities.
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Create(user).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Create(user).Error; err != nil {
 		msg := fmt.Sprintf("cannot save user with ID [%s]", user.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -52,7 +52,7 @@ func (repository *gormUserRepository) Update(ctx context.Context, user *entities
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Save(user).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Save(user).Error; err != nil {
 		msg := fmt.Sprintf("cannot update user with ID [%s]", user.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -65,7 +65,7 @@ func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey s
 	defer span.End()
 
 	user := new(entities.User)
-	err := repository.db.Where("api_key = ?", apiKey).First(user).Error
+	err := repository.db.WithContext(ctx).Where("api_key = ?", apiKey).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with api key [%s] does not exist", apiKey)
 		return entities.AuthUser{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -87,7 +87,7 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	defer span.End()
 
 	user := new(entities.User)
-	err := repository.db.First(user, userID).Error
+	err := repository.db.WithContext(ctx).First(user, userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with ID [%s] does not exist", user.ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -125,7 +125,7 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 	}
 
 	err = crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		return tx.Where(entities.User{ID: user.ID}).FirstOrCreate(user).Error
+		return tx.WithContext(ctx).Where(entities.User{ID: user.ID}).FirstOrCreate(user).Error
 	})
 
 	if err != nil {

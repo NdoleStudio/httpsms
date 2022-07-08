@@ -53,7 +53,7 @@ func (repository *gormEventRepository) FetchAll(ctx context.Context) (*[]cloudev
 	defer span.End()
 
 	var events []GormEvent
-	if err := repository.db.Order("time ASC").Find(&events).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Order("time ASC").Find(&events).Error; err != nil {
 		msg := fmt.Sprintf("cannot fetch all cloudevents")
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -88,7 +88,7 @@ func (repository *gormEventRepository) Save(ctx context.Context, event cloudeven
 		Data:   datatypes.JSON(data),
 	}
 
-	if err = repository.db.Create(gormEvent).Error; err != nil {
+	if err = repository.db.WithContext(ctx).Create(gormEvent).Error; err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot save event [%s] and type [%s]", event.ID(), event.Type()))
 	}
 

@@ -39,7 +39,7 @@ func (repository *gormPhoneRepository) Upsert(ctx context.Context, phone *entiti
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
 		existingPhone := new(entities.Phone)
 
-		err := tx.Model(&phone).
+		err := tx.WithContext(ctx).Model(&phone).
 			Where("user_id = ?", phone.UserID).
 			Where("phone_number = ?", phone.PhoneNumber).
 			First(existingPhone).
@@ -75,7 +75,7 @@ func (repository *gormPhoneRepository) Load(ctx context.Context, userID entities
 	defer span.End()
 
 	phone := new(entities.Phone)
-	err := repository.db.Where("user_id = ?", userID).Where("phone_number = ?", phoneNumber).First(phone).Error
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("phone_number = ?", phoneNumber).First(phone).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("phone with userID [%s] and phoneNumber [%s] does not exist", userID, phoneNumber)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -93,7 +93,7 @@ func (repository *gormPhoneRepository) Index(ctx context.Context, userID entitie
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("user_id = ?", userID)
+	query := repository.db.WithContext(ctx).Where("user_id = ?", userID)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where("phone_number ILIKE ?", queryPattern)

@@ -35,7 +35,7 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, owner stri
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("owner = ?", owner)
+	query := repository.db.WithContext(ctx).Where("owner = ?", owner)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where("quantity ILIKE ?", queryPattern)
@@ -55,7 +55,7 @@ func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat 
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Create(heartbeat).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Create(heartbeat).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

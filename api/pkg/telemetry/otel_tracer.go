@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 	"strings"
 
@@ -32,10 +31,7 @@ func (tracer *otelTracer) StartFromFiberCtx(_ *fiber.Ctx, name ...string) (conte
 }
 
 func (tracer *otelTracer) CtxLogger(logger Logger, span trace.Span) Logger {
-	return logger.
-		WithString("trace", fmt.Sprintf("projects/%s/traces/%s", tracer.projectID, span.SpanContext().TraceID().String())).
-		WithString("spanID", span.SpanContext().SpanID().String()).
-		WithBool("traceSampled", span.SpanContext().IsSampled())
+	return logger.WithSpan(span.SpanContext())
 }
 
 func (tracer *otelTracer) Start(c context.Context, name ...string) (context.Context, trace.Span) {
@@ -47,6 +43,11 @@ func (tracer *otelTracer) Start(c context.Context, name ...string) (context.Cont
 	span.SetAttributes(attribute.Key("traceFlags").String(parentSpan.SpanContext().TraceFlags().String()))
 
 	return ctx, span
+}
+
+// Span returns the trace.Span from context.Context
+func (tracer *otelTracer) Span(ctx context.Context) trace.Span {
+	return trace.SpanFromContext(ctx)
 }
 
 func (tracer *otelTracer) WrapErrorSpan(span trace.Span, err error) error {

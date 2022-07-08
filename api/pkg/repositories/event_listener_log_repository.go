@@ -8,7 +8,7 @@ import (
 
 // EventListenerLogRepository loads and persists an entities.EventListenerLog
 type EventListenerLogRepository interface {
-	// Save a new entities.EventListenerLog
+	// Store a new entities.EventListenerLog
 	Store(ctx context.Context, log *entities.EventListenerLog) error
 
 	// Has verifies that the listener has not already been called

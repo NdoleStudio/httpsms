@@ -30,12 +30,12 @@ func NewGormEventListenerLogRepository(
 	}
 }
 
-// Save a new entities.Message
+// Store a new entities.Message
 func (repository *gormEventListenerLogRepository) Store(ctx context.Context, message *entities.EventListenerLog) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Create(message).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Create(message).Error; err != nil {
 		msg := fmt.Sprintf("cannot save message with ID [%s]", message.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -49,7 +49,7 @@ func (repository *gormEventListenerLogRepository) Has(ctx context.Context, event
 	defer span.End()
 
 	var exists bool
-	err := repository.db.Model(&entities.EventListenerLog{}).
+	err := repository.db.WithContext(ctx).Model(&entities.EventListenerLog{}).
 		Select("count(*) > 0").
 		Where("event_id = ?", eventID).
 		Where("handler = ?", handler).

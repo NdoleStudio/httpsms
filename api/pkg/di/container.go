@@ -3,12 +3,13 @@ package di
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"firebase.google.com/go/messaging"
+	"github.com/hirosassa/zerodriver"
+	"github.com/rs/zerolog"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
@@ -30,7 +31,6 @@ import (
 	"github.com/NdoleStudio/http-sms-manager/pkg/handlers"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
-	"github.com/rs/zerolog"
 	"gorm.io/driver/postgres"
 	gormLogger "gorm.io/gorm/logger"
 )
@@ -48,7 +48,7 @@ type Container struct {
 func NewContainer(projectID string) (container *Container) {
 	container = &Container{
 		projectID: projectID,
-		logger:    logger().WithService(fmt.Sprintf("%T", container)),
+		logger:    logger(3).WithService(fmt.Sprintf("%T", container)),
 	}
 
 	container.RegisterMessageListeners()
@@ -109,9 +109,21 @@ func (container *Container) AuthRouter() fiber.Router {
 }
 
 // Logger creates a new instance of telemetry.Logger
-func (container *Container) Logger() telemetry.Logger {
+func (container *Container) Logger(skipFrameCount ...int) telemetry.Logger {
 	container.logger.Debug("creating telemetry.Logger")
-	return logger()
+	if len(skipFrameCount) > 0 {
+		return logger(skipFrameCount[0])
+	}
+	return logger(3)
+}
+
+// GormLogger creates a new instance of gormLogger.Interface
+func (container *Container) GormLogger() gormLogger.Interface {
+	container.logger.Debug("creating gormLogger.Interface")
+	return telemetry.NewGormLogger(
+		container.Tracer(),
+		container.Logger(6),
+	)
 }
 
 // DB creates an instance of gorm.DB if it has not been created already
@@ -122,14 +134,7 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
 
-	gl := gormLogger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), gormLogger.Config{
-		SlowThreshold:             200 * time.Millisecond,
-		LogLevel:                  gormLogger.Info,
-		IgnoreRecordNotFoundError: false,
-		Colorful:                  true,
-	})
-
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{Logger: gl})
+	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{Logger: container.GormLogger()})
 	if err != nil {
 		container.logger.Fatal(err)
 	}
@@ -559,29 +564,63 @@ func (container *Container) UserRepository() repositories.UserRepository {
 	)
 }
 
-func logger() telemetry.Logger {
+func logger(skipFrameCount int) telemetry.Logger {
 	hostname, _ := os.Hostname()
-	fields := fiber.Map{
-		"pid":      os.Getpid(),
+	fields := map[string]string{
+		"pid":      strconv.Itoa(os.Getpid()),
 		"hostname": hostname,
 	}
 
-	var writer io.Writer = zerolog.ConsoleWriter{Out: os.Stderr}
-	if !isLocal() {
-		writer = os.Stderr
-		//gcpWriter, err := zlg.NewCloudLoggingWriter(
-		//	context.Background(),
-		//	os.Getenv("GCP_PROJECT_ID"),
-		//	fmt.Sprintf("projects/%s/logs/run.googleapis.com%%2Fstderr", os.Getenv("GCP_PROJECT_ID")),
-		//	zlg.CloudLoggingOptions{},
-		//)
-		//if err != nil {
-		//	log.Fatal("could not create a CloudLoggingWriter")
-		//}
-		//writer = gcpWriter
+	return telemetry.NewZerologLogger(
+		os.Getenv("GCP_PROJECT_ID"),
+		fields,
+		3,
+		logDriver(skipFrameCount),
+		nil,
+	)
+}
+
+func logDriver(skipFrameCount int) *zerodriver.Logger {
+	if isLocal() {
+		return consoleLogger(skipFrameCount)
+	}
+	return jsonLogger(skipFrameCount)
+}
+
+func jsonLogger(skipFrameCount int) *zerodriver.Logger {
+	logLevel := zerolog.DebugLevel
+	zerolog.SetGlobalLevel(logLevel)
+
+	// See: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
+	logLevelSeverity := map[zerolog.Level]string{
+		zerolog.TraceLevel: "DEFAULT",
+		zerolog.DebugLevel: "DEBUG",
+		zerolog.InfoLevel:  "INFO",
+		zerolog.WarnLevel:  "WARNING",
+		zerolog.ErrorLevel: "ERROR",
+		zerolog.PanicLevel: "CRITICAL",
+		zerolog.FatalLevel: "CRITICAL",
 	}
 
-	return telemetry.NewZerologLogger(zerolog.New(writer).With().Fields(fields).Timestamp().CallerWithSkipFrameCount(3))
+	zerolog.LevelFieldName = "severity"
+	zerolog.LevelFieldMarshalFunc = func(l zerolog.Level) string {
+		return logLevelSeverity[l]
+	}
+	zerolog.TimestampFieldName = "time"
+	zerolog.TimeFieldFormat = time.RFC3339Nano
+
+	zl := zerolog.New(os.Stderr).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+	return &zerodriver.Logger{Logger: &zl}
+}
+
+func consoleLogger(skipFrameCount int) *zerodriver.Logger {
+	l := zerolog.New(
+		zerolog.ConsoleWriter{
+			Out: os.Stderr,
+		}).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+	return &zerodriver.Logger{
+		Logger: &l,
+	}
 }
 
 func isLocal() bool {

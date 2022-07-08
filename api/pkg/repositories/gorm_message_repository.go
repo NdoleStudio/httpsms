@@ -40,7 +40,7 @@ func (repository *gormMessageRepository) Index(ctx context.Context, owner string
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.Where("owner = ?", owner).Where("contact =  ?", contact)
+	query := repository.db.WithContext(ctx).Where("owner = ?", owner).Where("contact =  ?", contact)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where("content ILIKE ?", queryPattern)
@@ -60,7 +60,7 @@ func (repository *gormMessageRepository) Store(ctx context.Context, message *ent
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Create(message).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Create(message).Error; err != nil {
 		msg := fmt.Sprintf("cannot save message with ID [%s]", message.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -74,7 +74,7 @@ func (repository *gormMessageRepository) Load(ctx context.Context, messageID uui
 	defer span.End()
 
 	message := new(entities.Message)
-	err := repository.db.First(message, messageID).Error
+	err := repository.db.WithContext(ctx).First(message, messageID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("message with ID [%s] does not exist", message.ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -93,7 +93,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.Save(message).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Save(message).Error; err != nil {
 		msg := fmt.Sprintf("cannot update message with ID [%s]", message.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -109,7 +109,7 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, own
 	messages := new([]entities.Message)
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
-			return tx.Model(messages).
+			return tx.WithContext(ctx).Model(messages).
 				Clauses(clause.Returning{}).
 				Where(
 					"id IN (?)",
