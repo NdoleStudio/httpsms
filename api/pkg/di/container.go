@@ -147,7 +147,12 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
 
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{Logger: container.GormLogger()})
+	config := &gorm.Config{}
+	if isLocal() {
+		config = &gorm.Config{Logger: container.GormLogger()}
+	}
+
+	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), config)
 	if err != nil {
 		container.logger.Fatal(err)
 	}
