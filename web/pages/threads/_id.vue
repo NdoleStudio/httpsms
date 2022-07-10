@@ -103,7 +103,7 @@
                       <div v-bind="attrs" v-on="on">
                         <v-icon
                           v-if="isExpired(message)"
-                          color="error"
+                          color="warning"
                           class="mt-n2"
                           >mdi-alert</v-icon
                         >
@@ -129,6 +129,12 @@
                         >
                           mdi-check
                         </v-icon>
+                        <v-icon
+                          v-if="message.status === 'failed'"
+                          color="error"
+                          class="mt-n2"
+                          >mdi-alert</v-icon
+                        >
                       </div>
                     </template>
                     <span>
