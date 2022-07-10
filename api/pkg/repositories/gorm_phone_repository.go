@@ -7,7 +7,6 @@ import (
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
-	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
 	"github.com/palantir/stacktrace"
 	"gorm.io/gorm"
 )
@@ -32,37 +31,13 @@ func NewGormPhoneRepository(
 	}
 }
 
-func (repository *gormPhoneRepository) Upsert(ctx context.Context, phone *entities.Phone) error {
+// Save a new entities.Phone
+func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities.Phone) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		existingPhone := new(entities.Phone)
-
-		err := tx.WithContext(ctx).Model(&phone).
-			Where("user_id = ?", phone.UserID).
-			Where("phone_number = ?", phone.PhoneNumber).
-			First(existingPhone).
-			Error
-
-		if err == nil {
-			existingPhone.FcmToken = phone.FcmToken
-			if err = tx.Save(existingPhone).Error; err != nil {
-				return stacktrace.Propagate(err, fmt.Sprintf("cannot update exiting phone [%s]", existingPhone.ID))
-			}
-			*phone = *existingPhone
-			return nil
-		}
-
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			msg := fmt.Sprintf("cannot find phone with user_Id [%s] and phone_number [%s]", phone.UserID, phone.PhoneNumber)
-			return stacktrace.Propagate(err, msg)
-		}
-
-		return tx.Create(phone).Error
-	})
-	if err != nil {
-		msg := fmt.Sprintf("cannot upsert phone with params [%+#v]", err)
+	if err := repository.db.WithContext(ctx).Save(phone).Error; err != nil {
+		msg := fmt.Sprintf("cannot save phone with ID [%s]", phone.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

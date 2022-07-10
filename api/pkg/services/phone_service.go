@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nyaruka/phonenumbers"
-
 	"github.com/google/uuid"
+	"github.com/nyaruka/phonenumbers"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
 	"github.com/palantir/stacktrace"
@@ -67,6 +66,25 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
+	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return service.createPhone(ctx, params)
+	}
+
+	phone.FcmToken = &params.FcmToken
+	if err = service.repository.Save(ctx, phone); err != nil {
+		msg := fmt.Sprintf("cannot update phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("phone saved with id [%s] in the userRepository", phone.ID))
+	return phone, nil
+}
+
+func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsertParams) (*entities.Phone, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
 	phone := &entities.Phone{
 		ID:          uuid.New(),
 		UserID:      params.UserID,
@@ -76,11 +94,10 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		UpdatedAt:   time.Now().UTC(),
 	}
 
-	if err := service.repository.Upsert(ctx, phone); err != nil {
-		msg := fmt.Sprintf("cannot save phone with id [%s]", phone.ID)
+	if err := service.repository.Save(ctx, phone); err != nil {
+		msg := fmt.Sprintf("cannot create phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("phone saved with id [%s] in the userRepository", phone.ID))
 	return phone, nil
 }

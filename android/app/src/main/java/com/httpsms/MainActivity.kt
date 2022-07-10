@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
+        requestPermissions(this)
     }
 
     private fun registerReceivers(context: Context) {
@@ -191,18 +192,20 @@ class MainActivity : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.READ_SMS
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
                 this,
                 READ_PHONE_NUMBERS
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.READ_PHONE_STATE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            Timber.d("cannot get owner because permissions are not granted")
             return Settings.getOwnerOrDefault(this)
         }
 
         if (telephonyManager.line1Number != null) {
+            Timber.d("line 1 number fetched [${telephonyManager.line1Number}]")
             Settings.setOwnerAsync(context, telephonyManager.line1Number)
         }
 
@@ -214,11 +217,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        Timber.e("requesting permissions")
-
+        Timber.d("requesting permissions")
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
-                Timber.e("${it.key} = ${it.value}")
+                Timber.d("${it.key} = ${it.value}")
                 setOwner(getPhoneNumber(context))
             }
         }
@@ -233,6 +235,6 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        Timber.e("creating luncher")
+        Timber.d("creating permissions launcher")
     }
 }

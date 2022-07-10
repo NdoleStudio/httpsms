@@ -137,17 +137,6 @@ object Settings {
             .apply()
     }
 
-    fun getReceiverRegistered(context: Context): Boolean{
-        Timber.d(Settings::getReceiverRegistered.name)
-
-        val receiverRegistered = PreferenceManager
-            .getDefaultSharedPreferences(context)
-            .getBoolean(this.SETTINGS_RECEIVER_REGISTERED,false)
-
-        Timber.d("SETTINGS_RECEIVER_REGISTERED: [$receiverRegistered]")
-        return receiverRegistered
-    }
-
     fun setReceiverRegistered(context: Context, registered: Boolean) {
         Timber.d(Settings::setReceiverRegistered.name)
 
