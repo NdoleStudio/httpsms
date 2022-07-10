@@ -67,7 +67,7 @@ func (service *NotificationService) MessageSent(ctx context.Context, params *Not
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot send notification for user [%s] to phone [%s]", params.MessageID, phone.ID)
+		msg := fmt.Sprintf("cannot send notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

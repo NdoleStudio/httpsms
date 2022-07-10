@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/palantir/stacktrace"
@@ -29,6 +31,23 @@ func NewGormPhoneRepository(
 		tracer: tracer,
 		db:     db,
 	}
+}
+
+// Delete an entities.Phone
+func (repository *gormPhoneRepository) Delete(ctx context.Context, userID entities.UserID, phoneID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("id = ?", phoneID).
+		Delete(&entities.Phone{}).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete phone with ID [%s] and userID [%s]", phoneID, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
 }
 
 // Save a new entities.Phone

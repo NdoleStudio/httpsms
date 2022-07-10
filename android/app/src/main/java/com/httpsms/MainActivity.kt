@@ -53,7 +53,6 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
-        requestPermissions(this)
     }
 
     private fun registerReceivers(context: Context) {

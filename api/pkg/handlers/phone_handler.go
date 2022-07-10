@@ -41,6 +41,7 @@ func NewPhoneHandler(
 func (h *PhoneHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/phones", h.Index)
 	router.Put("/phones", h.Upsert)
+	router.Delete("/phones/:phoneID", h.Delete)
 }
 
 // Index returns the phones of a user
@@ -129,4 +130,41 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "phone updated successfully", phone)
+}
+
+// Delete a phone
+// @Summary      Delete Phone
+// @Description  Delete a phone that has been sored in the database
+// @Security	 ApiKeyAuth
+// @Tags         Phones
+// @Accept       json
+// @Produce      json
+// @Param 		 phoneID 	path		string 							true 	"ID of the phone"	default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      204 		{object}
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /phones/{phoneID} [delete]
+func (h *PhoneHandler) Delete(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	request := requests.PhoneDelete{PhoneID: c.Params("phoneID")}
+	if errors := h.validator.ValidateDelete(ctx, request); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while deleting phone [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting phone")
+	}
+
+	err := h.service.Delete(ctx, h.userIDFomContext(c), request.PhoneIDUuid())
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete phones with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "phone deleted successfully", nil)
 }

@@ -71,6 +71,11 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		return service.createPhone(ctx, params)
 	}
 
+	if err != nil {
+		msg := fmt.Sprintf("cannot upsert phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
 	phone.FcmToken = &params.FcmToken
 	if err = service.repository.Save(ctx, phone); err != nil {
 		msg := fmt.Sprintf("cannot update phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
@@ -79,6 +84,24 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 
 	ctxLogger.Info(fmt.Sprintf("phone saved with id [%s] in the userRepository", phone.ID))
 	return phone, nil
+}
+
+// Delete an entities.Phone
+func (service *PhoneService) Delete(ctx context.Context, userID entities.UserID, phoneID uuid.UUID) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	err := service.repository.Delete(ctx, userID, phoneID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete phone with id [%s] and user id [%s]", phoneID, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted phone with id [%s] and user id [%s]", phoneID, userID))
+
+	return nil
 }
 
 func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsertParams) (*entities.Phone, error) {

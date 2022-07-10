@@ -71,3 +71,18 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 
 	return v.ValidateStruct()
 }
+
+// ValidateDelete ValidateUpsert validates requests.PhoneDelete
+func (validator *PhoneHandlerValidator) ValidateDelete(_ context.Context, request requests.PhoneDelete) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"phoneID": []string{
+				"required",
+				"uuid",
+			},
+		},
+	})
+
+	return v.ValidateStruct()
+}
