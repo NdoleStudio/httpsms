@@ -140,7 +140,7 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param 		 phoneID 	path		string 							true 	"ID of the phone"	default(32343a19-da5e-4b1b-a767-3298a73703ca)
-// @Success      204 		{object}
+// @Success      204		{object}    responses.NoContent
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity

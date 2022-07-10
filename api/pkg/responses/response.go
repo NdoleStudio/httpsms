@@ -37,3 +37,9 @@ type Unauthorized struct {
 	Message string `json:"message" example:"You are not authorized to carry out this request."`
 	Data    string `json:"data" example:"Make sure your API key is set in the [X-API-Key] header in the request"`
 }
+
+// NoContent is the response when status code is 204
+type NoContent struct {
+	Status  string `json:"status" example:"success"`
+	Message string `json:"message" example:"phone deleted successfully"`
+}
