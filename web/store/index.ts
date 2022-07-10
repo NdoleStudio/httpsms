@@ -68,6 +68,7 @@ export const state = (): State => ({
 export type AppData = {
   url: string
   name: string
+  env: string
   appDownloadUrl: string
   documentationUrl: string
   githubUrl: string
@@ -85,6 +86,7 @@ export const getters = {
     }
     return {
       url,
+      env: process.env.APP_ENV as string,
       appDownloadUrl: process.env.APP_DOWNLOAD_URL as string,
       documentationUrl: process.env.APP_DOCUMENTATION_URL as string,
       githubUrl: process.env.APP_GITHUB_URL as string,
@@ -98,6 +100,10 @@ export const getters = {
 
   getAuthUser(state: State): AuthUser | null {
     return state.authUser
+  },
+
+  isLocal(): boolean {
+    return process.env.APP_ENV === 'local'
   },
 
   getUser(state: State): User | null {
@@ -268,6 +274,11 @@ export const actions = {
   async loadUser(context: ActionContext<State, State>) {
     const response = await axios.get('/v1/users/me')
     context.commit('setUser', response.data.data)
+  },
+
+  async deletePhone(context: ActionContext<State, State>, phoneID: string) {
+    await axios.delete(`/v1/phones/${phoneID}`)
+    await context.dispatch('loadPhones', true)
   },
 
   resetState(context: ActionContext<State, State>) {

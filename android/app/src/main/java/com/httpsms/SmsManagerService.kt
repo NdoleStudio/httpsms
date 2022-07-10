@@ -7,8 +7,16 @@ import android.telephony.SmsManager
 
 class SmsManagerService {
     companion object {
-        const val ACTION_SMS_SENT = "SMS_SENT"
-        const val ACTION_SMS_DELIVERED = "SMS_DELIVERED"
+        private const val ACTION_SMS_SENT = "SMS_SENT"
+        private const val ACTION_SMS_DELIVERED = "SMS_DELIVERED"
+
+        fun sentAction(messageID: String): String {
+            return "$ACTION_SMS_SENT.$messageID"
+        }
+
+        fun deliveredAction(messageID: String): String {
+            return "$ACTION_SMS_DELIVERED.$messageID"
+        }
     }
 
     fun sendMessage(context: Context, message: Message, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {

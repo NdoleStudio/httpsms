@@ -3,6 +3,7 @@ package com.httpsms
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -13,9 +14,11 @@ import timber.log.Timber
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
+    private val timberInit = false
 
     // [START receive_message]
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        initTimber()
         Timber.d(MyFirebaseMessagingService::onMessageReceived.name)
         scheduleJob()
     }
@@ -28,6 +31,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
      * FCM registration token is initially generated so this is where you would retrieve the token.
      */
     override fun onNewToken(token: String) {
+        initTimber()
         Timber.d("Refreshed token: $token")
 
         // If you want to send messages to this application instance or
@@ -59,6 +63,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     }
 
+    private fun initTimber() {
+        if (Timber.treeCount > 1) {
+            Timber.d("timber is already initialized with count [${Timber.treeCount}]")
+            return
+        }
+
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+            Timber.plant(LogtailTree())
+        }
+    }
+
     internal class SendSmsWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
         override fun doWork(): Result {
             if (!Settings.isLoggedIn(applicationContext)) {
@@ -74,13 +90,26 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
             val message = getMessage(applicationContext, owner) ?: return Result.failure()
 
+            registerReceivers(applicationContext, message.id)
+
             sendMessage(
                 message,
-                createPendingIntent(message, SmsManagerService.ACTION_SMS_SENT),
-                createPendingIntent(message, SmsManagerService.ACTION_SMS_DELIVERED)
+                createPendingIntent(message, SmsManagerService.sentAction(message.id)),
+                createPendingIntent(message, SmsManagerService.deliveredAction(message.id))
             )
 
             return Result.success()
+        }
+
+        private fun registerReceivers(context: Context, messageID: String) {
+            context.registerReceiver(
+                SentReceiver(),
+                IntentFilter(SmsManagerService.sentAction(messageID))
+            )
+            context.registerReceiver(
+                DeliveredReceiver(),
+                IntentFilter(SmsManagerService.deliveredAction(messageID))
+            )
         }
 
         private fun getMessage(context: Context, owner: String): Message? {

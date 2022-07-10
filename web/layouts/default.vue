@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <v-divider v-if="$store.getters.isLocal" class="py-1 warning"></v-divider>
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.lgAndUp && hasDrawer"
       :width="400"
@@ -7,6 +8,10 @@
       app
     >
       <template #prepend>
+        <v-divider
+          v-if="$store.getters.isLocal"
+          class="py-1 warning"
+        ></v-divider>
         <message-thread-header></message-thread-header>
         <message-thread></message-thread>
       </template>

@@ -7,7 +7,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
@@ -44,8 +43,6 @@ class MainActivity : AppCompatActivity() {
         setActiveStatus(this)
         registerListeners()
         refreshToken(this)
-
-        registerReceivers(this)
     }
 
     override fun onResume() {
@@ -53,18 +50,6 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
-    }
-
-    private fun registerReceivers(context: Context) {
-        context.registerReceiver(
-            this.sentReceiver,
-            IntentFilter(SmsManagerService.ACTION_SMS_SENT)
-        )
-        context.registerReceiver(
-            this.deliveredReceiver,
-            IntentFilter(SmsManagerService.ACTION_SMS_DELIVERED)
-        )
-        Settings.setReceiverRegistered(context, true)
     }
 
     private fun refreshToken(context: Context) {
@@ -107,6 +92,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initTimber() {
+        if (Timber.treeCount > 1) {
+            Timber.d("timber is already initialized with count [${Timber.treeCount}]")
+            return
+        }
+
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
             Timber.plant(LogtailTree())

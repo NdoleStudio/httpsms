@@ -9,7 +9,7 @@
       </v-app-bar>
       <v-container>
         <v-row>
-          <v-col cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
+          <v-col cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p>
               Use your API Key in the <code>X-API-Key</code> HTTP Header when
@@ -42,6 +42,60 @@
               copy-text="Copy API Key"
               notification-text="API Key copied successfully"
             ></copy-button>
+            <h5 class="text-h4 mb-3 mt-12">Phones</h5>
+            <p>
+              List of mobile phones which are registered for sending and
+              receiving SMS messages.
+            </p>
+            <v-simple-table>
+              <template #default>
+                <thead>
+                  <tr class="text-uppercase">
+                    <th v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
+                      ID
+                    </th>
+                    <th class="text-left">Phone Number</th>
+                    <th class="text-center">Fcm Token</th>
+                    <th class="text-center">Updated At</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="phone in $store.getters.getPhones" :key="phone.id">
+                    <td v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
+                      {{ phone.id }}
+                    </td>
+                    <td>{{ phone.phone_number | phoneNumber }}</td>
+                    <td>
+                      <div class="d-flex justify-center">
+                        <v-checkbox
+                          readonly
+                          class="mx-auto"
+                          :input-value="true"
+                          color="success"
+                        ></v-checkbox>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      {{ phone.updated_at | timestamp }}
+                    </td>
+                    <td class="text-center">
+                      <v-btn
+                        :icon="$vuetify.breakpoint.mdAndDown"
+                        small
+                        color="error"
+                        @click.prevent="deletePhone(phone.id)"
+                      >
+                        <v-icon small>mdi-delete</v-icon>
+                        <span v-if="!$vuetify.breakpoint.mdAndDown">
+                          Delete
+                        </span>
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
           </v-col>
         </v-row>
       </v-container>
@@ -73,6 +127,12 @@ export default {
       return
     }
     this.$store.dispatch('loadUser')
+  },
+
+  methods: {
+    deletePhone(phoneId) {
+      this.$store.dispatch('deletePhone', phoneId)
+    },
   },
 }
 </script>
