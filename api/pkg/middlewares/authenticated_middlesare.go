@@ -8,7 +8,7 @@ import (
 
 const (
 	authHeaderBearer = "Authorization"
-	authHeaderAPIKey = "X-API-Key"
+	authHeaderAPIKey = "x-api-key"
 	bearerScheme     = "Bearer"
 )
 
@@ -27,7 +27,7 @@ func Authenticated(tracer telemetry.Tracer) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"status":  "error",
 				"message": "You are not authorized to carry out this request.",
-				"data":    "Make sure your API key is set in the [X-API-Key] header in the request",
+				"data":    "Make sure your API key is set in the [x-api-key] header in the request",
 			})
 		}
 

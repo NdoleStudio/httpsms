@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
-
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
 	"github.com/NdoleStudio/http-sms-manager/pkg/validators"

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -74,6 +76,8 @@ func NewContainer(projectID string) (container *Container) {
 	container.RegisterUserRoutes()
 
 	container.RegisterPhoneRoutes()
+
+	container.RegisterEventRoutes()
 
 	container.RegisterNotificationListeners()
 
@@ -188,6 +192,10 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Phone{})))
 	}
 
+	if err = db.AutoMigrate(&entities.PhoneNotification{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneNotification{})))
+	}
+
 	return container.db
 }
 
@@ -211,6 +219,42 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
 	}
 	return authClient
+}
+
+// CloudTasksClient creates a new instance of cloudtasks.Client
+func (container *Container) CloudTasksClient() (client *cloudtasks.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+
+	client, err := cloudtasks.NewClient(context.Background(), option.WithCredentialsJSON(container.FirebaseCredentials()))
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize cloud tasks client"))
+	}
+
+	return client
+}
+
+// EventsQueueConfiguration creates a new instance of services.PushQueueConfig
+func (container *Container) EventsQueueConfiguration() (config services.PushQueueConfig) {
+	container.logger.Debug(fmt.Sprintf("creating %T", config))
+
+	return services.PushQueueConfig{
+		UserAPIKey:       os.Getenv("EVENTS_QUEUE_USER_API_KEY"),
+		Name:             os.Getenv("EVENTS_QUEUE_NAME"),
+		UserID:           entities.UserID(os.Getenv("EVENTS_QUEUE_USER_ID")),
+		ConsumerEndpoint: os.Getenv("EVENTS_QUEUE_ENDPOINT"),
+	}
+}
+
+// EventsQueue creates a new instance of services.PushQueue
+func (container *Container) EventsQueue() (queue services.PushQueue) {
+	container.logger.Debug("creating events services.PushQueue")
+
+	return services.NewGooglePushQueue(
+		container.Logger(),
+		container.Tracer(),
+		container.CloudTasksClient(),
+		container.EventsQueueConfiguration(),
+	)
 }
 
 // FirebaseMessagingClient creates a new instance of messaging.Client
@@ -317,6 +361,8 @@ func (container *Container) EventDispatcher() (dispatcher *services.EventDispatc
 		container.Logger(),
 		container.Tracer(),
 		container.EventRepository(),
+		container.EventsQueue(),
+		container.EventsQueueConfiguration(),
 	)
 
 	container.eventDispatcher = dispatcher
@@ -337,6 +383,16 @@ func (container *Container) MessageRepository() (repository repositories.Message
 func (container *Container) PhoneRepository() (repository repositories.PhoneRepository) {
 	container.logger.Debug("creating GORM repositories.PhoneRepository")
 	return repositories.NewGormPhoneRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// PhoneNotificationRepository creates a new instance of repositories.PhoneNotificationRepository
+func (container *Container) PhoneNotificationRepository() (repository repositories.PhoneNotificationRepository) {
+	container.logger.Debug("creating GORM repositories.PhoneNotificationRepository")
+	return repositories.NewGormPhoneNotificationRepository(
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
@@ -446,6 +502,18 @@ func (container *Container) PhoneHandler() (handler *handlers.PhoneHandler) {
 	)
 }
 
+// EventsHandler creates a new instance of handlers.EventsHandler
+func (container *Container) EventsHandler() (handler *handlers.EventsHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+
+	return handlers.NewEventsHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.EventsQueueConfiguration(),
+		container.EventDispatcher(),
+	)
+}
+
 // RegisterMessageListeners registers event listeners for listeners.MessageListener
 func (container *Container) RegisterMessageListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.MessageListener{}))
@@ -523,6 +591,8 @@ func (container *Container) NotificationService() (service *services.Notificatio
 		container.Tracer(),
 		container.FirebaseMessagingClient(),
 		container.PhoneRepository(),
+		container.PhoneNotificationRepository(),
+		container.EventDispatcher(),
 	)
 }
 
@@ -554,6 +624,12 @@ func (container *Container) RegisterPhoneRoutes() {
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
 	container.UserHandler().RegisterRoutes(container.AuthRouter())
+}
+
+// RegisterEventRoutes registers routes for the /events prefix
+func (container *Container) RegisterEventRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.EventsHandler{}))
+	container.EventsHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterSwaggerRoutes registers routes for swagger

@@ -51,21 +51,8 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
-	handled, err := listener.repository.Has(ctx, event.ID(), listener.signature(event))
-	if err != nil {
-		msg := fmt.Sprintf("cannot verify if event [%s] has been handled by [%T]", event.ID(), listener.signature(event))
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	ctxLogger := listener.tracer.CtxLogger(listener.logger, span)
-
-	if handled {
-		ctxLogger.Info(fmt.Sprintf("event [%s] has already been handled by [%s]", event.ID(), listener.signature(event)))
-		return nil
-	}
-
 	var payload events.MessageAPISentPayload
-	if err = event.DataAs(&payload); err != nil {
+	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -78,12 +65,12 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 		Timestamp: payload.RequestReceivedAt,
 	}
 
-	if _, err = listener.service.StoreSentMessage(ctx, storeParams); err != nil {
+	if _, err := listener.service.StoreSentMessage(ctx, storeParams); err != nil {
 		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+	return nil
 }
 
 // OnMessagePhoneSending handles the events.EventTypeMessagePhoneSending event

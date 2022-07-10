@@ -23,7 +23,7 @@ import (
 //
 // @securitydefinitions.apikey ApiKeyAuth
 // @in header
-// @name X-API-Key
+// @name x-api-Key
 func main() {
 	if len(os.Args) == 1 {
 		di.LoadEnv()

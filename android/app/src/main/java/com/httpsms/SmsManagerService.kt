@@ -21,7 +21,7 @@ class SmsManagerService {
 
     fun sendMessage(context: Context, message: Message, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {
         getSmsManager(context)
-            .sendTextMessage(message.contact, message.owner, message.content, sentIntent, deliveryIntent)
+            .sendTextMessage(message.contact, null, message.content, sentIntent, deliveryIntent)
     }
 
     @Suppress("DEPRECATION")

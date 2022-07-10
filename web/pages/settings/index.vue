@@ -12,7 +12,7 @@
           <v-col cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p>
-              Use your API Key in the <code>X-API-Key</code> HTTP Header when
+              Use your API Key in the <code>x-api-key</code> HTTP Header when
               sending requests to
               <code>https://api.httpsms.com</code> endpoints.
             </p>

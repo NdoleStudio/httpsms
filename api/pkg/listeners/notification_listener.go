@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/events"
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
@@ -31,11 +33,12 @@ func NewNotificationListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent: l.onMessageAPISent,
+		events.EventTypeMessageAPISent:               l.onMessageAPISent,
+		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
 	}
 }
 
-// onMessageAPISent handles the events.EventTypeHeartbeatPhoneOutstanding event
+// onMessageAPISent handles the events.EventTypeMessageAPISent event
 func (listener *NotificationListener) onMessageAPISent(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
@@ -46,14 +49,41 @@ func (listener *NotificationListener) onMessageAPISent(ctx context.Context, even
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	sentParams := &services.NotificationMessageSentParams{
+	sendParams := &services.NotificationScheduleParams{
 		UserID:    payload.UserID,
 		Owner:     payload.Owner,
+		Source:    event.Source(),
 		MessageID: payload.ID,
 	}
 
-	if err := listener.service.MessageSent(ctx, sentParams); err != nil {
-		msg := fmt.Sprintf("cannot send notification with params [%+#v] for event with ID [%s]", sentParams, event.ID())
+	if err := listener.service.Schedule(ctx, sendParams); err != nil {
+		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageNotificationScheduled handles the events.EventTypeMessageNotificationScheduled event
+func (listener *NotificationListener) onMessageNotificationScheduled(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageNotificationScheduledPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	scheduleParams := &services.NotificationSendParams{
+		UserID:              payload.UserID,
+		PhoneID:             payload.PhoneID,
+		PhoneNotificationID: payload.NotificationID,
+		MessageID:           payload.MessageID,
+	}
+
+	if err := listener.service.Send(ctx, scheduleParams); err != nil {
+		msg := fmt.Sprintf("cannot schedule notification with params [%s] for event with ID [%s]", spew.Sdump(scheduleParams), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

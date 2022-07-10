@@ -130,7 +130,7 @@
                           mdi-check
                         </v-icon>
                         <v-icon
-                          v-if="message.status === 'failed'"
+                          v-else-if="message.status === 'failed'"
                           color="error"
                           class="mt-n2"
                           >mdi-alert</v-icon
