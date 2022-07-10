@@ -84,6 +84,7 @@
                         :icon="$vuetify.breakpoint.mdAndDown"
                         small
                         color="error"
+                        :disabled="deletingPhone"
                         @click.prevent="deletePhone(phone.id)"
                       >
                         <v-icon small>mdi-delete</v-icon>
@@ -110,6 +111,7 @@ export default {
   data() {
     return {
       apiKeyShow: false,
+      deletingPhone: false,
     }
   },
   computed: {
@@ -131,7 +133,10 @@ export default {
 
   methods: {
     deletePhone(phoneId) {
-      this.$store.dispatch('deletePhone', phoneId)
+      this.deletingPhone = true
+      this.$store.dispatch('deletePhone', phoneId).finally(() => {
+        this.deletingPhone = false
+      })
     },
   },
 }
