@@ -50,12 +50,15 @@
             <v-simple-table>
               <template #default>
                 <thead>
-                  <tr class="text-uppercase">
+                  <tr class="text-uppercase subtitle-2">
                     <th v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
                       ID
                     </th>
                     <th class="text-left">Phone Number</th>
-                    <th class="text-center">Fcm Token</th>
+                    <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
+                      Fcm Token
+                    </th>
+                    <th class="text-center">Rate</th>
                     <th class="text-center">Updated At</th>
                     <th class="text-center">Action</th>
                   </tr>
@@ -66,7 +69,7 @@
                       {{ phone.id }}
                     </td>
                     <td>{{ phone.phone_number | phoneNumber }}</td>
-                    <td>
+                    <td v-if="$vuetify.breakpoint.lgAndUp">
                       <div class="d-flex justify-center">
                         <v-checkbox
                           readonly
@@ -75,6 +78,12 @@
                           color="success"
                         ></v-checkbox>
                       </div>
+                    </td>
+                    <td class="text-center">
+                      <span v-if="phone.messages_per_minute"
+                        >{{ phone.messages_per_minute }}/min</span
+                      >
+                      <span v-else>Unlimited</span>
                     </td>
                     <td class="text-center">
                       {{ phone.updated_at | timestamp }}
