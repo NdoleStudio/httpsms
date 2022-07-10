@@ -109,6 +109,7 @@ class MainActivity : AppCompatActivity() {
     private fun initTimber() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+            Timber.plant(LogtailTree())
         }
     }
 
@@ -119,6 +120,7 @@ class MainActivity : AppCompatActivity() {
     private fun onLogoutClick() {
         Timber.d("logout button clicked")
         Settings.setApiKeyAsync(this, null)
+        Settings.setOwnerAsync(this, null)
         Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
         redirectToLogin()
     }
@@ -203,12 +205,12 @@ class MainActivity : AppCompatActivity() {
             return Settings.getOwnerOrDefault(this)
         }
 
-        if (telephonyManager.line1Number != null) {
+        if (telephonyManager.line1Number != null && telephonyManager.line1Number != "") {
             Timber.d("line 1 number fetched [${telephonyManager.line1Number}]")
             Settings.setOwnerAsync(context, telephonyManager.line1Number)
         }
 
-        return telephonyManager.line1Number ?: Settings.getOwnerOrDefault(this)
+        return Settings.getOwnerOrDefault(this)
     }
 
     private fun requestPermissions(context:Context) {

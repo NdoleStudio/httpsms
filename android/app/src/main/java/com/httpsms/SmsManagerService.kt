@@ -2,6 +2,7 @@ package com.httpsms
 
 import android.app.PendingIntent
 import android.content.Context
+import android.os.Build
 import android.telephony.SmsManager
 
 class SmsManagerService {
@@ -11,7 +12,16 @@ class SmsManagerService {
     }
 
     fun sendMessage(context: Context, message: Message, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {
-        val smsManager: SmsManager = context.getSystemService(SmsManager::class.java)
-        smsManager.sendTextMessage(message.contact, message.owner, message.content, sentIntent, deliveryIntent)
+        getSmsManager(context)
+            .sendTextMessage(message.contact, message.owner, message.content, sentIntent, deliveryIntent)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getSmsManager(context: Context): SmsManager {
+        return if (Build.VERSION.SDK_INT < 31) {
+            SmsManager.getDefault()
+        } else {
+            context.getSystemService(SmsManager::class.java)
+        }
     }
 }

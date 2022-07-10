@@ -98,7 +98,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         private fun sendMessage(message: Message, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
             Timber.d("sending SMS for message with ID [${message.id}]")
-            SmsManagerService().sendMessage(this.applicationContext, message, sentIntent, deliveredIntent)
+            try {
+                SmsManagerService().sendMessage(this.applicationContext, message, sentIntent, deliveredIntent)
+            } catch (e: Exception) {
+                Timber.e(e)
+                Timber.d("could not send SMS for message with ID [${message.id}]")
+                return
+            }
             Timber.d("sent SMS for message with ID [${message.id}]")
         }
 

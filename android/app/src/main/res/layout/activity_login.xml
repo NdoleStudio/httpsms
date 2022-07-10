@@ -36,12 +36,34 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/loginPhoneNumberLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="224dp"
+        android:hint="@string/phone_number"
+        app:errorEnabled="true"
+        app:placeholderText="@string/login_phone_number_hint"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout"
+        app:layout_constraintVertical_bias="0.137"
+        tools:layout_editor_absoluteX="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/loginPhoneNumberInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            tools:ignore="TextContrastCheck" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/loginApiKeyTextInputLayout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:errorEnabled="true"
-        app:errorContentDescription="How are you"
         android:hint="@string/text_area_api_key"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -57,6 +79,7 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
+        android:id="@+id/linearLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="50"
@@ -65,35 +88,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/loginButton"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="#2196f3"
-            android:drawableTint="@color/white"
-            android:padding="10dp"
-            android:text="@string/sign_in_button"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:icon="@drawable/ic_login"
-            app:iconTint="@color/white"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout"
-            tools:ignore="TextContrastCheck" />
-
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/loginProgressIndicator"
             android:layout_width="match_parent"
-            android:visibility="invisible"
             android:layout_height="wrap_content"
-            android:indeterminate="true"
             android:layout_marginTop="4dp"
+            android:indeterminate="true"
+            android:visibility="invisible"
             app:indicatorColor="@color/pink_500"
             app:layout_constraintTop_toBottomOf="@+id/loginButton"
             tools:layout_editor_absoluteX="16dp" />
     </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/loginButton"
+        style="@style/Widget.MaterialComponents.Button.Icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#2196f3"
+        android:drawableTint="@color/white"
+        android:padding="10dp"
+        android:text="@string/sign_in_button"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:icon="@drawable/ic_login"
+        app:iconTint="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayout"
+        tools:ignore="TextContrastCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

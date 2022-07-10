@@ -60,7 +60,7 @@ object Settings {
     }
 
 
-    fun setOwnerAsync(context: Context, owner: String) {
+    fun setOwnerAsync(context: Context, owner: String?) {
         Timber.d(Settings::setOwnerAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
