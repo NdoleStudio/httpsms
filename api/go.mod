@@ -7,6 +7,7 @@ require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.3
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
+	github.com/carlmjohnson/requests v0.22.3
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/cloudevents/sdk-go/v2 v2.10.0
 	github.com/cockroachdb/cockroach-go/v2 v2.2.11

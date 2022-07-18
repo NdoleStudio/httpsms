@@ -65,6 +65,7 @@ func (repository gormPhoneNotificationRepository) Schedule(ctx context.Context, 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
 		var messagesCount int64
 		err := tx.WithContext(ctx).
+			Model(&entities.PhoneNotification{}).
 			Where("phone_id = ?", notification.PhoneID).
 			Where("status = ?", entities.PhoneNotificationStatusPending).
 			Count(&messagesCount).

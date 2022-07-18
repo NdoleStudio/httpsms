@@ -1,41 +1,33 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 
+	"github.com/carlmjohnson/requests"
 	"github.com/palantir/stacktrace"
 )
 
 func main() {
-	client := http.Client{}
-	for i := 0; i < 100; i++ {
-		payload, err := json.Marshal(map[string]string{
-			"content": fmt.Sprintf("testing http api sample: [%d]", i),
-			"from":    "+37259139660",
-			"to":      "+37253517181",
-		})
+	for i := 0; i < 50; i++ {
+		var responsePayload string
+		err := requests.
+			URL("/v1/messages/send").
+			Host("localhost:8000").
+			Scheme("http").
+			Header("x-api-key", "Uv38ByGCZU8WP18PmmIdcpVmx00QA3xNe7sEB9HixkmBhVrYaB0NhtHpHgAWeTnL").
+			BodyJSON(&map[string]string{
+				"content": fmt.Sprintf("testing http api sample: [%d]", i),
+				"from":    "+37259139660",
+				"to":      "+37253517181",
+			}).
+			ToString(&responsePayload).
+			Fetch(context.Background())
 		if err != nil {
 			log.Fatal(stacktrace.Propagate(err, "cannot create json payload"))
 		}
-		response, err := client.Post("https://api.httpsms.com/v1/messages/send", "application/json", bytes.NewBuffer(payload))
-		if err != nil {
-			log.Fatal(stacktrace.Propagate(err, "cannot perform http request"))
-		}
 
-		if response.StatusCode != http.StatusOK {
-			log.Fatal(stacktrace.NewError(fmt.Sprintf("status code [%d] is different from expected [%d]", response.StatusCode, http.StatusOK)))
-		}
-
-		responsePayload, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			log.Fatal(stacktrace.NewError(fmt.Sprintf("cannot read response")))
-		}
-
-		log.Println(string(responsePayload))
+		log.Println(responsePayload)
 	}
 }
