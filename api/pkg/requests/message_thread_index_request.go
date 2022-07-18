@@ -3,6 +3,8 @@ package requests
 import (
 	"strings"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
@@ -40,14 +42,15 @@ func (input *MessageThreadIndex) Sanitize() MessageThreadIndex {
 	return *input
 }
 
-// ToGetParams converts request to services.MessageThreadGetParams
-func (input *MessageThreadIndex) ToGetParams() services.MessageThreadGetParams {
+// ToGetParams converts MessageThreadIndex into services.MessageThreadGetParams
+func (input *MessageThreadIndex) ToGetParams(userID entities.UserID) services.MessageThreadGetParams {
 	return services.MessageThreadGetParams{
 		IndexParams: repositories.IndexParams{
 			Skip:  input.getInt(input.Skip),
 			Query: input.Query,
 			Limit: input.getInt(input.Limit),
 		},
+		UserID:     userID,
 		IsArchived: input.getBool(input.IsArchived),
 		Owner:      input.Owner,
 	}

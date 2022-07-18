@@ -17,11 +17,11 @@ type MessageThreadRepository interface {
 	Update(ctx context.Context, thread *entities.MessageThread) error
 
 	// LoadByOwnerContact fetches a thread between owner and contact
-	LoadByOwnerContact(ctx context.Context, owner string, contact string) (*entities.MessageThread, error)
+	LoadByOwnerContact(ctx context.Context, userID entities.UserID, owner string, contact string) (*entities.MessageThread, error)
 
 	// Load a thread by ID
-	Load(ctx context.Context, ID uuid.UUID) (*entities.MessageThread, error)
+	Load(ctx context.Context, userID entities.UserID, ID uuid.UUID) (*entities.MessageThread, error)
 
 	// Index message threads for an owner
-	Index(ctx context.Context, owner string, archived bool, params IndexParams) (*[]entities.MessageThread, error)
+	Index(ctx context.Context, userID entities.UserID, owner string, archived bool, params IndexParams) (*[]entities.MessageThread, error)
 }

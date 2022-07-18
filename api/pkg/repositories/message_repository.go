@@ -16,11 +16,11 @@ type MessageRepository interface {
 	Update(ctx context.Context, message *entities.Message) error
 
 	// Load an entities.Message by ID
-	Load(ctx context.Context, messageID uuid.UUID) (*entities.Message, error)
+	Load(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error)
 
 	// Index entities.Message between 2 phone numbers
-	Index(ctx context.Context, owner string, contact string, params IndexParams) (*[]entities.Message, error)
+	Index(ctx context.Context, userID entities.UserID, owner string, contact string, params IndexParams) (*[]entities.Message, error)
 
 	// GetOutstanding fetches list of outstanding []entities.Message
-	GetOutstanding(ctx context.Context, owner string, limit int) (*[]entities.Message, error)
+	GetOutstanding(ctx context.Context, userID entities.UserID, owner string, limit int) (*[]entities.Message, error)
 }

@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
@@ -38,13 +40,14 @@ func (input *MessageIndex) Sanitize() MessageIndex {
 }
 
 // ToGetParams converts request to services.MessageGetParams
-func (input *MessageIndex) ToGetParams() services.MessageGetParams {
+func (input *MessageIndex) ToGetParams(userID entities.UserID) services.MessageGetParams {
 	return services.MessageGetParams{
 		IndexParams: repositories.IndexParams{
 			Skip:  input.getInt(input.Skip),
 			Query: input.Query,
 			Limit: input.getInt(input.Limit),
 		},
+		UserID:  userID,
 		Owner:   input.Owner,
 		Contact: input.Contact,
 	}

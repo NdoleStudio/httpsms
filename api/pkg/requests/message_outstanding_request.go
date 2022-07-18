@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
 )
 
@@ -29,10 +31,11 @@ func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 	return *input
 }
 
-// ToGetOutstandingParams converts request to services.MessageGetOutstandingParams
-func (input *MessageOutstanding) ToGetOutstandingParams(source string, timestamp time.Time) services.MessageGetOutstandingParams {
+// ToGetOutstandingParams converts MessageOutstanding into services.MessageGetOutstandingParams
+func (input *MessageOutstanding) ToGetOutstandingParams(source string, userID entities.UserID, timestamp time.Time) services.MessageGetOutstandingParams {
 	return services.MessageGetOutstandingParams{
 		Source:    source,
+		UserID:    userID,
 		Owner:     input.Owner,
 		Timestamp: timestamp,
 		Limit:     input.getLimit(),

@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/google/uuid"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
@@ -15,8 +16,9 @@ type MessageThreadUpdate struct {
 }
 
 // ToUpdateParams converts MessageThreadUpdate to services.MessageThreadStatusParams
-func (input *MessageThreadUpdate) ToUpdateParams() services.MessageThreadStatusParams {
+func (input *MessageThreadUpdate) ToUpdateParams(userID entities.UserID) services.MessageThreadStatusParams {
 	return services.MessageThreadStatusParams{
+		UserID:          userID,
 		MessageThreadID: uuid.MustParse(input.MessageThreadID),
 		IsArchived:      input.IsArchived,
 	}

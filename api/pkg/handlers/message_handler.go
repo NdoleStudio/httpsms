@@ -128,7 +128,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching outstanding messages")
 	}
 
-	messages, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), timestamp))
+	messages, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), h.userIDFomContext(c), timestamp))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get messgaes with URL [%s]", c.OriginalURL())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
@@ -175,7 +175,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching messages")
 	}
 
-	messages, err := h.service.GetMessages(ctx, request.ToGetParams())
+	messages, err := h.service.GetMessages(ctx, request.ToGetParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get messgaes with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
@@ -222,7 +222,7 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
-	message, err := h.service.GetMessage(ctx, uuid.MustParse(request.MessageID))
+	message, err := h.service.GetMessage(ctx, h.userIDFomContext(c), uuid.MustParse(request.MessageID))
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", request.MessageID))
 	}
@@ -275,7 +275,7 @@ func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while receiving message")
 	}
 
-	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(c.OriginalURL()))
+	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot receive message with paylod [%s]", c.Body())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

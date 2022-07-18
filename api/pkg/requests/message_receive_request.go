@@ -3,6 +3,8 @@ package requests
 import (
 	"time"
 
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+
 	"github.com/nyaruka/phonenumbers"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
@@ -26,11 +28,12 @@ func (input *MessageReceive) Sanitize() MessageReceive {
 }
 
 // ToMessageReceiveParams converts MessageReceive to services.MessageReceiveParams
-func (input MessageReceive) ToMessageReceiveParams(source string) services.MessageReceiveParams {
+func (input MessageReceive) ToMessageReceiveParams(userID entities.UserID, source string) services.MessageReceiveParams {
 	phone, _ := phonenumbers.Parse(input.To, phonenumbers.UNKNOWN_REGION)
 	return services.MessageReceiveParams{
 		Source:    source,
 		Contact:   input.From,
+		UserID:    userID,
 		Timestamp: input.Timestamp,
 		Owner:     *phone,
 		Content:   input.Content,

@@ -1,6 +1,7 @@
 package events
 
 import (
+	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
 	"github.com/google/uuid"
 )
 
@@ -9,8 +10,9 @@ const EventTypeMessagePhoneSending = "message.phone.sending"
 
 // MessagePhoneSendingPayload is the payload of the EventTypeMessageSent event
 type MessagePhoneSendingPayload struct {
-	ID      uuid.UUID `json:"id"`
-	Owner   string    `json:"owner"`
-	Contact string    `json:"contact"`
-	Content string    `json:"content"`
+	ID      uuid.UUID       `json:"id"`
+	UserID  entities.UserID `json:"user_id"`
+	Owner   string          `json:"owner"`
+	Contact string          `json:"contact"`
+	Content string          `json:"content"`
 }

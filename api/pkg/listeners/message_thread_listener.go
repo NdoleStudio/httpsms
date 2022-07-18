@@ -60,6 +60,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 	updateParams := services.MessageThreadUpdateParams{
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
+		UserID:    payload.UserID,
 		Timestamp: payload.RequestReceivedAt,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -86,6 +87,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSending(ctx context.Context
 
 	updateParams := services.MessageThreadUpdateParams{
 		Owner:     payload.Owner,
+		UserID:    payload.UserID,
 		Contact:   payload.Contact,
 		Timestamp: event.Time(),
 		Content:   payload.Content,
@@ -114,6 +116,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 	updateParams := services.MessageThreadUpdateParams{
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
+		UserID:    payload.UserID,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -140,6 +143,7 @@ func (listener *MessageThreadListener) OnMessagePhoneDelivered(ctx context.Conte
 
 	updateParams := services.MessageThreadUpdateParams{
 		Owner:     payload.Owner,
+		UserID:    payload.UserID,
 		Contact:   payload.Contact,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
@@ -168,6 +172,7 @@ func (listener *MessageThreadListener) OnMessagePhoneFailed(ctx context.Context,
 	updateParams := services.MessageThreadUpdateParams{
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
+		UserID:    payload.UserID,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -196,6 +201,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		Timestamp: event.Time(),
+		UserID:    payload.UserID,
 		Content:   payload.Content,
 		MessageID: payload.ID,
 	}

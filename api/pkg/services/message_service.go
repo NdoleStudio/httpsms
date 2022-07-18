@@ -57,7 +57,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	messages, err := service.repository.GetOutstanding(ctx, params.Owner, params.Limit)
+	messages, err := service.repository.GetOutstanding(ctx, params.UserID, params.Owner, params.Limit)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Limit)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -72,6 +72,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 // MessageGetParams parameters for sending a new message
 type MessageGetParams struct {
 	repositories.IndexParams
+	UserID  entities.UserID
 	Owner   string
 	Contact string
 }
@@ -83,7 +84,7 @@ func (service *MessageService) GetMessages(ctx context.Context, params MessageGe
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	messages, err := service.repository.Index(ctx, params.Owner, params.Contact, params.IndexParams)
+	messages, err := service.repository.Index(ctx, params.UserID, params.Owner, params.Contact, params.IndexParams)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages with parms [%+#v]", params)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -94,11 +95,11 @@ func (service *MessageService) GetMessages(ctx context.Context, params MessageGe
 }
 
 // GetMessage fetches a message by the ID
-func (service *MessageService) GetMessage(ctx context.Context, messageID uuid.UUID) (*entities.Message, error) {
+func (service *MessageService) GetMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	message, err := service.repository.Load(ctx, messageID)
+	message, err := service.repository.Load(ctx, userID, messageID)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages with ID [%s]", messageID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
@@ -138,12 +139,13 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return service.repository.Load(ctx, params.MessageID)
+	return service.repository.Load(ctx, message.UserID, params.MessageID)
 }
 
 // MessageReceiveParams parameters registering a message event
 type MessageReceiveParams struct {
 	Contact   string
+	UserID    entities.UserID
 	Owner     phonenumbers.PhoneNumber
 	Content   string
 	Timestamp time.Time
@@ -182,7 +184,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched succesfully", event.ID()))
 
-	message, err := service.repository.Load(ctx, eventPayload.ID)
+	message, err := service.repository.Load(ctx, params.UserID, eventPayload.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -200,6 +202,7 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 	event, err := service.createMessagePhoneSentEvent(params.Source, events.MessagePhoneSentPayload{
 		ID:        message.ID,
 		Owner:     message.Owner,
+		UserID:    message.UserID,
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
 		Content:   message.Content,
@@ -248,6 +251,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		Owner:     message.Owner,
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
+		UserID:    message.UserID,
 		Content:   message.Content,
 	})
 	if err != nil {
@@ -303,6 +307,7 @@ func (service *MessageService) handleOutstandingMessages(ctx context.Context, so
 				ID:      message.ID,
 				Owner:   message.Owner,
 				Contact: message.Contact,
+				UserID:  message.UserID,
 				Content: message.Content,
 			})
 			if err != nil {
@@ -321,7 +326,7 @@ func (service *MessageService) handleOutstandingMessages(ctx context.Context, so
 
 			ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
 
-			resultMessage, err := service.repository.Load(ctx, message.ID)
+			resultMessage, err := service.repository.Load(ctx, message.UserID, message.ID)
 			if err != nil {
 				msg := fmt.Sprintf("cannot load message with id [%s]", message.ID)
 				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
@@ -383,7 +388,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched succesfully", event.ID()))
 
-	message, err := service.repository.Load(ctx, eventPayload.ID)
+	message, err := service.repository.Load(ctx, eventPayload.UserID, eventPayload.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -399,6 +404,7 @@ type MessageStoreParams struct {
 	Owner     string
 	Contact   string
 	Content   string
+	UserID    entities.UserID
 	ID        uuid.UUID
 	Timestamp time.Time
 }
@@ -446,6 +452,7 @@ func (service *MessageService) StoreReceivedMessage(ctx context.Context, params 
 	message := &entities.Message{
 		ID:                params.ID,
 		Owner:             params.Owner,
+		UserID:            params.UserID,
 		Contact:           params.Contact,
 		Content:           params.Content,
 		Type:              entities.MessageTypeMobileOriginated,
@@ -469,6 +476,7 @@ func (service *MessageService) StoreReceivedMessage(ctx context.Context, params 
 // HandleMessageParams are parameters for handling a message event
 type HandleMessageParams struct {
 	ID        uuid.UUID
+	UserID    entities.UserID
 	Timestamp time.Time
 }
 
@@ -479,7 +487,7 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.Load(ctx, params.ID)
+	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -506,7 +514,7 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.Load(ctx, params.ID)
+	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -533,7 +541,7 @@ func (service *MessageService) HandleMessageFailed(ctx context.Context, params H
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.Load(ctx, params.ID)
+	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -560,7 +568,7 @@ func (service *MessageService) HandleMessageDelivered(ctx context.Context, param
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.Load(ctx, params.ID)
+	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

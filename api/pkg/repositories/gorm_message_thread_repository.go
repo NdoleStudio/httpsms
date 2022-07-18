@@ -62,13 +62,19 @@ func (repository *gormMessageThreadRepository) Update(ctx context.Context, threa
 }
 
 // LoadByOwnerContact a thread between 2 users
-func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Context, owner string, contact string) (*entities.MessageThread, error) {
+func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Context, userID entities.UserID, owner string, contact string) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	thread := new(entities.MessageThread)
 
-	err := repository.db.WithContext(ctx).Where("owner = ?", owner).Where("contact = ?", contact).First(thread).Error
+	err := repository.db.
+		WithContext(ctx).
+		Where("user = ?", userID).
+		Where("owner = ?", owner).
+		Where("contact = ?", contact).
+		First(thread).
+		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("thread with owner [%s] and contact [%s] does not exist", owner, contact)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -83,13 +89,17 @@ func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Co
 }
 
 // Load an entities.MessageThread by ID
-func (repository *gormMessageThreadRepository) Load(ctx context.Context, ID uuid.UUID) (*entities.MessageThread, error) {
+func (repository *gormMessageThreadRepository) Load(ctx context.Context, userID entities.UserID, ID uuid.UUID) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	thread := new(entities.MessageThread)
 
-	err := repository.db.WithContext(ctx).First(thread, ID).Error
+	err := repository.db.
+		WithContext(ctx).
+		Where("user = ?", userID).
+		Where("id = ?", ID).
+		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("thread with id [%s] not found", ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -104,11 +114,14 @@ func (repository *gormMessageThreadRepository) Load(ctx context.Context, ID uuid
 }
 
 // Index message threads for an owner
-func (repository *gormMessageThreadRepository) Index(ctx context.Context, owner string, isArchived bool, params IndexParams) (*[]entities.MessageThread, error) {
+func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID entities.UserID, owner string, isArchived bool, params IndexParams) (*[]entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.WithContext(ctx).Where("owner = ?", owner)
+	query := repository.db.
+		WithContext(ctx).
+		Where("user = ?", userID).
+		Where("owner = ?", owner)
 
 	if isArchived {
 		query.Where("is_archived = ?", isArchived)

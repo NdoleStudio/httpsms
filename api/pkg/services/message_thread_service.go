@@ -38,6 +38,7 @@ type MessageThreadUpdateParams struct {
 	Owner     string
 	Contact   string
 	Content   string
+	UserID    entities.UserID
 	MessageID uuid.UUID
 	Timestamp time.Time
 }
@@ -49,7 +50,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	thread, err := service.repository.LoadByOwnerContact(ctx, params.Owner, params.Contact)
+	thread, err := service.repository.LoadByOwnerContact(ctx, params.UserID, params.Owner, params.Contact)
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact))
 		return service.createThread(ctx, params)
@@ -77,6 +78,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 // MessageThreadStatusParams are parameters for updating a thread status
 type MessageThreadStatusParams struct {
 	IsArchived      bool
+	UserID          entities.UserID
 	MessageThreadID uuid.UUID
 }
 
@@ -87,7 +89,7 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	thread, err := service.repository.Load(ctx, params.MessageThreadID)
+	thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find thread with id [%s]", params.MessageThreadID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -165,6 +167,7 @@ func (service *MessageThreadService) getColor() string {
 type MessageThreadGetParams struct {
 	repositories.IndexParams
 	IsArchived bool
+	UserID     entities.UserID
 	Owner      string
 }
 
@@ -175,7 +178,7 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	threads, err := service.repository.Index(ctx, params.Owner, params.IsArchived, params.IndexParams)
+	threads, err := service.repository.Index(ctx, params.UserID, params.Owner, params.IsArchived, params.IndexParams)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages threads for params [%+#v]", params)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

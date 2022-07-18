@@ -61,6 +61,7 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		Content:   payload.Content,
+		UserID:    payload.UserID,
 		ID:        payload.ID,
 		Timestamp: payload.RequestReceivedAt,
 	}
@@ -99,6 +100,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 
 	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
+		UserID:    payload.UserID,
 		Timestamp: event.Time(),
 	}
 
@@ -173,6 +175,7 @@ func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, ev
 
 	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
+		UserID:    payload.UserID,
 		Timestamp: payload.Timestamp,
 	}
 
@@ -210,6 +213,7 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 
 	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
+		UserID:    payload.UserID,
 		Timestamp: payload.Timestamp,
 	}
 
@@ -249,6 +253,7 @@ func (listener *MessageListener) OnMessagePhoneReceived(ctx context.Context, eve
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		Content:   payload.Content,
+		UserID:    payload.UserID,
 		ID:        payload.ID,
 		Timestamp: payload.Timestamp,
 	}

@@ -80,7 +80,7 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching message threads")
 	}
 
-	threads, err := h.service.GetThreads(ctx, request.ToGetParams())
+	threads, err := h.service.GetThreads(ctx, request.ToGetParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get message threads with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
@@ -124,7 +124,7 @@ func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating message thread")
 	}
 
-	thread, err := h.service.UpdateStatus(ctx, request.ToUpdateParams())
+	thread, err := h.service.UpdateStatus(ctx, request.ToUpdateParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot update message thread with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
