@@ -12,5 +12,5 @@ type HeartbeatRepository interface {
 	Store(ctx context.Context, heartbeat *entities.Heartbeat) error
 
 	// Index entities.Heartbeat of an owner
-	Index(ctx context.Context, owner string, params IndexParams) (*[]entities.Heartbeat, error)
+	Index(ctx context.Context, userID entities.UserID, owner string, params IndexParams) (*[]entities.Heartbeat, error)
 }

@@ -31,16 +31,16 @@ func NewHeartbeatListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeHeartbeatPhoneOutstanding: l.onHeartbeatPhoneOutstanding,
+		events.EventTypeMessagePhoneSending: l.onMessagePhoneSending,
 	}
 }
 
-// onHeartbeatPhoneOutstanding handles the events.EventTypeHeartbeatPhoneOutstanding event
-func (listener *HeartbeatListener) onHeartbeatPhoneOutstanding(ctx context.Context, event cloudevents.Event) error {
+// onMessagePhoneSending handles the events.EventTypeMessagePhoneSending event
+func (listener *HeartbeatListener) onMessagePhoneSending(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
-	var payload events.HeartbeatPhoneOutstandingPayload
+	var payload events.MessagePhoneSendingPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -49,7 +49,8 @@ func (listener *HeartbeatListener) onHeartbeatPhoneOutstanding(ctx context.Conte
 	storeParams := services.HeartbeatStoreParams{
 		Owner:     payload.Owner,
 		Timestamp: payload.Timestamp,
-		Quantity:  payload.Quantity,
+		UserID:    payload.UserID,
+		MessageID: payload.ID,
 	}
 
 	if _, err := listener.service.Store(ctx, storeParams); err != nil {

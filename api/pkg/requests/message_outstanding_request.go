@@ -1,33 +1,23 @@
 package requests
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-
 	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/google/uuid"
 )
 
 // MessageOutstanding is the payload fetching outstanding entities.Message
 type MessageOutstanding struct {
 	request
-	Owner string `json:"owner" query:"owner"`
-	Limit string `json:"limit" query:"limit"`
+	MessageID string `json:"message_id" query:"message_id"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
 func (input *MessageOutstanding) Sanitize() MessageOutstanding {
-	if strings.TrimSpace(input.Limit) == "" {
-		input.Limit = "1"
-	}
-
-	input.Owner = input.sanitizeAddress(input.Owner)
-	if input.Owner == "" {
-		input.Owner = "+37259139660"
-	}
-
+	input.MessageID = strings.TrimSpace(input.MessageID)
 	return *input
 }
 
@@ -36,14 +26,7 @@ func (input *MessageOutstanding) ToGetOutstandingParams(source string, userID en
 	return services.MessageGetOutstandingParams{
 		Source:    source,
 		UserID:    userID,
-		Owner:     input.Owner,
+		MessageID: uuid.MustParse(input.MessageID),
 		Timestamp: timestamp,
-		Limit:     input.getLimit(),
 	}
-}
-
-// getLimit gets the take as a string
-func (input *MessageOutstanding) getLimit() int {
-	val, _ := strconv.Atoi(input.Limit)
-	return val
 }

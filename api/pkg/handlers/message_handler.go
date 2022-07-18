@@ -93,20 +93,19 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 	return h.responseOK(c, "message added to queue", message)
 }
 
-// GetOutstanding returns entities.Message which are still to be sent by the mobile phone
-// @Summary      Get outstanding messages
-// @Description  Get list of messages which are outstanding to be sent by the phone
+// GetOutstanding returns an entities.Message which is still to be sent by the mobile phone
+// @Summary      Get an outstanding message
+// @Description  Get an outstanding message to be sent by an android phone
 // @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        owner	query  string  	true 							"The owner's phone number" 					default(+18005550199)
-// @Param        limit	query  int  	false  							"Number of outstanding messages to fetch"	minimum(1)	maximum(10)
-// @Success      200 	{object}		responses.MessagesResponse
-// @Failure      400	{object}		responses.BadRequest
+// @Param        message_id	query  		string  						true "The ID of the message" default(32343a19-da5e-4b1b-a767-3298a73703cb)
+// @Success      200 		{object}	responses.MessageResponse
+// @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
-// @Failure      422	{object}		responses.UnprocessableEntity
-// @Failure      500	{object}		responses.InternalServerError
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages/outstanding [get]
 func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
@@ -128,14 +127,14 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching outstanding messages")
 	}
 
-	messages, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), h.userIDFomContext(c), timestamp))
+	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), h.userIDFomContext(c), timestamp))
 	if err != nil {
-		msg := fmt.Sprintf("cannot get messgaes with URL [%s]", c.OriginalURL())
+		msg := fmt.Sprintf("cannot get outstnading messgage with ID [%s]", request.MessageID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseOK(c, fmt.Sprintf("fetched %d %s", len(*messages), h.pluralize("message", len(*messages))), messages)
+	return h.responseOK(c, "outstanding message fetched successfully", message)
 }
 
 // Index returns messages sent between 2 phone numbers

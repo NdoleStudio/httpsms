@@ -83,11 +83,9 @@ func (validator MessageHandlerValidator) ValidateMessageOutstanding(_ context.Co
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
-			"limit": []string{
+			"message_id": []string{
 				"required",
-				"numeric",
-				"min:1",
-				"max:20",
+				"uuid",
 			},
 		},
 	})

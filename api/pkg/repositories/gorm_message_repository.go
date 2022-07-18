@@ -106,36 +106,25 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
-func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, owner string, take int) (*[]entities.Message, error) {
+func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	messages := new([]entities.Message)
+	message := new(entities.Message)
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
-			return tx.WithContext(ctx).Model(messages).
+			return tx.WithContext(ctx).Model(message).
 				Clauses(clause.Returning{}).
 				Where("user_id = ?", userID).
-				Where(
-					"id IN (?)",
-					tx.Model(&entities.Message{}).
-						Where("owner = ?", owner).
-						Where(
-							repository.db.
-								Where("status = ?", entities.MessageStatusPending).
-								Where("age(now(), created_at) < ?", "5 minutes"),
-						).
-						Order("request_received_at ASC").
-						Select("id").
-						Limit(take),
-				).
-				Update("status", "sending").Error
+				Where("id = ?", messageID).
+				Where("status = ?", entities.MessageStatusPending).
+				Update("status", entities.MessageStatusSending).Error
 		},
 	)
 	if err != nil {
-		msg := fmt.Sprintf("cannot fetch [%d] outstanding messages", take)
+		msg := fmt.Sprintf("cannot fetch outstanding message with userID [%s] and messageID [%s]", userID, messageID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return messages, nil
+	return message, nil
 }

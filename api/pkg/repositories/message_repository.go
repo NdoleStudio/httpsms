@@ -21,6 +21,6 @@ type MessageRepository interface {
 	// Index entities.Message between 2 phone numbers
 	Index(ctx context.Context, userID entities.UserID, owner string, contact string, params IndexParams) (*[]entities.Message, error)
 
-	// GetOutstanding fetches list of outstanding []entities.Message
-	GetOutstanding(ctx context.Context, userID entities.UserID, owner string, limit int) (*[]entities.Message, error)
+	// GetOutstanding fetches an entities.Message which is outstanding
+	GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error)
 }

@@ -35,13 +35,13 @@ func NewHeartbeatService(
 }
 
 // Index fetches the heartbeats for a phone number
-func (service *HeartbeatService) Index(ctx context.Context, owner string, params repositories.IndexParams) (*[]entities.Heartbeat, error) {
+func (service *HeartbeatService) Index(ctx context.Context, userID entities.UserID, owner string, params repositories.IndexParams) (*[]entities.Heartbeat, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	heartbeats, err := service.repository.Index(ctx, owner, params)
+	heartbeats, err := service.repository.Index(ctx, userID, owner, params)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch heartbeats with parms [%+#v]", params)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -55,7 +55,8 @@ func (service *HeartbeatService) Index(ctx context.Context, owner string, params
 type HeartbeatStoreParams struct {
 	Owner     string
 	Timestamp time.Time
-	Quantity  int
+	UserID    entities.UserID
+	MessageID uuid.UUID
 }
 
 // Store a new entities.Heartbeat
@@ -69,7 +70,8 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		ID:        uuid.New(),
 		Owner:     params.Owner,
 		Timestamp: params.Timestamp,
-		Quantity:  params.Quantity,
+		MessageID: params.MessageID,
+		UserID:    params.UserID,
 	}
 
 	if err := service.repository.Store(ctx, heartbeat); err != nil {

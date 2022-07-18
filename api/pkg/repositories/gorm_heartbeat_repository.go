@@ -31,11 +31,11 @@ func NewGormHeartbeatRepository(
 }
 
 // Index entities.Message between 2 parties
-func (repository *gormHeartbeatRepository) Index(ctx context.Context, owner string, params IndexParams) (*[]entities.Heartbeat, error) {
+func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID entities.UserID, owner string, params IndexParams) (*[]entities.Heartbeat, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.WithContext(ctx).Where("owner = ?", owner)
+	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where("quantity ILIKE ?", queryPattern)

@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/nyaruka/phonenumbers"
 
@@ -44,29 +45,46 @@ func NewMessageService(
 // MessageGetOutstandingParams parameters for sending a new message
 type MessageGetOutstandingParams struct {
 	Source    string
-	Owner     string
 	UserID    entities.UserID
 	Timestamp time.Time
-	Limit     int
+	MessageID uuid.UUID
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
-func (service *MessageService) GetOutstanding(ctx context.Context, params MessageGetOutstandingParams) (*[]entities.Message, error) {
+func (service *MessageService) GetOutstanding(ctx context.Context, params MessageGetOutstandingParams) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	messages, err := service.repository.GetOutstanding(ctx, params.UserID, params.Owner, params.Limit)
+	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch [%d] outstanding messages", params.Limit)
+		msg := fmt.Sprintf("could not fetch outstanding messages with params [%s]", spew.Sdump(params))
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	go service.registerHeartbeatEvent(ctx, len(*messages), params)
+	event, err := service.createMessagePhoneSendingEvent(params.Source, events.MessagePhoneSendingPayload{
+		ID:        message.ID,
+		Owner:     message.Owner,
+		Contact:   message.Contact,
+		Timestamp: params.Timestamp,
+		UserID:    message.UserID,
+		Content:   message.Content,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched [%d] outstanding messages", len(*messages)))
-	return service.handleOutstandingMessages(ctx, params.Source, messages), nil
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
+	return message, nil
 }
 
 // MessageGetParams parameters for sending a new message
@@ -264,85 +282,6 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 	return nil
-}
-
-func (service *MessageService) registerHeartbeatEvent(ctx context.Context, quantity int, params MessageGetOutstandingParams) {
-	ctx, span := service.tracer.Start(ctx)
-	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
-
-	event, err := service.createHeartbeatPhoneOutstandingEvent(params.Source, events.HeartbeatPhoneOutstandingPayload{
-		Owner:     params.Owner,
-		Timestamp: params.Timestamp,
-		Quantity:  quantity,
-	})
-	if err != nil {
-		msg := fmt.Sprintf("cannot create event [%s] for owner [%s]", events.EventTypeHeartbeatPhoneOutstanding, params.Owner)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-	}
-
-	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-	}
-}
-
-func (service *MessageService) handleOutstandingMessages(ctx context.Context, source string, messages *[]entities.Message) *[]entities.Message {
-	ctx, span := service.tracer.Start(ctx)
-	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
-
-	var wg sync.WaitGroup
-	results := make([]entities.Message, 0, len(*messages))
-	var lock sync.Mutex
-
-	for _, message := range *messages {
-		wg.Add(1)
-		go func(ctx context.Context, message entities.Message) {
-			defer wg.Done()
-
-			event, err := service.createMessagePhoneSendingEvent(source, events.MessagePhoneSendingPayload{
-				ID:      message.ID,
-				Owner:   message.Owner,
-				Contact: message.Contact,
-				UserID:  message.UserID,
-				Content: message.Content,
-			})
-			if err != nil {
-				msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
-				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-				return
-			}
-
-			ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
-
-			if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-				msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
-				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-				return
-			}
-
-			ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
-
-			resultMessage, err := service.repository.Load(ctx, message.UserID, message.ID)
-			if err != nil {
-				msg := fmt.Sprintf("cannot load message with id [%s]", message.ID)
-				ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-				return
-			}
-
-			ctxLogger.Info(fmt.Sprintf("loaded message [%s]", message.ID))
-
-			lock.Lock()
-			defer lock.Unlock()
-			results = append(results, *resultMessage)
-		}(ctx, message)
-	}
-
-	wg.Wait()
-	return &results
 }
 
 // MessageSendParams parameters for sending a new message
