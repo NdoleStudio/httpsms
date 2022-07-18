@@ -62,13 +62,11 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 				phoneNumberRule,
 			},
 			"fcm_token": []string{
-				"required",
-				"min:1",
+				"min:0",
 				"max:1000",
 			},
 			"messages_per_minute": []string{
-				"required",
-				"min:1",
+				"min:0",
 				"max:60",
 			},
 		},

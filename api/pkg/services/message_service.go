@@ -244,6 +244,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 	event, err := service.createMessagePhoneDeliveredEvent(params.Source, events.MessagePhoneDeliveredPayload{
 		ID:        message.ID,
 		Owner:     message.Owner,
+		UserID:    message.UserID,
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
 		Content:   message.Content,
@@ -514,8 +515,8 @@ func (service *MessageService) HandleMessageDelivered(ctx context.Context, param
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSent() {
-		msg := fmt.Sprintf("message has wrong status [%s]. expected %s", message.Status, entities.MessageStatusSent)
+	if !message.IsSent() && !message.IsSending() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s]", message.Status, entities.MessageStatusSent, entities.MessageStatusSending)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
 

@@ -58,10 +58,10 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header s
 		response := c.Next()
 
 		statusCode := c.Response().StatusCode()
-		span.AddEvent(fmt.Sprintf("finished handling request with traceID: %s, statusCode = %d", traceID, statusCode))
+		span.AddEvent(fmt.Sprintf("finished handling request with traceID: [%s], statusCode: [%d]", traceID, statusCode))
 
 		if statusCode >= 300 && len(c.Request().Body()) > 0 {
-			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("http.status [%b], body [%s]", statusCode, string(c.Request().Body()))))
+			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("http.status [%d], body [%s]", statusCode, string(c.Request().Body()))))
 		}
 
 		return response

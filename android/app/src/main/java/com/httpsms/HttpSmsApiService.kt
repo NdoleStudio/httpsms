@@ -14,28 +14,28 @@ import java.util.logging.Logger.getLogger
 
 
 class HttpSmsApiService(private val apiKey: String) {
-    private val apiKeyHeader = "X-API-KEY"
-    private val baseURL = URI("https://api.httpsms.com")
+    private val apiKeyHeader = "x-api-key"
+    private val baseURL = URI("https://41f2-145-14-47-25.ngrok.io")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     init {
         getLogger(OkHttpClient::class.java.name).level = Level.FINE
     }
 
-    fun getOutstandingMessages(owner: String): List<Message> {
+    fun getOutstandingMessage(messageID: String): Message? {
         val client = OkHttpClient()
 
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/messages/outstanding?owner=${owner}").toURL())
+            .url(baseURL.resolve("/v1/messages/outstanding?message_id=${messageID}").toURL())
             .header(apiKeyHeader, apiKey)
             .build()
 
         val response = client.newCall(request).execute()
         if (response.isSuccessful) {
-            val payload =  ResponseMessagesOutstanding.fromJson(response.body!!.string())?.data
+            val payload =  ResponseMessage.fromJson(response.body!!.string())?.data
             if (payload == null) {
                 Timber.e("cannot decode payload [${response.body}]")
-                return listOf()
+                return null
             }
             response.close()
             return payload
@@ -43,7 +43,7 @@ class HttpSmsApiService(private val apiKey: String) {
 
         Timber.e("invalid response with code [${response.code}] and payload [${response.body}]")
         response.close()
-        return listOf()
+        return null
     }
 
     fun sendDeliveredEvent(messageId: String, timestamp: ZonedDateTime) {

@@ -9,16 +9,6 @@ import com.beust.klaxon.Klaxon
 
 private val klaxon = Klaxon()
 
-data class ResponseMessagesOutstanding (
-    val data: List<Message>,
-    val message: String,
-    val status: String
-) {
-    companion object {
-        fun fromJson(json: String) = klaxon.parse<ResponseMessagesOutstanding>(json)
-    }
-}
-
 data class ResponseMessage (
     val data: Message,
     val message: String,

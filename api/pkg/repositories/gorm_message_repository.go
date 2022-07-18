@@ -80,7 +80,7 @@ func (repository *gormMessageRepository) Load(ctx context.Context, userID entiti
 	message := new(entities.Message)
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageID).First(message).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("message with ID [%s] does not exist", message.ID)
+		msg := fmt.Sprintf("message with ID [%s] and userID [%s] does not exist", messageID, userID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 

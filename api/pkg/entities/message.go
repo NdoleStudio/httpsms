@@ -92,7 +92,7 @@ func (message *Message) Sent(timestamp time.Time) *Message {
 	sendDuration := timestamp.UnixNano() - message.RequestReceivedAt.UnixNano()
 	message.SentAt = &timestamp
 	message.Status = MessageStatusSent
-	message.OrderTimestamp = timestamp
+	message.updateOrderTimestamp(timestamp)
 	message.SendDuration = &sendDuration
 	return message
 }
@@ -101,7 +101,7 @@ func (message *Message) Sent(timestamp time.Time) *Message {
 func (message *Message) Failed(timestamp time.Time) *Message {
 	message.SentAt = &timestamp
 	message.Status = MessageStatusFailed
-	message.OrderTimestamp = timestamp
+	message.updateOrderTimestamp(timestamp)
 	return message
 }
 
@@ -109,7 +109,7 @@ func (message *Message) Failed(timestamp time.Time) *Message {
 func (message *Message) Delivered(timestamp time.Time) *Message {
 	message.SentAt = &timestamp
 	message.Status = MessageStatusDelivered
-	message.OrderTimestamp = timestamp
+	message.updateOrderTimestamp(timestamp)
 	return message
 }
 
@@ -117,6 +117,12 @@ func (message *Message) Delivered(timestamp time.Time) *Message {
 func (message *Message) AddSendAttempt(timestamp time.Time) *Message {
 	message.Status = MessageStatusSending
 	message.LastAttemptedAt = &timestamp
-	message.OrderTimestamp = timestamp
+	message.updateOrderTimestamp(timestamp)
 	return message
+}
+
+func (message *Message) updateOrderTimestamp(timestamp time.Time) {
+	if timestamp.UnixNano() > message.OrderTimestamp.UnixNano() {
+		message.OrderTimestamp = timestamp
+	}
 }

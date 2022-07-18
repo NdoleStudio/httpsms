@@ -4,23 +4,25 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
-import androidx.work.Worker
-import androidx.work.WorkerParameters
+import androidx.work.*
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import timber.log.Timber
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
-    private val timberInit = false
-
     // [START receive_message]
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         initTimber()
         Timber.d(MyFirebaseMessagingService::onMessageReceived.name)
-        scheduleJob()
+
+        val messageID = remoteMessage.data[Constants.KEY_MESSAGE_ID]
+        if (messageID == null)  {
+            Timber.e("cannot get message id from notification data with key [${Constants.KEY_MESSAGE_ID}]")
+            return
+        }
+
+        scheduleJob(messageID)
     }
     // [END receive_message]
 
@@ -41,15 +43,20 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
     // [END on_new_token]
 
-    private fun scheduleJob() {
+    private fun scheduleJob(messageID: String) {
         // [START dispatch_job]
+        val inputData: Data = workDataOf(Constants.KEY_MESSAGE_ID to messageID)
         val work = OneTimeWorkRequest
             .Builder(SendSmsWorker::class.java)
+            .setInputData(inputData)
+            .addTag(messageID)
             .build()
 
         WorkManager
             .getInstance(this)
             .enqueue(work)
+
+        Timber.d("work enqueued with ID [${work.id}] for messageID [${messageID}]")
         // [END dispatch_job]
     }
     private fun sendRegistrationToServer(token: String) {
@@ -87,9 +94,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 return Result.failure()
             }
 
-            val owner = Settings.getOwner(applicationContext) ?: return Result.failure()
-            val message = getMessage(applicationContext, owner) ?: return Result.failure()
+            val messageID = this.inputData.getString(Constants.KEY_MESSAGE_ID)
+            if (messageID == null) {
+                Timber.e("cannot get outstanding message for work [${this.id}]")
+                return Result.failure()
+            }
 
+            val message = getMessage(applicationContext, messageID) ?: return Result.failure()
             registerReceivers(applicationContext, message.id)
 
             sendMessage(
@@ -112,16 +123,16 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             )
         }
 
-        private fun getMessage(context: Context, owner: String): Message? {
-            Timber.d("fetching message")
-            val messages = HttpSmsApiService(Settings.getApiKeyOrDefault(context)).getOutstandingMessages(owner)
+        private fun getMessage(context: Context, messageID: String): Message? {
+            Timber.d("fetching message with ID [${messageID}]")
+            val message = HttpSmsApiService(Settings.getApiKeyOrDefault(context)).getOutstandingMessage(messageID)
 
-            if (messages.isNotEmpty()) {
-                Timber.d("fetched message with ID [${messages.first().id}]")
-                return messages.first()
+            if (message != null) {
+                Timber.d("fetched message with ID [${message.id}]")
+                return message
             }
 
-            Timber.e("cannot get message from API")
+            Timber.e("cannot get message from API with ID [${messageID}]")
             return null
         }
 
