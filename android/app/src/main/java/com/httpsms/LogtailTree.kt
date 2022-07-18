@@ -18,7 +18,7 @@ class LogtailTree: Timber.DebugTree() {
     private val queue: ConcurrentLinkedQueue<LogEntry> = ConcurrentLinkedQueue<LogEntry>()
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-        val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z")
+        val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         val logEntry = LogEntry(
             priority,
             severity(priority),

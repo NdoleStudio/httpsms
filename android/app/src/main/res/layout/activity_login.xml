@@ -86,7 +86,22 @@
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout">
+        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayout">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/loginButton"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#2196f3"
+            android:drawableTint="@color/white"
+            android:padding="10dp"
+            android:text="@string/sign_in_button"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            app:icon="@drawable/ic_login"
+            app:iconTint="@color/white"
+            tools:ignore="TextContrastCheck" />
 
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/loginProgressIndicator"
@@ -99,23 +114,5 @@
             app:layout_constraintTop_toBottomOf="@+id/loginButton"
             tools:layout_editor_absoluteX="16dp" />
     </LinearLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/loginButton"
-        style="@style/Widget.MaterialComponents.Button.Icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#2196f3"
-        android:drawableTint="@color/white"
-        android:padding="10dp"
-        android:text="@string/sign_in_button"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        app:icon="@drawable/ic_login"
-        app:iconTint="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayout"
-        tools:ignore="TextContrastCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

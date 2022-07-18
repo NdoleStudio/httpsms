@@ -18,7 +18,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 20; i++ {
 		var responsePayload string
 		err = requests.
 			URL("/v1/messages/send").

@@ -15,7 +15,7 @@ import java.util.logging.Logger.getLogger
 
 class HttpSmsApiService(private val apiKey: String) {
     private val apiKeyHeader = "x-api-key"
-    private val baseURL = URI("https://41f2-145-14-47-25.ngrok.io")
+    private val baseURL = URI("https://api.httpsms.com")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     init {
