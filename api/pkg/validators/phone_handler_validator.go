@@ -66,6 +66,11 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 				"min:1",
 				"max:1000",
 			},
+			"messages_per_minute": []string{
+				"required",
+				"min:1",
+				"max:60",
+			},
 		},
 	})
 

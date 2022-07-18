@@ -10,6 +10,28 @@
       <v-container>
         <v-row>
           <v-col cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
+            <div v-if="$fire.auth.currentUser" class="text-center">
+              <v-avatar size="100" color="indigo" class="mx-auto">
+                <img
+                  v-if="$fire.auth.currentUser.photoURL"
+                  :src="$fire.auth.currentUser.photoURL"
+                  :alt="$fire.auth.currentUser.displayName"
+                />
+                <v-icon v-else dark size="70"> mdi-account-circle </v-icon>
+              </v-avatar>
+              <h3 v-if="$fire.auth.currentUser.displayName">
+                {{ $fire.auth.currentUser.displayName }}
+              </h3>
+              <h4 class="text--secondary">
+                {{ $fire.auth.currentUser.email }}
+                <v-icon
+                  v-if="$fire.auth.currentUser.emailVerified"
+                  small
+                  color="primary"
+                  >mdi-shield-check</v-icon
+                >
+              </h4>
+            </div>
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p>
               Use your API Key in the <code>x-api-key</code> HTTP Header when
@@ -92,13 +114,13 @@
                       <v-btn
                         :icon="$vuetify.breakpoint.mdAndDown"
                         small
-                        color="error"
-                        :disabled="deletingPhone"
-                        @click.prevent="deletePhone(phone.id)"
+                        color="info"
+                        :disabled="updatingPhone"
+                        @click.prevent="showEditPhone(phone.id)"
                       >
-                        <v-icon small>mdi-delete</v-icon>
+                        <v-icon small>mdi-square-edit-outline</v-icon>
                         <span v-if="!$vuetify.breakpoint.mdAndDown">
-                          Delete
+                          Edit
                         </span>
                       </v-btn>
                     </td>
@@ -110,17 +132,79 @@
         </v-row>
       </v-container>
     </div>
+    <v-dialog v-model="showPhoneEdit" max-width="500px">
+      <v-card>
+        <v-card-text v-if="activePhone" class="mt-6">
+          <v-container>
+            <v-row>
+              <v-col>
+                <v-text-field
+                  outlined
+                  dense
+                  disabled
+                  label="ID"
+                  :value="activePhone.id"
+                >
+                </v-text-field>
+                <v-text-field
+                  outlined
+                  disabled
+                  dense
+                  label="Phone Number"
+                  :value="activePhone.phone_number"
+                >
+                </v-text-field>
+                <v-textarea
+                  outlined
+                  disabled
+                  dense
+                  label="FCM Token"
+                  :value="activePhone.fcm_token"
+                >
+                </v-textarea>
+                <v-text-field
+                  v-model="activePhone.messages_per_minute"
+                  outlined
+                  type="number"
+                  dense
+                  label="Messages Per Minute"
+                >
+                </v-text-field>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+        <v-card-actions class="mt-n8">
+          <v-btn small color="info" @click="updatePhone">
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small
+              >mdi-content-save</v-icon
+            >
+            Update
+          </v-btn>
+          <v-spacer></v-spacer>
+          <v-btn small color="error" text @click="deletePhone(activePhone.id)">
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>mdi-delete</v-icon>
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import Vue from 'vue'
+import { Phone } from '~/models/phone'
+
+export default Vue.extend({
   name: 'SettingsIndex',
   middleware: ['auth'],
   data() {
     return {
       apiKeyShow: false,
-      deletingPhone: false,
+      showPhoneEdit: false,
+      activePhone: null,
+      updatingPhone: false,
     }
   },
   computed: {
@@ -141,12 +225,34 @@ export default {
   },
 
   methods: {
-    deletePhone(phoneId) {
-      this.deletingPhone = true
+    showEditPhone(phoneId: string) {
+      const phone = this.$store.getters.getPhones.find(
+        (x: Phone) => x.id === phoneId
+      )
+      if (!phone) {
+        return
+      }
+      this.activePhone = { ...phone }
+      this.showPhoneEdit = true
+    },
+
+    updatePhone() {
+      this.updatingPhone = true
+      this.$store.dispatch('updatePhone', this.activePhone).finally(() => {
+        this.updatingPhone = false
+        this.showPhoneEdit = false
+        this.activePhone = null
+      })
+    },
+
+    deletePhone(phoneId: string) {
+      this.updatingPhone = true
       this.$store.dispatch('deletePhone', phoneId).finally(() => {
-        this.deletingPhone = false
+        this.updatingPhone = false
+        this.showPhoneEdit = false
+        this.activePhone = null
       })
     },
   },
-}
+})
 </script>

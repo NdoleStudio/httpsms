@@ -54,9 +54,10 @@ func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthUs
 
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
-	PhoneNumber phonenumbers.PhoneNumber
-	FcmToken    string
-	UserID      entities.UserID
+	PhoneNumber       phonenumbers.PhoneNumber
+	FcmToken          *string
+	MessagesPerMinute *uint
+	UserID            entities.UserID
 }
 
 // Upsert a new entities.Phone
@@ -76,14 +77,23 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	phone.FcmToken = &params.FcmToken
-	if err = service.repository.Save(ctx, phone); err != nil {
+	if err = service.repository.Save(ctx, service.update(phone, params)); err != nil {
 		msg := fmt.Sprintf("cannot update phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone saved with id [%s] in the userRepository", phone.ID))
 	return phone, nil
+}
+
+func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertParams) *entities.Phone {
+	if phone.FcmToken != nil {
+		phone.FcmToken = params.FcmToken
+	}
+	if params.MessagesPerMinute != nil {
+		phone.MessagesPerMinute = *params.MessagesPerMinute
+	}
+	return phone
 }
 
 // Delete an entities.Phone
@@ -109,12 +119,13 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 	defer span.End()
 
 	phone := &entities.Phone{
-		ID:          uuid.New(),
-		UserID:      params.UserID,
-		FcmToken:    &params.FcmToken,
-		PhoneNumber: phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
-		CreatedAt:   time.Now().UTC(),
-		UpdatedAt:   time.Now().UTC(),
+		ID:                uuid.New(),
+		UserID:            params.UserID,
+		FcmToken:          params.FcmToken,
+		MessagesPerMinute: 0,
+		PhoneNumber:       phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
 	}
 
 	if err := service.repository.Save(ctx, phone); err != nil {

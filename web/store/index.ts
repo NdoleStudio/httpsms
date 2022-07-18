@@ -285,6 +285,15 @@ export const actions = {
     context.commit('resetState', false)
   },
 
+  async updatePhone(context: ActionContext<State, State>, phone: Phone) {
+    await axios.put(`/v1/phones`, {
+      fcm_token: phone.fcm_token,
+      phone_number: phone.phone_number,
+      messages_per_minute: parseInt(phone.messages_per_minute.toString()),
+    })
+    await context.dispatch('loadPhones', true)
+  },
+
   async getHeartbeat(context: ActionContext<State, State>) {
     const response = await axios.get('/v1/heartbeats', {
       params: {
