@@ -4,19 +4,28 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 
 	"github.com/carlmjohnson/requests"
 	"github.com/palantir/stacktrace"
 )
 
 func main() {
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	for i := 0; i < 50; i++ {
 		var responsePayload string
-		err := requests.
+		err = requests.
 			URL("/v1/messages/send").
-			Host("localhost:8000").
-			Scheme("http").
-			Header("x-api-key", "Uv38ByGCZU8WP18PmmIdcpVmx00QA3xNe7sEB9HixkmBhVrYaB0NhtHpHgAWeTnL").
+			Host("api.httpsms.com").
+			// Host("localhost:8000").
+			// Scheme("http").
+			Header("x-api-key", os.Getenv("API_KEY")).
 			BodyJSON(&map[string]string{
 				"content": fmt.Sprintf("testing http api sample: [%d]", i),
 				"from":    "+37259139660",
