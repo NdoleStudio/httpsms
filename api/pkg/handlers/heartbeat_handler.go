@@ -77,7 +77,7 @@ func (h *HeartbeatHandler) Index(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching heartbeats")
 	}
 
-	heartbeats, err := h.service.Index(ctx, request.Owner, request.ToIndexParams())
+	heartbeats, err := h.service.Index(ctx, h.userIDFomContext(c), request.Owner, request.ToIndexParams())
 	if err != nil {
 		msg := fmt.Sprintf("cannot get messgaes with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
