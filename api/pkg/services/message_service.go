@@ -420,6 +420,7 @@ func (service *MessageService) StoreSentMessage(ctx context.Context, params Mess
 		ID:                params.ID,
 		Owner:             params.Owner,
 		Contact:           params.Contact,
+		UserID:            params.UserID,
 		Content:           params.Content,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,

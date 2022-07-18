@@ -36,11 +36,15 @@ func NewGormMessageRepository(
 }
 
 // Index entities.Message between 2 parties
-func (repository *gormMessageRepository) Index(ctx context.Context, owner string, contact string, params IndexParams) (*[]entities.Message, error) {
+func (repository *gormMessageRepository) Index(ctx context.Context, userID entities.UserID, owner string, contact string, params IndexParams) (*[]entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := repository.db.WithContext(ctx).Where("owner = ?", owner).Where("contact =  ?", contact)
+	query := repository.db.
+		WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("owner = ?", owner).
+		Where("contact =  ?", contact)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where("content ILIKE ?", queryPattern)
@@ -69,12 +73,12 @@ func (repository *gormMessageRepository) Store(ctx context.Context, message *ent
 }
 
 // Load an entities.Message by ID
-func (repository *gormMessageRepository) Load(ctx context.Context, messageID uuid.UUID) (*entities.Message, error) {
+func (repository *gormMessageRepository) Load(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	message := new(entities.Message)
-	err := repository.db.WithContext(ctx).First(message, messageID).Error
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageID).First(message).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("message with ID [%s] does not exist", message.ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -102,7 +106,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
-func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, owner string, take int) (*[]entities.Message, error) {
+func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, owner string, take int) (*[]entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -111,6 +115,7 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, own
 		func(tx *gorm.DB) error {
 			return tx.WithContext(ctx).Model(messages).
 				Clauses(clause.Returning{}).
+				Where("user_id = ?", userID).
 				Where(
 					"id IN (?)",
 					tx.Model(&entities.Message{}).

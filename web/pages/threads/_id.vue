@@ -235,19 +235,10 @@ export default Vue.extend({
     if (!this.$store.getters.getAuthUser) {
       await this.$store.dispatch('setNextRoute', this.$route.path)
       await this.$router.push({ name: 'index' })
+      setTimeout(this.loadData, 2000)
       return
     }
-
-    await this.$store.dispatch('loadPhones')
-    await this.$store.dispatch('loadThreads')
-
-    if (!this.$store.getters.hasThreadId(this.$route.params.id)) {
-      await this.$router.push({ name: 'threads' })
-      return
-    }
-
-    await this.$store.dispatch('loadThreadMessages', this.$route.params.id)
-    this.scrollToElement()
+    await this.loadData()
   },
 
   methods: {
@@ -261,6 +252,19 @@ export default Vue.extend({
         new Date().getTime() - new Date(message.created_at).getTime() >
           5 * 60 * 1000
       ) // 5 minutes
+    },
+
+    async loadData() {
+      await this.$store.dispatch('loadPhones')
+      await this.$store.dispatch('loadThreads')
+
+      if (!this.$store.getters.hasThreadId(this.$route.params.id)) {
+        await this.$router.push({ name: 'threads' })
+        return
+      }
+
+      await this.$store.dispatch('loadThreadMessages', this.$route.params.id)
+      this.scrollToElement()
     },
 
     isMT(message: Message): boolean {

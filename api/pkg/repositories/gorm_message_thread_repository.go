@@ -70,7 +70,7 @@ func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Co
 
 	err := repository.db.
 		WithContext(ctx).
-		Where("user = ?", userID).
+		Where("user_id = ?", userID).
 		Where("owner = ?", owner).
 		Where("contact = ?", contact).
 		First(thread).
@@ -97,8 +97,9 @@ func (repository *gormMessageThreadRepository) Load(ctx context.Context, userID 
 
 	err := repository.db.
 		WithContext(ctx).
-		Where("user = ?", userID).
+		Where("user_id = ?", userID).
 		Where("id = ?", ID).
+		First(thread).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("thread with id [%s] not found", ID)
@@ -120,7 +121,7 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID
 
 	query := repository.db.
 		WithContext(ctx).
-		Where("user = ?", userID).
+		Where("user_id = ?", userID).
 		Where("owner = ?", owner)
 
 	if isArchived {

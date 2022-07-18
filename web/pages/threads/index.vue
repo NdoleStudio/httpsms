@@ -32,10 +32,17 @@ export default {
     if (!this.$store.getters.getAuthUser) {
       await this.$store.dispatch('setNextRoute', this.$route.path)
       await this.$router.push({ name: 'index' })
+      setTimeout(this.loadData, 2000)
       return
     }
-    await this.$store.dispatch('loadThreads')
-    await this.$store.dispatch('loadPhones')
+    await this.loadData()
+  },
+
+  methods: {
+    async loadData() {
+      await this.$store.dispatch('loadThreads')
+      await this.$store.dispatch('loadPhones')
+    },
   },
 }
 </script>
