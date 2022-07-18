@@ -10,14 +10,15 @@ import timber.log.Timber
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class LogtailTree: Timber.DebugTree() {
     private val client = OkHttpClient()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+    private val queue: ConcurrentLinkedQueue<LogEntry> = ConcurrentLinkedQueue<LogEntry>()
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-        val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z")
-
+        val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z")
         val logEntry = LogEntry(
             priority,
             severity(priority),
@@ -30,14 +31,19 @@ class LogtailTree: Timber.DebugTree() {
             ZonedDateTime.now(ZoneOffset.UTC).format(formatter),
             t
         )
+        queue.add(logEntry)
+        if (queue.size < 10) {
+            return
+        }
+
+        val logEntries = queue.toArray()
+        queue.clear()
 
         val request: Request = Request.Builder()
             .url("https://in.logtail.com")
-            .post(Klaxon().toJsonString(logEntry).toRequestBody(jsonMediaType))
+            .post(Klaxon().toJsonString(logEntries).toRequestBody(jsonMediaType))
             .header("Authorization", "Bearer m7ZoA8u5KRYNe6RnEdWeZqsZ")
             .build()
-
-
 
         Thread {
             client.newCall(request).execute()
@@ -64,6 +70,6 @@ class LogtailTree: Timber.DebugTree() {
         val brand: String,
         val device: String,
         val version: Int,
-        val timestamp: String,
+        val dt: String,
         val throwable: Throwable?)
 }
