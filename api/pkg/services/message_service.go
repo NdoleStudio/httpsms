@@ -179,6 +179,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	eventPayload := events.MessagePhoneReceivedPayload{
 		ID:        uuid.New(),
+		UserID:    params.UserID,
 		Owner:     phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:   params.Contact,
 		Timestamp: params.Timestamp,
@@ -204,11 +205,11 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	message, err := service.repository.Load(ctx, params.UserID, eventPayload.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
+		msg := fmt.Sprintf("cannot load message with ID [%s]", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the userRepository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s]", message.ID))
 
 	return message, nil
 }
