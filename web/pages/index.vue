@@ -93,6 +93,22 @@
         </v-col>
       </v-row>
     </v-container>
+    <v-sheet color="#FFFFFF">
+      <v-container>
+        <v-row class="pb-16">
+          <v-col cols="12" class="text-center pb-16 pt-8">
+            <h3 style="color: #111" class="text-h3">Sending An SMS</h3>
+            <v-img
+              class="mx-auto mb-4"
+              max-height="700"
+              max-width="98%"
+              contain
+              :src="require('assets/img/flow-diagram.svg')"
+            ></v-img>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-sheet>
     <v-footer absolute>
       <v-container class="text-center">
         <v-row justify="center" no-gutters>
