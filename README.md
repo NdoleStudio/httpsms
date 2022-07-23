@@ -18,7 +18,7 @@ solution that could help me send/receive SMS messages using a mobile phone using
 ### Web
 
 The web interface https://httpsms.com is built using [Nuxt](https://nuxtjs.org/) and [Vuetify](https://vuetifyjs.com/en/).
-It is hosted as a single page application on firebase. The source code is in the [./web](../../web) directory
+It is hosted as a single page application on firebase. The source code is in the [web](./web) directory
 
 ### API
 
