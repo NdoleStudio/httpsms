@@ -1,8 +1,6 @@
 # HTTP SMS
 
 [![Build](https://github.com/NdoleStudio/httpsms/actions/workflows/ci.yml/badge.svg)](https://github.com/NdoleStudio/httpsms/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/NdoleStudio/httpsms/branch/main/graph/badge.svg)](https://codecov.io/gh/NdoleStudio/httpsms)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/NdoleStudio/httpsms/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/NdoleStudio/httpsms/?branch=main)
 [![GitHub contributors](https://img.shields.io/github/contributors/NdoleStudio/httpsms)](https://github.com/NdoleStudio/httpsms/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/NdoleStudio/httpsms?color=brightgreen)](https://github.com/NdoleStudio/httpsms/blob/master/LICENSE)
 
