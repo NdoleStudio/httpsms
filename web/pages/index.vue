@@ -93,7 +93,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <v-sheet color="#FFFFFF">
+    <v-sheet v-if="$vuetify.breakpoint.lgAndUp" color="#FFFFFF">
       <v-container>
         <v-row class="pb-16">
           <v-col cols="12" class="text-center pb-16 pt-8">
