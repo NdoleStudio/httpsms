@@ -24,24 +24,24 @@ import (
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
-	"github.com/NdoleStudio/http-sms-manager/pkg/middlewares"
+	"github.com/NdoleStudio/httpsms/pkg/middlewares"
 	"google.golang.org/api/option"
 
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/listeners"
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/listeners"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/gofiber/fiber/v2"
 	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 	"github.com/palantir/stacktrace"
 	"gorm.io/gorm"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/handlers"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
-	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
+	"github.com/NdoleStudio/httpsms/pkg/handlers"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"gorm.io/driver/postgres"
 	gormLogger "gorm.io/gorm/logger"
 )

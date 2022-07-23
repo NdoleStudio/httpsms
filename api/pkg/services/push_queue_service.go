@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 )
 
 // PushQueueTask represents a push queue task

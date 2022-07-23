@@ -3,11 +3,11 @@ package requests
 import (
 	"strings"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 )
 
 // MessageThreadIndex is the payload fetching entities.MessageThread sent between 2 numbers

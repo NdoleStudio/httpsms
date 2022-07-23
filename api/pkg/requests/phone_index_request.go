@@ -3,7 +3,7 @@ package requests
 import (
 	"strings"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 )
 
 // PhoneIndex is the payload fetching registered phones

@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/url"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/middlewares"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/middlewares"
 
 	"github.com/gofiber/fiber/v2"
 )

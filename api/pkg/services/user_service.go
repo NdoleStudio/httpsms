@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 )
 
 // UserService is handles user requests

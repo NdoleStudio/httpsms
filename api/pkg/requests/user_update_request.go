@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 )
 
 // UserUpdate is the payload for updating a phone

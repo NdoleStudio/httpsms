@@ -3,7 +3,7 @@ package events
 import (
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/google/uuid"
 )

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/google/uuid"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
-	"github.com/NdoleStudio/http-sms-manager/pkg/validators"
+	"github.com/NdoleStudio/httpsms/pkg/requests"
+	"github.com/NdoleStudio/httpsms/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v2"
 	"github.com/palantir/stacktrace"

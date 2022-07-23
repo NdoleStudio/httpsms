@@ -3,11 +3,11 @@ package requests
 import (
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/nyaruka/phonenumbers"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 )
 
 // MessageReceive is the payload for sending and SMS message

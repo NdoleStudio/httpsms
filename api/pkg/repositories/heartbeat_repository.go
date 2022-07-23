@@ -3,7 +3,7 @@ package repositories
 import (
 	"context"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 )
 
 // HeartbeatRepository loads and persists an entities.Heartbeat

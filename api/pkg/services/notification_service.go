@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/events"
+	"github.com/NdoleStudio/httpsms/pkg/events"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
 	"firebase.google.com/go/messaging"
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 )

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/palantir/stacktrace"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"

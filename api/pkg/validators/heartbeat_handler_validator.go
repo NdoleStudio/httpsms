@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/requests"
+	"github.com/NdoleStudio/httpsms/pkg/requests"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/thedevsaddam/govalidator"
 )
 

@@ -5,8 +5,8 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 )
 
 // PhoneUpsert is the payload for updating a phone

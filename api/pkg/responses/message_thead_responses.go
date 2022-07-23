@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/NdoleStudio/http-sms-manager/pkg/entities"
+import "github.com/NdoleStudio/httpsms/pkg/entities"
 
 // MessageThreadsResponse is the payload containing []entities.MessageThread
 type MessageThreadsResponse struct {

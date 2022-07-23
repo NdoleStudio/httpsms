@@ -3,7 +3,7 @@ package requests
 import (
 	"strings"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 )
 
 // HeartbeatIndex is the payload for fetching entities.Heartbeat of a phone number

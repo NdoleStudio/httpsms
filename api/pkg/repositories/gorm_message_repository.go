@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm/clause"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"

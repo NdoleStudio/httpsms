@@ -9,14 +9,14 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/events"
-	"github.com/NdoleStudio/http-sms-manager/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/events"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 )
 
 // MessageService is handles message requests

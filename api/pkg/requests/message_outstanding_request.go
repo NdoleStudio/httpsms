@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/google/uuid"
 )
 

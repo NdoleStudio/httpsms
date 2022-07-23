@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	_ "github.com/NdoleStudio/http-sms-manager/docs"
-	"github.com/NdoleStudio/http-sms-manager/pkg/di"
+	_ "github.com/NdoleStudio/httpsms/docs"
+	"github.com/NdoleStudio/httpsms/pkg/di"
 )
 
 // @title       HTTP SMS API

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"

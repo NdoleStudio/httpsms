@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/di"
+	"github.com/NdoleStudio/httpsms/pkg/di"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/joho/godotenv"
 	"github.com/palantir/stacktrace"

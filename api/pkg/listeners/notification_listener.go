@@ -6,9 +6,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/events"
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/events"
+	"github.com/NdoleStudio/httpsms/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/palantir/stacktrace"
 )

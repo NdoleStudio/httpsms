@@ -1,4 +1,4 @@
-module github.com/NdoleStudio/http-sms-manager
+module github.com/NdoleStudio/httpsms
 
 go 1.18
 

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/gofiber/fiber/v2"
 	"github.com/palantir/stacktrace"
 	"go.opentelemetry.io/otel"

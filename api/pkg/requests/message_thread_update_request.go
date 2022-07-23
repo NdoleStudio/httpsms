@@ -1,10 +1,10 @@
 package requests
 
 import (
-	"github.com/NdoleStudio/http-sms-manager/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/google/uuid"
 
-	"github.com/NdoleStudio/http-sms-manager/pkg/services"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 )
 
 // MessageThreadUpdate is the payload for updating a message thread
