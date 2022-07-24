@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
@@ -63,20 +63,24 @@ func (repository gormPhoneNotificationRepository) Schedule(ctx context.Context, 
 	}
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		var messagesCount int64
+		lastNotification := new(entities.PhoneNotification)
 		err := tx.WithContext(ctx).
-			Model(&entities.PhoneNotification{}).
 			Where("phone_id = ?", notification.PhoneID).
-			Where("status = ?", entities.PhoneNotificationStatusPending).
-			Count(&messagesCount).
+			Order("scheduled_at desc").
+			First(lastNotification).
 			Error
-		if err != nil {
-			msg := fmt.Sprintf("cannot count messages with phoneID [%s] and status [%s]", notification.PhoneID, entities.PhoneNotificationStatusPending)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			msg := fmt.Sprintf("cannot fetch last notification with phone ID [%s]", notification.PhoneID)
 			return stacktrace.Propagate(err, msg)
 		}
 
-		timeout := int(math.Ceil(float64(messagesCount) / float64(messagesPerMinute))) // how many minutes to wait
-		notification.ScheduledAt = time.Now().UTC().Add(time.Minute * time.Duration(timeout))
+		notification.ScheduledAt = time.Now().UTC()
+		if err == nil {
+			notification.ScheduledAt = repository.maxTime(
+				time.Now().UTC(),
+				lastNotification.ScheduledAt.Add(time.Duration(60/messagesPerMinute)*time.Second),
+			)
+		}
 
 		if err = tx.WithContext(ctx).Create(notification).Error; err != nil {
 			msg := fmt.Sprintf("cannot create new notification with id [%s] and schedule [%s]", notification.ID, notification.ScheduledAt.String())
@@ -90,6 +94,13 @@ func (repository gormPhoneNotificationRepository) Schedule(ctx context.Context, 
 	}
 
 	return nil
+}
+
+func (repository *gormPhoneNotificationRepository) maxTime(a, b time.Time) time.Time {
+	if a.Unix() > b.Unix() {
+		return a
+	}
+	return b
 }
 
 func (repository *gormPhoneNotificationRepository) insert(ctx context.Context, notification *entities.PhoneNotification) error {
