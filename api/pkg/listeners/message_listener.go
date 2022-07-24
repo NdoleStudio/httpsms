@@ -138,6 +138,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 
 	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
+		UserID:    payload.UserID,
 		Timestamp: payload.Timestamp,
 	}
 
