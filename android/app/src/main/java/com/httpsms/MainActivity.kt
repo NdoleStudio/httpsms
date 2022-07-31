@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.httpsms.services.StickyNotificationService
 import timber.log.Timber
 import java.util.*
 
@@ -43,6 +44,8 @@ class MainActivity : AppCompatActivity() {
         setActiveStatus(this)
         registerListeners()
         refreshToken(this)
+
+        startStickyNotification(this)
     }
 
     override fun onResume() {
@@ -50,6 +53,13 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
+    }
+
+    private fun startStickyNotification(context: Context) {
+        Timber.d("starting foreground service")
+        val notificationIntent = Intent(context, StickyNotificationService::class.java)
+        val service = context.startForegroundService(notificationIntent)
+        Timber.d("foreground service started [${service?.className}]")
     }
 
     private fun refreshToken(context: Context) {
