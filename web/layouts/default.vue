@@ -4,8 +4,8 @@
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.lgAndUp && hasDrawer"
       :width="400"
-      fixed
       app
+      fixed
     >
       <template #prepend>
         <v-divider
@@ -13,7 +13,9 @@
           class="py-1 warning"
         ></v-divider>
         <message-thread-header></message-thread-header>
-        <message-thread></message-thread>
+        <div class="overflow-y-auto v-navigation-drawer__message-thread">
+          <message-thread></message-thread>
+        </div>
       </template>
     </v-navigation-drawer>
     <v-main :class="{ 'has-drawer': hasDrawer && $vuetify.breakpoint.lgAndUp }">
@@ -83,10 +85,6 @@ export default class DefaultLayout extends Vue {
 </script>
 
 <style lang="scss">
-html {
-  overflow-y: auto;
-}
-
 .v-application {
   .w-full {
     width: 100%;
@@ -98,6 +96,26 @@ html {
   .has-drawer {
     .v-snack {
       padding-left: 400px;
+    }
+  }
+
+  .v-navigation-drawer__message-thread {
+    height: calc(100vh - 120px);
+
+    /* width */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    /* Track */
+    &::-webkit-scrollbar-track {
+      background: #363636;
+    }
+
+    /* Handle */
+    &::-webkit-scrollbar-thumb {
+      background: #666666;
+      border-radius: 8px;
     }
   }
 }

@@ -8,6 +8,8 @@ import androidx.work.*
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import timber.log.Timber
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
@@ -89,14 +91,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 return Result.failure()
             }
 
-            if (!Settings.getActiveStatus(applicationContext)) {
-                Timber.w("user is not active, stopping processing")
-                return Result.failure()
-            }
-
             val messageID = this.inputData.getString(Constants.KEY_MESSAGE_ID)
             if (messageID == null) {
                 Timber.e("cannot get outstanding message for work [${this.id}]")
+                return Result.failure()
+            }
+
+            if (!Settings.getActiveStatus(applicationContext)) {
+                Timber.w("user is not active, stopping processing")
+                handleFailed(applicationContext, messageID, "MOBILE_APP_INACTIVE")
                 return Result.failure()
             }
 
@@ -121,6 +124,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 DeliveredReceiver(),
                 IntentFilter(SmsManagerService.deliveredAction(messageID))
             )
+        }
+
+        private fun handleFailed(context: Context, messageID: String, reason: String) {
+            Timber.d("sending failed event for message with ID [${messageID}]")
+            HttpSmsApiService(Settings.getApiKeyOrDefault(context))
+                .sendFailedEvent(messageID, ZonedDateTime.now(ZoneOffset.UTC), reason)
         }
 
         private fun getMessage(context: Context, messageID: String): Message? {

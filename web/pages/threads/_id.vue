@@ -65,7 +65,11 @@
         indeterminate
       ></v-progress-linear>
       <v-container v-if="$store.getters.hasThread">
-        <div ref="messageBody" class="messages-body no-scrollbar">
+        <div
+          ref="messageBody"
+          class="messages-body no-scrollbar"
+          :class="{ 'pr-7': $vuetify.breakpoint.lgAndUp }"
+        >
           <v-row v-for="message in messages" :key="message.id">
             <v-col
               class="d-flex"
@@ -83,6 +87,27 @@
               >
                 <v-icon> mdi-account</v-icon>
               </v-avatar>
+              <v-menu v-if="canResend(message)" offset-y>
+                <template #activator="{ on }">
+                  <v-btn icon text class="mt-2" v-on="on">
+                    <v-icon>mdi-dots-vertical</v-icon>
+                  </v-btn>
+                </template>
+                <v-list class="px-2" nav dense>
+                  <v-list-item-group v-model="selectedMenuItem">
+                    <v-list-item @click.prevent="resendMessage(message)">
+                      <v-list-item-icon class="pl-2">
+                        <v-icon dense>mdi-refresh</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content class="ml-n3">
+                        <v-list-item-title class="pr-16 py-1">
+                          Resend Message
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                  </v-list-item-group>
+                </v-list>
+              </v-menu>
               <div>
                 <v-card
                   class="ml-2"
@@ -140,7 +165,11 @@
                       </div>
                     </template>
                     <span>
-                      {{ message.status }}
+                      {{
+                        message.failure_reason
+                          ? message.failure_reason
+                          : message.status
+                      }}
                     </span>
                   </v-tooltip>
                 </div>
@@ -248,6 +277,13 @@ export default Vue.extend({
       return ['sending', 'pending'].includes(message.status)
     },
 
+    canResend(message: Message): boolean {
+      return (
+        this.isMT(message) &&
+        (message.status === 'expired' || message.status === 'failed')
+      )
+    },
+
     async loadData() {
       await this.$store.dispatch('loadPhones')
       await this.$store.dispatch('loadThreads')
@@ -290,6 +326,25 @@ export default Vue.extend({
       }, 1000)
     },
 
+    async resendMessage(message: Message) {
+      await this.$store.dispatch('sendMessage', {
+        from: message.owner,
+        to: message.contact,
+        content: message.content,
+      })
+
+      setTimeout(() => {
+        this.selectedMenuItem = -1
+      }, 1000)
+
+      await this.$store.dispatch(
+        'loadThreadMessages',
+        this.$store.getters.getThread.id
+      )
+
+      this.scrollToElement()
+    },
+
     async sendMessage(event: KeyboardEvent) {
       if (event.shiftKey) {
         return
@@ -325,7 +380,6 @@ export default Vue.extend({
 <style lang="scss">
 .messages-body {
   padding-top: 50px;
-  padding-right: 20px;
   max-height: calc(100vh - 200px);
   position: absolute;
   width: 100%;

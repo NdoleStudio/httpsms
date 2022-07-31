@@ -252,6 +252,7 @@ export const actions = {
     const response = await axios.get('/v1/message-threads', {
       params: {
         owner: context.getters.getOwner,
+        limit: 100,
         is_archived: context.getters.getIsArchived,
       },
     })
