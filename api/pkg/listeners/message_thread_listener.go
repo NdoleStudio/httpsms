@@ -67,7 +67,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
-		msg := fmt.Sprintf("cannot update thread for message with MessageID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -95,7 +95,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSending(ctx context.Context
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
-		msg := fmt.Sprintf("cannot update thread for message with MessageID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -123,7 +123,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
-		msg := fmt.Sprintf("cannot update thread for message with MessageID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -151,7 +151,7 @@ func (listener *MessageThreadListener) OnMessagePhoneDelivered(ctx context.Conte
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
-		msg := fmt.Sprintf("cannot update thread for message with MessageID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -179,7 +179,7 @@ func (listener *MessageThreadListener) OnMessagePhoneFailed(ctx context.Context,
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
-		msg := fmt.Sprintf("cannot update thread for message with MessageID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -207,7 +207,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
-		msg := fmt.Sprintf("cannot update thread for message with MessageID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with MessageID [%s]", updateParams.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

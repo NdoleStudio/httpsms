@@ -72,7 +72,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 		Content:   message.Content,
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot create [%T] for message with MessageID [%s]", event, message.ID)
+		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -206,7 +206,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 
 	message, err := service.repository.Load(ctx, params.UserID, eventPayload.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with MessageID [%s]", eventPayload.ID)
+		msg := fmt.Sprintf("cannot load message with ID [%s]", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -319,7 +319,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		Content:           params.Content,
 	}
 
-	ctxLogger.Info(fmt.Sprintf("creating cloud event for message with MessageID [%s]", eventPayload.ID))
+	ctxLogger.Info(fmt.Sprintf("creating cloud event for message with ID [%s]", eventPayload.ID))
 
 	event, err := service.createMessageAPISentEvent(params.Source, eventPayload)
 	if err != nil {
@@ -338,7 +338,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	message, err := service.repository.Load(ctx, eventPayload.UserID, eventPayload.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with MessageID [%s] in the userRepository", eventPayload.ID)
+		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
