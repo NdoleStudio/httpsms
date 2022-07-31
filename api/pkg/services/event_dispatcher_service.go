@@ -48,6 +48,11 @@ func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudeven
 	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
 
+	if err := event.Validate(); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type())
+		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
 	if err := dispatcher.repository.Save(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot save event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -61,6 +66,11 @@ func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudeven
 func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, event cloudevents.Event, timeout time.Duration) error {
 	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
+
+	if err := event.Validate(); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type())
+		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
 
 	task, err := dispatcher.createCloudTask(event)
 	if err != nil {

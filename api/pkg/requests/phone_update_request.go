@@ -2,6 +2,7 @@ package requests
 
 import (
 	"strings"
+	"time"
 
 	"github.com/nyaruka/phonenumbers"
 
@@ -14,7 +15,11 @@ type PhoneUpsert struct {
 	request
 	MessagesPerMinute uint   `json:"messages_per_minute" example:"1"`
 	PhoneNumber       string `json:"phone_number" example:"+18005550199"`
-	FcmToken          string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
+
+	// MessageExpirationTimeout is the duration in nanoseconds after sending a message when it is considered to be expired.
+	MessageExpirationTimeout time.Duration `json:"message_expiration_timeout" example:"12345"`
+
+	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -40,10 +45,17 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser) services.PhoneU
 		fcmToken = &input.FcmToken
 	}
 
+	// ignore default
+	var timeout *time.Duration
+	if input.MessageExpirationTimeout != 0 {
+		timeout = &input.MessageExpirationTimeout
+	}
+
 	return services.PhoneUpsertParams{
-		PhoneNumber:       *phone,
-		MessagesPerMinute: messagesPerMinute,
-		FcmToken:          fcmToken,
-		UserID:            user.ID,
+		PhoneNumber:              *phone,
+		MessagesPerMinute:        messagesPerMinute,
+		MessageExpirationTimeout: timeout,
+		FcmToken:                 fcmToken,
+		UserID:                   user.ID,
 	}
 }

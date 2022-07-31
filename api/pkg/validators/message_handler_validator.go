@@ -132,9 +132,9 @@ func (validator MessageHandlerValidator) ValidateMessageEvent(_ context.Context,
 			"event_name": []string{
 				"required",
 				"in:" + strings.Join([]string{
-					entities.MessageEventNameSent,
-					entities.MessageEventNameFailed,
-					entities.MessageEventNameDelivered,
+					string(entities.MessageEventNameSent),
+					string(entities.MessageEventNameFailed),
+					string(entities.MessageEventNameDelivered),
 				}, ","),
 			},
 			"messageID": []string{

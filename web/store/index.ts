@@ -289,6 +289,9 @@ export const actions = {
     await axios.put(`/v1/phones`, {
       fcm_token: phone.fcm_token,
       phone_number: phone.phone_number,
+      message_expiration_timeout: parseInt(
+        phone.message_expiration_timeout.toString()
+      ),
       messages_per_minute: parseInt(phone.messages_per_minute.toString()),
     })
     await context.dispatch('loadPhones', true)

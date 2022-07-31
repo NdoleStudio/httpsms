@@ -163,6 +163,14 @@
                 >
                 </v-textarea>
                 <v-text-field
+                  v-model="activePhone.message_expiration_timeout"
+                  outlined
+                  type="number"
+                  dense
+                  label="Message Expiration (nanoseconds)"
+                >
+                </v-text-field>
+                <v-text-field
                   v-model="activePhone.messages_per_minute"
                   outlined
                   type="number"

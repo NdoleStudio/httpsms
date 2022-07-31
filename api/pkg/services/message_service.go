@@ -579,7 +579,7 @@ type MessageScheduleExpirationParams struct {
 	NotificationSentAt       time.Time
 	PhoneID                  uuid.UUID
 	MessageExpirationTimeout time.Duration
-	source                   string
+	Source                   string
 }
 
 // ScheduleExpirationCheck schedules an event to check if a message is expired
@@ -594,7 +594,7 @@ func (service *MessageService) ScheduleExpirationCheck(ctx context.Context, para
 		return nil
 	}
 
-	event, err := service.createMessageSendExpiredCheckEvent(params.source, events.MessageSendExpiredCheckPayload{
+	event, err := service.createMessageSendExpiredCheckEvent(params.Source, events.MessageSendExpiredCheckPayload{
 		MessageID:   params.MessageID,
 		ScheduledAt: params.NotificationSentAt.Add(params.MessageExpirationTimeout),
 		UserID:      params.UserID,
@@ -617,7 +617,7 @@ func (service *MessageService) ScheduleExpirationCheck(ctx context.Context, para
 type MessageCheckExpired struct {
 	MessageID uuid.UUID
 	UserID    entities.UserID
-	source    string
+	Source    string
 }
 
 // CheckExpired checks if a message has expired
@@ -638,7 +638,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		return nil
 	}
 
-	event, err := service.createMessageSendExpiredEvent(params.source, events.MessageSendExpiredPayload{
+	event, err := service.createMessageSendExpiredEvent(params.Source, events.MessageSendExpiredPayload{
 		MessageID: message.ID,
 		Owner:     message.Owner,
 		Contact:   message.Contact,

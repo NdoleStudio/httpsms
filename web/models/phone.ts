@@ -5,5 +5,6 @@ export interface Phone {
   phone_number: string
   created_at: string
   updated_at: string
+  message_expiration_timeout: number
   messages_per_minute: number
 }
