@@ -72,6 +72,8 @@
               :class="{
                 'pr-12': $vuetify.breakpoint.mdAndDown && !isMT(message),
                 'pl-12 pr-5': $vuetify.breakpoint.mdAndDown && isMT(message),
+                'pl-16 ml-16': $vuetify.breakpoint.lgAndUp && isMT(message),
+                'pr-16 mr-16': $vuetify.breakpoint.lgAndUp && !isMT(message),
               }"
             >
               <v-spacer v-if="isMT(message)"></v-spacer>
@@ -88,7 +90,7 @@
                   :color="isMT(message) ? 'primary' : 'default'"
                 >
                   <v-card-text
-                    class="text--primary"
+                    class="text--primary text-break"
                     style="white-space: pre-line"
                     >{{ message.content }}</v-card-text
                   >
@@ -102,7 +104,7 @@
                     <template #activator="{ on, attrs }">
                       <div v-bind="attrs" v-on="on">
                         <v-icon
-                          v-if="isExpired(message)"
+                          v-if="message.status === 'expired'"
                           color="warning"
                           class="mt-n2"
                           >mdi-alert</v-icon
@@ -138,7 +140,7 @@
                       </div>
                     </template>
                     <span>
-                      {{ isExpired(message) ? 'expired' : message.status }}
+                      {{ message.status }}
                     </span>
                   </v-tooltip>
                 </div>
@@ -246,14 +248,6 @@ export default Vue.extend({
       return ['sending', 'pending'].includes(message.status)
     },
 
-    isExpired(message: Message): boolean {
-      return (
-        this.isPending(message) &&
-        new Date().getTime() - new Date(message.created_at).getTime() >
-          5 * 60 * 1000
-      ) // 5 minutes
-    },
-
     async loadData() {
       await this.$store.dispatch('loadPhones')
       await this.$store.dispatch('loadThreads')
@@ -331,11 +325,27 @@ export default Vue.extend({
 <style lang="scss">
 .messages-body {
   padding-top: 50px;
-  width: 96%;
+  padding-right: 20px;
   max-height: calc(100vh - 200px);
-  max-width: 1761px;
   position: absolute;
+  width: 100%;
   bottom: 120px;
+}
+
+@media (min-width: 960px) {
+  .messages-body {
+    max-width: 900px;
+  }
+}
+@media (min-width: 1264px) {
+  .messages-body {
+    max-width: 1185px;
+  }
+}
+@media (min-width: 1904px) {
+  .messages-body {
+    max-width: 1785px;
+  }
 }
 
 .no-scrollbar,
