@@ -10,11 +10,15 @@ import timber.log.Timber
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            Intent(context, StickyNotificationService::class.java).also {
-                context.startForegroundService(it)
-            }
+           startStickyNotification(context)
         } else {
             Timber.e("invalid intent [${intent.action}]")
         }
+    }
+    private fun startStickyNotification(context: Context) {
+        Timber.d("starting foreground service")
+        val notificationIntent = Intent(context, StickyNotificationService::class.java)
+        val service = context.startForegroundService(notificationIntent)
+        Timber.d("foreground service started [${service?.className}]")
     }
 }
