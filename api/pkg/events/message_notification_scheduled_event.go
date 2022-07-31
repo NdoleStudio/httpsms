@@ -11,7 +11,7 @@ import (
 // EventTypeMessageNotificationScheduled is emitted when a new message notification is scheduled
 const EventTypeMessageNotificationScheduled = "message.notification.scheduled"
 
-// MessageNotificationScheduledPayload is the payload of the MessageNotificationScheduledPayload event
+// MessageNotificationScheduledPayload is the payload of the EventTypeMessageNotificationScheduled event
 type MessageNotificationScheduledPayload struct {
 	MessageID      uuid.UUID       `json:"id"`
 	UserID         entities.UserID `json:"user_id"`

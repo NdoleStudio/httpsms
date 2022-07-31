@@ -78,6 +78,8 @@ func (listener *NotificationListener) onMessageNotificationScheduled(ctx context
 	scheduleParams := &services.NotificationSendParams{
 		UserID:              payload.UserID,
 		PhoneID:             payload.PhoneID,
+		Source:              event.Source(),
+		ScheduledAt:         payload.ScheduledAt,
 		PhoneNotificationID: payload.NotificationID,
 		MessageID:           payload.MessageID,
 	}

@@ -462,8 +462,8 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSending() {
-		msg := fmt.Sprintf("message has wrong status [%s]. expected %s", message.Status, entities.MessageStatusSending)
+	if !message.IsSending() && !message.IsExpired() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s]", message.Status, entities.MessageStatusSending, entities.MessageStatusExpired)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
 
@@ -489,8 +489,8 @@ func (service *MessageService) HandleMessageFailed(ctx context.Context, params H
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSent() && !message.IsSending() {
-		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s,%s]", message.Status, entities.MessageStatusSending, entities.MessageStatusSent)
+	if !message.IsSent() && !message.IsSending() && !message.IsExpired() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSending, entities.MessageStatusSent, entities.MessageStatusExpired)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
 
@@ -516,8 +516,8 @@ func (service *MessageService) HandleMessageDelivered(ctx context.Context, param
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSent() && !message.IsSending() {
-		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s]", message.Status, entities.MessageStatusSent, entities.MessageStatusSending)
+	if !message.IsSent() && !message.IsSending() && !message.IsExpired() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSent, entities.MessageStatusSending, entities.MessageStatusExpired)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
 
