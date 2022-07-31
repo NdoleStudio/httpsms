@@ -163,7 +163,7 @@
                 >
                 </v-textarea>
                 <v-text-field
-                  v-model="activePhone.message_expiration_timeout"
+                  v-model="activePhone.message_expiration_seconds"
                   outlined
                   type="number"
                   dense
