@@ -72,7 +72,7 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 	}
 
 	if _, err := listener.service.StoreSentMessage(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store message with ID [%s] for event with MessageID [%s]", storeParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -110,7 +110,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 	}
 
 	if err = listener.service.HandleMessageSending(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle sending for message with ID [%s] for event with MessageID [%s]", handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle sending for message with ID [%s] for event with ID [%s]", handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -148,7 +148,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 	}
 
 	if err = listener.service.HandleMessageSent(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with MessageID [%s]", event.Type(), handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -186,7 +186,7 @@ func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, ev
 	}
 
 	if err = listener.service.HandleMessageDelivered(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with MessageID [%s]", event.Type(), handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -225,7 +225,7 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 	}
 
 	if err = listener.service.HandleMessageFailed(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with MessageID [%s]", event.Type(), handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -266,7 +266,7 @@ func (listener *MessageListener) OnMessagePhoneReceived(ctx context.Context, eve
 	}
 
 	if _, err = listener.service.StoreReceivedMessage(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store message with ID [%s] for event with MessageID [%s]", storeParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

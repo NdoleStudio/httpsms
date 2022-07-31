@@ -49,7 +49,7 @@ func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudeven
 	defer span.End()
 
 	if err := dispatcher.repository.Save(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot save event with MessageID [%s] and type [%s]", event.ID(), event.Type())
+		msg := fmt.Sprintf("cannot save event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -69,7 +69,7 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 	}
 
 	if err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
-		msg := fmt.Sprintf("cannot enqueue event with MessageID [%s] and type [%s]", event.ID(), event.Type())
+		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

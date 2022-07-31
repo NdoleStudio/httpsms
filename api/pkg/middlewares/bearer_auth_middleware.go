@@ -47,7 +47,7 @@ func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *au
 
 		c.Locals(ContextKeyAuthUserID, authUser)
 
-		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with MessageID [%s]", authUser, authUser.ID))
+		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
 		return c.Next()
 	}
 }
