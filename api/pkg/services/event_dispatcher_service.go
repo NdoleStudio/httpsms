@@ -116,7 +116,7 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 func (dispatcher *EventDispatcher) createCloudTask(event cloudevents.Event) (*PushQueueTask, error) {
 	eventContent, err := json.Marshal(event)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%T] with MessageID [%s]", event, event.ID()))
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%T] with ID [%s]", event, event.ID()))
 	}
 
 	return &PushQueueTask{

@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	// ContextKeyAuthUserID is the context key used to store the MessageID of an authenticated user
+	// ContextKeyAuthUserID is the context key used to store the ID of an authenticated user
 	ContextKeyAuthUserID = "auth.user.id"
 )
 

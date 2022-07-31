@@ -130,7 +130,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	}
 
 	ctxLogger.Info(fmt.Sprintf(
-		"created thread [%s] for message MessageID [%s] with owner [%s] and contact [%s]",
+		"created thread [%s] for message ID [%s] with owner [%s] and contact [%s]",
 		thread.ID,
 		thread.LastMessageID,
 		thread.Owner,

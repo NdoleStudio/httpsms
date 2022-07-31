@@ -112,14 +112,14 @@ func (service *MessageService) GetMessages(ctx context.Context, params MessageGe
 	return messages, nil
 }
 
-// GetMessage fetches a message by the MessageID
+// GetMessage fetches a message by the ID
 func (service *MessageService) GetMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	message, err := service.repository.Load(ctx, userID, messageID)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch messages with MessageID [%s]", messageID)
+		msg := fmt.Sprintf("could not fetch messages with ID [%s]", messageID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}
 
@@ -187,7 +187,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 		Content:   params.Content,
 	}
 
-	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with MessageID [%s]", eventPayload.ID))
+	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.ID))
 
 	event, err := service.createMessagePhoneReceivedEvent(params.Source, eventPayload)
 	if err != nil {
