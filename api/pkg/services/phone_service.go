@@ -54,11 +54,11 @@ func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthUs
 
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
-	PhoneNumber              phonenumbers.PhoneNumber
-	FcmToken                 *string
-	MessagesPerMinute        *uint
-	MessageExpirationTimeout *time.Duration
-	UserID                   entities.UserID
+	PhoneNumber               phonenumbers.PhoneNumber
+	FcmToken                  *string
+	MessagesPerMinute         *uint
+	MessageExpirationDuration *time.Duration
+	UserID                    entities.UserID
 }
 
 // Upsert a new entities.Phone
@@ -95,8 +95,8 @@ func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertPar
 		phone.MessagesPerMinute = *params.MessagesPerMinute
 	}
 
-	if params.MessageExpirationTimeout != nil {
-		phone.MessageExpirationTimeout = *params.MessageExpirationTimeout
+	if params.MessageExpirationDuration != nil {
+		phone.MessageExpirationSeconds = uint(params.MessageExpirationDuration.Seconds())
 	}
 	return phone
 }
@@ -128,7 +128,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		UserID:                   params.UserID,
 		FcmToken:                 params.FcmToken,
 		MessagesPerMinute:        0,
-		MessageExpirationTimeout: 0,
+		MessageExpirationSeconds: 0,
 		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),

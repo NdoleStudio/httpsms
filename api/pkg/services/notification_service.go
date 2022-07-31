@@ -210,14 +210,14 @@ func (service *NotificationService) createMessageNotificationSentEvent(source st
 	event.SetID(uuid.New().String())
 
 	payload := events.MessageNotificationSentPayload{
-		MessageID:                params.MessageID,
-		UserID:                   params.UserID,
-		PhoneID:                  params.PhoneID,
-		ScheduledAt:              params.ScheduledAt,
-		MessageExpirationTimeout: phone.MessageExpirationTimeout,
-		FcmMessageID:             fcmMessageID,
-		NotificationSentAt:       time.Now().UTC(),
-		NotificationID:           params.PhoneNotificationID,
+		MessageID:                 params.MessageID,
+		UserID:                    params.UserID,
+		PhoneID:                   params.PhoneID,
+		ScheduledAt:               params.ScheduledAt,
+		MessageExpirationDuration: phone.MessageExpirationDuration(),
+		FcmMessageID:              fcmMessageID,
+		NotificationSentAt:        time.Now().UTC(),
+		NotificationID:            params.PhoneNotificationID,
 	}
 
 	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {

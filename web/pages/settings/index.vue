@@ -167,7 +167,7 @@
                   outlined
                   type="number"
                   dense
-                  label="Message Expiration (nanoseconds)"
+                  label="Message Expiration (seconds)"
                 >
                 </v-text-field>
                 <v-text-field

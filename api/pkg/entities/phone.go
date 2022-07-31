@@ -14,9 +14,14 @@ type Phone struct {
 	PhoneNumber       string    `json:"phone_number" example:"+18005550199"`
 	MessagesPerMinute uint      `json:"messages_per_minute" example:"1"`
 
-	// MessageExpirationTimeout is the duration in nanoseconds after sending a message when it is considered to be expired.
-	MessageExpirationTimeout time.Duration `json:"message_expiration_timeout"`
+	// MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.
+	MessageExpirationSeconds uint `json:"message_expiration_seconds"`
 
 	CreatedAt time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
+}
+
+// MessageExpirationDuration returns the message expiration as time.Duration
+func (phone *Phone) MessageExpirationDuration() time.Duration {
+	return time.Duration(phone.MessageExpirationSeconds) * time.Second
 }

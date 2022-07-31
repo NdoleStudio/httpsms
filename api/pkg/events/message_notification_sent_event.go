@@ -13,12 +13,12 @@ const EventTypeMessageNotificationSent = "message.notification.sent"
 
 // MessageNotificationSentPayload is the payload of the EventTypeMessageNotificationSent event
 type MessageNotificationSentPayload struct {
-	MessageID                uuid.UUID       `json:"message_id"`
-	UserID                   entities.UserID `json:"user_id"`
-	PhoneID                  uuid.UUID       `json:"phone_id"`
-	ScheduledAt              time.Time       `json:"scheduled_at"`
-	FcmMessageID             string          `json:"fcm_message_id"`
-	MessageExpirationTimeout time.Duration   `json:"message_expiration_timeout"`
-	NotificationSentAt       time.Time       `json:"notification_sent_at"`
-	NotificationID           uuid.UUID       `json:"notification_id"`
+	MessageID                 uuid.UUID       `json:"message_id"`
+	UserID                    entities.UserID `json:"user_id"`
+	PhoneID                   uuid.UUID       `json:"phone_id"`
+	ScheduledAt               time.Time       `json:"scheduled_at"`
+	FcmMessageID              string          `json:"fcm_message_id"`
+	MessageExpirationDuration time.Duration   `json:"message_expiration_duration"`
+	NotificationSentAt        time.Time       `json:"notification_sent_at"`
+	NotificationID            uuid.UUID       `json:"notification_id"`
 }

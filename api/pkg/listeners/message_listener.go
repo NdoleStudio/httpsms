@@ -317,12 +317,12 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 	}
 
 	storeParams := services.MessageScheduleExpirationParams{
-		MessageID:                payload.MessageID,
-		UserID:                   payload.UserID,
-		NotificationSentAt:       payload.NotificationSentAt,
-		PhoneID:                  payload.PhoneID,
-		Source:                   event.Source(),
-		MessageExpirationTimeout: payload.MessageExpirationTimeout,
+		MessageID:                 payload.MessageID,
+		UserID:                    payload.UserID,
+		NotificationSentAt:        payload.NotificationSentAt,
+		PhoneID:                   payload.PhoneID,
+		Source:                    event.Source(),
+		MessageExpirationDuration: payload.MessageExpirationDuration,
 	}
 	if err := listener.service.ScheduleExpirationCheck(ctx, storeParams); err != nil {
 		msg := fmt.Sprintf("cannot exchedule expiration check for  MessageID [%s] and userID [%s]", storeParams.MessageID, storeParams.UserID)

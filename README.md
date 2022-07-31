@@ -48,6 +48,12 @@ sending and receiving SMS messages.
 In-order not to abuse the SMS API on android, you can send a rate limit e.g 3 messages per minute. Such that even if you
 call the API to send messages to 100 people, It will only send the messages at a rate of 3 messages per minute.
 
+### Message Expiration
+
+Sometimes it happens that the phone doesn't get the push notification in time and I can't send the SMS message. It is
+possible to set a timeout for which a message is valid and if a message becomes expired after the timeout elapses, you
+will be notified.
+
 ## API Clients
 
 - Go: https://github.com/NdoleStudio/httpsms-go

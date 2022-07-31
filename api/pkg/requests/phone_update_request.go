@@ -16,8 +16,8 @@ type PhoneUpsert struct {
 	MessagesPerMinute uint   `json:"messages_per_minute" example:"1"`
 	PhoneNumber       string `json:"phone_number" example:"+18005550199"`
 
-	// MessageExpirationTimeout is the duration in nanoseconds after sending a message when it is considered to be expired.
-	MessageExpirationTimeout time.Duration `json:"message_expiration_timeout" example:"12345"`
+	// MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.
+	MessageExpirationSeconds uint `json:"message_expiration_seconds" example:"12345"`
 
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 }
@@ -47,15 +47,16 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser) services.PhoneU
 
 	// ignore default
 	var timeout *time.Duration
-	if input.MessageExpirationTimeout != 0 {
-		timeout = &input.MessageExpirationTimeout
+	if input.MessageExpirationSeconds != 0 {
+		duration := time.Duration(input.MessageExpirationSeconds) * time.Second
+		timeout = &duration
 	}
 
 	return services.PhoneUpsertParams{
-		PhoneNumber:              *phone,
-		MessagesPerMinute:        messagesPerMinute,
-		MessageExpirationTimeout: timeout,
-		FcmToken:                 fcmToken,
-		UserID:                   user.ID,
+		PhoneNumber:               *phone,
+		MessagesPerMinute:         messagesPerMinute,
+		MessageExpirationDuration: timeout,
+		FcmToken:                  fcmToken,
+		UserID:                    user.ID,
 	}
 }

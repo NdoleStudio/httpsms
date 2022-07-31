@@ -574,12 +574,12 @@ func (service *MessageService) HandleMessageExpired(ctx context.Context, params 
 
 // MessageScheduleExpirationParams are parameters for scheduling the expiration of a message event
 type MessageScheduleExpirationParams struct {
-	MessageID                uuid.UUID
-	UserID                   entities.UserID
-	NotificationSentAt       time.Time
-	PhoneID                  uuid.UUID
-	MessageExpirationTimeout time.Duration
-	Source                   string
+	MessageID                 uuid.UUID
+	UserID                    entities.UserID
+	NotificationSentAt        time.Time
+	PhoneID                   uuid.UUID
+	MessageExpirationDuration time.Duration
+	Source                    string
 }
 
 // ScheduleExpirationCheck schedules an event to check if a message is expired
@@ -589,14 +589,14 @@ func (service *MessageService) ScheduleExpirationCheck(ctx context.Context, para
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	if params.MessageExpirationTimeout == 0 {
+	if params.MessageExpirationDuration == 0 {
 		ctxLogger.Info(fmt.Sprintf("message expiration duration not set for message [%s] using phone [%s]", params.MessageID, params.PhoneID))
 		return nil
 	}
 
 	event, err := service.createMessageSendExpiredCheckEvent(params.Source, events.MessageSendExpiredCheckPayload{
 		MessageID:   params.MessageID,
-		ScheduledAt: params.NotificationSentAt.Add(params.MessageExpirationTimeout),
+		ScheduledAt: params.NotificationSentAt.Add(params.MessageExpirationDuration),
 		UserID:      params.UserID,
 	})
 	if err != nil {
@@ -604,12 +604,12 @@ func (service *MessageService) ScheduleExpirationCheck(ctx context.Context, para
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.eventDispatcher.DispatchWithTimeout(ctx, event, params.MessageExpirationTimeout); err != nil {
+	if err = service.eventDispatcher.DispatchWithTimeout(ctx, event, params.MessageExpirationDuration); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for message with ID [%s]", event.Type(), params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("scheduled message id [%s] to expire at [%s]", params.MessageID, params.NotificationSentAt.Add(params.MessageExpirationTimeout)))
+	ctxLogger.Info(fmt.Sprintf("scheduled message id [%s] to expire at [%s]", params.MessageID, params.NotificationSentAt.Add(params.MessageExpirationDuration)))
 	return nil
 }
 
