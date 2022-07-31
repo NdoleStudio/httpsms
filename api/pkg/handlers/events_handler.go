@@ -63,14 +63,14 @@ func (h *EventsHandler) Dispatch(c *fiber.Ctx) error {
 	}
 
 	if h.userIDFomContext(c) != h.queueConfig.UserID {
-		msg := fmt.Sprintf("user with MessageID [%s], cannot dispatch event [%+#v]", h.userIDFomContext(c), request)
+		msg := fmt.Sprintf("user with ID [%s], cannot dispatch event [%+#v]", h.userIDFomContext(c), request)
 		ctxLogger.Error(stacktrace.NewError(msg))
 		return h.responseForbidden(c)
 	}
 
 	err := h.service.Dispatch(ctx, request)
 	if err != nil {
-		msg := fmt.Sprintf("cannot dispatch event with MessageID [%s]", request.ID())
+		msg := fmt.Sprintf("cannot dispatch event with ID [%s]", request.ID())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}

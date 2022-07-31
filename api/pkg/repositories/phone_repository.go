@@ -19,7 +19,7 @@ type PhoneRepository interface {
 	// Load a phone by user and phone number
 	Load(ctx context.Context, userID entities.UserID, phoneNumber string) (*entities.Phone, error)
 
-	// LoadByID a phone by MessageID
+	// LoadByID a phone by ID
 	LoadByID(ctx context.Context, phoneID uuid.UUID) (*entities.Phone, error)
 
 	// Delete an entities.Phone

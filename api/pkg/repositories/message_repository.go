@@ -15,7 +15,7 @@ type MessageRepository interface {
 	// Update a new entities.Message
 	Update(ctx context.Context, message *entities.Message) error
 
-	// Load an entities.Message by MessageID
+	// Load an entities.Message by ID
 	Load(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error)
 
 	// Index entities.Message between 2 phone numbers

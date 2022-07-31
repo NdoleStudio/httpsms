@@ -36,7 +36,7 @@ func (repository *gormEventListenerLogRepository) Store(ctx context.Context, mes
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Create(message).Error; err != nil {
-		msg := fmt.Sprintf("cannot save message with MessageID [%s]", message.ID)
+		msg := fmt.Sprintf("cannot save message with ID [%s]", message.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -56,7 +56,7 @@ func (repository *gormEventListenerLogRepository) Has(ctx context.Context, event
 		Find(&exists).
 		Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot check if log exists with event MessageID [%s] and handler [%s]", eventID, handler)
+		msg := fmt.Sprintf("cannot check if log exists with event ID [%s] and handler [%s]", eventID, handler)
 		return exists, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

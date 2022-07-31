@@ -100,7 +100,7 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        message_id	query  		string  						true "The MessageID of the message" default(32343a19-da5e-4b1b-a767-3298a73703cb)
+// @Param        message_id	query  		string  						true "The ID of the message" default(32343a19-da5e-4b1b-a767-3298a73703cb)
 // @Success      200 		{object}	responses.MessageResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
@@ -129,7 +129,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 
 	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), h.userIDFomContext(c), timestamp))
 	if err != nil {
-		msg := fmt.Sprintf("cannot get outstnading messgage with MessageID [%s]", request.MessageID)
+		msg := fmt.Sprintf("cannot get outstnading messgage with ID [%s]", request.MessageID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
@@ -191,7 +191,7 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param 		 messageID 	path		string 							true 	"MessageID of the message" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Param 		 messageID 	path		string 							true 	"ID of the message" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
 // @Param        payload   	body 		requests.MessageEvent  			true 	"Payload of the event emitted."
 // @Success      200  		{object} 	responses.MessageResponse
 // @Failure      400  		{object}  	responses.BadRequest
@@ -223,7 +223,7 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 
 	message, err := h.service.GetMessage(ctx, h.userIDFomContext(c), uuid.MustParse(request.MessageID))
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return h.responseNotFound(c, fmt.Sprintf("cannot find message with MessageID [%s]", request.MessageID))
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", request.MessageID))
 	}
 
 	if err != nil {
