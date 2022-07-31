@@ -48,13 +48,13 @@ type MessageEventName string
 
 const (
 	// MessageEventNameSent is emitted when a message is sent by the mobile phone
-	MessageEventNameSent = "SENT"
+	MessageEventNameSent = MessageEventName("SENT")
 
 	// MessageEventNameDelivered is emitted when a message is delivered by the mobile phone
-	MessageEventNameDelivered = "DELIVERED"
+	MessageEventNameDelivered = MessageEventName("DELIVERED")
 
 	// MessageEventNameFailed is emitted when a message is failed by the mobile phone
-	MessageEventNameFailed = "FAILED"
+	MessageEventNameFailed = MessageEventName("FAILED")
 )
 
 // Message represents a message sent between 2 phone numbers
@@ -85,6 +85,16 @@ func (message *Message) IsSending() bool {
 	return message.Status == MessageStatusSending
 }
 
+// IsDelivered checks if a message is delivered
+func (message *Message) IsDelivered() bool {
+	return message.Status == MessageStatusDelivered
+}
+
+// IsPending checks if a message is pending
+func (message *Message) IsPending() bool {
+	return message.Status == MessageStatusPending
+}
+
 // IsExpired checks if a message is expired
 func (message *Message) IsExpired() bool {
 	return message.Status == MessageStatusExpired
@@ -106,9 +116,10 @@ func (message *Message) Sent(timestamp time.Time) *Message {
 }
 
 // Failed registers a message as failed
-func (message *Message) Failed(timestamp time.Time) *Message {
+func (message *Message) Failed(timestamp time.Time, errorMessage string) *Message {
 	message.SentAt = &timestamp
 	message.Status = MessageStatusFailed
+	message.FailureReason = &errorMessage
 	message.updateOrderTimestamp(timestamp)
 	return message
 }
@@ -117,6 +128,14 @@ func (message *Message) Failed(timestamp time.Time) *Message {
 func (message *Message) Delivered(timestamp time.Time) *Message {
 	message.SentAt = &timestamp
 	message.Status = MessageStatusDelivered
+	message.updateOrderTimestamp(timestamp)
+	return message
+}
+
+// Expired registers a message as expired
+func (message *Message) Expired(timestamp time.Time) *Message {
+	message.SentAt = &timestamp
+	message.Status = MessageStatusExpired
 	message.updateOrderTimestamp(timestamp)
 	return message
 }

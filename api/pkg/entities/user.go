@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// UserID is the ID of a user
+// UserID is the MessageID of a user
 type UserID string
 
 // User stores information about a user

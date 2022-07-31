@@ -56,7 +56,7 @@ func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat 
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Create(heartbeat).Error; err != nil {
-		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
+		msg := fmt.Sprintf("cannot save heartbeat with MessageID [%s]", heartbeat.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

@@ -66,7 +66,7 @@ func (h *UserHandler) Show(c *fiber.Ctx) error {
 
 	user, err := h.service.Get(ctx, authUser)
 	if err != nil {
-		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
+		msg := fmt.Sprintf("cannot get user with MessageID [%s]", authUser.ID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}

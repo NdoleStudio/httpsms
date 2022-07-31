@@ -20,15 +20,19 @@ type MessageEvent struct {
 	// * DELIVERED: is event is emitted when a delivery report has been received by the mobile phone
 	EventName string `json:"event_name" example:"SENT"`
 
+	// Reason is the exact error message in case the event is an error
+	Reason *string `json:"reason"`
+
 	MessageID string `json:"messageID" swaggerignore:"true"` // used internally for validation
 }
 
-// ToMessageStoreEventParams converts MessageEvent to services.MessageStorePhoneEventParams
-func (input MessageEvent) ToMessageStoreEventParams(source string) services.MessageStorePhoneEventParams {
-	return services.MessageStorePhoneEventParams{
-		MessageID: uuid.MustParse(input.MessageID),
-		Source:    source,
-		EventName: entities.MessageEventName(input.EventName),
-		Timestamp: input.Timestamp,
+// ToMessageStoreEventParams converts MessageEvent to services.MessageStoreEventParams
+func (input MessageEvent) ToMessageStoreEventParams(source string) services.MessageStoreEventParams {
+	return services.MessageStoreEventParams{
+		MessageID:    uuid.MustParse(input.MessageID),
+		Source:       source,
+		ErrorMessage: input.Reason,
+		EventName:    entities.MessageEventName(input.EventName),
+		Timestamp:    input.Timestamp,
 	}
 }

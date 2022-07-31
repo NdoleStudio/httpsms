@@ -19,7 +19,7 @@ type MessageThreadRepository interface {
 	// LoadByOwnerContact fetches a thread between owner and contact
 	LoadByOwnerContact(ctx context.Context, userID entities.UserID, owner string, contact string) (*entities.MessageThread, error)
 
-	// Load a thread by ID
+	// Load a thread by MessageID
 	Load(ctx context.Context, userID entities.UserID, ID uuid.UUID) (*entities.MessageThread, error)
 
 	// Index message threads for an owner

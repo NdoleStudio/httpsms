@@ -54,7 +54,7 @@ func (listener *HeartbeatListener) onMessagePhoneSending(ctx context.Context, ev
 	}
 
 	if _, err := listener.service.Store(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store heartbeat with params [%+#v] for event with ID [%s]", storeParams, event.ID())
+		msg := fmt.Sprintf("cannot store heartbeat with params [%+#v] for event with MessageID [%s]", storeParams, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

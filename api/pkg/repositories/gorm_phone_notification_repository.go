@@ -70,7 +70,7 @@ func (repository gormPhoneNotificationRepository) Schedule(ctx context.Context, 
 			First(lastNotification).
 			Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			msg := fmt.Sprintf("cannot fetch last notification with phone ID [%s]", notification.PhoneID)
+			msg := fmt.Sprintf("cannot fetch last notification with phone MessageID [%s]", notification.PhoneID)
 			return stacktrace.Propagate(err, msg)
 		}
 
@@ -89,7 +89,7 @@ func (repository gormPhoneNotificationRepository) Schedule(ctx context.Context, 
 		return nil
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot schedule phone notification with ID [%s]", notification.ID)
+		msg := fmt.Sprintf("cannot schedule phone notification with MessageID [%s]", notification.ID)
 		return stacktrace.Propagate(err, msg)
 	}
 

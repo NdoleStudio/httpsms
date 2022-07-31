@@ -41,7 +41,7 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(thread).Error; err != nil {
-		msg := fmt.Sprintf("cannot save message thread with ID [%s]", thread.ID)
+		msg := fmt.Sprintf("cannot save message thread with MessageID [%s]", thread.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -54,7 +54,7 @@ func (repository *gormMessageThreadRepository) Update(ctx context.Context, threa
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(thread).Error; err != nil {
-		msg := fmt.Sprintf("cannot update message thread thread with ID [%s]", thread.ID)
+		msg := fmt.Sprintf("cannot update message thread thread with MessageID [%s]", thread.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -88,7 +88,7 @@ func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Co
 	return thread, nil
 }
 
-// Load an entities.MessageThread by ID
+// Load an entities.MessageThread by MessageID
 func (repository *gormMessageThreadRepository) Load(ctx context.Context, userID entities.UserID, ID uuid.UUID) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -37,12 +38,16 @@ func NewMessageListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:        l.OnMessageAPISent,
-		events.EventTypeMessagePhoneSending:   l.OnMessagePhoneSending,
-		events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
-		events.EventTypeMessagePhoneDelivered: l.OnMessagePhoneDelivered,
-		events.EventTypeMessagePhoneFailed:    l.OnMessagePhoneFailed,
-		events.EventTypeMessagePhoneReceived:  l.OnMessagePhoneReceived,
+		events.EventTypeMessageAPISent:            l.OnMessageAPISent,
+		events.EventTypeMessagePhoneSending:       l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:          l.OnMessagePhoneSent,
+		events.EventTypeMessagePhoneDelivered:     l.OnMessagePhoneDelivered,
+		events.EventTypeMessageSendFailed:         l.OnMessagePhoneFailed,
+		events.EventTypeMessagePhoneReceived:      l.OnMessagePhoneReceived,
+		events.EventTypeMessageNotificationSent:   l.onMessageNotificationSent,
+		events.EventTypeMessageNotificationFailed: l.onMessageNotificationFailed,
+		events.EventTypeMessageSendExpiredCheck:   l.onMessageSendExpiredCheck,
+		events.EventTypeMessageSendExpired:        l.onMessageSendExpired,
 	}
 }
 
@@ -67,7 +72,7 @@ func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event clo
 	}
 
 	if _, err := listener.service.StoreSentMessage(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot store message with MessageID [%s] for event with MessageID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -105,7 +110,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 	}
 
 	if err = listener.service.HandleMessageSending(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle sending for message with ID [%s] for event with ID [%s]", handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle sending for message with MessageID [%s] for event with MessageID [%s]", handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -143,7 +148,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 	}
 
 	if err = listener.service.HandleMessageSent(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle [%s] for message with MessageID [%s] for event with MessageID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -181,14 +186,14 @@ func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, ev
 	}
 
 	if err = listener.service.HandleMessageDelivered(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle [%s] for message with MessageID [%s] for event with MessageID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
 }
 
-// OnMessagePhoneFailed handles the events.EventTypeMessagePhoneFailed event
+// OnMessagePhoneFailed handles the events.EventTypeMessageSendFailed event
 func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
@@ -206,20 +211,21 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 		return nil
 	}
 
-	var payload events.MessagePhoneFailedPayload
+	var payload events.MessageSendFailedPayload
 	if err = event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	handleParams := services.HandleMessageParams{
-		ID:        payload.ID,
-		UserID:    payload.UserID,
-		Timestamp: payload.Timestamp,
+	handleParams := services.HandleMessageFailedParams{
+		ID:           payload.ID,
+		UserID:       payload.UserID,
+		ErrorMessage: payload.ErrorMessage,
+		Timestamp:    payload.Timestamp,
 	}
 
 	if err = listener.service.HandleMessageFailed(ctx, handleParams); err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot handle [%s] for message with MessageID [%s] for event with MessageID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -260,11 +266,116 @@ func (listener *MessageListener) OnMessagePhoneReceived(ctx context.Context, eve
 	}
 
 	if _, err = listener.service.StoreReceivedMessage(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
+		msg := fmt.Sprintf("cannot store message with MessageID [%s] for event with MessageID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+}
+
+// onMessageNotificationFailed handles the events.EventTypeMessageNotificationFailed event
+func (listener *MessageListener) onMessageNotificationFailed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageNotificationFailedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	message, err := listener.service.GetMessage(ctx, payload.UserID, payload.MessageID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load message with id [%s] and user id [%s]", payload.MessageID, payload.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	storeParams := services.MessageStoreEventParams{
+		MessageID:    payload.MessageID,
+		EventName:    entities.MessageEventNameFailed,
+		Timestamp:    payload.NotificationFailedAt,
+		ErrorMessage: &payload.ErrorMessage,
+		Source:       event.Source(),
+	}
+	if _, err = listener.service.StoreEvent(ctx, message, storeParams); err != nil {
+		msg := fmt.Sprintf("cannot store message event [%s] for message with MessageID [%s]", storeParams.EventName, storeParams.MessageID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageNotificationSent handles the events.EventTypeMessageNotificationSent event
+func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageNotificationSentPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	storeParams := services.MessageScheduleExpirationParams{
+		MessageID:                payload.MessageID,
+		UserID:                   payload.UserID,
+		NotificationSentAt:       payload.NotificationSentAt,
+		PhoneID:                  payload.PhoneID,
+		MessageExpirationTimeout: payload.MessageExpirationTimeout,
+	}
+	if err := listener.service.ScheduleExpirationCheck(ctx, storeParams); err != nil {
+		msg := fmt.Sprintf("cannot exchedule expiration check for  MessageID [%s] and userID [%s]", storeParams.MessageID, storeParams.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageNotificationSent handles the events.EventTypeMessageSendExpiredCheck event
+func (listener *MessageListener) onMessageSendExpiredCheck(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageSendExpiredCheckPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	checkParams := services.MessageCheckExpired{
+		MessageID: payload.MessageID,
+		UserID:    payload.UserID,
+	}
+	if err := listener.service.CheckExpired(ctx, checkParams); err != nil {
+		msg := fmt.Sprintf("cannot check expiration for  MessageID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageSendExpired handles the events.EventTypeMessageSendExpired event
+func (listener *MessageListener) onMessageSendExpired(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageSendExpiredPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	expiredParams := services.HandleMessageParams{
+		ID:        payload.MessageID,
+		UserID:    payload.UserID,
+		Timestamp: payload.Timestamp,
+	}
+	if err := listener.service.HandleMessageExpired(ctx, expiredParams); err != nil {
+		msg := fmt.Sprintf("cannot handle event [%s] for MessageID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
 }
 
 func (listener *MessageListener) signature(event cloudevents.Event) string {

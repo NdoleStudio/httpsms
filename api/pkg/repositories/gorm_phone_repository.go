@@ -33,7 +33,7 @@ func NewGormPhoneRepository(
 	}
 }
 
-// LoadByID loads a phone by ID
+// LoadByID loads a phone by MessageID
 func (repository *gormPhoneRepository) LoadByID(ctx context.Context, phoneID uuid.UUID) (*entities.Phone, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -41,12 +41,12 @@ func (repository *gormPhoneRepository) LoadByID(ctx context.Context, phoneID uui
 	phone := new(entities.Phone)
 	err := repository.db.WithContext(ctx).First(phone, phoneID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("phone with ID [%s] does not exist", phoneID)
+		msg := fmt.Sprintf("phone with MessageID [%s] does not exist", phoneID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load phone with ID [%s]", phoneID)
+		msg := fmt.Sprintf("cannot load phone with MessageID [%s]", phoneID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -63,7 +63,7 @@ func (repository *gormPhoneRepository) Delete(ctx context.Context, userID entiti
 		Where("id = ?", phoneID).
 		Delete(&entities.Phone{}).Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot delete phone with ID [%s] and userID [%s]", phoneID, userID)
+		msg := fmt.Sprintf("cannot delete phone with MessageID [%s] and userID [%s]", phoneID, userID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -76,7 +76,7 @@ func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(phone).Error; err != nil {
-		msg := fmt.Sprintf("cannot save phone with ID [%s]", phone.ID)
+		msg := fmt.Sprintf("cannot save phone with MessageID [%s]", phone.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

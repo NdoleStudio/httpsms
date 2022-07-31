@@ -81,7 +81,7 @@ func (service *NotificationService) Send(ctx context.Context, params *Notificati
 	if err != nil {
 		return service.handleNotificationFailed(ctx, err, params)
 	}
-	return service.handleNotificationSent(ctx, result, params)
+	return service.handleNotificationSent(ctx, phone, result, params)
 }
 
 // NotificationScheduleParams are parameters for sending a notification
@@ -156,7 +156,7 @@ func (service *NotificationService) handleNotificationFailed(ctx context.Context
 	return nil
 }
 
-func (service *NotificationService) handleNotificationSent(ctx context.Context, result string, params *NotificationSendParams) error {
+func (service *NotificationService) handleNotificationSent(ctx context.Context, phone *entities.Phone, result string, params *NotificationSendParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -164,7 +164,7 @@ func (service *NotificationService) handleNotificationSent(ctx context.Context, 
 
 	ctxLogger.Info(fmt.Sprintf("sent notification [%s] for message [%s] to phone [%s]", result, params.MessageID, params.PhoneID))
 
-	event, err := service.createMessageNotificationSentEvent(params.Source, result, params)
+	event, err := service.createMessageNotificationSentEvent(params.Source, phone, result, params)
 	if err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSent, params.PhoneNotificationID))
 	}
@@ -201,7 +201,7 @@ func (service *NotificationService) createEvent(source string, notification *ent
 	return event, nil
 }
 
-func (service *NotificationService) createMessageNotificationSentEvent(source string, fcmMessageID string, params *NotificationSendParams) (cloudevents.Event, error) {
+func (service *NotificationService) createMessageNotificationSentEvent(source string, phone *entities.Phone, fcmMessageID string, params *NotificationSendParams) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
@@ -210,13 +210,14 @@ func (service *NotificationService) createMessageNotificationSentEvent(source st
 	event.SetID(uuid.New().String())
 
 	payload := events.MessageNotificationSentPayload{
-		MessageID:          params.MessageID,
-		UserID:             params.UserID,
-		PhoneID:            params.PhoneID,
-		ScheduledAt:        params.ScheduledAt,
-		FcmMessageID:       fcmMessageID,
-		NotificationSentAt: time.Now().UTC(),
-		NotificationID:     params.PhoneNotificationID,
+		MessageID:                params.MessageID,
+		UserID:                   params.UserID,
+		PhoneID:                  params.PhoneID,
+		ScheduledAt:              params.ScheduledAt,
+		MessageExpirationTimeout: phone.MessageExpirationTimeout,
+		FcmMessageID:             fcmMessageID,
+		NotificationSentAt:       time.Now().UTC(),
+		NotificationID:           params.PhoneNotificationID,
 	}
 
 	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {

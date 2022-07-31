@@ -13,6 +13,10 @@ type Phone struct {
 	FcmToken          *string   `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 	PhoneNumber       string    `json:"phone_number" example:"+18005550199"`
 	MessagesPerMinute uint      `json:"messages_per_minute" example:"1"`
-	CreatedAt         time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
-	UpdatedAt         time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
+
+	// MessageExpirationTimeout is the time after sending a message when it is considered to be expired
+	MessageExpirationTimeout time.Duration `json:"message_expiration_timeout"`
+
+	CreatedAt time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
+	UpdatedAt time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }

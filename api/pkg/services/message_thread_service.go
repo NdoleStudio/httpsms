@@ -125,12 +125,12 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	}
 
 	if err := service.repository.Store(ctx, thread); err != nil {
-		msg := fmt.Sprintf("cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID)
+		msg := fmt.Sprintf("cannot store thread with id [%s] for message with MessageID [%s]", thread.ID, params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf(
-		"created thread [%s] for message ID [%s] with owner [%s] and contact [%s]",
+		"created thread [%s] for message MessageID [%s] with owner [%s] and contact [%s]",
 		thread.ID,
 		thread.LastMessageID,
 		thread.Owner,

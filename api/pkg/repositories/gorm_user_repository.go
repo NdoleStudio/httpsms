@@ -41,7 +41,7 @@ func (repository *gormUserRepository) Store(ctx context.Context, user *entities.
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Create(user).Error; err != nil {
-		msg := fmt.Sprintf("cannot save user with ID [%s]", user.ID)
+		msg := fmt.Sprintf("cannot save user with MessageID [%s]", user.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -53,7 +53,7 @@ func (repository *gormUserRepository) Update(ctx context.Context, user *entities
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(user).Error; err != nil {
-		msg := fmt.Sprintf("cannot update user with ID [%s]", user.ID)
+		msg := fmt.Sprintf("cannot update user with MessageID [%s]", user.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -89,12 +89,12 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	user := new(entities.User)
 	err := repository.db.WithContext(ctx).First(user, userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with ID [%s] does not exist", user.ID)
+		msg := fmt.Sprintf("user with MessageID [%s] does not exist", user.ID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s]", userID)
+		msg := fmt.Sprintf("cannot load user with MessageID [%s]", userID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

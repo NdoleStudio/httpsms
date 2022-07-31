@@ -65,14 +65,14 @@ func (repository *gormMessageRepository) Store(ctx context.Context, message *ent
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Create(message).Error; err != nil {
-		msg := fmt.Sprintf("cannot save message with ID [%s]", message.ID)
+		msg := fmt.Sprintf("cannot save message with MessageID [%s]", message.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	return nil
 }
 
-// Load an entities.Message by ID
+// Load an entities.Message by MessageID
 func (repository *gormMessageRepository) Load(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -80,12 +80,12 @@ func (repository *gormMessageRepository) Load(ctx context.Context, userID entiti
 	message := new(entities.Message)
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageID).First(message).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("message with ID [%s] and userID [%s] does not exist", messageID, userID)
+		msg := fmt.Sprintf("message with MessageID [%s] and userID [%s] does not exist", messageID, userID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s]", messageID)
+		msg := fmt.Sprintf("cannot load message with MessageID [%s]", messageID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -98,7 +98,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(message).Error; err != nil {
-		msg := fmt.Sprintf("cannot update message with ID [%s]", message.ID)
+		msg := fmt.Sprintf("cannot update message with MessageID [%s]", message.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

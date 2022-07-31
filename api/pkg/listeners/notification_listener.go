@@ -57,7 +57,7 @@ func (listener *NotificationListener) onMessageAPISent(ctx context.Context, even
 	}
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {
-		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
+		msg := fmt.Sprintf("cannot send notification with params [%s] for event with MessageID [%s]", spew.Sdump(sendParams), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -85,7 +85,7 @@ func (listener *NotificationListener) onMessageNotificationScheduled(ctx context
 	}
 
 	if err := listener.service.Send(ctx, scheduleParams); err != nil {
-		msg := fmt.Sprintf("cannot schedule notification with params [%s] for event with ID [%s]", spew.Sdump(scheduleParams), event.ID())
+		msg := fmt.Sprintf("cannot schedule notification with params [%s] for event with MessageID [%s]", spew.Sdump(scheduleParams), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
