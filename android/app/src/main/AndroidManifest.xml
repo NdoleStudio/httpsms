@@ -61,8 +61,10 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:enabled="true" android:name=".receivers.BootReceiver"
-            android:exported="true">
+        <receiver android:enabled="true"
+            android:name=".receivers.BootReceiver"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
