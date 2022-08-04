@@ -117,7 +117,7 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, use
 				Clauses(clause.Returning{}).
 				Where("user_id = ?", userID).
 				Where("id = ?", messageID).
-				Where("status = ?", entities.MessageStatusPending).
+				Where(repository.db.Where("status = ?", entities.MessageStatusPending).Or("status = ?", entities.MessageStatusExpired)).
 				Update("status", entities.MessageStatusSending).Error
 		},
 	)
