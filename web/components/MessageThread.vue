@@ -32,7 +32,7 @@
         </p>
       </div>
       <v-btn
-        v-if="$store.getters.getOwner"
+        v-if="$store.getters.getOwner && $store.getters.getPhones.length !== 0"
         class="primary"
         :to="{ name: 'messages' }"
       >

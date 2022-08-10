@@ -227,6 +227,8 @@ export const mutations = {
   },
 
   resetState(state: State) {
+    state.threads = []
+    state.threadMessages = []
     state.archivedThreads = false
     state.owner = null
   },
