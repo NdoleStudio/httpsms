@@ -27,7 +27,8 @@ It rus as a serverless application on Google Cloud Run. The API documentation ca
 
 ```go
 // Sending an SMS Message using Go
-client := htpsms.New(htpsms.WithAPIKey(/* API Key from https://httpsms.com/settings*/))
+client := htpsms.New(htpsms.WithAPIKey(/* API Key from https://httpsms.com/settings */))
+
 client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
     Content: "This is a sample text message",
     From:    "+18005550199",
