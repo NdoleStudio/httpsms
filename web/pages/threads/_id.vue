@@ -3,7 +3,7 @@
     <div class="w-full h-full">
       <v-app-bar :dense="$vuetify.breakpoint.mdAndDown">
         <v-btn v-if="$vuetify.breakpoint.mdAndDown" icon to="/">
-          <v-icon>mdi-arrow-left</v-icon>
+          <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title>
           <span v-if="$store.getters.hasThread">
@@ -14,7 +14,7 @@
         <v-menu offset-y>
           <template #activator="{ on }">
             <v-btn icon text class="mt-2" v-on="on">
-              <v-icon>mdi-dots-vertical</v-icon>
+              <v-icon>{{ mdiDotsVertical }}</v-icon>
             </v-btn>
           </template>
           <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
@@ -27,7 +27,7 @@
                 @click.prevent="archiveThread"
               >
                 <v-list-item-icon class="pl-2">
-                  <v-icon dense>mdi-package-down</v-icon>
+                  <v-icon dense>{{ mdiPackageDown }}</v-icon>
                 </v-list-item-icon>
                 <v-list-item-content class="ml-n3">
                   <v-list-item-title class="pr-16 py-1">
@@ -45,7 +45,7 @@
                 @click.prevent="unArchiveThread"
               >
                 <v-list-item-icon class="pl-2">
-                  <v-icon dense>mdi-package-up</v-icon>
+                  <v-icon dense>{{ mdiPackageUp }}</v-icon>
                 </v-list-item-icon>
                 <v-list-item-content class="ml-n3">
                   <v-list-item-title class="pr-16 py-1">
@@ -85,19 +85,19 @@
                 v-if="!isMT(message)"
                 :color="$store.getters.getThread.color"
               >
-                <v-icon> mdi-account</v-icon>
+                <v-icon>{{ mdiAccount }}</v-icon>
               </v-avatar>
               <v-menu v-if="canResend(message)" offset-y>
                 <template #activator="{ on }">
                   <v-btn icon text class="mt-2" v-on="on">
-                    <v-icon>mdi-dots-vertical</v-icon>
+                    <v-icon>{{ mdiDotsVertical }}</v-icon>
                   </v-btn>
                 </template>
                 <v-list class="px-2" nav dense>
                   <v-list-item-group v-model="selectedMenuItem">
                     <v-list-item @click.prevent="resendMessage(message)">
                       <v-list-item-icon class="pl-2">
-                        <v-icon dense>mdi-refresh</v-icon>
+                        <v-icon dense>{{ mdiReferesh }}</v-icon>
                       </v-list-item-icon>
                       <v-list-item-content class="ml-n3">
                         <v-list-item-title class="pr-16 py-1">
@@ -132,7 +132,7 @@
                           v-if="message.status === 'expired'"
                           color="warning"
                           class="mt-n2"
-                          >mdi-alert</v-icon
+                          >{{ mdiAlert }}</v-icon
                         >
                         <v-progress-circular
                           v-else-if="isPending(message)"
@@ -148,20 +148,22 @@
                           v-else-if="message.status === 'delivered'"
                           color="primary"
                           class="mt-n6"
-                          >mdi-check-all</v-icon
                         >
+                          {{ mdiCheckAll }}
+                        </v-icon>
                         <v-icon
                           v-else-if="message.status === 'sent'"
                           class="mt-n6"
                         >
-                          mdi-check
+                          {{ mdiCheck }}
                         </v-icon>
                         <v-icon
                           v-else-if="message.status === 'failed'"
                           color="error"
                           class="mt-n2"
-                          >mdi-alert</v-icon
                         >
+                          {{ mdiAlert }}
+                        </v-icon>
                       </div>
                     </template>
                     <span>
@@ -216,7 +218,7 @@
                   :width="3"
                   color="pink"
                 ></v-progress-circular>
-                <v-icon>mdi-send</v-icon>
+                <v-icon>{{ mdiSend }}</v-icon>
               </v-btn>
             </v-form>
           </v-container>
@@ -230,6 +232,18 @@
 import Vue from 'vue'
 import { InputValidationRules } from 'vuetify'
 import { isValidPhoneNumber } from 'libphonenumber-js'
+import {
+  mdiSend,
+  mdiDotsVertical,
+  mdiArrowLeft,
+  mdiCheckAll,
+  mdiCheck,
+  mdiAlert,
+  mdiPackageUp,
+  mdiPackageDown,
+  mdiAccount,
+  mdiRefresh,
+} from '@mdi/js'
 import { Message } from '~/models/message'
 import { SendMessageRequest } from '~/store'
 
@@ -243,6 +257,16 @@ export default Vue.extend({
         'Message must be less than 320 characters',
     ]
     return {
+      mdiSend,
+      mdiDotsVertical,
+      mdiArrowLeft,
+      mdiCheckAll,
+      mdiCheck,
+      mdiAlert,
+      mdiPackageUp,
+      mdiPackageDown,
+      mdiAccount,
+      mdiRefresh,
       formMessage: '',
       formMessageRules,
       submitting: false,

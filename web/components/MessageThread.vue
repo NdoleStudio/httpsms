@@ -36,7 +36,9 @@
         class="primary"
         :to="{ name: 'messages' }"
       >
-        <v-icon>mdi-plus</v-icon>
+        <v-icon>
+          {{ mdiPlus }}
+        </v-icon>
         New Message
       </v-btn>
     </v-sheet>
@@ -45,7 +47,9 @@
         Install the mobile app on your android phone to start sending messages
       </p>
       <v-btn class="primary" :href="$store.getters.getAppData.appDownloadUrl">
-        <v-icon>mdi-download</v-icon>
+        <v-icon>
+          {{ mdiDownload }}
+        </v-icon>
         Install App
       </v-btn>
     </div>
@@ -62,7 +66,7 @@
             }"
           >
             <v-list-item-avatar :color="thread.color">
-              <v-icon dark> mdi-account </v-icon>
+              <v-icon dark>{{ mdiAccount }}</v-icon>
             </v-list-item-avatar>
             <v-list-item-content>
               <v-list-item-title>
@@ -86,9 +90,14 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
+import { mdiPlus, mdiDownload, mdiAccount } from '@mdi/js'
 
 @Component
 export default class MessageThread extends Vue {
+  mdiPlus = mdiPlus
+  mdiDownload = mdiDownload
+  mdiAccount = mdiAccount
+
   get threads(): Array<MessageThread> {
     return this.$store.getters.getThreads
   }

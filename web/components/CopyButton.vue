@@ -7,13 +7,14 @@
     :large="large"
     @click="copy"
   >
-    <v-icon>mdi-content-copy</v-icon>
+    <v-icon>{{ mdiContentCopy }}</v-icon>
     {{ copyText }}
   </v-btn>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
+import { mdiContentCopy } from '@mdi/js'
 import { NotificationRequest } from '~/store'
 @Component
 export default class CopyButton extends Vue {
@@ -26,6 +27,7 @@ export default class CopyButton extends Vue {
   notificationText!: string
 
   disabled = false
+  mdiContentCopy = mdiContentCopy
 
   async copy() {
     this.disabled = true

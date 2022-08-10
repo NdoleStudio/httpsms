@@ -50,7 +50,7 @@
               icon
               v-on="on"
             >
-              <v-icon x-small>mdi-circle</v-icon>
+              <v-icon x-small>{{ mdiCircle }}</v-icon>
             </v-btn>
           </template>
           <h4>Last Heartbeat</h4>
@@ -62,19 +62,19 @@
     <v-menu offset-y>
       <template #activator="{ on }">
         <v-btn icon text class="mt-2" v-on="on">
-          <v-icon>mdi-dots-vertical</v-icon>
+          <v-icon>{{ mdiDotsVertical }}</v-icon>
         </v-btn>
       </template>
       <v-list class="px-2" nav :dense="$vuetify.breakpoint.mdAndDown">
         <v-list-item-group v-model="selectedMenuItem">
           <v-list-item @click.prevent="toggleArchive">
             <v-list-item-icon class="pl-2">
-              <v-icon v-if="!$store.getters.getIsArchived" dense
-                >mdi-package-down</v-icon
-              >
-              <v-icon v-if="$store.getters.getIsArchived" dense
-                >mdi-package-up</v-icon
-              >
+              <v-icon v-if="!$store.getters.getIsArchived" dense>
+                {{ mdiPackageDown }}
+              </v-icon>
+              <v-icon v-if="$store.getters.getIsArchived" dense>
+                {{ mdiPackageUp }}
+              </v-icon>
             </v-list-item-icon>
             <v-list-item-content class="ml-n3">
               <v-list-item-title class="pr-16 py-1">
@@ -99,7 +99,7 @@
             exact
           >
             <v-list-item-icon class="pl-2">
-              <v-icon dense>mdi-plus</v-icon>
+              <v-icon dense>{{ mdiPlus }}</v-icon>
             </v-list-item-icon>
             <v-list-item-content class="ml-n3">
               <v-list-item-title class="pr-16 py-1">
@@ -111,7 +111,7 @@
           </v-list-item>
           <v-list-item :to="{ name: 'settings' }" exact>
             <v-list-item-icon class="pl-2">
-              <v-icon dense>mdi-account-cog</v-icon>
+              <v-icon dense>{{ mdiAccountCog }}</v-icon>
             </v-list-item-icon>
             <v-list-item-content class="ml-n3">
               <v-list-item-title class="pr-16 py-1">
@@ -127,7 +127,7 @@
             exact
           >
             <v-list-item-icon class="pl-2">
-              <v-icon dense>mdi-download</v-icon>
+              <v-icon dense>{{ mdiDownload }}</v-icon>
             </v-list-item-icon>
             <v-list-item-content class="ml-n3">
               <v-list-item-title class="pr-16 py-1">
@@ -139,7 +139,7 @@
           </v-list-item>
           <v-list-item @click.prevent="logout">
             <v-list-item-icon class="pl-2">
-              <v-icon dense>mdi-logout</v-icon>
+              <v-icon dense>{{ mdiLogout }}</v-icon>
             </v-list-item-icon>
             <v-list-item-content class="ml-n3">
               <v-list-item-title class="pr-16 py-1">
@@ -157,12 +157,31 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
+import {
+  mdiPlus,
+  mdiAccountCog,
+  mdiLogout,
+  mdiDownload,
+  mdiPackageUp,
+  mdiPackageDown,
+  mdiDotsVertical,
+  mdiCircle,
+} from '@mdi/js'
 import { SelectItem } from '~/types'
 import { Phone } from '~/models/phone'
 
 @Component
 export default class MessageThreadHeader extends Vue {
   selectedMenuItem = -1
+  mdiPlus = mdiPlus
+  mdiAccountCog = mdiAccountCog
+  mdiLogout = mdiLogout
+  mdiDownload = mdiDownload
+  mdiPackageUp = mdiPackageUp
+  mdiPackageDown = mdiPackageDown
+  mdiDotsVertical = mdiDotsVertical
+  mdiCircle = mdiCircle
+
   get owners(): Array<SelectItem> {
     return this.$store.getters.getPhones.map((phone: Phone): SelectItem => {
       return {

@@ -3,7 +3,7 @@
     <div class="w-full h-full">
       <v-app-bar :dense="$vuetify.breakpoint.mdAndDown">
         <v-btn icon to="/">
-          <v-icon>mdi-arrow-left</v-icon>
+          <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title>New Message</v-toolbar-title>
       </v-app-bar>
@@ -35,7 +35,7 @@
                 :disabled="sending"
                 :block="$vuetify.breakpoint.mdAndDown"
               >
-                <v-icon>mdi-send</v-icon>
+                <v-icon>{{ mdiSend }}</v-icon>
                 Send Message
               </v-btn>
             </v-form>
@@ -47,6 +47,7 @@
 </template>
 
 <script>
+import { mdiArrowLeft, mdiSend } from '@mdi/js'
 import axios from '@/plugins/axios'
 
 export default {
@@ -54,6 +55,8 @@ export default {
   middleware: ['auth'],
   data() {
     return {
+      mdiArrowLeft,
+      mdiSend,
       sending: false,
       formPhoneNumber: '',
       formContent: '',

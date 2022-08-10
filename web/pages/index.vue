@@ -11,7 +11,9 @@
                 'text-h5': $vuetify.breakpoint.mdAndDown,
               }"
             >
-              <v-icon :large="$vuetify.breakpoint.mdAndDown">mdi-forum</v-icon>
+              <v-icon :large="$vuetify.breakpoint.mdAndDown">{{
+                mdiForum
+              }}</v-icon>
               Http SMS
             </h2>
             <v-spacer></v-spacer>
@@ -53,7 +55,7 @@
               class="mt-4 mb-4"
               :to="{ name: 'login' }"
             >
-              <v-icon v-if="$vuetify.breakpoint.lgAndUp">mdi-send</v-icon>
+              <v-icon v-if="$vuetify.breakpoint.lgAndUp">{{ mdiSend }}</v-icon>
               Get Started
             </v-btn>
             <v-btn
@@ -63,7 +65,9 @@
               class="mt-4 mb-4 ml-4"
               :href="$store.getters.getAppData.githubUrl"
             >
-              <v-icon v-if="$vuetify.breakpoint.lgAndUp">mdi-github</v-icon>
+              <v-icon v-if="$vuetify.breakpoint.lgAndUp">
+                {{ mdiGithub }}
+              </v-icon>
               Open Source
             </v-btn>
           </div>
@@ -71,9 +75,13 @@
             class="mt-4"
             :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }"
           >
-            <v-icon color="success">mdi-check-circle</v-icon>
+            <v-icon color="success">
+              {{ mdiCheckCircle }}
+            </v-icon>
             Free to use
-            <v-icon class="ml-4" color="success">mdi-check-circle</v-icon>
+            <v-icon class="ml-4" color="success">
+              {{ mdiCheckCircle }}
+            </v-icon>
             100% Open Source
           </div>
           <v-divider
@@ -142,9 +150,57 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { mdiGithub, mdiCheckCircle, mdiSend, mdiForum } from '@mdi/js'
+
+/*
+Sections.
+How it works
+
+Create An Account
+
+1) Create an account on httpsms.com and obtain an API key under your settings
+
+Install App
+
+2) Download and install the companion android application on your phone and sign in using your API Key.
+
+API Client
+
+3) Send and receive SMS messages using our rich http API. You can find the documentation on
+
+
+-------------------
+
+Features
+
+Back Pressure
+
+- Set a rate of SMS messages that can be sent per minute
+
+Expired Messages
+
+- Sometimes the phone is not online and a message expires. You'll get notified and you can create some automation to receive
+a message on slack or retry sending the same SMS message
+
+- Open source.
+
+======
+Send SMS Messages
+
+- Samples how to send an SMS using golang and using CURL.
+
+ */
 
 export default Vue.extend({
   name: 'LandingPage',
   middleware: ['guest'],
+  data() {
+    return {
+      mdiGithub,
+      mdiCheckCircle,
+      mdiSend,
+      mdiForum,
+    }
+  },
 })
 </script>

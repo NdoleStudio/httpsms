@@ -4,8 +4,8 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - HTTP SMS API',
-    title: 'Messages',
+    titleTemplate: '%s',
+    title: 'HTTP SMS | Convert your android phone into an SMS Gateway.',
     htmlAttrs: {
       lang: 'en',
     },
@@ -71,7 +71,11 @@ export default {
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {
+    treeShake: true,
     customVariables: ['~/assets/variables.scss'],
+    defaultAssets: {
+      icons: 'mdiSvg',
+    },
     theme: {
       dark: true,
     },

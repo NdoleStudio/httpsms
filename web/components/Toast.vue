@@ -5,12 +5,12 @@
     :color="notification.type"
     :timeout="notification.timeout"
   >
-    <v-icon v-if="notification.type === 'success'" :color="notification.type"
-      >mdi-check</v-icon
-    >
-    <v-icon v-if="notification.type === 'info'" :color="notification.type"
-      >mdi-information</v-icon
-    >
+    <v-icon v-if="notification.type === 'success'" :color="notification.type">
+      {{ mdiCheck }}
+    </v-icon>
+    <v-icon v-if="notification.type === 'info'" :color="notification.type">
+      {{ mdiInformation }}
+    </v-icon>
     {{ notification.message }}
     <template #action="{ attrs }">
       <v-btn
@@ -28,10 +28,14 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
+import { mdiCheck, mdiInformation } from '@mdi/js'
 import { Notification } from '~/store'
 
 @Component
 export default class Toast extends Vue {
+  mdiCheck = mdiCheck
+  mdiInformation = mdiInformation
+
   get notification(): Notification {
     return this.$store.getters.getNotification
   }

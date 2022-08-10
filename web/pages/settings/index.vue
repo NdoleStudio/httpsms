@@ -3,7 +3,7 @@
     <div class="w-full h-full">
       <v-app-bar :dense="$vuetify.breakpoint.mdAndDown">
         <v-btn icon to="/">
-          <v-icon>mdi-arrow-left</v-icon>
+          <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title> Settings </v-toolbar-title>
       </v-app-bar>
@@ -17,7 +17,7 @@
                   :src="$fire.auth.currentUser.photoURL"
                   :alt="$fire.auth.currentUser.displayName"
                 />
-                <v-icon v-else dark size="70"> mdi-account-circle </v-icon>
+                <v-icon v-else dark size="70">{{ mdiAccountCircle }}</v-icon>
               </v-avatar>
               <h3 v-if="$fire.auth.currentUser.displayName">
                 {{ $fire.auth.currentUser.displayName }}
@@ -28,8 +28,9 @@
                   v-if="$fire.auth.currentUser.emailVerified"
                   small
                   color="primary"
-                  >mdi-shield-check</v-icon
                 >
+                  {{ mdiShieldCheck }}
+                </v-icon>
               </h4>
             </div>
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
@@ -48,7 +49,7 @@
             </div>
             <v-text-field
               v-else
-              :append-icon="apiKeyShow ? 'mdi-eye' : 'mdi-eye-off'"
+              :append-icon="apiKeyShow ? mdiEye : mdiEyeOff"
               :type="apiKeyShow ? 'text' : 'password'"
               :value="apiKey"
               readonly
@@ -118,7 +119,7 @@
                         :disabled="updatingPhone"
                         @click.prevent="showEditPhone(phone.id)"
                       >
-                        <v-icon small>mdi-square-edit-outline</v-icon>
+                        <v-icon small>{{ mdiSquareEditOutline }}</v-icon>
                         <span v-if="!$vuetify.breakpoint.mdAndDown">
                           Edit
                         </span>
@@ -184,14 +185,16 @@
         </v-card-text>
         <v-card-actions class="mt-n8">
           <v-btn small color="info" @click="updatePhone">
-            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small
-              >mdi-content-save</v-icon
-            >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiContentSave }}
+            </v-icon>
             Update
           </v-btn>
           <v-spacer></v-spacer>
           <v-btn small color="error" text @click="deletePhone(activePhone.id)">
-            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>mdi-delete</v-icon>
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiDelete }}
+            </v-icon>
             Delete
           </v-btn>
         </v-card-actions>
@@ -202,6 +205,16 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import {
+  mdiArrowLeft,
+  mdiAccountCircle,
+  mdiShieldCheck,
+  mdiDelete,
+  mdiContentSave,
+  mdiEye,
+  mdiEyeOff,
+  mdiSquareEditOutline,
+} from '@mdi/js'
 import { Phone } from '~/models/phone'
 
 export default Vue.extend({
@@ -209,6 +222,14 @@ export default Vue.extend({
   middleware: ['auth'],
   data() {
     return {
+      mdiEye,
+      mdiEyeOff,
+      mdiArrowLeft,
+      mdiAccountCircle,
+      mdiShieldCheck,
+      mdiDelete,
+      mdiContentSave,
+      mdiSquareEditOutline,
       apiKeyShow: false,
       showPhoneEdit: false,
       activePhone: null,
