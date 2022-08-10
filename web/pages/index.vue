@@ -11,9 +11,9 @@
                 'text-h5': $vuetify.breakpoint.mdAndDown,
               }"
             >
-              <v-icon :large="$vuetify.breakpoint.mdAndDown">{{
-                mdiForum
-              }}</v-icon>
+              <v-icon :x-large="!$vuetify.breakpoint.mdAndDown">
+                {{ mdiForum }}
+              </v-icon>
               Http SMS
             </h2>
             <v-spacer></v-spacer>

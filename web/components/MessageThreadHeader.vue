@@ -6,7 +6,7 @@
   >
     <div :class="{ 'px-2': $vuetify.breakpoint.mdAndDown }">
       <v-toolbar-title>
-        <div class="d-flex pt-2" style="width: 225px">
+        <div class="d-flex pt-2" style="width: 245px">
           <v-select
             outlined
             dense
