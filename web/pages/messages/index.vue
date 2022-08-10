@@ -63,6 +63,11 @@ export default {
       errors: new Map(),
     }
   },
+  head() {
+    return {
+      title: 'New Message - Http SMS',
+    }
+  },
 
   methods: {
     sendMessage() {

@@ -273,7 +273,11 @@ export default Vue.extend({
       selectedMenuItem: -1,
     }
   },
-
+  head() {
+    return {
+      title: 'Messages - Http SMS',
+    }
+  },
   computed: {
     messages(): Array<Message> {
       return [...this.$store.getters.getThreadMessages].reverse()

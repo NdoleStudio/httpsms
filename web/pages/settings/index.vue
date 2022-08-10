@@ -236,6 +236,11 @@ export default Vue.extend({
       updatingPhone: false,
     }
   },
+  head() {
+    return {
+      title: 'Settings - Http SMS',
+    }
+  },
   computed: {
     apiKey() {
       if (this.$store.getters.getUser === null) {

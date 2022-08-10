@@ -28,6 +28,11 @@
 export default {
   name: 'ThreadsIndex',
   middleware: ['auth'],
+  head() {
+    return {
+      title: 'Threads - Http SMS',
+    }
+  },
   async mounted() {
     if (!this.$store.getters.getAuthUser) {
       await this.$store.dispatch('setNextRoute', this.$route.path)
