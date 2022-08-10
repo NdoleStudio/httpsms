@@ -34,6 +34,11 @@ export default Vue.extend({
       to: '/',
     }
   },
+  head() {
+    return {
+      title: 'Login To Your Account - Http SMS',
+    }
+  },
   mounted() {
     if (this.$route.query.to) {
       this.to = this.$route.query.to as string
