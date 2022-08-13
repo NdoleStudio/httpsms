@@ -185,7 +185,8 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	exists, err := service.monitorRepository.Exists(ctx, params.UserID, params.Owner)
 	if err != nil {
 		msg := fmt.Sprintf("cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	}
 
 	if !exists {
@@ -197,19 +198,18 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch last heartbeat for userID [%s] and owner [%s]", params.UserID, params.Owner)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return service.handleFailedMonitor(ctx, params, false)
+		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	}
 
 	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval &&
 		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*2) {
-		ctxLogger.Error(stacktrace.NewError(fmt.Sprintf("last heartbeat was at [%s] which is more than [%s]", heartbeat.Timestamp, heartbeatCheckInterval)))
-		return service.handleFailedMonitor(ctx, params, true)
+		return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
 	}
 
 	return service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params)
 }
 
-func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, params *HeartbeatMonitorParams, raiseEvent bool) error {
+func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -219,16 +219,13 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, params
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !raiseEvent {
-		return nil
-	}
-
 	event, err := service.createPhoneHeartbeatDeadEvent(params.Source, &events.PhoneHeartbeatDeadPayload{
-		PhoneID:   params.PhoneID,
-		UserID:    params.UserID,
-		MonitorID: params.MonitorID,
-		Timestamp: time.Now().UTC(),
-		Owner:     params.Owner,
+		PhoneID:                params.PhoneID,
+		UserID:                 params.UserID,
+		MonitorID:              params.MonitorID,
+		LastHeartbeatTimestamp: lastTimestamp,
+		Timestamp:              time.Now().UTC(),
+		Owner:                  params.Owner,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event when phone monitor failed")

@@ -12,9 +12,10 @@ const EventTypePhoneHeartbeatDead = "phone.heartbeat.dead"
 
 // PhoneHeartbeatDeadPayload is the payload of the EventTypePhoneHeartbeatDead event
 type PhoneHeartbeatDeadPayload struct {
-	PhoneID   uuid.UUID       `json:"phone_id"`
-	UserID    entities.UserID `json:"user_id"`
-	Timestamp time.Time       `json:"timestamp"`
-	MonitorID uuid.UUID       `json:"monitor_id"`
-	Owner     string          `json:"owner"`
+	PhoneID                uuid.UUID       `json:"phone_id"`
+	UserID                 entities.UserID `json:"user_id"`
+	LastHeartbeatTimestamp time.Time       `json:"last_heartbeat_timestamp"`
+	Timestamp              time.Time       `json:"timestamp"`
+	MonitorID              uuid.UUID       `json:"monitor_id"`
+	Owner                  string          `json:"owner"`
 }
