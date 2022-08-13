@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/palantir/stacktrace"
@@ -15,6 +17,29 @@ type gormHeartbeatRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 	db     *gorm.DB
+}
+
+func (repository *gormHeartbeatRepository) Last(ctx context.Context, userID entities.UserID, owner string) (*entities.Heartbeat, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	heartbeat := new(entities.Heartbeat)
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("owner = ?", owner).
+		Order("timestamp DESC").
+		First(&heartbeat).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("heartbeat with userID [%s] and owner [%s] does not exist", userID, owner)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot load heartbeat with userID [%s] and owner [%s]", userID, owner)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return heartbeat, nil
 }
 
 // NewGormHeartbeatRepository creates the GORM version of the HeartbeatRepository

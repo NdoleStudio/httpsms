@@ -19,6 +19,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/nyaruka/phonenumbers v1.1.0
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
+	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.1
 	github.com/swaggo/swag v1.8.2
 	github.com/thedevsaddam/govalidator v1.9.10

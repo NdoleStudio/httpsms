@@ -13,4 +13,7 @@ type HeartbeatRepository interface {
 
 	// Index entities.Heartbeat of an owner
 	Index(ctx context.Context, userID entities.UserID, owner string, params IndexParams) (*[]entities.Heartbeat, error)
+
+	// Last entities.Heartbeat returns the last heartbeat
+	Last(ctx context.Context, userID entities.UserID, owner string) (*entities.Heartbeat, error)
 }
