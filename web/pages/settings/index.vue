@@ -1,11 +1,13 @@
 <template>
   <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
     <div class="w-full h-full">
-      <v-app-bar :dense="$vuetify.breakpoint.mdAndDown">
+      <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
         <v-btn icon to="/">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
-        <v-toolbar-title> Settings </v-toolbar-title>
+        <v-toolbar-title>
+          <div class="py-16">Settings</div>
+        </v-toolbar-title>
       </v-app-bar>
       <v-container>
         <v-row>

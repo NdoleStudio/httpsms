@@ -46,7 +46,7 @@ sending and receiving SMS messages.
 
 ### Back Pressure
 
-In-order not to abuse the SMS API on android, you can send a rate limit e.g 3 messages per minute. Such that even if you
+In-order not to abuse the SMS API on android, you can set a rate limit e.g 3 messages per minute. Such that even if you
 call the API to send messages to 100 people, It will only send the messages at a rate of 3 messages per minute.
 
 ### Message Expiration
