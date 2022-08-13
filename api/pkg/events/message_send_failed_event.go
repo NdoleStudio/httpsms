@@ -13,7 +13,7 @@ const EventTypeMessageSendFailed = "message.send.failed"
 // MessageSendFailedPayload is the payload of the EventTypeMessageSendFailed event
 type MessageSendFailedPayload struct {
 	ID           uuid.UUID       `json:"id"`
-	ErrorMessage string          `json:"errorMessage"`
+	ErrorMessage string          `json:"error_message"`
 	UserID       entities.UserID `json:"user_id"`
 	Owner        string          `json:"owner"`
 	Contact      string          `json:"contact"`

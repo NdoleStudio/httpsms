@@ -159,7 +159,7 @@ func (h *PhoneHandler) Delete(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting phone")
 	}
 
-	err := h.service.Delete(ctx, h.userIDFomContext(c), request.PhoneIDUuid())
+	err := h.service.Delete(ctx, c.OriginalURL(), h.userIDFomContext(c), request.PhoneIDUuid())
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete phones with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

@@ -61,7 +61,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	phone, err := service.phoneRepository.LoadByID(ctx, params.PhoneID)
+	phone, err := service.phoneRepository.LoadByID(ctx, params.UserID, params.PhoneID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load phone with userID [%s] and phoneID [%s]", params.UserID, params.PhoneID)
 		return service.handleNotificationFailed(ctx, errors.New(msg), params)

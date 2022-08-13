@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
     <div class="w-full h-full">
-      <v-app-bar :dense="$vuetify.breakpoint.mdAndDown">
+      <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
         <v-btn v-if="$vuetify.breakpoint.mdAndDown" icon to="/">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>

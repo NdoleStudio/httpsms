@@ -34,12 +34,15 @@ func NewGormPhoneRepository(
 }
 
 // LoadByID loads a phone by ID
-func (repository *gormPhoneRepository) LoadByID(ctx context.Context, phoneID uuid.UUID) (*entities.Phone, error) {
+func (repository *gormPhoneRepository) LoadByID(ctx context.Context, userID entities.UserID, phoneID uuid.UUID) (*entities.Phone, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	phone := new(entities.Phone)
-	err := repository.db.WithContext(ctx).First(phone, phoneID).Error
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("id = ?", phoneID).
+		First(&phone).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("phone with ID [%s] does not exist", phoneID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
