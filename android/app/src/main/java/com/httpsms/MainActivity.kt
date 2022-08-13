@@ -16,11 +16,21 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
+import com.httpsms.worker.HeartbeatWorker
 import timber.log.Timber
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -46,6 +56,8 @@ class MainActivity : AppCompatActivity() {
         refreshToken(this)
 
         startStickyNotification(this)
+        scheduleHeartbeatWorker(this)
+        setLastHeartbeatTimestamp(this)
     }
 
     override fun onResume() {
@@ -53,6 +65,39 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
+        setLastHeartbeatTimestamp(this)
+    }
+
+    private fun setLastHeartbeatTimestamp(context: Context) {
+        val refreshTimestampView = findViewById<TextView>(R.id.cardRefreshTime)
+        val timestamp = Settings.getHeartbeatTimestamp(context)
+
+        if (timestamp == 0.toLong()) {
+            Timber.d("not heartbeat timestamp has been set")
+            refreshTimestampView.text = "--"
+            return
+        }
+
+        val timestampZdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC)
+        val localTime = timestampZdt.withZoneSameInstant(ZoneId.systemDefault())
+        Timber.d("heartbeat timestamp in UTC is [${timestampZdt}] and local is [$localTime]")
+
+        refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    private fun scheduleHeartbeatWorker(context: Context) {
+        val tag = "TAG_HEARTBEAT_WORKER"
+
+        val heartbeatWorker =
+            PeriodicWorkRequestBuilder<HeartbeatWorker>(15, TimeUnit.MINUTES)
+                .addTag(tag)
+                .build()
+
+        WorkManager
+            .getInstance(context)
+            .enqueueUniquePeriodicWork(tag, ExistingPeriodicWorkPolicy.KEEP, heartbeatWorker)
+
+        Timber.d("finished scheduling heartbeat worker with ID [${heartbeatWorker.id}]")
     }
 
     private fun startStickyNotification(context: Context) {

@@ -39,6 +39,7 @@ func NewHeartbeatHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/heartbeats", h.Index)
+	router.Post("/heartbeats", h.Store)
 }
 
 // Index returns the heartbeats of a phone number
@@ -108,7 +109,7 @@ func (h *HeartbeatHandler) Store(c *fiber.Ctx) error {
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.HeartbeatStore
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.BodyParser(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)

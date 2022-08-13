@@ -11,8 +11,8 @@ object Settings {
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
-    private const val SETTINGS_RECEIVER_REGISTERED = "SETTINGS_RECEIVER_REGISTERED"
     private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
+    private const val SETTINGS_HEARTBEAT_TIMESTAMP = "SETTINGS_HEARTBEAT_TIMESTAMP"
 
     fun getOwner(context: Context): String? {
         Timber.d(Settings::getOwner.name)
@@ -137,12 +137,24 @@ object Settings {
             .apply()
     }
 
-    fun setReceiverRegistered(context: Context, registered: Boolean) {
-        Timber.d(Settings::setReceiverRegistered.name)
+    fun getHeartbeatTimestamp(context: Context): Long {
+        Timber.d(Settings::getHeartbeatTimestamp.name)
+
+        val timestamp = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getLong(this.SETTINGS_HEARTBEAT_TIMESTAMP,0)
+
+        Timber.d("SETTINGS_HEARTBEAT_TIMESTAMP: [$timestamp]")
+        return timestamp
+    }
+
+
+    fun setHeartbeatTimestampAsync(context: Context, timestamp: Long) {
+        Timber.d(Settings::setHeartbeatTimestampAsync.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
-            .putBoolean(this.SETTINGS_RECEIVER_REGISTERED, registered)
+            .putLong(this.SETTINGS_HEARTBEAT_TIMESTAMP, timestamp)
             .apply()
     }
 }

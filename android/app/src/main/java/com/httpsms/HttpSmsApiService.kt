@@ -15,16 +15,15 @@ import java.util.logging.Logger.getLogger
 
 class HttpSmsApiService(private val apiKey: String) {
     private val apiKeyHeader = "x-api-key"
-    private val baseURL = URI("https://api.httpsms.com")
+    private val baseURL = URI("https://6a2d-94-246-225-10.ngrok.io")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+    private val client = OkHttpClient()
 
     init {
         getLogger(OkHttpClient::class.java.name).level = Level.FINE
     }
 
     fun getOutstandingMessage(messageID: String): Message? {
-        val client = OkHttpClient()
-
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/messages/outstanding?message_id=${messageID}").toURL())
             .header(apiKeyHeader, apiKey)
@@ -59,8 +58,6 @@ class HttpSmsApiService(private val apiKey: String) {
     }
 
     fun receive(from: String, to: String, content: String, timestamp: ZonedDateTime) {
-        val client = OkHttpClient()
-
         val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
         val timestampString = formatter.format(timestamp).replace("+", "Z")
 
@@ -91,10 +88,31 @@ class HttpSmsApiService(private val apiKey: String) {
         Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
     }
 
+    fun storeHeartbeat(phoneNumber: String) {
+        val body = """
+            {
+              "owner": "$phoneNumber"
+            }
+        """.trimIndent()
+
+        val request: Request = Request.Builder()
+            .url(baseURL.resolve("/v1/heartbeats").toURL())
+            .post(body.toRequestBody(jsonMediaType))
+            .header(apiKeyHeader, apiKey)
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending heartbeat [$body] for owner [$phoneNumber]")
+            return
+        }
+
+        response.close()
+        Timber.i( "heartbeat stored successfully for owner [$phoneNumber]" )
+    }
+
 
     private fun sendEvent(messageId: String, event: String, timestamp: ZonedDateTime, reason: String? = null) {
-        val client = OkHttpClient()
-
         val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
         val timestampString = formatter.format(timestamp).replace("+", "Z")
 
@@ -129,8 +147,6 @@ class HttpSmsApiService(private val apiKey: String) {
 
 
     fun updatePhone(phoneNumber: String, fcmToken: String): Boolean {
-        val client = OkHttpClient()
-
         val body = """
             {
               "fcm_token": "$fcmToken",
@@ -157,8 +173,6 @@ class HttpSmsApiService(private val apiKey: String) {
 
 
     fun validateApiKey(): String? {
-        val client = OkHttpClient()
-
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/users/me").toURL())
             .header(apiKeyHeader, apiKey)
