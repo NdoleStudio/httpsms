@@ -544,9 +544,9 @@ func (container *Container) RegisterMessageThreadListeners() {
 	}
 }
 
-// RegisterNotificationListeners registers event listeners for listeners.NotificationListener
+// RegisterNotificationListeners registers event listeners for listeners.PhoneNotificationListener
 func (container *Container) RegisterNotificationListeners() {
-	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.NotificationListener{}))
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.PhoneNotificationListener{}))
 	_, routes := listeners.NewNotificationListener(
 		container.Logger(),
 		container.Tracer(),
@@ -583,8 +583,8 @@ func (container *Container) MessageService() (service *services.MessageService) 
 	)
 }
 
-// NotificationService creates a new instance of services.NotificationService
-func (container *Container) NotificationService() (service *services.NotificationService) {
+// NotificationService creates a new instance of services.PhoneNotificationService
+func (container *Container) NotificationService() (service *services.PhoneNotificationService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
 	return services.NewNotificationService(
 		container.Logger(),

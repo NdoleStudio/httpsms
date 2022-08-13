@@ -13,20 +13,20 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
-// NotificationListener handles cloud events which sends notifications
-type NotificationListener struct {
+// PhoneNotificationListener handles cloud events which sends notifications
+type PhoneNotificationListener struct {
 	logger  telemetry.Logger
 	tracer  telemetry.Tracer
-	service *services.NotificationService
+	service *services.PhoneNotificationService
 }
 
-// NewNotificationListener creates a new instance of NotificationListener
+// NewNotificationListener creates a new instance of PhoneNotificationListener
 func NewNotificationListener(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	service *services.NotificationService,
-) (l *NotificationListener, routes map[string]events.EventListener) {
-	l = &NotificationListener{
+	service *services.PhoneNotificationService,
+) (l *PhoneNotificationListener, routes map[string]events.EventListener) {
+	l = &PhoneNotificationListener{
 		logger:  logger.WithService(fmt.Sprintf("%T", l)),
 		tracer:  tracer,
 		service: service,
@@ -39,7 +39,7 @@ func NewNotificationListener(
 }
 
 // onMessageAPISent handles the events.EventTypeMessageAPISent event
-func (listener *NotificationListener) onMessageAPISent(ctx context.Context, event cloudevents.Event) error {
+func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
@@ -49,7 +49,7 @@ func (listener *NotificationListener) onMessageAPISent(ctx context.Context, even
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	sendParams := &services.NotificationScheduleParams{
+	sendParams := &services.PhoneNotificationScheduleParams{
 		UserID:    payload.UserID,
 		Owner:     payload.Owner,
 		Source:    event.Source(),
@@ -65,7 +65,7 @@ func (listener *NotificationListener) onMessageAPISent(ctx context.Context, even
 }
 
 // onMessageNotificationScheduled handles the events.EventTypeMessageNotificationScheduled event
-func (listener *NotificationListener) onMessageNotificationScheduled(ctx context.Context, event cloudevents.Event) error {
+func (listener *PhoneNotificationListener) onMessageNotificationScheduled(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
@@ -75,7 +75,7 @@ func (listener *NotificationListener) onMessageNotificationScheduled(ctx context
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	scheduleParams := &services.NotificationSendParams{
+	scheduleParams := &services.PhoneNotificationSendParams{
 		UserID:              payload.UserID,
 		PhoneID:             payload.PhoneID,
 		Source:              event.Source(),

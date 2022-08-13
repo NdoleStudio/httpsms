@@ -7,3 +7,9 @@ type HeartbeatsResponse struct {
 	response
 	Data []entities.Heartbeat `json:"data"`
 }
+
+// HeartbeatResponse is the payload containing entities.Heartbeat
+type HeartbeatResponse struct {
+	response
+	Data entities.Heartbeat `json:"data"`
+}

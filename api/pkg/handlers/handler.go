@@ -72,6 +72,14 @@ func (h *handler) responseOK(c *fiber.Ctx, message string, data interface{}) err
 	})
 }
 
+func (h *handler) responseCreated(c *fiber.Ctx, message string, data interface{}) error {
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"status":  "success",
+		"message": message,
+		"data":    data,
+	})
+}
+
 func (h *handler) pluralize(value string, count int) string {
 	if count == 1 {
 		return value

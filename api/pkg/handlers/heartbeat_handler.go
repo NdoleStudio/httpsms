@@ -86,3 +86,46 @@ func (h *HeartbeatHandler) Index(c *fiber.Ctx) error {
 
 	return h.responseOK(c, fmt.Sprintf("fetched %d %s", len(*heartbeats), h.pluralize("heartbeat", len(*heartbeats))), heartbeats)
 }
+
+// Store the heartbeat of a phone number
+// @Summary      Register heartbeat of an owner phone number
+// @Description  Store the heartbeat to make notify that a phone number is still active
+// @Security	 ApiKeyAuth
+// @Tags         Heartbeats
+// @Accept       json
+// @Produce      json
+// @Param        payload   	body 		requests.HeartbeatStore  		true "Payload of the heartbeat request"
+// @Success      200 		{object}	responses.HeartbeatResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401	    {object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /heartbeats [post]
+func (h *HeartbeatHandler) Store(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.HeartbeatStore
+	if err := c.QueryParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateStore(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while storing heartbeat [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while storing heartbeat")
+	}
+
+	heartbeat, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
+	if err != nil {
+		msg := fmt.Sprintf("cannot store heartbeat with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseCreated(c, "heartbeat created successfully", heartbeat)
+}

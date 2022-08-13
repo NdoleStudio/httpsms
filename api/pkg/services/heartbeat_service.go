@@ -56,7 +56,6 @@ type HeartbeatStoreParams struct {
 	Owner     string
 	Timestamp time.Time
 	UserID    entities.UserID
-	MessageID uuid.UUID
 }
 
 // Store a new entities.Heartbeat
@@ -70,7 +69,6 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		ID:        uuid.New(),
 		Owner:     params.Owner,
 		Timestamp: params.Timestamp,
-		MessageID: params.MessageID,
 		UserID:    params.UserID,
 	}
 

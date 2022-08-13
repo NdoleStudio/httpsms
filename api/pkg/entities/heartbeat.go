@@ -12,5 +12,4 @@ type Heartbeat struct {
 	Owner     string    `json:"owner" gorm:"index:idx_heartbeats_owner_timestamp" example:"+18005550199"`
 	UserID    UserID    `json:"userID" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Timestamp time.Time `json:"timestamp" gorm:"index:idx_heartbeats_owner_timestamp" example:"2022-06-05T14:26:01.520828+03:00"`
-	MessageID uuid.UUID `json:"message_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 }

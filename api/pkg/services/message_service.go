@@ -688,10 +688,6 @@ func (service *MessageService) createMessageSendFailedEvent(source string, paylo
 	return service.createEvent(events.EventTypeMessageSendFailed, source, payload)
 }
 
-func (service *MessageService) createHeartbeatPhoneOutstandingEvent(source string, payload events.HeartbeatPhoneOutstandingPayload) (cloudevents.Event, error) {
-	return service.createEvent(events.EventTypeHeartbeatPhoneOutstanding, source, payload)
-}
-
 func (service *MessageService) createMessagePhoneDeliveredEvent(source string, payload events.MessagePhoneDeliveredPayload) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessagePhoneDelivered, source, payload)
 }

@@ -56,3 +56,17 @@ func (validator *HeartbeatHandlerValidator) ValidateIndex(_ context.Context, req
 	})
 	return v.ValidateStruct()
 }
+
+// ValidateStore validates the requests.HeartbeatStore request
+func (validator *HeartbeatHandlerValidator) ValidateStore(_ context.Context, request requests.HeartbeatStore) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"owner": []string{
+				"required",
+				phoneNumberRule,
+			},
+		},
+	})
+	return v.ValidateStruct()
+}

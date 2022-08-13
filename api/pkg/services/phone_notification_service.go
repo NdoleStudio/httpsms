@@ -17,8 +17,8 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
-// NotificationService sends out notifications to mobile phones
-type NotificationService struct {
+// PhoneNotificationService sends out notifications to mobile phones
+type PhoneNotificationService struct {
 	logger                      telemetry.Logger
 	tracer                      telemetry.Tracer
 	phoneNotificationRepository repositories.PhoneNotificationRepository
@@ -27,7 +27,7 @@ type NotificationService struct {
 	eventDispatcher             *EventDispatcher
 }
 
-// NewNotificationService creates a new NotificationService
+// NewNotificationService creates a new PhoneNotificationService
 func NewNotificationService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
@@ -35,8 +35,8 @@ func NewNotificationService(
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
 	dispatcher *EventDispatcher,
-) (s *NotificationService) {
-	return &NotificationService{
+) (s *PhoneNotificationService) {
+	return &PhoneNotificationService{
 		logger:                      logger.WithService(fmt.Sprintf("%T", s)),
 		tracer:                      tracer,
 		messagingClient:             messagingClient,
@@ -46,8 +46,8 @@ func NewNotificationService(
 	}
 }
 
-// NotificationSendParams are parameters for sending a notification
-type NotificationSendParams struct {
+// PhoneNotificationSendParams are parameters for sending a notification
+type PhoneNotificationSendParams struct {
 	UserID              entities.UserID
 	PhoneID             uuid.UUID
 	PhoneNotificationID uuid.UUID
@@ -57,7 +57,7 @@ type NotificationSendParams struct {
 }
 
 // Send sends a message when a message is sent
-func (service *NotificationService) Send(ctx context.Context, params *NotificationSendParams) error {
+func (service *PhoneNotificationService) Send(ctx context.Context, params *PhoneNotificationSendParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -84,8 +84,8 @@ func (service *NotificationService) Send(ctx context.Context, params *Notificati
 	return service.handleNotificationSent(ctx, phone, result, params)
 }
 
-// NotificationScheduleParams are parameters for sending a notification
-type NotificationScheduleParams struct {
+// PhoneNotificationScheduleParams are parameters for sending a notification
+type PhoneNotificationScheduleParams struct {
 	UserID    entities.UserID
 	Owner     string
 	Source    string
@@ -93,7 +93,7 @@ type NotificationScheduleParams struct {
 }
 
 // Schedule a notification to be sent to a phone
-func (service *NotificationService) Schedule(ctx context.Context, params *NotificationScheduleParams) error {
+func (service *PhoneNotificationService) Schedule(ctx context.Context, params *PhoneNotificationScheduleParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -134,7 +134,7 @@ func (service *NotificationService) Schedule(ctx context.Context, params *Notifi
 	return nil
 }
 
-func (service *NotificationService) handleNotificationFailed(ctx context.Context, err error, params *NotificationSendParams) error {
+func (service *PhoneNotificationService) handleNotificationFailed(ctx context.Context, err error, params *PhoneNotificationSendParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -156,7 +156,7 @@ func (service *NotificationService) handleNotificationFailed(ctx context.Context
 	return nil
 }
 
-func (service *NotificationService) handleNotificationSent(ctx context.Context, phone *entities.Phone, result string, params *NotificationSendParams) error {
+func (service *PhoneNotificationService) handleNotificationSent(ctx context.Context, phone *entities.Phone, result string, params *PhoneNotificationSendParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -177,7 +177,7 @@ func (service *NotificationService) handleNotificationSent(ctx context.Context, 
 	return nil
 }
 
-func (service *NotificationService) createEvent(source string, notification *entities.PhoneNotification) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createEvent(source string, notification *entities.PhoneNotification) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
@@ -201,7 +201,7 @@ func (service *NotificationService) createEvent(source string, notification *ent
 	return event, nil
 }
 
-func (service *NotificationService) createMessageNotificationSentEvent(source string, phone *entities.Phone, fcmMessageID string, params *NotificationSendParams) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createMessageNotificationSentEvent(source string, phone *entities.Phone, fcmMessageID string, params *PhoneNotificationSendParams) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
@@ -228,7 +228,7 @@ func (service *NotificationService) createMessageNotificationSentEvent(source st
 	return event, nil
 }
 
-func (service *NotificationService) createMessageNotificationFailedEvent(source string, errorMessage string, params *NotificationSendParams) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createMessageNotificationFailedEvent(source string, errorMessage string, params *PhoneNotificationSendParams) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
@@ -253,7 +253,7 @@ func (service *NotificationService) createMessageNotificationFailedEvent(source 
 	return event, nil
 }
 
-func (service *NotificationService) updateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) {
+func (service *PhoneNotificationService) updateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
