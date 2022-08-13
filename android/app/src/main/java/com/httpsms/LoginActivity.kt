@@ -97,7 +97,7 @@ class LoginActivity : AppCompatActivity() {
             !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumber.text.toString()) ||
             !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumber.text.toString())
         ) {
-            Timber.e("phone number [$phoneNumber] is not valid")
+            Timber.e("phone number [${phoneNumber.text.toString()}] is not valid")
             resetView()
             phoneNumberLayout.error = "Invalid E.164 phone number"
             return
