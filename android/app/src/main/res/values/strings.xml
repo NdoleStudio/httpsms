@@ -11,4 +11,5 @@
     <string name="main_log_out">Log Out</string>
     <string name="login_phone_number_hint">International phone number in E.164 format</string>
     <string name="phone_number">Phone Number</string>
+    <string name="send_heartbeat">Send Heartbeat</string>
 </resources>

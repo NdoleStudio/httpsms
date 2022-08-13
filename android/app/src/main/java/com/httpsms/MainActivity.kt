@@ -11,15 +11,18 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.MutableLiveData
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
@@ -58,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         startStickyNotification(this)
         scheduleHeartbeatWorker(this)
         setLastHeartbeatTimestamp(this)
+        setHeartbeatListener(this)
     }
 
     override fun onResume() {
@@ -82,7 +86,7 @@ class MainActivity : AppCompatActivity() {
         val localTime = timestampZdt.withZoneSameInstant(ZoneId.systemDefault())
         Timber.d("heartbeat timestamp in UTC is [${timestampZdt}] and local is [$localTime]")
 
-        refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
     }
 
     private fun scheduleHeartbeatWorker(context: Context) {
@@ -282,5 +286,48 @@ class MainActivity : AppCompatActivity() {
         )
 
         Timber.d("creating permissions launcher")
+    }
+
+    private fun setHeartbeatListener(context: Context) {
+        findViewById<MaterialButton>(R.id.mainHeartbeatButton).setOnClickListener{onHeartbeatClick(context)}
+    }
+
+    private fun onHeartbeatClick(context: Context) {
+        Timber.d("heartbeat button clicked")
+        val heartbeatButton = findViewById<MaterialButton>(R.id.mainHeartbeatButton)
+        heartbeatButton.isEnabled = false
+
+        val progressBar = findViewById<LinearProgressIndicator>(R.id.mainProgressIndicator)
+        progressBar.visibility = View.VISIBLE
+
+
+        val liveData = MutableLiveData<String?>()
+        liveData.observe(this) { exception ->
+            run {
+                progressBar.visibility = View.INVISIBLE
+                heartbeatButton.isEnabled = true
+
+                if (exception != null) {
+                    Timber.w("heartbeat sending failed with [$exception]")
+                    Toast.makeText(context, exception, Toast.LENGTH_SHORT).show()
+                    return@run
+                }
+                Toast.makeText(context, "Heartbeat Sent", Toast.LENGTH_SHORT).show()
+                setLastHeartbeatTimestamp(this)
+            }
+        }
+
+        Thread {
+            var error: String? = null
+            try {
+                HttpSmsApiService(Settings.getApiKeyOrDefault(context)).storeHeartbeat(Settings.getOwnerOrDefault(context))
+                Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
+            } catch (exception: Exception) {
+                Timber.e(exception)
+                error = exception.javaClass.simpleName
+            }
+            liveData.postValue(error)
+            Timber.d("finished sending pulse")
+        }.start()
     }
 }

@@ -73,6 +73,43 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_weight="50"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mainPhoneCard">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/mainHeartbeatButton"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#2196f3"
+            android:drawableTint="@color/white"
+            android:padding="10dp"
+            android:text="@string/send_heartbeat"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            app:iconTint="@color/white"
+            tools:ignore="TextContrastCheck" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/mainProgressIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:indeterminate="true"
+            android:visibility="invisible"
+            app:indicatorColor="@color/pink_500"
+            app:layout_constraintTop_toBottomOf="@+id/mainHeartbeatButton"
+            tools:layout_editor_absoluteX="16dp" />
+    </LinearLayout>
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/mainLogoutButton"
         style="@style/Widget.MaterialComponents.Button.Icon"
