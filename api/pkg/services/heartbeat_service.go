@@ -99,11 +99,12 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 type HeartbeatMonitorStoreParams struct {
 	Owner   string
 	PhoneID uuid.UUID
+	Source  string
 	UserID  entities.UserID
 }
 
 // StoreMonitor a new entities.HeartbeatMonitor
-func (service *HeartbeatService) StoreMonitor(ctx context.Context, params HeartbeatMonitorStoreParams) (*entities.HeartbeatMonitor, error) {
+func (service *HeartbeatService) StoreMonitor(ctx context.Context, params *HeartbeatMonitorStoreParams) (*entities.HeartbeatMonitor, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -132,7 +133,20 @@ func (service *HeartbeatService) StoreMonitor(ctx context.Context, params Heartb
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("heartbeat monitor saved with id [%s] for wner [%s] and user [%s]", heartbeatMonitor.ID, heartbeatMonitor.Owner, heartbeatMonitor.UserID))
+	ctxLogger.Info(fmt.Sprintf("heartbeat monitor saved with id [%s] for owner [%s] and user [%s]", heartbeatMonitor.ID, heartbeatMonitor.Owner, heartbeatMonitor.UserID))
+
+	monitorParams := &HeartbeatMonitorParams{
+		Owner:     heartbeatMonitor.Owner,
+		PhoneID:   heartbeatMonitor.PhoneID,
+		UserID:    heartbeatMonitor.UserID,
+		MonitorID: heartbeatMonitor.ID,
+		Source:    params.Source,
+	}
+	if err = service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), monitorParams); err != nil {
+		msg := fmt.Sprintf("cannot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
 	return heartbeatMonitor, nil
 }
 
@@ -154,14 +168,15 @@ func (service *HeartbeatService) DeleteMonitor(ctx context.Context, userID entit
 
 // HeartbeatMonitorParams are parameters for monitoring the heartbeat
 type HeartbeatMonitorParams struct {
-	Owner   string
-	PhoneID uuid.UUID
-	UserID  entities.UserID
-	Source  string
+	Owner     string
+	MonitorID uuid.UUID
+	PhoneID   uuid.UUID
+	UserID    entities.UserID
+	Source    string
 }
 
 // Monitor the heartbeats of an owner and phone number
-func (service *HeartbeatService) Monitor(ctx context.Context, params HeartbeatMonitorParams) error {
+func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatMonitorParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -191,26 +206,16 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params HeartbeatMo
 		return service.handleFailedMonitor(ctx, params, true)
 	}
 
-	return service.handlePassingMonitor(ctx, heartbeat, params)
+	return service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params)
 }
 
-func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, params HeartbeatMonitorParams, raiseEvent bool) error {
+func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, params *HeartbeatMonitorParams, raiseEvent bool) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	event, err := service.createPhoneHeartbeatCheckEvent(params.Source, &events.PhoneHeartbeatCheckPayload{
-		PhoneID:     params.PhoneID,
-		UserID:      params.UserID,
-		ScheduledAt: time.Now().UTC().Add(heartbeatCheckInterval),
-		Owner:       params.Owner,
-	})
+	err := service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create event when phone monitor failed")
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	if err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
-		msg := fmt.Sprintf("cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)
+		msg := fmt.Sprintf("canot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -218,9 +223,10 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, params
 		return nil
 	}
 
-	event, err = service.createPhoneHeartbeatDeadEvent(params.Source, &events.PhoneHeartbeatDeadPayload{
+	event, err := service.createPhoneHeartbeatDeadEvent(params.Source, &events.PhoneHeartbeatDeadPayload{
 		PhoneID:   params.PhoneID,
 		UserID:    params.UserID,
+		MonitorID: params.MonitorID,
 		Timestamp: time.Now().UTC(),
 		Owner:     params.Owner,
 	})
@@ -237,14 +243,15 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, params
 	return nil
 }
 
-func (service *HeartbeatService) handlePassingMonitor(ctx context.Context, heartbeat *entities.Heartbeat, params HeartbeatMonitorParams) error {
+func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	event, err := service.createPhoneHeartbeatCheckEvent(params.Source, &events.PhoneHeartbeatCheckPayload{
 		PhoneID:     params.PhoneID,
 		UserID:      params.UserID,
-		ScheduledAt: heartbeat.Timestamp.Add(heartbeatCheckInterval),
+		MonitorID:   params.MonitorID,
+		ScheduledAt: lastTimestamp.Add(heartbeatCheckInterval),
 		Owner:       params.Owner,
 	})
 	if err != nil {

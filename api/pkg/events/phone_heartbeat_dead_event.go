@@ -15,5 +15,6 @@ type PhoneHeartbeatDeadPayload struct {
 	PhoneID   uuid.UUID       `json:"phone_id"`
 	UserID    entities.UserID `json:"user_id"`
 	Timestamp time.Time       `json:"timestamp"`
+	MonitorID uuid.UUID       `json:"monitor_id"`
 	Owner     string          `json:"owner"`
 }
