@@ -23,7 +23,7 @@
             <v-spacer></v-spacer>
             <v-btn
               exact-path
-              class="primary"
+              class="primary mt-5"
               :large="$vuetify.breakpoint.lgAndUp"
               :to="{ name: 'login' }"
             >
