@@ -178,7 +178,7 @@ func (service *PhoneService) createPhoneUpdatedEvent(source string, payload even
 }
 
 func (service *PhoneService) createPhoneDeletedEvent(source string, payload events.PhoneDeletedPayload) (cloudevents.Event, error) {
-	return service.createEvent(events.EventTypePhoneUpdated, source, payload)
+	return service.createEvent(events.EventTypePhoneDeleted, source, payload)
 }
 
 func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertParams) *entities.Phone {
