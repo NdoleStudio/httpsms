@@ -11,9 +11,13 @@
                 'text-h5': $vuetify.breakpoint.mdAndDown,
               }"
             >
-              <v-icon :x-large="!$vuetify.breakpoint.mdAndDown">
-                {{ mdiForum }}
-              </v-icon>
+              <v-avatar size="70" class="mt-4">
+                <v-img
+                  class="mb-4"
+                  contain
+                  :src="require('assets/img/icon.svg')"
+                ></v-img>
+              </v-avatar>
               Http SMS
             </h2>
             <v-spacer></v-spacer>

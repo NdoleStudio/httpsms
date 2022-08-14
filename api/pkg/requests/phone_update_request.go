@@ -30,7 +30,7 @@ func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 }
 
 // ToUpsertParams converts PhoneUpsert to services.PhoneUpsertParams
-func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser) services.PhoneUpsertParams {
+func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) services.PhoneUpsertParams {
 	phone, _ := phonenumbers.Parse(input.PhoneNumber, phonenumbers.UNKNOWN_REGION)
 
 	// ignore value if it's default
@@ -53,6 +53,7 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser) services.PhoneU
 	}
 
 	return services.PhoneUpsertParams{
+		Source:                    source,
 		PhoneNumber:               *phone,
 		MessagesPerMinute:         messagesPerMinute,
 		MessageExpirationDuration: timeout,

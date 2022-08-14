@@ -28,7 +28,7 @@ type HeartbeatService struct {
 	tracer            telemetry.Tracer
 	repository        repositories.HeartbeatRepository
 	monitorRepository repositories.HeartbeatMonitorRepository
-	dispatcher        EventDispatcher
+	dispatcher        *EventDispatcher
 }
 
 // NewHeartbeatService creates a new HeartbeatService
@@ -37,7 +37,7 @@ func NewHeartbeatService(
 	tracer telemetry.Tracer,
 	repository repositories.HeartbeatRepository,
 	monitorRepository repositories.HeartbeatMonitorRepository,
-	dispatcher EventDispatcher,
+	dispatcher *EventDispatcher,
 ) (s *HeartbeatService) {
 	return &HeartbeatService{
 		logger:            logger.WithService(fmt.Sprintf("%T", s)),

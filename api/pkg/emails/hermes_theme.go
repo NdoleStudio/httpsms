@@ -46,7 +46,7 @@ func (dt *hermesTheme) HTMLTemplate() string {
       width: 100%;
       margin: 0;
       padding: 0;
-      background-color: #283593;
+      background-color: #1E1E1E;
     }
     .email-content {
       width: 100%;
@@ -89,10 +89,12 @@ func (dt *hermesTheme) HTMLTemplate() string {
     .email-footer {
       width: 570px;
       margin: 0 auto;
+      font-size: 16px;
       padding: 0;
       text-align: center;
     }
     .email-footer p {
+      font-size: 16px;
       color: #AEAEAE;
     }
     .body-action {
@@ -182,7 +184,7 @@ func (dt *hermesTheme) HTMLTemplate() string {
       line-height: 1.5em;
     }
     p.sub {
-      font-size: 12px;
+      font-size: 14px;
     }
     p.center {
       text-align: center;

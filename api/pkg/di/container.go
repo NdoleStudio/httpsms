@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/emails"
+
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 
 	"go.opentelemetry.io/otel"
@@ -74,6 +76,7 @@ func NewContainer(projectID string) (container *Container) {
 	container.RegisterHeartbeatListeners()
 
 	container.RegisterUserRoutes()
+	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
 
@@ -182,6 +185,10 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
+	}
+
+	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
 	}
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {
@@ -419,6 +426,16 @@ func (container *Container) EventRepository() (repository repositories.EventRepo
 	)
 }
 
+// HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository
+func (container *Container) HeartbeatMonitorRepository() (repository repositories.HeartbeatMonitorRepository) {
+	container.logger.Debug("creating GORM repositories.HeartbeatMonitorRepository")
+	return repositories.NewGormHeartbeatMonitorRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
 // EventListenerLogRepository creates a new instance of repositories.EventListenerLogRepository
 func (container *Container) EventListenerLogRepository() (repository repositories.EventListenerLogRepository) {
 	container.logger.Debug("creating GORM repositories.EventListenerLogRepository")
@@ -436,6 +453,8 @@ func (container *Container) HeartbeatService() (service *services.HeartbeatServi
 		container.Logger(),
 		container.Tracer(),
 		container.HeartbeatRepository(),
+		container.HeartbeatMonitorRepository(),
+		container.EventDispatcher(),
 	)
 }
 
@@ -446,6 +465,7 @@ func (container *Container) PhoneService() (service *services.PhoneService) {
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneRepository(),
+		container.EventDispatcher(),
 	)
 }
 
@@ -456,7 +476,35 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.Logger(),
 		container.Tracer(),
 		container.UserRepository(),
+		container.Mailer(),
+		container.UserEmailFactory(),
 	)
+}
+
+// Mailer creates a new instance of emails.Mailer
+func (container *Container) Mailer() (mailer emails.Mailer) {
+	container.logger.Debug("creating emails.Mailer")
+	return emails.NewSMTPEmailService(
+		container.Tracer(),
+		emails.SMTPConfig{
+			FromName:  os.Getenv("SMTP_FROM_NAME"),
+			FromEmail: os.Getenv("SMTP_FROM_EMAIL"),
+			Username:  os.Getenv("SMTP_USERNAME"),
+			Password:  os.Getenv("SMTP_PASSWORD"),
+			Hostname:  os.Getenv("SMTP_HOST"),
+			Port:      os.Getenv("SMTP_PORT"),
+		},
+	)
+}
+
+// UserEmailFactory creates a new instance of emails.UserEmailFactory
+func (container *Container) UserEmailFactory() (factory emails.UserEmailFactory) {
+	container.logger.Debug("creating emails.UserEmailFactory")
+	return emails.NewHermesUserEmailFactory(&emails.HermesGeneratorConfig{
+		AppURL:     os.Getenv("APP_URL"),
+		AppName:    os.Getenv("APP_NAME"),
+		AppLogoURL: os.Getenv("APP_LOGO_URL"),
+	})
 }
 
 // MessageThreadService creates a new instance of services.MessageService
@@ -565,6 +613,20 @@ func (container *Container) RegisterHeartbeatListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.HeartbeatService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterUserListeners registers event listeners for listeners.UserListener
+func (container *Container) RegisterUserListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.UserListener{}))
+	_, routes := listeners.NewUserListener(
+		container.Logger(),
+		container.Tracer(),
+		container.UserService(),
 	)
 
 	for event, handler := range routes {

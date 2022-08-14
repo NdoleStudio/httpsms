@@ -27,10 +27,10 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 	email := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
-				fmt.Sprintf("We haven't received any heartbeat event from your mobile phone <b>%s</b> since %s.", owner, lastHeartbeatTimestamp.Format(time.RFC822)),
+				fmt.Sprintf("We haven't received any heartbeat event from your mobile phone %s since %s.", owner, lastHeartbeatTimestamp.Format(time.RFC1123)),
 				fmt.Sprintf("Check if the mobile phone is powered on and if it has stable internet connection."),
 			},
-			Title:     "Hello 🤚",
+			Title:     "Hey,",
 			Signature: "Cheers",
 			Outros: []string{
 				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
