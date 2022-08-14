@@ -61,6 +61,7 @@ export default {
         },
       },
     ],
+    '@nuxtjs/sitemap', // always put it at the end
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
@@ -83,6 +84,12 @@ export default {
 
   router: {
     middleware: ['user'],
+  },
+
+  sitemap: {
+    hostname: 'https://httpsms.com',
+    gzip: true,
+    exclude: ['/messages', '/settings', '/threads**'],
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
