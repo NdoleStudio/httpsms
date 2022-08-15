@@ -229,6 +229,7 @@ export const mutations = {
   resetState(state: State) {
     state.threads = []
     state.phones = []
+    state.user = null
     state.threadId = null
     state.threadMessages = []
     state.archivedThreads = false
