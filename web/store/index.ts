@@ -246,14 +246,18 @@ export type SendMessageRequest = {
 
 export const actions = {
   async loadThreads(context: ActionContext<State, State>) {
-    if (context.getters.getOwner === null) {
-      await context.commit('setThreads', [])
+    if (
+      context.getters.getOwner === 0 &&
+      context.getters.getPhones.length === 0
+    ) {
+      console.error('owner does not exist')
       return
     }
 
     const response = await axios.get('/v1/message-threads', {
       params: {
-        owner: context.getters.getOwner,
+        owner:
+          context.getters.getOwner ?? context.getters.getPhones[0].phone_number,
         limit: 100,
         is_archived: context.getters.getIsArchived,
       },
