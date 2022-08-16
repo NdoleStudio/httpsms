@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	heartbeatCheckInterval = 16 * time.Minute
+	// select id, a.timestamp, a.owner,  a.timestamp - (SELECT timestamp from heartbeats b where  b.timestamp < a.timestamp and a.owner = b.owner and a.user_id = b.user_id order by b.timestamp desc  limit 1) as diff  from heartbeats a;
+	heartbeatCheckInterval = 25 * time.Minute
 )
 
 // HeartbeatService is handles heartbeat requests
