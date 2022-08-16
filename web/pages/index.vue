@@ -228,7 +228,10 @@
                     <v-card-text class="subtitle-1">
                       Start sending and receiving SMS messages using our rich
                       HTTP API. You can find the documentation on
-                      <a :href="$store.getters.getAppData.documentationUrl">
+                      <a
+                        class="text-decoration-none"
+                        :href="$store.getters.getAppData.documentationUrl"
+                      >
                         {{ $store.getters.getAppData.documentationUrl }}
                       </a>
                     </v-card-text>
