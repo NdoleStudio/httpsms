@@ -191,7 +191,7 @@
                     @mouseleave="step1Hover = false"
                   >
                     <v-card-title class="text-h5"> Step 1 </v-card-title>
-                    <v-card-text>
+                    <v-card-text class="subtitle-1">
                       <router-link
                         class="font-weight-bold text-decoration-none"
                         :to="{ name: 'login' }"
@@ -210,7 +210,7 @@
                     @mouseleave="step2Hover = false"
                   >
                     <v-card-title class="text-h5"> Step 2 </v-card-title>
-                    <v-card-text>
+                    <v-card-text class="subtitle-1">
                       <a
                         download
                         class="font-weight-bold text-decoration-none"
@@ -225,7 +225,7 @@
                 <v-timeline-item color="primary" :icon="mdiTallyMark3">
                   <v-card class="elevation-2">
                     <v-card-title class="text-h5"> Step 3 </v-card-title>
-                    <v-card-text>
+                    <v-card-text class="subtitle-1">
                       Start sending and receiving SMS messages using our rich
                       HTTP API. You can find the documentation on
                       <a :href="$store.getters.getAppData.documentationUrl">
