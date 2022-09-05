@@ -46,7 +46,7 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 			"content": []string{
 				"required",
 				"min:1",
-				"max:500",
+				"max:1024",
 			},
 		},
 	})
@@ -70,7 +70,7 @@ func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, 
 			"content": []string{
 				"required",
 				"min:1",
-				"max:500",
+				"max:1024",
 			},
 		},
 	})
