@@ -11,7 +11,11 @@
                 'text-h5': $vuetify.breakpoint.mdAndDown,
               }"
             >
-              <v-avatar size="70" class="mt-4">
+              <v-avatar
+                v-if="$vuetify.breakpoint.lgAndUp"
+                size="70"
+                class="mt-4"
+              >
                 <v-img
                   class="mb-4"
                   contain
