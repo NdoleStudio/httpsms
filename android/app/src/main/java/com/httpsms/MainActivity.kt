@@ -180,7 +180,7 @@ class MainActivity : AppCompatActivity() {
                 Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
                 redirectToLogin()
             }
-            .show();
+            .show()
     }
 
     private fun redirectToLogin():Boolean {
