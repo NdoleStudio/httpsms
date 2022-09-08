@@ -22,6 +22,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
@@ -168,10 +169,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun onLogoutClick() {
         Timber.d("logout button clicked")
-        Settings.setApiKeyAsync(this, null)
-        Settings.setOwnerAsync(this, null)
-        Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
-        redirectToLogin()
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Confirm")
+            .setMessage("Are you sure you want to logout of the Http SMS App?")
+            .setNeutralButton("Cancel"){ _, _ -> Timber.d("logout dialog canceled") }
+            .setPositiveButton("Logout"){_, _ ->
+                Timber.d("logging out user")
+                Settings.setApiKeyAsync(this, null)
+                Settings.setOwnerAsync(this, null)
+                Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
+                redirectToLogin()
+            }
+            .show();
     }
 
     private fun redirectToLogin():Boolean {
