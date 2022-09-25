@@ -342,11 +342,11 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	message, err := service.repository.Load(ctx, eventPayload.UserID, eventPayload.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s] in the userRepository", eventPayload.ID)
+		msg := fmt.Sprintf("cannot load message with ID [%s]", eventPayload.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s] from the userRepository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s]", message.ID))
 
 	return message, nil
 }
@@ -408,7 +408,7 @@ func (service *MessageService) StoreSentMessage(ctx context.Context, params Mess
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the userRepository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", message.ID))
 	return message, nil
 }
 
@@ -439,7 +439,7 @@ func (service *MessageService) StoreReceivedMessage(ctx context.Context, params 
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message saved with id [%s] in the userRepository", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", message.ID))
 	return message, nil
 }
 
@@ -474,7 +474,7 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message with id [%s] in the userRepository after adding send attempt", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] in after adding send attempt", message.ID))
 	return nil
 }
 
@@ -580,12 +580,38 @@ func (service *MessageService) HandleMessageNotificationScheduled(ctx context.Co
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	if !message.IsPending() && !message.IsExpired() {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("received scheduled event for message with id [%s] message has status [%s]", message.ID, message.Status)))
+	}
+
 	if err = service.repository.Update(ctx, message.NotificationScheduled(params.Timestamp)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as expired", message.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been scheduled to send at [%s]", message.ID, message.NotificationScheduledAt.String()))
+	return nil
+}
+
+// HandleMessageNotificationSent handles the event when the notification of a message has been sent
+func (service *MessageService) HandleMessageNotificationSent(ctx context.Context, params HandleMessageParams) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message, err := service.repository.Load(ctx, params.UserID, params.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.repository.Update(ctx, message.AddSendAttemptCount()); err != nil {
+		msg := fmt.Sprintf("cannot update message with id [%s] as expired", message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("notification for message with id [%s] has been sent at [%s]", message.ID, params.Timestamp.String()))
 	return nil
 }
 

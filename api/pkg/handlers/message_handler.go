@@ -127,7 +127,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching outstanding messages")
 	}
 
-	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.OriginalURL(), h.userIDFomContext(c), timestamp))
+	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.Path(), h.userIDFomContext(c), timestamp))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get outstnading messgage with ID [%s]", request.MessageID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

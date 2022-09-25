@@ -132,6 +132,7 @@ func (message *Message) Sent(timestamp time.Time) *Message {
 	message.Status = MessageStatusSent
 	message.updateOrderTimestamp(timestamp)
 	message.SendDuration = &sendDuration
+
 	return message
 }
 
@@ -152,12 +153,17 @@ func (message *Message) Delivered(timestamp time.Time) *Message {
 	return message
 }
 
+// AddSendAttemptCount increments the send attempt count of a message
+func (message *Message) AddSendAttemptCount() *Message {
+	message.SendAttemptCount++
+	return message
+}
+
 // Expired registers a message as expired
 func (message *Message) Expired(timestamp time.Time) *Message {
 	message.ExpiredAt = &timestamp
 	message.Status = MessageStatusExpired
 	message.CanBePolled = true
-	message.SendAttemptCount++
 	message.updateOrderTimestamp(timestamp)
 	return message
 }
@@ -165,8 +171,12 @@ func (message *Message) Expired(timestamp time.Time) *Message {
 // NotificationScheduled registers a message as scheduled
 func (message *Message) NotificationScheduled(timestamp time.Time) *Message {
 	message.NotificationScheduledAt = &timestamp
-	message.Status = MessageStatusScheduled
+
+	if message.IsExpired() || message.IsPending() {
+		message.Status = MessageStatusScheduled
+	}
 	message.updateOrderTimestamp(timestamp)
+
 	return message
 }
 

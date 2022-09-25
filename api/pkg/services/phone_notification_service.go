@@ -124,11 +124,11 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
-		return service.tracer.WrapErrorSpan(span, err)
+	if err = service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
+		ctxLogger.Error(err)
 	}
 
-	if err = service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
+	if err = service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
 		return service.tracer.WrapErrorSpan(span, err)
 	}
 

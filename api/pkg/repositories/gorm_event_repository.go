@@ -16,11 +16,12 @@ import (
 
 // GormEvent is a serialized version of cloudevents.Event
 type GormEvent struct {
-	ID     uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;"`
-	Time   time.Time
-	Source string
-	Type   string
-	Data   datatypes.JSON
+	ID        uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;"`
+	Time      time.Time
+	CreatedAt time.Time
+	Source    string
+	Type      string
+	Data      datatypes.JSON
 }
 
 // TableName overrides the table name used by GormEvent to `events`
@@ -81,11 +82,12 @@ func (repository *gormEventRepository) Save(ctx context.Context, event cloudeven
 	}
 
 	gormEvent := GormEvent{
-		ID:     uuid.MustParse(event.ID()),
-		Time:   event.Time(),
-		Source: event.Source(),
-		Type:   event.Type(),
-		Data:   datatypes.JSON(data),
+		ID:        uuid.MustParse(event.ID()),
+		Time:      event.Time(),
+		Source:    event.Source(),
+		CreatedAt: time.Now().UTC(),
+		Type:      event.Type(),
+		Data:      datatypes.JSON(data),
 	}
 
 	if err = repository.db.WithContext(ctx).Create(gormEvent).Error; err != nil {

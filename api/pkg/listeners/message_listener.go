@@ -38,16 +38,17 @@ func NewMessageListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:            l.OnMessageAPISent,
-		events.EventTypeMessagePhoneSending:       l.OnMessagePhoneSending,
-		events.EventTypeMessagePhoneSent:          l.OnMessagePhoneSent,
-		events.EventTypeMessagePhoneDelivered:     l.OnMessagePhoneDelivered,
-		events.EventTypeMessageSendFailed:         l.OnMessagePhoneFailed,
-		events.EventTypeMessagePhoneReceived:      l.OnMessagePhoneReceived,
-		events.EventTypeMessageNotificationSent:   l.onMessageNotificationSent,
-		events.EventTypeMessageNotificationFailed: l.onMessageNotificationFailed,
-		events.EventTypeMessageSendExpiredCheck:   l.onMessageSendExpiredCheck,
-		events.EventTypeMessageSendExpired:        l.onMessageSendExpired,
+		events.EventTypeMessageAPISent:               l.OnMessageAPISent,
+		events.EventTypeMessagePhoneSending:          l.OnMessagePhoneSending,
+		events.EventTypeMessagePhoneSent:             l.OnMessagePhoneSent,
+		events.EventTypeMessagePhoneDelivered:        l.OnMessagePhoneDelivered,
+		events.EventTypeMessageSendFailed:            l.OnMessagePhoneFailed,
+		events.EventTypeMessagePhoneReceived:         l.OnMessagePhoneReceived,
+		events.EventTypeMessageNotificationSent:      l.onMessageNotificationSent,
+		events.EventTypeMessageNotificationFailed:    l.onMessageNotificationFailed,
+		events.EventTypeMessageSendExpiredCheck:      l.onMessageSendExpiredCheck,
+		events.EventTypeMessageSendExpired:           l.onMessageSendExpired,
+		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
 	}
 }
 
@@ -318,7 +319,7 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	storeParams := services.MessageScheduleExpirationParams{
+	checkParams := services.MessageScheduleExpirationParams{
 		MessageID:                 payload.MessageID,
 		UserID:                    payload.UserID,
 		NotificationSentAt:        payload.NotificationSentAt,
@@ -326,15 +327,26 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 		Source:                    event.Source(),
 		MessageExpirationDuration: payload.MessageExpirationDuration,
 	}
-	if err := listener.service.ScheduleExpirationCheck(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot exchedule expiration check for  ID [%s] and userID [%s]", storeParams.MessageID, storeParams.UserID)
+	if err := listener.service.ScheduleExpirationCheck(ctx, checkParams); err != nil {
+		msg := fmt.Sprintf("cannot exchedule expiration check for  ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	handleParams := services.HandleMessageParams{
+		ID:        payload.MessageID,
+		UserID:    payload.UserID,
+		Source:    event.Source(),
+		Timestamp: payload.NotificationSentAt,
+	}
+	if err := listener.service.HandleMessageNotificationSent(ctx, handleParams); err != nil {
+		msg := fmt.Sprintf("cannot handle event [%s] for message [%s] and userID [%s]", event.Type(), checkParams.MessageID, checkParams.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	return nil
 }
 
-// onMessageNotificationSent handles the events.EventTypeMessageSendExpiredCheck event
+// onMessageSendExpiredCheck handles the events.EventTypeMessageSendExpiredCheck event
 func (listener *MessageListener) onMessageSendExpiredCheck(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
@@ -376,6 +388,31 @@ func (listener *MessageListener) onMessageSendExpired(ctx context.Context, event
 		Timestamp: payload.Timestamp,
 	}
 	if err := listener.service.HandleMessageExpired(ctx, expiredParams); err != nil {
+		msg := fmt.Sprintf("cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageNotificationScheduled handles the events.EventTypeMessageSendExpired event
+func (listener *MessageListener) onMessageNotificationScheduled(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageNotificationScheduledPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	expiredParams := services.HandleMessageParams{
+		ID:        payload.MessageID,
+		UserID:    payload.UserID,
+		Source:    event.Source(),
+		Timestamp: payload.ScheduledAt,
+	}
+	if err := listener.service.HandleMessageNotificationScheduled(ctx, expiredParams); err != nil {
 		msg := fmt.Sprintf("cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
