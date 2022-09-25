@@ -97,7 +97,7 @@
                   <v-list-item-group v-model="selectedMenuItem">
                     <v-list-item @click.prevent="resendMessage(message)">
                       <v-list-item-icon class="pl-2">
-                        <v-icon dense>{{ mdiReferesh }}</v-icon>
+                        <v-icon dense>{{ mdiRefresh }}</v-icon>
                       </v-list-item-icon>
                       <v-list-item-content class="ml-n3">
                         <v-list-item-title class="pr-16 py-1">
@@ -140,9 +140,7 @@
                           :size="14"
                           :width="1"
                           class="mt-n2"
-                          :color="
-                            message.status === 'pending' ? 'primary' : 'warning'
-                          "
+                          :color="statusColor(message)"
                         ></v-progress-circular>
                         <v-icon
                           v-else-if="message.status === 'delivered'"
@@ -302,7 +300,19 @@ export default Vue.extend({
 
   methods: {
     isPending(message: Message): boolean {
-      return ['sending', 'pending'].includes(message.status)
+      return ['sending', 'pending', 'scheduled'].includes(message.status)
+    },
+
+    statusColor(message: Message): string {
+      if (message.status === 'sending') {
+        return 'warning'
+      }
+
+      if (message.status === 'scheduled') {
+        return 'teal'
+      }
+
+      return 'primary'
     },
 
     canResend(message: Message): boolean {

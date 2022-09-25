@@ -1,4 +1,5 @@
 import { ActionContext } from 'vuex'
+import { AxiosError, AxiosResponse } from 'axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
@@ -28,6 +29,7 @@ export type AuthUser = {
 
 export type State = {
   owner: string | null
+  axiosError: AxiosError | null
   nextRoute: string | null
   loadingThreads: boolean
   loadingMessages: boolean
@@ -48,6 +50,7 @@ export const state = (): State => ({
   threadId: null,
   heartbeat: null,
   nextRoute: null,
+  axiosError: null,
   loadingThreads: true,
   archivedThreads: false,
   loadingMessages: true,
@@ -100,6 +103,10 @@ export const getters = {
 
   getAuthUser(state: State): AuthUser | null {
     return state.authUser
+  },
+
+  getAxiosError(state: State): AxiosError | null {
+    return state.axiosError
   },
 
   isLocal(): boolean {
@@ -191,6 +198,9 @@ export const mutations = {
   },
   setAuthUser(state: State, payload: AuthUser | null) {
     state.authUser = payload
+  },
+  setAxiosError(state: State, payload: AxiosError | null) {
+    state.axiosError = payload
   },
   setNotification(state: State, notification: NotificationRequest) {
     state.notification = {
@@ -300,15 +310,42 @@ export const actions = {
   },
 
   async updatePhone(context: ActionContext<State, State>, phone: Phone) {
-    await axios.put(`/v1/phones`, {
-      fcm_token: phone.fcm_token,
-      phone_number: phone.phone_number,
-      message_expiration_seconds: parseInt(
-        phone.message_expiration_seconds.toString()
-      ),
-      messages_per_minute: parseInt(phone.messages_per_minute.toString()),
-    })
+    await axios
+      .put(`/v1/phones`, {
+        fcm_token: phone.fcm_token,
+        phone_number: phone.phone_number,
+        message_expiration_seconds: parseInt(
+          phone.message_expiration_seconds.toString()
+        ),
+        max_send_attempts: parseInt(phone.max_send_attempts.toString()),
+        messages_per_minute: parseInt(phone.messages_per_minute.toString()),
+      })
+      .catch((error: AxiosError) => {
+        context.dispatch('handleAxiosError', error)
+      })
+      .then((response: any) => {
+        context.dispatch('addNotification', {
+          message: response.data.message,
+          type: 'success',
+        })
+      })
+
     await context.dispatch('loadPhones', true)
+  },
+
+  async handleAxiosError(
+    context: ActionContext<State, State>,
+    error: AxiosError
+  ) {
+    const errorMessage =
+      error.response?.data?.data[Object.keys(error.response?.data?.data)[0]][0]
+    await context.dispatch('addNotification', {
+      message:
+        (errorMessage ? errorMessage.replaceAll('_', ' ') : null) ??
+        error.response?.data.message,
+      type: 'error',
+    })
+    await context.commit('setAxiosError', error)
   },
 
   async getHeartbeat(context: ActionContext<State, State>) {
@@ -400,6 +437,10 @@ export const actions = {
         await context.dispatch('setOwner', phone.phone_number)
       }
     }
+  },
+
+  async clearAxiosError(context: ActionContext<State, State>) {
+    await context.commit('setAxiosError', null)
   },
 
   async setOwner(context: ActionContext<State, State>, owner: string) {

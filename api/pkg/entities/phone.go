@@ -29,6 +29,14 @@ func (phone *Phone) MessageExpirationDuration() time.Duration {
 	return time.Duration(phone.MessageExpirationSeconds) * time.Second
 }
 
+// MessageExpirationSecondsSanitized returns the message expiration seconds with default of 1 hour
+func (phone *Phone) MessageExpirationSecondsSanitized() uint {
+	if phone.MessageExpirationSeconds == 0 {
+		return 60 * 60 // 1 hour
+	}
+	return phone.MessageExpirationSeconds
+}
+
 // MaxSendAttemptsSanitized returns the max send attempts replacing 0 with 1
 func (phone *Phone) MaxSendAttemptsSanitized() uint {
 	if phone.MaxSendAttempts == 0 {

@@ -69,10 +69,27 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 				"min:0",
 				"max:60",
 			},
+			"max_send_attempts": []string{
+				"min:0",
+				"max:5",
+			},
+			"message_expiration_seconds": []string{
+				"min:60",
+				"max:3600",
+			},
 		},
 	})
 
-	return v.ValidateStruct()
+	result := v.ValidateStruct()
+	if len(result) > 0 {
+		return result
+	}
+
+	if request.MaxSendAttempts > 0 && request.MessageExpirationSeconds == 0 {
+		result.Add("message_expiration_seconds", "message_expiration_seconds cannot be 0 when max_send_attempts is greater than 0")
+	}
+
+	return result
 }
 
 // ValidateDelete ValidateUpsert validates requests.PhoneDelete

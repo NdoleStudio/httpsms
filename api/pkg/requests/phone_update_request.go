@@ -19,6 +19,9 @@ type PhoneUpsert struct {
 	// MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.
 	MessageExpirationSeconds uint `json:"message_expiration_seconds" example:"12345"`
 
+	// MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.
+	MaxSendAttempts uint `json:"max_send_attempts" example:"2"`
+
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 }
 
@@ -52,11 +55,17 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) 
 		timeout = &duration
 	}
 
+	var maxSendAttempts *uint
+	if input.MaxSendAttempts != 0 {
+		maxSendAttempts = &input.MaxSendAttempts
+	}
+
 	return services.PhoneUpsertParams{
 		Source:                    source,
 		PhoneNumber:               *phone,
 		MessagesPerMinute:         messagesPerMinute,
 		MessageExpirationDuration: timeout,
+		MaxSendAttempts:           maxSendAttempts,
 		FcmToken:                  fcmToken,
 		UserID:                    user.ID,
 	}

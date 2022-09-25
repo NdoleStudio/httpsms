@@ -73,9 +73,13 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		return service.handleNotificationFailed(ctx, errors.New(msg), params)
 	}
 
+	ttl := phone.MessageExpirationDuration()
 	result, err := service.messagingClient.Send(ctx, &messaging.Message{
 		Data: map[string]string{
 			"KEY_MESSAGE_ID": params.MessageID.String(),
+		},
+		Android: &messaging.AndroidConfig{
+			TTL: &ttl,
 		},
 		Token: *phone.FcmToken,
 	})

@@ -99,11 +99,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             if (!Settings.getActiveStatus(applicationContext)) {
                 Timber.w("user is not active, stopping processing")
-                handleFailed(applicationContext, messageID, "MOBILE_APP_INACTIVE")
+                handleFailed(applicationContext, messageID)
                 return Result.failure()
             }
 
             val message = getMessage(applicationContext, messageID) ?: return Result.failure()
+
             registerReceivers(applicationContext, message.id)
 
             sendMessage(
@@ -126,10 +127,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             )
         }
 
-        private fun handleFailed(context: Context, messageID: String, reason: String) {
+        private fun handleFailed(context: Context, messageID: String) {
             Timber.d("sending failed event for message with ID [${messageID}]")
             HttpSmsApiService(Settings.getApiKeyOrDefault(context))
-                .sendFailedEvent(messageID, ZonedDateTime.now(ZoneOffset.UTC), reason)
+                .sendFailedEvent(messageID, ZonedDateTime.now(ZoneOffset.UTC), "MOBILE_APP_INACTIVE")
         }
 
         private fun getMessage(context: Context, messageID: String): Message? {

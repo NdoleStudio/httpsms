@@ -121,9 +121,19 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, use
 				Update("status", entities.MessageStatusSending).Error
 		},
 	)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("outstanding message with ID [%s] and userID [%s] does not exist", messageID, userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch outstanding message with userID [%s] and messageID [%s]", userID, messageID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if message == nil || message.ID == uuid.Nil {
+		msg := fmt.Sprintf("outstanding message with ID [%s] and userID [%s] does not exist", messageID, userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.NewErrorWithCode(ErrCodeNotFound, msg))
 	}
 
 	return message, nil

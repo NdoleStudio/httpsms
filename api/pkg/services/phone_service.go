@@ -72,6 +72,7 @@ type PhoneUpsertParams struct {
 	PhoneNumber               phonenumbers.PhoneNumber
 	FcmToken                  *string
 	MessagesPerMinute         *uint
+	MaxSendAttempts           *uint
 	MessageExpirationDuration *time.Duration
 	Source                    string
 	UserID                    entities.UserID
@@ -166,8 +167,8 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		ID:                       uuid.New(),
 		UserID:                   params.UserID,
 		FcmToken:                 params.FcmToken,
-		MessagesPerMinute:        0,
-		MessageExpirationSeconds: 0,
+		MessagesPerMinute:        60,
+		MessageExpirationSeconds: 60 * 60, // 1 hour
 		MaxSendAttempts:          1,
 		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
@@ -196,6 +197,10 @@ func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertPar
 	}
 	if params.MessagesPerMinute != nil {
 		phone.MessagesPerMinute = *params.MessagesPerMinute
+	}
+
+	if params.MaxSendAttempts != nil && *params.MaxSendAttempts > 0 {
+		phone.MaxSendAttempts = *params.MaxSendAttempts
 	}
 
 	if params.MessageExpirationDuration != nil {

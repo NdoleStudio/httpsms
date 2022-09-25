@@ -128,12 +128,19 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 	}
 
 	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.Path(), h.userIDFomContext(c), timestamp))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		msg := fmt.Sprintf("outstanding message with id [%s] already fetched", request.MessageID)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseNotFound(c, "outstanding message already processed")
+	}
+
 	if err != nil {
-		msg := fmt.Sprintf("cannot get outstnading messgage with ID [%s]", request.MessageID)
+		msg := fmt.Sprintf("cannot get outstanding messgage with ID [%s]", request.MessageID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
 
+	ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("New Message [%s]", spew.Sdump(message))))
 	return h.responseOK(c, "outstanding message fetched successfully", message)
 }
 

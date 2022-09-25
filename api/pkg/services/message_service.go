@@ -64,7 +64,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch outstanding messages with params [%s]", spew.Sdump(params))
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}
 
 	event, err := service.createMessagePhoneSendingEvent(params.Source, events.MessagePhoneSendingPayload{
@@ -727,7 +727,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsPending() && !message.IsSending() {
+	if !message.IsPending() && !message.IsSending() && !message.IsScheduled() {
 		ctxLogger.Info(fmt.Sprintf("message with ID [%s] has status [%s] and is not expired", message.ID, message.Status))
 		return nil
 	}

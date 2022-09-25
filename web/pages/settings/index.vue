@@ -83,6 +83,9 @@
                     <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
                       Fcm Token
                     </th>
+                    <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
+                      Retries
+                    </th>
                     <th class="text-center">Rate</th>
                     <th class="text-center">Updated At</th>
                     <th class="text-center">Action</th>
@@ -102,6 +105,13 @@
                           :input-value="true"
                           color="success"
                         ></v-checkbox>
+                      </div>
+                    </td>
+                    <td v-if="$vuetify.breakpoint.lgAndUp">
+                      <div class="d-flex justify-center">
+                        {{
+                          phone.max_send_attempts ? phone.max_send_attempts : 1
+                        }}
                       </div>
                     </td>
                     <td class="text-center">
@@ -181,6 +191,15 @@
                   label="Messages Per Minute"
                 >
                 </v-text-field>
+                <v-text-field
+                  v-model="activePhone.max_send_attempts"
+                  outlined
+                  type="number"
+                  dense
+                  placeholder="How many retries when sending an SMS"
+                  label="Max Send Attempts"
+                >
+                </v-text-field>
               </v-col>
             </v-row>
           </v-container>
@@ -252,6 +271,7 @@ export default Vue.extend({
     },
   },
   mounted() {
+    this.$store.dispatch('clearAxiosError')
     if (!this.$store.getters.getAuthUser) {
       this.$store.dispatch('setNextRoute', this.$route.path)
       this.$router.push({ name: 'index' })
@@ -272,12 +292,15 @@ export default Vue.extend({
       this.showPhoneEdit = true
     },
 
-    updatePhone() {
+    async updatePhone() {
       this.updatingPhone = true
+      await this.$store.dispatch('clearAxiosError')
       this.$store.dispatch('updatePhone', this.activePhone).finally(() => {
-        this.updatingPhone = false
-        this.showPhoneEdit = false
-        this.activePhone = null
+        if (!this.$store.getters.getAxiosError) {
+          this.updatingPhone = false
+          this.showPhoneEdit = false
+          this.activePhone = null
+        }
       })
     },
 

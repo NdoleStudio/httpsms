@@ -15,8 +15,8 @@ import java.util.logging.Logger.getLogger
 
 class HttpSmsApiService(private val apiKey: String) {
     private val apiKeyHeader = "x-api-key"
-    private val baseURL = URI("https://49b1-145-14-19-43.ngrok.io")
-    // private val baseURL = URI("https://api.httpsms.com")
+    // private val baseURL = URI("https://49b1-145-14-19-43.ngrok.io")
+    private val baseURL = URI("https://api.httpsms.com")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient()
 
@@ -32,16 +32,17 @@ class HttpSmsApiService(private val apiKey: String) {
 
         val response = client.newCall(request).execute()
         if (response.isSuccessful) {
-            val payload =  ResponseMessage.fromJson(response.body!!.string())?.data
+            val payload = ResponseMessage.fromJson(response.body!!.string())?.data
             if (payload == null) {
                 Timber.e("cannot decode payload [${response.body}]")
                 return null
             }
+            Timber.w("response code [${response.code}]")
             response.close()
             return payload
         }
 
-        Timber.e("invalid response with code [${response.code}] and payload [${response.body}]")
+        Timber.e("invalid response with code [${response.code}]")
         response.close()
         return null
     }
