@@ -1,5 +1,5 @@
 import { ActionContext } from 'vuex'
-import { AxiosError, AxiosResponse } from 'axios'
+import { AxiosError } from 'axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
