@@ -14,6 +14,9 @@ type Phone struct {
 	PhoneNumber       string    `json:"phone_number" example:"+18005550199"`
 	MessagesPerMinute uint      `json:"messages_per_minute" example:"1"`
 
+	// MaxSendAttempts determines how many times to retry sending an SMS message
+	MaxSendAttempts uint `json:"max_send_attempts" example:"1"`
+
 	// MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.
 	MessageExpirationSeconds uint `json:"message_expiration_seconds"`
 
@@ -24,4 +27,12 @@ type Phone struct {
 // MessageExpirationDuration returns the message expiration as time.Duration
 func (phone *Phone) MessageExpirationDuration() time.Duration {
 	return time.Duration(phone.MessageExpirationSeconds) * time.Second
+}
+
+// MaxSendAttemptsSanitized returns the max send attempts replacing 0 with 1
+func (phone *Phone) MaxSendAttemptsSanitized() uint {
+	if phone.MaxSendAttempts == 0 {
+		return 1
+	}
+	return phone.MaxSendAttempts
 }

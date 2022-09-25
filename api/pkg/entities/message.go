@@ -73,16 +73,21 @@ type Message struct {
 	// SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
 	SendDuration *int64 `json:"send_time" example:"133414"`
 
-	RequestReceivedAt time.Time   `json:"request_received_at" example:"2022-06-05T14:26:01.520828+03:00"`
-	CreatedAt         time.Time   `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
-	UpdatedAt         time.Time   `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
-	OrderTimestamp    time.Time   `json:"order_timestamp" gorm:"index:idx_messages_order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
-	LastAttemptedAt   *time.Time  `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	ScheduledAt       *time.Time  `json:"scheduled_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	SentAt            *time.Time  `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	ReceivedAt        *time.Time  `json:"received_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	SendAttempts      []time.Time `json:"send_attempts"`
-	FailureReason     *string     `json:"failure_reason" example:"UNKNOWN"`
+	RequestReceivedAt       time.Time  `json:"request_received_at" example:"2022-06-05T14:26:01.520828+03:00"`
+	CreatedAt               time.Time  `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
+	UpdatedAt               time.Time  `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
+	OrderTimestamp          time.Time  `json:"order_timestamp" gorm:"index:idx_messages_order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
+	LastAttemptedAt         *time.Time `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	NotificationScheduledAt *time.Time `json:"scheduled_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	SentAt                  *time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	DeliveredAt             *time.Time `json:"delivered_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	ExpiredAt               *time.Time `json:"expired_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	FailedAt                *time.Time `json:"failed_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	CanBePolled             bool       `json:"can_be_polled" example:"false"`
+	SendAttemptCount        uint       `json:"send_attempt_count" example:"0"`
+	MaxSendAttempts         uint       `json:"max_send_attempts" example:"1"`
+	ReceivedAt              *time.Time `json:"received_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	FailureReason           *string    `json:"failure_reason" example:"UNKNOWN"`
 }
 
 // IsSending determines if a message is being sent
@@ -100,9 +105,19 @@ func (message *Message) IsPending() bool {
 	return message.Status == MessageStatusPending
 }
 
+// IsScheduled checks if a message is scheduled
+func (message *Message) IsScheduled() bool {
+	return message.Status == MessageStatusScheduled
+}
+
 // IsExpired checks if a message is expired
 func (message *Message) IsExpired() bool {
 	return message.Status == MessageStatusExpired
+}
+
+// CanBeRescheduled checks if a message can be rescheduled
+func (message *Message) CanBeRescheduled() bool {
+	return message.SendAttemptCount < message.MaxSendAttempts
 }
 
 // IsSent determines if a message has been sent
@@ -122,7 +137,7 @@ func (message *Message) Sent(timestamp time.Time) *Message {
 
 // Failed registers a message as failed
 func (message *Message) Failed(timestamp time.Time, errorMessage string) *Message {
-	message.SentAt = &timestamp
+	message.FailedAt = &timestamp
 	message.Status = MessageStatusFailed
 	message.FailureReason = &errorMessage
 	message.updateOrderTimestamp(timestamp)
@@ -131,7 +146,7 @@ func (message *Message) Failed(timestamp time.Time, errorMessage string) *Messag
 
 // Delivered registers a message as delivered
 func (message *Message) Delivered(timestamp time.Time) *Message {
-	message.SentAt = &timestamp
+	message.DeliveredAt = &timestamp
 	message.Status = MessageStatusDelivered
 	message.updateOrderTimestamp(timestamp)
 	return message
@@ -139,8 +154,18 @@ func (message *Message) Delivered(timestamp time.Time) *Message {
 
 // Expired registers a message as expired
 func (message *Message) Expired(timestamp time.Time) *Message {
-	message.SentAt = &timestamp
+	message.ExpiredAt = &timestamp
 	message.Status = MessageStatusExpired
+	message.CanBePolled = true
+	message.SendAttemptCount++
+	message.updateOrderTimestamp(timestamp)
+	return message
+}
+
+// NotificationScheduled registers a message as scheduled
+func (message *Message) NotificationScheduled(timestamp time.Time) *Message {
+	message.NotificationScheduledAt = &timestamp
+	message.Status = MessageStatusScheduled
 	message.updateOrderTimestamp(timestamp)
 	return message
 }

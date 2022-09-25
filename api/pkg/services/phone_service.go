@@ -59,6 +59,14 @@ func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthUs
 	return phones, nil
 }
 
+// Load a phone by userID and owner
+func (service *PhoneService) Load(ctx context.Context, userID entities.UserID, owner string) (*entities.Phone, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	return service.repository.Load(ctx, userID, owner)
+}
+
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
 	PhoneNumber               phonenumbers.PhoneNumber
@@ -103,7 +111,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+	if err = service.dispatcher.DispatchSync(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for phone with id [%s]", event.Type(), phone.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -142,7 +150,7 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+	if err = service.dispatcher.DispatchSync(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for phone with id [%s]", event.Type(), phone.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -160,6 +168,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		FcmToken:                 params.FcmToken,
 		MessagesPerMinute:        0,
 		MessageExpirationSeconds: 0,
+		MaxSendAttempts:          1,
 		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),

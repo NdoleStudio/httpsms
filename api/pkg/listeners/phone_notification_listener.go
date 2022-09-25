@@ -33,8 +33,9 @@ func NewNotificationListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:               l.onMessageAPISent,
-		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
+		events.EventTypeMessageAPISent:          l.onMessageAPISent,
+		events.EventTypeMessageSendRetry:        l.onMessageSendRetry,
+		events.EventTypeMessageNotificationSend: l.onMessageNotificationSend,
 	}
 }
 
@@ -52,6 +53,8 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 	sendParams := &services.PhoneNotificationScheduleParams{
 		UserID:    payload.UserID,
 		Owner:     payload.Owner,
+		Contact:   payload.Contact,
+		Content:   payload.Content,
 		Source:    event.Source(),
 		MessageID: payload.ID,
 	}
@@ -64,12 +67,40 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 	return nil
 }
 
-// onMessageNotificationScheduled handles the events.EventTypeMessageNotificationScheduled event
-func (listener *PhoneNotificationListener) onMessageNotificationScheduled(ctx context.Context, event cloudevents.Event) error {
+// onMessageSendRetry handles the events.EventTypeMessageSendRetry event
+func (listener *PhoneNotificationListener) onMessageSendRetry(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
-	var payload events.MessageNotificationScheduledPayload
+	var payload events.MessageSendRetryPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	sendParams := &services.PhoneNotificationScheduleParams{
+		UserID:    payload.UserID,
+		Owner:     payload.Owner,
+		Contact:   payload.Contact,
+		Content:   payload.Content,
+		Source:    event.Source(),
+		MessageID: payload.MessageID,
+	}
+
+	if err := listener.service.Schedule(ctx, sendParams); err != nil {
+		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageNotificationSend handles the events.EventTypeMessageNotificationSend event
+func (listener *PhoneNotificationListener) onMessageNotificationSend(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageNotificationSendPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

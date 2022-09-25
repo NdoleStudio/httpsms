@@ -68,7 +68,7 @@ func (h *EventsHandler) Dispatch(c *fiber.Ctx) error {
 		return h.responseForbidden(c)
 	}
 
-	err := h.service.Dispatch(ctx, request)
+	err := h.service.DispatchSync(ctx, request)
 	if err != nil {
 		msg := fmt.Sprintf("cannot dispatch event with ID [%s]", request.ID())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

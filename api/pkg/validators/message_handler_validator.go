@@ -6,6 +6,10 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/services"
+	"github.com/palantir/stacktrace"
+
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
@@ -16,18 +20,21 @@ import (
 // MessageHandlerValidator validates models used in handlers.MessageHandler
 type MessageHandlerValidator struct {
 	validator
-	logger telemetry.Logger
-	tracer telemetry.Tracer
+	logger       telemetry.Logger
+	tracer       telemetry.Tracer
+	phoneService *services.PhoneService
 }
 
 // NewMessageHandlerValidator creates a new handlers.MessageHandler validator
 func NewMessageHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
+	phoneService *services.PhoneService,
 ) (v *MessageHandlerValidator) {
 	return &MessageHandlerValidator{
-		logger: logger.WithService(fmt.Sprintf("%T", v)),
-		tracer: tracer,
+		logger:       logger.WithService(fmt.Sprintf("%T", v)),
+		tracer:       tracer,
+		phoneService: phoneService,
 	}
 }
 
@@ -55,7 +62,12 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 }
 
 // ValidateMessageSend validates the requests.MessageSend request
-func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, request requests.MessageSend) url.Values {
+func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context, userID entities.UserID, request requests.MessageSend) url.Values {
+	ctx, span := validator.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := validator.tracer.CtxLogger(validator.logger, span)
+
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
@@ -75,7 +87,22 @@ func (validator MessageHandlerValidator) ValidateMessageSend(_ context.Context, 
 		},
 	})
 
-	return v.ValidateStruct()
+	result := v.ValidateStruct()
+	if len(result) != 0 {
+		return result
+	}
+
+	_, err := validator.phoneService.Load(ctx, userID, request.From)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		result.Add("from", fmt.Sprintf("no phone found with with 'from' number [%s]. install the android app on your phone to start sending messages", request.From))
+	}
+
+	if err != nil {
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("could not load phone for user [%s] and phone [%s]", userID, request.From))))
+		result.Add("from", fmt.Sprintf("could not validate 'from' number [%s], please try again later", request.From))
+	}
+
+	return result
 }
 
 // ValidateMessageOutstanding validates the requests.MessageOutstanding request

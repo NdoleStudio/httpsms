@@ -298,6 +298,7 @@ func (container *Container) MessageHandlerValidator() (validator *validators.Mes
 	return validators.NewMessageHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
+		container.PhoneService(),
 	)
 }
 
@@ -644,6 +645,7 @@ func (container *Container) MessageService() (service *services.MessageService) 
 		container.Tracer(),
 		container.MessageRepository(),
 		container.EventDispatcher(),
+		container.PhoneService(),
 	)
 }
 
@@ -759,9 +761,13 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 		uptrace.WithServiceName(namespace),
 		uptrace.WithServiceVersion(version),
 	)
+
 	// Send buffered spans and free resources.
 	return func() {
-		uptrace.Shutdown(context.Background())
+		err := uptrace.Shutdown(context.Background())
+		if err != nil {
+			container.logger.Error(err)
+		}
 	}
 }
 

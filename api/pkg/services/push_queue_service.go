@@ -26,5 +26,5 @@ type PushQueueConfig struct {
 // PushQueue is a push queue
 type PushQueue interface {
 	// Enqueue adds a message to the push queue
-	Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) error
+	Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) (string, error)
 }

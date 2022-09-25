@@ -77,7 +77,7 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	if errors := h.validator.ValidateMessageSend(ctx, request.Sanitize()); len(errors) != 0 {
+	if errors := h.validator.ValidateMessageSend(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending message")

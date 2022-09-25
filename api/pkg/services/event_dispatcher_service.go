@@ -43,8 +43,8 @@ func NewEventDispatcher(
 	}
 }
 
-// Dispatch dispatches a new event
-func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudevents.Event) error {
+// DispatchSync dispatches a new event
+func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
 
@@ -78,12 +78,19 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
+	if _, err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
 		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	return nil
+}
+
+// Dispatch a new event by adding it to the queue to be processed async
+func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := dispatcher.tracer.Start(ctx)
+	defer span.End()
+	return dispatcher.DispatchWithTimeout(ctx, event, time.Nanosecond)
 }
 
 // Subscribe a listener to an event

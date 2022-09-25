@@ -36,7 +36,7 @@ func NewGooglePushQueue(
 }
 
 // Enqueue a task to the queue
-func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) error {
+func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) (queueID string, err error) {
 	ctx, span := queue.tracer.Start(ctx)
 	defer span.End()
 
@@ -70,7 +70,7 @@ func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, 
 	queueTask, err := queue.client.CreateTask(ctx, req)
 	if err != nil {
 		msg := fmt.Sprintf("cannot schedule task %s to URL: %s", string(task.Body), task.URL)
-		return queue.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return queueID, queue.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf(
@@ -80,7 +80,7 @@ func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, 
 		queueTask.ScheduleTime,
 	))
 
-	return nil
+	return queueTask.Name, nil
 }
 
 func (queue *googlePushQueue) httpMethodToProtoHTTPMethod(httpMethod string) taskspb.HttpMethod {

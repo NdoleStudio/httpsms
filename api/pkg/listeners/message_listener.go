@@ -107,6 +107,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 		ID:        payload.ID,
 		UserID:    payload.UserID,
 		Timestamp: event.Time(),
+		Source:    event.Source(),
 	}
 
 	if err = listener.service.HandleMessageSending(ctx, handleParams); err != nil {
@@ -144,6 +145,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 	handleParams := services.HandleMessageParams{
 		ID:        payload.ID,
 		UserID:    payload.UserID,
+		Source:    event.Source(),
 		Timestamp: payload.Timestamp,
 	}
 
@@ -325,7 +327,7 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 		MessageExpirationDuration: payload.MessageExpirationDuration,
 	}
 	if err := listener.service.ScheduleExpirationCheck(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot exchedule expiration check for  MessageID [%s] and userID [%s]", storeParams.MessageID, storeParams.UserID)
+		msg := fmt.Sprintf("cannot exchedule expiration check for  ID [%s] and userID [%s]", storeParams.MessageID, storeParams.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -349,7 +351,7 @@ func (listener *MessageListener) onMessageSendExpiredCheck(ctx context.Context, 
 		Source:    event.Source(),
 	}
 	if err := listener.service.CheckExpired(ctx, checkParams); err != nil {
-		msg := fmt.Sprintf("cannot check expiration for  MessageID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID)
+		msg := fmt.Sprintf("cannot check expiration for  ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -370,10 +372,11 @@ func (listener *MessageListener) onMessageSendExpired(ctx context.Context, event
 	expiredParams := services.HandleMessageParams{
 		ID:        payload.MessageID,
 		UserID:    payload.UserID,
+		Source:    event.Source(),
 		Timestamp: payload.Timestamp,
 	}
 	if err := listener.service.HandleMessageExpired(ctx, expiredParams); err != nil {
-		msg := fmt.Sprintf("cannot handle event [%s] for MessageID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID)
+		msg := fmt.Sprintf("cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

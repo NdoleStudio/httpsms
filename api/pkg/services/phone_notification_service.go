@@ -19,6 +19,7 @@ import (
 
 // PhoneNotificationService sends out notifications to mobile phones
 type PhoneNotificationService struct {
+	service
 	logger                      telemetry.Logger
 	tracer                      telemetry.Tracer
 	phoneNotificationRepository repositories.PhoneNotificationRepository
@@ -89,6 +90,8 @@ type PhoneNotificationScheduleParams struct {
 	UserID    entities.UserID
 	Owner     string
 	Source    string
+	Contact   string
+	Content   string
 	MessageID uuid.UUID
 }
 
@@ -121,16 +124,54 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	event, err := service.createEvent(params.Source, notification)
+	if err = service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
+		return service.tracer.WrapErrorSpan(span, err)
+	}
+
+	if err = service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
+		return service.tracer.WrapErrorSpan(span, err)
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] notification scheduled for [%s] with id [%s]", params.MessageID, notification.ScheduledAt, notification.ID))
+	return nil
+}
+
+func (service *PhoneNotificationService) dispatchMessageNotificationSend(ctx context.Context, source string, notification *entities.PhoneNotification) error {
+	event, err := service.createMessageNotificationSendEvent(source, &events.MessageNotificationSendPayload{
+		MessageID:      notification.MessageID,
+		UserID:         notification.UserID,
+		PhoneID:        notification.PhoneID,
+		ScheduledAt:    notification.ScheduledAt,
+		NotificationID: notification.ID,
+	})
 	if err != nil {
-		return stacktrace.Propagate(err, fmt.Sprintf("cannot create cloud event for notification [%s]", notification.ID))
+		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSend, notification.ID))
 	}
 
 	if err = service.eventDispatcher.DispatchWithTimeout(ctx, event, notification.ScheduledAt.Sub(time.Now())); err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch event [%s] for notification [%s]", event.Type(), notification.ID))
 	}
+	return nil
+}
 
-	ctxLogger.Info(fmt.Sprintf("message with id [%s] notification scheduled for [%s] with id [%s]", params.MessageID, notification.ScheduledAt, notification.ID))
+func (service *PhoneNotificationService) dispatchMessageNotificationScheduled(ctx context.Context, params *PhoneNotificationScheduleParams, notification *entities.PhoneNotification) error {
+	event, err := service.createMessageNotificationScheduledEvent(params.Source, &events.MessageNotificationScheduledPayload{
+		MessageID:      notification.MessageID,
+		Owner:          params.Owner,
+		Contact:        params.Contact,
+		Content:        params.Content,
+		UserID:         notification.UserID,
+		PhoneID:        notification.PhoneID,
+		ScheduledAt:    notification.ScheduledAt,
+		NotificationID: notification.ID,
+	})
+	if err != nil {
+		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationScheduled, notification.ID))
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		return stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch event [%s] for notification [%s]", event.Type(), notification.ID))
+	}
 	return nil
 }
 
@@ -148,7 +189,7 @@ func (service *PhoneNotificationService) handleNotificationFailed(ctx context.Co
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationFailed, params.PhoneNotificationID))
 	}
 
-	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID))
 	}
 
@@ -169,7 +210,7 @@ func (service *PhoneNotificationService) handleNotificationSent(ctx context.Cont
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSent, params.PhoneNotificationID))
 	}
 
-	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID))
 	}
 
@@ -177,28 +218,12 @@ func (service *PhoneNotificationService) handleNotificationSent(ctx context.Cont
 	return nil
 }
 
-func (service *PhoneNotificationService) createEvent(source string, notification *entities.PhoneNotification) (cloudevents.Event, error) {
-	event := cloudevents.NewEvent()
+func (service *PhoneNotificationService) createMessageNotificationScheduledEvent(source string, payload *events.MessageNotificationScheduledPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessageNotificationScheduled, source, payload)
+}
 
-	event.SetSource(source)
-	event.SetType(events.EventTypeMessageNotificationScheduled)
-	event.SetTime(time.Now().UTC())
-	event.SetID(uuid.New().String())
-
-	payload := events.MessageNotificationScheduledPayload{
-		MessageID:      notification.MessageID,
-		UserID:         notification.UserID,
-		PhoneID:        notification.PhoneID,
-		ScheduledAt:    notification.ScheduledAt,
-		NotificationID: notification.ID,
-	}
-
-	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {
-		msg := fmt.Sprintf("cannot encode %T [%#+v] as JSON", payload, payload)
-		return event, stacktrace.Propagate(err, msg)
-	}
-
-	return event, nil
+func (service *PhoneNotificationService) createMessageNotificationSendEvent(source string, payload *events.MessageNotificationSendPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.EventTypeMessageNotificationSend, source, payload)
 }
 
 func (service *PhoneNotificationService) createMessageNotificationSentEvent(source string, phone *entities.Phone, fcmMessageID string, params *PhoneNotificationSendParams) (cloudevents.Event, error) {
