@@ -2104,7 +2104,8 @@
 
 "@panva/asn1.js@^1.0.0":
   version "1.0.0"
-  resolved "https://registry.npmjs.org/@panva/asn1.js/-/asn1.js-1.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/@panva/asn1.js/-/asn1.js-1.0.0.tgz#dd55ae7b8129e02049f009408b97c61ccf9032f6"
+  integrity sha512-UdkG3mLEqXgnlKsWanWcgb6dOjUzJ+XC5f+aWw30qrtjxeNUSfKX1cd5FBzOaXQumoe9nIqeZUvrRJS03HCCtw==
 
 "@polka/url@^1.0.0-next.20":
   version "1.0.0-next.21"
@@ -7121,8 +7122,9 @@ jiti@^1.9.2:
   resolved "https://registry.npmjs.org/jiti/-/jiti-1.13.0.tgz"
 
 jose@^2.0.5:
-  version "2.0.5"
-  resolved "https://registry.npmjs.org/jose/-/jose-2.0.5.tgz"
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-2.0.6.tgz#894ba19169af339d3911be933f913dd02fc57c7c"
+  integrity sha512-FVoPY7SflDodE4lknJmbAHSUjLCzE2H1F6MS0RYKMQ8SR+lNccpMf8R4eqkNYyyUjR5qZReOzZo5C5YiHOCjjg==
   dependencies:
     "@panva/asn1.js" "^1.0.0"
 
@@ -11266,9 +11268,10 @@ vuetify-loader@^1.7.3:
     file-loader "^6.2.0"
     loader-utils "^2.0.0"
 
-vuetify@^2.6, vuetify@^2.6.1:
-  version "2.6.6"
-  resolved "https://registry.npmjs.org/vuetify/-/vuetify-2.6.6.tgz"
+vuetify@^2.6, vuetify@^2.6.10:
+  version "2.6.10"
+  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-2.6.10.tgz#b86cd7a97bf8cd3828a72c349795b5b3c539ebc2"
+  integrity sha512-fgUeRDDCwYkwu6WGEEKGe7IdfzOsXJCZGrqkn1pcS2ycuoDL8mR2/dejH5iFNnBY6MnsT365PAGn0J+9otjfQg==
 
 vuex@^3.6.2:
   version "3.6.2"
