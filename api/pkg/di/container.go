@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/uptrace/uptrace-go/uptrace"
+
 	"github.com/NdoleStudio/httpsms/pkg/emails"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
@@ -723,7 +725,7 @@ func (container *Container) UserRepository() repositories.UserRepository {
 // InitializeTraceProvider initializes the open telemetry trace provider
 func (container *Container) InitializeTraceProvider(version string, namespace string) func() {
 	if isLocal() {
-		return container.initializeJaegerTraceProvider(version, namespace)
+		return container.initializeUptraceProvider(version, namespace)
 	}
 	return container.initializeGoogleTraceProvider(version, namespace)
 }
@@ -746,6 +748,20 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 
 	return func() {
 		_ = exporter.Shutdown(context.Background())
+	}
+}
+
+func (container *Container) initializeUptraceProvider(version string, namespace string) (flush func()) {
+	container.logger.Debug("initializing uptrace provider")
+	// Configure OpenTelemetry with sensible defaults.
+	uptrace.ConfigureOpentelemetry(
+		uptrace.WithDSN(os.Getenv("UPTRACE_DSN")),
+		uptrace.WithServiceName(namespace),
+		uptrace.WithServiceVersion(version),
+	)
+	// Send buffered spans and free resources.
+	return func() {
+		uptrace.Shutdown(context.Background())
 	}
 }
 

@@ -48,7 +48,7 @@ class LogtailTree: Timber.DebugTree() {
         Thread {
             try {
                 client.newCall(request).execute()
-            } catch(ex: Exception) {
+            } catch(_: Exception) {
             }
         }.start()
     }

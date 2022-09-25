@@ -226,6 +226,10 @@ export const mutations = {
     state.archivedThreads = payload
   },
 
+  setLoadingThreads(state: State, payload: boolean) {
+    state.loadingThreads = payload
+  },
+
   resetState(state: State) {
     state.threads = []
     state.phones = []
@@ -250,10 +254,10 @@ export type SendMessageRequest = {
 export const actions = {
   async loadThreads(context: ActionContext<State, State>) {
     if (
-      context.getters.getOwner === 0 &&
+      context.getters.getOwner === null &&
       context.getters.getPhones.length === 0
     ) {
-      console.error('owner does not exist')
+      context.commit('setLoadingThreads', false)
       return
     }
 
