@@ -18,7 +18,7 @@ class HttpSmsApiService(private val apiKey: String) {
     // private val baseURL = URI("https://49b1-145-14-19-43.ngrok.io")
     private val baseURL = URI("https://api.httpsms.com")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().retryOnConnectionFailure(true).build()
 
     init {
         getLogger(OkHttpClient::class.java.name).level = Level.FINE

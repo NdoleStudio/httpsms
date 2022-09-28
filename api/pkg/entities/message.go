@@ -149,6 +149,11 @@ func (message *Message) Failed(timestamp time.Time, errorMessage string) *Messag
 func (message *Message) Delivered(timestamp time.Time) *Message {
 	message.DeliveredAt = &timestamp
 	message.Status = MessageStatusDelivered
+	if message.SendDuration == nil {
+		sendDuration := timestamp.UnixNano() - message.RequestReceivedAt.UnixNano()
+		message.SendDuration = &sendDuration
+
+	}
 	message.updateOrderTimestamp(timestamp)
 	return message
 }
