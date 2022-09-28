@@ -1,14 +1,13 @@
 <template>
   <div>
-    <v-app-bar elevation="0" color="#121212" height="100px">
+    <v-app-bar elevation="0" color="#121212" height="70" fixed>
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
             <h2
-              class="text--primary"
+              class="text--primary text-h4"
               :class="{
-                'text-h4': $vuetify.breakpoint.lgAndUp,
-                'text-h5': $vuetify.breakpoint.mdAndDown,
+                'mt-5': $vuetify.breakpoint.mdAndDown,
               }"
             >
               <v-avatar
@@ -27,7 +26,7 @@
             <v-spacer></v-spacer>
             <v-btn
               exact-path
-              class="primary mt-5"
+              class="primary mt-5 mb-5"
               :large="$vuetify.breakpoint.lgAndUp"
               :to="{ name: 'login' }"
             >
@@ -44,11 +43,17 @@
           cols="12"
           md="4"
           :class="{
-            'text-center': $vuetify.breakpoint.mdAndDown,
+            'text-center pt-16': $vuetify.breakpoint.mdAndDown,
             'py-16': $vuetify.breakpoint.lgAndUp,
           }"
         >
-          <h1 class="text-h2" :class="{ 'mt-16': $vuetify.breakpoint.lgAndUp }">
+          <h1
+            class="text-h2 font-weight-bold gradient-header"
+            :class="{
+              'mt-16': $vuetify.breakpoint.lgAndUp,
+              'mt-10': $vuetify.breakpoint.mdAndUp,
+            }"
+          >
             Convert your android phone into an SMS gateway.
           </h1>
           <h2 class="text--secondary text-h5 mt-8 mb-8">
@@ -359,5 +364,12 @@ export default Vue.extend({
 
 .min-h-650 {
   min-height: 650px;
+}
+
+.gradient-header {
+  color: #1ad37f;
+  background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 </style>
