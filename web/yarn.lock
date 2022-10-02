@@ -6069,6 +6069,11 @@ hex-color-regex@^1.1.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/hex-color-regex/-/hex-color-regex-1.1.0.tgz"
 
+highlight.js@^11.5.1:
+  version "11.6.0"
+  resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-11.6.0.tgz#a50e9da05763f1bb0c1322c8f4f755242cff3f5a"
+  integrity sha512-ig1eqDzJaB0pqEvlPVIpSSyMaO92bH1N2rJpLMN/nX396wTpDA4Eq0uK+7I/2XG17pFaaKE0kjV/XPeGt7Evjw==
+
 hmac-drbg@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/hmac-drbg/-/hmac-drbg-1.0.1.tgz"
@@ -8199,6 +8204,13 @@ nth-check@^2.0.1:
 num2fraction@^1.2.2:
   version "1.2.2"
   resolved "https://registry.npmjs.org/num2fraction/-/num2fraction-1.2.2.tgz"
+
+nuxt-highlightjs@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/nuxt-highlightjs/-/nuxt-highlightjs-1.0.3.tgz#6a7aa3450f596e1531fc1fd91c2157938dd708ce"
+  integrity sha512-3UEEyVYwjN+tg+gFF2fC/K4+xMiGCQlZ+3c19f3MCa5l90JtV7QXfU/2NpTq3yY3BeAgAYSwLVbP1SWOhVsXaw==
+  dependencies:
+    highlight.js "^11.5.1"
 
 nuxt@^2.15.8:
   version "2.15.8"

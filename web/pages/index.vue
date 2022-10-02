@@ -249,36 +249,174 @@
               </v-timeline>
             </v-col>
             <v-col
-              v-if="$vuetify.breakpoint.lgAndUp"
               cols="12"
               md="7"
-              class="d-flex align-center"
-              :class="{ 'min-h-650': $vuetify.breakpoint.lgAndUp }"
+              :class="{ 'pt-16 pb-16': $vuetify.breakpoint.lgAndUp }"
             >
-              <transition name="fade">
-                <v-img
-                  v-if="step1Hover"
-                  contain
-                  max-height="600"
-                  :src="require('assets/img/phone-api-key.png')"
-                ></v-img>
-              </transition>
-              <transition name="fade">
-                <v-img
-                  v-if="step2Hover && !step1Hover"
-                  contain
-                  max-height="600"
-                  :src="require('assets/img/phone-login.png')"
-                ></v-img>
-              </transition>
-              <transition name="fade">
-                <v-img
-                  v-if="!step1Hover && !step2Hover"
-                  contain
-                  class="mt-n16"
-                  :src="require('assets/img/code-snippet.png')"
-                ></v-img>
-              </transition>
+              <div class="w-full mt-4">
+                <v-tabs v-model="selectedTab" show-arrows>
+                  <v-tab href="#javascript">
+                    <v-icon color="#efd81d" class="mr-1">{{
+                      mdiLanguageJavascript
+                    }}</v-icon>
+                    Javascript
+                  </v-tab>
+                  <v-tab href="#php">
+                    <v-icon color="#777bb3" class="mr-2">{{
+                      mdiLanguagePhp
+                    }}</v-icon>
+                    PHP
+                  </v-tab>
+                  <v-tab href="#go">
+                    <v-icon color="#00aed8" class="mr-2">{{
+                      mdiLanguageGo
+                    }}</v-icon>
+                    Go
+                  </v-tab>
+                  <v-tab href="#java">
+                    <v-icon color="#0c89c7" class="mr-2">{{
+                      mdiLanguageJava
+                    }}</v-icon>
+                    Java
+                  </v-tab>
+                  <v-tab href="#curl">
+                    <v-icon color="primary" class="mr-2">{{
+                      mdiPowershell
+                    }}</v-icon>
+                    cURL
+                  </v-tab>
+                  <v-tab href="#c-sharp">
+                    <v-icon color="#68217a" class="mr-2">{{
+                      mdiLanguageCsharp
+                    }}</v-icon>
+                    c-sharp
+                  </v-tab>
+                </v-tabs>
+                <v-tabs-items v-model="selectedTab">
+                  <v-tab-item value="javascript">
+                    <pre v-highlight class="javascript w-full mt-n2 mb-n13">
+<code>let apiKey = "Get API Key from https://httpsms.com/settings";
+
+fetch('https://api.httpsms.com/v1/messages/send', {
+    method: 'POST',
+    headers: {
+        'x-api-key': apiKey,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        "content": "This is a sample text message",
+        "from": "+18005550199",
+        "to": "+18005550100"
+    })
+})
+.then(res => res.json())
+.then((data) => console.log(data));
+</code>
+                    </pre>
+                  </v-tab-item>
+                  <v-tab-item value="php">
+                    <pre v-highlight class="php w-full mt-n2 mb-n13">
+<code>&#60;?php
+// initialize guzzle client https://github.com/guzzle/guzzle
+$client = new GuzzleHttp\Client();
+
+$apiKey = "Get API Key from https://httpsms.com/settings";
+
+$res = $client->request('POST', 'https://api.httpsms.com/v1/messages/send', [
+  'headers' => [
+    'x-api-key' => $apiKey,
+  ],
+  'json'    => [
+    'content' => 'This is a sample text message',
+    'from'    => "+18005550199",
+    'to'      => '+18005550100'
+  ]
+]);
+
+echo $res->getBody();
+</code>
+                    </pre>
+                  </v-tab-item>
+                  <v-tab-item value="go">
+                    <pre v-highlight class="go w-full mt-n2 mb-n13">
+<code>import "github.com/NdoleStudio/httpsms-go"
+
+client := htpsms.New(htpsms.WithAPIKey(/* API Key from https://httpsms.com/settings */))
+
+client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
+    Content: "This is a sample text message",
+    From:    "+18005550199",
+    To:      "+18005550100",
+})
+</code>
+                    </pre>
+                  </v-tab-item>
+                  <v-tab-item value="java">
+                    <pre v-highlight class="java w-full mt-n2 mb-n13">
+<code>var client = HttpClient.newHttpClient();
+
+var apiKey = "Get API Key from https://httpsms.com/settings";
+
+JSONObject request = new JSONObject();
+request.put("content", "This is a sample text message");
+request.put("from", "+18005550199")
+request.put("to", "+18005550100")
+
+// create a request
+var request = HttpRequest.newBuilder()
+  .uri(URI.create("https://api.httpsms.com/v1/messages/send"))
+  .header("accept", "application/json")
+  .header("x-api-key", apiKey)
+  .setEntity(new StringEntity(request.toString()))
+  .POST()
+  .build();
+
+// use the client to send the request
+var response = client.send(request, new JsonBodyHandler<>(APOD.class));
+
+// the response:
+System.out.println(response.body().get());
+</code>
+                    </pre>
+                  </v-tab-item>
+                  <v-tab-item value="curl">
+                    <pre v-highlight class="bash w-full mt-n2 mb-n13">
+<code>curl --location --request POST 'https://api.httpsms.com/v1/messages/send' \
+--header 'x-api-key: Get API Key from https://httpsms.com/settings' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "from": "+18005550199",
+    "to": "+18005550100",
+    "content": "This is a sample text message"
+}'
+</code>
+                    </pre>
+                  </v-tab-item>
+                  <v-tab-item value="c-sharp">
+                    <pre v-highlight class="c-sharp w-full mt-n2 mb-n13">
+<code>var client = new HttpClient();
+client.DefaultRequestHeaders.Add("x-api-key", ""/* Get API Key from https://httpsms.com/settings */);
+
+var response = await client.PostAsync(
+    "https://api.httpsms.com/v1/messages/send",
+    new StringContent(
+        JsonSerializer.Serialize(new {
+            from = "+18005550199",
+            To = "+18005550100",
+            Content = "This is a sample text message",
+        }),
+        Encoding.UTF8,
+        "application/json"
+    )
+);
+
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+</code>
+                    </pre>
+                  </v-tab-item>
+                </v-tabs-items>
+              </div>
             </v-col>
           </v-row>
         </v-col>
@@ -291,6 +429,7 @@
             <v-btn
               text
               rounded
+              outlined
               class="my-2"
               :href="$store.getters.getAppData.documentationUrl"
               >Documentation</v-btn
@@ -299,6 +438,7 @@
               text
               rounded
               class="my-2"
+              outlined
               :href="$store.getters.getAppData.githubUrl"
               >Open Source</v-btn
             >
@@ -328,6 +468,12 @@ import {
   mdiTallyMark1,
   mdiTallyMark3,
   mdiTallyMark2,
+  mdiLanguageJavascript,
+  mdiLanguagePhp,
+  mdiLanguageCsharp,
+  mdiLanguageJava,
+  mdiPowershell,
+  mdiLanguageGo,
 } from '@mdi/js'
 
 export default Vue.extend({
@@ -345,8 +491,13 @@ export default Vue.extend({
       mdiTallyMark1,
       mdiTallyMark2,
       mdiTallyMark3,
-      step1Hover: false,
-      step2Hover: false,
+      mdiLanguageJavascript,
+      mdiLanguagePhp,
+      mdiLanguageCsharp,
+      mdiLanguageJava,
+      mdiPowershell,
+      mdiLanguageGo,
+      selectedTab: 'javascript',
     }
   },
 })

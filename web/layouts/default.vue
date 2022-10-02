@@ -117,5 +117,8 @@ export default class DefaultLayout extends Vue {
       border-radius: 8px;
     }
   }
+  code.hljs {
+    font-size: 16px;
+  }
 }
 </style>
