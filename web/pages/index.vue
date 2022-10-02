@@ -373,7 +373,7 @@ var request = HttpRequest.newBuilder()
   .build();
 
 // use the client to send the request
-var response = client.send(request, new JsonBodyHandler<>(APOD.class));
+var response = client.send(request, new JsonBodyHandler&#60;&#62;(APOD.class));
 
 // the response:
 System.out.println(response.body().get());
