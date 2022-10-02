@@ -137,6 +137,18 @@
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item :to="{ name: 'billing' }" exact>
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>{{ mdiFinance }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  Usage & Billing
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
           <v-list-item @click.prevent="logout">
             <v-list-item-icon class="pl-2">
               <v-icon dense>{{ mdiLogout }}</v-icon>
@@ -162,6 +174,7 @@ import {
   mdiAccountCog,
   mdiLogout,
   mdiDownload,
+  mdiFinance,
   mdiPackageUp,
   mdiPackageDown,
   mdiDotsVertical,
@@ -178,6 +191,7 @@ export default class MessageThreadHeader extends Vue {
   mdiLogout = mdiLogout
   mdiDownload = mdiDownload
   mdiPackageUp = mdiPackageUp
+  mdiFinance = mdiFinance
   mdiPackageDown = mdiPackageDown
   mdiDotsVertical = mdiDotsVertical
   mdiCircle = mdiCircle

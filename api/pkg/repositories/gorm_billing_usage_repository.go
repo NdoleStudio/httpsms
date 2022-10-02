@@ -87,13 +87,17 @@ func (repository *gormBillingUsageRepository) GetCurrent(ctx context.Context, us
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
+			loadedUsage := &entities.BillingUsage{}
 			result := tx.WithContext(ctx).
+				Where("user_id = ?", userID).
 				Where("start_timestamp = ?", now.New(timestamp).BeginningOfMonth()).
-				First(usage)
+				First(&loadedUsage)
 
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 				return tx.WithContext(ctx).Create(usage).Error
 			}
+
+			*usage = *loadedUsage
 			return result.Error
 		},
 	)

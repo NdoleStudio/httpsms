@@ -12,6 +12,7 @@ type BillingUsage struct {
 	UserID           UserID    `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	SentMessages     uint      `json:"sent_messages" example:"321"`
 	ReceivedMessages uint      `json:"received_messages" example:"465"`
+	TotalCost        uint      `json:"total_cost" example:"0"`
 	StartTimestamp   time.Time `json:"start_timestamp" example:"2022-01-01T00:00:00+00:00"`
 	EndTimestamp     time.Time `json:"end_timestamp" example:"2022-01-31T23:59:59+00:00"`
 	CreatedAt        time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`

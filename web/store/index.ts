@@ -6,6 +6,7 @@ import { Heartbeat } from '~/models/heartbeat'
 import axios from '~/plugins/axios'
 import { Phone } from '~/models/phone'
 import { User } from '~/models/user'
+import { BillingUsage } from '~/models/billing'
 
 const defaultNotificationTimeout = 3000
 
@@ -35,6 +36,8 @@ export type State = {
   loadingMessages: boolean
   archivedThreads: boolean
   authUser: AuthUser | null
+  billingUsage: BillingUsage | null
+  billingUsageHistory: Array<BillingUsage>
   user: User | null
   phones: Array<Phone>
   threads: Array<MessageThread>
@@ -52,6 +55,8 @@ export const state = (): State => ({
   nextRoute: null,
   axiosError: null,
   loadingThreads: true,
+  billingUsage: null,
+  billingUsageHistory: [],
   archivedThreads: false,
   loadingMessages: true,
   pooling: false,
@@ -115,6 +120,14 @@ export const getters = {
 
   getUser(state: State): User | null {
     return state.user
+  },
+
+  getBillingUsageHistory(state: State): Array<BillingUsage> {
+    return state.billingUsageHistory
+  },
+
+  getBillingUsage(state: State): BillingUsage | null {
+    return state.billingUsage
   },
 
   getOwner(state: State): string | null {
@@ -186,6 +199,12 @@ export const mutations = {
   setThreadId(state: State, payload: string | null) {
     state.threadId = payload
   },
+  setBillingUsageHistory(state: State, payload: Array<BillingUsage>) {
+    state.billingUsageHistory = payload
+  },
+  setBillingUsage(state: State, payload: BillingUsage | null) {
+    state.billingUsage = payload
+  },
   setThreadMessages(state: State, payload: Array<Message>) {
     state.threadMessages = payload
     state.loadingMessages = false
@@ -242,6 +261,8 @@ export const mutations = {
 
   resetState(state: State) {
     state.threads = []
+    state.billingUsage = null
+    state.billingUsageHistory = []
     state.phones = []
     state.user = null
     state.threadId = null
@@ -280,6 +301,16 @@ export const actions = {
       },
     })
     await context.commit('setThreads', response.data.data)
+  },
+
+  async loadBillingUsage(context: ActionContext<State, State>) {
+    const response = await axios.get('/v1/billing/usage')
+    await context.commit('setBillingUsage', response.data.data)
+  },
+
+  async loadBillingUsageHistory(context: ActionContext<State, State>) {
+    const response = await axios.get('/v1/billing/usage-history')
+    await context.commit('setBillingUsageHistory', response.data.data)
   },
 
   async toggleArchive(context: ActionContext<State, State>) {
