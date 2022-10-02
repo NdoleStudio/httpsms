@@ -140,7 +140,6 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
-	ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("New Message [%s]", spew.Sdump(message))))
 	return h.responseOK(c, "outstanding message fetched successfully", message)
 }
 

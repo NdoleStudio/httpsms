@@ -64,7 +64,9 @@ type Container struct {
 // NewContainer creates a new dependency injection container
 func NewContainer(projectID string) (container *Container) {
 	// Set location to UTC
-	now.DefaultConfig.TimeLocation = time.UTC
+	now.DefaultConfig = &now.Config{
+		TimeLocation: time.UTC,
+	}
 
 	container = &Container{
 		projectID: projectID,
@@ -480,6 +482,16 @@ func (container *Container) HeartbeatService() (service *services.HeartbeatServi
 	)
 }
 
+// BillingService creates a new instance of services.BillingService
+func (container *Container) BillingService() (service *services.BillingService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewBillingService(
+		container.Logger(),
+		container.Tracer(),
+		container.BillingUsageRepository(),
+	)
+}
+
 // PhoneService creates a new instance of services.PhoneService
 func (container *Container) PhoneService() (service *services.PhoneService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -649,6 +661,20 @@ func (container *Container) RegisterUserListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.UserService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterBillingListeners registers event listeners for listeners.BillingListener
+func (container *Container) RegisterBillingListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.BillingListener{}))
+	_, routes := listeners.NewBillingListener(
+		container.Logger(),
+		container.Tracer(),
+		container.BillingService(),
 	)
 
 	for event, handler := range routes {

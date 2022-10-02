@@ -71,7 +71,33 @@ func (repository *gormEventRepository) FetchAll(ctx context.Context) (*[]cloudev
 	return &results, nil
 }
 
-// Save saves a new cloudevents.Event
+// Create creates a new cloudevents.Event
+func (repository *gormEventRepository) Create(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	data, err := event.MarshalJSON()
+	if err != nil {
+		return stacktrace.Propagate(err, fmt.Sprintf("cannot marshall event [%s]  and type [%s] into JSON", event.ID(), event.Type()))
+	}
+
+	gormEvent := GormEvent{
+		ID:        uuid.MustParse(event.ID()),
+		Time:      event.Time(),
+		Source:    event.Source(),
+		CreatedAt: event.Time().UTC(),
+		Type:      event.Type(),
+		Data:      datatypes.JSON(data),
+	}
+
+	if err = repository.db.WithContext(ctx).Create(gormEvent).Error; err != nil {
+		return stacktrace.Propagate(err, fmt.Sprintf("cannot create event [%s] and type [%s]", event.ID(), event.Type()))
+	}
+
+	return nil
+}
+
+// Save updates a cloudevents.Event
 func (repository *gormEventRepository) Save(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -85,12 +111,12 @@ func (repository *gormEventRepository) Save(ctx context.Context, event cloudeven
 		ID:        uuid.MustParse(event.ID()),
 		Time:      event.Time(),
 		Source:    event.Source(),
-		CreatedAt: time.Now().UTC(),
+		CreatedAt: event.Time().UTC(),
 		Type:      event.Type(),
 		Data:      datatypes.JSON(data),
 	}
 
-	if err = repository.db.WithContext(ctx).Create(gormEvent).Error; err != nil {
+	if err = repository.db.WithContext(ctx).Save(gormEvent).Error; err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot save event [%s] and type [%s]", event.ID(), event.Type()))
 	}
 

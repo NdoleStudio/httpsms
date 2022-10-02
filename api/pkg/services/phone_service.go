@@ -112,7 +112,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for phone with id [%s]", event.Type(), phone.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -151,7 +151,7 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for phone with id [%s]", event.Type(), phone.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

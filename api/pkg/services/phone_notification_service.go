@@ -193,7 +193,7 @@ func (service *PhoneNotificationService) handleNotificationFailed(ctx context.Co
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationFailed, params.PhoneNotificationID))
 	}
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID))
 	}
 
@@ -214,7 +214,7 @@ func (service *PhoneNotificationService) handleNotificationSent(ctx context.Cont
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSent, params.PhoneNotificationID))
 	}
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID))
 	}
 

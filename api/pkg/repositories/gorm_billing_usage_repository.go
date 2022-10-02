@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -35,7 +36,7 @@ func NewGormBillingUsageRepository(
 }
 
 // RegisterSentMessage registers a message as sent
-func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Context, userID entities.UserID) error {
+func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Context, timestamp time.Time, userID entities.UserID) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -43,12 +44,12 @@ func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Co
 		func(tx *gorm.DB) error {
 			result := tx.WithContext(ctx).
 				Model(&entities.BillingUsage{}).
-				Where("start_timestamp = ?", now.BeginningOfMonth()).
+				Where("start_timestamp = ?", now.New(timestamp).BeginningOfMonth()).
 				Where("user_id = ?", userID).
 				UpdateColumn("sent_messages", gorm.Expr("sent_messages + ?", 1))
 
 			if result.Error == nil && result.RowsAffected == 0 {
-				return tx.Create(repository.createBillingUsage(userID, 1, 0)).Error
+				return tx.Create(repository.createBillingUsage(userID, timestamp, 1, 0)).Error
 			}
 			return result.Error
 		},
@@ -56,7 +57,7 @@ func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Co
 }
 
 // RegisterReceivedMessage registers a message as received
-func (repository *gormBillingUsageRepository) RegisterReceivedMessage(ctx context.Context, userID entities.UserID) error {
+func (repository *gormBillingUsageRepository) RegisterReceivedMessage(ctx context.Context, timestamp time.Time, userID entities.UserID) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -64,12 +65,12 @@ func (repository *gormBillingUsageRepository) RegisterReceivedMessage(ctx contex
 		func(tx *gorm.DB) error {
 			result := tx.WithContext(ctx).
 				Model(&entities.BillingUsage{}).
-				Where("start_timestamp = ?", now.BeginningOfMonth()).
+				Where("start_timestamp = ?", now.New(timestamp).BeginningOfMonth()).
 				Where("user_id = ?", userID).
-				UpdateColumn("sent_messages", gorm.Expr("received_messages + ?", 1))
+				UpdateColumn("received_messages", gorm.Expr("received_messages + ?", 1))
 
 			if result.Error == nil && result.RowsAffected == 0 {
-				return tx.Create(repository.createBillingUsage(userID, 0, 1)).Error
+				return tx.Create(repository.createBillingUsage(userID, timestamp, 0, 1)).Error
 			}
 			return result.Error
 		},
@@ -81,12 +82,13 @@ func (repository *gormBillingUsageRepository) GetCurrent(ctx context.Context, us
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	usage := repository.createBillingUsage(userID, 0, 0)
+	timestamp := time.Now().UTC()
+	usage := repository.createBillingUsage(userID, timestamp, 0, 0)
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
 			result := tx.WithContext(ctx).
-				Where("start_timestamp = ?", now.BeginningOfMonth()).
+				Where("start_timestamp = ?", now.New(timestamp).BeginningOfMonth()).
 				First(usage)
 
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -125,13 +127,13 @@ func (repository *gormBillingUsageRepository) GetHistory(ctx context.Context, us
 	return usages, err
 }
 
-func (repository *gormBillingUsageRepository) createBillingUsage(userID entities.UserID, sent uint, received uint) *entities.BillingUsage {
+func (repository *gormBillingUsageRepository) createBillingUsage(userID entities.UserID, timestamp time.Time, sent uint, received uint) *entities.BillingUsage {
 	return &entities.BillingUsage{
 		ID:               uuid.New(),
 		UserID:           userID,
 		SentMessages:     sent,
 		ReceivedMessages: received,
-		StartTimestamp:   now.BeginningOfMonth(),
-		EndTimestamp:     now.EndOfMonth(),
+		StartTimestamp:   now.New(timestamp).BeginningOfMonth(),
+		EndTimestamp:     now.New(timestamp).EndOfMonth(),
 	}
 }

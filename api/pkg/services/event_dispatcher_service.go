@@ -53,7 +53,7 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err := dispatcher.repository.Save(ctx, event); err != nil {
+	if err := dispatcher.repository.Create(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot save event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

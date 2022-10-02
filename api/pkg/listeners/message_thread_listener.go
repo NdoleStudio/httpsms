@@ -64,7 +64,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 		UserID:    payload.UserID,
 		Timestamp: payload.RequestReceivedAt,
 		Content:   payload.Content,
-		MessageID: payload.ID,
+		MessageID: payload.MessageID,
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
@@ -204,7 +204,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 		Timestamp: payload.Timestamp,
 		UserID:    payload.UserID,
 		Content:   payload.Content,
-		MessageID: payload.ID,
+		MessageID: payload.MessageID,
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {

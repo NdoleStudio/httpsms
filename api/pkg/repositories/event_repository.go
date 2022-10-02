@@ -8,6 +8,9 @@ import (
 
 // EventRepository is responsible for persisting cloudevents.Event
 type EventRepository interface {
+	// Create a new entities.Message
+	Create(ctx context.Context, event cloudevents.Event) error
+
 	// Save a new entities.Message
 	Save(ctx context.Context, event cloudevents.Event) error
 

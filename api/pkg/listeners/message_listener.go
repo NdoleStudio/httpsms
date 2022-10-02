@@ -38,46 +38,16 @@ func NewMessageListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessageAPISent:               l.OnMessageAPISent,
 		events.EventTypeMessagePhoneSending:          l.OnMessagePhoneSending,
 		events.EventTypeMessagePhoneSent:             l.OnMessagePhoneSent,
 		events.EventTypeMessagePhoneDelivered:        l.OnMessagePhoneDelivered,
 		events.EventTypeMessageSendFailed:            l.OnMessagePhoneFailed,
-		events.EventTypeMessagePhoneReceived:         l.OnMessagePhoneReceived,
 		events.EventTypeMessageNotificationSent:      l.onMessageNotificationSent,
 		events.EventTypeMessageNotificationFailed:    l.onMessageNotificationFailed,
 		events.EventTypeMessageSendExpiredCheck:      l.onMessageSendExpiredCheck,
 		events.EventTypeMessageSendExpired:           l.onMessageSendExpired,
 		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
 	}
-}
-
-// OnMessageAPISent handles the events.EventTypeMessageAPISent event
-func (listener *MessageListener) OnMessageAPISent(ctx context.Context, event cloudevents.Event) error {
-	ctx, span := listener.tracer.Start(ctx)
-	defer span.End()
-
-	var payload events.MessageAPISentPayload
-	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	storeParams := services.MessageStoreParams{
-		Owner:     payload.Owner,
-		Contact:   payload.Contact,
-		Content:   payload.Content,
-		UserID:    payload.UserID,
-		ID:        payload.ID,
-		Timestamp: payload.RequestReceivedAt,
-	}
-
-	if _, err := listener.service.StoreSentMessage(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	return nil
 }
 
 // OnMessagePhoneSending handles the events.EventTypeMessagePhoneSending event
@@ -229,47 +199,6 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 
 	if err = listener.service.HandleMessageFailed(ctx, handleParams); err != nil {
 		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
-}
-
-// OnMessagePhoneReceived handles the events.EventTypeMessageAPISent event
-func (listener *MessageListener) OnMessagePhoneReceived(ctx context.Context, event cloudevents.Event) error {
-	ctx, span := listener.tracer.Start(ctx)
-	defer span.End()
-
-	handled, err := listener.repository.Has(ctx, event.ID(), listener.signature(event))
-	if err != nil {
-		msg := fmt.Sprintf("cannot verify if event [%s] has been handled by [%T]", event.ID(), listener.signature(event))
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	ctxLogger := listener.tracer.CtxLogger(listener.logger, span)
-
-	if handled {
-		ctxLogger.Info(fmt.Sprintf("event [%s] has already been handled by [%s]", event.ID(), listener.signature(event)))
-		return nil
-	}
-
-	var payload events.MessagePhoneReceivedPayload
-	if err = event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	storeParams := services.MessageStoreParams{
-		Owner:     payload.Owner,
-		Contact:   payload.Contact,
-		Content:   payload.Content,
-		UserID:    payload.UserID,
-		ID:        payload.ID,
-		Timestamp: payload.Timestamp,
-	}
-
-	if _, err = listener.service.StoreReceivedMessage(ctx, storeParams); err != nil {
-		msg := fmt.Sprintf("cannot store message with ID [%s] for event with ID [%s]", storeParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

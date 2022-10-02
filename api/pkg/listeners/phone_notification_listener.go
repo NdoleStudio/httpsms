@@ -56,7 +56,7 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 		Contact:   payload.Contact,
 		Content:   payload.Content,
 		Source:    event.Source(),
-		MessageID: payload.ID,
+		MessageID: payload.MessageID,
 	}
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {

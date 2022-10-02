@@ -82,7 +82,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -183,7 +183,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	eventPayload := events.MessagePhoneReceivedPayload{
-		ID:        uuid.New(),
+		MessageID: uuid.New(),
 		UserID:    params.UserID,
 		Owner:     phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:   params.Contact,
@@ -191,32 +191,23 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 		Content:   params.Content,
 	}
 
-	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.ID))
+	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.MessageID))
 
 	event, err := service.createMessagePhoneReceivedEvent(params.Source, eventPayload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.ID)
+		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.MessageID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s]", event.Type(), event.ID(), eventPayload.ID))
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s]", event.Type(), event.ID(), eventPayload.MessageID))
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
-
 	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched succesfully", event.ID()))
 
-	message, err := service.repository.Load(ctx, params.UserID, eventPayload.ID)
-	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s]", eventPayload.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s]", message.ID))
-
-	return message, nil
+	return service.storeReceivedMessage(ctx, eventPayload)
 }
 
 func (service *MessageService) handleMessageSentEvent(ctx context.Context, params MessageStoreEventParams, message *entities.Message) error {
@@ -236,7 +227,7 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -260,7 +251,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -290,7 +281,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -315,112 +306,40 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	eventPayload := events.MessageAPISentPayload{
-		ID:                uuid.New(),
+		MessageID:         uuid.New(),
 		UserID:            params.UserID,
+		MaxSendAttempts:   service.maxSendAttempts(ctx, params.UserID, phonenumbers.Format(&params.Owner, phonenumbers.E164)),
 		Owner:             phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:           phonenumbers.Format(&params.Contact, phonenumbers.E164),
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
 	}
 
-	ctxLogger.Info(fmt.Sprintf("creating cloud event for message with ID [%s]", eventPayload.ID))
-
 	event, err := service.createMessageAPISentEvent(params.Source, eventPayload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.ID)
+		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.MessageID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s]", event.Type(), event.ID(), eventPayload.MessageID))
 
-	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s]", event.Type(), event.ID(), eventPayload.ID))
-
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
-
 	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched succesfully", event.ID()))
 
-	message, err := service.repository.Load(ctx, eventPayload.UserID, eventPayload.ID)
-	if err != nil {
-		msg := fmt.Sprintf("cannot load message with ID [%s]", eventPayload.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	ctxLogger.Info(fmt.Sprintf("fetched message with id [%s]", message.ID))
-
-	return message, nil
-}
-
-// MessageStoreParams are parameters for creating a new message
-type MessageStoreParams struct {
-	Owner     string
-	Contact   string
-	Content   string
-	UserID    entities.UserID
-	ID        uuid.UUID
-	Timestamp time.Time
-}
-
-func (service *MessageService) maxSendAttempts(ctx context.Context, userID entities.UserID, owner string) uint {
-	ctx, span := service.tracer.Start(ctx)
-	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
-
-	phone, err := service.phoneService.Load(ctx, userID, owner)
-	if err != nil {
-		msg := fmt.Sprintf("cannot load phone for userID [%s] and owner [%s]. using default max send attempt of 1", userID, owner)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return 1
-	}
-
-	return phone.MaxSendAttemptsSanitized()
-}
-
-// StoreSentMessage a new message
-func (service *MessageService) StoreSentMessage(ctx context.Context, params MessageStoreParams) (*entities.Message, error) {
-	ctx, span := service.tracer.Start(ctx)
-	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
-
-	message := &entities.Message{
-		ID:                params.ID,
-		Owner:             params.Owner,
-		Contact:           params.Contact,
-		UserID:            params.UserID,
-		Content:           params.Content,
-		Type:              entities.MessageTypeMobileTerminated,
-		Status:            entities.MessageStatusPending,
-		RequestReceivedAt: params.Timestamp,
-		CreatedAt:         time.Now().UTC(),
-		UpdatedAt:         time.Now().UTC(),
-		MaxSendAttempts:   service.maxSendAttempts(ctx, params.UserID, params.Owner),
-		OrderTimestamp:    params.Timestamp,
-		SendDuration:      nil,
-		LastAttemptedAt:   nil,
-		SentAt:            nil,
-		ReceivedAt:        nil,
-	}
-
-	if err := service.repository.Store(ctx, message); err != nil {
-		msg := fmt.Sprintf("cannot save message with id [%s]", params.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", message.ID))
-	return message, nil
+	return service.storeSentMessage(ctx, eventPayload)
 }
 
 // StoreReceivedMessage a new message
-func (service *MessageService) StoreReceivedMessage(ctx context.Context, params MessageStoreParams) (*entities.Message, error) {
+func (service *MessageService) storeReceivedMessage(ctx context.Context, params events.MessagePhoneReceivedPayload) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	message := &entities.Message{
-		ID:                params.ID,
+		ID:                params.MessageID,
 		Owner:             params.Owner,
 		UserID:            params.UserID,
 		Contact:           params.Contact,
@@ -435,7 +354,7 @@ func (service *MessageService) StoreReceivedMessage(ctx context.Context, params 
 	}
 
 	if err := service.repository.Store(ctx, message); err != nil {
-		msg := fmt.Sprintf("cannot save message with id [%s]", params.ID)
+		msg := fmt.Sprintf("cannot save message with id [%s]", params.MessageID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -580,7 +499,7 @@ func (service *MessageService) HandleMessageNotificationScheduled(ctx context.Co
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsPending() && !message.IsExpired() {
+	if !message.IsPending() && !message.IsExpired() && !message.IsSending() {
 		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("received scheduled event for message with id [%s] message has status [%s]", message.ID, message.Status)))
 	}
 
@@ -745,13 +664,60 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.eventDispatcher.DispatchSync(ctx, event); err != nil {
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for message with ID [%s]", event.Type(), params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message [%s] has expired with status [%s]", params.MessageID, message.Status))
 	return nil
+}
+
+func (service *MessageService) maxSendAttempts(ctx context.Context, userID entities.UserID, owner string) uint {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	phone, err := service.phoneService.Load(ctx, userID, owner)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load phone for userID [%s] and owner [%s]. using default max send attempt of 2", userID, owner)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return 2
+	}
+
+	return phone.MaxSendAttemptsSanitized()
+}
+
+// storeSentMessage a new message
+func (service *MessageService) storeSentMessage(ctx context.Context, payload events.MessageAPISentPayload) (*entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message := &entities.Message{
+		ID:                payload.MessageID,
+		Owner:             payload.Owner,
+		Contact:           payload.Contact,
+		UserID:            payload.UserID,
+		Content:           payload.Content,
+		Type:              entities.MessageTypeMobileTerminated,
+		Status:            entities.MessageStatusPending,
+		RequestReceivedAt: payload.RequestReceivedAt,
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
+		MaxSendAttempts:   payload.MaxSendAttempts,
+		OrderTimestamp:    payload.RequestReceivedAt,
+	}
+
+	if err := service.repository.Store(ctx, message); err != nil {
+		msg := fmt.Sprintf("cannot save message with id [%s]", payload.MessageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", payload.MessageID))
+	return message, nil
 }
 
 func (service *MessageService) createMessageSendExpiredEvent(source string, payload events.MessageSendExpiredPayload) (cloudevents.Event, error) {

@@ -15,8 +15,8 @@ import java.util.logging.Logger.getLogger
 
 class HttpSmsApiService(private val apiKey: String) {
     private val apiKeyHeader = "x-api-key"
-    // private val baseURL = URI("https://49b1-145-14-19-43.ngrok.io")
-    private val baseURL = URI("https://api.httpsms.com")
+    private val baseURL = URI("https://a276-145-14-19-43.ngrok.io/")
+    //private val baseURL = URI("https://api.httpsms.com")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient.Builder().retryOnConnectionFailure(true).build()
 
