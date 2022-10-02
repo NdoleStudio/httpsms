@@ -93,6 +93,9 @@ func NewContainer(projectID string) (container *Container) {
 
 	container.RegisterNotificationListeners()
 
+	container.RegisterBillingRoutes()
+	container.RegisterBillingListeners()
+
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
 
@@ -324,10 +327,30 @@ func (container *Container) HeartbeatHandler() (h *handlers.HeartbeatHandler) {
 	)
 }
 
+// BillingHandler creates a new instance of handlers.BillingHandler
+func (container *Container) BillingHandler() (h *handlers.BillingHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", h))
+	return handlers.NewBillingHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.BillingHandlerValidator(),
+		container.BillingService(),
+	)
+}
+
 // HeartbeatHandlerValidator creates a new instance of validators.HeartbeatHandlerValidator
 func (container *Container) HeartbeatHandlerValidator() (validator *validators.HeartbeatHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
 	return validators.NewHeartbeatHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// BillingHandlerValidator creates a new instance of validators.BillingHandlerValidator
+func (container *Container) BillingHandlerValidator() (validator *validators.BillingHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewBillingHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
 	)
@@ -723,6 +746,12 @@ func (container *Container) RegisterMessageThreadRoutes() {
 func (container *Container) RegisterHeartbeatRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.HeartbeatHandler{}))
 	container.HeartbeatHandler().RegisterRoutes(container.AuthRouter())
+}
+
+// RegisterBillingRoutes registers routes for the /billing prefix
+func (container *Container) RegisterBillingRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.BillingHandler{}))
+	container.BillingHandler().RegisterRoutes(container.AuthRouter())
 }
 
 // RegisterPhoneRoutes registers routes for the /phone prefix

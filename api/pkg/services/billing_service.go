@@ -33,6 +33,22 @@ func NewBillingService(
 	}
 }
 
+// GetCurrentUsage gets the current billing usage for a user
+func (service *BillingService) GetCurrentUsage(ctx context.Context, userID entities.UserID) (*entities.BillingUsage, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	return service.usageRepository.GetCurrent(ctx, userID)
+}
+
+// GetUsageHistory gets the billing usage history for a user
+func (service *BillingService) GetUsageHistory(ctx context.Context, userID entities.UserID, params repositories.IndexParams) (*[]entities.BillingUsage, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	return service.usageRepository.GetHistory(ctx, userID, params)
+}
+
 // RegisterSentMessage records the billing usage for a sent message
 func (service *BillingService) RegisterSentMessage(ctx context.Context, messageID uuid.UUID, timestamp time.Time, userID entities.UserID) error {
 	ctx, span := service.tracer.Start(ctx)
