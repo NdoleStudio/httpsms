@@ -65,7 +65,7 @@ export default {
     [
       'nuxt-highlightjs',
       {
-        style: 'AndroidStudio',
+        style: 'androidstudio',
       },
     ],
     '@nuxtjs/sitemap', // always put it at the end
