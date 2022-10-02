@@ -407,6 +407,7 @@ export const actions = {
       params: {
         contact: context.getters.getThread.contact,
         owner: context.getters.getThread.owner,
+        limit: 100,
       },
     })
     context.commit('setThreadMessages', response.data.data)
