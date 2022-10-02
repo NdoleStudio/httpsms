@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -17,6 +19,23 @@ type gormHeartbeatMonitorRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 	db     *gorm.DB
+}
+
+// UpdateQueueID updates the queueID of a monitor
+func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Context, monitorID uuid.UUID, queueID string) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.
+		Model(&entities.HeartbeatMonitor{}).
+		Where("id = ?", monitorID).
+		UpdateColumn("queue_id", queueID).
+		Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot update heartbeat monitor ID [%s]", monitorID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+	return nil
 }
 
 func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, userID entities.UserID, owner string) error {

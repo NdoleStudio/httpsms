@@ -233,7 +233,7 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
+	if _, err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -257,10 +257,17 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
+	queueID, err := service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval)
+	if err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
+
+	if err = service.monitorRepository.UpdateQueueID(ctx, params.MonitorID, queueID); err != nil {
+		msg := fmt.Sprintf("cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID)
+		service.logger.Error(stacktrace.Propagate(err, msg))
+	}
+
 	return nil
 }
 

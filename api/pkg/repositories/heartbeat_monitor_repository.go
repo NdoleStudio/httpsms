@@ -3,6 +3,8 @@ package repositories
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 )
 
@@ -16,6 +18,9 @@ type HeartbeatMonitorRepository interface {
 
 	// Exists checks if a heartbeat monitor exists for a phone number
 	Exists(ctx context.Context, userID entities.UserID, phoneNumber string) (bool, error)
+
+	// UpdateQueueID updates the queueID of a monitor
+	UpdateQueueID(ctx context.Context, monitorID uuid.UUID, queueID string) error
 
 	// Delete an entities.HeartbeatMonitor
 	Delete(ctx context.Context, userID entities.UserID, phoneNumber string) error
