@@ -47,7 +47,7 @@ func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Co
 				Where("user_id = ?", userID).
 				UpdateColumn("sent_messages", gorm.Expr("sent_messages + ?", 1))
 
-			if result.RowsAffected == 0 {
+			if result.Error == nil && result.RowsAffected == 0 {
 				return tx.Create(repository.createBillingUsage(userID, 1, 0)).Error
 			}
 			return result.Error
@@ -68,7 +68,7 @@ func (repository *gormBillingUsageRepository) RegisterReceivedMessage(ctx contex
 				Where("user_id = ?", userID).
 				UpdateColumn("sent_messages", gorm.Expr("received_messages + ?", 1))
 
-			if result.RowsAffected == 0 {
+			if result.Error == nil && result.RowsAffected == 0 {
 				return tx.Create(repository.createBillingUsage(userID, 0, 1)).Error
 			}
 			return result.Error
