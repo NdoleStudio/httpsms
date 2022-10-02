@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/now"
+
 	"github.com/uptrace/uptrace-go/uptrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/emails"
@@ -61,6 +63,9 @@ type Container struct {
 
 // NewContainer creates a new dependency injection container
 func NewContainer(projectID string) (container *Container) {
+	// Set location to UTC
+	now.DefaultConfig.TimeLocation = time.UTC
+
 	container = &Container{
 		projectID: projectID,
 		logger:    logger(3).WithService(fmt.Sprintf("%T", container)),
@@ -203,6 +208,10 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	if err = db.AutoMigrate(&entities.PhoneNotification{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneNotification{})))
+	}
+
+	if err = db.AutoMigrate(&entities.BillingUsage{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.BillingUsage{})))
 	}
 
 	return container.db
@@ -393,6 +402,16 @@ func (container *Container) MessageRepository() (repository repositories.Message
 func (container *Container) PhoneRepository() (repository repositories.PhoneRepository) {
 	container.logger.Debug("creating GORM repositories.PhoneRepository")
 	return repositories.NewGormPhoneRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// BillingUsageRepository creates a new instance of repositories.BillingUsageRepository
+func (container *Container) BillingUsageRepository() (repository repositories.BillingUsageRepository) {
+	container.logger.Debug("creating GORM repositories.BillingUsageRepository")
+	return repositories.NewGormBillingUsageRepository(
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),

@@ -16,6 +16,7 @@ require (
 	github.com/gofiber/swagger v0.0.1
 	github.com/google/uuid v1.3.0
 	github.com/hirosassa/zerodriver v0.1.2
+	github.com/jinzhu/now v1.1.4
 	github.com/joho/godotenv v1.4.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/matcornic/hermes/v2 v2.1.0
@@ -84,7 +85,6 @@ require (
 	github.com/jackc/pgx/v4 v4.16.1 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/klauspost/compress v1.15.5 // indirect
