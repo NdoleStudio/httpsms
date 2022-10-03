@@ -78,7 +78,7 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if _, err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
+	if queueID, err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
 		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
