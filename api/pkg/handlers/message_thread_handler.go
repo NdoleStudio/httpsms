@@ -97,12 +97,13 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 // @Tags         Message Threads
 // @Accept       json
 // @Produce      json
-// @Param        payload   	body 		requests.MessageThreadUpdate 	true 	"Payload of message thread details to update"
-// @Success      200 		{object}	responses.PhoneResponse
-// @Failure      400		{object}	responses.BadRequest
-// @Failure 	 401    	{object}	responses.Unauthorized
-// @Failure      422		{object}	responses.UnprocessableEntity
-// @Failure      500		{object}	responses.InternalServerError
+// @Param 		 messageThreadID	path		string 							true 	"ID of the message thread" 						default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Param        payload   			body 		requests.MessageThreadUpdate 	true 	"Payload of message thread details to update"
+// @Success      200 				{object}	responses.PhoneResponse
+// @Failure      400				{object}	responses.BadRequest
+// @Failure 	 401    			{object}	responses.Unauthorized
+// @Failure      422				{object}	responses.UnprocessableEntity
+// @Failure      500				{object}	responses.InternalServerError
 // @Router       /message-threads/{messageThreadID} [put]
 func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
