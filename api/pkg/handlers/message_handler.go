@@ -63,7 +63,6 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]
-// @Security	 ApiKeyAuth
 func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
