@@ -205,7 +205,6 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/{messageID}/events [post]
-// @Security	 ApiKeyAuth
 func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
