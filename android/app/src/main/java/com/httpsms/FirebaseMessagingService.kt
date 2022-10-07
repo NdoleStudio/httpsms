@@ -67,7 +67,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         if (Settings.isLoggedIn(this)) {
             Timber.d("updating phone with new fcm token")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(this)).updatePhone(Settings.getOwnerOrDefault(this), token)
+            HttpSmsApiService.create(this).updatePhone(Settings.getOwnerOrDefault(this), token)
         }
 
     }
@@ -129,13 +129,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         private fun handleFailed(context: Context, messageID: String) {
             Timber.d("sending failed event for message with ID [${messageID}]")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(context))
+            HttpSmsApiService.create(context)
                 .sendFailedEvent(messageID, ZonedDateTime.now(ZoneOffset.UTC), "MOBILE_APP_INACTIVE")
         }
 
         private fun getMessage(context: Context, messageID: String): Message? {
             Timber.d("fetching message with ID [${messageID}]")
-            val message = HttpSmsApiService(Settings.getApiKeyOrDefault(context)).getOutstandingMessage(messageID)
+            val message =  HttpSmsApiService.create(context).getOutstandingMessage(messageID)
 
             if (message != null) {
                 Timber.d("fetched message with ID [${message.id}]")

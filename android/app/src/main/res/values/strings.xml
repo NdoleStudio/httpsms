@@ -10,6 +10,9 @@
     <string name="get_your_api_key">Open\nhttpsms.com/settings\nto get your API key</string>
     <string name="main_log_out">Log Out</string>
     <string name="login_phone_number_hint">International phone number in E.164 format</string>
+    <string name="login_server_url_hint">e.g https://api.httpsms.com</string>
     <string name="phone_number">Phone Number</string>
     <string name="send_heartbeat">Send Heartbeat</string>
+    <string name="server_url">Server URL</string>
+    <string name="default_server_url">https://api.httpsms.com</string>
 </resources>

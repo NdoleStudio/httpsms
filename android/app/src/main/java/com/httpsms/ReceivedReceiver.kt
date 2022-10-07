@@ -47,7 +47,7 @@ class ReceivedReceiver: BroadcastReceiver()
 
         Thread {
             Timber.i("forwarding received message from [${from}]")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).receive(from, to, content, timestamp)
+            HttpSmsApiService.create(context).receive(from, to, content, timestamp)
         }.start()
     }
 }

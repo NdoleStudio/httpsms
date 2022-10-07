@@ -20,7 +20,7 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
             return Result.failure()
         }
 
-        HttpSmsApiService(Settings.getApiKeyOrDefault(applicationContext))
+        HttpSmsApiService.create(applicationContext)
             .storeHeartbeat(Settings.getOwnerOrDefault(applicationContext))
         Timber.d("finished sending heartbeat to server")
 

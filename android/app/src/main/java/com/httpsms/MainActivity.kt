@@ -140,8 +140,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
-            val updated = HttpSmsApiService(Settings.getApiKeyOrDefault(context))
-                .updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "")
+            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "")
             if (updated) {
                 Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
                 Timber.i("fcm token uploaded successfully")
@@ -329,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         Thread {
             var error: String? = null
             try {
-                HttpSmsApiService(Settings.getApiKeyOrDefault(context)).storeHeartbeat(Settings.getOwnerOrDefault(context))
+                HttpSmsApiService.create(context).storeHeartbeat(Settings.getOwnerOrDefault(context))
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)

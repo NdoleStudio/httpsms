@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import android.view.View
+import android.webkit.URLUtil
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
@@ -17,6 +18,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import timber.log.Timber
+import java.net.URI
 
 class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,6 +27,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
         registerListeners()
         setPhoneNumber()
+        setServerURL()
     }
 
     private fun registerListeners() {
@@ -41,6 +44,12 @@ class LoginActivity : AppCompatActivity() {
         val phoneInput = findViewById<TextInputEditText>(R.id.loginPhoneNumberInput)
         phoneInput.setText(phoneNumber)
         Timber.d("phone number [$phoneNumber] set successfully")
+    }
+
+    private fun setServerURL() {
+        val serverUrlInput = findViewById<TextInputEditText>(R.id.loginServerUrlInput)
+        serverUrlInput.setText(getString(R.string.default_server_url))
+        Timber.d("default server url [${serverUrlInput.text.toString()}] set successfully")
     }
 
     @SuppressLint("HardwareIds")
@@ -81,6 +90,12 @@ class LoginActivity : AppCompatActivity() {
         val apiKey = findViewById<TextInputEditText>(R.id.loginApiKeyTextInput)
         apiKey.isEnabled = false
 
+        val serverUrlLayout = findViewById<TextInputLayout>(R.id.loginServerUrlLayout)
+        serverUrlLayout.error = null
+
+        val serverUrl = findViewById<TextInputEditText>(R.id.loginServerUrlInput)
+        serverUrl.isEnabled = false
+
         val phoneNumberLayout = findViewById<TextInputLayout>(R.id.loginPhoneNumberLayout)
         phoneNumberLayout.error = null
 
@@ -89,6 +104,7 @@ class LoginActivity : AppCompatActivity() {
 
         val resetView = fun () {
             apiKey.isEnabled = true
+            serverUrl.isEnabled = true
             progressBar.visibility = View.INVISIBLE
             phoneNumber.isEnabled = true
             loginButton().isEnabled = true
@@ -104,17 +120,38 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        val liveData = MutableLiveData<String?>()
+        if(!URLUtil.isValidUrl(serverUrl.text.toString().trim())) {
+            Timber.e("url number [${serverUrl.text.toString()}] is not a valid URL")
+            resetView()
+            serverUrlLayout.error = "Server URL [${serverUrl.text.toString()}] is invalid"
+            return
+        }
+
+        if (!URLUtil.isHttpsUrl(serverUrl.text.toString().trim())) {
+            Timber.e("url number [${serverUrl.text.toString()}] is not an https URL")
+            resetView()
+            serverUrlLayout.error = "Server URL [${serverUrl.text.toString()}] must be HTTPS"
+            return
+        }
+
+        val liveData = MutableLiveData<Pair<String?, String?>>()
         liveData.observe(this) { authResult ->
             run {
                 progressBar.visibility = View.INVISIBLE
-                if (authResult != null) {
+                if (authResult.first != null) {
                     resetView()
-                    apiKeyLayout.error = authResult
+                    apiKeyLayout.error = authResult.first
+                    return@run
+                }
+
+                if (authResult.second != null) {
+                    resetView()
+                    serverUrlLayout.error = authResult.second
                     return@run
                 }
 
                 Settings.setApiKeyAsync(this, apiKey.text.toString())
+                Settings.setServerUrlAsync(this, serverUrl.text.toString().trim())
 
                 val e164PhoneNumber = PhoneNumberUtils.formatNumberToE164(
                     phoneNumber.text.toString(),
@@ -128,9 +165,9 @@ class LoginActivity : AppCompatActivity() {
         }
 
         Thread {
-            val error = HttpSmsApiService(apiKey.text.toString()).validateApiKey()
+            val error = HttpSmsApiService(apiKey.text.toString(), URI(serverUrl.text.toString().trim())).validateApiKey()
             liveData.postValue(error)
-            Timber.i("login successful")
+            Timber.d("finished validating api URL")
         }.start()
     }
 

@@ -1,5 +1,6 @@
 package com.httpsms
 
+import android.content.Context
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -13,15 +14,22 @@ import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 
 
-class HttpSmsApiService(private val apiKey: String) {
+class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
     private val apiKeyHeader = "x-api-key"
-    //private val baseURL = URI("https://a276-145-14-19-43.ngrok.io/")
-    private val baseURL = URI("https://api.httpsms.com")
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient.Builder().retryOnConnectionFailure(true).build()
 
     init {
         getLogger(OkHttpClient::class.java.name).level = Level.FINE
+    }
+
+    companion object {
+        fun create(context: Context): HttpSmsApiService {
+            return HttpSmsApiService(
+                Settings.getApiKeyOrDefault(context),
+                Settings.getServerUrlOrDefault(context)
+            )
+        }
     }
 
     fun getOutstandingMessage(messageID: String): Message? {
@@ -174,21 +182,25 @@ class HttpSmsApiService(private val apiKey: String) {
     }
 
 
-    fun validateApiKey(): String? {
+    fun validateApiKey(): Pair<String?, String?> {
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/users/me").toURL())
             .header(apiKeyHeader, apiKey)
             .get()
             .build()
 
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
-            return "Cannot validate the API key. Check if it is correct and try again."
-        }
+        try {
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
+                return Pair("Cannot validate the API key. Check if it is correct and try again.", null);
+            }
 
-        response.close()
-        Timber.i("api key [$apiKey] is valid" )
-        return null
+            response.close()
+            Timber.i("api key [$apiKey] and server url [$baseURL] are valid" )
+            return Pair(null, null)
+        } catch (ex: Exception) {
+            return Pair(null, ex.message)
+        }
     }
 }

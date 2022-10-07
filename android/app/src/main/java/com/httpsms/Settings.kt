@@ -3,6 +3,7 @@ package com.httpsms
 import android.content.Context
 import androidx.preference.PreferenceManager
 import timber.log.Timber
+import java.net.URI
 
 object Settings {
     private const val DEFAULT_PHONE_NUMBER = "66836863" // NOT_FOUND :)
@@ -10,6 +11,7 @@ object Settings {
     private const val SETTINGS_OWNER = "SETTINGS_OWNER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
+    private const val SETTINGS_SERVER_URL = "SETTINGS_SERVER_URL"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
     private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
     private const val SETTINGS_HEARTBEAT_TIMESTAMP = "SETTINGS_HEARTBEAT_TIMESTAMP"
@@ -106,6 +108,31 @@ object Settings {
 
     fun getApiKeyOrDefault(context:Context): String {
         return getApiKey(context) ?: ""
+    }
+
+    fun getServerUrlOrDefault(context:Context): URI {
+        val urlString = getServerUrl(context) ?: "https://api.httpsms.com"
+        return URI(urlString)
+    }
+
+    private fun getServerUrl(context: Context): String? {
+        Timber.d(Settings::getServerUrl.name)
+
+        val serverUrl = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getString(this.SETTINGS_SERVER_URL,null)
+
+        Timber.d("SETTINGS_SERVER_URL: [$serverUrl]")
+        return serverUrl
+    }
+
+    fun setServerUrlAsync(context: Context, serverURL: String?) {
+        Timber.d(Settings::SETTINGS_SERVER_URL.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(this.SETTINGS_SERVER_URL, serverURL)
+            .apply()
     }
 
     fun setApiKeyAsync(context: Context, apiKey: String?) {

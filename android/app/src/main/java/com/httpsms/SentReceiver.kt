@@ -29,7 +29,7 @@ internal class SentReceiver : BroadcastReceiver() {
 
         Thread {
             Timber.d("sent message with ID [${messageId}]")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).sendSentEvent(messageId!!,timestamp)
+            HttpSmsApiService.create(context).sendSentEvent(messageId!!,timestamp)
         }.start()
     }
 
@@ -41,7 +41,7 @@ internal class SentReceiver : BroadcastReceiver() {
 
         Thread {
             Timber.i("message with ID [${messageId}] not sent with reason [$reason]")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).sendFailedEvent(messageId!!, timestamp, reason)
+            HttpSmsApiService.create(context).sendFailedEvent(messageId!!, timestamp, reason)
         }.start()
     }
 }

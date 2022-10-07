@@ -24,7 +24,7 @@ internal class DeliveredReceiver : BroadcastReceiver() {
         }
         Thread {
             Timber.i("delivered message with ID [${messageId}]")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).sendDeliveredEvent(messageId!!, timestamp)
+            HttpSmsApiService.create(context).sendDeliveredEvent(messageId!!, timestamp)
         }.start()
     }
 
@@ -36,7 +36,7 @@ internal class DeliveredReceiver : BroadcastReceiver() {
 
         Thread {
             Timber.i("message with ID [${messageId}] not delivered")
-            HttpSmsApiService(Settings.getApiKeyOrDefault(context)).sendFailedEvent(messageId!!,timestamp, "NOT_DELIVERED")
+            HttpSmsApiService.create(context).sendFailedEvent(messageId!!,timestamp, "NOT_DELIVERED")
         }.start()
     }
 }
