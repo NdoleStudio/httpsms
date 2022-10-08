@@ -29,8 +29,4 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
 
         return Result.success()
     }
-
-
-
-
 }
