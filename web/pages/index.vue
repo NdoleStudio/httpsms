@@ -8,20 +8,13 @@
               class="text--primary text-h4"
               :class="{
                 'mt-5': $vuetify.breakpoint.mdAndDown,
+                'mt-4': !$vuetify.breakpoint.mdAndDown,
               }"
             >
-              <v-avatar
-                v-if="$vuetify.breakpoint.lgAndUp"
-                size="70"
-                class="mt-4"
-              >
-                <v-img
-                  class="mb-4"
-                  contain
-                  :src="require('assets/img/icon.svg')"
-                ></v-img>
+              <v-avatar v-if="$vuetify.breakpoint.lgAndUp" tile size="30">
+                <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
               </v-avatar>
-              Http SMS
+              HTTP SMS
             </h2>
             <v-spacer></v-spacer>
             <v-btn
@@ -48,7 +41,7 @@
           }"
         >
           <h1
-            class="text-h2 font-weight-bold gradient-header"
+            class="text-h2 font-weight-bold pb-1 gradient-header"
             :class="{
               'mt-16': $vuetify.breakpoint.lgAndUp,
               'mt-10': $vuetify.breakpoint.mdAndUp,

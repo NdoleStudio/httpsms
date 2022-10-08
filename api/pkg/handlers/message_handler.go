@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -67,8 +66,6 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
-
-	sort.Search()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
