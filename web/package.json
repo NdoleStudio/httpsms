@@ -26,6 +26,7 @@
     "@nuxtjs/firebase": "^8.2.2",
     "@nuxtjs/sitemap": "^2.4.0",
     "core-js": "^3.19.3",
+    "date-fns": "^2.29.3",
     "dotenv": "^16.0.1",
     "firebase": "^9.8.4",
     "firebaseui": "^6.0.1",

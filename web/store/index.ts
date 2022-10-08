@@ -300,6 +300,8 @@ export const actions = {
         is_archived: context.getters.getIsArchived,
       },
     })
+
+    await context.dispatch('getHeartbeat')
     await context.commit('setThreads', response.data.data)
   },
 

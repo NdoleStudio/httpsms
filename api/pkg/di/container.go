@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
@@ -25,7 +24,6 @@ import (
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
-	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/trace"
 
 	firebase "firebase.google.com/go"
@@ -842,28 +840,6 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 		if err != nil {
 			container.logger.Error(err)
 		}
-	}
-}
-
-func (container *Container) initializeJaegerTraceProvider(version string, namespace string) (flush func()) {
-	container.logger.Debug("initializing jaeger trace provider")
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(os.Getenv("JAEGER_COLLECTOR_ENDPOINT"))))
-	if err != nil {
-		container.logger.Error(stacktrace.Propagate(err, "could not create jaeger exporter"))
-	}
-	tp := trace.NewTracerProvider(
-		// Always be sure to batch in production.
-		trace.WithBatcher(exp),
-		trace.WithSampler(trace.AlwaysSample()),
-		// Record information about this application in a resource.
-		trace.WithResource(container.InitializeOtelResources(version, namespace)),
-	)
-
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-
-	return func() {
-		_ = exp.Shutdown(context.Background())
 	}
 }
 

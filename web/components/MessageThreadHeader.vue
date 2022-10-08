@@ -54,7 +54,7 @@
             </v-btn>
           </template>
           <h4>Last Heartbeat</h4>
-          {{ $store.getters.getHeartbeat.timestamp | timestamp }}
+          {{ $store.getters.getHeartbeat.timestamp | humanizeTime }} ago
         </v-tooltip>
       </div>
     </div>

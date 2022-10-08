@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import { intervalToDuration, formatDuration } from 'date-fns'
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js'
 
 Vue.filter('phoneNumber', (value: string): string => {
@@ -46,4 +47,12 @@ Vue.filter('billingPeriod', (value: string): string => {
   }
   // @ts-ignore
   return new Date(value).toLocaleDateString('en-US', options)
+})
+
+Vue.filter('humanizeTime', (value: string): string => {
+  const durations = intervalToDuration({
+    start: new Date(),
+    end: new Date(value),
+  })
+  return formatDuration(durations)
 })
