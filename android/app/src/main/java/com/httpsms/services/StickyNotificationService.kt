@@ -71,7 +71,7 @@ class StickyNotificationService: Service() {
             .setContentTitle("HTTP SMS")
             .setContentText("Service running in background")
             .setContentIntent(pendingIntent)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.mipmap.ic_launcher_round)
             .setTicker("Ticker text")
             .build()
     }
