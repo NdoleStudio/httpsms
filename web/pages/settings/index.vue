@@ -60,7 +60,7 @@
               class="mb-n2"
               @click:append="apiKeyShow = !apiKeyShow"
             ></v-text-field>
-            <div>
+            <div class="d-flex">
               <copy-button
                 :block="$vuetify.breakpoint.mdAndDown"
                 :large="$vuetify.breakpoint.mdAndDown"

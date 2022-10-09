@@ -1,35 +1,6 @@
 <template>
   <div>
-    <v-app-bar elevation="0" color="#121212" height="70" fixed>
-      <v-container>
-        <v-row>
-          <v-col class="w-full d-flex">
-            <h2
-              class="text--primary text-h4"
-              :class="{
-                'mt-5': $vuetify.breakpoint.mdAndDown,
-                'mt-4': !$vuetify.breakpoint.mdAndDown,
-              }"
-            >
-              <v-avatar v-if="$vuetify.breakpoint.lgAndUp" tile size="30">
-                <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
-              </v-avatar>
-              HTTP SMS
-            </h2>
-            <v-spacer></v-spacer>
-            <v-btn
-              exact-path
-              class="primary mt-5 mb-5"
-              :large="$vuetify.breakpoint.lgAndUp"
-              :to="{ name: 'login' }"
-            >
-              Get Started
-              <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-app-bar>
+    <fixed-header></fixed-header>
     <v-container class="pb-16">
       <v-row :class="{ 'py-16': $vuetify.breakpoint.lgAndUp }">
         <v-col
@@ -50,8 +21,8 @@
             Convert your android phone into an SMS gateway.
           </h1>
           <h2 class="text--secondary text-h5 mt-8 mb-8">
-            Use your android phone to send and receive SMS messages using an
-            intuitive HTTP API.
+            Use your android phone to send and receive SMS messages using a
+            simple HTTP API.
           </h2>
           <div :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }">
             <v-btn
@@ -153,8 +124,8 @@
             <div>
               <h3 class="text-h3 mb-1">Open Source</h3>
               <h5 class="text-h6 font-weight-light">
-                HttpSms is transparent and fully open source. The source code is
-                available
+                HTTP SMS is transparent and fully open source. The source code
+                is available
                 <a
                   target="_blank"
                   class="text-decoration-none"
@@ -434,6 +405,22 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
               outlined
               :href="$store.getters.getAppData.githubUrl"
               >Open Source</v-btn
+            >
+            <v-btn
+              text
+              rounded
+              class="my-2"
+              outlined
+              :to="{ name: 'privacy-policy' }"
+              >Privacy Policy</v-btn
+            >
+            <v-btn
+              text
+              rounded
+              class="my-2"
+              outlined
+              :to="{ name: 'terms-and-conditions' }"
+              >Terms And Conditions</v-btn
             >
           </v-col>
           <v-col class="text-center mb-n4" cols="12">

@@ -5,15 +5,42 @@ export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
     titleTemplate: '%s',
-    title: 'Http SMS - Convert your android phone into an SMS Gateway.',
+    title: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
     htmlAttrs: {
       lang: 'en',
     },
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: '' },
+      {
+        hid: 'description',
+        name: 'description',
+        content:
+          'Use your android phone to send and receive SMS messages using a simple HTTP API.',
+      },
       { name: 'format-detection', content: 'telephone=no' },
+      { hid: 'twitter:site', name: 'twitter:site', content: '@NdoleStudio' },
+      {
+        hid: 'twitter:card',
+        name: 'twitter:card',
+        content: 'summary_large_image',
+      },
+      {
+        hid: 'og:title',
+        name: 'og:title',
+        content: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
+      },
+      {
+        hid: 'og:description',
+        name: 'og:description',
+        content:
+          'Use your android phone to send and receive SMS messages using a simple HTTP API.',
+      },
+      {
+        hid: 'og:image',
+        name: 'og:image',
+        content: 'https://httpsms.com/header.png',
+      },
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },

@@ -7,7 +7,15 @@
         xl="3"
         :class="{ 'mt-n16': $vuetify.breakpoint.lgAndUp }"
       >
-        <h3 class="text-h3 text-center mb-4">Login or Sign Up</h3>
+        <div class="text-center mb-5">
+          <v-avatar tile size="45" class="mt-n8 mr-4">
+            <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
+          </v-avatar>
+          <span class="text-h3">Welcome</span>
+        </div>
+        <p class="text--secondary text-h6 text-center">
+          Login to the HTTP SMS dashboard
+        </p>
         <v-card max-width="360" class="mx-auto">
           <v-card-text class="px-0">
             <no-ssr>
