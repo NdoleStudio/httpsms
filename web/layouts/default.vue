@@ -37,10 +37,10 @@ export default class DefaultLayout extends Vue {
   }
 
   mounted() {
-    if (this.$route.name !== 'index') {
-      this.$store.dispatch('setNextRoute', this.$route.path)
-      this.$router.push({ name: 'index' })
-    }
+    // if (this.$route.name !== 'index') {
+    //   this.$store.dispatch('setNextRoute', this.$route.path)
+    //   this.$router.push({ name: 'index' })
+    // }
   }
 
   beforeDestroy(): void {

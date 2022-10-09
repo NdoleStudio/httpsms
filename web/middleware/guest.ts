@@ -1,6 +1,6 @@
 import { Context, Middleware } from '@nuxt/types'
 
-const authMiddleware: Middleware = (context: Context) => {
+const guestMiddleware: Middleware = (context: Context) => {
   if (context.store.getters.getAuthUser !== null) {
     if (context.store.getters.getNextRoute) {
       context.redirect(context.store.getters.getNextRoute)
@@ -10,4 +10,4 @@ const authMiddleware: Middleware = (context: Context) => {
   }
 }
 
-export default authMiddleware
+export default guestMiddleware
