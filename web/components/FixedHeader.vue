@@ -3,7 +3,7 @@
     <v-container>
       <v-row>
         <v-col class="w-full d-flex">
-          <router-link
+          <nuxt-link
             :to="{ name: 'index' }"
             class="text--primary text-h4 text-decoration-none"
             :class="{
@@ -15,7 +15,7 @@
               <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
             </v-avatar>
             HTTP SMS
-          </router-link>
+          </nuxt-link>
           <v-spacer></v-spacer>
           <v-btn
             exact-path

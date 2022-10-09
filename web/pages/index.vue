@@ -158,30 +158,22 @@
             <v-col cols="12" md="5" class="pr-4">
               <v-timeline dense class="mt-10 ml-n4">
                 <v-timeline-item color="primary" :icon="mdiTallyMark1">
-                  <v-card
-                    class="elevation-2"
-                    @mouseover="step1Hover = true"
-                    @mouseleave="step1Hover = false"
-                  >
+                  <v-card class="elevation-2">
                     <v-card-title class="text-h5"> Step 1 </v-card-title>
                     <v-card-text class="subtitle-1">
-                      <router-link
+                      <NuxtLink
                         class="font-weight-bold text-decoration-none"
                         :to="{ name: 'login' }"
                       >
                         Create an account
-                      </router-link>
+                      </NuxtLink>
                       on httpsms.com and obtain you API key on the settings
                       page.
                     </v-card-text>
                   </v-card>
                 </v-timeline-item>
                 <v-timeline-item color="primary" :icon="mdiTallyMark2">
-                  <v-card
-                    class="elevation-2"
-                    @mouseover="step2Hover = true"
-                    @mouseleave="step2Hover = false"
-                  >
+                  <v-card class="elevation-2">
                     <v-card-title class="text-h5"> Step 2 </v-card-title>
                     <v-card-text class="subtitle-1">
                       <a
