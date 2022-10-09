@@ -65,11 +65,12 @@
                 :block="$vuetify.breakpoint.mdAndDown"
                 :large="$vuetify.breakpoint.mdAndDown"
                 :value="apiKey"
+                color="primary"
                 copy-text="Copy API Key"
                 notification-text="API Key copied successfully"
               ></copy-button>
-              <v-spacer></v-spacer>
               <v-btn
+                class="ml-4"
                 v-if="$vuetify.breakpoint.lgAndUp"
                 :href="$store.getters.getAppData.documentationUrl"
                 >Documentation</v-btn
