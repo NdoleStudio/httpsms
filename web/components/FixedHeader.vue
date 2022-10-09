@@ -31,3 +31,8 @@
     </v-container>
   </v-app-bar>
 </template>
+<script lang="ts">
+import { Vue, Component } from 'vue-property-decorator'
+@Component
+export default class FixedHeader extends Vue {}
+</script>
