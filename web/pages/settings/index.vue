@@ -60,13 +60,21 @@
               class="mb-n2"
               @click:append="apiKeyShow = !apiKeyShow"
             ></v-text-field>
-            <copy-button
-              :block="$vuetify.breakpoint.mdAndDown"
-              :large="$vuetify.breakpoint.mdAndDown"
-              :value="apiKey"
-              copy-text="Copy API Key"
-              notification-text="API Key copied successfully"
-            ></copy-button>
+            <div>
+              <copy-button
+                :block="$vuetify.breakpoint.mdAndDown"
+                :large="$vuetify.breakpoint.mdAndDown"
+                :value="apiKey"
+                copy-text="Copy API Key"
+                notification-text="API Key copied successfully"
+              ></copy-button>
+              <v-spacer></v-spacer>
+              <v-btn
+                v-if="$vuetify.breakpoint.lgAndUp"
+                :href="$store.getters.getAppData.documentationUrl"
+                >Documentation</v-btn
+              >
+            </div>
             <h5 class="text-h4 mb-3 mt-12">Phones</h5>
             <p>
               List of mobile phones which are registered for sending and

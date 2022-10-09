@@ -7,6 +7,8 @@
 [HTTP SMS](https://httpsms.com) is a service that lets you use your android phone as an SMS Gateway to send and receive SMS messages.
 You make a request to the API which it triggers your android phone to send an SMS.
 
+Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
+
 ## Why?
 
 I'm originally from Cameroon and I wanted an automated way to send and receive SMS messages using an API.
