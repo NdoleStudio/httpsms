@@ -11,8 +11,8 @@ import (
 // @version     1.0
 // @description API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP
 //
-// @contact.name  HTTP SMS Support
-// @contact.email supportd@httpsms.com
+// @contact.name  HTTP SMS
+// @contact.email support@httpsms.com
 //
 // @license.name MIT
 // @license.url  https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
