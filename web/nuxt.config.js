@@ -31,6 +31,17 @@ export default {
         content: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
       },
       {
+        hid: 'twitter:title',
+        name: 'twitter:title',
+        content: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
+      },
+      {
+        hid: 'twitter:description',
+        name: 'twitter:description',
+        content:
+          'Use your android phone to send and receive SMS messages using a simple HTTP API.',
+      },
+      {
         hid: 'og:description',
         name: 'og:description',
         content:
@@ -39,6 +50,11 @@ export default {
       {
         hid: 'og:image',
         name: 'og:image',
+        content: 'https://httpsms.com/header.png',
+      },
+      {
+        hid: 'twitter:image',
+        name: 'twitter:image',
         content: 'https://httpsms.com/header.png',
       },
     ],
