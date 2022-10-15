@@ -2,7 +2,6 @@ package com.httpsms
 
 import android.Manifest
 import android.Manifest.permission.READ_PHONE_NUMBERS
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -10,7 +9,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
-import android.telephony.TelephonyManager
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -27,6 +25,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
+import okhttp3.internal.format
 import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
@@ -62,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         startStickyNotification(this)
         scheduleHeartbeatWorker(this)
         setLastHeartbeatTimestamp(this)
+        setVersion()
         setHeartbeatListener(this)
     }
 
@@ -88,6 +88,11 @@ class MainActivity : AppCompatActivity() {
         Timber.d("heartbeat timestamp in UTC is [${timestampZdt}] and local is [$localTime]")
 
         refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    }
+
+    private fun setVersion() {
+        val appVersionView = findViewById<TextView>(R.id.mainAppVersion)
+        appVersionView.text = format(getString(R.string.app_version), BuildConfig.VERSION_NAME)
     }
 
     private fun scheduleHeartbeatWorker(context: Context) {
