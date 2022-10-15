@@ -244,30 +244,8 @@ class MainActivity : AppCompatActivity() {
         notificationManager.createNotificationChannel(mChannel)
     }
 
-    @SuppressLint("HardwareIds")
     private fun getPhoneNumber(context: Context): String {
-        val telephonyManager = this.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_SMS
-            ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
-                this,
-                READ_PHONE_NUMBERS
-            ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_PHONE_STATE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Timber.d("cannot get owner because permissions are not granted")
-            return Settings.getOwnerOrDefault(this)
-        }
-
-        if (telephonyManager.line1Number != null && telephonyManager.line1Number != "") {
-            Timber.d("line 1 number fetched [${telephonyManager.line1Number}]")
-            Settings.setOwnerAsync(context, telephonyManager.line1Number)
-        }
-
-        return Settings.getOwnerOrDefault(this)
+        return Settings.getOwnerOrDefault(context)
     }
 
     private fun requestPermissions(context:Context) {
