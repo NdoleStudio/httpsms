@@ -772,7 +772,7 @@ func (container *Container) RegisterEventRoutes() {
 
 // RegisterSwaggerRoutes registers routes for swagger
 func (container *Container) RegisterSwaggerRoutes() {
-	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
+	container.logger.Debug(fmt.Sprintf("registering %T routes", swagger.HandlerDefault))
 	container.App().Get("/*", swagger.HandlerDefault)
 }
 

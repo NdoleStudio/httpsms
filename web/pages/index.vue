@@ -45,7 +45,8 @@
             class="text-h2 font-weight-bold pb-1 gradient-header"
             :class="{
               'mt-16': $vuetify.breakpoint.lgAndUp,
-              'mt-10': $vuetify.breakpoint.mdAndUp,
+              'mt-10': $vuetify.breakpoint.mdOnly,
+              'mt-8': $vuetify.breakpoint.smAndDown,
             }"
           >
             Convert your android phone into an SMS gateway.
@@ -237,9 +238,13 @@
             <v-col
               cols="12"
               md="7"
-              :class="{ 'pt-16 pb-16': $vuetify.breakpoint.lgAndUp }"
+              class="mb-16"
+              :class="{ 'pt-16': $vuetify.breakpoint.mdAndUp }"
             >
-              <div class="w-full mt-4">
+              <div
+                class="w-full mt-4"
+                :class="{ 'mb-16': $vuetify.breakpoint.smAndDown }"
+              >
                 <v-tabs v-model="selectedTab" show-arrows>
                   <v-tab href="#javascript">
                     <v-icon color="#efd81d" class="mr-1">{{
