@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.view.View
@@ -37,9 +38,6 @@ import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
-    private val sentReceiver = SentReceiver()
-    private val deliveredReceiver = DeliveredReceiver()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -224,7 +222,10 @@ class MainActivity : AppCompatActivity() {
             ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.READ_PHONE_STATE
-            ) == PackageManager.PERMISSION_GRANTED
+            ) == PackageManager.PERMISSION_GRANTED && (Build.VERSION.SDK_INT < 33 || ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED)
         ) {
             return true
         }
@@ -266,15 +267,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        requestPermissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.SEND_SMS,
-                Manifest.permission.RECEIVE_SMS,
-                READ_PHONE_NUMBERS,
-                Manifest.permission.READ_SMS,
-                Manifest.permission.READ_PHONE_STATE
-            )
+        var permissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            READ_PHONE_NUMBERS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_PHONE_STATE
         )
+
+        if(Build.VERSION.SDK_INT > 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        requestPermissionLauncher.launch(permissions)
 
         Timber.d("creating permissions launcher")
     }
