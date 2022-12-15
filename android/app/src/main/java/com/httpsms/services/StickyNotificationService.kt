@@ -68,11 +68,11 @@ class StickyNotificationService: Service() {
         )
 
         return builder
-            .setContentTitle("HTTP SMS")
-            .setContentText("Service running in background")
+            .setContentTitle("SMS Listener")
+            .setContentText("HTTP SMS is listening for sent and received SMS messages in the background.")
             .setContentIntent(pendingIntent)
+            .setOngoing(true)
             .setSmallIcon(R.drawable.ic_stat_name)
-            .setTicker("Ticker text")
             .build()
     }
 }
