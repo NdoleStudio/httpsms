@@ -104,15 +104,48 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
 
             val message = getMessage(applicationContext, messageID) ?: return Result.failure()
+            val parts = getMessageParts(applicationContext, message)
+            if (parts.size == 1) {
+                return handleSingleMessage(applicationContext, message)
+            }
+            return handleMultipartMessage(applicationContext, message, parts)
+        }
 
-            registerReceivers(applicationContext, message.id)
+        private fun handleMultipartMessage(context: Context, message:Message, parts: ArrayList<String>): Result {
+            registerReceivers(context, message.id)
 
+            Timber.d("sending SMS for message with ID [${message.id}]")
+            return try {
+                // The trick here is to listen to the intent only on the last part
+                val sentIntents = ArrayList<PendingIntent>()
+                val deliveredIntents = ArrayList<PendingIntent>()
+
+                for (i in 0 until parts.size) {
+                    var id = "${message.id}.$i"
+                    if (i == parts.size -1) {
+                        id = message.id
+                    }
+                    sentIntents.add(createPendingIntent(id, SmsManagerService.sentAction(id)))
+                    deliveredIntents.add(createPendingIntent(id, SmsManagerService.deliveredAction(id)))
+                }
+                SmsManagerService().sendMultipartMessage(this.applicationContext,message.contact, parts, sentIntents, deliveredIntents)
+                Timber.d("sent SMS for message with ID [${message.id}] in [${parts.size}] parts")
+                Result.success()
+            } catch (e: Exception) {
+                Timber.e(e)
+                Timber.d("could not send SMS for message with ID [${message.id}] in [${parts.size}] parts")
+                Result.failure()
+            }
+        }
+
+
+        private fun handleSingleMessage(context: Context, message:Message): Result {
+            registerReceivers(context, message.id)
             sendMessage(
                 message,
-                createPendingIntent(message, SmsManagerService.sentAction(message.id)),
-                createPendingIntent(message, SmsManagerService.deliveredAction(message.id))
+                createPendingIntent(message.id, SmsManagerService.sentAction(message.id)),
+                createPendingIntent(message.id, SmsManagerService.deliveredAction(message.id))
             )
-
             return Result.success()
         }
 
@@ -149,7 +182,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private fun sendMessage(message: Message, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
             Timber.d("sending SMS for message with ID [${message.id}]")
             try {
-                SmsManagerService().sendMessage(this.applicationContext, message, sentIntent, deliveredIntent)
+                SmsManagerService().sendTextMessage(this.applicationContext,message.contact, message.content, sentIntent, deliveredIntent)
             } catch (e: Exception) {
                 Timber.e(e)
                 Timber.d("could not send SMS for message with ID [${message.id}]")
@@ -158,9 +191,24 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             Timber.d("sent SMS for message with ID [${message.id}]")
         }
 
-        private fun createPendingIntent(message: Message, action: String): PendingIntent {
+        private fun getMessageParts(context: Context, message: Message): ArrayList<String> {
+            Timber.d("getting parts for message with ID [${message.id}]")
+            return try {
+                val parts = SmsManagerService().messageParts(context, message.content)
+                Timber.d("message with ID [${message.id}] has [${parts.size}] parts")
+                parts
+            } catch (e: Exception) {
+                Timber.e(e)
+                Timber.d("could not get parts message with ID [${message.id}] returning [1] part with entire content")
+                val list = ArrayList<String>()
+                list.add(message.content)
+                list
+            }
+        }
+
+        private fun createPendingIntent(id: String, action: String): PendingIntent {
             val intent = Intent(action)
-            intent.putExtra(Constants.KEY_MESSAGE_ID, message.id)
+            intent.putExtra(Constants.KEY_MESSAGE_ID, id)
 
             return PendingIntent.getBroadcast(
                 this.applicationContext,

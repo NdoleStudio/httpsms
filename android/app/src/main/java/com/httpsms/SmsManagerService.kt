@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.telephony.SmsManager
 
+
 class SmsManagerService {
     companion object {
         private const val ACTION_SMS_SENT = "SMS_SENT"
@@ -19,9 +20,16 @@ class SmsManagerService {
         }
     }
 
-    fun sendMessage(context: Context, message: Message, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {
-        getSmsManager(context)
-            .sendTextMessage(message.contact, null, message.content, sentIntent, deliveryIntent)
+    fun messageParts(context: Context, content: String): ArrayList<String> {
+        return getSmsManager(context).divideMessage(content)
+    }
+
+    fun sendMultipartMessage(context: Context, contact: String, parts: ArrayList<String>, sendIntents: ArrayList<PendingIntent>, deliveryIntents: ArrayList<PendingIntent>) {
+        getSmsManager(context).sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+    }
+
+    fun sendTextMessage(context: Context, contact: String, content: String, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {
+        getSmsManager(context).sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
     }
 
     @Suppress("DEPRECATION")
