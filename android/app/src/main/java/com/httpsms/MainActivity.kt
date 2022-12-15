@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.view.View
@@ -15,6 +16,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -26,6 +29,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
 import okhttp3.internal.format
+import okhttp3.internal.notify
 import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
@@ -37,9 +41,6 @@ import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
-    private val sentReceiver = SentReceiver()
-    private val deliveredReceiver = DeliveredReceiver()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -224,7 +225,10 @@ class MainActivity : AppCompatActivity() {
             ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.READ_PHONE_STATE
-            ) == PackageManager.PERMISSION_GRANTED
+            ) == PackageManager.PERMISSION_GRANTED && (Build.VERSION.SDK_INT < 33 || ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED)
         ) {
             return true
         }
@@ -266,15 +270,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        requestPermissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.SEND_SMS,
-                Manifest.permission.RECEIVE_SMS,
-                READ_PHONE_NUMBERS,
-                Manifest.permission.READ_SMS,
-                Manifest.permission.READ_PHONE_STATE
-            )
+        var permissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            READ_PHONE_NUMBERS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_PHONE_STATE
         )
+
+        if(Build.VERSION.SDK_INT >= 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        requestPermissionLauncher.launch(permissions)
 
         Timber.d("creating permissions launcher")
     }
@@ -304,6 +312,7 @@ class MainActivity : AppCompatActivity() {
                     return@run
                 }
                 Toast.makeText(context, "Heartbeat Sent", Toast.LENGTH_SHORT).show()
+
                 setLastHeartbeatTimestamp(this)
             }
         }

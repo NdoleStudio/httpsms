@@ -116,15 +116,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             Timber.d("sending SMS for message with ID [${message.id}]")
             return try {
-                // The trick here is to listen to the intent only on the last part
                 val sentIntents = ArrayList<PendingIntent>()
                 val deliveredIntents = ArrayList<PendingIntent>()
 
                 for (i in 0 until parts.size) {
                     var id = "${message.id}.$i"
+
+                    // Listen for 'delivered' and 'sent' intents only on the last part in the
+                    // multipart SMS message
                     if (i == parts.size -1) {
                         id = message.id
                     }
+
                     sentIntents.add(createPendingIntent(id, SmsManagerService.sentAction(id)))
                     deliveredIntents.add(createPendingIntent(id, SmsManagerService.deliveredAction(id)))
                 }
