@@ -70,8 +70,8 @@
                 notification-text="API Key copied successfully"
               ></copy-button>
               <v-btn
-                class="ml-4"
                 v-if="$vuetify.breakpoint.lgAndUp"
+                class="ml-4"
                 :href="$store.getters.getAppData.documentationUrl"
                 >Documentation</v-btn
               >

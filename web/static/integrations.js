@@ -4,7 +4,7 @@ window.SB_PROJECT_ID = 'f80322c8-d7a5-4807-b27e-cdd1cc41ea05'
   const d = document
   const s = d.createElement('script')
   s.src = 'https://cdn.superbutton.app/widget.js'
-  s['async'] = true
+  s.async = true
   d.getElementsByTagName('head')[0].appendChild(s)
 })()
 ;(function (c, l, a, r, i, t, y) {

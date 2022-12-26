@@ -63,7 +63,7 @@
               class="mt-4 mb-4"
               :to="{ name: 'login' }"
             >
-              <v-icon left v-if="$vuetify.breakpoint.lgAndUp">{{
+              <v-icon v-if="$vuetify.breakpoint.lgAndUp" left>{{
                 mdiSend
               }}</v-icon>
               Get Started
@@ -75,7 +75,7 @@
               class="mt-4 mb-4 ml-4"
               :href="$store.getters.getAppData.githubUrl"
             >
-              <v-icon left v-if="$vuetify.breakpoint.lgAndUp">
+              <v-icon v-if="$vuetify.breakpoint.lgAndUp" left>
                 {{ mdiGithub }}
               </v-icon>
               Open Source
