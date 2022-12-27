@@ -197,9 +197,9 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if err != nil {
-		msg := fmt.Sprintf("cannot fetch last heartbeat for userID [%s] and owner [%s]", params.UserID, params.Owner)
+		msg := fmt.Sprintf("cannot fetch last heartbeat for userID [%s] and owner [%s] removing check", params.UserID, params.Owner)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
+		return nil
 	}
 
 	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval &&
