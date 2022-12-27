@@ -21,5 +21,5 @@ type UserRepository interface {
 	Load(ctx context.Context, userID entities.UserID) (*entities.User, error)
 
 	// LoadOrStore an entities.User by entities.AuthUser
-	LoadOrStore(ctx context.Context, user entities.AuthUser) (*entities.User, error)
+	LoadOrStore(ctx context.Context, user entities.AuthUser) (*entities.User, bool, error)
 }

@@ -17,11 +17,12 @@ import (
 
 // UserService is handles user requests
 type UserService struct {
-	logger       telemetry.Logger
-	tracer       telemetry.Tracer
-	emailFactory emails.UserEmailFactory
-	mailer       emails.Mailer
-	repository   repositories.UserRepository
+	logger           telemetry.Logger
+	tracer           telemetry.Tracer
+	emailFactory     emails.UserEmailFactory
+	mailer           emails.Mailer
+	repository       repositories.UserRepository
+	marketingService *MarketingService
 }
 
 // NewUserService creates a new UserService
@@ -31,13 +32,15 @@ func NewUserService(
 	repository repositories.UserRepository,
 	mailer emails.Mailer,
 	emailFactory emails.UserEmailFactory,
+	marketingService *MarketingService,
 ) (s *UserService) {
 	return &UserService{
-		logger:       logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:       tracer,
-		mailer:       mailer,
-		emailFactory: emailFactory,
-		repository:   repository,
+		logger:           logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:           tracer,
+		mailer:           mailer,
+		marketingService: marketingService,
+		emailFactory:     emailFactory,
+		repository:       repository,
 	}
 }
 
@@ -46,10 +49,14 @@ func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser)
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	user, err := service.repository.LoadOrStore(ctx, authUser)
+	user, isNew, err := service.repository.LoadOrStore(ctx, authUser)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with from [%+#v]", user, authUser)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if isNew {
+		service.marketingService.AddToList(ctx, user)
 	}
 
 	return user, nil
@@ -67,10 +74,14 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthUs
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	user, err := service.repository.LoadOrStore(ctx, authUser)
+	user, isNew, err := service.repository.LoadOrStore(ctx, authUser)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with from [%+#v]", user, authUser)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if isNew {
+		service.marketingService.AddToList(ctx, user)
 	}
 
 	user.ActivePhoneID = &params.ActivePhoneID

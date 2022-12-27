@@ -101,18 +101,18 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	return user, nil
 }
 
-func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser entities.AuthUser) (*entities.User, error) {
+func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser entities.AuthUser) (*entities.User, bool, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	user, err := repository.Load(ctx, authUser.ID)
 	if err == nil {
-		return user, nil
+		return user, false, nil
 	}
 
 	apiKey, err := repository.generateAPIKey(64)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate apiKey")
+		return nil, false, stacktrace.Propagate(err, "cannot generate apiKey")
 	}
 
 	user = &entities.User{
@@ -124,16 +124,23 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 		UpdatedAt:     time.Now().UTC(),
 	}
 
+	isNew := false
 	err = crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		return tx.WithContext(ctx).Where(entities.User{ID: user.ID}).FirstOrCreate(user).Error
+		result := tx.WithContext(ctx).Where(entities.User{ID: user.ID}).FirstOrCreate(user)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected > 0 {
+			isNew = true
+		}
+		return result.Error
 	})
-
 	if err != nil {
 		msg := fmt.Sprintf("cannot create user from auth user [%+#v]", authUser)
-		return user, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return user, isNew, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return user, nil
+	return user, isNew, nil
 }
 
 // generateRandomBytes returns securely generated random bytes.
