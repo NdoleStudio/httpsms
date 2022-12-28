@@ -8,9 +8,9 @@ updates:
       time: '00:00'
     open-pull-requests-limit: 10
     reviewers:
-      - ndolestudio
+      - AchoArnold
     assignees:
-      - ndolestudio
+      - AchoArnold
     commit-message:
       prefix: fix
       prefix-development: chore
@@ -23,9 +23,9 @@ updates:
       time: '00:00'
     open-pull-requests-limit: 10
     reviewers:
-      - ndolestudio
+      - AchoArnold
     assignees:
-      - ndolestudio
+      - AchoArnold
     commit-message:
       prefix: fix
       prefix-development: chore
