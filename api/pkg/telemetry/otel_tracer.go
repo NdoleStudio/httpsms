@@ -42,6 +42,11 @@ func (tracer *otelTracer) CtxLogger(logger Logger, span trace.Span) Logger {
 	return logger.WithSpan(span.SpanContext())
 }
 
+func (tracer *otelTracer) StartWithLogger(c context.Context, logger Logger, name ...string) (context.Context, trace.Span, Logger) {
+	ctx, span := tracer.Start(c, getName(name...))
+	return ctx, span, tracer.CtxLogger(logger, span)
+}
+
 func (tracer *otelTracer) Start(c context.Context, name ...string) (context.Context, trace.Span) {
 	parentSpan := trace.SpanFromContext(c)
 	ctx, span := parentSpan.TracerProvider().Tracer("").Start(c, getName(name...))
