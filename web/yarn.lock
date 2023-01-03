@@ -1659,9 +1659,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@mdi/js@^7.0.96":
-  version "7.0.96"
-  resolved "https://registry.npmjs.org/@mdi/js/-/js-7.0.96.tgz"
+"@mdi/js@^7.1.96":
+  version "7.1.96"
+  resolved "https://registry.yarnpkg.com/@mdi/js/-/js-7.1.96.tgz#9c5a7f8a20ea63c03b09a0dba1768fe8b70eeaf9"
+  integrity sha512-wlrJs6Ryhaa5CqhK3FjTfMRnb/s7HeLkKMFqwQySkK86cdN1TGdzpSM3O4tsmzCA1dYBeTbXvOwSE/Y42cUrvA==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
