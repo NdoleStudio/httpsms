@@ -57,8 +57,8 @@
                   <div class="d-flex">
                     <h2 class="text-h4 font-weight-bold mt-4">
                       {{
-                        $store.getters.getBillingUsage.received_messages
-                          | decimal
+                        $store.getters.getBillingUsage.received_messages |
+                          decimal
                       }}
                     </h2>
                   </div>

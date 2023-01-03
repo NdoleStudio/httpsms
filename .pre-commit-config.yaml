@@ -1,19 +1,19 @@
 repos:
   - repo: https://github.com/tekwizely/pre-commit-golang
-    rev: master
+    rev: v1.0.0-rc.1
     hooks:
       - id: go-fumpt
       - id: go-mod-tidy
       - id: go-lint
       - id: go-imports
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: main
+    rev: v3.0.0-alpha.4
     hooks:
       - id: prettier
