@@ -2,9 +2,9 @@ version: 2
 updates:
   # Fetch and update latest `npm` packages
   - package-ecosystem: npm
-    directory: '/'
+    directory: '/web'
     schedule:
-      interval: daily
+      interval: weekly
       time: '00:00'
     open-pull-requests-limit: 10
     reviewers:
@@ -19,7 +19,7 @@ updates:
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
-      interval: daily
+      interval: weekly
       time: '00:00'
     open-pull-requests-limit: 10
     reviewers:
