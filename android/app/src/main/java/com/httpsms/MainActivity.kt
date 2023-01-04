@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         val timestamp = Settings.getHeartbeatTimestamp(context)
 
         if (timestamp == 0.toLong()) {
-            Timber.d("not heartbeat timestamp has been set")
+            Timber.d("no heartbeat timestamp has been set")
             refreshTimestampView.text = "--"
             return
         }
