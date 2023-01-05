@@ -3,3 +3,8 @@ docs
 *main.exe
 tmp
 $path
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
