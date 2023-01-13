@@ -1,4 +1,4 @@
-(function (c, l, a, r, i, t, y) {
+;(function (c, l, a, r, i, t, y) {
   c[a] =
     c[a] ||
     function () {
