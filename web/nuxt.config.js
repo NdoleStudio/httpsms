@@ -5,7 +5,7 @@ export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
     titleTemplate: '%s',
-    title: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
+    title: 'Convert your android phone into an SMS gateway - httpSMS',
     htmlAttrs: {
       lang: 'en',
     },
@@ -36,12 +36,12 @@ export default {
       {
         hid: 'og:title',
         name: 'og:title',
-        content: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
+        content: 'Convert your android phone into an SMS gateway - httpSMS',
       },
       {
         hid: 'twitter:title',
         name: 'twitter:title',
-        content: 'HTTP SMS - Convert your android phone into an SMS Gateway.',
+        content: 'Convert your android phone into an SMS gateway - httpSMS',
       },
       {
         hid: 'twitter:description',
