@@ -27,7 +27,7 @@
     "@nuxtjs/sitemap": "^2.4.0",
     "core-js": "^3.27.1",
     "date-fns": "^2.29.3",
-    "dotenv": "^16.0.1",
+    "dotenv": "^16.0.3",
     "firebase": "^9.15.0",
     "firebaseui": "^6.0.1",
     "libphonenumber-js": "^1.10.17",
