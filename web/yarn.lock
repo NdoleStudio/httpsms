@@ -8287,10 +8287,10 @@ levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-libphonenumber-js@^1.10.17:
-  version "1.10.17"
-  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.17.tgz#7efcfa3068fc076bc59a43a08a723ccd95308474"
-  integrity sha512-UQrNzsusSn5qaojdpWqporWRdpx6AGeb+egj64NrpYuyKHvnSH9jMp/1Dy3b/WnMyJA5zgV1yw//jC6J0dCXkw==
+libphonenumber-js@^1.10.18:
+  version "1.10.18"
+  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.18.tgz#657c419071c8a02c638c0e80d9ee1232f152f280"
+  integrity sha512-NS4ZEgNhwbcPz1gfSXCGFnQm0xEiyTSPRthIuWytDzOiEG9xnZ2FbLyfJC4tI2BMAAXpoWbNxHYH75pa3Dq9og==
 
 lilconfig@2.0.6:
   version "2.0.6"
