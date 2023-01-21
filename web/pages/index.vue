@@ -158,7 +158,7 @@
           <h2 class="text-h3 text-center">Get Started</h2>
         </v-col>
       </v-row>
-      <v-row class="pb-16">
+      <v-row>
         <v-col cols="12">
           <v-row>
             <v-col cols="12" md="5" class="pr-4">
@@ -213,13 +213,9 @@
             <v-col
               cols="12"
               md="7"
-              class="mb-16"
-              :class="{ 'pt-16': $vuetify.breakpoint.mdAndUp }"
+              :class="{ 'pt-16 mb-16mb-16': $vuetify.breakpoint.mdAndUp }"
             >
-              <div
-                class="w-full mt-4"
-                :class="{ 'mb-16': $vuetify.breakpoint.smAndDown }"
-              >
+              <div class="w-full mt-4">
                 <v-tabs v-model="selectedTab" show-arrows>
                   <v-tab href="#javascript">
                     <v-icon color="#efd81d" class="mr-1">{{
@@ -463,15 +459,15 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   features.
                 </p>
                 <p v-if="!yearlyPricing" class="text-center text--primary">
-                  <span class="text-h3">$12</span>/month
+                  <span class="text-h3">$6</span>/month
                 </p>
                 <p v-else class="text-center text--primary">
-                  <span class="text-h3">$120</span>/year
+                  <span class="text-h3">$60</span>/year
                 </p>
                 <p v-if="!yearlyPricing" class="text-center mt-n3">
-                  or <b>$144</b> per year
+                  or <b>$72</b> per year
                 </p>
-                <p v-else class="text-center mt-n3">or <b>$10</b> per month</p>
+                <p v-else class="text-center mt-n3">or <b>$5</b> per month</p>
                 <v-btn block color="primary" :to="{ name: 'login' }" large
                   >Try For Free</v-btn
                 >

@@ -15,6 +15,8 @@ const setUser = (context: Context): Promise<User | null> => {
         let stateUser: StateUser | null = null
         if (user) {
           stateUser = {
+            email: user.email,
+            displayName: user.displayName,
             id: user.uid,
           }
           setAuthHeader(await user.getIdToken())
@@ -23,7 +25,7 @@ const setUser = (context: Context): Promise<User | null> => {
           resolve(user)
         })
       },
-      reject
+      reject,
     )
   })
 }

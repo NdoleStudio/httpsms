@@ -107,8 +107,16 @@ export default {
           measurementId: 'G-EZ5W9DVK8T',
         },
         services: {
-          auth: true,
           analytics: true,
+          auth: {
+            persistence: 'local', // default
+            initialize: {
+              onAuthStateChangedAction: 'onAuthStateChanged',
+              onIdTokenChangedAction: 'onAuthStateChanged',
+              subscribeManually: false,
+            },
+            ssr: false,
+          },
         },
       },
     ],
@@ -148,6 +156,10 @@ export default {
     hostname: 'https://httpsms.com',
     gzip: true,
     exclude: ['/messages', '/settings', '/threads**'],
+  },
+
+  publicRuntimeConfig: {
+    checkoutURL: process.env.CHECKOUT_URL,
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
