@@ -12,6 +12,7 @@
     "lint:prettier": "prettier --check .",
     "lint": "yarn lint:js && yarn lint:style && yarn lint:prettier",
     "lintfix": "prettier --write --list-different . && yarn lint:js --fix && yarn lint:style --fix",
+    "api:models": "npx swagger-typescript-api -p ..\\api\\docs\\swagger.json -o ./models -n api.ts --no-client",
     "test": "jest"
   },
   "lint-staged": {

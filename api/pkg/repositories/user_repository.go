@@ -22,4 +22,6 @@ type UserRepository interface {
 
 	// LoadOrStore an entities.User by entities.AuthUser
 	LoadOrStore(ctx context.Context, user entities.AuthUser) (*entities.User, bool, error)
+
+	LoadBySubscriptionID(ctx context.Context, subscriptionID string) (*entities.User, error)
 }

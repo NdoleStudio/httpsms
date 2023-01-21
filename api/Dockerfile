@@ -12,8 +12,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go get github.com/swaggo/swag/gen@v1.8.2
-RUN go get github.com/swaggo/swag/cmd/swag@v1.8.2
+RUN go get github.com/swaggo/swag/gen@latest
+RUN go get github.com/swaggo/swag/cmd/swag@vlatest
 RUN go install github.com/swaggo/swag/cmd/swag
 RUN swag init
 RUN go install github.com/gobuffalo/packr/v2/packr2@latest

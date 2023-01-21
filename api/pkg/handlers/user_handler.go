@@ -41,6 +41,8 @@ func NewUserHandler(
 func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/users/me", h.Show)
 	router.Put("/users/me", h.Update)
+	router.Get("/users/subscription-update-url", h.subscriptionUpdateURL)
+	router.Delete("/users/subscription", h.cancelSubscription)
 }
 
 // Show returns an entities.User
@@ -115,4 +117,62 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "user updated successfully", user)
+}
+
+// subscriptionUpdateURL returns the subscription update URL for the authenticated entities.User
+// @Summary      Currently authenticated user subscription update URL
+// @Description  Fetches the subscription URL of the authenticated user.
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Produce      json
+// @Success      200 		{object}	responses.OkString
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/subscription-update-url 	[get]
+func (h *UserHandler) subscriptionUpdateURL(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+	authUser := h.userFromContext(c)
+
+	url, err := h.service.GetSubscriptionUpdateURL(ctx, authUser.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "Subscription update URL fetched successfully", url)
+}
+
+// cancelSubscription cancels the subscription for the authenticated entities.User
+// @Summary      Cancel the user's subscription
+// @Description  Cancel the subscription of the authenticated user.
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Produce      json
+// @Success      200 		{object}	responses.NoContent
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/subscription 	[delete]
+func (h *UserHandler) cancelSubscription(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+	authUser := h.userFromContext(c)
+
+	err := h.service.InitiateSubscriptionCancel(ctx, authUser.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseNoContent(c, "Subscription cancelled successfully")
 }

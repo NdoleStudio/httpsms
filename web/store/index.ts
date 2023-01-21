@@ -1,5 +1,5 @@
 import { ActionContext } from 'vuex'
-import { AxiosError } from 'axios'
+import { AxiosError, AxiosResponse } from 'axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
@@ -7,6 +7,7 @@ import axios, { setAuthHeader } from '~/plugins/axios'
 import { Phone } from '~/models/phone'
 import { User } from '~/models/user'
 import { BillingUsage } from '~/models/billing'
+import { ResponsesNoContent, ResponsesOkString } from '~/models/api'
 
 const defaultNotificationTimeout = 3000
 
@@ -517,5 +518,47 @@ export const actions = {
     })
     await context.commit('setArchivedThreads', payload.isArchived)
     await context.dispatch('loadThreads')
+  },
+
+  getSubscriptionUpdateLink(context: ActionContext<State, State>) {
+    return new Promise<string>((resolve, reject) => {
+      axios
+        .get<ResponsesOkString>(`/v1/users/subscription-update-url`)
+        .then((response: AxiosResponse<ResponsesOkString>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Error while fetching the update URL',
+              type: 'error',
+            }),
+          ])
+          reject(error)
+        })
+    })
+  },
+
+  cancelSubscription(context: ActionContext<State, State>) {
+    return new Promise<string>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(`/v1/users/subscription`)
+        .then((response: AxiosResponse<ResponsesNoContent>) => {
+          resolve(response.data.message)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Error while cancelling your subscription',
+              type: 'error',
+            }),
+          ])
+          reject(error)
+        })
+    })
   },
 }

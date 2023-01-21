@@ -97,3 +97,7 @@ func (h *handler) userFromContext(c *fiber.Ctx) entities.AuthUser {
 func (h *handler) userIDFomContext(c *fiber.Ctx) entities.UserID {
 	return h.userFromContext(c).ID
 }
+
+func (h *handler) computeRoute(middlewares []fiber.Handler, route fiber.Handler) []fiber.Handler {
+	return append(append([]fiber.Handler{}, middlewares...), route)
+}

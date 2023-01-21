@@ -27,9 +27,17 @@
                       <h1
                         class="subtitle-1 font-weight-bold text-uppercase mt-3"
                       >
-                        Free
+                        <span v-if="isOnFreePlan">{{ plan.name }}</span>
+                        <span v-else-if="subscriptionIsCancelled"
+                          ><span class="warning--text">{{ plan.name }}</span> →
+                          Free</span
+                        >
+                        <span v-else>{{ plan.name }}</span>
                       </h1>
-                      <p v-if="plan.price" class="text--secondary">
+                      <p
+                        v-if="!isOnFreePlan && !subscriptionIsCancelled"
+                        class="text--secondary"
+                      >
                         Your next bill is for <b>${{ plan.price }}</b> on
                         <b>{{
                           new Date(
@@ -354,11 +362,9 @@ export default Vue.extend({
     checkoutURL() {
       const url = new URL(this.$config.checkoutURL)
       const user = this.$store.getters.getAuthUser
-      console.log(this.$store.getters.getAuthUser)
-      url.searchParams.append('checkout[custom][user_id]', user?.uid)
+      url.searchParams.append('checkout[custom][user_id]', user?.id)
       url.searchParams.append('checkout[email]', user?.email)
       url.searchParams.append('checkout[name]', user?.displayName)
-      console.log(url.toString())
       return url.toString()
     },
     plan(): PaymentPlan {

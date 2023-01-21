@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
+
 	"github.com/jinzhu/now"
 
 	"github.com/uptrace/uptrace-go/uptrace"
@@ -93,6 +95,8 @@ func NewContainer(projectID string) (container *Container) {
 
 	container.RegisterBillingRoutes()
 	container.RegisterBillingListeners()
+
+	container.RegisterLemonsqueezyRoutes()
 
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
@@ -546,6 +550,7 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.Mailer(),
 		container.UserEmailFactory(),
 		container.MarketingService(),
+		container.LemonsqueezyClient(),
 	)
 }
 
@@ -643,6 +648,54 @@ func (container *Container) RegisterMessageListeners() {
 	for event, handler := range routes {
 		container.EventDispatcher().Subscribe(event, handler)
 	}
+}
+
+// LemonsqueezyService creates a new instance of services.LemonsqueezyService
+func (container *Container) LemonsqueezyService() (service *services.LemonsqueezyService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewLemonsqueezyService(
+		container.Logger(),
+		container.Tracer(),
+		container.UserRepository(),
+		container.EventDispatcher(),
+	)
+}
+
+// LemonsqueezyHandler creates a new instance of handlers.LemonsqueezyHandler
+func (container *Container) LemonsqueezyHandler() (handler *handlers.LemonsqueezyHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+
+	return handlers.NewLemonsqueezyHandlerHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.LemonsqueezyService(),
+		container.LemonsqueezyHandlerValidator(),
+	)
+}
+
+// LemonsqueezyHandlerValidator creates a new instance of validators.LemonsqueezyHandlerValidator
+func (container *Container) LemonsqueezyHandlerValidator() (validator *validators.LemonsqueezyHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewLemonsqueezyHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+		container.LemonsqueezyClient(),
+	)
+}
+
+// LemonsqueezyClient creates a new instance of lemonsqueezy.Client
+func (container *Container) LemonsqueezyClient() (client *lemonsqueezy.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+	return lemonsqueezy.New(
+		lemonsqueezy.WithAPIKey(os.Getenv("LEMONSQUEEZY_API_KEY")),
+		lemonsqueezy.WithSigningSecret(os.Getenv("LEMONSQUEEZY_SIGNING_SECRET")),
+	)
+}
+
+// RegisterLemonsqueezyRoutes registers routes for the /project-settings prefix
+func (container *Container) RegisterLemonsqueezyRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.LemonsqueezyHandler{}))
+	container.LemonsqueezyHandler().RegisterRoutes(container.App())
 }
 
 // RegisterMessageThreadListeners registers event listeners for listeners.MessageThreadListener

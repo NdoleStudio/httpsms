@@ -27,6 +27,11 @@ func NewOtelLogger(projectID string, logger Logger) Tracer {
 	}
 }
 
+func (tracer *otelTracer) StartFromFiberCtxWithLogger(c *fiber.Ctx, logger Logger, name ...string) (context.Context, trace.Span, Logger) {
+	ctx, span := tracer.StartFromFiberCtx(c, getName(name...))
+	return ctx, span, tracer.CtxLogger(logger, span)
+}
+
 func (tracer *otelTracer) StartFromFiberCtx(c *fiber.Ctx, name ...string) (context.Context, trace.Span) {
 	parentCtx, ok := c.Locals(TracerContextKey).(context.Context)
 	if !ok {

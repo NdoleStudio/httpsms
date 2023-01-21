@@ -34,6 +34,8 @@ func NewUserListener(
 
 	return l, map[string]events.EventListener{
 		events.EventTypePhoneHeartbeatDead: l.onPhoneHeartbeatDead,
+		events.UserSubscriptionCreated:     l.OnUserSubscriptionCreated,
+		events.UserSubscriptionCancelled:   l.OnUserSubscriptionCancelled,
 	}
 }
 
@@ -57,6 +59,44 @@ func (listener *UserListener) onPhoneHeartbeatDead(ctx context.Context, event cl
 
 	if err := listener.service.SendPhoneDeadEmail(ctx, sendParams); err != nil {
 		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnUserSubscriptionCreated handles the events.UserSubscriptionCreated event
+func (listener *UserListener) OnUserSubscriptionCreated(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserSubscriptionCreatedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.StartSubscription(ctx, &payload); err != nil {
+		msg := fmt.Sprintf("cannot start subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnUserSubscriptionCancelled handles the events.UserSubscriptionCancelled event
+func (listener *UserListener) OnUserSubscriptionCancelled(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserSubscriptionCancelledPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.CancelSubscription(ctx, &payload); err != nil {
+		msg := fmt.Sprintf("cannot cancell subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

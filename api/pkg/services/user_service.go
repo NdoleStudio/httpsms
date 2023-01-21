@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/events"
+
 	"github.com/NdoleStudio/httpsms/pkg/emails"
+	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/google/uuid"
@@ -17,12 +20,14 @@ import (
 
 // UserService is handles user requests
 type UserService struct {
-	logger           telemetry.Logger
-	tracer           telemetry.Tracer
-	emailFactory     emails.UserEmailFactory
-	mailer           emails.Mailer
-	repository       repositories.UserRepository
-	marketingService *MarketingService
+	service
+	logger             telemetry.Logger
+	tracer             telemetry.Tracer
+	emailFactory       emails.UserEmailFactory
+	mailer             emails.Mailer
+	repository         repositories.UserRepository
+	marketingService   *MarketingService
+	lemonsqueezyClient *lemonsqueezy.Client
 }
 
 // NewUserService creates a new UserService
@@ -33,14 +38,16 @@ func NewUserService(
 	mailer emails.Mailer,
 	emailFactory emails.UserEmailFactory,
 	marketingService *MarketingService,
+	lemonsqueezyClient *lemonsqueezy.Client,
 ) (s *UserService) {
 	return &UserService{
-		logger:           logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:           tracer,
-		mailer:           mailer,
-		marketingService: marketingService,
-		emailFactory:     emailFactory,
-		repository:       repository,
+		logger:             logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:             tracer,
+		mailer:             mailer,
+		marketingService:   marketingService,
+		emailFactory:       emailFactory,
+		repository:         repository,
+		lemonsqueezyClient: lemonsqueezyClient,
 	}
 }
 
@@ -129,5 +136,95 @@ func (service *UserService) SendPhoneDeadEmail(ctx context.Context, params *User
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone dead notification sent successfully to [%s] about [%s]", user.Email, params.Owner))
+	return nil
+}
+
+// StartSubscription starts a subscription for an entities.User
+func (service *UserService) StartSubscription(ctx context.Context, params *events.UserSubscriptionCreatedPayload) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, params.UserID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	user.SubscriptionID = &params.SubscriptionID
+	user.SubscriptionName = params.SubscriptionName
+	user.SubscriptionRenewsAt = &params.SubscriptionRenewsAt
+	user.SubscriptionStatus = &params.SubscriptionStatus
+	user.SubscriptionEndsAt = nil
+
+	if err = service.repository.Update(ctx, user); err != nil {
+		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after update", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// InitiateSubscriptionCancel initiates the cancelling of a subscription on lemonsqueezy
+func (service *UserService) InitiateSubscriptionCancel(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if _, _, err = service.lemonsqueezyClient.Subscriptions.Cancel(ctx, *user.SubscriptionID); err != nil {
+		msg := fmt.Sprintf("could not cancel subscription [%s] for [%T] with with ID [%s]", *user.SubscriptionID, user, user.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("cancelled subscription [%s] for user [%s]", *user.SubscriptionID, user.ID))
+	return nil
+}
+
+// GetSubscriptionUpdateURL initiates the cancelling of a subscription on lemonsqueezy
+func (service *UserService) GetSubscriptionUpdateURL(ctx context.Context, userID entities.UserID) (url string, err error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, userID)
+		return "", service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	subscription, _, err := service.lemonsqueezyClient.Subscriptions.Get(ctx, *user.SubscriptionID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get subscription [%s] for [%T] with with ID [%s]", user.SubscriptionID, user, user.ID)
+		return url, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return subscription.Data.Attributes.Urls.UpdatePaymentMethod, nil
+}
+
+// CancelSubscription starts a subscription for an entities.User
+func (service *UserService) CancelSubscription(ctx context.Context, params *events.UserSubscriptionCancelledPayload) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, params.UserID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	user.SubscriptionID = &params.SubscriptionID
+	user.SubscriptionName = params.SubscriptionName
+	user.SubscriptionRenewsAt = nil
+	user.SubscriptionStatus = &params.SubscriptionStatus
+	user.SubscriptionEndsAt = &params.SubscriptionEndsAt
+
+	if err = service.repository.Update(ctx, user); err != nil {
+		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after update", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
 	return nil
 }

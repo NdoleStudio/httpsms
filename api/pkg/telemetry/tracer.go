@@ -17,9 +17,13 @@ type Tracer interface {
 	// StartFromFiberCtx creates a spanContext and a context.Context containing the newly-created spanContext.
 	StartFromFiberCtx(c *fiber.Ctx, name ...string) (context.Context, trace.Span)
 
+	// StartFromFiberCtxWithLogger creates a spanContext and a context.Context containing the newly-created spanContext with a logger
+	StartFromFiberCtxWithLogger(c *fiber.Ctx, logger Logger, name ...string) (context.Context, trace.Span, Logger)
+
 	// Start creates a spanContext and a context.Context containing the newly-created spanContext.
 	Start(c context.Context, name ...string) (context.Context, trace.Span)
 
+	// StartWithLogger creates a spanContext and a context.Context containing the newly-created spanContext with a logger
 	StartWithLogger(c context.Context, logger Logger, name ...string) (context.Context, trace.Span, Logger)
 
 	// CtxLogger creates a telemetry.Logger with spanContext attributes in the structured logger
