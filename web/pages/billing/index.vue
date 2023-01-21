@@ -41,7 +41,7 @@
                         Your next bill is for <b>${{ plan.price }}</b> on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_renews_at,
+                            $store.getters.getUser.subscription_renews_at
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -52,7 +52,7 @@
                         You will be downgraded to the <b>FREE</b> plan on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_ends_at,
+                            $store.getters.getUser.subscription_ends_at
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -93,7 +93,7 @@
                               of the current billing period on
                               <b>{{
                                 new Date(
-                                  $store.getters.getUser.subscription_renews_at,
+                                  $store.getters.getUser.subscription_renews_at
                                 ).toLocaleDateString()
                               }}</b>
                             </p>
@@ -370,7 +370,7 @@ export default Vue.extend({
     plan(): PaymentPlan {
       return this.plans.find(
         (x) =>
-          x.id === (this.$store.getters.getUser?.subscription_name || 'free'),
+          x.id === (this.$store.getters.getUser?.subscription_name || 'free')
       )!
     },
     isOnFreePlan(): boolean {

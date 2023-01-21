@@ -351,7 +351,7 @@ export const actions = {
         fcm_token: phone.fcm_token,
         phone_number: phone.phone_number,
         message_expiration_seconds: parseInt(
-          phone.message_expiration_seconds.toString(),
+          phone.message_expiration_seconds.toString()
         ),
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
@@ -371,7 +371,7 @@ export const actions = {
 
   async handleAxiosError(
     context: ActionContext<State, State>,
-    error: AxiosError,
+    error: AxiosError
   ) {
     const errorMessage =
       error.response?.data?.data[Object.keys(error.response?.data?.data)[0]][0]
@@ -406,7 +406,7 @@ export const actions = {
 
   async sendMessage(
     context: ActionContext<State, State>,
-    request: SendMessageRequest,
+    request: SendMessageRequest
   ) {
     await axios.post('/v1/messages/send', request)
     await Promise.all([
@@ -421,7 +421,7 @@ export const actions = {
 
   addNotification(
     context: ActionContext<State, State>,
-    request: NotificationRequest,
+    request: NotificationRequest
   ) {
     context.commit('setNotification', request)
   },
@@ -436,7 +436,7 @@ export const actions = {
 
   async loadThreadMessages(
     context: ActionContext<State, State>,
-    threadId: string | null,
+    threadId: string | null
   ) {
     await context.commit('setThreadId', threadId)
     const response = await axios.get('/v1/messages', {
@@ -451,7 +451,7 @@ export const actions = {
 
   async setAuthUser(
     context: ActionContext<State, State>,
-    user: AuthUser | null | undefined,
+    user: AuthUser | null | undefined
   ) {
     const userChanged = user?.id !== context.getters.getAuthUser?.id
 
@@ -468,7 +468,7 @@ export const actions = {
       ])
 
       const phone = context.getters.getPhones.find(
-        (x: Phone) => x.id === context.getters.getUser.active_phone_id,
+        (x: Phone) => x.id === context.getters.getUser.active_phone_id
       )
       if (phone) {
         await context.dispatch('setOwner', phone.phone_number)
@@ -478,7 +478,7 @@ export const actions = {
   async onAuthStateChanged(
     context: ActionContext<State, State>,
     // @ts-ignore
-    { authUser },
+    { authUser }
   ) {
     if (authUser == null) {
       context.commit('setAuthUser', null)
@@ -511,7 +511,7 @@ export const actions = {
 
   async updateThread(
     context: ActionContext<State, State>,
-    payload: { threadId: string; isArchived: boolean },
+    payload: { threadId: string; isArchived: boolean }
   ) {
     await axios.put(`/v1/message-threads/${payload.threadId}`, {
       is_archived: payload.isArchived,

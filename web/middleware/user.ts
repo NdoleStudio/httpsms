@@ -25,7 +25,7 @@ const setUser = (context: Context): Promise<User | null> => {
           resolve(user)
         })
       },
-      reject,
+      reject
     )
   })
 }
