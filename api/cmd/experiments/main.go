@@ -12,5 +12,5 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	_ = di.NewContainer("http-sms")
+	_ = di.NewContainer("http-sms", "")
 }

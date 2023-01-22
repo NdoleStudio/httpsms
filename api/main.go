@@ -7,6 +7,9 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/di"
 )
 
+// Version is injected at runtime
+var Version string
+
 // @title       HTTP SMS API
 // @version     1.0
 // @description API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP
@@ -29,6 +32,6 @@ func main() {
 		di.LoadEnv()
 	}
 
-	container := di.NewContainer("http-sms")
+	container := di.NewContainer("http-sms", Version)
 	container.Logger().Info(container.App().Listen(":8000").Error())
 }

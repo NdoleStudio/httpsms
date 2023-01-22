@@ -20,7 +20,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	container := di.NewContainer("http-sms")
+	container := di.NewContainer("http-sms", "")
 	eventRepo := container.EventRepository()
 	logger := container.Logger()
 

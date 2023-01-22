@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NdoleStudio/go-otelroundtripper"
+	"go.opentelemetry.io/otel/metric/global"
+
 	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/hashicorp/go-retryablehttp"
 
@@ -20,7 +23,6 @@ import (
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
@@ -58,13 +60,14 @@ import (
 type Container struct {
 	projectID       string
 	db              *gorm.DB
+	version         string
 	app             *fiber.App
 	eventDispatcher *services.EventDispatcher
 	logger          telemetry.Logger
 }
 
 // NewContainer creates a new dependency injection container
-func NewContainer(projectID string) (container *Container) {
+func NewContainer(projectID string, version string) (container *Container) {
 	// Set location to UTC
 	now.DefaultConfig = &now.Config{
 		TimeLocation: time.UTC,
@@ -72,10 +75,11 @@ func NewContainer(projectID string) (container *Container) {
 
 	container = &Container{
 		projectID: projectID,
+		version:   version,
 		logger:    logger(3).WithService(fmt.Sprintf("%T", container)),
 	}
 
-	container.InitializeTraceProvider("0.0.1", os.Getenv("GCP_PROJECT_ID"))
+	container.InitializeTraceProvider()
 
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
@@ -572,19 +576,31 @@ func (container *Container) HTTPClient(name string) *http.Client {
 	container.logger.Debug(fmt.Sprintf("creating %s %T", name, http.DefaultClient))
 	return &http.Client{
 		Timeout:   60 * time.Second,
-		Transport: container.RetryHTTPRoundTripper(),
+		Transport: container.HTTPRoundTripper(name),
 	}
 }
 
-//func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
-//	container.logger.Debug(fmt.Sprintf("Debug: initializing %s %T", name, http.DefaultTransport))
-//	return otelroundtripper.New(
-//		otelroundtripper.WithName(name),
-//		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
-//		otelroundtripper.WithMeter(global.Meter(os.Getenv("NAMESPACE"))),
-//		otelroundtripper.WithAttributes(initializers.InitializeOtelResources(container.Version, container.Namespace).Attributes()...),
-//	)
-//}
+// HTTPRoundTripper creates an open telemetry http.RoundTripper
+func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
+	container.logger.Debug(fmt.Sprintf("Debug: initializing %s %T", name, http.DefaultTransport))
+	return otelroundtripper.New(
+		otelroundtripper.WithName(name),
+		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
+		otelroundtripper.WithMeter(global.Meter(container.projectID)),
+		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
+	)
+}
+
+// OtelResources generates default open telemetry resources
+func (container *Container) OtelResources(version string, namespace string) *resource.Resource {
+	return resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(namespace),
+		semconv.ServiceVersionKey.String(version),
+		semconv.ServiceInstanceIDKey.String(hostName()),
+		semconv.DeploymentEnvironmentKey.String(os.Getenv("ENV")),
+	)
+}
 
 // RetryHTTPRoundTripper creates a retryable http.RoundTripper
 func (container *Container) RetryHTTPRoundTripper() http.RoundTripper {
@@ -961,11 +977,11 @@ func (container *Container) UserRepository() repositories.UserRepository {
 }
 
 // InitializeTraceProvider initializes the open telemetry trace provider
-func (container *Container) InitializeTraceProvider(version string, namespace string) func() {
+func (container *Container) InitializeTraceProvider() func() {
 	if isLocal() {
-		return container.initializeUptraceProvider(version, namespace)
+		return container.initializeUptraceProvider(container.version, container.projectID)
 	}
-	return container.initializeGoogleTraceProvider(version, namespace)
+	return container.initializeGoogleTraceProvider(container.version, container.projectID)
 }
 
 func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {
@@ -979,7 +995,7 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 	tp := trace.NewTracerProvider(
 		trace.WithBatcher(exporter),
 		trace.WithSampler(trace.AlwaysSample()),
-		trace.WithResource(container.InitializeOtelResources(version, namespace)),
+		trace.WithResource(container.OtelResources(version, namespace)),
 	)
 
 	otel.SetTracerProvider(tp)
@@ -996,6 +1012,7 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 		uptrace.WithDSN(os.Getenv("UPTRACE_DSN")),
 		uptrace.WithServiceName(namespace),
 		uptrace.WithServiceVersion(version),
+		uptrace.WithDeploymentEnvironment(os.Getenv("ENV")),
 	)
 
 	// Send buffered spans and free resources.
@@ -1005,18 +1022,6 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 			container.logger.Error(err)
 		}
 	}
-}
-
-// InitializeOtelResources initializes open telemetry resources
-func (container *Container) InitializeOtelResources(version string, namespace string) *resource.Resource {
-	return resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(namespace),
-		semconv.ServiceNamespaceKey.String(namespace),
-		semconv.ServiceVersionKey.String(version),
-		semconv.ServiceInstanceIDKey.String(hostName()),
-		attribute.String("service.environment", os.Getenv("ENV")),
-	)
 }
 
 func logger(skipFrameCount int) telemetry.Logger {
