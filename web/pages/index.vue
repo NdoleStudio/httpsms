@@ -70,10 +70,10 @@
           ></v-divider>
         </v-col>
         <v-col
+          v-if="$vuetify.breakpoint.mdAndUp"
           cols="12"
           md="8"
           class="py-16"
-          v-if="$vuetify.breakpoint.mdAndUp"
         >
           <v-img
             class="mx-auto mb-4"
