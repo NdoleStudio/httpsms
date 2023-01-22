@@ -479,7 +479,7 @@ export default Vue.extend({
   methods: {
     showEditPhone(phoneId: string) {
       const phone = this.$store.getters.getPhones.find(
-        (x: Phone) => x.id === phoneId,
+        (x: Phone) => x.id === phoneId
       )
       if (!phone) {
         return
@@ -491,7 +491,7 @@ export default Vue.extend({
 
     onWebhookEdit(webhookId: string) {
       const webhook = this.webhooks.find(
-        (x: EntitiesWebhook) => x.id === webhookId,
+        (x: EntitiesWebhook) => x.id === webhookId
       )
       if (!webhook) {
         return
