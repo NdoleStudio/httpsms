@@ -20,13 +20,3 @@ type MessagePhoneReceivedPayload struct {
 	Timestamp time.Time       `json:"timestamp"`
 	Content   string          `json:"content"`
 }
-
-// MessagePhoneReceivedPayloadV1 is the payload of the EventTypeMessagePhoneReceived event
-type MessagePhoneReceivedPayloadV1 struct {
-	MessageID uuid.UUID       `json:"id"`
-	UserID    entities.UserID `json:"user_id"`
-	Owner     string          `json:"owner"`
-	Contact   string          `json:"contact"`
-	Timestamp time.Time       `json:"timestamp"`
-	Content   string          `json:"content"`
-}

@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"fmt"
+
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
@@ -36,6 +38,10 @@ func (logger *zerologLogger) WithService(service string) Logger {
 		logger.zerolog,
 		logger.spanContext,
 	)
+}
+
+func (logger *zerologLogger) Printf(s string, i ...interface{}) {
+	logger.decorateEvent(logger.zerolog.Info()).Msg(fmt.Sprintf(s, i...))
 }
 
 // WithString creates a new structured zerolog logger instance with a key value pair

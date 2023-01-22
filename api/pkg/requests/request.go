@@ -42,6 +42,20 @@ func (input *request) sanitizeBool(value string) string {
 	return value
 }
 
+func (input *request) removeStringDuplicates(values []string) []string {
+	cache := map[string]struct{}{}
+	for _, value := range values {
+		cache[value] = struct{}{}
+	}
+
+	var result []string
+	for key := range cache {
+		result = append(result, key)
+	}
+
+	return result
+}
+
 // getLimit gets the take as a string
 func (input *request) getBool(value string) bool {
 	if value == "true" {

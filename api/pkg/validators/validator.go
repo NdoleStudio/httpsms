@@ -1,7 +1,11 @@
 package validators
 
 import (
+	"context"
 	"fmt"
+	"net/url"
+
+	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/thedevsaddam/govalidator"
@@ -10,7 +14,8 @@ import (
 type validator struct{}
 
 const (
-	phoneNumberRule = "phoneNumber"
+	phoneNumberRule   = "phoneNumber"
+	webhookEventsRule = "webhookEvents"
 )
 
 func init() {
@@ -29,4 +34,46 @@ func init() {
 
 		return nil
 	})
+
+	govalidator.AddCustomRule(webhookEventsRule, func(field string, rule string, message string, value interface{}) error {
+		input, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("the %s field must be a string array", field)
+		}
+
+		if len(input) == 0 {
+			return fmt.Errorf("the %s field is an empty array", field)
+		}
+
+		validEvents := map[string]bool{
+			events.EventTypeMessagePhoneReceived: true,
+		}
+
+		for _, event := range input {
+			if _, ok := validEvents[event]; !ok {
+				return fmt.Errorf("the %s field has an invalid event with name [%s]", field, event)
+			}
+		}
+
+		return nil
+	})
+}
+
+// ValidateUUID that the payload is a UUID
+func (validator *validator) ValidateUUID(_ context.Context, ID string, name string) url.Values {
+	request := map[string]string{
+		name: ID,
+	}
+
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			name: []string{
+				"required",
+				"uuid",
+			},
+		},
+	})
+
+	return v.ValidateStruct()
 }

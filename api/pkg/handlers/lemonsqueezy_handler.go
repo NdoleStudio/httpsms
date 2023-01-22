@@ -23,8 +23,8 @@ type LemonsqueezyHandler struct {
 	validator *validators.LemonsqueezyHandlerValidator
 }
 
-// NewLemonsqueezyHandlerHandler creates a new LemonsqueezyHandler
-func NewLemonsqueezyHandlerHandler(
+// NewLemonsqueezyHandler creates a new LemonsqueezyHandler
+func NewLemonsqueezyHandler(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	service *services.LemonsqueezyService,

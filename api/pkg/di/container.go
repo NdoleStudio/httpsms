@@ -3,11 +3,13 @@ package di
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/jinzhu/now"
 
@@ -95,6 +97,9 @@ func NewContainer(projectID string) (container *Container) {
 
 	container.RegisterBillingRoutes()
 	container.RegisterBillingListeners()
+
+	container.RegisterWebhookRoutes()
+	container.RegisterWebhookListeners()
 
 	container.RegisterLemonsqueezyRoutes()
 
@@ -340,6 +345,17 @@ func (container *Container) BillingHandler() (h *handlers.BillingHandler) {
 	)
 }
 
+// WebhookHandler creates a new instance of handlers.WebhookHandler
+func (container *Container) WebhookHandler() (h *handlers.WebhookHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", h))
+	return handlers.NewWebhookHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.WebhookService(),
+		container.WebhookHandlerValidator(),
+	)
+}
+
 // HeartbeatHandlerValidator creates a new instance of validators.HeartbeatHandlerValidator
 func (container *Container) HeartbeatHandlerValidator() (validator *validators.HeartbeatHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
@@ -353,6 +369,15 @@ func (container *Container) HeartbeatHandlerValidator() (validator *validators.H
 func (container *Container) BillingHandlerValidator() (validator *validators.BillingHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
 	return validators.NewBillingHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// WebhookHandlerValidator creates a new instance of validators.WebhookHandlerValidator
+func (container *Container) WebhookHandlerValidator() (validator *validators.WebhookHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewWebhookHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
 	)
@@ -445,6 +470,16 @@ func (container *Container) BillingUsageRepository() (repository repositories.Bi
 	)
 }
 
+// WebhookRepository creates a new instance of repositories.WebhookRepository
+func (container *Container) WebhookRepository() (repository repositories.WebhookRepository) {
+	container.logger.Debug("creating GORM repositories.WebhookRepository")
+	return repositories.NewGormWebhookRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
 // PhoneNotificationRepository creates a new instance of repositories.PhoneNotificationRepository
 func (container *Container) PhoneNotificationRepository() (repository repositories.PhoneNotificationRepository) {
 	container.logger.Debug("creating GORM repositories.PhoneNotificationRepository")
@@ -515,6 +550,44 @@ func (container *Container) BillingService() (service *services.BillingService) 
 		container.Tracer(),
 		container.BillingUsageRepository(),
 	)
+}
+
+// WebhookService creates a new instance of services.WebhookService
+func (container *Container) WebhookService() (service *services.WebhookService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewWebhookService(
+		container.Logger(),
+		container.Tracer(),
+		container.HTTPClient("webhook"),
+		container.WebhookRepository(),
+	)
+}
+
+// HTTPClient creates a new http.Client
+func (container *Container) HTTPClient(name string) *http.Client {
+	container.logger.Debug(fmt.Sprintf("creating %s %T", name, http.DefaultClient))
+	return &http.Client{
+		Timeout:   60 * time.Second,
+		Transport: container.RetryHTTPRoundTripper(),
+	}
+}
+
+//func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
+//	container.logger.Debug(fmt.Sprintf("Debug: initializing %s %T", name, http.DefaultTransport))
+//	return otelroundtripper.New(
+//		otelroundtripper.WithName(name),
+//		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
+//		otelroundtripper.WithMeter(global.Meter(os.Getenv("NAMESPACE"))),
+//		otelroundtripper.WithAttributes(initializers.InitializeOtelResources(container.Version, container.Namespace).Attributes()...),
+//	)
+//}
+
+// RetryHTTPRoundTripper creates a retryable http.RoundTripper
+func (container *Container) RetryHTTPRoundTripper() http.RoundTripper {
+	container.logger.Debug(fmt.Sprintf("initializing retry %T", http.DefaultTransport))
+	retryClient := retryablehttp.NewClient()
+	retryClient.Logger = container.Logger()
+	return retryClient.StandardClient().Transport
 }
 
 // PhoneService creates a new instance of services.PhoneService
@@ -665,7 +738,7 @@ func (container *Container) LemonsqueezyService() (service *services.Lemonsqueez
 func (container *Container) LemonsqueezyHandler() (handler *handlers.LemonsqueezyHandler) {
 	container.logger.Debug(fmt.Sprintf("creating %T", handler))
 
-	return handlers.NewLemonsqueezyHandlerHandler(
+	return handlers.NewLemonsqueezyHandler(
 		container.Logger(),
 		container.Tracer(),
 		container.LemonsqueezyService(),
@@ -687,6 +760,7 @@ func (container *Container) LemonsqueezyHandlerValidator() (validator *validator
 func (container *Container) LemonsqueezyClient() (client *lemonsqueezy.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	return lemonsqueezy.New(
+		lemonsqueezy.WithHTTPClient(container.HTTPClient("lemonsqueezy")),
 		lemonsqueezy.WithAPIKey(os.Getenv("LEMONSQUEEZY_API_KEY")),
 		lemonsqueezy.WithSigningSecret(os.Getenv("LEMONSQUEEZY_SIGNING_SECRET")),
 	)
@@ -769,6 +843,20 @@ func (container *Container) RegisterBillingListeners() {
 	}
 }
 
+// RegisterWebhookListeners registers event listeners for listeners.WebhookListener
+func (container *Container) RegisterWebhookListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.WebhookListener{}))
+	_, routes := listeners.NewWebhookListener(
+		container.Logger(),
+		container.Tracer(),
+		container.WebhookService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
 // MessageService creates a new instance of services.MessageService
 func (container *Container) MessageService() (service *services.MessageService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -816,6 +904,12 @@ func (container *Container) RegisterHeartbeatRoutes() {
 func (container *Container) RegisterBillingRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.BillingHandler{}))
 	container.BillingHandler().RegisterRoutes(container.AuthRouter())
+}
+
+// RegisterWebhookRoutes registers routes for the /webhooks prefix
+func (container *Container) RegisterWebhookRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.WebhookHandler{}))
+	container.WebhookHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterPhoneRoutes registers routes for the /phone prefix

@@ -14,11 +14,14 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gofiber/fiber/v2 v2.34.0
 	github.com/gofiber/swagger v0.0.1
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
+	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hirosassa/zerodriver v0.1.2
 	github.com/jinzhu/now v1.1.4
 	github.com/joho/godotenv v1.4.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+	github.com/lib/pq v1.10.6
 	github.com/matcornic/hermes/v2 v2.1.0
 	github.com/nyaruka/phonenumbers v1.1.0
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
@@ -72,6 +75,7 @@ require (
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.1 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

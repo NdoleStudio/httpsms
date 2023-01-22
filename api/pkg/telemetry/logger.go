@@ -32,4 +32,7 @@ type Logger interface {
 
 	// Fatal logs a new message with fatal level.
 	Fatal(err error)
+
+	// Printf makes the logger compatible with retryablehttp.Logger
+	Printf(string, ...interface{})
 }
