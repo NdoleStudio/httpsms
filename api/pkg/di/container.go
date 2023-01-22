@@ -226,6 +226,10 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.BillingUsage{})))
 	}
 
+	if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Webhook{})))
+	}
+
 	return container.db
 }
 

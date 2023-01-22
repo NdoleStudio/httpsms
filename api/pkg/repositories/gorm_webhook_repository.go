@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -75,6 +76,25 @@ func (repository *gormWebhookRepository) LoadByEvent(ctx context.Context, userID
 	}
 
 	return webhooks, nil
+}
+
+func (repository *gormWebhookRepository) Load(ctx context.Context, userID entities.UserID, webhookID uuid.UUID) (*entities.Webhook, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	webhook := new(entities.Webhook)
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", webhookID).First(&webhook).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("webhook with ID [%s] for user [%s] does not exist", webhookID, userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot load webhook with ID [%s] for user [%s]", webhookID, userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return webhook, nil
 }
 
 func (repository *gormWebhookRepository) Delete(ctx context.Context, userID entities.UserID, webhookID uuid.UUID) error {
