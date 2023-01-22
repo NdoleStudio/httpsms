@@ -401,7 +401,7 @@
   </v-container>
 </template>
 
-<script lang="ts">
+<script>
 import Vue from 'vue'
 import {
   mdiArrowLeft,
@@ -414,10 +414,8 @@ import {
   mdiEyeOff,
   mdiSquareEditOutline,
 } from '@mdi/js'
-import { Phone } from '~/models/phone'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
-import { EntitiesWebhook } from '~/models/api'
 
 export default Vue.extend({
   name: 'SettingsIndex',
@@ -477,10 +475,8 @@ export default Vue.extend({
   },
 
   methods: {
-    showEditPhone(phoneId: string) {
-      const phone = this.$store.getters.getPhones.find(
-        (x: Phone) => x.id === phoneId
-      )
+    showEditPhone(phoneId) {
+      const phone = this.$store.getters.getPhones.find((x) => x.id === phoneId)
       if (!phone) {
         return
       }
@@ -489,10 +485,8 @@ export default Vue.extend({
       this.resetErrors()
     },
 
-    onWebhookEdit(webhookId: string) {
-      const webhook = this.webhooks.find(
-        (x: EntitiesWebhook) => x.id === webhookId
-      )
+    onWebhookEdit(webhookId) {
+      const webhook = this.webhooks.find((x) => x.id === webhookId)
       if (!webhook) {
         return
       }
@@ -546,7 +540,7 @@ export default Vue.extend({
           this.showWebhookEdit = false
           this.loadWebhooks()
         })
-        .catch((errors: ErrorMessages) => {
+        .catch((errors) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -567,7 +561,7 @@ export default Vue.extend({
           this.showWebhookEdit = false
           this.loadWebhooks()
         })
-        .catch((errors: ErrorMessages) => {
+        .catch((errors) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -575,7 +569,7 @@ export default Vue.extend({
         })
     },
 
-    deleteWebhook(webhookId: string) {
+    deleteWebhook(webhookId) {
       this.updatingWebhook = true
       this.$store
         .dispatch('deleteWebhook', webhookId)
@@ -596,7 +590,7 @@ export default Vue.extend({
       this.loadingWebhooks = true
       this.$store
         .dispatch('getWebhooks')
-        .then((webhooks: Array<EntitiesWebhook>) => {
+        .then((webhooks) => {
           this.webhooks = webhooks
         })
         .finally(() => {
@@ -604,7 +598,7 @@ export default Vue.extend({
         })
     },
 
-    deletePhone(phoneId: string) {
+    deletePhone(phoneId) {
       this.updatingPhone = true
       this.$store.dispatch('deletePhone', phoneId).finally(() => {
         this.updatingPhone = false
