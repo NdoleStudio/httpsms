@@ -57,7 +57,7 @@ func (h *WebhookHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Han
 // @Param        skip		query  int  	false	"number of webhooks to skip"		minimum(0)
 // @Param        query		query  string  	false 	"filter webhooks containing query"
 // @Param        limit		query  int  	false	"number of webhooks to return"	minimum(1)	maximum(20)
-// @Success      200 		{object}	responses.Ok[entities.Webhook]
+// @Success      200 		{object}	responses.WebhooksResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401	    {object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
@@ -133,7 +133,7 @@ func (h *WebhookHandler) Delete(c *fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param        payload   	body 		requests.WebhookStore  		true "Payload of the webhook request"
-// @Success      200 		{object}	responses.Ok[entities.Webhook]
+// @Success      200 		{object}	responses.WebhookResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401	    {object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
@@ -177,7 +177,7 @@ func (h *WebhookHandler) Store(c *fiber.Ctx) error {
 // @Produce      json
 // @Param 		 webhookID	path		string 							true 	"ID of the webhook" 					default(32343a19-da5e-4b1b-a767-3298a73703ca)
 // @Param        payload   	body 		requests.WebhookUpdate  		true 	"Payload of webhook details to update"
-// @Success      200 		{object}	responses.PhoneResponse
+// @Success      200 		{object}	responses.WebhookResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
@@ -198,7 +198,7 @@ func (h *WebhookHandler) Update(c *fiber.Ctx) error {
 	if errors := h.validator.ValidateUpdate(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
-		return h.responseUnprocessableEntity(c, errors, "validation errors while updating user")
+		return h.responseUnprocessableEntity(c, errors, "validation errors while updating webhook")
 	}
 
 	user, err := h.service.Update(ctx, request.ToUpdateParams(h.userFromContext(c)))

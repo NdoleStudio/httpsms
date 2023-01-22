@@ -69,7 +69,12 @@
             :class="{ 'ml-16': $vuetify.breakpoint.mdAndDown }"
           ></v-divider>
         </v-col>
-        <v-col cols="12" md="8" class="py-16">
+        <v-col
+          cols="12"
+          md="8"
+          class="py-16"
+          v-if="$vuetify.breakpoint.mdAndUp"
+        >
           <v-img
             class="mx-auto mb-4"
             max-height="700"
@@ -85,6 +90,27 @@
         <v-row class="mb-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
             <div>
+              <h3 class="text-h3 mb-1">Webhooks</h3>
+              <h5 class="text-h6 font-weight-light">
+                If you want to build advanced integrations, we support callback
+                URLs. The httpSMS platform can forward SMS messages received on
+                your android phone to your server using a callback URL which you
+                provide.
+              </h5>
+            </div>
+          </v-col>
+          <v-col cols="12" md="6" :order-lg="1">
+            <v-img
+              class="mb-4"
+              max-height="300"
+              contain
+              :src="require('assets/img/connection.svg')"
+            ></v-img>
+          </v-col>
+        </v-row>
+        <v-row class="mb-16">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-md="1">
+            <div>
               <h3 class="text-h3 mb-1">Control Sending</h3>
               <h5 class="text-h6 font-weight-light">
                 Send bulk messages without mobile carrier limitations. If you
@@ -93,7 +119,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6" :order-lg="1">
+          <v-col cols="12" md="6" :order-md="2">
             <v-img
               class="mb-4"
               max-height="300"
@@ -103,7 +129,7 @@
           </v-col>
         </v-row>
         <v-row class="mb-16">
-          <v-col cols="12" md="6" class="d-flex align-center">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-md="2">
             <div>
               <h3 class="text-h3 mb-1">Monitoring</h3>
               <h5 class="text-h6 font-weight-light">
@@ -112,7 +138,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-col cols="12" md="6" :order-md="1">
             <v-img
               class="mb-4"
               max-height="300"
@@ -122,7 +148,7 @@
           </v-col>
         </v-row>
         <v-row class="mt-16">
-          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-md="1">
             <div>
               <h3 class="text-h3 mb-1">Open Source</h3>
               <h5 class="text-h6 mb-3 font-weight-light">
@@ -141,7 +167,7 @@
               </a>
             </div>
           </v-col>
-          <v-col cols="12" md="6" :order-lg="1">
+          <v-col cols="12" md="6" :order-md="2">
             <v-img
               class="mb-4"
               max-height="300"
@@ -439,7 +465,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Forward received messages to slack
+                  >Forward received messages to your server
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>{{
@@ -486,7 +512,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Forward received messages to slack
+                  >Forward received messages to your server
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>{{

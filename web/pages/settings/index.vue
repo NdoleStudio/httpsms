@@ -36,7 +36,7 @@
               </h4>
             </div>
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
-            <p>
+            <p class="text--secondary">
               Use your API Key in the <code>x-api-key</code> HTTP Header when
               sending requests to
               <code>https://api.httpsms.com</code> endpoints.
@@ -76,8 +76,73 @@
                 >Documentation</v-btn
               >
             </div>
+            <h5 class="text-h4 mb-3 mt-12">Webhooks</h5>
+            <p class="text--secondary">
+              Webhooks allow us to send events to your server for example when
+              the android phone receives an SMS message we can foward the
+              message to your server.
+            </p>
+            <div v-if="loadingWebhooks">
+              <v-progress-circular
+                :size="60"
+                :width="2"
+                color="primary"
+                class="mb-4"
+                indeterminate
+              ></v-progress-circular>
+            </div>
+            <v-simple-table v-else-if="webhooks.length" class="mb-4">
+              <template #default>
+                <thead>
+                  <tr class="text-uppercase subtitle-2">
+                    <th v-if="$vuetify.breakpoint.xlOnly" class="text-left">
+                      ID
+                    </th>
+                    <th class="text-left">Callback URL</th>
+                    <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
+                      Events
+                    </th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="webhook in webhooks" :key="webhook.id">
+                    <td v-if="$vuetify.breakpoint.xlOnly" class="text-left">
+                      {{ webhook.id }}
+                    </td>
+                    <td>{{ webhook.url }}</td>
+                    <td v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
+                      <v-chip
+                        v-for="event in webhook.events"
+                        :key="event"
+                        small
+                        >{{ event }}</v-chip
+                      >
+                    </td>
+                    <td class="text-center">
+                      <v-btn
+                        :icon="$vuetify.breakpoint.mdAndDown"
+                        small
+                        color="info"
+                        :disabled="updatingWebhook"
+                        @click.prevent="onWebhookEdit(webhook.id)"
+                      >
+                        <v-icon small>{{ mdiSquareEditOutline }}</v-icon>
+                        <span v-if="!$vuetify.breakpoint.mdAndDown">
+                          Edit
+                        </span>
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+            <v-btn color="primary" @click="onWebhookCreate">
+              <v-icon left>{{ mdiLinkVariant }}</v-icon>
+              Add webhook
+            </v-btn>
             <h5 class="text-h4 mb-3 mt-12">Phones</h5>
-            <p>
+            <p class="text--secondary">
               List of mobile phones which are registered for sending and
               receiving SMS messages.
             </p>
@@ -85,7 +150,7 @@
               <template #default>
                 <thead>
                   <tr class="text-uppercase subtitle-2">
-                    <th v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
+                    <th v-if="$vuetify.breakpoint.xlOnly" class="text-left">
                       ID
                     </th>
                     <th class="text-left">Phone Number</th>
@@ -102,7 +167,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="phone in $store.getters.getPhones" :key="phone.id">
-                    <td v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
+                    <td v-if="$vuetify.breakpoint.xlOnly" class="text-left">
                       {{ phone.id }}
                     </td>
                     <td>{{ phone.phone_number | phoneNumber }}</td>
@@ -154,8 +219,9 @@
         </v-row>
       </v-container>
     </div>
-    <v-dialog v-model="showPhoneEdit" max-width="500px">
+    <v-dialog v-model="showPhoneEdit" max-width="600px">
       <v-card>
+        <v-card-title>Edit Phone</v-card-title>
         <v-card-text v-if="activePhone" class="mt-6">
           <v-container>
             <v-row>
@@ -230,6 +296,108 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="showWebhookEdit" max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span v-if="!activeWebhook.id">Add a new&nbsp;</span>
+          <span v-else>Edit&nbsp;</span>
+          webhook
+        </v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col class="pt-8">
+              <v-text-field
+                v-if="activeWebhook.id"
+                outlined
+                dense
+                disabled
+                label="ID"
+                :value="activeWebhook.id"
+              >
+              </v-text-field>
+              <v-text-field
+                v-model="activeWebhook.url"
+                outlined
+                dense
+                label="Callback URL"
+                persistent-placeholder
+                persistent-hint
+                :error="errorMessages.has('url')"
+                :error-messages="errorMessages.get('url')"
+                hint="A POST request will be sent to this URL every time an event is triggered in httpSMS."
+                placeholder="https://example.com/webhook"
+              >
+              </v-text-field>
+              <v-text-field
+                v-model="activeWebhook.signing_key"
+                outlined
+                dense
+                class="mt-6"
+                persistent-placeholder
+                persistent-hint
+                label="Signing Key"
+                placeholder="******************"
+                :error="errorMessages.has('signing_key')"
+                :error-messages="errorMessages.get('signing_key')"
+                hint="The signing key is used to verify the webhook is sent from httpSMS."
+              >
+              </v-text-field>
+              <v-select
+                v-model="activeWebhook.events"
+                :items="events"
+                label="Events"
+                multiple
+                outlined
+                persistent-placeholder
+                class="mt-6"
+                dense
+                :error="errorMessages.has('events')"
+                :error-messages="errorMessages.get('events')"
+                hint="Select multiple httpSMS events to watch for"
+                persistent-hint
+              ></v-select>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="mt-n4 pb-4">
+          <loading-button
+            v-if="!activeWebhook.id"
+            :icon="mdiContentSave"
+            :loading="updatingWebhook"
+            small
+            @click="createWebhook"
+          >
+            Save Webhook
+          </loading-button>
+          <loading-button
+            v-else
+            small
+            color="info"
+            :loading="updatingWebhook"
+            @click="updateWebhook"
+          >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiContentSave }}
+            </v-icon>
+            Update Webhook
+          </loading-button>
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="activeWebhook.id"
+            :disabled="updatingWebhook"
+            small
+            color="error"
+            text
+            @click="deleteWebhook(activeWebhook.id)"
+          >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiDelete }}
+            </v-icon>
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -242,13 +410,18 @@ import {
   mdiDelete,
   mdiContentSave,
   mdiEye,
+  mdiLinkVariant,
   mdiEyeOff,
   mdiSquareEditOutline,
 } from '@mdi/js'
 import { Phone } from '~/models/phone'
+import { ErrorMessages } from '~/plugins/errors'
+import LoadingButton from '~/components/LoadingButton.vue'
+import { EntitiesWebhook } from '~/models/api'
 
 export default Vue.extend({
   name: 'SettingsIndex',
+  components: { LoadingButton },
   middleware: ['auth'],
   data() {
     return {
@@ -258,12 +431,25 @@ export default Vue.extend({
       mdiAccountCircle,
       mdiShieldCheck,
       mdiDelete,
+      mdiLinkVariant,
       mdiContentSave,
       mdiSquareEditOutline,
+      errorMessages: new ErrorMessages(),
       apiKeyShow: false,
       showPhoneEdit: false,
+      activeWebhook: {
+        id: null,
+        url: '',
+        signing_key: '',
+        events: ['message.phone.received'],
+      },
+      updatingWebhook: false,
+      loadingWebhooks: false,
+      webhooks: [],
+      showWebhookEdit: false,
       activePhone: null,
       updatingPhone: false,
+      events: ['message.phone.received'],
     }
   },
   head() {
@@ -287,18 +473,48 @@ export default Vue.extend({
       return
     }
     this.$store.dispatch('loadUser')
+    this.loadWebhooks()
   },
 
   methods: {
     showEditPhone(phoneId: string) {
       const phone = this.$store.getters.getPhones.find(
-        (x: Phone) => x.id === phoneId
+        (x: Phone) => x.id === phoneId,
       )
       if (!phone) {
         return
       }
       this.activePhone = { ...phone }
       this.showPhoneEdit = true
+      this.resetErrors()
+    },
+
+    onWebhookEdit(webhookId: string) {
+      const webhook = this.webhooks.find(
+        (x: EntitiesWebhook) => x.id === webhookId,
+      )
+      if (!webhook) {
+        return
+      }
+      this.activeWebhook = {
+        id: webhook.id,
+        url: webhook.url,
+        signing_key: webhook.signing_key,
+        events: webhook.events,
+      }
+      this.showWebhookEdit = true
+      this.resetErrors()
+    },
+
+    onWebhookCreate() {
+      this.activeWebhook = {
+        id: null,
+        url: '',
+        signing_key: '',
+        events: ['message.phone.received'],
+      }
+      this.showWebhookEdit = true
+      this.resetErrors()
     },
 
     async updatePhone() {
@@ -311,6 +527,81 @@ export default Vue.extend({
           this.activePhone = null
         }
       })
+    },
+
+    resetErrors() {
+      this.errorMessages = new ErrorMessages()
+    },
+
+    createWebhook() {
+      this.resetErrors()
+      this.updatingWebhook = true
+      this.$store
+        .dispatch('createWebhook', this.activeWebhook)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Webhook created successfully',
+            type: 'success',
+          })
+          this.showWebhookEdit = false
+          this.loadWebhooks()
+        })
+        .catch((errors: ErrorMessages) => {
+          this.errorMessages = errors
+        })
+        .finally(() => {
+          this.updatingWebhook = false
+        })
+    },
+
+    updateWebhook() {
+      this.resetErrors()
+      this.updatingWebhook = true
+      this.$store
+        .dispatch('updateWebhook', this.activeWebhook)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Webhook updated successfully',
+            type: 'success',
+          })
+          this.showWebhookEdit = false
+          this.loadWebhooks()
+        })
+        .catch((errors: ErrorMessages) => {
+          this.errorMessages = errors
+        })
+        .finally(() => {
+          this.updatingWebhook = false
+        })
+    },
+
+    deleteWebhook(webhookId: string) {
+      this.updatingWebhook = true
+      this.$store
+        .dispatch('deleteWebhook', webhookId)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Webhook deleted successfully',
+            type: 'success',
+          })
+          this.showWebhookEdit = false
+          this.loadWebhooks()
+        })
+        .finally(() => {
+          this.updatingWebhook = false
+        })
+    },
+
+    loadWebhooks() {
+      this.loadingWebhooks = true
+      this.$store
+        .dispatch('getWebhooks')
+        .then((webhooks: Array<EntitiesWebhook>) => {
+          this.webhooks = webhooks
+        })
+        .finally(() => {
+          this.loadingWebhooks = false
+        })
     },
 
     deletePhone(phoneId: string) {

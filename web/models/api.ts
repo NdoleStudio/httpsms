@@ -173,6 +173,23 @@ export interface EntitiesUser {
   updated_at: string
 }
 
+export interface EntitiesWebhook {
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string
+  /** @example ["[message.phone.received]"] */
+  events: string[]
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  id: string
+  /** @example "DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY" */
+  signing_key: string
+  /** @example "2022-06-05T14:26:10.303278+03:00" */
+  updated_at: string
+  /** @example "https://example.com" */
+  url: string
+  /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
+  user_id: string
+}
+
 export interface RequestsHeartbeatStore {
   owner: string
 }
@@ -245,6 +262,18 @@ export interface RequestsPhoneUpsert {
 export interface RequestsUserUpdate {
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   active_phone_id: string
+}
+
+export interface RequestsWebhookStore {
+  events: string[]
+  signing_key: string
+  url: string
+}
+
+export interface RequestsWebhookUpdate {
+  events: string[]
+  signing_key: string
+  url: string
 }
 
 export interface ResponsesBadRequest {
@@ -376,6 +405,22 @@ export interface ResponsesUnprocessableEntity {
 
 export interface ResponsesUserResponse {
   data: EntitiesUser
+  /** @example "item created successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesWebhookResponse {
+  data: EntitiesWebhook
+  /** @example "item created successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesWebhooksResponse {
+  data: EntitiesWebhook[]
   /** @example "item created successfully" */
   message: string
   /** @example "success" */

@@ -13,7 +13,7 @@ type Webhook struct {
 	UserID     UserID         `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	URL        string         `json:"url" example:"https://example.com"`
 	SigningKey string         `json:"signing_key" example:"DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY"`
-	Events     pq.StringArray `json:"events" example:"[message.phone.received]" gorm:"type:string[]"`
+	Events     pq.StringArray `json:"events" example:"[message.phone.received]" gorm:"type:text[]" swaggertype:"array,string"`
 	CreatedAt  time.Time      `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt  time.Time      `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }

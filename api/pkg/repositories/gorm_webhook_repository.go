@@ -69,7 +69,7 @@ func (repository *gormWebhookRepository) LoadByEvent(ctx context.Context, userID
 	defer span.End()
 
 	webhooks := make([]*entities.Webhook, 0)
-	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("? = ANY(events)", event).Find(webhooks).Error
+	err := repository.db.Raw("SELECT * FROM webhooks WHERE user_id = ? AND CAST(? as TEXT) = ANY(events)", userID, event).Scan(&webhooks).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot load webhooks for user with ID [%s] and event [%s]", userID, event)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
