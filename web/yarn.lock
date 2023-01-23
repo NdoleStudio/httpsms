@@ -6361,9 +6361,10 @@ firebase@^9.15.0:
     "@firebase/storage-compat" "0.2.0"
     "@firebase/util" "1.8.0"
 
-firebaseui@^6.0.1:
-  version "6.0.1"
-  resolved "https://registry.npmjs.org/firebaseui/-/firebaseui-6.0.1.tgz"
+firebaseui@^6.0.2:
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/firebaseui/-/firebaseui-6.0.2.tgz#14411920e17a7986e2ae969cb4890dfbf94fbfc5"
+  integrity sha512-Jwwn2I657loKrvedeCrwED9UibLFl8Cm0uH2ntDBSCpruWzG4HXlIWb35WsDdXMILRPQjJ1PwVwuRsrnsxcaXA==
   dependencies:
     dialog-polyfill "^0.4.7"
     material-design-lite "^1.2.0"
