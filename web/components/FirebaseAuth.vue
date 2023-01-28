@@ -33,6 +33,7 @@ export default class FirebaseAuth extends Vue {
 
   mounted(): void {
     if (process.browser) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const firebaseui = require('firebaseui')
       require('firebaseui/dist/firebaseui.css')
       this.ui = new firebaseui.auth.AuthUI(this.$fire.auth)
@@ -57,7 +58,7 @@ export default class FirebaseAuth extends Vue {
           this.firebaseUIInitialized = true
           const container = this.$refs.authContainer as HTMLElement
           Array.from(
-            container.getElementsByClassName('firebaseui-idp-text-long')
+            container.getElementsByClassName('firebaseui-idp-text-long'),
           ).forEach((item: Element) => {
             item.textContent =
               item.textContent?.replace('Sign in with', 'Continue with') || null
