@@ -62,7 +62,7 @@
     "jest": "^27.4.4",
     "lint-staged": "^13.1.1",
     "postcss-html": "^1.5.0",
-    "prettier": "^2.8.3",
+    "prettier": "^2.8.4",
     "stylelint": "^14.16.1",
     "stylelint-config-prettier": "^9.0.5",
     "stylelint-config-recommended-vue": "^1.1.0",
