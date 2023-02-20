@@ -31,7 +31,7 @@
     "dotenv": "^16.0.3",
     "firebase": "^9.17.1",
     "firebaseui": "^6.0.2",
-    "libphonenumber-js": "^1.10.18",
+    "libphonenumber-js": "^1.10.20",
     "nuxt": "^2.16.1",
     "nuxt-highlightjs": "^1.0.3",
     "vue": "^2.6.14",
