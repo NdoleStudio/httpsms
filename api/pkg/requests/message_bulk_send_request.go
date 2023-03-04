@@ -14,7 +14,7 @@ import (
 type MessageBulkSend struct {
 	request
 	From    string   `json:"from" example:"+18005550199"`
-	To      []string `json:"to" example:"[+18005550100,+18005550100]"`
+	To      []string `json:"to" example:"+18005550100,+18005550100"`
 	Content string   `json:"content" example:"This is a sample text message"`
 }
 
