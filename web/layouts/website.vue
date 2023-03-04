@@ -32,6 +32,16 @@
               Pricing
             </v-btn>
             <v-btn
+              v-if="$vuetify.breakpoint.lgAndUp"
+              large
+              text
+              color="primary"
+              class="my-5 mr-2"
+              :to="{ name: 'login' }"
+            >
+              Login
+            </v-btn>
+            <v-btn
               exact-path
               color="primary"
               class="my-5"
