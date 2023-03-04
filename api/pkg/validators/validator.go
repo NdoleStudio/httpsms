@@ -14,8 +14,9 @@ import (
 type validator struct{}
 
 const (
-	phoneNumberRule   = "phoneNumber"
-	webhookEventsRule = "webhookEvents"
+	phoneNumberRule         = "phoneNumber"
+	multiplePhoneNumberRule = "multiplePhoneNumber"
+	webhookEventsRule       = "webhookEvents"
 )
 
 func init() {
@@ -30,6 +31,22 @@ func init() {
 		_, err := phonenumbers.Parse(phoneNumber, phonenumbers.UNKNOWN_REGION)
 		if err != nil {
 			return fmt.Errorf("the %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+		}
+
+		return nil
+	})
+
+	govalidator.AddCustomRule(multiplePhoneNumberRule, func(field string, rule string, message string, value interface{}) error {
+		phoneNumbers, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("the %s field must be an array of a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+		}
+
+		for index, number := range phoneNumbers {
+			_, err := phonenumbers.Parse(number, phonenumbers.UNKNOWN_REGION)
+			if err != nil {
+				return fmt.Errorf("the %s value in index [%d] must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field, index)
+			}
 		}
 
 		return nil

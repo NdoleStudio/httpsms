@@ -105,6 +105,52 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 	return result
 }
 
+// ValidateMessageBulkSend validates the requests.MessageBulkSend request
+func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Context, userID entities.UserID, request requests.MessageBulkSend) url.Values {
+	ctx, span := validator.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := validator.tracer.CtxLogger(validator.logger, span)
+
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"to": []string{
+				"required",
+				"max:50",
+				"min:1",
+				multiplePhoneNumberRule,
+			},
+			"from": []string{
+				"required",
+				phoneNumberRule,
+			},
+			"content": []string{
+				"required",
+				"min:1",
+				"max:1024",
+			},
+		},
+	})
+
+	result := v.ValidateStruct()
+	if len(result) != 0 {
+		return result
+	}
+
+	_, err := validator.phoneService.Load(ctx, userID, request.From)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		result.Add("from", fmt.Sprintf("no phone found with with 'from' number [%s]. Install the android app on your phone to start sending messages", request.From))
+	}
+
+	if err != nil {
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("could not load phone for user [%s] and phone [%s]", userID, request.From))))
+		result.Add("from", fmt.Sprintf("could not validate 'from' number [%s], please try again later", request.From))
+	}
+
+	return result
+}
+
 // ValidateMessageOutstanding validates the requests.MessageOutstanding request
 func (validator MessageHandlerValidator) ValidateMessageOutstanding(_ context.Context, request requests.MessageOutstanding) url.Values {
 	v := govalidator.New(govalidator.Options{
