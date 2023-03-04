@@ -37,10 +37,7 @@ export default class DefaultLayout extends Vue {
   }
 
   mounted() {
-    // if (this.$route.name !== 'index') {
-    //   this.$store.dispatch('setNextRoute', this.$route.path)
-    //   this.$router.push({ name: 'index' })
-    // }
+    this.startPoller()
   }
 
   beforeDestroy(): void {
@@ -57,7 +54,7 @@ export default class DefaultLayout extends Vue {
       if (this.$store.getters.getAuthUser && this.$store.getters.getOwner) {
         promises.push(
           this.$store.dispatch('loadThreads'),
-          this.$store.dispatch('getHeartbeat')
+          this.$store.dispatch('getHeartbeat'),
         )
       }
 
@@ -69,8 +66,8 @@ export default class DefaultLayout extends Vue {
         promises.push(
           this.$store.dispatch(
             'loadThreadMessages',
-            this.$store.getters.getThread.id
-          )
+            this.$store.getters.getThread.id,
+          ),
         )
       }
       await Promise.all(promises)

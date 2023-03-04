@@ -19,16 +19,15 @@ func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User) (
 	email := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
-				fmt.Sprintf("You have exceeded your limit of [%d] messages on your [%s] plan.", user.SubscriptionName.Limit(), user.SubscriptionName),
-				fmt.Sprintf("Upgrade your plan to send more messages on https://httpsms.com/billing"),
+				fmt.Sprintf("You have exceeded your limit of %d messages on your %s plan.", user.SubscriptionName.Limit(), user.SubscriptionName),
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "Click the button below to upgrade your plan",
+					Instructions: "Click the button below to upgrade your plan and continue sending more messages",
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "UPGRADE PLAN",
+						Text:      "Upgrade your httpSMS plan",
 						Link:      "https://httpsms.com/billing",
 					},
 				},
@@ -65,12 +64,12 @@ func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usag
 	email := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
-				fmt.Sprintf("This is a friendly notification that you have exceeded %d of your monthly SMS limit on the %s plan.", percent, user.SubscriptionName),
-				fmt.Sprintf("You have sent %d messages and received %d messages. Upgrade your plan to send more messages on https://httpsms.com/billing", usage.SentMessages, usage.ReceivedMessages),
+				fmt.Sprintf("This is a friendly notification that you have exceeded %d%% of your monthly SMS limit on the %s plan.", percent, user.SubscriptionName),
+				fmt.Sprintf("You have sent %d messages and received %d messages using httpSMS this month.", usage.SentMessages, usage.ReceivedMessages),
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "Click the button below to upgrade your plan",
+					Instructions: "Click the button below to upgrade your plan so you can continue without any disruptions",
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",

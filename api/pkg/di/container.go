@@ -2,6 +2,7 @@ package di
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -258,6 +259,10 @@ func (container *Container) Cache() cache.Cache {
 	if err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot parse redis url [%s]", os.Getenv("REDIS_URL"))))
 	}
+	opt.TLSConfig = &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+
 	return cache.NewRedisCache(container.Tracer(), redis.NewClient(opt))
 }
 

@@ -6,7 +6,7 @@ import timber.log.Timber
 import java.net.URI
 
 object Settings {
-    private const val DEFAULT_PHONE_NUMBER = "66836863" // NOT_FOUND :)
+    private const val DEFAULT_PHONE_NUMBER = "NOT_FOUND"
 
     private const val SETTINGS_OWNER = "SETTINGS_OWNER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"

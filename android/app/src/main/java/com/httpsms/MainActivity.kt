@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         Timber.d( "on activity resume")
         redirectToLogin()
+        setOwner(getPhoneNumber(this))
         refreshToken(this)
         setLastHeartbeatTimestamp(this)
     }
