@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/google/uuid"
 
@@ -46,6 +48,7 @@ func NewMessageHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Post("/messages/send", h.PostSend)
+	router.Post("/messages/bulk-send", h.BulkSend)
 	router.Post("/messages/receive", h.PostReceive)
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
@@ -98,6 +101,59 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "message added to queue", message)
+}
+
+// BulkSend a bulk entities.Message
+// @Summary      Send bulk SMS messages
+// @Description  Add bulk SMS messages to be sent by the android phone
+// @Security	 ApiKeyAuth
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        payload   body requests.MessageBulkSend  true  "Bulk send message request payload"
+// @Success      200  {object}  []responses.MessagesResponse
+// @Failure      400  {object}  responses.BadRequest
+// @Failure 	 401  {object}	responses.Unauthorized
+// @Failure      422  {object}  responses.UnprocessableEntity
+// @Failure      500  {object}  responses.InternalServerError
+// @Router       /messages/bulk-send [post]
+func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageBulkSend
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateMessageBulkSend(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while sending messages")
+	}
+
+	var responses []*entities.Message
+	params := request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL())
+	for _, param := range params {
+		if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
+			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't send a message", h.userIDFomContext(c))))
+			break
+		}
+
+		message, err := h.service.SendMessage(ctx, param)
+		if err != nil {
+			msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
+			ctxLogger.Error(stacktrace.Propagate(err, msg))
+			break
+		}
+		responses = append(responses, message)
+	}
+
+	return h.responseOK(c, "messages added to queue", responses)
 }
 
 // GetOutstanding returns an entities.Message which is still to be sent by the mobile phone
