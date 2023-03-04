@@ -18,3 +18,8 @@ type BillingUsage struct {
 	CreatedAt        time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt        time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }
+
+// TotalMessages returns the sum of sent and received messages
+func (usage *BillingUsage) TotalMessages() uint {
+	return usage.SentMessages + usage.ReceivedMessages
+}

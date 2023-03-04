@@ -14,6 +14,97 @@ type hermesUserEmailFactory struct {
 	generator hermes.Hermes
 }
 
+// UsageLimitExceeded is the email sent when the plan limit is reached
+func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User) (*Email, error) {
+	email := hermes.Email{
+		Body: hermes.Body{
+			Intros: []string{
+				fmt.Sprintf("You have exceeded your limit of [%d] messages on your [%s] plan.", user.SubscriptionName.Limit(), user.SubscriptionName),
+				fmt.Sprintf("Upgrade your plan to send more messages on https://httpsms.com/billing"),
+			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "Click the button below to upgrade your plan",
+					Button: hermes.Button{
+						Color:     "#329ef4",
+						TextColor: "#FFFFFF",
+						Text:      "UPGRADE PLAN",
+						Link:      "https://httpsms.com/billing",
+					},
+				},
+			},
+			Title:     "Hey,",
+			Signature: "Cheers",
+			Outros: []string{
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+			},
+		},
+	}
+
+	html, err := factory.generator.GenerateHTML(email)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "cannot generate html email")
+	}
+
+	text, err := factory.generator.GeneratePlainText(email)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "cannot generate text email")
+	}
+
+	return &Email{
+		ToEmail: user.Email,
+		Subject: "⚠ You have exceeded your plan limit",
+		HTML:    html,
+		Text:    text,
+	}, nil
+}
+
+// UsageLimitAlert is the email sent when the plan limit is reached
+func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usage *entities.BillingUsage) (*Email, error) {
+	percent := (usage.TotalMessages() * 100) / user.SubscriptionName.Limit()
+	email := hermes.Email{
+		Body: hermes.Body{
+			Intros: []string{
+				fmt.Sprintf("This is a friendly notification that you have exceeded %d of your monthly SMS limit on the %s plan.", percent, user.SubscriptionName),
+				fmt.Sprintf("You have sent %d messages and received %d messages. Upgrade your plan to send more messages on https://httpsms.com/billing", usage.SentMessages, usage.ReceivedMessages),
+			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "Click the button below to upgrade your plan",
+					Button: hermes.Button{
+						Color:     "#329ef4",
+						TextColor: "#FFFFFF",
+						Text:      "UPGRADE PLAN",
+						Link:      "https://httpsms.com/billing",
+					},
+				},
+			},
+			Title:     "Hey,",
+			Signature: "Cheers",
+			Outros: []string{
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+			},
+		},
+	}
+
+	html, err := factory.generator.GenerateHTML(email)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "cannot generate html email")
+	}
+
+	text, err := factory.generator.GeneratePlainText(email)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "cannot generate text email")
+	}
+
+	return &Email{
+		ToEmail: user.Email,
+		Subject: fmt.Sprintf("⚠ %d%% Usage Limit Alert", percent),
+		HTML:    html,
+		Text:    text,
+	}, nil
+}
+
 // NewHermesUserEmailFactory creates a new instance of the UserEmailFactory
 func NewHermesUserEmailFactory(config *HermesGeneratorConfig) UserEmailFactory {
 	return &hermesUserEmailFactory{

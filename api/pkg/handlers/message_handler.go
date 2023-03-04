@@ -19,10 +19,11 @@ import (
 // MessageHandler handles message http requests.
 type MessageHandler struct {
 	handler
-	logger    telemetry.Logger
-	tracer    telemetry.Tracer
-	validator *validators.MessageHandlerValidator
-	service   *services.MessageService
+	logger         telemetry.Logger
+	tracer         telemetry.Tracer
+	billingService *services.BillingService
+	validator      *validators.MessageHandlerValidator
+	service        *services.MessageService
 }
 
 // NewMessageHandler creates a new MessageHandler
@@ -30,13 +31,15 @@ func NewMessageHandler(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	validator *validators.MessageHandlerValidator,
+	billingService *services.BillingService,
 	service *services.MessageService,
 ) (h *MessageHandler) {
 	return &MessageHandler{
-		logger:    logger.WithService(fmt.Sprintf("%T", h)),
-		tracer:    tracer,
-		validator: validator,
-		service:   service,
+		logger:         logger.WithService(fmt.Sprintf("%T", h)),
+		tracer:         tracer,
+		validator:      validator,
+		billingService: billingService,
+		service:        service,
 	}
 }
 
@@ -80,6 +83,11 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending message")
+	}
+
+	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't send a message", h.userIDFomContext(c))))
+		return h.responsePaymentRequired(c, *msg)
 	}
 
 	message, err := h.service.SendMessage(ctx, request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL()))
@@ -276,6 +284,11 @@ func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while receiving message")
+	}
+
+	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't receive a message", h.userIDFomContext(c))))
+		return h.responsePaymentRequired(c, *msg)
 	}
 
 	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(h.userIDFomContext(c), c.OriginalURL()))

@@ -35,15 +35,23 @@
                         <span v-else>{{ plan.name }}</span>
                       </h1>
                       <p
-                        v-if="!isOnFreePlan && !subscriptionIsCancelled"
+                        v-if="
+                          !isOnFreePlan &&
+                          !isOnLifetimePlan &&
+                          !subscriptionIsCancelled
+                        "
                         class="text--secondary"
                       >
                         Your next bill is for <b>${{ plan.price }}</b> on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_renews_at
+                            $store.getters.getUser.subscription_renews_at,
                           ).toLocaleDateString()
                         }}</b>
+                      </p>
+                      <p v-if="isOnLifetimePlan" class="text--secondary">
+                        You are on the life time plan which costs
+                        <b>${{ plan.price }}</b>
                       </p>
                       <p
                         v-else-if="subscriptionIsCancelled"
@@ -52,7 +60,7 @@
                         You will be downgraded to the <b>FREE</b> plan on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_ends_at
+                            $store.getters.getUser.subscription_ends_at,
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -62,19 +70,30 @@
                     </v-col>
                     <v-col cols="12" class="d-flex mb-2 mt-n6">
                       <loading-button
-                        v-if="!subscriptionIsCancelled && !isOnFreePlan"
+                        v-if="
+                          !subscriptionIsCancelled &&
+                          !isOnFreePlan &&
+                          !isOnLifetimePlan
+                        "
                         color="primary"
                         :loading="loading"
                         @click="updateDetails"
                       >
                         Update Details
                       </loading-button>
-                      <v-btn v-else color="primary" :href="checkoutURL"
+                      <v-btn
+                        v-else-if="!isOnLifetimePlan"
+                        color="primary"
+                        :href="checkoutURL"
                         >Upgrade Plan</v-btn
                       >
                       <v-spacer></v-spacer>
                       <v-dialog
-                        v-if="!subscriptionIsCancelled && !isOnFreePlan"
+                        v-if="
+                          !subscriptionIsCancelled &&
+                          !isOnFreePlan &&
+                          !isOnLifetimePlan
+                        "
                         v-model="dialog"
                         max-width="590"
                       >
@@ -93,7 +112,7 @@
                               of the current billing period on
                               <b>{{
                                 new Date(
-                                  $store.getters.getUser.subscription_renews_at
+                                  $store.getters.getUser.subscription_renews_at,
                                 ).toLocaleDateString()
                               }}</b>
                             </p>
@@ -335,7 +354,7 @@ export default Vue.extend({
         {
           name: 'Free',
           id: 'free',
-          messagesPerMonth: 1000,
+          messagesPerMonth: 200,
           price: 0,
         },
         {
@@ -349,6 +368,12 @@ export default Vue.extend({
           id: 'pro-yearly',
           messagesPerMonth: 5000,
           price: 60,
+        },
+        {
+          name: 'PRO - Lifetime',
+          id: 'pro-lifetime',
+          messagesPerMonth: 5000,
+          price: 300,
         },
       ],
     }
@@ -370,11 +395,14 @@ export default Vue.extend({
     plan(): PaymentPlan {
       return this.plans.find(
         (x) =>
-          x.id === (this.$store.getters.getUser?.subscription_name || 'free')
+          x.id === (this.$store.getters.getUser?.subscription_name || 'free'),
       )!
     },
     isOnFreePlan(): boolean {
       return this.plan.id === 'free'
+    },
+    isOnLifetimePlan(): boolean {
+      return this.plan.id === 'pro-lifetime'
     },
     subscriptionIsCancelled(): boolean {
       return this.$store.getters.getUser?.subscription_status === 'cancelled'

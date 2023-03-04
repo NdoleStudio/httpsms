@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/cache"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/NdoleStudio/go-otelroundtripper"
 	"go.opentelemetry.io/otel/metric/global"
 
@@ -246,6 +249,16 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
 	}
 	return app
+}
+
+// Cache creates a new instance of cache.Cache
+func (container *Container) Cache() cache.Cache {
+	container.logger.Debug("creating cache.Cache")
+	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot parse redis url [%s]", os.Getenv("REDIS_URL"))))
+	}
+	return cache.NewRedisCache(container.Tracer(), redis.NewClient(opt))
 }
 
 // FirebaseAuthClient creates a new instance of auth.Client
@@ -556,7 +569,11 @@ func (container *Container) BillingService() (service *services.BillingService) 
 	return services.NewBillingService(
 		container.Logger(),
 		container.Tracer(),
+		container.Cache(),
+		container.Mailer(),
+		container.UserEmailFactory(),
 		container.BillingUsageRepository(),
+		container.UserRepository(),
 	)
 }
 
@@ -690,6 +707,7 @@ func (container *Container) MessageHandler() (handler *handlers.MessageHandler) 
 		container.Logger(),
 		container.Tracer(),
 		container.MessageHandlerValidator(),
+		container.BillingService(),
 		container.MessageService(),
 	)
 }

@@ -454,7 +454,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Send or receive up to <b>1,000</b> SMS/month
+                  >Send or receive up to <b>200</b> SMS/month
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>

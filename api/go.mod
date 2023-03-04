@@ -27,6 +27,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.1.4
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
 	github.com/pkg/errors v0.9.1
+	github.com/redis/go-redis/v9 v9.0.2
 	github.com/rs/zerolog v1.28.0
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/swaggo/swag v1.8.9
@@ -63,6 +64,8 @@ require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

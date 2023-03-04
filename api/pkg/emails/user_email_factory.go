@@ -10,4 +10,10 @@ import (
 type UserEmailFactory interface {
 	// PhoneDead sends an emails when the user's phone is not sending heartbeats
 	PhoneDead(user *entities.User, lastHeartbeatTimestamp time.Time, owner string) (*Email, error)
+
+	// UsageLimitExceeded sends an email when the user's limit is exceeded
+	UsageLimitExceeded(user *entities.User) (*Email, error)
+
+	// UsageLimitAlert sends an email when a user is approaching the limit
+	UsageLimitAlert(user *entities.User, usage *entities.BillingUsage) (*Email, error)
 }

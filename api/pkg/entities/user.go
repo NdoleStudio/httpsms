@@ -12,6 +12,14 @@ type UserID string
 // SubscriptionName is the name of the subscription
 type SubscriptionName string
 
+// Limit returns the limit of a subscription
+func (subscription SubscriptionName) Limit() uint {
+	if subscription == SubscriptionNameFree {
+		return 200
+	}
+	return 5000
+}
+
 // SubscriptionNameFree represents a free subscription
 const SubscriptionNameFree = SubscriptionName("free")
 
@@ -20,6 +28,9 @@ const SubscriptionNameProMonthly = SubscriptionName("pro-monthly")
 
 // SubscriptionNameProYearly represents a yearly pro subscription
 const SubscriptionNameProYearly = SubscriptionName("pro-yearly")
+
+// SubscriptionNameProLifetime represents a pro lifetime subscription
+const SubscriptionNameProLifetime = SubscriptionName("pro-lifetime")
 
 // User stores information about a user
 type User struct {
@@ -34,4 +45,9 @@ type User struct {
 	SubscriptionEndsAt   *time.Time       `json:"subscription_ends_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	CreatedAt            time.Time        `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt            time.Time        `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
+}
+
+// IsOnProPlan checks if a user is on the pro plan
+func (user User) IsOnProPlan() bool {
+	return user.SubscriptionName == SubscriptionNameProLifetime || user.SubscriptionName == SubscriptionNameProMonthly || user.SubscriptionName == SubscriptionNameProYearly
 }

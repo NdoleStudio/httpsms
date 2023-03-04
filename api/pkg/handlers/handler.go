@@ -57,6 +57,13 @@ func (h *handler) responseNotFound(c *fiber.Ctx, message string) error {
 	})
 }
 
+func (h *handler) responsePaymentRequired(c *fiber.Ctx, message string) error {
+	return c.Status(fiber.StatusPaymentRequired).JSON(fiber.Map{
+		"status":  "error",
+		"message": message,
+	})
+}
+
 func (h *handler) responseNoContent(c *fiber.Ctx, message string) error {
 	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{
 		"status":  "success",
