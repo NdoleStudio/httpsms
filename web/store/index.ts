@@ -44,7 +44,6 @@ export type State = {
   owner: string | null
   axiosError: AxiosError | null
   loadingThreads: boolean
-  loadingMessages: boolean
   archivedThreads: boolean
   authStateChanged: boolean
   authUser: AuthUser | null
@@ -69,7 +68,6 @@ export const state = (): State => ({
   billingUsage: null,
   billingUsageHistory: [],
   archivedThreads: false,
-  loadingMessages: true,
   pooling: false,
   phones: [],
   user: null,
@@ -166,10 +164,6 @@ export const getters = {
     return state.loadingThreads
   },
 
-  getLoadingMessages(state: State): boolean {
-    return state.loadingMessages
-  },
-
   getThread(state: State): MessageThread {
     const thread = state.threads.find((x) => x.id === state.threadId)
     if (thread === undefined) {
@@ -249,7 +243,6 @@ export const mutations = {
   setOwner(state: State, payload: string) {
     state.owner = payload
     state.loadingThreads = true
-    state.loadingMessages = true
   },
 
   setArchivedThreads(state: State, payload: boolean) {

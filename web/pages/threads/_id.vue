@@ -64,7 +64,7 @@
         </v-menu>
       </v-app-bar>
       <v-progress-linear
-        v-if="$store.getters.getLoadingMessages"
+        v-if="loadingMessages"
         color="primary"
         indeterminate
       ></v-progress-linear>
@@ -74,12 +74,16 @@
           class="messages-body no-scrollbar"
           :class="{ 'pr-7': $vuetify.breakpoint.lgAndUp }"
         >
-          <v-row v-for="message in messages" :key="message.id">
+          <v-row
+            v-for="message in messages"
+            :key="message.id"
+            :style="{ visibility: messageVisibility }"
+          >
             <v-col
               class="d-flex"
               :class="{
                 'pr-12': $vuetify.breakpoint.mdAndDown && !isMT(message),
-                'pl-12 pr-5': $vuetify.breakpoint.mdAndDown && isMT(message),
+                'pl-12 pr-8': $vuetify.breakpoint.mdAndDown && isMT(message),
                 'pl-16 ml-16': $vuetify.breakpoint.lgAndUp && isMT(message),
                 'pr-16 mr-16': $vuetify.breakpoint.lgAndUp && !isMT(message),
               }"
@@ -265,6 +269,8 @@ export default Vue.extend({
       mdiCheckAll,
       mdiCheck,
       mdiAlert,
+      hideMessages: true,
+      loadingMessages: false,
       messages: [] as Message[],
       mdiPackageUp,
       mdiPackageDown,
@@ -284,6 +290,12 @@ export default Vue.extend({
   computed: {
     contactIsPhoneNumber(): boolean {
       return isValidPhoneNumber(this.$store.getters.getThread.contact)
+    },
+    messageVisibility(): string {
+      if (this.hideMessages) {
+        return 'hidden'
+      }
+      return 'visible'
     },
     contact(): string {
       return this.$store.getters.getThread.contact
@@ -319,12 +331,21 @@ export default Vue.extend({
     },
 
     loadMessages() {
+      this.loadingMessages = true
       this.$store
         .dispatch('loadThreadMessages', this.$route.params.id)
         .then((messages: Array<Message>) => {
           this.messages = [...messages].reverse()
         })
-      this.scrollToElement()
+        .finally(() => {
+          setTimeout(() => {
+            this.loadingMessages = false
+          }, 750)
+        })
+      this.hideMessages = true
+      setTimeout(() => {
+        this.scrollToElement()
+      }, 500)
     },
 
     async loadData() {
@@ -333,8 +354,8 @@ export default Vue.extend({
 
       if (!this.$store.getters.hasThreadId(this.$route.params.id)) {
         await this.$router.push({ name: 'threads' })
-        this.loadMessages()
       }
+      this.loadMessages()
     },
 
     isMT(message: Message): boolean {
@@ -343,7 +364,10 @@ export default Vue.extend({
 
     scrollToElement() {
       const el: Element = this.$refs.messageBody as Element
-      el.scrollTop = el.scrollHeight + 120
+      if (el) {
+        el.scrollTop = el.scrollHeight + 120
+      }
+      this.hideMessages = false
     },
 
     archiveThread() {
