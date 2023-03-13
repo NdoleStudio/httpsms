@@ -38,7 +38,7 @@ export default class DefaultLayout extends Vue {
   }
 
   mounted() {
-    this.startPoller()
+    // this.startPoller()
     setTimeout(() => {
       if (this.poller) {
         clearInterval(this.poller)
