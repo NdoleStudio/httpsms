@@ -30,7 +30,7 @@ export default {
   middleware: ['auth'],
   head() {
     return {
-      title: 'Threads - Http SMS',
+      title: 'Threads - httpSMS',
     }
   },
   async mounted() {

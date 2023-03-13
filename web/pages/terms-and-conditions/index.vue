@@ -169,7 +169,7 @@ export default Vue.extend({
   },
   head() {
     return {
-      title: 'Terms And Conditions - Http SMS',
+      title: 'Terms And Conditions - httpSMS',
     }
   },
 })

@@ -265,6 +265,7 @@ export default Vue.extend({
       mdiCheckAll,
       mdiCheck,
       mdiAlert,
+      messages: [] as Message[],
       mdiPackageUp,
       mdiPackageDown,
       mdiAccount,
@@ -277,13 +278,10 @@ export default Vue.extend({
   },
   head() {
     return {
-      title: 'Messages - Http SMS',
+      title: 'Messages - httpSMS',
     }
   },
   computed: {
-    messages(): Array<Message> {
-      return [...this.$store.getters.getThreadMessages].reverse()
-    },
     contactIsPhoneNumber(): boolean {
       return isValidPhoneNumber(this.$store.getters.getThread.contact)
     },
@@ -320,17 +318,23 @@ export default Vue.extend({
       )
     },
 
+    loadMessages() {
+      this.$store
+        .dispatch('loadThreadMessages', this.$route.params.id)
+        .then((messages: Array<Message>) => {
+          this.messages = [...messages].reverse()
+        })
+      this.scrollToElement()
+    },
+
     async loadData() {
       await this.$store.dispatch('loadPhones')
       await this.$store.dispatch('loadThreads')
 
       if (!this.$store.getters.hasThreadId(this.$route.params.id)) {
         await this.$router.push({ name: 'threads' })
-        return
+        this.loadMessages()
       }
-
-      await this.$store.dispatch('loadThreadMessages', this.$route.params.id)
-      this.scrollToElement()
     },
 
     isMT(message: Message): boolean {
@@ -373,12 +377,7 @@ export default Vue.extend({
         this.selectedMenuItem = -1
       }, 1000)
 
-      await this.$store.dispatch(
-        'loadThreadMessages',
-        this.$store.getters.getThread.id,
-      )
-
-      this.scrollToElement()
+      this.loadMessages()
     },
 
     async sendMessage(event: KeyboardEvent) {

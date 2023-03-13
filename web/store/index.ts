@@ -57,7 +57,6 @@ export type State = {
   heartbeat: null | Heartbeat
   pooling: boolean
   notification: Notification
-  threadMessages: Array<Message>
 }
 
 export const state = (): State => ({
@@ -72,7 +71,6 @@ export const state = (): State => ({
   archivedThreads: false,
   loadingMessages: true,
   pooling: false,
-  threadMessages: [],
   phones: [],
   user: null,
   owner: null,
@@ -172,10 +170,6 @@ export const getters = {
     return state.loadingMessages
   },
 
-  getThreadMessages(state: State): Array<Message> {
-    return state.threadMessages
-  },
-
   getThread(state: State): MessageThread {
     const thread = state.threads.find((x) => x.id === state.threadId)
     if (thread === undefined) {
@@ -214,10 +208,6 @@ export const mutations = {
   },
   setBillingUsage(state: State, payload: BillingUsage | null) {
     state.billingUsage = payload
-  },
-  setThreadMessages(state: State, payload: Array<Message>) {
-    state.threadMessages = payload
-    state.loadingMessages = false
   },
   setHeartbeat(state: State, payload: Heartbeat | null) {
     state.heartbeat = payload
@@ -277,7 +267,6 @@ export const mutations = {
     state.phones = []
     state.user = null
     state.threadId = null
-    state.threadMessages = []
     state.archivedThreads = false
     state.owner = null
   },
@@ -355,7 +344,7 @@ export const actions = {
         fcm_token: phone.fcm_token,
         phone_number: phone.phone_number,
         message_expiration_seconds: parseInt(
-          phone.message_expiration_seconds.toString(),
+          phone.message_expiration_seconds.toString()
         ),
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
@@ -375,7 +364,7 @@ export const actions = {
 
   async handleAxiosError(
     context: ActionContext<State, State>,
-    error: AxiosError,
+    error: AxiosError
   ) {
     const errorMessage =
       error.response?.data?.data[Object.keys(error.response?.data?.data)[0]][0]
@@ -410,7 +399,7 @@ export const actions = {
 
   async sendMessage(
     context: ActionContext<State, State>,
-    request: SendMessageRequest,
+    request: SendMessageRequest
   ) {
     try {
       const response = await axios.post('/v1/messages/send', request)
@@ -426,10 +415,7 @@ export const actions = {
         type: 'error',
       })
     }
-    await Promise.all([
-      context.dispatch('loadThreadMessages', context.getters.getThread.id),
-      context.dispatch('loadThreads'),
-    ])
+    await Promise.all([context.dispatch('loadThreads')])
   },
 
   setThreadId(context: ActionContext<State, State>, threadId: string | null) {
@@ -438,7 +424,7 @@ export const actions = {
 
   addNotification(
     context: ActionContext<State, State>,
-    request: NotificationRequest,
+    request: NotificationRequest
   ) {
     context.commit('setNotification', request)
   },
@@ -447,24 +433,37 @@ export const actions = {
     context.commit('disableNotification')
   },
 
-  async loadThreadMessages(
+  loadThreadMessages(
     context: ActionContext<State, State>,
-    threadId: string | null,
-  ) {
-    await context.commit('setThreadId', threadId)
-    const response = await axios.get('/v1/messages', {
-      params: {
-        contact: context.getters.getThread.contact,
-        owner: context.getters.getThread.owner,
-        limit: 100,
-      },
+    threadId: string | null
+  ): Promise<Array<Message>> {
+    context.commit('setThreadId', threadId)
+    return new Promise<Array<Message>>((resolve, reject) => {
+      axios
+        .get('/v1/messages', {
+          params: {
+            contact: context.getters.getThread.contact,
+            owner: context.getters.getThread.owner,
+            limit: 100,
+          },
+        })
+        .then((response: AxiosResponse) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await context.dispatch('addNotification', {
+            message:
+              error.response?.data?.message ?? 'Errors while fetching messages',
+            type: 'error',
+          })
+          reject(error)
+        })
     })
-    context.commit('setThreadMessages', response.data.data)
   },
 
   async setAuthUser(
     context: ActionContext<State, State>,
-    user: AuthUser | null | undefined,
+    user: AuthUser | null | undefined
   ) {
     const userChanged = user?.id !== context.getters.getAuthUser?.id
 
@@ -481,7 +480,7 @@ export const actions = {
       ])
 
       const phone = context.getters.getPhones.find(
-        (x: Phone) => x.id === context.getters.getUser.active_phone_id,
+        (x: Phone) => x.id === context.getters.getUser.active_phone_id
       )
       if (phone) {
         await context.dispatch('setOwner', phone.phone_number)
@@ -491,7 +490,7 @@ export const actions = {
   async onAuthStateChanged(
     context: ActionContext<State, State>,
     // @ts-ignore
-    { authUser },
+    { authUser }
   ) {
     if (authUser == null) {
       await Promise.all([
@@ -510,7 +509,7 @@ export const actions = {
   async onIdTokenChanged(
     _: ActionContext<State, State>,
     // @ts-ignore
-    { authUser },
+    { authUser }
   ) {
     if (authUser == null) {
       return
@@ -539,7 +538,7 @@ export const actions = {
 
   async updateThread(
     context: ActionContext<State, State>,
-    payload: { threadId: string; isArchived: boolean },
+    payload: { threadId: string; isArchived: boolean }
   ) {
     await axios.put(`/v1/message-threads/${payload.threadId}`, {
       is_archived: payload.isArchived,
@@ -592,7 +591,7 @@ export const actions = {
 
   createWebhook(
     context: ActionContext<State, State>,
-    payload: RequestsWebhookStore,
+    payload: RequestsWebhookStore
   ) {
     return new Promise<EntitiesWebhook>((resolve, reject) => {
       axios
@@ -640,7 +639,7 @@ export const actions = {
 
   updateWebhook(
     context: ActionContext<State, State>,
-    payload: RequestsWebhookUpdate & { id: string },
+    payload: RequestsWebhookUpdate & { id: string }
   ) {
     return new Promise<EntitiesWebhook>((resolve, reject) => {
       axios

@@ -96,8 +96,8 @@ export default {
             errors.set(
               'to',
               response.data.data.to.map((x) =>
-                x.replace('to field', 'phone number field'),
-              ),
+                x.replace('to field', 'phone number field')
+              )
             )
           }
           if (response.data.data.from) {

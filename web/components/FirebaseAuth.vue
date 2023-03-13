@@ -46,7 +46,7 @@ export default class FirebaseAuth extends Vue {
     return {
       callbacks: {
         signInSuccessWithAuthResult: (
-          authResult: firebase.auth.UserCredential,
+          authResult: firebase.auth.UserCredential
         ) => {
           this.$store.dispatch('addNotification', {
             message: 'Login successfull!',
@@ -66,7 +66,7 @@ export default class FirebaseAuth extends Vue {
           this.firebaseUIInitialized = true
           const container = this.$refs.authContainer as HTMLElement
           Array.from(
-            container.getElementsByClassName('firebaseui-idp-text-long'),
+            container.getElementsByClassName('firebaseui-idp-text-long')
           ).forEach((item: Element) => {
             item.textContent =
               item.textContent?.replace('Sign in with', 'Continue with') || null
