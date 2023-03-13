@@ -422,15 +422,10 @@ export default Vue.extend({
       }
 
       await this.$store.dispatch('sendMessage', request)
+      this.loadMessages()
 
       this.formMessage = ''
       this.submitting = false
-
-      this.$nextTick(() => {
-        ;(this.$refs.messageInput as any).$refs.input.focus()
-        this.scrollToElement()
-        ;(this.$refs.form as any).reset()
-      })
     },
   },
 })
