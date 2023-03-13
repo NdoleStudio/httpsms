@@ -340,12 +340,12 @@ export default Vue.extend({
         .finally(() => {
           setTimeout(() => {
             this.loadingMessages = false
-          }, 750)
+          }, 900)
         })
       this.hideMessages = true
       setTimeout(() => {
         this.scrollToElement()
-      }, 500)
+      }, 750)
     },
 
     async loadData() {
