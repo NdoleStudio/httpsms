@@ -1,8 +1,12 @@
 <template>
-  <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
+  <v-container
+    fluid
+    class="px-0 pt-0"
+    :fill-height="$vuetify.breakpoint.lgAndUp"
+  >
     <div class="w-full h-full">
       <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
-        <v-btn icon to="/">
+        <v-btn icon to="/threads">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title>
@@ -45,7 +49,7 @@
                         Your next bill is for <b>${{ plan.price }}</b> on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_renews_at
+                            $store.getters.getUser.subscription_renews_at,
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -60,7 +64,7 @@
                         You will be downgraded to the <b>FREE</b> plan on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_ends_at
+                            $store.getters.getUser.subscription_ends_at,
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -112,7 +116,7 @@
                               of the current billing period on
                               <b>{{
                                 new Date(
-                                  $store.getters.getUser.subscription_renews_at
+                                  $store.getters.getUser.subscription_renews_at,
                                 ).toLocaleDateString()
                               }}</b>
                             </p>
@@ -395,7 +399,7 @@ export default Vue.extend({
     plan(): PaymentPlan {
       return this.plans.find(
         (x) =>
-          x.id === (this.$store.getters.getUser?.subscription_name || 'free')
+          x.id === (this.$store.getters.getUser?.subscription_name || 'free'),
       )!
     },
     isOnFreePlan(): boolean {
@@ -418,12 +422,6 @@ export default Vue.extend({
     },
   },
   async mounted() {
-    if (!this.$store.getters.getAuthUser) {
-      await this.$store.dispatch('setNextRoute', this.$route.path)
-      await this.$router.push({ name: 'index' })
-      setTimeout(this.loadData, 2000)
-      return
-    }
     await this.loadData()
   },
 

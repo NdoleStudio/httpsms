@@ -112,7 +112,7 @@ export default {
             persistence: 'local', // default
             initialize: {
               onAuthStateChangedAction: 'onAuthStateChanged',
-              onIdTokenChangedAction: 'onAuthStateChanged',
+              onIdTokenChangedAction: 'onIdTokenChanged',
               subscribeManually: false,
             },
             ssr: false,
@@ -146,10 +146,6 @@ export default {
     theme: {
       dark: true,
     },
-  },
-
-  router: {
-    middleware: ['user'],
   },
 
   sitemap: {

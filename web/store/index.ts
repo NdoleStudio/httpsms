@@ -43,10 +43,10 @@ export type AuthUser = {
 export type State = {
   owner: string | null
   axiosError: AxiosError | null
-  nextRoute: string | null
   loadingThreads: boolean
   loadingMessages: boolean
   archivedThreads: boolean
+  authStateChanged: boolean
   authUser: AuthUser | null
   billingUsage: BillingUsage | null
   billingUsageHistory: Array<BillingUsage>
@@ -64,8 +64,8 @@ export const state = (): State => ({
   threads: [],
   threadId: null,
   heartbeat: null,
-  nextRoute: null,
   axiosError: null,
+  authStateChanged: false,
   loadingThreads: true,
   billingUsage: null,
   billingUsageHistory: [],
@@ -126,6 +126,8 @@ export const getters = {
     return state.axiosError
   },
 
+  authStateChanged: (state: State) => state.authStateChanged,
+
   isLocal(): boolean {
     return process.env.APP_ENV === 'local'
   },
@@ -168,10 +170,6 @@ export const getters = {
 
   getLoadingMessages(state: State): boolean {
     return state.loadingMessages
-  },
-
-  getNextRoute(state: State): string | null {
-    return state.nextRoute
   },
 
   getThreadMessages(state: State): Array<Message> {
@@ -228,6 +226,7 @@ export const mutations = {
     state.pooling = payload
   },
   setAuthUser(state: State, payload: AuthUser | null) {
+    state.authStateChanged = true
     state.authUser = payload
   },
   setAxiosError(state: State, payload: AxiosError | null) {
@@ -281,10 +280,6 @@ export const mutations = {
     state.threadMessages = []
     state.archivedThreads = false
     state.owner = null
-  },
-
-  setNextRoute(state: State, payload: string | null) {
-    state.nextRoute = payload
   },
 }
 
@@ -360,7 +355,7 @@ export const actions = {
         fcm_token: phone.fcm_token,
         phone_number: phone.phone_number,
         message_expiration_seconds: parseInt(
-          phone.message_expiration_seconds.toString()
+          phone.message_expiration_seconds.toString(),
         ),
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
@@ -380,7 +375,7 @@ export const actions = {
 
   async handleAxiosError(
     context: ActionContext<State, State>,
-    error: AxiosError
+    error: AxiosError,
   ) {
     const errorMessage =
       error.response?.data?.data[Object.keys(error.response?.data?.data)[0]][0]
@@ -415,7 +410,7 @@ export const actions = {
 
   async sendMessage(
     context: ActionContext<State, State>,
-    request: SendMessageRequest
+    request: SendMessageRequest,
   ) {
     try {
       const response = await axios.post('/v1/messages/send', request)
@@ -443,7 +438,7 @@ export const actions = {
 
   addNotification(
     context: ActionContext<State, State>,
-    request: NotificationRequest
+    request: NotificationRequest,
   ) {
     context.commit('setNotification', request)
   },
@@ -452,13 +447,9 @@ export const actions = {
     context.commit('disableNotification')
   },
 
-  setNextRoute(context: ActionContext<State, State>, payload: string | null) {
-    context.commit('setNextRoute', payload)
-  },
-
   async loadThreadMessages(
     context: ActionContext<State, State>,
-    threadId: string | null
+    threadId: string | null,
   ) {
     await context.commit('setThreadId', threadId)
     const response = await axios.get('/v1/messages', {
@@ -473,7 +464,7 @@ export const actions = {
 
   async setAuthUser(
     context: ActionContext<State, State>,
-    user: AuthUser | null | undefined
+    user: AuthUser | null | undefined,
   ) {
     const userChanged = user?.id !== context.getters.getAuthUser?.id
 
@@ -490,7 +481,7 @@ export const actions = {
       ])
 
       const phone = context.getters.getPhones.find(
-        (x: Phone) => x.id === context.getters.getUser.active_phone_id
+        (x: Phone) => x.id === context.getters.getUser.active_phone_id,
       )
       if (phone) {
         await context.dispatch('setOwner', phone.phone_number)
@@ -500,16 +491,31 @@ export const actions = {
   async onAuthStateChanged(
     context: ActionContext<State, State>,
     // @ts-ignore
-    { authUser }
+    { authUser },
   ) {
     if (authUser == null) {
-      context.commit('setAuthUser', null)
-      context.commit('setUser', null)
+      await Promise.all([
+        context.commit('setAuthUser', null),
+        context.commit('setUser', null),
+      ])
       return
     }
     setAuthHeader(await authUser.getIdToken())
     const { uid, email, displayName } = authUser
-    await context.commit('setAuthUser', { id: uid, email, displayName })
+    await Promise.all([
+      context.commit('setAuthUser', { id: uid, email, displayName }),
+    ])
+  },
+
+  async onIdTokenChanged(
+    _: ActionContext<State, State>,
+    // @ts-ignore
+    { authUser },
+  ) {
+    if (authUser == null) {
+      return
+    }
+    setAuthHeader(await authUser.getIdToken())
   },
 
   async clearAxiosError(context: ActionContext<State, State>) {
@@ -533,7 +539,7 @@ export const actions = {
 
   async updateThread(
     context: ActionContext<State, State>,
-    payload: { threadId: string; isArchived: boolean }
+    payload: { threadId: string; isArchived: boolean },
   ) {
     await axios.put(`/v1/message-threads/${payload.threadId}`, {
       is_archived: payload.isArchived,
@@ -586,7 +592,7 @@ export const actions = {
 
   createWebhook(
     context: ActionContext<State, State>,
-    payload: RequestsWebhookStore
+    payload: RequestsWebhookStore,
   ) {
     return new Promise<EntitiesWebhook>((resolve, reject) => {
       axios
@@ -634,7 +640,7 @@ export const actions = {
 
   updateWebhook(
     context: ActionContext<State, State>,
-    payload: RequestsWebhookUpdate & { id: string }
+    payload: RequestsWebhookUpdate & { id: string },
   ) {
     return new Promise<EntitiesWebhook>((resolve, reject) => {
       axios

@@ -16,6 +16,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import { ProviderId } from 'firebase/auth'
 import { auth } from 'firebaseui'
+import firebase from 'firebase/compat'
 import { NotificationRequest } from '~/store'
 
 @Component
@@ -44,11 +45,18 @@ export default class FirebaseAuth extends Vue {
   uiConfig(): any {
     return {
       callbacks: {
-        signInSuccessWithAuthResult: () => {
+        signInSuccessWithAuthResult: (
+          authResult: firebase.auth.UserCredential,
+        ) => {
           this.$store.dispatch('addNotification', {
             message: 'Login successfull!',
             type: 'success',
           } as NotificationRequest)
+
+          this.$store.dispatch('onAuthStateChanged', {
+            authUser: authResult.user,
+          })
+
           this.$router.push({ path: this.to })
           return false
         },
@@ -58,7 +66,7 @@ export default class FirebaseAuth extends Vue {
           this.firebaseUIInitialized = true
           const container = this.$refs.authContainer as HTMLElement
           Array.from(
-            container.getElementsByClassName('firebaseui-idp-text-long')
+            container.getElementsByClassName('firebaseui-idp-text-long'),
           ).forEach((item: Element) => {
             item.textContent =
               item.textContent?.replace('Sign in with', 'Continue with') || null

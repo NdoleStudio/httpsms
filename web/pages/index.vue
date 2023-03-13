@@ -553,7 +553,6 @@ import {
 export default Vue.extend({
   name: 'LandingPage',
   layout: 'website',
-  middleware: ['guest'],
   data() {
     return {
       mdiGithub,

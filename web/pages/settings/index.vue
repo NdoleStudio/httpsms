@@ -1,8 +1,12 @@
 <template>
-  <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
+  <v-container
+    fluid
+    class="px-0 pt-0"
+    :fill-height="$vuetify.breakpoint.lgAndUp"
+  >
     <div class="w-full h-full">
       <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
-        <v-btn icon to="/">
+        <v-btn icon to="/threads">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title>
@@ -464,12 +468,8 @@ export default Vue.extend({
     },
   },
   mounted() {
+    console.log('inside settings')
     this.$store.dispatch('clearAxiosError')
-    if (!this.$store.getters.getAuthUser) {
-      this.$store.dispatch('setNextRoute', this.$route.path)
-      this.$router.push({ name: 'index' })
-      return
-    }
     this.$store.dispatch('loadUser')
     this.loadWebhooks()
   },

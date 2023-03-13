@@ -19,8 +19,9 @@
       </template>
     </v-navigation-drawer>
     <v-main :class="{ 'has-drawer': hasDrawer && $vuetify.breakpoint.lgAndUp }">
-      <Nuxt />
       <toast></toast>
+      <Nuxt v-if="$store.getters.authStateChanged" />
+      <loading-dashboard v-else></loading-dashboard>
     </v-main>
   </v-app>
 </template>
@@ -39,11 +40,14 @@ export default class DefaultLayout extends Vue {
 
   mounted() {
     // this.startPoller()
-    setTimeout(() => {
-      if (this.poller) {
-        clearInterval(this.poller)
-      }
-    }, 60 * 1000 * 60)
+    setTimeout(
+      () => {
+        if (this.poller) {
+          clearInterval(this.poller)
+        }
+      },
+      60 * 1000 * 60,
+    )
   }
 
   beforeDestroy(): void {
@@ -61,7 +65,7 @@ export default class DefaultLayout extends Vue {
         setAuthHeader((await this.$fire.auth.currentUser?.getIdToken()) ?? '')
         promises.push(
           this.$store.dispatch('loadThreads'),
-          this.$store.dispatch('getHeartbeat')
+          this.$store.dispatch('getHeartbeat'),
         )
       }
 
@@ -73,8 +77,8 @@ export default class DefaultLayout extends Vue {
         promises.push(
           this.$store.dispatch(
             'loadThreadMessages',
-            this.$store.getters.getThread.id
-          )
+            this.$store.getters.getThread.id,
+          ),
         )
       }
       await Promise.all(promises)

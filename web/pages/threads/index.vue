@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
+  <v-container fluid :fill-height="$vuetify.breakpoint.lgAndUp">
     <v-row v-if="$vuetify.breakpoint.lgAndUp" align="center" justify="center">
       <div>
         <v-img
@@ -34,12 +34,6 @@ export default {
     }
   },
   async mounted() {
-    if (!this.$store.getters.getAuthUser) {
-      await this.$store.dispatch('setNextRoute', this.$route.path)
-      await this.$router.push({ name: 'index' })
-      setTimeout(this.loadData, 2000)
-      return
-    }
     await this.loadData()
   },
 

@@ -2,7 +2,7 @@
   <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
     <div class="w-full h-full">
       <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
-        <v-btn icon to="/">
+        <v-btn icon to="/threads">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title>New Message</v-toolbar-title>
@@ -96,8 +96,8 @@ export default {
             errors.set(
               'to',
               response.data.data.to.map((x) =>
-                x.replace('to field', 'phone number field')
-              )
+                x.replace('to field', 'phone number field'),
+              ),
             )
           }
           if (response.data.data.from) {

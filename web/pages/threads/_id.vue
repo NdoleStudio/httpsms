@@ -1,8 +1,12 @@
 <template>
-  <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
+  <v-container
+    fluid
+    class="px-0 pt-0 pb-0"
+    :fill-height="$vuetify.breakpoint.lgAndUp"
+  >
     <div class="w-full h-full">
       <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
-        <v-btn v-if="$vuetify.breakpoint.mdAndDown" icon to="/">
+        <v-btn v-if="$vuetify.breakpoint.mdAndDown" icon to="/threads">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
         <v-toolbar-title>
@@ -289,12 +293,6 @@ export default Vue.extend({
   },
 
   async mounted() {
-    if (!this.$store.getters.getAuthUser) {
-      await this.$store.dispatch('setNextRoute', this.$route.path)
-      await this.$router.push({ name: 'index' })
-      setTimeout(this.loadData, 2000)
-      return
-    }
     await this.loadData()
   },
 
@@ -377,7 +375,7 @@ export default Vue.extend({
 
       await this.$store.dispatch(
         'loadThreadMessages',
-        this.$store.getters.getThread.id
+        this.$store.getters.getThread.id,
       )
 
       this.scrollToElement()

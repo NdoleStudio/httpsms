@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0" fill-height>
+  <v-container fluid fill-height>
     <v-row align="center" justify="center">
       <v-col
         cols="12"
@@ -39,7 +39,7 @@ export default Vue.extend({
   middleware: ['guest'],
   data() {
     return {
-      to: '/',
+      to: '/threads',
     }
   },
   head() {
