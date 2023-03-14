@@ -20,8 +20,10 @@
     </v-navigation-drawer>
     <v-main :class="{ 'has-drawer': hasDrawer && $vuetify.breakpoint.lgAndUp }">
       <toast></toast>
-      <Nuxt v-if="$store.getters.authStateChanged" />
-      <loading-dashboard v-else></loading-dashboard>
+      <client-only>
+        <Nuxt v-if="$store.getters.authStateChanged" />
+        <loading-dashboard v-else></loading-dashboard>
+      </client-only>
     </v-main>
   </v-app>
 </template>
