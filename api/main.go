@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-
+	"fmt"
 	_ "github.com/NdoleStudio/httpsms/docs"
 	"github.com/NdoleStudio/httpsms/pkg/di"
 )
@@ -33,5 +33,5 @@ func main() {
 	}
 
 	container := di.NewContainer("http-sms", Version)
-	container.Logger().Info(container.App().Listen(":8000").Error())
+	container.Logger().Info(container.App().Listen(fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT"))).Error())
 }
