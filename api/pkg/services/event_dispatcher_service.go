@@ -13,6 +13,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/palantir/stacktrace"
+	"github.com/google/uuid"
 )
 
 // EventDispatcher dispatches a new event
@@ -72,15 +73,30 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	task, err := dispatcher.createCloudTask(event)
-	if err != nil {
-		msg := fmt.Sprintf("cannot create cloud task for event [%s] with id [%s]", event.Type(), event.ID())
-		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	if queueID, err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
-		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
-		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	if dispatcher.queue == nil {
+		ctxLogger := dispatcher.tracer.CtxLogger(dispatcher.logger, span)
+		queueID := uuid.New()
+		go func() {
+			time.Sleep(timeout)
+			dispatcher.DispatchSync(ctx, event)
+		}()
+		ctxLogger.Info(fmt.Sprintf(
+			"item added to [%s] queue with id [%s] and schedule [%s]",
+			dispatcher.queueConfig.Name,
+			queueID,
+			time.Now().UTC().Add(timeout),
+		))
+	} else {
+		task, err := dispatcher.createCloudTask(event)
+		if err != nil {
+			msg := fmt.Sprintf("cannot create cloud task for event [%s] with id [%s]", event.Type(), event.ID())
+			return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+	
+		if queueID, err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
+			msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
+			return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
 	}
 
 	return queueID, nil
