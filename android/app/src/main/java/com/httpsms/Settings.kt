@@ -76,7 +76,7 @@ object Settings {
 
         val activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
-            .getBoolean(this.SETTINGS_ACTIVE,false)
+            .getBoolean(this.SETTINGS_ACTIVE,true)
 
         Timber.d("SETTINGS_ACTIVE: [$activeStatus]")
         return activeStatus
