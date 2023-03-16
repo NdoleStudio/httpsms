@@ -265,10 +265,13 @@ export const mutations = {
   },
 }
 
+export type SIM = "ISMS" | "ISMS2" | "DEFAULT";
+
 export type SendMessageRequest = {
   from: string
   to: string
-  content: string
+  content: string,
+  sim: SIM
 }
 
 export const actions = {

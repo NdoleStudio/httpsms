@@ -193,13 +193,30 @@
               lazy-validation
               @submit.prevent="sendMessage"
             >
+            <div style="width: 150px">
+              <v-select
+                v-model="simSelected"
+                :items="simOptions"
+                item-text="title"
+                item-value="code"
+                persistent-hint
+                return-object
+                single-line
+                rounded
+                filled
+              >
+                <template v-slot:append>
+                  <v-icon>{{ mdiSim }}</v-icon>
+                </template>
+              </v-select>
+            </div>
               <v-text-field
                 ref="messageInput"
                 v-model="formMessage"
                 :disabled="submitting || !contactIsPhoneNumber"
                 :rows="1"
                 filled
-                class="no-scrollbar"
+                class="no-scrollbar ml-2"
                 :rules="formMessageRules"
                 :placeholder="
                   contactIsPhoneNumber
@@ -249,9 +266,10 @@ import {
   mdiPackageDown,
   mdiAccount,
   mdiRefresh,
+  mdiSim,
 } from '@mdi/js'
 import { Message } from '~/models/message'
-import { SendMessageRequest } from '~/store'
+import { SendMessageRequest, SIM } from '~/store'
 
 export default Vue.extend({
   middleware: ['auth'],
@@ -276,6 +294,9 @@ export default Vue.extend({
       mdiPackageDown,
       mdiAccount,
       mdiRefresh,
+      mdiSim,
+      simOptions: [{ title: 'Default', code: 'DEFAULT' }, { title: 'SIM 1', code: 'ISMS' }, { title: 'SIM 2', code: 'ISMS2' }],
+      simSelected: { title: 'Default', code: 'DEFAULT' },
       formMessage: '',
       formMessageRules,
       submitting: false,
@@ -419,6 +440,7 @@ export default Vue.extend({
         from: this.$store.getters.getOwner,
         to: this.$store.getters.getThread.contact,
         content: this.formMessage,
+        sim: this.simSelected.code as SIM,
       }
 
       await this.$store.dispatch('sendMessage', request)
