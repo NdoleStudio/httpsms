@@ -20,4 +20,5 @@ type MessageAPISentPayload struct {
 	Contact           string          `json:"contact"`
 	RequestReceivedAt time.Time       `json:"request_received_at"`
 	Content           string          `json:"content"`
+	SIM               entities.SIM    `json:"sim"`
 }

@@ -55,6 +55,14 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 				"min:1",
 				"max:1024",
 			},
+			"sim": []string{
+				"required",
+				"in:" + strings.Join([]string{
+					string(entities.ISMS_1),
+					string(entities.ISMS_2),
+					string(entities.ISMS_DEFAULT),
+				}, ","),
+			},
 		},
 	})
 
@@ -83,6 +91,14 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 				"required",
 				"min:1",
 				"max:1024",
+			},
+			"sim": []string{
+				"required",
+				"in:" + strings.Join([]string{
+					string(entities.ISMS_1),
+					string(entities.ISMS_2),
+					string(entities.ISMS_DEFAULT),
+				}, ","),
 			},
 		},
 	})
@@ -129,6 +145,14 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 				"required",
 				"min:1",
 				"max:1024",
+			},
+			"sim": []string{
+				"required",
+				"in:" + strings.Join([]string{
+					string(entities.ISMS_1),
+					string(entities.ISMS_2),
+					string(entities.ISMS_DEFAULT),
+				}, ","),
 			},
 		},
 	})
