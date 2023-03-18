@@ -15,6 +15,7 @@ object Settings {
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
     private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
     private const val SETTINGS_HEARTBEAT_TIMESTAMP = "SETTINGS_HEARTBEAT_TIMESTAMP"
+    private const val SETTINGS_PRODUCTION_ENV = "SETTINGS_PRODUCTION_ENV";
 
     fun getOwner(context: Context): String? {
         Timber.d(Settings::getOwner.name)
@@ -80,6 +81,17 @@ object Settings {
 
         Timber.d("SETTINGS_ACTIVE: [$activeStatus]")
         return activeStatus
+    }
+
+    fun isProductionEnvironment(context: Context): Boolean {
+        Timber.d(Settings::isProductionEnvironment.name)
+
+        val isProductionEnv = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getBoolean(this.SETTINGS_PRODUCTION_ENV, true)
+
+        Timber.d("SETTINGS_PRODUCTION_ENV: [$isProductionEnv]")
+        return isProductionEnv
     }
 
     fun setActiveStatusAsync(context: Context, status: Boolean) {
