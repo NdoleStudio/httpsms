@@ -22,6 +22,7 @@ data class ResponseMessage (
 data class Message (
     val contact: String,
     val content: String,
+    val sim: String,
 
     @Json(name = "created_at")
     val createdAt: String,
