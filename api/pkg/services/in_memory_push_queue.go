@@ -36,6 +36,8 @@ func NewInMemoryPushQueue(
 // Enqueue a task to the queue
 func (queue *inMemoryPushQueue) Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) (queueID string, err error) {
 	ctx, span := queue.tracer.Start(ctx)
+	defer span.End()
+
 	ctxLogger := queue.tracer.CtxLogger(queue.logger, span)
 	queueID = uuid.New().String()
 
