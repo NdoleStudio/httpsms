@@ -306,7 +306,12 @@ func (container *Container) EventsQueue() (queue services.PushQueue) {
 	container.logger.Debug("creating events services.PushQueue")
 
 	if isLocal() {
-		return nil
+		return services.NewInMemoryPushQueue(
+			container.Logger(),
+			container.Tracer(),
+			container.EventsQueueConfiguration(),
+			func() *services.EventDispatcher { return container.eventDispatcher },
+		)
 	}
 
 	return services.NewGooglePushQueue(
