@@ -25,7 +25,7 @@ type MessageSend struct {
 func (input *MessageSend) Sanitize() MessageSend {
 	input.To = input.sanitizeAddress(input.To)
 	input.From = input.sanitizeAddress(input.From)
-	if len(strings.TrimSpace(string(input.SIM))) == 0 {
+	if strings.TrimSpace(string(input.SIM)) == "" {
 		input.SIM = entities.SIM_DEFAULT
 	}
 	return *input
