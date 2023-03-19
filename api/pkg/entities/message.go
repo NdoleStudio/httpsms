@@ -63,12 +63,12 @@ const (
 type SIM string
 
 const (
-	// ISMS_1 use the SIM card in slot 1 to send the message
-	ISMS_1 = SIM("ISMS")
-	// ISMS_2 use the SIM card in slot 2 to send the message
-	ISMS_2 = SIM("ISMS2")
-	// DEFAULT use the SIM card configured as default communication card to send the message
-	ISMS_DEFAULT = SIM("DEFAULT")
+	// SIM_1 use the SIM card in slot 1 to send the message
+	SIM_1 = SIM("SIM1")
+	// SIM_2 use the SIM card in slot 2 to send the message
+	SIM_2 = SIM("SIM2")
+	// SIM_DEFAULT use the SIM card configured as default communication card to send the message
+	SIM_DEFAULT = SIM("DEFAULT")
 )
 
 // Message represents a message sent between 2 phone numbers

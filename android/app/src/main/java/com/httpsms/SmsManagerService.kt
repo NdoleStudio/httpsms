@@ -43,9 +43,9 @@ class SmsManagerService {
             context.getSystemService(SubscriptionManager::class.java)
         }
 
-        val subscriptionId = if (sim == "ISMS" && localSubscriptionManager.activeSubscriptionInfoList.size > 0) {
+        val subscriptionId = if (sim == "SIM1" && localSubscriptionManager.activeSubscriptionInfoList.size > 0) {
             localSubscriptionManager.activeSubscriptionInfoList[0].subscriptionId
-        } else if (sim == "ISMS2" && localSubscriptionManager.activeSubscriptionInfoList.size > 1) {
+        } else if (sim == "SIM2" && localSubscriptionManager.activeSubscriptionInfoList.size > 1) {
             localSubscriptionManager.activeSubscriptionInfoList[1].subscriptionId
         } else{
             SubscriptionManager.getDefaultSmsSubscriptionId()
