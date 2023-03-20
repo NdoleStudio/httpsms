@@ -56,7 +56,7 @@ func (queue *emulatorPushQueue) Enqueue(ctx context.Context, task *PushQueueTask
 
 func (queue *emulatorPushQueue) push(task PushQueueTask, queueID string) func() {
 	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		err := requests.
