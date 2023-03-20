@@ -305,15 +305,27 @@ func (container *Container) EventsQueueConfiguration() (config services.PushQueu
 func (container *Container) EventsQueue() (queue services.PushQueue) {
 	container.logger.Debug("creating events services.PushQueue")
 
-	if isLocal() {
-		return services.NewInMemoryPushQueue(
-			container.Logger(),
-			container.Tracer(),
-			container.EventsQueueConfiguration(),
-			func() *services.EventDispatcher { return container.eventDispatcher },
-		)
+	if os.Getenv("EVENTS_QUEUE_TYPE") == "emulator" {
+		return container.EmulatorEventsQueue()
 	}
 
+	return container.CloudTaskEventsQueue()
+}
+
+// EmulatorEventsQueue creates an in process instance of events services.PushQueue
+func (container *Container) EmulatorEventsQueue() (queue services.PushQueue) {
+	container.logger.Debug("creating emulator events services.PushQueue")
+	return services.EmulatorPushQueue(
+		container.Logger(),
+		container.Tracer(),
+		container.HTTPClient("emulator_events_queue"),
+		container.EventsQueueConfiguration(),
+	)
+}
+
+// CloudTaskEventsQueue creates a Google cloud task instance of events services.PushQueue
+func (container *Container) CloudTaskEventsQueue() (queue services.PushQueue) {
+	container.logger.Debug("creating cloud task events services.PushQueue")
 	return services.NewGooglePushQueue(
 		container.Logger(),
 		container.Tracer(),
