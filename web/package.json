@@ -29,7 +29,7 @@
     "core-js": "^3.29.0",
     "date-fns": "^2.29.3",
     "dotenv": "^16.0.3",
-    "firebase": "^9.17.2",
+    "firebase": "^9.18.0",
     "firebaseui": "^6.0.2",
     "libphonenumber-js": "^1.10.21",
     "nuxt": "^2.16.3",
