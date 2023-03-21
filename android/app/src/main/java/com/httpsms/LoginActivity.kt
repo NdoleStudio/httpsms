@@ -127,7 +127,7 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        if (Settings.isProductionEnvironment(this) && !URLUtil.isHttpsUrl(serverUrl.text.toString().trim())) {
+        if (!URLUtil.isHttpsUrl(serverUrl.text.toString().trim())) {
             Timber.e("url number [${serverUrl.text.toString()}] is not an https URL")
             resetView()
             serverUrlLayout.error = "Server URL [${serverUrl.text.toString()}] must be HTTPS"
