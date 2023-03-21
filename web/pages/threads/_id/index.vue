@@ -351,7 +351,7 @@ export default Vue.extend({
       )
     },
 
-    loadMessages() {
+    loadMessages(hideMessages = true) {
       this.loadingMessages = true
       this.$store
         .dispatch('loadThreadMessages', this.$route.params.id)
@@ -363,7 +363,7 @@ export default Vue.extend({
             this.loadingMessages = false
           }, 900)
         })
-      this.hideMessages = true
+      this.hideMessages = hideMessages
       setTimeout(() => {
         this.scrollToElement()
       }, 750)
@@ -422,7 +422,7 @@ export default Vue.extend({
         this.selectedMenuItem = -1
       }, 1000)
 
-      this.loadMessages()
+      this.loadMessages(false)
     },
 
     async sendMessage(event: KeyboardEvent) {
@@ -444,7 +444,7 @@ export default Vue.extend({
       }
 
       await this.$store.dispatch('sendMessage', request)
-      this.loadMessages()
+      this.loadMessages(false)
 
       this.formMessage = ''
       this.submitting = false

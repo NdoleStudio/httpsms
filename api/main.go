@@ -1,8 +1,9 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
+
 	_ "github.com/NdoleStudio/httpsms/docs"
 	"github.com/NdoleStudio/httpsms/pkg/di"
 )

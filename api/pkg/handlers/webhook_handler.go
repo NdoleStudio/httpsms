@@ -3,6 +3,8 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
+
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/google/uuid"
 
@@ -158,14 +160,25 @@ func (h *WebhookHandler) Store(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing webhook")
 	}
 
-	heartbeat, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
+	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 1})
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot index webhooks for user [%s]", h.userIDFomContext(c))))
+		return h.responsePaymentRequired(c, "You can't create more than 1 webhook contact us to upgrade your account.")
+	}
+
+	if len(webhooks) > 0 {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] wants to create more than 1 webhook", h.userIDFomContext(c))))
+		return h.responsePaymentRequired(c, "You can't create more than 1 webhook contact us to upgrade your account.")
+	}
+
+	webhook, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store webhoook with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseCreated(c, "webhook created successfully", heartbeat)
+	return h.responseCreated(c, "webhook created successfully", webhook)
 }
 
 // Update an entities.Webhook
