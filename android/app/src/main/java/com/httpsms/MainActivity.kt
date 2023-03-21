@@ -1,7 +1,6 @@
 package com.httpsms
 
 import android.Manifest
-import android.Manifest.permission.READ_PHONE_NUMBERS
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -219,7 +218,7 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.SEND_SMS
             ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 context,
-                READ_PHONE_NUMBERS
+                Manifest.permission.READ_PHONE_NUMBERS
             ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.RECEIVE_SMS
@@ -274,7 +273,7 @@ class MainActivity : AppCompatActivity() {
         var permissions = arrayOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.RECEIVE_SMS,
-            READ_PHONE_NUMBERS,
+            Manifest.permission.READ_PHONE_NUMBERS,
             Manifest.permission.READ_SMS,
             Manifest.permission.READ_PHONE_STATE
         )
