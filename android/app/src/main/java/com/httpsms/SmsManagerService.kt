@@ -20,6 +20,16 @@ class SmsManagerService {
         fun deliveredAction(messageID: String): String {
             return "$ACTION_SMS_DELIVERED.$messageID"
         }
+
+        @SuppressLint("MissingPermission")
+        fun isDualSIM(context: Context) : Boolean {
+            val localSubscriptionManager: SubscriptionManager = if (Build.VERSION.SDK_INT < 31) {
+                SubscriptionManager.from(context)
+            } else {
+                context.getSystemService(SubscriptionManager::class.java)
+            }
+            return localSubscriptionManager.activeSubscriptionInfoList.size > 1
+        }
     }
 
     fun messageParts(context: Context, content: String): ArrayList<String> {

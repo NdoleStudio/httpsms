@@ -197,7 +197,7 @@ func (service *UserService) GetSubscriptionUpdateURL(ctx context.Context, userID
 
 	subscription, _, err := service.lemonsqueezyClient.Subscriptions.Get(ctx, *user.SubscriptionID)
 	if err != nil {
-		msg := fmt.Sprintf("could not get subscription [%s] for [%T] with with ID [%s]", user.SubscriptionID, user, user.ID)
+		msg := fmt.Sprintf("could not get subscription [%s] for [%T] with with ID [%s]", *user.SubscriptionID, user, user.ID)
 		return url, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

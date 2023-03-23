@@ -73,8 +73,7 @@ func (queue *emulatorPushQueue) push(task PushQueueTask, queueID string) func() 
 		// add content type
 		request.Header("Content-Type", "application/json")
 
-		err := request.Fetch(ctx)
-		if err != nil {
+		if err := request.Fetch(ctx); err != nil {
 			queue.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot send http request to [%s] for queue task [%s]", task.URL, queueID)))
 			return
 		}

@@ -16,4 +16,5 @@ type PhoneUpdatedPayload struct {
 	UserID    entities.UserID `json:"user_id"`
 	Timestamp time.Time       `json:"timestamp"`
 	Owner     string          `json:"owner"`
+	IsDualSIM bool            `json:"is_dual_sim"`
 }

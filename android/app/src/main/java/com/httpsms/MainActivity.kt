@@ -146,7 +146,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
-            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "")
+            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "", SmsManagerService.isDualSIM(this))
             if (updated) {
                 Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
                 Timber.i("fcm token uploaded successfully")

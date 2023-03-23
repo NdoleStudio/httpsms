@@ -67,7 +67,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         if (Settings.isLoggedIn(this)) {
             Timber.d("updating phone with new fcm token")
-            HttpSmsApiService.create(this).updatePhone(Settings.getOwnerOrDefault(this), token)
+            HttpSmsApiService.create(this).updatePhone(Settings.getOwnerOrDefault(this), token, SmsManagerService.isDualSIM(this))
         }
 
     }

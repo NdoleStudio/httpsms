@@ -23,6 +23,9 @@ type PhoneUpsert struct {
 	MaxSendAttempts uint `json:"max_send_attempts" example:"2"`
 
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
+
+	// IsDualSIM is true if the phone has more than one SIM active
+	IsDualSIM bool `json:"is_dual_sim" example:"false"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -68,5 +71,6 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) 
 		MaxSendAttempts:           maxSendAttempts,
 		FcmToken:                  fcmToken,
 		UserID:                    user.ID,
+		IsDualSIM:                 input.IsDualSIM,
 	}
 }
