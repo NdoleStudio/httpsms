@@ -18,9 +18,9 @@
         </p>
         <v-card max-width="360" class="mx-auto">
           <v-card-text class="px-0">
-            <no-ssr>
+            <client-only>
               <firebase-auth :to="to"></firebase-auth>
-            </no-ssr>
+            </client-only>
           </v-card-text>
         </v-card>
         <div class="text-center mt-4">
