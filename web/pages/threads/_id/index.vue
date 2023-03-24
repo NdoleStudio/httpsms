@@ -295,7 +295,7 @@ export default Vue.extend({
       mdiAccount,
       mdiRefresh,
       mdiSim,
-      simOptions: [{ title: 'Default', code: 'DEFAULT' }, { title: 'SIM 1', code: 'ISMS' }, { title: 'SIM 2', code: 'ISMS2' }],
+      simOptions: [{ title: 'Default', code: 'DEFAULT' }, { title: 'SIM 1', code: 'SIM1' }, { title: 'SIM 2', code: 'SIM2' }],
       simSelected: { title: 'Default', code: 'DEFAULT' },
       formMessage: '',
       formMessageRules,
