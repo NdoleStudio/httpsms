@@ -194,6 +194,7 @@
               @submit.prevent="sendMessage"
             >
               <v-select
+                v-if="$store.getters.getActivePhone.is_dual_sim"
                 v-model="simSelected"
                 :items="simOptions"
                 item-text="title"
