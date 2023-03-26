@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -25,6 +26,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.httpsms.receivers.SimChangeReceiver
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
 import okhttp3.internal.format
@@ -63,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         setLastHeartbeatTimestamp(this)
         setVersion()
         setHeartbeatListener(this)
+        registerReceivers()
     }
 
     override fun onResume() {
@@ -172,6 +175,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.mainLogoutButton).setOnClickListener { onLogoutClick() }
     }
 
+    private fun registerReceivers() {
+        registerReceiver(SimChangeReceiver(), IntentFilter("android.intent.action.SIM_STATE_CHANGED"))
+    }
     private fun onLogoutClick() {
         Timber.d("logout button clicked")
         MaterialAlertDialogBuilder(this)
