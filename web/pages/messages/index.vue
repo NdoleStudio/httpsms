@@ -31,6 +31,7 @@
               ></v-textarea>
               <div style="width: 175px">
               <v-select
+                v-if="$store.getters.getActivePhone.is_dual_sim"
                 v-model="simSelected"
                 :items="simOptions"
                 item-text="title"
