@@ -193,12 +193,12 @@
               lazy-validation
               @submit.prevent="sendMessage"
             >
-            <div style="width: 150px">
               <v-select
                 v-model="simSelected"
                 :items="simOptions"
                 item-text="title"
                 item-value="code"
+                class="sim-selector"
                 persistent-hint
                 return-object
                 single-line
@@ -206,10 +206,11 @@
                 filled
               >
                 <template v-slot:append>
-                  <v-icon>{{ mdiSim }}</v-icon>
+                  <v-badge :content="simSelected.value" :value="simSelected.value > 0" :offset-y="10" :offset-x="10">
+                    <v-icon>{{ mdiSim }}</v-icon>
+                  </v-badge>
                 </template>
               </v-select>
-            </div>
               <v-text-field
                 ref="messageInput"
                 v-model="formMessage"
@@ -295,8 +296,8 @@ export default Vue.extend({
       mdiAccount,
       mdiRefresh,
       mdiSim,
-      simOptions: [{ title: 'Default', code: 'DEFAULT' }, { title: 'SIM 1', code: 'SIM1' }, { title: 'SIM 2', code: 'SIM2' }],
-      simSelected: { title: 'Default', code: 'DEFAULT' },
+      simOptions: [{ title: 'Default', code: 'DEFAULT', value: 0 }, { title: 'SIM1', code: 'SIM1', value: 1 }, { title: 'SIM2', code: 'SIM2', value: 2 }],
+      simSelected: { title: 'Default', code: 'DEFAULT', value: 0 },
       formMessage: '',
       formMessageRules,
       submitting: false,
@@ -475,6 +476,30 @@ export default Vue.extend({
 @media (min-width: 1904px) {
   .messages-body {
     max-width: 1785px;
+  }
+}
+
+
+.sim-selector {
+  max-width: 150px;
+}
+
+@media (max-width: 720px) {
+  .sim-selector {
+    max-width: 44px;
+  }
+  .sim-selector .v-select__selections {
+    display: none;
+  }
+  .sim-selector.v-select .v-input__append-inner {
+    margin-left: 0;
+  }
+  .sim-selector.v-text-field--rounded > .v-input__control > .v-input__slot {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .sim-selector.v-select .v-input__append-inner {
+    padding-left: 0;
   }
 }
 
