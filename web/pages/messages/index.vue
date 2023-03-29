@@ -29,6 +29,23 @@
                 placeholder="Enter your message here"
                 label="Content"
               ></v-textarea>
+              <div style="width: 175px">
+              <v-select
+                v-if="$store.getters.getActivePhone.is_dual_sim"
+                v-model="simSelected"
+                :items="simOptions"
+                item-text="title"
+                item-value="code"
+                persistent-hint
+                return-object
+                single-line
+                solo
+              >
+                <template v-slot:append>
+                  <v-icon>{{ mdiSim }}</v-icon>
+                </template>
+              </v-select>
+            </div>
               <v-btn
                 type="submit"
                 class="primary"
@@ -47,7 +64,7 @@
 </template>
 
 <script>
-import { mdiArrowLeft, mdiSend } from '@mdi/js'
+import { mdiArrowLeft, mdiSend, mdiSim } from '@mdi/js'
 import axios from '@/plugins/axios'
 
 export default {
@@ -57,6 +74,9 @@ export default {
     return {
       mdiArrowLeft,
       mdiSend,
+      mdiSim,
+      simOptions: [{ title: 'Default', code: 'DEFAULT' }, { title: 'SIM 1', code: 'SIM1' }, { title: 'SIM 2', code: 'SIM2' }],
+      simSelected: { title: 'Default', code: 'DEFAULT' },
       sending: false,
       formPhoneNumber: '',
       formContent: '',
@@ -78,6 +98,7 @@ export default {
           to: this.formPhoneNumber,
           from: this.$store.getters.getOwner,
           content: this.formContent,
+          sim: this.simSelected.code,
         })
         .then(() => {
           this.$store.dispatch('addNotification', {

@@ -74,6 +74,7 @@ type PhoneUpsertParams struct {
 	MessagesPerMinute         *uint
 	MaxSendAttempts           *uint
 	MessageExpirationDuration *time.Duration
+	IsDualSIM                 bool
 	Source                    string
 	UserID                    entities.UserID
 }
@@ -106,9 +107,10 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		UserID:    phone.UserID,
 		Timestamp: phone.UpdatedAt,
 		Owner:     phone.PhoneNumber,
+		IsDualSIM: phone.IsDualSIM,
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot create event when phone is updated")
+		msg := "cannot create event when phone is updated"
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -145,9 +147,10 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 		UserID:    phone.UserID,
 		Timestamp: phone.UpdatedAt,
 		Owner:     phone.PhoneNumber,
+		IsDualSIM: phone.IsDualSIM,
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot create event when phone is deleted")
+		msg := "cannot create event when phone is deleted"
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -172,6 +175,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		MessagesPerMinute:        29,
 		MessageExpirationSeconds: 15 * 60, // 30 minutes
 		MaxSendAttempts:          2,
+		IsDualSIM:                params.IsDualSIM,
 		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),
@@ -208,5 +212,8 @@ func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertPar
 	if params.MessageExpirationDuration != nil {
 		phone.MessageExpirationSeconds = uint(params.MessageExpirationDuration.Seconds())
 	}
+
+	phone.IsDualSIM = params.IsDualSIM
+
 	return phone
 }

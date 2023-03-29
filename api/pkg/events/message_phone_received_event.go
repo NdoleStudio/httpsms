@@ -19,4 +19,5 @@ type MessagePhoneReceivedPayload struct {
 	Contact   string          `json:"contact"`
 	Timestamp time.Time       `json:"timestamp"`
 	Content   string          `json:"content"`
+	SIM       entities.SIM    `json:"sim"`
 }

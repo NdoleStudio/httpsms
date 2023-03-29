@@ -69,6 +69,15 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:enabled="true"
+                  android:name=".receivers.SimChangeReceiver"
+                  android:exported="true"
+                  android:permission="android.permission.READ_PHONE_STATE">
+            <intent-filter>
+                <action android:name="android.intent.action.SIM_STATE_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

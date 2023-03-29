@@ -1,11 +1,11 @@
 package com.httpsms
 
 import android.Manifest
-import android.Manifest.permission.READ_PHONE_NUMBERS
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +24,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.httpsms.receivers.SimChangeReceiver
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
 import okhttp3.internal.format
@@ -61,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         setLastHeartbeatTimestamp(this)
         setVersion()
         setHeartbeatListener(this)
+        registerReceivers()
     }
 
     override fun onResume() {
@@ -144,7 +146,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
-            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "")
+            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "", SmsManagerService.isDualSIM(this))
             if (updated) {
                 Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
                 Timber.i("fcm token uploaded successfully")
@@ -170,6 +172,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.mainLogoutButton).setOnClickListener { onLogoutClick() }
     }
 
+    private fun registerReceivers() {
+        registerReceiver(SimChangeReceiver(), IntentFilter("android.intent.action.SIM_STATE_CHANGED"))
+    }
     private fun onLogoutClick() {
         Timber.d("logout button clicked")
         MaterialAlertDialogBuilder(this)
@@ -216,7 +221,7 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.SEND_SMS
             ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 context,
-                READ_PHONE_NUMBERS
+                Manifest.permission.READ_PHONE_NUMBERS
             ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.RECEIVE_SMS
@@ -271,7 +276,7 @@ class MainActivity : AppCompatActivity() {
         var permissions = arrayOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.RECEIVE_SMS,
-            READ_PHONE_NUMBERS,
+            Manifest.permission.READ_PHONE_NUMBERS,
             Manifest.permission.READ_SMS,
             Manifest.permission.READ_PHONE_STATE
         )

@@ -59,26 +59,25 @@ func (queue *emulatorPushQueue) push(task PushQueueTask, queueID string) func() 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		err := requests.
+		request := requests.
 			URL(task.URL).
 			Client(queue.client).
-			CopyHeaders(queue.httpHeaders(task)).
 			Method(task.Method).
-			BodyBytes(task.Body).
-			Fetch(ctx)
-		if err != nil {
+			BodyBytes(task.Body)
+
+		// add headers
+		for key, value := range task.Headers {
+			request.Header(key, value)
+		}
+
+		// add content type
+		request.Header("Content-Type", "application/json")
+
+		if err := request.Fetch(ctx); err != nil {
 			queue.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot send http request to [%s] for queue task [%s]", task.URL, queueID)))
 			return
 		}
 
 		queue.logger.Info(fmt.Sprintf("queue task [%s] sent to URL [%s]", queueID, task.URL))
 	}
-}
-
-func (queue *emulatorPushQueue) httpHeaders(task PushQueueTask) map[string][]string {
-	headers := map[string][]string{}
-	for key, value := range task.Headers {
-		headers[key] = []string{value}
-	}
-	return headers
 }

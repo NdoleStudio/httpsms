@@ -67,7 +67,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         if (Settings.isLoggedIn(this)) {
             Timber.d("updating phone with new fcm token")
-            HttpSmsApiService.create(this).updatePhone(Settings.getOwnerOrDefault(this), token)
+            HttpSmsApiService.create(this).updatePhone(Settings.getOwnerOrDefault(this), token, SmsManagerService.isDualSIM(this))
         }
 
     }
@@ -131,7 +131,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     sentIntents.add(createPendingIntent(id, SmsManagerService.sentAction(id)))
                     deliveredIntents.add(createPendingIntent(id, SmsManagerService.deliveredAction(id)))
                 }
-                SmsManagerService().sendMultipartMessage(this.applicationContext,message.contact, parts, sentIntents, deliveredIntents)
+                SmsManagerService().sendMultipartMessage(this.applicationContext,message.contact, parts, message.sim, sentIntents, deliveredIntents)
                 Timber.d("sent SMS for message with ID [${message.id}] in [${parts.size}] parts")
                 Result.success()
             } catch (e: Exception) {
@@ -185,7 +185,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private fun sendMessage(message: Message, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
             Timber.d("sending SMS for message with ID [${message.id}]")
             try {
-                SmsManagerService().sendTextMessage(this.applicationContext,message.contact, message.content, sentIntent, deliveredIntent)
+                SmsManagerService().sendTextMessage(this.applicationContext,message.contact, message.content, message.sim, sentIntent, deliveredIntent)
             } catch (e: Exception) {
                 Timber.e(e)
                 Timber.d("could not send SMS for message with ID [${message.id}]")

@@ -193,13 +193,32 @@
               lazy-validation
               @submit.prevent="sendMessage"
             >
+              <v-select
+                v-if="$store.getters.getActivePhone.is_dual_sim"
+                v-model="simSelected"
+                :items="simOptions"
+                item-text="title"
+                item-value="code"
+                class="sim-selector"
+                persistent-hint
+                return-object
+                single-line
+                rounded
+                filled
+              >
+                <template v-slot:append>
+                  <v-badge :content="simSelected.value" :value="simSelected.value > 0" :offset-y="10" :offset-x="10">
+                    <v-icon>{{ mdiSim }}</v-icon>
+                  </v-badge>
+                </template>
+              </v-select>
               <v-text-field
                 ref="messageInput"
                 v-model="formMessage"
                 :disabled="submitting || !contactIsPhoneNumber"
                 :rows="1"
                 filled
-                class="no-scrollbar"
+                class="no-scrollbar ml-2"
                 :rules="formMessageRules"
                 :placeholder="
                   contactIsPhoneNumber
@@ -249,9 +268,10 @@ import {
   mdiPackageDown,
   mdiAccount,
   mdiRefresh,
+  mdiSim,
 } from '@mdi/js'
 import { Message } from '~/models/message'
-import { SendMessageRequest } from '~/store'
+import { SendMessageRequest, SIM } from '~/store'
 
 export default Vue.extend({
   middleware: ['auth'],
@@ -276,6 +296,9 @@ export default Vue.extend({
       mdiPackageDown,
       mdiAccount,
       mdiRefresh,
+      mdiSim,
+      simOptions: [{ title: 'Default', code: 'DEFAULT', value: 0 }, { title: 'SIM 1', code: 'SIM1', value: 1 }, { title: 'SIM 2', code: 'SIM2', value: 2 }],
+      simSelected: { title: 'Default', code: 'DEFAULT', value: 0 },
       formMessage: '',
       formMessageRules,
       submitting: false,
@@ -419,6 +442,7 @@ export default Vue.extend({
         from: this.$store.getters.getOwner,
         to: this.$store.getters.getThread.contact,
         content: this.formMessage,
+        sim: this.simSelected.code as SIM,
       }
 
       await this.$store.dispatch('sendMessage', request)
@@ -453,6 +477,30 @@ export default Vue.extend({
 @media (min-width: 1904px) {
   .messages-body {
     max-width: 1785px;
+  }
+}
+
+
+.sim-selector {
+  max-width: 150px;
+}
+
+@media (max-width: 720px) {
+  .sim-selector {
+    max-width: 44px;
+  }
+  .sim-selector .v-select__selections {
+    display: none;
+  }
+  .sim-selector.v-select .v-input__append-inner {
+    margin-left: 0;
+  }
+  .sim-selector.v-text-field--rounded > .v-input__control > .v-input__slot {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .sim-selector.v-select .v-input__append-inner {
+    padding-left: 0;
   }
 }
 

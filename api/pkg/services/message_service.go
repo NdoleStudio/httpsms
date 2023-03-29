@@ -74,6 +74,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 		Timestamp: params.Timestamp,
 		UserID:    message.UserID,
 		Content:   message.Content,
+		SIM:       message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
@@ -171,6 +172,7 @@ type MessageReceiveParams struct {
 	UserID    entities.UserID
 	Owner     phonenumbers.PhoneNumber
 	Content   string
+	SIM       entities.SIM
 	Timestamp time.Time
 	Source    string
 }
@@ -189,6 +191,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 		Contact:   params.Contact,
 		Timestamp: params.Timestamp,
 		Content:   params.Content,
+		SIM:       params.SIM,
 	}
 
 	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.MessageID))
@@ -221,6 +224,7 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
 		Content:   message.Content,
+		SIM:       message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
@@ -245,6 +249,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
 		Content:   message.Content,
+		SIM:       message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
@@ -275,6 +280,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		Contact:      message.Contact,
 		UserID:       message.UserID,
 		Content:      message.Content,
+		SIM:          message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessageSendFailed, message.ID)
@@ -294,6 +300,7 @@ type MessageSendParams struct {
 	Contact           phonenumbers.PhoneNumber
 	Content           string
 	Source            string
+	SIM               entities.SIM
 	UserID            entities.UserID
 	RequestReceivedAt time.Time
 }
@@ -313,6 +320,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		Contact:           phonenumbers.Format(&params.Contact, phonenumbers.E164),
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
+		SIM:               params.SIM,
 	}
 
 	event, err := service.createMessageAPISentEvent(params.Source, eventPayload)
@@ -344,6 +352,7 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 		UserID:            params.UserID,
 		Contact:           params.Contact,
 		Content:           params.Content,
+		SIM:               params.SIM,
 		Type:              entities.MessageTypeMobileOriginated,
 		Status:            entities.MessageStatusReceived,
 		RequestReceivedAt: params.Timestamp,
@@ -570,6 +579,7 @@ func (service *MessageService) HandleMessageExpired(ctx context.Context, params 
 		Owner:     message.Owner,
 		UserID:    message.UserID,
 		Content:   message.Content,
+		SIM:       message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%s] event for expired message with ID [%s]", events.EventTypeMessageSendRetry, message.ID)
@@ -658,6 +668,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		UserID:    message.UserID,
 		Timestamp: time.Now().UTC(),
 		Content:   message.Content,
+		SIM:       message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message with id [%s]", events.EventTypeMessageSendExpired, params.MessageID)
@@ -702,6 +713,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 		Contact:           payload.Contact,
 		UserID:            payload.UserID,
 		Content:           payload.Content,
+		SIM:               payload.SIM,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,
 		RequestReceivedAt: payload.RequestReceivedAt,

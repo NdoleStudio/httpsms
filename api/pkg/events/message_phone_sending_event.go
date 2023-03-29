@@ -18,4 +18,5 @@ type MessagePhoneSendingPayload struct {
 	Owner     string          `json:"owner"`
 	Contact   string          `json:"contact"`
 	Content   string          `json:"content"`
+	SIM       entities.SIM    `json:"sim"`
 }

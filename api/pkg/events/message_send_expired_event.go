@@ -19,4 +19,5 @@ type MessageSendExpiredPayload struct {
 	UserID    entities.UserID `json:"user_id"`
 	Timestamp time.Time       `json:"timestamp"`
 	Content   string          `json:"content"`
+	SIM       entities.SIM    `json:"sim"`
 }

@@ -60,6 +60,17 @@ const (
 	MessageEventNameFailed = MessageEventName("FAILED")
 )
 
+type SIM string
+
+const (
+	// SIM_1 use the SIM card in slot 1 to send the message
+	SIM_1 = SIM("SIM1")
+	// SIM_2 use the SIM card in slot 2 to send the message
+	SIM_2 = SIM("SIM2")
+	// SIM_DEFAULT use the SIM card configured as default communication card to send the message
+	SIM_DEFAULT = SIM("DEFAULT")
+)
+
 // Message represents a message sent between 2 phone numbers
 type Message struct {
 	ID      uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
@@ -69,6 +80,11 @@ type Message struct {
 	Content string        `json:"content" example:"This is a sample text message"`
 	Type    MessageType   `json:"type" example:"mobile-terminated"`
 	Status  MessageStatus `json:"status" gorm:"index:idx_messages_status" example:"pending"`
+	// SIM is the type of event
+	// * ISMS: use the SIM card in slot 1
+	// * ISMS2: use the SIM card in slot 2
+	// * DEFAULT: used the default communication SIM card
+	SIM SIM `json:"sim" example:"DEFAULT"`
 
 	// SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
 	SendDuration *int64 `json:"send_time" example:"133414"`

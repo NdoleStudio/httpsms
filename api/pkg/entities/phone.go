@@ -13,6 +13,7 @@ type Phone struct {
 	FcmToken          *string   `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 	PhoneNumber       string    `json:"phone_number" example:"+18005550199"`
 	MessagesPerMinute uint      `json:"messages_per_minute" example:"1"`
+	IsDualSIM         bool      `json:"is_dual_sim" example:"false"`
 
 	// MaxSendAttempts determines how many times to retry sending an SMS message
 	MaxSendAttempts uint `json:"max_send_attempts" example:"1"`

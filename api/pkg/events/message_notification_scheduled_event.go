@@ -17,6 +17,7 @@ type MessageNotificationScheduledPayload struct {
 	Owner          string          `json:"owner"`
 	Contact        string          `json:"contact"`
 	Content        string          `json:"content"`
+	SIM            entities.SIM    `json:"sim"`
 	UserID         entities.UserID `json:"user_id"`
 	PhoneID        uuid.UUID       `json:"phone_id"`
 	ScheduledAt    time.Time       `json:"scheduled_at"`

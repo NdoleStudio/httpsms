@@ -96,6 +96,7 @@ type PhoneNotificationScheduleParams struct {
 	Source    string
 	Contact   string
 	Content   string
+	SIM       entities.SIM
 	MessageID uuid.UUID
 }
 
@@ -164,6 +165,7 @@ func (service *PhoneNotificationService) dispatchMessageNotificationScheduled(ct
 		Owner:          params.Owner,
 		Contact:        params.Contact,
 		Content:        params.Content,
+		SIM:            params.SIM,
 		UserID:         notification.UserID,
 		PhoneID:        notification.PhoneID,
 		ScheduledAt:    notification.ScheduledAt,

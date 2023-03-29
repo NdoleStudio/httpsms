@@ -20,15 +20,5 @@ type MessageAPISentPayload struct {
 	Contact           string          `json:"contact"`
 	RequestReceivedAt time.Time       `json:"request_received_at"`
 	Content           string          `json:"content"`
-}
-
-// MessageAPISentPayloadV1 is the old event
-type MessageAPISentPayloadV1 struct {
-	MessageID         uuid.UUID       `json:"id"`
-	UserID            entities.UserID `json:"userID"`
-	Owner             string          `json:"owner"`
-	MaxSendAttempts   uint            `json:"max_send_attempts"`
-	Contact           string          `json:"contact"`
-	RequestReceivedAt time.Time       `json:"request_received_at"`
-	Content           string          `json:"content"`
+	SIM               entities.SIM    `json:"sim"`
 }

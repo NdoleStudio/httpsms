@@ -55,6 +55,7 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		Content:   payload.Content,
+		SIM:       payload.SIM,
 		Source:    event.Source(),
 		MessageID: payload.MessageID,
 	}
@@ -83,6 +84,7 @@ func (listener *PhoneNotificationListener) onMessageSendRetry(ctx context.Contex
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		Content:   payload.Content,
+		SIM:       payload.SIM,
 		Source:    event.Source(),
 		MessageID: payload.MessageID,
 	}
