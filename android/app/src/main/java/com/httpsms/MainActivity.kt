@@ -16,8 +16,6 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -29,7 +27,6 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
 import okhttp3.internal.format
-import okhttp3.internal.notify
 import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
