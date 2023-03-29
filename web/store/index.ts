@@ -265,12 +265,12 @@ export const mutations = {
   },
 }
 
-export type SIM = "SIM1" | "SIM2" | "DEFAULT";
+export type SIM = 'SIM1' | 'SIM2' | 'DEFAULT'
 
 export type SendMessageRequest = {
   from: string
   to: string
-  content: string,
+  content: string
   sim: SIM
 }
 
