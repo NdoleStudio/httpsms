@@ -9,6 +9,10 @@ import (
 	"strconv"
 	"time"
 
+	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
+	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
+	"go.opentelemetry.io/otel/sdk/metric"
+
 	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/redis/go-redis/v9"
 
@@ -31,7 +35,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
 	"firebase.google.com/go/messaging"
-	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -1029,23 +1032,38 @@ func (container *Container) InitializeTraceProvider() func() {
 }
 
 func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {
-	container.logger.Debug("initializing google trace provider")
+	container.logger.Debug("initializing google trace meterProvider")
 
-	exporter, err := cloudtrace.New(cloudtrace.WithProjectID(os.Getenv("GCP_PROJECT_ID")))
+	traceExporter, err := cloudtrace.New(cloudtrace.WithProjectID(os.Getenv("GCP_PROJECT_ID")))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create cloud trace exporter"))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create cloud trace traceExporter"))
 	}
 
 	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
+		trace.WithBatcher(traceExporter),
 		trace.WithSampler(trace.AlwaysSample()),
 		trace.WithResource(container.OtelResources(version, namespace)),
 	)
-
 	otel.SetTracerProvider(tp)
 
+	metricExporter, err := mexporter.New(mexporter.WithProjectID(os.Getenv("GCP_PROJECT_ID")))
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create cloud metric traceExporter"))
+	}
+
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithResource(container.OtelResources(version, namespace)),
+	)
+	global.SetMeterProvider(meterProvider)
+
 	return func() {
-		_ = exporter.Shutdown(context.Background())
+		if err = metricExporter.Shutdown(context.Background()); err != nil {
+			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown cloud metric metric exporter"))
+		}
+		if err = traceExporter.Shutdown(context.Background()); err != nil {
+			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown cloud trace trace exporter"))
+		}
 	}
 }
 

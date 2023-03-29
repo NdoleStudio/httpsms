@@ -5,6 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/cloudtasks v1.10.0
 	firebase.google.com/go v3.13.0+incompatible
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.36.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.12.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.7
 	github.com/NdoleStudio/lemonsqueezy-go v0.0.8
@@ -36,6 +37,7 @@ require (
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/metric v0.37.0
 	go.opentelemetry.io/otel/sdk v1.14.0
+	go.opentelemetry.io/otel/sdk/metric v0.37.0
 	go.opentelemetry.io/otel/trace v1.14.0
 	google.golang.org/api v0.114.0
 	google.golang.org/genproto v0.0.0-20230320173215-1fe4d14fc725
@@ -52,6 +54,7 @@ require (
 	cloud.google.com/go/firestore v1.9.0 // indirect
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
+	cloud.google.com/go/monitoring v1.12.0 // indirect
 	cloud.google.com/go/storage v1.30.0 // indirect
 	cloud.google.com/go/trace v1.9.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.36.0 // indirect
@@ -123,7 +126,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.14.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
