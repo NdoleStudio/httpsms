@@ -1,11 +1,14 @@
 package com.httpsms
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
+import androidx.core.app.ActivityCompat
 
 
 class SmsManagerService {
@@ -21,8 +24,11 @@ class SmsManagerService {
             return "$ACTION_SMS_DELIVERED.$messageID"
         }
 
-        @SuppressLint("MissingPermission")
         fun isDualSIM(context: Context) : Boolean {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
             val localSubscriptionManager: SubscriptionManager = if (Build.VERSION.SDK_INT < 31) {
                 SubscriptionManager.from(context)
             } else {

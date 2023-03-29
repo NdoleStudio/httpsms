@@ -12,8 +12,14 @@ import timber.log.Timber
 class SimChangeReceiver : BroadcastReceiver() {
     private var lastDualSIMState: Boolean = false
     override fun onReceive(context: Context, intent: Intent) {
-        Timber.d("SIM state changed")
+        if (intent.action == "android.intent.action.SIM_STATE_CHANGED") {
+            updateDualSimState(context)
+        } else {
+            Timber.e("invalid intent [${intent.action}]")
+        }
+    }
 
+    private fun updateDualSimState(context: Context) {
         Thread {
             val currentTimeStamp = System.currentTimeMillis()
             val isDualSIM = SmsManagerService.isDualSIM(context)
@@ -25,6 +31,7 @@ class SimChangeReceiver : BroadcastReceiver() {
                 Settings.getFcmToken(context) ?: "",
                 isDualSIM
             )
+            Timber.d("SIM state change pushed to server")
 
             if (updated) {
                 lastDualSIMState = isDualSIM
@@ -32,7 +39,6 @@ class SimChangeReceiver : BroadcastReceiver() {
                 Timber.i("fcm token uploaded successfully")
                 return@Thread
             }
-
             Timber.e("could not update fcm token")
         }.start()
     }

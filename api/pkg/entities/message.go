@@ -60,15 +60,16 @@ const (
 	MessageEventNameFailed = MessageEventName("FAILED")
 )
 
+// SIM is the SIM card to use to send the message
 type SIM string
 
 const (
-	// SIM_1 use the SIM card in slot 1 to send the message
-	SIM_1 = SIM("SIM1")
-	// SIM_2 use the SIM card in slot 2 to send the message
-	SIM_2 = SIM("SIM2")
-	// SIM_DEFAULT use the SIM card configured as default communication card to send the message
-	SIM_DEFAULT = SIM("DEFAULT")
+	// SIM1 use the SIM card in slot 1 to send the message
+	SIM1 = SIM("SIM1")
+	// SIM2 use the SIM card in slot 2 to send the message
+	SIM2 = SIM("SIM2")
+	// SIMDefault use the SIM card configured as default communication card to send the message
+	SIMDefault = SIM("DEFAULT")
 )
 
 // Message represents a message sent between 2 phone numbers
@@ -80,9 +81,9 @@ type Message struct {
 	Content string        `json:"content" example:"This is a sample text message"`
 	Type    MessageType   `json:"type" example:"mobile-terminated"`
 	Status  MessageStatus `json:"status" gorm:"index:idx_messages_status" example:"pending"`
-	// SIM is the type of event
-	// * ISMS: use the SIM card in slot 1
-	// * ISMS2: use the SIM card in slot 2
+	// SIM is the SIM card to use to send the message
+	// * SMS1: use the SIM card in slot 1
+	// * SMS2: use the SIM card in slot 2
 	// * DEFAULT: used the default communication SIM card
 	SIM SIM `json:"sim" example:"DEFAULT"`
 

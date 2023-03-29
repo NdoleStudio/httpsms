@@ -30,7 +30,7 @@ func (input *MessageBulkSend) Sanitize() MessageBulkSend {
 	input.To = to
 	input.From = input.sanitizeAddress(input.From)
 	if strings.TrimSpace(string(input.SIM)) == "" {
-		input.SIM = entities.SIM_DEFAULT
+		input.SIM = entities.SIMDefault
 	}
 	return *input
 }
