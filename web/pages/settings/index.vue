@@ -468,7 +468,6 @@ export default Vue.extend({
     },
   },
   mounted() {
-    console.log('inside settings')
     this.$store.dispatch('clearAxiosError')
     this.$store.dispatch('loadUser')
     this.loadWebhooks()

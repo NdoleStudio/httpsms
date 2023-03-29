@@ -206,8 +206,13 @@
                 rounded
                 filled
               >
-                <template v-slot:append>
-                  <v-badge :content="simSelected.value" :value="simSelected.value > 0" :offset-y="10" :offset-x="10">
+                <template #append>
+                  <v-badge
+                    :content="simSelected.value"
+                    :value="simSelected.value > 0"
+                    :offset-y="10"
+                    :offset-x="10"
+                  >
                     <v-icon>{{ mdiSim }}</v-icon>
                   </v-badge>
                 </template>
@@ -297,7 +302,11 @@ export default Vue.extend({
       mdiAccount,
       mdiRefresh,
       mdiSim,
-      simOptions: [{ title: 'Default', code: 'DEFAULT', value: 0 }, { title: 'SIM 1', code: 'SIM1', value: 1 }, { title: 'SIM 2', code: 'SIM2', value: 2 }],
+      simOptions: [
+        { title: 'Default', code: 'DEFAULT', value: 0 },
+        { title: 'SIM 1', code: 'SIM1', value: 1 },
+        { title: 'SIM 2', code: 'SIM2', value: 2 },
+      ],
       simSelected: { title: 'Default', code: 'DEFAULT', value: 0 },
       formMessage: '',
       formMessageRules,
@@ -479,7 +488,6 @@ export default Vue.extend({
     max-width: 1785px;
   }
 }
-
 
 .sim-selector {
   max-width: 150px;

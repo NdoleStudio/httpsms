@@ -30,22 +30,22 @@
                 label="Content"
               ></v-textarea>
               <div style="width: 175px">
-              <v-select
-                v-if="$store.getters.getActivePhone.is_dual_sim"
-                v-model="simSelected"
-                :items="simOptions"
-                item-text="title"
-                item-value="code"
-                persistent-hint
-                return-object
-                single-line
-                solo
-              >
-                <template v-slot:append>
-                  <v-icon>{{ mdiSim }}</v-icon>
-                </template>
-              </v-select>
-            </div>
+                <v-select
+                  v-if="$store.getters.getActivePhone.is_dual_sim"
+                  v-model="simSelected"
+                  :items="simOptions"
+                  item-text="title"
+                  item-value="code"
+                  persistent-hint
+                  return-object
+                  single-line
+                  solo
+                >
+                  <template #append>
+                    <v-icon>{{ mdiSim }}</v-icon>
+                  </template>
+                </v-select>
+              </div>
               <v-btn
                 type="submit"
                 class="primary"
@@ -75,7 +75,11 @@ export default {
       mdiArrowLeft,
       mdiSend,
       mdiSim,
-      simOptions: [{ title: 'Default', code: 'DEFAULT' }, { title: 'SIM 1', code: 'SIM1' }, { title: 'SIM 2', code: 'SIM2' }],
+      simOptions: [
+        { title: 'Default', code: 'DEFAULT' },
+        { title: 'SIM 1', code: 'SIM1' },
+        { title: 'SIM 2', code: 'SIM2' },
+      ],
       simSelected: { title: 'Default', code: 'DEFAULT' },
       sending: false,
       formPhoneNumber: '',
