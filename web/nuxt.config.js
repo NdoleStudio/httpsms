@@ -39,17 +39,6 @@ export default {
         content: 'Convert your android phone into an SMS gateway - httpSMS',
       },
       {
-        hid: 'twitter:title',
-        name: 'twitter:title',
-        content: 'Convert your android phone into an SMS gateway - httpSMS',
-      },
-      {
-        hid: 'twitter:description',
-        name: 'twitter:description',
-        content:
-          'Use your android phone to send and receive SMS messages using a simple HTTP API.',
-      },
-      {
         hid: 'og:description',
         name: 'og:description',
         content:
@@ -60,11 +49,6 @@ export default {
         name: 'og:image',
         content: 'https://httpsms.com/header.png',
       },
-      {
-        hid: 'twitter:image',
-        name: 'twitter:image',
-        content: 'https://httpsms.com/header.png',
-      },
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },
@@ -73,7 +57,7 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: ['~plugins/filters.ts'],
+  plugins: ['~plugins/filters.ts', { src: '~/plugins/vue-glow', ssr: false }],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,

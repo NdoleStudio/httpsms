@@ -37,6 +37,16 @@
               text
               color="primary"
               class="my-5 mr-2"
+              :to="{ name: 'blog' }"
+            >
+              Blog
+            </v-btn>
+            <v-btn
+              v-if="$vuetify.breakpoint.lgAndUp"
+              large
+              text
+              color="primary"
+              class="my-5 mr-2"
               :to="{ name: 'login' }"
             >
               Login
@@ -132,6 +142,18 @@
                   </a>
                 </v-hover>
               </li>
+              <li class="mb-2">
+                <v-hover v-slot="{ hover }">
+                  <nuxt-link
+                    class="text--primary text-decoration-none"
+                    :class="{ 'text-decoration-underline': hover }"
+                    to="/blog"
+                  >
+                    Blog
+                    <v-icon small>{{ mdiPost }}</v-icon>
+                  </nuxt-link>
+                </v-hover>
+              </li>
             </ul>
           </v-col>
           <v-col cols="12" md="3">
@@ -220,6 +242,7 @@ import {
   mdiTwitter,
   mdiHeart,
   mdiEyeOffOutline,
+  mdiPost,
   mdiCreditCardOutline,
   mdiScaleBalance,
   mdiEmailOutline,
@@ -239,6 +262,7 @@ export default Vue.extend({
       mdiEyeOffOutline,
       mdiCreditCardOutline,
       mdiEmailOutline,
+      mdiPost,
       mdiCircle,
       mdiBookOpenVariant,
     }
