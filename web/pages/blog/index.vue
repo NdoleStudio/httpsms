@@ -15,9 +15,7 @@
                 post.title
               }}</v-card-title>
               <v-card-subtitle>
-                <span class="text-uppercase primary--text-color">{{
-                  post.date
-                }}</span>
+                <span class="text-uppercase blue--text">{{ post.date }}</span>
                 • <span class="text-uppercase">{{ post.readTime }}</span>
               </v-card-subtitle>
               <v-card-text class="mt-n2">
@@ -60,7 +58,7 @@ export default {
           route: '/blog/forward-incoming-sms-from-phone-to-webhook',
           title:
             'How to forward a text message (SMS) from an android phone into your webhook',
-          postDate: 'April 08, 2023',
+          date: 'April 08, 2023',
           readTime: '5 min read',
           authorImage: require('@/assets/img/arnold.png'),
           description:
