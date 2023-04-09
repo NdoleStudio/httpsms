@@ -64,10 +64,12 @@
           >
           android app on your phone and sign in using your API KEY which you
           copied above. This app listens for SMS messages received on your
-          android phone. <br />👉
+          android phone. <br /><span v-if="$vuetify.breakpoint.mdAndUp"
+            >👉</span
+          >
           <a
             target="_blank"
-            class="text-decoration-none"
+            class="text-decoration-none text-break"
             href="https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk"
             >https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk</a
           >
