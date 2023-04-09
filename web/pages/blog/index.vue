@@ -2,38 +2,41 @@
   <v-container>
     <v-row class="mt-16">
       <v-col cols="12" md="9">
-        <v-hover v-slot="{ hover }">
-          <v-card
-            v-for="post in blogPosts"
-            :key="post.route"
-            :to="post.route"
-            :elevation="hover ? 4 : 1"
+        <v-hover v-for="post in blogPosts" v-slot="{ hover }" :key="post.route">
+          <vue-glow
+            color="#329ef4"
+            mode="hex"
+            elevation="7"
+            :intensity="hover ? 0.7 : 0"
+            intense
           >
-            <v-card-title class="text-h4 text-break">{{
-              post.title
-            }}</v-card-title>
-            <v-card-subtitle>
-              <span class="text-uppercase primary--text-color">{{
-                post.date
-              }}</span>
-              • <span class="text-uppercase">{{ post.readTime }}</span>
-            </v-card-subtitle>
-            <v-card-text class="mt-n2">
-              <p class="text--primary subtitle-1">{{ post.description }}</p>
-              <div class="d-flex mt-n2">
-                <v-avatar class="mb-n2">
-                  <v-img :src="post.authorImage"></v-img>
-                </v-avatar>
-                <div class="ml-2">
-                  <p class="subtitle-1">{{ post.authorName }}</p>
-                  <p class="mt-n5 mb-n4">
-                    {{ post.authorTwitter }}
-                    <v-icon color="#1DA1F2" small>{{ mdiTwitter }}</v-icon>
-                  </p>
+            <v-card :to="post.route">
+              <v-card-title class="text-h4 text-break">{{
+                post.title
+              }}</v-card-title>
+              <v-card-subtitle>
+                <span class="text-uppercase primary--text-color">{{
+                  post.date
+                }}</span>
+                • <span class="text-uppercase">{{ post.readTime }}</span>
+              </v-card-subtitle>
+              <v-card-text class="mt-n2">
+                <p class="text--primary subtitle-1">{{ post.description }}</p>
+                <div class="d-flex mt-n2">
+                  <v-avatar class="mb-n2">
+                    <v-img :src="post.authorImage"></v-img>
+                  </v-avatar>
+                  <div class="ml-2">
+                    <p class="subtitle-1">{{ post.authorName }}</p>
+                    <p class="mt-n5 mb-n4">
+                      {{ post.authorTwitter }}
+                      <v-icon color="#1DA1F2" small>{{ mdiTwitter }}</v-icon>
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </v-card-text>
-          </v-card>
+              </v-card-text>
+            </v-card>
+          </vue-glow>
         </v-hover>
       </v-col>
       <v-col v-if="$vuetify.breakpoint.mdAndUp" md="3">
