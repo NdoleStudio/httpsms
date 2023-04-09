@@ -39,6 +39,7 @@ export default {
 
   methods: {
     async loadData() {
+      await this.$store.dispatch('loadUser')
       await this.$store.dispatch('loadPhones')
       await this.$store.dispatch('loadThreads')
     },

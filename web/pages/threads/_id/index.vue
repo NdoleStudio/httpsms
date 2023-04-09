@@ -381,6 +381,7 @@ export default Vue.extend({
     },
 
     async loadData() {
+      await this.$store.dispatch('loadUser')
       await this.$store.dispatch('loadPhones')
       await this.$store.dispatch('loadThreads')
 

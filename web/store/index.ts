@@ -318,6 +318,15 @@ export const actions = {
 
     const response = await axios.get('/v1/phones', { params: { limit: 100 } })
     context.commit('setPhones', response.data.data)
+
+    if (context.state.user && context.state.user.active_phone_id) {
+      const phone = response.data.data.find(
+        (x: Phone) => x.id === context.state.user?.active_phone_id
+      )
+      if (phone) {
+        context.commit('setOwner', phone.phone_number)
+      }
+    }
   },
 
   async loadUser(context: ActionContext<State, State>) {
