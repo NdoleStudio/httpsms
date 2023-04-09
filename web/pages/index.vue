@@ -255,6 +255,12 @@
                     }}</v-icon>
                     PHP
                   </v-tab>
+                  <v-tab href="#python">
+                    <v-icon color="#ffffff" class="mr-2">{{
+                      mdiLanguagePython
+                    }}</v-icon>
+                    Python
+                  </v-tab>
                   <v-tab href="#go">
                     <v-icon color="#00aed8" class="mr-2">{{
                       mdiLanguageGo
@@ -323,6 +329,33 @@ $res = $client->request('POST', 'https://api.httpsms.com/v1/messages/send', [
 ]);
 
 echo $res->getBody();
+</code>
+                    </pre>
+                  </v-tab-item>
+                  <v-tab-item value="python">
+                    <pre v-highlight class="python w-full mt-n2 mb-n13">
+<code>import requests
+import json
+
+api_key = "Get API Key from https://httpsms.com/settings"
+
+url = 'https://api.httpsms.com/v1/messages/send'
+
+headers = {
+    'x-api-key': api_key,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+}
+
+payload = {
+    "content": "This is a sample text message",
+    "from": "+18005550199",
+    "to": "+18005550100"
+}
+
+response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+print(response.json())
 </code>
                     </pre>
                   </v-tab-item>
@@ -537,6 +570,7 @@ import {
   mdiSend,
   mdiForum,
   mdiNumeric1,
+  mdiLanguagePython,
   mdiNumeric2,
   mdiNumeric3,
   mdiTallyMark1,
@@ -567,6 +601,7 @@ export default Vue.extend({
       mdiTallyMark3,
       mdiLanguageJavascript,
       mdiLanguagePhp,
+      mdiLanguagePython,
       mdiLanguageCsharp,
       mdiLanguageJava,
       mdiPowershell,
