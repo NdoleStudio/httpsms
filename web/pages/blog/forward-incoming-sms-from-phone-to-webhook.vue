@@ -9,7 +9,13 @@
             require('@/static/img/blog/forward-incoming-sms-from-phone-to-webhook/header.png')
           "
         ></v-img>
-        <h1 class="text-h2 mt-1">
+        <h1
+          class="mt-1"
+          :class="{
+            'text-h2': $vuetify.breakpoint.mdAndUp,
+            'text-h3': !$vuetify.breakpoint.mdAndUp,
+          }"
+        >
           How to forward a text message (SMS) from an android phone into your
           webhook
         </h1>
