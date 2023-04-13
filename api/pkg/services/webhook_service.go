@@ -225,8 +225,9 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 	}
 
 	return map[string]string{
-		"username": payload.Contact,
-		"content":  payload.Content,
+		"avatar_url": "https://httpsms.com/avatar.png",
+		"username":   payload.Contact,
+		"content":    payload.Content,
 	}
 }
 
