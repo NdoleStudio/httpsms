@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -194,7 +197,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 		Client(service.client).
 		Bearer(token).
 		Header("X-Event-Type", event.Type()).
-		BodyJSON(event).
+		BodyJSON(service.getPayload(ctxLogger, event, webhook)).
 		ToString(&response).
 		Fetch(ctx)
 	if err != nil {
@@ -202,7 +205,29 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s]", webhook.URL, event.Type(), event.ID()))
+	ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response [%s]", webhook.URL, event.Type(), event.ID(), response))
+}
+
+func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event cloudevents.Event, webhook *entities.Webhook) any {
+	if event.Type() != events.EventTypeMessagePhoneReceived {
+		return event
+	}
+
+	if !strings.HasPrefix(webhook.URL, "https://discord.com/api/webhooks/") {
+		return event
+	}
+
+	payload := new(events.MessagePhoneReceivedPayload)
+	err := event.DataAs(payload)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)))
+		return event
+	}
+
+	return map[string]string{
+		"username": payload.Contact,
+		"content":  payload.Content,
+	}
 }
 
 func (service *WebhookService) getAuthToken(webhook *entities.Webhook) (string, error) {
@@ -210,7 +235,7 @@ func (service *WebhookService) getAuthToken(webhook *entities.Webhook) (string, 
 		Audience:  webhook.URL,
 		ExpiresAt: time.Now().UTC().Add(10 * time.Minute).Unix(),
 		IssuedAt:  time.Now().UTC().Unix(),
-		Issuer:    "httpSMS",
+		Issuer:    "api.httpsms.com",
 		NotBefore: time.Now().UTC().Add(-10 * time.Minute).Unix(),
 		Subject:   string(webhook.UserID),
 	})
