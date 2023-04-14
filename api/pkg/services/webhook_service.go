@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nyaruka/phonenumbers"
+
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -224,9 +226,16 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 		return event
 	}
 
+	username := payload.Contact
+	if number, err := phonenumbers.Parse(payload.Contact, phonenumbers.UNKNOWN_REGION); err == nil {
+		username = phonenumbers.Format(number, phonenumbers.INTERNATIONAL)
+	} else {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", payload.Contact)))
+	}
+
 	return map[string]string{
 		"avatar_url": "https://httpsms.com/avatar.png",
-		"username":   payload.Contact,
+		"username":   username,
 		"content":    payload.Content,
 	}
 }
