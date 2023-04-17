@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -226,18 +227,30 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 		return event
 	}
 
-	username := payload.Contact
-	if number, err := phonenumbers.Parse(payload.Contact, phonenumbers.UNKNOWN_REGION); err == nil {
-		username = phonenumbers.Format(number, phonenumbers.INTERNATIONAL)
-	} else {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", payload.Contact)))
-	}
-
 	return map[string]string{
 		"avatar_url": "https://httpsms.com/avatar.png",
-		"username":   username,
+		"username":   service.getFormattedContact(ctxLogger, payload.Contact),
 		"content":    payload.Content,
 	}
+}
+
+func (service *WebhookService) getFormattedContact(ctxLogger telemetry.Logger, contact string) string {
+	matched, err := regexp.MatchString("^\\+?[1-9]\\d{10,14}$", contact)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("error while matching contact [%s] with regex [%s]", contact, "^\\+?[1-9]\\d{10,14}$")))
+		return contact
+	}
+	if !matched {
+		return contact
+	}
+
+	number, err := phonenumbers.Parse(contact, phonenumbers.UNKNOWN_REGION)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", contact)))
+		return contact
+	}
+
+	return phonenumbers.Format(number, phonenumbers.INTERNATIONAL)
 }
 
 func (service *WebhookService) getAuthToken(webhook *entities.Webhook) (string, error) {
