@@ -20,6 +20,7 @@ class LogtailTree: Timber.DebugTree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         val logEntry = LogEntry(
+            BuildConfig.VERSION_NAME,
             priority,
             severity(priority),
             tag,
@@ -65,6 +66,7 @@ class LogtailTree: Timber.DebugTree() {
     }
 
     class LogEntry(
+        val release: String,
         val priority: Int,
         val severity: String,
         val tag: String?,
