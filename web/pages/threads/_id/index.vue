@@ -321,7 +321,10 @@ export default Vue.extend({
   },
   computed: {
     contactIsPhoneNumber(): boolean {
-      return isValidPhoneNumber(this.$store.getters.getThread.contact)
+      return (
+        isValidPhoneNumber(this.$store.getters.getThread.contact) ||
+        !isNaN(Number(this.$store.getters.getThread.contact))
+      )
     },
     messageVisibility(): string {
       if (this.hideMessages) {
