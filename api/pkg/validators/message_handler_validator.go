@@ -81,7 +81,6 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 		Rules: govalidator.MapData{
 			"to": []string{
 				"required",
-				phoneNumberRule,
 			},
 			"from": []string{
 				"required",
@@ -135,7 +134,6 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 				"required",
 				"max:50",
 				"min:1",
-				multiplePhoneNumberRule,
 			},
 			"from": []string{
 				"required",
