@@ -40,13 +40,12 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 	from, _ := phonenumbers.Parse(input.From, phonenumbers.UNKNOWN_REGION)
 	var result []services.MessageSendParams
 	for _, to := range input.To {
-		toAddress, _ := phonenumbers.Parse(to, phonenumbers.UNKNOWN_REGION)
 		result = append(result, services.MessageSendParams{
 			Source:            source,
 			Owner:             *from,
 			UserID:            userID,
 			RequestReceivedAt: time.Now().UTC(),
-			Contact:           *toAddress,
+			Contact:           to,
 			Content:           input.Content,
 			SIM:               input.SIM,
 		})

@@ -34,14 +34,12 @@ func (input *MessageSend) Sanitize() MessageSend {
 // ToMessageSendParams converts MessageSend to services.MessageSendParams
 func (input *MessageSend) ToMessageSendParams(userID entities.UserID, source string) services.MessageSendParams {
 	from, _ := phonenumbers.Parse(input.From, phonenumbers.UNKNOWN_REGION)
-	to, _ := phonenumbers.Parse(input.To, phonenumbers.UNKNOWN_REGION)
-
 	return services.MessageSendParams{
 		Source:            source,
 		Owner:             *from,
 		UserID:            userID,
 		RequestReceivedAt: time.Now().UTC(),
-		Contact:           *to,
+		Contact:           input.sanitizeAddress(input.To),
 		Content:           input.Content,
 		SIM:               input.SIM,
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
@@ -14,9 +15,10 @@ import (
 type validator struct{}
 
 const (
-	phoneNumberRule         = "phoneNumber"
-	multiplePhoneNumberRule = "multiplePhoneNumber"
-	webhookEventsRule       = "webhookEvents"
+	phoneNumberRule                = "phoneNumber"
+	contactPhoneNumberRule         = "contactPhoneNumber"
+	multipleContactPhoneNumberRule = "multipleContactPhoneNumber"
+	webhookEventsRule              = "webhookEvents"
 )
 
 func init() {
@@ -25,27 +27,41 @@ func init() {
 	govalidator.AddCustomRule(phoneNumberRule, func(field string, rule string, message string, value interface{}) error {
 		phoneNumber, ok := value.(string)
 		if !ok {
-			return fmt.Errorf("the %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+			return fmt.Errorf("The %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
 		}
 
 		_, err := phonenumbers.Parse(phoneNumber, phonenumbers.UNKNOWN_REGION)
 		if err != nil {
-			return fmt.Errorf("the %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+			return fmt.Errorf("The %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
 		}
 
 		return nil
 	})
 
-	govalidator.AddCustomRule(multiplePhoneNumberRule, func(field string, rule string, message string, value interface{}) error {
+	// custom rules to take fixed length word.
+	// e.g: max_word:5 will throw error if the field contains more than 5 words
+	govalidator.AddCustomRule(contactPhoneNumberRule, func(field string, rule string, message string, value interface{}) error {
+		phoneNumber, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("The %s field must contain only digits and must be less than 14 characters", field)
+		}
+
+		if match, err := regexp.MatchString("^\\+?[0-9]\\d{1,14}$", phoneNumber); err != nil || !match {
+			return fmt.Errorf("The %s field must contain only digits and must be less than 14 characters", field)
+		}
+
+		return nil
+	})
+
+	govalidator.AddCustomRule(multipleContactPhoneNumberRule, func(field string, rule string, message string, value interface{}) error {
 		phoneNumbers, ok := value.([]string)
 		if !ok {
-			return fmt.Errorf("the %s field must be an array of a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+			return fmt.Errorf("The %s field must be an array of valid phone numbers", field)
 		}
 
 		for index, number := range phoneNumbers {
-			_, err := phonenumbers.Parse(number, phonenumbers.UNKNOWN_REGION)
-			if err != nil {
-				return fmt.Errorf("the %s value in index [%d] must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field, index)
+			if match, err := regexp.MatchString("^\\+?[0-9]\\d{1,14}$", number); err != nil || !match {
+				return fmt.Errorf("The %s field in index [%d] must contain only digits and must be less than 14 characters", field, index)
 			}
 		}
 
@@ -55,11 +71,11 @@ func init() {
 	govalidator.AddCustomRule(webhookEventsRule, func(field string, rule string, message string, value interface{}) error {
 		input, ok := value.([]string)
 		if !ok {
-			return fmt.Errorf("the %s field must be a string array", field)
+			return fmt.Errorf("The %s field must be a string array", field)
 		}
 
 		if len(input) == 0 {
-			return fmt.Errorf("the %s field is an empty array", field)
+			return fmt.Errorf("The %s field is an empty array", field)
 		}
 
 		validEvents := map[string]bool{
@@ -68,7 +84,7 @@ func init() {
 
 		for _, event := range input {
 			if _, ok := validEvents[event]; !ok {
-				return fmt.Errorf("the %s field has an invalid event with name [%s]", field, event)
+				return fmt.Errorf("The %s field has an invalid event with name [%s]", field, event)
 			}
 		}
 

@@ -76,7 +76,7 @@ const (
 type Message struct {
 	ID      uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 	Owner   string        `json:"owner" gorm:"index:idx_messages_user_id__owner__contact" example:"+18005550199"`
-	UserID  UserID        `json:"user_id" gorm:"index:idx_messages_user_id__owner__contact" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	UserID  UserID        `json:"user_id" gorm:"index:idx_messages__user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Contact string        `json:"contact" gorm:"index:idx_messages_user_id__owner__contact" example:"+18005550100"`
 	Content string        `json:"content" example:"This is a sample text message"`
 	Type    MessageType   `json:"type" example:"mobile-terminated"`

@@ -297,7 +297,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 // MessageSendParams parameters for sending a new message
 type MessageSendParams struct {
 	Owner             phonenumbers.PhoneNumber
-	Contact           phonenumbers.PhoneNumber
+	Contact           string
 	Content           string
 	Source            string
 	SIM               entities.SIM
@@ -317,7 +317,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		UserID:            params.UserID,
 		MaxSendAttempts:   service.maxSendAttempts(ctx, params.UserID, phonenumbers.Format(&params.Owner, phonenumbers.E164)),
 		Owner:             phonenumbers.Format(&params.Owner, phonenumbers.E164),
-		Contact:           phonenumbers.Format(&params.Contact, phonenumbers.E164),
+		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
 		SIM:               params.SIM,
