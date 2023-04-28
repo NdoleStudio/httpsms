@@ -46,7 +46,7 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router) {
 // @Summary      Get message threads for a phone number
 // @Description  Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order.
 // @Security	 ApiKeyAuth
-// @Tags         Message Threads
+// @Tags         Channel Threads
 // @Accept       json
 // @Produce      json
 // @Param        owner	query  string  	true 	"owner phone number" 						default(+18005550199)
@@ -94,7 +94,7 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 // @Summary      Update a message thread
 // @Description  Updates the details of a message thread
 // @Security	 ApiKeyAuth
-// @Tags         Message Threads
+// @Tags         Channel Threads
 // @Accept       json
 // @Produce      json
 // @Param 		 messageThreadID	path		string 							true 	"ID of the message thread" 						default(32343a19-da5e-4b1b-a767-3298a73703ca)

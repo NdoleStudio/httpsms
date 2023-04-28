@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/discord"
+
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -113,6 +115,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterWebhookListeners()
 
 	container.RegisterLemonsqueezyRoutes()
+	container.RegisterDiscordRoutes()
 
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
@@ -239,6 +242,10 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Webhook{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Discord{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Discord{})))
 	}
 
 	return container.db
@@ -424,6 +431,16 @@ func (container *Container) BillingHandlerValidator() (validator *validators.Bil
 	)
 }
 
+// DiscordHandlerValidator creates a new instance of validators.DiscordHandlerValidator
+func (container *Container) DiscordHandlerValidator() (validator *validators.DiscordHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewDiscordHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+		container.DiscordClient(),
+	)
+}
+
 // WebhookHandlerValidator creates a new instance of validators.WebhookHandlerValidator
 func (container *Container) WebhookHandlerValidator() (validator *validators.WebhookHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
@@ -520,6 +537,16 @@ func (container *Container) BillingUsageRepository() (repository repositories.Bi
 	)
 }
 
+// DiscordRepository creates a new instance of repositories.DiscordRepository
+func (container *Container) DiscordRepository() (repository repositories.DiscordRepository) {
+	container.logger.Debug("creating GORM repositories.DiscordRepository")
+	return repositories.NewGormDiscordRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
 // WebhookRepository creates a new instance of repositories.WebhookRepository
 func (container *Container) WebhookRepository() (repository repositories.WebhookRepository) {
 	container.logger.Debug("creating GORM repositories.WebhookRepository")
@@ -603,6 +630,17 @@ func (container *Container) BillingService() (service *services.BillingService) 
 		container.UserEmailFactory(),
 		container.BillingUsageRepository(),
 		container.UserRepository(),
+	)
+}
+
+// DiscordService creates a new instance of services.DiscordService
+func (container *Container) DiscordService() (service *services.DiscordService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewDiscordService(
+		container.Logger(),
+		container.Tracer(),
+		container.DiscordClient(),
+		container.DiscordRepository(),
 	)
 }
 
@@ -813,6 +851,18 @@ func (container *Container) LemonsqueezyHandler() (handler *handlers.Lemonsqueez
 	)
 }
 
+// DiscordHandler creates a new instance of handlers.DiscordHandler
+func (container *Container) DiscordHandler() (handler *handlers.DiscordHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+
+	return handlers.NewDiscordHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.DiscordHandlerValidator(),
+		container.DiscordService(),
+	)
+}
+
 // LemonsqueezyHandlerValidator creates a new instance of validators.LemonsqueezyHandlerValidator
 func (container *Container) LemonsqueezyHandlerValidator() (validator *validators.LemonsqueezyHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
@@ -833,10 +883,25 @@ func (container *Container) LemonsqueezyClient() (client *lemonsqueezy.Client) {
 	)
 }
 
-// RegisterLemonsqueezyRoutes registers routes for the /project-settings prefix
+// DiscordClient creates a new instance of discord.Client
+func (container *Container) DiscordClient() (client *discord.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+	return discord.New(
+		discord.WithHTTPClient(container.HTTPClient("discord")),
+		discord.WithBotToken(os.Getenv("DISCORD_BOT_TOKEN")),
+	)
+}
+
+// RegisterLemonsqueezyRoutes registers routes for the /lemonsqueezy prefix
 func (container *Container) RegisterLemonsqueezyRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.LemonsqueezyHandler{}))
 	container.LemonsqueezyHandler().RegisterRoutes(container.App())
+}
+
+// RegisterDiscordRoutes registers routes for the /discord prefix
+func (container *Container) RegisterDiscordRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.DiscordHandler{}))
+	container.DiscordHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterMessageThreadListeners registers event listeners for listeners.MessageThreadListener

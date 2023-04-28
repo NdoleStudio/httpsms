@@ -145,6 +145,21 @@
               <v-icon left>{{ mdiLinkVariant }}</v-icon>
               Add webhook
             </v-btn>
+            <h5 class="text-h4 mb-3 mt-12">Discord Integration</h5>
+            <p class="text--secondary">
+              Send and receive SMS messages without leaving your discord server
+              with the httpsms discord app.
+            </p>
+            <v-btn color="#5865f2" @click="onWebhookCreate">
+              <v-img
+                contain
+                height="24"
+                width="24"
+                class="mr-2"
+                :src="require('assets/img/discord-logo.svg')"
+              ></v-img>
+              Add Discord
+            </v-btn>
             <h5 class="text-h4 mb-3 mt-12">Phones</h5>
             <p class="text--secondary">
               List of mobile phones which are registered for sending and
