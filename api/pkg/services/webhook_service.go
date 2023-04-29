@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/nyaruka/phonenumbers"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
@@ -227,30 +226,35 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 		return event
 	}
 
-	return map[string]string{
+	return map[string]any{
 		"avatar_url": "https://httpsms.com/avatar.png",
-		"username":   service.getFormattedContact(ctxLogger, payload.Contact),
-		"content":    payload.Content,
+		"username":   "httpsms.com",
+		"content":    "✉ new message received",
+		"embeds": []fiber.Map{
+			{
+				"fields": []fiber.Map{
+					{
+						"name":   "From:",
+						"value":  service.getFormattedNumber(ctxLogger, payload.Contact),
+						"inline": true,
+					},
+					{
+						"name":   "To:",
+						"value":  service.getFormattedNumber(ctxLogger, payload.Owner),
+						"inline": true,
+					},
+					{
+						"name":  "Content:",
+						"value": payload.Content,
+					},
+					{
+						"name":  "MessageID:",
+						"value": payload.MessageID,
+					},
+				},
+			},
+		},
 	}
-}
-
-func (service *WebhookService) getFormattedContact(ctxLogger telemetry.Logger, contact string) string {
-	matched, err := regexp.MatchString("^\\+?[1-9]\\d{10,14}$", contact)
-	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("error while matching contact [%s] with regex [%s]", contact, "^\\+?[1-9]\\d{10,14}$")))
-		return contact
-	}
-	if !matched {
-		return contact
-	}
-
-	number, err := phonenumbers.Parse(contact, phonenumbers.UNKNOWN_REGION)
-	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", contact)))
-		return contact
-	}
-
-	return phonenumbers.Format(number, phonenumbers.INTERNATIONAL)
 }
 
 func (service *WebhookService) getAuthToken(webhook *entities.Webhook) (string, error) {

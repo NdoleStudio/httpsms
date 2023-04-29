@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/google/uuid"
 
@@ -23,10 +26,13 @@ import (
 // DiscordHandler handles discord events
 type DiscordHandler struct {
 	handler
-	logger    telemetry.Logger
-	tracer    telemetry.Tracer
-	validator *validators.DiscordHandlerValidator
-	service   *services.DiscordService
+	logger           telemetry.Logger
+	tracer           telemetry.Tracer
+	billingService   *services.BillingService
+	messageValidator *validators.MessageHandlerValidator
+	validator        *validators.DiscordHandlerValidator
+	service          *services.DiscordService
+	messageService   *services.MessageService
 }
 
 // NewDiscordHandler creates a new DiscordHandler
@@ -35,12 +41,18 @@ func NewDiscordHandler(
 	tracer telemetry.Tracer,
 	validator *validators.DiscordHandlerValidator,
 	service *services.DiscordService,
+	messageService *services.MessageService,
+	billingService *services.BillingService,
+	messageValidator *validators.MessageHandlerValidator,
 ) (h *DiscordHandler) {
 	return &DiscordHandler{
-		logger:    logger.WithService(fmt.Sprintf("%T", h)),
-		tracer:    tracer,
-		validator: validator,
-		service:   service,
+		logger:           logger.WithService(fmt.Sprintf("%T", h)),
+		tracer:           tracer,
+		validator:        validator,
+		service:          service,
+		messageService:   messageService,
+		billingService:   billingService,
+		messageValidator: messageValidator,
 	}
 }
 
@@ -244,7 +256,7 @@ func (h *DiscordHandler) Store(c *fiber.Ctx) error {
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /discord/event [post]
 func (h *DiscordHandler) Event(c *fiber.Ctx) error {
-	_, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	if verified := h.verifyInteraction(ctxLogger, c); !verified {
@@ -265,40 +277,46 @@ func (h *DiscordHandler) Event(c *fiber.Ctx) error {
 	}
 
 	if payload["type"].(float64) == 2 {
+		return h.sendSMS(ctx, c, payload)
+	}
+
+	return h.responseBadRequest(c, stacktrace.NewError(fmt.Sprintf("unknown type [%d]", payload["type"])))
+}
+
+func (h *DiscordHandler) createRequest(payload map[string]any) requests.MessageSend {
+	getOption := func(name string) string {
+		for _, option := range payload["data"].(map[string]any)["options"].([]any) {
+			if option.(map[string]any)["name"].(string) == name {
+				return option.(map[string]any)["value"].(string)
+			}
+		}
+		return ""
+	}
+	return requests.MessageSend{
+		From:    getOption("from"),
+		To:      getOption("to"),
+		Content: getOption("message"),
+		SIM:     entities.SIMDefault,
+	}
+}
+
+func (h *DiscordHandler) sendSMS(ctx context.Context, c *fiber.Ctx, payload map[string]any) error {
+	_, span, ctxLogger := h.tracer.StartWithLogger(ctx, h.logger)
+	defer span.End()
+
+	discord, err := h.service.GetByServerID(ctx, payload["guild_id"].(string))
+	if err != nil {
+		msg := fmt.Sprintf("cannot get discord integration by server ID [%s]", payload["guild_id"].(string))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return c.JSON(
 			fiber.Map{
 				"type": 4,
-				//"data": fiber.Map{
-				//	"content": "✔ sending sms*",
-				//},
 				"data": fiber.Map{
-					"content": "*⚠ could not send SMS message*",
+					"content": "**⚠️ error while sending message**",
 					"embeds": []fiber.Map{
 						{
-							"title": "The to field is not a valid phone number",
+							"title": "We cannot find the link to your discord server to an account on [httpsms.com](https://httpsms.com/settings).",
 							"color": 14681092,
-						},
-						{
-							"title": "The from field is not a valid phone number",
-							"color": 14681092,
-						},
-						{
-							"fields": []fiber.Map{
-								{
-									"name":   "From:",
-									"value":  "+37259139660",
-									"inline": true,
-								},
-								{
-									"name":   "To:",
-									"value":  "+37259139661",
-									"inline": true,
-								},
-								{
-									"name":  "Content:",
-									"value": "Hello World",
-								},
-							},
 						},
 					},
 				},
@@ -306,7 +324,100 @@ func (h *DiscordHandler) Event(c *fiber.Ctx) error {
 		)
 	}
 
-	return h.responseBadRequest(c, stacktrace.NewError(fmt.Sprintf("unknown type [%d]", payload["type"])))
+	request := h.createRequest(payload)
+	messageEmbed := fiber.Map{
+		"fields": []fiber.Map{
+			{
+				"name":   "From:",
+				"value":  request.From,
+				"inline": true,
+			},
+			{
+				"name":   "To:",
+				"value":  request.To,
+				"inline": true,
+			},
+			{
+				"name":  "Content:",
+				"value": request.Content,
+			},
+		},
+	}
+
+	if errors := h.messageValidator.ValidateMessageSend(ctx, discord.UserID, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
+		ctxLogger.Warn(stacktrace.NewError(msg))
+
+		var embeds []fiber.Map
+		for _, value := range errors {
+			embeds = append(embeds, fiber.Map{
+				"title": value[0],
+				"color": 14681092,
+			})
+		}
+
+		return c.JSON(
+			fiber.Map{
+				"type": 4,
+				"data": fiber.Map{
+					"content": "**⚠️ error while sending message**",
+					"embeds":  append(embeds, messageEmbed),
+				},
+			},
+		)
+	}
+
+	if msg := h.billingService.IsEntitled(ctx, discord.UserID); msg != nil {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't send a message", discord.UserID)))
+		return c.JSON(
+			fiber.Map{
+				"type": 4,
+				"data": fiber.Map{
+					"content": "**⚠️ error while sending message**",
+					"embeds": append([]fiber.Map{
+						{
+							"title": msg,
+							"color": 14681092,
+						},
+					}, messageEmbed),
+				},
+			},
+		)
+	}
+
+	message, err := h.messageService.SendMessage(ctx, request.ToMessageSendParams(discord.UserID, c.OriginalURL()))
+	if err != nil {
+		msg := fmt.Sprintf("cannot send message with paylod [%s] from discord server [%s]", c.Body(), discord.ServerID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return c.JSON(
+			fiber.Map{
+				"type": 4,
+				"data": fiber.Map{
+					"content": "**Could not send the message⚠️**",
+					"embeds": append([]fiber.Map{
+						{
+							"title": "Internal server error while sending SMS. Please try again later or contact support.",
+							"color": 14681092,
+						},
+					}, messageEmbed),
+				},
+			},
+		)
+	}
+
+	messageEmbed["fields"] = append(messageEmbed["fields"].([]fiber.Map), fiber.Map{
+		"name":  "MessageID:",
+		"value": message.ID,
+	})
+	return c.JSON(
+		fiber.Map{
+			"type": 4,
+			"data": fiber.Map{
+				"content": "✔ sending sms",
+				"embeds":  []fiber.Map{messageEmbed},
+			},
+		},
+	)
 }
 
 // verifyInteraction implements message verification of the discord interactions api

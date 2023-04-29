@@ -22,6 +22,9 @@ type DiscordRepository interface {
 	// Load loads a Discord by ID.
 	Load(ctx context.Context, userID entities.UserID, DiscordID uuid.UUID) (*entities.Discord, error)
 
+	// FindByServerID loads a Discord by the serverID.
+	FindByServerID(ctx context.Context, serverID string) (*entities.Discord, error)
+
 	// Delete an entities.Discord
 	Delete(ctx context.Context, userID entities.UserID, DiscordID uuid.UUID) error
 }

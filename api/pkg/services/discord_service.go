@@ -3,7 +3,12 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
+
+	"github.com/NdoleStudio/httpsms/pkg/events"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
 
@@ -20,6 +25,7 @@ type DiscordService struct {
 	logger     telemetry.Logger
 	tracer     telemetry.Tracer
 	client     *discord.Client
+	dispatcher *EventDispatcher
 	repository repositories.DiscordRepository
 }
 
@@ -29,13 +35,22 @@ func NewDiscordService(
 	tracer telemetry.Tracer,
 	client *discord.Client,
 	repository repositories.DiscordRepository,
+	dispatcher *EventDispatcher,
 ) (s *DiscordService) {
 	return &DiscordService{
 		logger:     logger.WithService(fmt.Sprintf("%T", s)),
 		tracer:     tracer,
 		client:     client,
+		dispatcher: dispatcher,
 		repository: repository,
 	}
+}
+
+// GetByServerID fetches the entities.Discord by the serverID
+func (service *DiscordService) GetByServerID(ctx context.Context, serverID string) (*entities.Discord, error) {
+	ctx, span, _ := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+	return service.repository.FindByServerID(ctx, serverID)
 }
 
 // Index fetches the entities.Discord for an entities.UserID
@@ -189,115 +204,111 @@ func (service *DiscordService) Update(ctx context.Context, params *DiscordUpdate
 	return discordIntegration, nil
 }
 
-//
-//// Send an event to a subscribed webhook
-//func (service *DiscordService) Send(ctx context.Context, userID entities.UserID, event cloudevents.Event) error {
-//	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
-//	defer span.End()
-//
-//	discordIntegrations, err := service.repository.LoadByEvent(ctx, userID, event.Type())
-//	if err != nil {
-//		msg := fmt.Sprintf("cannot load discordIntegrations for userID [%s] and event [%s]", userID, event.Type())
-//		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
-//	}
-//
-//	if len(discordIntegrations) == 0 {
-//		ctxLogger.Info(fmt.Sprintf("user [%s] has no webhook subscription to event [%s]", userID, event.Type()))
-//		return nil
-//	}
-//
-//	var wg sync.WaitGroup
-//	for _, webhook := range discordIntegrations {
-//		wg.Add(1)
-//		go func(webhook *entities.Discord) {
-//			defer wg.Done()
-//			service.sendNotification(ctx, event, webhook)
-//		}(webhook)
-//	}
-//	wg.Wait()
-//
-//	return nil
-//}
-//
-//func (service *DiscordService) sendNotification(ctx context.Context, event cloudevents.Event, webhook *entities.Discord) {
-//	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
-//	defer span.End()
-//
-//	token, err := service.getAuthToken(webhook)
-//	if err != nil {
-//		msg := fmt.Sprintf("cannot generate auth token for user [%s] and webhook [%s]", webhook.UserID, webhook.ID)
-//		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-//	}
-//
-//	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-//	defer cancel()
-//
-//	var response string
-//	err = requests.URL(webhook.URL).
-//		Client(service.client).
-//		Bearer(token).
-//		Header("X-Event-Type", event.Type()).
-//		BodyJSON(service.getPayload(ctxLogger, event, webhook)).
-//		ToString(&response).
-//		Fetch(ctx)
-//	if err != nil {
-//		msg := fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
-//		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-//	}
-//
-//	ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response [%s]", webhook.URL, event.Type(), event.ID(), response))
-//}
-//
-//func (service *DiscordService) getPayload(ctxLogger telemetry.Logger, event cloudevents.Event, webhook *entities.Discord) any {
-//	if event.Type() != events.EventTypeMessagePhoneReceived {
-//		return event
-//	}
-//
-//	if !strings.HasPrefix(webhook.URL, "https://discord.com/api/discordIntegrations/") {
-//		return event
-//	}
-//
-//	payload := new(events.MessagePhoneReceivedPayload)
-//	err := event.DataAs(payload)
-//	if err != nil {
-//		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)))
-//		return event
-//	}
-//
-//	return map[string]string{
-//		"avatar_url": "https://httpsms.com/avatar.png",
-//		"username":   service.getFormattedContact(ctxLogger, payload.Contact),
-//		"content":    payload.Content,
-//	}
-//}
-//
-//func (service *DiscordService) getFormattedContact(ctxLogger telemetry.Logger, contact string) string {
-//	matched, err := regexp.MatchString("^\\+?[1-9]\\d{10,14}$", contact)
-//	if err != nil {
-//		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("error while matching contact [%s] with regex [%s]", contact, "^\\+?[1-9]\\d{10,14}$")))
-//		return contact
-//	}
-//	if !matched {
-//		return contact
-//	}
-//
-//	number, err := phonenumbers.Parse(contact, phonenumbers.UNKNOWN_REGION)
-//	if err != nil {
-//		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", contact)))
-//		return contact
-//	}
-//
-//	return phonenumbers.Format(number, phonenumbers.INTERNATIONAL)
-//}
-//
-//func (service *DiscordService) getAuthToken(webhook *entities.Discord) (string, error) {
-//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-//		Audience:  webhook.URL,
-//		ExpiresAt: time.Now().UTC().Add(10 * time.Minute).Unix(),
-//		IssuedAt:  time.Now().UTC().Unix(),
-//		Issuer:    "api.httpsms.com",
-//		NotBefore: time.Now().UTC().Add(-10 * time.Minute).Unix(),
-//		Subject:   string(webhook.UserID),
-//	})
-//	return token.SignedString([]byte(webhook.SigningKey))
-//}
+// HandleMessageReceived sends an incoming SMS to a discord channel
+func (service *DiscordService) HandleMessageReceived(ctx context.Context, userID entities.UserID, event cloudevents.Event) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	discordIntegrations, err := service.repository.FetchHavingIncomingChannel(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load discord integrations for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	if len(discordIntegrations) == 0 {
+		ctxLogger.Info(fmt.Sprintf("user [%s] has no discord integration for event [%s]", userID, event.Type()))
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	for _, discordIntegration := range discordIntegrations {
+		wg.Add(1)
+		go func(webhook *entities.Discord) {
+			defer wg.Done()
+			service.sendMessage(ctx, event, webhook)
+		}(discordIntegration)
+	}
+	wg.Wait()
+
+	return nil
+}
+
+func (service *DiscordService) sendMessage(ctx context.Context, event cloudevents.Event, discord *entities.Discord) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	payload := new(events.MessagePhoneReceivedPayload)
+	if err := event.DataAs(payload); err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)))
+		return
+	}
+
+	request := service.createDiscordMessage(ctxLogger, payload)
+	message, response, err := service.client.Channel.CreateMessage(ctx, discord.IncomingChannelID, request)
+	if err != nil {
+		msg := fmt.Sprintf("cannot send [%s] event to discord channel [%s] for user [%s]", event.Type(), discord.IncomingChannelID, discord.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		service.handleDiscordMessageFailed(ctx, event.Source(), &events.DiscordMessageFailedPayload{
+			DiscordID:        discord.ID,
+			UserID:           discord.UserID,
+			MessageID:        payload.MessageID,
+			EventType:        event.Type(),
+			HTTPStatusCode:   response.HTTPResponse.StatusCode,
+			ErrorMessage:     string(*response.Body),
+			DiscordChannelID: discord.IncomingChannelID,
+		})
+		return
+	}
+
+	ctxLogger.Info(fmt.Sprintf("sent discord message [%s] to channel [%s] for [%s] event with ID [%s]", message["id"].(string), discord.IncomingChannelID, event.Type(), event.ID()))
+}
+
+func (service *DiscordService) createDiscordMessage(ctxLogger telemetry.Logger, payload *events.MessagePhoneReceivedPayload) fiber.Map {
+	return fiber.Map{
+		"content": "✉ new message received",
+		"embeds": []fiber.Map{
+			{
+				"fields": []fiber.Map{
+					{
+						"name":   "From:",
+						"value":  service.getFormattedNumber(ctxLogger, payload.Contact),
+						"inline": true,
+					},
+					{
+						"name":   "To:",
+						"value":  service.getFormattedNumber(ctxLogger, payload.Owner),
+						"inline": true,
+					},
+					{
+						"name":  "Content:",
+						"value": payload.Content,
+					},
+					{
+						"name":  "MessageID:",
+						"value": payload.MessageID,
+					},
+				},
+			},
+		},
+	}
+}
+
+func (service *DiscordService) handleDiscordMessageFailed(ctx context.Context, source string, payload *events.DiscordMessageFailedPayload) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	event, err := service.createEvent(events.EventTypeDiscordMessageFailed, source, payload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for user with id [%s]", events.EventTypeDiscordMessageFailed, payload.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event [%s] for user with id [%s]", event.Type(), payload.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+
+	ctxLogger.Info(fmt.Sprintf("dispatched event [%s] for user with id [%s]", event.Type(), payload.UserID))
+}

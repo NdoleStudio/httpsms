@@ -102,6 +102,25 @@ func (repository *gormDiscordRepository) Load(ctx context.Context, userID entiti
 	return discord, nil
 }
 
+func (repository *gormDiscordRepository) FindByServerID(ctx context.Context, serverID string) (*entities.Discord, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	discord := new(entities.Discord)
+	err := repository.db.WithContext(ctx).Where("server_id = ?", serverID).First(&discord).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("discord integration with server ID [%s] does not exist", serverID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot load discord integration with serverID [%s]", serverID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return discord, nil
+}
+
 func (repository *gormDiscordRepository) Delete(ctx context.Context, userID entities.UserID, discordID uuid.UUID) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

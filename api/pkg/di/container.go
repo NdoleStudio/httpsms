@@ -115,7 +115,9 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterWebhookListeners()
 
 	container.RegisterLemonsqueezyRoutes()
+
 	container.RegisterDiscordRoutes()
+	container.RegisterDiscordListeners()
 
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
@@ -641,6 +643,7 @@ func (container *Container) DiscordService() (service *services.DiscordService) 
 		container.Tracer(),
 		container.DiscordClient(),
 		container.DiscordRepository(),
+		container.EventDispatcher(),
 	)
 }
 
@@ -860,6 +863,9 @@ func (container *Container) DiscordHandler() (handler *handlers.DiscordHandler) 
 		container.Tracer(),
 		container.DiscordHandlerValidator(),
 		container.DiscordService(),
+		container.MessageService(),
+		container.BillingService(),
+		container.MessageHandlerValidator(),
 	)
 }
 
@@ -969,6 +975,20 @@ func (container *Container) RegisterBillingListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.BillingService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterDiscordListeners registers event listeners for listeners.DiscordListener
+func (container *Container) RegisterDiscordListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.DiscordListener{}))
+	_, routes := listeners.NewDiscordListener(
+		container.Logger(),
+		container.Tracer(),
+		container.DiscordService(),
 	)
 
 	for event, handler := range routes {

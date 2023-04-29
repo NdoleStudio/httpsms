@@ -2,7 +2,11 @@ package services
 
 import (
 	"fmt"
+	"regexp"
 	"time"
+
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/nyaruka/phonenumbers"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
@@ -25,4 +29,23 @@ func (service *service) createEvent(eventType string, source string, payload any
 	}
 
 	return event, nil
+}
+
+func (service *service) getFormattedNumber(ctxLogger telemetry.Logger, phoneNumber string) string {
+	matched, err := regexp.MatchString("^\\+?[1-9]\\d{9,14}$", phoneNumber)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("error while matching phoneNumber [%s] with regex [%s]", phoneNumber, "^\\+?[1-9]\\d{10,14}$")))
+		return phoneNumber
+	}
+	if !matched {
+		return phoneNumber
+	}
+
+	number, err := phonenumbers.Parse(phoneNumber, phonenumbers.UNKNOWN_REGION)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", phoneNumber)))
+		return phoneNumber
+	}
+
+	return phonenumbers.Format(number, phonenumbers.INTERNATIONAL)
 }

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -83,7 +83,7 @@ func createSmsMessage() error {
 		return stacktrace.Propagate(err, "cannot do http request")
 	}
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return stacktrace.Propagate(err, "cannot read response body")
 	}
