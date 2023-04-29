@@ -35,6 +35,13 @@ func WithBaseURL(baseURL string) Option {
 	})
 }
 
+// WithApplicationID sets the discord bot application ID
+func WithApplicationID(applicationID string) Option {
+	return clientOptionFunc(func(config *clientConfig) {
+		config.applicationID = applicationID
+	})
+}
+
 // WithBotToken sets the discord bot token
 func WithBotToken(botToken string) Option {
 	return clientOptionFunc(func(config *clientConfig) {

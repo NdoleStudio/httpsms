@@ -11,7 +11,6 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/palantir/stacktrace"
 )
 
@@ -57,23 +56,23 @@ func (service *DiscordService) Index(ctx context.Context, userID entities.UserID
 }
 
 // Delete an entities.Discord
-func (service *DiscordService) Delete(ctx context.Context, userID entities.UserID, webhookID uuid.UUID) error {
+func (service *DiscordService) Delete(ctx context.Context, userID entities.UserID, discordID uuid.UUID) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	if _, err := service.repository.Load(ctx, userID, webhookID); err != nil {
-		msg := fmt.Sprintf("cannot load discord integration with userID [%s] and phoneID [%s]", userID, webhookID)
+	if _, err := service.repository.Load(ctx, userID, discordID); err != nil {
+		msg := fmt.Sprintf("cannot load discord integration with userID [%s] and discordID [%s]", userID, discordID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}
 
-	if err := service.repository.Delete(ctx, userID, webhookID); err != nil {
-		msg := fmt.Sprintf("cannot delete discord integration with id [%s] and user id [%s]", webhookID, userID)
+	if err := service.repository.Delete(ctx, userID, discordID); err != nil {
+		msg := fmt.Sprintf("cannot delete discord integration with id [%s] and discordID [%s]", discordID, userID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("deleted discord integration with id [%s] and user id [%s]", webhookID, userID))
+	ctxLogger.Info(fmt.Sprintf("deleted discord integration with id [%s] and user id [%s]", discordID, userID))
 	return nil
 }
 
@@ -83,17 +82,19 @@ type DiscordStoreParams struct {
 	Name              string
 	ServerID          string
 	IncomingChannelID string
-	Events            pq.StringArray
 }
 
 // Store a new entities.Discord
 func (service *DiscordService) Store(ctx context.Context, params *DiscordStoreParams) (*entities.Discord, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+	if err := service.createSlashCommand(ctx, params.ServerID); err != nil {
+		msg := fmt.Sprintf("cannot create slash command for server [%s]", params.ServerID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
 
-	discord := &entities.Discord{
+	discordIntegration := &entities.Discord{
 		ID:                uuid.New(),
 		UserID:            params.UserID,
 		Name:              params.Name,
@@ -103,47 +104,91 @@ func (service *DiscordService) Store(ctx context.Context, params *DiscordStorePa
 		UpdatedAt:         time.Now().UTC(),
 	}
 
-	if err := service.repository.Save(ctx, discord); err != nil {
-		msg := fmt.Sprintf("cannot save discord integration with id [%s]", discord.ID)
+	if err := service.repository.Save(ctx, discordIntegration); err != nil {
+		msg := fmt.Sprintf("cannot save discord integration with id [%s]", discordIntegration.ID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("discord integration saved with id [%s] in the [%T]", discord.ID, service.repository))
-	return discord, nil
+	ctxLogger.Info(fmt.Sprintf("discord integration saved with id [%s] in the [%T]", discordIntegration.ID, service.repository))
+	return discordIntegration, nil
 }
 
-//// DiscordUpdateParams are parameters for updating an entities.Discord
-//type DiscordUpdateParams struct {
-//	UserID     entities.UserID
-//	SigningKey string
-//	URL        string
-//	Events     pq.StringArray
-//	DiscordID  uuid.UUID
-//}
-//
-//// Update an entities.Discord
-//func (service *DiscordService) Update(ctx context.Context, params *DiscordUpdateParams) (*entities.Discord, error) {
-//	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
-//	defer span.End()
-//
-//	webhook, err := service.repository.Load(ctx, params.UserID, params.DiscordID)
-//	if err != nil {
-//		msg := fmt.Sprintf("cannot load webhook with userID [%s] and phoneID [%s]", params.UserID, params.DiscordID)
-//		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
-//	}
-//
-//	webhook.URL = params.URL
-//	webhook.SigningKey = params.SigningKey
-//	webhook.Events = params.Events
-//
-//	if err = service.repository.Save(ctx, webhook); err != nil {
-//		msg := fmt.Sprintf("cannot save webhook with id [%s] after update", webhook.ID)
-//		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-//	}
-//
-//	ctxLogger.Info(fmt.Sprintf("webhook updated with id [%s] in the [%T]", webhook.ID, service.repository))
-//	return webhook, nil
-//}
+func (service *DiscordService) createSlashCommand(ctx context.Context, serverID string) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	command, _, err := service.client.Application.CreateCommand(ctx, serverID, &discord.CommandCreateRequest{
+		Name:        "httpsms",
+		Type:        1,
+		Description: "Send an SMS via httpsms.com",
+		Options: []discord.CommandCreateRequestOption{
+			{
+				Name:        "from",
+				Description: "Sender phone number",
+				Type:        3,
+				Required:    true,
+			},
+			{
+				Name:        "to",
+				Description: "Recipient phone number",
+				Type:        3,
+				Required:    true,
+			},
+			{
+				Name:        "message",
+				Description: "Text message content",
+				Type:        3,
+				Required:    true,
+			},
+		},
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create slash command for server [%s]", serverID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("upserted a slash command with ID [%s] for discord server [%s] and applicationID [%s]", command.ID, serverID, command.ApplicationID))
+	return nil
+}
+
+// DiscordUpdateParams are parameters for updating an entities.Discord
+type DiscordUpdateParams struct {
+	UserID            entities.UserID
+	Name              string
+	ServerID          string
+	IncomingChannelID string
+	DiscordID         uuid.UUID
+}
+
+// Update an entities.Discord
+func (service *DiscordService) Update(ctx context.Context, params *DiscordUpdateParams) (*entities.Discord, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	discordIntegration, err := service.repository.Load(ctx, params.UserID, params.DiscordID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load discord integration with userID [%s] and discordID [%s]", params.UserID, params.DiscordID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	if err = service.createSlashCommand(ctx, params.ServerID); err != nil {
+		msg := fmt.Sprintf("cannot create slash command for server [%s]", params.ServerID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	discordIntegration.Name = params.Name
+	discordIntegration.ServerID = params.ServerID
+	discordIntegration.IncomingChannelID = params.IncomingChannelID
+
+	if err = service.repository.Save(ctx, discordIntegration); err != nil {
+		msg := fmt.Sprintf("cannot save discord integration with id [%s] after update", discordIntegration.ID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("discord integration updated with id [%s] in the [%T]", discordIntegration.ID, service.repository))
+	return discordIntegration, nil
+}
+
 //
 //// Send an event to a subscribed webhook
 //func (service *DiscordService) Send(ctx context.Context, userID entities.UserID, event cloudevents.Event) error {

@@ -888,6 +888,7 @@ func (container *Container) DiscordClient() (client *discord.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	return discord.New(
 		discord.WithHTTPClient(container.HTTPClient("discord")),
+		discord.WithApplicationID(os.Getenv("DISCORD_APPLICATION_ID")),
 		discord.WithBotToken(os.Getenv("DISCORD_BOT_TOKEN")),
 	)
 }

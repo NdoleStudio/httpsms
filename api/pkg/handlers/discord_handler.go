@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
+
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -47,24 +49,148 @@ func (h *DiscordHandler) RegisterRoutes(app *fiber.App, authMiddleware fiber.Han
 	router := app.Group("discord")
 	router.Post("/event", h.computeRoute(middlewares, h.Event)...)
 
-	authRouter := app.Group("v1/discord")
-	authRouter.Post("/", h.computeRoute(append(middlewares, authMiddleware), h.Event)...)
+	authRouter := app.Group("v1/discord-integrations")
+	authRouter.Post("/", h.computeRoute(append(middlewares, authMiddleware), h.Store)...)
+	authRouter.Get("/", h.computeRoute(append(middlewares, authMiddleware), h.Index)...)
+	authRouter.Delete("/:discordID", h.computeRoute(append(middlewares, authMiddleware), h.Delete)...)
+	authRouter.Put("/:discordID", h.computeRoute(append(middlewares, authMiddleware), h.Update)...)
 }
 
-// Store a webhook
-// @Summary      Store a webhook
-// @Description  Store a webhook for the authenticated user
+// Index returns the discord integrations of a user
+// @Summary      Get discord integrations of a user
+// @Description  Get the discord integrations of a user
 // @Security	 ApiKeyAuth
-// @Tags         Webhooks
+// @Tags         DiscordIntegration
 // @Accept       json
 // @Produce      json
-// @Param        payload   	body 		requests.WebhookStore  		true "Payload of the webhook request"
-// @Success      200 		{object}	responses.WebhookResponse
+// @Param        skip		query  int  	false	"number of discord integrations to skip"		minimum(0)
+// @Param        query		query  string  	false 	"filter discord integrations containing query"
+// @Param        limit		query  int  	false	"number of discord integrations to return"	minimum(1)	maximum(20)
+// @Success      200 		{object}	responses.DiscordsResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401	    {object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
-// @Router       /webhooks [post]
+// @Router       /discord-integrations 	[get]
+func (h *DiscordHandler) Index(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	var request requests.DiscordIndex
+	if err := c.QueryParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall URL [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateIndex(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while fetching discord integrations [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching discord integrations")
+	}
+
+	discordIntegrations, err := h.service.Index(ctx, h.userIDFomContext(c), request.ToIndexParams())
+	if err != nil {
+		msg := fmt.Sprintf("cannot get discord integrations with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("fetched %d discord %s", len(discordIntegrations), h.pluralize("integration", len(discordIntegrations))), discordIntegrations)
+}
+
+// Delete a discord integration
+// @Summary      Delete discord integration
+// @Description  Delete a discord integration for a user
+// @Security	 ApiKeyAuth
+// @Tags         Webhooks
+// @Accept       json
+// @Produce      json
+// @Param 		 discordID 	path		string 				true 	"ID of the discord integration"	default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      204		{object}    responses.NoContent
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /discord-integrations/{discordID} [delete]
+func (h *DiscordHandler) Delete(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	discordID := c.Params("discordID")
+	if errors := h.validator.ValidateUUID(ctx, discordID, "discordID"); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while deleting discord integration with ID [%s]", spew.Sdump(errors), discordID)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting discord integration")
+	}
+
+	err := h.service.Delete(ctx, h.userIDFomContext(c), uuid.MustParse(discordID))
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete discord integration with ID [%+#v]", discordID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "discord integration deleted successfully", nil)
+}
+
+// Update an entities.Discord
+// @Summary      Update a discord integration
+// @Description  Update a discord integration for the currently authenticated user
+// @Security	 ApiKeyAuth
+// @Tags         DiscordIntegration
+// @Accept       json
+// @Produce      json
+// @Param 		 discordID	path		string 							true 	"ID of the discord integration" 					default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Param        payload   	body 		requests.DiscordUpdate  		true 	"Payload of discord integration to update"
+// @Success      200 		{object}	responses.DiscordResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /discord-integrations/{discordID} 	[put]
+func (h *DiscordHandler) Update(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	var request requests.DiscordUpdate
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into [%T]", c.Body(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	request.DiscordID = c.Params("discordID")
+	if errors := h.validator.ValidateUpdate(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while updating discord integration")
+	}
+
+	user, err := h.service.Update(ctx, request.ToUpdateParams(h.userFromContext(c)))
+	if err != nil {
+		msg := fmt.Sprintf("cannot update discord integration with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "discord integration updated successfully", user)
+}
+
+// Store an entities.Discord
+// @Summary      Store discord integration
+// @Description  Store a discord integration for the authenticated user
+// @Security	 ApiKeyAuth
+// @Tags         DiscordIntegration
+// @Accept       json
+// @Produce      json
+// @Param        payload   	body 		requests.DiscordStore  		true "Payload of the discord integration request"
+// @Success      201 		{object}	responses.DiscordResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401	    {object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /discord-integrations [post]
 func (h *DiscordHandler) Store(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()

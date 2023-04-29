@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* tslint:disable */
 /*
  * ---------------------------------------------------------------
@@ -23,6 +24,23 @@ export interface EntitiesBillingUsage {
   start_timestamp: string
   /** @example 0 */
   total_cost: number
+  /** @example "2022-06-05T14:26:10.303278+03:00" */
+  updated_at: string
+  /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
+  user_id: string
+}
+
+export interface EntitiesDiscord {
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  id: string
+  /** @example "1095780203256627291" */
+  incoming_channel_id: string
+  /** @example "Game Server" */
+  name: string
+  /** @example "1095778291488653372" */
+  server_id: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
@@ -82,6 +100,14 @@ export interface EntitiesMessage {
   send_time: number
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   sent_at: string
+  /**
+   * SIM is the SIM card to use to send the message
+   * * SMS1: use the SIM card in slot 1
+   * * SMS2: use the SIM card in slot 2
+   * * DEFAULT: used the default communication SIM card
+   * @example "DEFAULT"
+   */
+  sim: string
   /** @example "pending" */
   status: string
   /** @example "mobile-terminated" */
@@ -124,6 +150,8 @@ export interface EntitiesPhone {
   fcm_token: string
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
+  /** @example false */
+  is_dual_sim: boolean
   /**
    * MaxSendAttempts determines how many times to retry sending an SMS message
    * @example 1
@@ -189,8 +217,34 @@ export interface EntitiesWebhook {
   user_id: string
 }
 
+export interface RequestsDiscordStore {
+  incoming_channel_id: string
+  name: string
+  server_id: string
+}
+
+export interface RequestsDiscordUpdate {
+  incoming_channel_id: string
+  name: string
+  server_id: string
+}
+
 export interface RequestsHeartbeatStore {
   owner: string
+}
+
+export interface RequestsMessageBulkSend {
+  /** @example "This is a sample text message" */
+  content: string
+  /** @example "+18005550199" */
+  from: string
+  /**
+   * sim card to use to send the message
+   * @example "DEFAULT"
+   */
+  sim: string
+  /** @example ["+18005550100","+18005550100"] */
+  to: string[]
 }
 
 export interface RequestsMessageEvent {
@@ -217,6 +271,11 @@ export interface RequestsMessageReceive {
   /** @example "+18005550199" */
   from: string
   /**
+   * SIM card that received the message
+   * @example "DEFAULT"
+   */
+  sim: string
+  /**
    * Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
    * @example "2022-06-05T14:26:09.527976+03:00"
    */
@@ -230,6 +289,11 @@ export interface RequestsMessageSend {
   content: string
   /** @example "+18005550199" */
   from: string
+  /**
+   * sim card to use to send the message
+   * @example "DEFAULT"
+   */
+  sim: string
   /** @example "+18005550100" */
   to: string
 }
@@ -242,6 +306,11 @@ export interface RequestsMessageThreadUpdate {
 export interface RequestsPhoneUpsert {
   /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
   fcm_token: string
+  /**
+   * IsDualSIM is true if the phone has more than one SIM active
+   * @example false
+   */
+  is_dual_sim: boolean
   /**
    * MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.
    * @example 2
@@ -294,6 +363,22 @@ export interface ResponsesBillingUsageResponse {
 
 export interface ResponsesBillingUsagesResponse {
   data: EntitiesBillingUsage[]
+  /** @example "item created successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesDiscordResponse {
+  data: EntitiesDiscord
+  /** @example "item created successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesDiscordsResponse {
+  data: EntitiesDiscord[]
   /** @example "item created successfully" */
   message: string
   /** @example "success" */

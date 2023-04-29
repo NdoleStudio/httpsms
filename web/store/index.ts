@@ -8,9 +8,14 @@ import { Phone } from '~/models/phone'
 import { User } from '~/models/user'
 import { BillingUsage } from '~/models/billing'
 import {
+  EntitiesDiscord,
   EntitiesWebhook,
+  RequestsDiscordStore,
+  RequestsDiscordUpdate,
   RequestsWebhookStore,
   RequestsWebhookUpdate,
+  ResponsesDiscordResponse,
+  ResponsesDiscordsResponse,
   ResponsesNoContent,
   ResponsesOkString,
   ResponsesWebhookResponse,
@@ -590,6 +595,106 @@ export const actions = {
             }),
           ])
           reject(error)
+        })
+    })
+  },
+
+  createDiscord(
+    context: ActionContext<State, State>,
+    payload: RequestsDiscordStore
+  ): Promise<EntitiesDiscord> {
+    return new Promise<EntitiesDiscord>((resolve, reject) => {
+      axios
+        .post<ResponsesDiscordResponse>(`/v1/discord-integrations`, payload)
+        .then((response: AxiosResponse<ResponsesDiscordResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Error while adding discord integration',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  getDiscordIntegrations(context: ActionContext<State, State>) {
+    return new Promise<Array<EntitiesDiscord>>((resolve, reject) => {
+      axios
+        .get<ResponsesDiscordsResponse>(`/v1/discord-integrations`, {
+          params: {
+            limit: 100,
+          },
+        })
+        .then((response: AxiosResponse<ResponsesDiscordsResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Error while fetching discord integrations',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  updateDiscordIntegration(
+    context: ActionContext<State, State>,
+    payload: RequestsDiscordUpdate & { id: string }
+  ) {
+    return new Promise<EntitiesDiscord>((resolve, reject) => {
+      axios
+        .put<ResponsesDiscordResponse>(
+          `/v1/discord-integrations/${payload.id}`,
+          payload
+        )
+        .then((response: AxiosResponse<ResponsesDiscordResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Error while updating discord integration',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  deleteDiscordIntegration(
+    context: ActionContext<State, State>,
+    payload: string
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(`/v1/discord-integrations/${payload}`)
+        .then(() => {
+          resolve()
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Error while deleting discord integration',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
         })
     })
   },

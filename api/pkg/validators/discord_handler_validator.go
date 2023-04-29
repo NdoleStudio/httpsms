@@ -35,29 +35,29 @@ func NewDiscordHandlerValidator(
 	}
 }
 
-//// ValidateIndex validates the requests.HeartbeatIndex request
-//func (validator *DiscordHandlerValidator) ValidateIndex(_ context.Context, request requests.DiscordIndex) url.Values {
-//	v := govalidator.New(govalidator.Options{
-//		Data: &request,
-//		Rules: govalidator.MapData{
-//			"limit": []string{
-//				"required",
-//				"numeric",
-//				"min:1",
-//				"max:100",
-//			},
-//			"skip": []string{
-//				"required",
-//				"numeric",
-//				"min:0",
-//			},
-//			"query": []string{
-//				"max:100",
-//			},
-//		},
-//	})
-//	return v.ValidateStruct()
-//}
+// ValidateIndex validates the requests.DiscordIndex request
+func (validator *DiscordHandlerValidator) ValidateIndex(_ context.Context, request requests.DiscordIndex) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"limit": []string{
+				"required",
+				"numeric",
+				"min:1",
+				"max:100",
+			},
+			"skip": []string{
+				"required",
+				"numeric",
+				"min:0",
+			},
+			"query": []string{
+				"max:100",
+			},
+		},
+	})
+	return v.ValidateStruct()
+}
 
 // ValidateStore validates the requests.DiscordStore request
 func (validator *DiscordHandlerValidator) ValidateStore(ctx context.Context, request requests.DiscordStore) url.Values {
@@ -93,42 +93,64 @@ func (validator *DiscordHandlerValidator) ValidateStore(ctx context.Context, req
 	if _, _, err := validator.client.Channel.Get(ctx, request.IncomingChannelID); err != nil {
 		msg := fmt.Sprintf("cannot fetch discord channel with ID [%s]", request.IncomingChannelID)
 		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-		result.Add("incoming_channel_id", fmt.Sprintf("cannot fetch discord channel with ID [%s] make sure the bot has access to the channel"))
+		result.Add("incoming_channel_id", fmt.Sprintf("cannot fetch discord channel with ID [%s] make sure the bot has access to the channel", request.IncomingChannelID))
 	}
 
 	if _, _, err := validator.client.Guild.Get(ctx, request.ServerID); err != nil {
 		msg := fmt.Sprintf("cannot fetch discord channel with ID [%s]", request.IncomingChannelID)
 		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-		result.Add("server_id", fmt.Sprintf("cannot fetch discord channel with ID [%s] make sure the bot has access to the channel"))
+		result.Add("server_id", fmt.Sprintf("cannot fetch discord server with ID [%s] make sure the bot has access to the channel", request.ServerID))
 	}
 
 	return result
 }
 
-//// ValidateUpdate validates the requests.DiscordUpdate request
-//func (validator *DiscordHandlerValidator) ValidateUpdate(_ context.Context, request requests.DiscordUpdate) url.Values {
-//	v := govalidator.New(govalidator.Options{
-//		Data: &request,
-//		Rules: govalidator.MapData{
-//			"signing_key": []string{
-//				"required",
-//				"min:1",
-//				"max:255",
-//			},
-//			"webhookID": []string{
-//				"required",
-//				"uuid",
-//			},
-//			"url": []string{
-//				"required",
-//				"url",
-//				"max:255",
-//			},
-//			"events": []string{
-//				"required",
-//				webhookEventsRule,
-//			},
-//		},
-//	})
-//	return v.ValidateStruct()
-//}
+// ValidateUpdate validates the requests.DiscordUpdate request
+func (validator *DiscordHandlerValidator) ValidateUpdate(ctx context.Context, request requests.DiscordUpdate) url.Values {
+	ctx, span, ctxLogger := validator.tracer.StartWithLogger(ctx, validator.logger)
+	defer span.End()
+
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"name": []string{
+				"required",
+				"min:1",
+				"max:255",
+			},
+			"server_id": []string{
+				"required",
+				"numeric",
+				"max:255",
+			},
+			"incoming_channel_id": []string{
+				"required",
+				"max:255",
+				"numeric",
+			},
+			"discordID": []string{
+				"required",
+				"uuid",
+			},
+		},
+	})
+
+	result := v.ValidateStruct()
+	if len(result) > 0 {
+		return result
+	}
+
+	if _, _, err := validator.client.Channel.Get(ctx, request.IncomingChannelID); err != nil {
+		msg := fmt.Sprintf("cannot fetch discord channel with ID [%s]", request.IncomingChannelID)
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		result.Add("incoming_channel_id", fmt.Sprintf("cannot fetch discord channel with ID [%s] make sure the bot has access to the channel", request.IncomingChannelID))
+	}
+
+	if _, _, err := validator.client.Guild.Get(ctx, request.ServerID); err != nil {
+		msg := fmt.Sprintf("cannot fetch discord channel with ID [%s]", request.IncomingChannelID)
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		result.Add("server_id", fmt.Sprintf("cannot fetch discord server with ID [%s] make sure the bot has access to the channel", request.ServerID))
+	}
+
+	return result
+}

@@ -83,7 +83,7 @@
             <h5 class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
-              the android phone receives an SMS message we can foward the
+              the android phone receives an SMS message we can forward the
               message to your server.
             </p>
             <div v-if="loadingWebhooks">
@@ -148,9 +148,58 @@
             <h5 class="text-h4 mb-3 mt-12">Discord Integration</h5>
             <p class="text--secondary">
               Send and receive SMS messages without leaving your discord server
-              with the httpsms discord app.
+              with the httpsms discord app using the
+              <code>/httpsms</code> command.
             </p>
-            <v-btn color="#5865f2" @click="onWebhookCreate">
+            <div v-if="loadingDiscordIntegrations">
+              <v-progress-circular
+                :size="60"
+                :width="2"
+                color="primary"
+                class="mb-4"
+                indeterminate
+              ></v-progress-circular>
+            </div>
+            <v-simple-table v-else-if="discords.length" class="mb-4">
+              <template #default>
+                <thead>
+                  <tr class="text-uppercase subtitle-2">
+                    <th class="text-left">Name</th>
+                    <th class="text-left">Server ID</th>
+                    <th class="text-left">Channel ID</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="discord in discords" :key="discord.id">
+                    <td class="text-left">
+                      {{ discord.name }}
+                    </td>
+                    <td class="text-left">
+                      {{ discord.server_id }}
+                    </td>
+                    <td class="text-left">
+                      {{ discord.incoming_channel_id }}
+                    </td>
+                    <td class="text-center">
+                      <v-btn
+                        :icon="$vuetify.breakpoint.mdAndDown"
+                        small
+                        color="info"
+                        :disabled="updatingDiscord"
+                        @click.prevent="onDiscordEdit(discord.id)"
+                      >
+                        <v-icon small>{{ mdiSquareEditOutline }}</v-icon>
+                        <span v-if="!$vuetify.breakpoint.mdAndDown">
+                          Edit
+                        </span>
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+            <v-btn color="#5865f2" @click="onDiscordCreate">
               <v-img
                 contain
                 height="24"
@@ -219,7 +268,6 @@
                     <td class="text-center">
                       <v-btn
                         :icon="$vuetify.breakpoint.mdAndDown"
-                        small
                         color="info"
                         :disabled="updatingPhone"
                         @click.prevent="showEditPhone(phone.id)"
@@ -417,6 +465,119 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="showDiscordEdit" max-width="700px">
+      <v-card>
+        <v-card-title>
+          <span v-if="!activeDiscord.id">Add a new&nbsp;</span>
+          <span v-else>Edit&nbsp;</span>
+          discord integration
+        </v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col class="pt-8">
+              <p class="mt-n4 subtitle-1">
+                Click the button below to add the httpSMS bot to your discord
+                server. You need to do this so we can have permission to send
+                and receive messages on your discord server.
+              </p>
+              <v-btn
+                color="#5865f2"
+                class="mb-6"
+                target="_blank"
+                href="https://discord.com/api/oauth2/authorize?client_id=1095780203256627291&permissions=2147485760&scope=bot%20applications.commands"
+              >
+                <v-icon left>{{ mdiConnection }}</v-icon>
+                Add Discord Bot
+              </v-btn>
+              <v-text-field
+                v-if="activeDiscord.id"
+                outlined
+                dense
+                disabled
+                label="ID"
+                :value="activeDiscord.id"
+              >
+              </v-text-field>
+              <v-text-field
+                v-model="activeDiscord.name"
+                outlined
+                dense
+                label="Name"
+                persistent-placeholder
+                persistent-hint
+                :error="errorMessages.has('name')"
+                :error-messages="errorMessages.get('name')"
+                hint="The name of the discord integration"
+                placeholder="e.g Game Server"
+              >
+              </v-text-field>
+              <v-text-field
+                v-model="activeDiscord.server_id"
+                outlined
+                dense
+                class="mt-6"
+                persistent-placeholder
+                persistent-hint
+                label="Discord Server ID"
+                placeholder="e.g 1095778291488653372"
+                :error="errorMessages.has('server_id')"
+                :error-messages="errorMessages.get('server_id')"
+                hint="You can get this by right clicking on your server and clicking Copy Server ID."
+              >
+              </v-text-field>
+              <v-text-field
+                v-model="activeDiscord.incoming_channel_id"
+                outlined
+                dense
+                class="mt-6"
+                persistent-placeholder
+                persistent-hint
+                label="Discord Incoming Channel ID"
+                placeholder="e.g 1095778291488653372"
+                :error="errorMessages.has('incoming_channel_id')"
+                :error-messages="errorMessages.get('incoming_channel_id')"
+                hint="You can get this by right clicking on your discord channel and clicking Copy Chanel ID."
+              >
+              </v-text-field>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="mt-n4 pb-4 pl-6">
+          <loading-button
+            v-if="!activeDiscord.id"
+            :icon="mdiContentSave"
+            :loading="updatingDiscord"
+            @click="createDiscord"
+          >
+            Save Discord Integration
+          </loading-button>
+          <loading-button
+            v-else
+            color="info"
+            :loading="updatingDiscord"
+            @click="updateDiscord"
+          >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiContentSave }}
+            </v-icon>
+            Update Discord Integration
+          </loading-button>
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="activeDiscord.id"
+            :disabled="updatingDiscord"
+            color="error"
+            text
+            @click="deleteDiscord(activeDiscord.id)"
+          >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiDelete }}
+            </v-icon>
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -428,6 +589,7 @@ import {
   mdiShieldCheck,
   mdiDelete,
   mdiContentSave,
+  mdiConnection,
   mdiEye,
   mdiLinkVariant,
   mdiEyeOff,
@@ -451,21 +613,32 @@ export default Vue.extend({
       mdiLinkVariant,
       mdiContentSave,
       mdiSquareEditOutline,
+      mdiConnection,
       errorMessages: new ErrorMessages(),
       apiKeyShow: false,
       showPhoneEdit: false,
+      showDiscordEdit: false,
       activeWebhook: {
         id: null,
         url: '',
         signing_key: '',
         events: ['message.phone.received'],
       },
+      activeDiscord: {
+        id: null,
+        name: '',
+        server_id: '',
+        incoming_channel_id: '',
+      },
       updatingWebhook: false,
       loadingWebhooks: false,
+      discords: [],
       webhooks: [],
       showWebhookEdit: false,
       activePhone: null,
       updatingPhone: false,
+      updatingDiscord: false,
+      loadingDiscordIntegrations: false,
       events: ['message.phone.received'],
     }
   },
@@ -486,6 +659,7 @@ export default Vue.extend({
     this.$store.dispatch('clearAxiosError')
     this.$store.dispatch('loadUser')
     this.loadWebhooks()
+    this.loadDiscordIntegrations()
   },
 
   methods: {
@@ -514,6 +688,21 @@ export default Vue.extend({
       this.resetErrors()
     },
 
+    onDiscordEdit(discordId) {
+      const discord = this.discords.find((x) => x.id === discordId)
+      if (!discord) {
+        return
+      }
+      this.activeDiscord = {
+        id: discord.id,
+        name: discord.name,
+        server_id: discord.server_id,
+        incoming_channel_id: discord.incoming_channel_id,
+      }
+      this.showDiscordEdit = true
+      this.resetErrors()
+    },
+
     onWebhookCreate() {
       this.activeWebhook = {
         id: null,
@@ -522,6 +711,17 @@ export default Vue.extend({
         events: ['message.phone.received'],
       }
       this.showWebhookEdit = true
+      this.resetErrors()
+    },
+
+    onDiscordCreate() {
+      this.activeDiscord = {
+        id: null,
+        name: '',
+        server_id: '',
+        incoming_channel_id: '',
+      }
+      this.showDiscordEdit = true
       this.resetErrors()
     },
 
@@ -539,6 +739,65 @@ export default Vue.extend({
 
     resetErrors() {
       this.errorMessages = new ErrorMessages()
+    },
+
+    createDiscord() {
+      this.resetErrors()
+      this.updatingDiscord = true
+      this.$store
+        .dispatch('createDiscord', this.activeDiscord)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Discord integration created successfully',
+            type: 'success',
+          })
+          this.showDiscordEdit = false
+          this.loadDiscordIntegrations()
+        })
+        .catch((errors) => {
+          this.errorMessages = errors
+        })
+        .finally(() => {
+          this.updatingDiscord = false
+        })
+    },
+
+    updateDiscord() {
+      this.resetErrors()
+      this.updatingDiscord = true
+      this.$store
+        .dispatch('updateDiscordIntegration', this.activeDiscord)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Discord integration updated successfully',
+            type: 'success',
+          })
+          this.showDiscordEdit = false
+          this.loadDiscordIntegrations()
+        })
+        .catch((errors) => {
+          this.errorMessages = errors
+        })
+        .finally(() => {
+          this.updatingDiscord = false
+        })
+    },
+
+    deleteDiscord(discordId) {
+      this.updatingDiscord = true
+      this.$store
+        .dispatch('deleteDiscordIntegration', discordId)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Discord integration deleted successfully',
+            type: 'success',
+          })
+          this.showDiscordEdit = false
+          this.loadDiscordIntegrations()
+        })
+        .finally(() => {
+          this.updatingDiscord = false
+        })
     },
 
     createWebhook() {
@@ -609,6 +868,18 @@ export default Vue.extend({
         })
         .finally(() => {
           this.loadingWebhooks = false
+        })
+    },
+
+    loadDiscordIntegrations() {
+      this.loadingDiscordIntegrations = true
+      this.$store
+        .dispatch('getDiscordIntegrations')
+        .then((discords) => {
+          this.discords = discords
+        })
+        .finally(() => {
+          this.loadingDiscordIntegrations = false
         })
     },
 

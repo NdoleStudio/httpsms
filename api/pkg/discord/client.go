@@ -16,10 +16,11 @@ type service struct {
 // Client is the campay API client.
 // Do not instantiate this client with Client{}. Use the New method instead.
 type Client struct {
-	httpClient *http.Client
-	common     service
-	baseURL    string
-	botToken   string
+	httpClient    *http.Client
+	common        service
+	baseURL       string
+	applicationID string
+	botToken      string
 
 	Channel     *ChannelService
 	Guild       *GuildService
@@ -35,9 +36,10 @@ func New(options ...Option) *Client {
 	}
 
 	client := &Client{
-		httpClient: config.httpClient,
-		botToken:   config.botToken,
-		baseURL:    config.baseURL,
+		httpClient:    config.httpClient,
+		botToken:      config.botToken,
+		baseURL:       config.baseURL,
+		applicationID: config.applicationID,
 	}
 
 	client.common.client = client
