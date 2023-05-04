@@ -1,23 +1,30 @@
 package com.httpsms
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings as ProviderSettings
 import android.telephony.PhoneNumberUtils
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
@@ -62,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         setLastHeartbeatTimestamp(this)
         setVersion()
         setHeartbeatListener(this)
+        setBatteryOptimizationListener()
         registerReceivers()
     }
 
@@ -72,6 +80,7 @@ class MainActivity : AppCompatActivity() {
         setOwner(getPhoneNumber(this))
         refreshToken(this)
         setLastHeartbeatTimestamp(this)
+        setBatteryOptimizationListener()
     }
 
     private fun setLastHeartbeatTimestamp(context: Context) {
@@ -99,8 +108,13 @@ class MainActivity : AppCompatActivity() {
     private fun scheduleHeartbeatWorker(context: Context) {
         val tag = "TAG_HEARTBEAT_WORKER"
 
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
         val heartbeatWorker =
             PeriodicWorkRequestBuilder<HeartbeatWorker>(15, TimeUnit.MINUTES)
+                .setConstraints(constraints)
                 .addTag(tag)
                 .build()
 
@@ -288,6 +302,23 @@ class MainActivity : AppCompatActivity() {
         requestPermissionLauncher.launch(permissions)
 
         Timber.d("creating permissions launcher")
+    }
+
+    @SuppressLint("BatteryLife")
+    private fun setBatteryOptimizationListener() {
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            val button = findViewById<MaterialButton>(R.id.batteryOptimizationButtonButton)
+            button.setOnClickListener {
+                val intent = Intent()
+                intent.action = ProviderSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            }
+        } else {
+            val layout = findViewById<LinearLayout>(R.id.batteryOptimizationLinearLayout)
+            layout.visibility = View.GONE
+        }
     }
 
     private fun setHeartbeatListener(context: Context) {

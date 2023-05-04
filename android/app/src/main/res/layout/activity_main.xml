@@ -85,7 +85,7 @@
     </com.google.android.material.card.MaterialCardView>
 
     <LinearLayout
-        android:id="@+id/linearLayout"
+        android:id="@+id/batteryOptimizationLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -94,6 +94,33 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/mainPhoneCard">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/batteryOptimizationButtonButton"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/pink_500"
+            android:drawableTint="@color/white"
+            android:padding="10dp"
+            app:icon="@android:drawable/ic_lock_idle_low_battery"
+            android:text="@string/disable_battery_optimization"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            app:iconTint="@color/white"
+            tools:ignore="TextContrastCheck" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_weight="50"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/batteryOptimizationLinearLayout">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/mainHeartbeatButton"

@@ -16,4 +16,5 @@
     <string name="server_url">Server URL</string>
     <string name="default_server_url">https://api.httpsms.com</string>
     <string name="app_version">httpsms.com - %s</string>
+    <string name="disable_battery_optimization">Disable Battery Optimization</string>
 </resources>
