@@ -44,7 +44,7 @@
     "webpack": "^5.81.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.21.3",
+    "@babel/eslint-parser": "^7.21.8",
     "@commitlint/cli": "^17.6.1",
     "@commitlint/config-conventional": "^17.6.1",
     "@nuxt/types": "^2.16.3",
