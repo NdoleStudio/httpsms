@@ -508,6 +508,7 @@ export const actions = {
         context.commit('setAuthUser', null),
         context.commit('setUser', null),
       ])
+      setApiKey('')
       return
     }
     setAuthHeader(await authUser.getIdToken())
@@ -523,6 +524,7 @@ export const actions = {
     { authUser }
   ) {
     if (authUser == null) {
+      setApiKey('')
       return
     }
     setAuthHeader(await authUser.getIdToken())
