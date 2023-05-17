@@ -3,7 +3,7 @@ import { AxiosError, AxiosResponse } from 'axios'
 import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
-import axios, { setAuthHeader } from '~/plugins/axios'
+import axios, { setApiKey, setAuthHeader } from '~/plugins/axios'
 import { Phone } from '~/models/phone'
 import { User } from '~/models/user'
 import { BillingUsage } from '~/models/billing'
@@ -267,6 +267,7 @@ export const mutations = {
     state.threadId = null
     state.archivedThreads = false
     state.owner = null
+    setApiKey('')
   },
 }
 
@@ -543,6 +544,7 @@ export const actions = {
       active_phone_id: phone.id,
     })
 
+    setApiKey(response.data.data.api_key)
     context.commit('setUser', response.data.data)
   },
 
