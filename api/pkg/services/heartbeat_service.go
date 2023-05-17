@@ -19,7 +19,7 @@ import (
 
 const (
 	// select id, a.timestamp, a.owner,  a.timestamp - (SELECT timestamp from heartbeats b where  b.timestamp < a.timestamp and a.owner = b.owner and a.user_id = b.user_id order by b.timestamp desc  limit 1) as diff  from heartbeats a;
-	heartbeatCheckInterval = 1 * time.Hour
+	heartbeatCheckInterval = 16 * time.Minute
 )
 
 // HeartbeatService is handles heartbeat requests
@@ -202,12 +202,42 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		return nil
 	}
 
-	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval &&
-		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*2) {
+	// send urgent FCM message if the last heartbeat is late
+	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval && time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) {
+		ctxLogger.Info(fmt.Sprintf("sending missed heartbeat notification for userID [%s] and owner [%s] and monitor ID [%s]", params.UserID, params.Owner, params.MonitorID))
+		service.handleMissedMonitor(ctx, heartbeat.Timestamp, params)
+	}
+
+	if time.Now().UTC().Sub(heartbeat.Timestamp) > (heartbeatCheckInterval*4) &&
+		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) {
 		return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
 	}
 
 	return service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params)
+}
+
+func (service *HeartbeatService) handleMissedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	event, err := service.createPhoneHeartbeatMissedEvent(params.Source, &events.PhoneHeartbeatMissedPayload{
+		PhoneID:                params.PhoneID,
+		UserID:                 params.UserID,
+		MonitorID:              params.MonitorID,
+		LastHeartbeatTimestamp: lastTimestamp,
+		Timestamp:              time.Now().UTC(),
+		Owner:                  params.Owner,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event when phone monitor [%s] missed heartbeat", params.MonitorID.String())
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+
+	if _, err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+	}
 }
 
 func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
@@ -216,7 +246,7 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 
 	err := service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	if err != nil {
-		msg := fmt.Sprintf("canot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID)
+		msg := fmt.Sprintf("cannot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -233,7 +263,7 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if _, err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -269,6 +299,10 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 	}
 
 	return nil
+}
+
+func (service *HeartbeatService) createPhoneHeartbeatMissedEvent(source string, payload *events.PhoneHeartbeatMissedPayload) (cloudevents.Event, error) {
+	return service.createEvent(events.PhoneHeartbeatMissed, source, payload)
 }
 
 func (service *HeartbeatService) createPhoneHeartbeatDeadEvent(source string, payload *events.PhoneHeartbeatDeadPayload) (cloudevents.Event, error) {

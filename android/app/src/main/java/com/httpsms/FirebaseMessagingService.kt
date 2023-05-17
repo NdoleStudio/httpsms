@@ -10,6 +10,7 @@ import com.google.firebase.messaging.RemoteMessage
 import timber.log.Timber
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.util.Timer
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
@@ -17,6 +18,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         initTimber()
         Timber.d(MyFirebaseMessagingService::onMessageReceived.name)
+
+        if (remoteMessage.data.containsKey(Constants.KEY_HEARTBEAT_ID)) {
+            Timber.w("received heartbeat message with ID [${remoteMessage.data[Constants.KEY_HEARTBEAT_ID]}] and priority [${remoteMessage.priority}] and original priority [${remoteMessage.originalPriority}]")
+            sendHeartbeat()
+            return
+        }
 
         val messageID = remoteMessage.data[Constants.KEY_MESSAGE_ID]
         if (messageID == null)  {
@@ -44,6 +51,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         sendRegistrationToServer(token)
     }
     // [END on_new_token]
+
+    private fun sendHeartbeat() {
+        Timber.d("sending heartbeat from FCM notification")
+        if (!Settings.isLoggedIn(applicationContext)) {
+            Timber.w("user is not logged in, not sending heartbeat")
+            return
+        }
+        Thread {
+            try {
+                HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getOwnerOrDefault(applicationContext))
+                Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
+            } catch (exception: Exception) {
+                Timber.e(exception)
+            }
+            Timber.d("finished sending pulse")
+        }.start()
+    }
 
     private fun scheduleJob(messageID: String) {
         // [START dispatch_job]

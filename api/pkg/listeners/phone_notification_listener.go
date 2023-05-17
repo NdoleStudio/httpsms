@@ -36,6 +36,7 @@ func NewNotificationListener(
 		events.EventTypeMessageAPISent:          l.onMessageAPISent,
 		events.EventTypeMessageSendRetry:        l.onMessageSendRetry,
 		events.EventTypeMessageNotificationSend: l.onMessageNotificationSend,
+		events.PhoneHeartbeatMissed:             l.onPhoneHeartbeatMissed,
 	}
 }
 
@@ -91,6 +92,25 @@ func (listener *PhoneNotificationListener) onMessageSendRetry(ctx context.Contex
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {
 		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onPhoneHeartbeatMissed handles the events.PhoneHeartbeatMissed event
+func (listener *PhoneNotificationListener) onPhoneHeartbeatMissed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	payload := new(events.PhoneHeartbeatMissedPayload)
+	if err := event.DataAs(payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.SendHeartbeatFCM(ctx, payload); err != nil {
+		msg := fmt.Sprintf("cannot schedule send heartbeat FCM with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

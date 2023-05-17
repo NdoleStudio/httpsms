@@ -47,6 +47,40 @@ func NewNotificationService(
 	}
 }
 
+// SendHeartbeatFCM sends a heartbeat message so the phone can request a heartbeat
+func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, payload *events.PhoneHeartbeatMissedPayload) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	phone, err := service.phoneRepository.LoadByID(ctx, payload.UserID, payload.PhoneID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load phone with userID [%s] and phoneID [%s]", payload.UserID, payload.PhoneID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if phone.FcmToken == nil {
+		msg := fmt.Sprintf("phone with id [%s] has no FCM token", phone.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	result, err := service.messagingClient.Send(ctx, &messaging.Message{
+		Data: map[string]string{
+			"KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
+		},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+		},
+		Token: *phone.FcmToken,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot send heartbeat FCM to phone with id [%s]", phone.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("successfully sent heartbeat FCM [%s] to phone with ID [%s] for user [%s] and monitor [%s]", result, payload.PhoneID, payload.UserID, payload.MonitorID))
+	return nil
+}
+
 // PhoneNotificationSendParams are parameters for sending a notification
 type PhoneNotificationSendParams struct {
 	UserID              entities.UserID
@@ -79,7 +113,8 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 			"KEY_MESSAGE_ID": params.MessageID.String(),
 		},
 		Android: &messaging.AndroidConfig{
-			TTL: &ttl,
+			Priority: "normal",
+			TTL:      &ttl,
 		},
 		Token: *phone.FcmToken,
 	})

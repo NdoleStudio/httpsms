@@ -90,7 +90,7 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 func (dispatcher *EventDispatcher) Dispatch(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
-	_, err := dispatcher.DispatchWithTimeout(ctx, event, time.Nanosecond*-1)
+	_, err := dispatcher.DispatchWithTimeout(ctx, event, time.Nanosecond*1)
 	return err
 }
 
