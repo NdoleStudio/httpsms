@@ -14,7 +14,7 @@ export function setAuthHeader(token: string | null) {
 }
 
 export function setApiKey(apiKey: string | null) {
-  client.defaults.headers['x-api-key'] = apiKey
+  client.defaults.headers.common['x-api-key'] = apiKey
 }
 
 export default client
