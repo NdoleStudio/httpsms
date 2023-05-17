@@ -51,7 +51,7 @@ jobs:
         run: yarn test
 
       - name: Build 🏗️
-        run: mv .env.production .env && yarn generate
+        run: mv .env.production .env && GITHUB_SHA=${{GITHUB_SHA}}; yarn generate
 
       - name: Deploy 🚀
         uses: FirebaseExtended/action-hosting-deploy@v0

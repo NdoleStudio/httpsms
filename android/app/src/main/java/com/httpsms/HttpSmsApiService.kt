@@ -16,6 +16,7 @@ import java.util.logging.Logger.getLogger
 
 class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
     private val apiKeyHeader = "x-api-key"
+    private val clientVersionHeader = "X-Client-Version"
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient.Builder().retryOnConnectionFailure(true).build()
 
@@ -36,6 +37,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/messages/outstanding?message_id=${messageID}").toURL())
             .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
         val response = client.newCall(request).execute()
@@ -85,6 +87,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .url(baseURL.resolve("/v1/messages/receive").toURL())
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
         val response = client.newCall(request).execute()
@@ -109,6 +112,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .url(baseURL.resolve("/v1/heartbeats").toURL())
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
         val response = client.newCall(request).execute()
@@ -143,6 +147,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .url(baseURL.resolve("/v1/messages/${messageId}/events").toURL())
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
         val response = client.newCall(request).execute()
@@ -169,6 +174,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .url(baseURL.resolve("/v1/phones").toURL())
             .put(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
         val response = client.newCall(request).execute()
@@ -187,6 +193,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         val request: Request = Request.Builder()
             .url(baseURL.resolve("/v1/users/me").toURL())
             .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .get()
             .build()
 
@@ -194,7 +201,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
                 Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
-                return Pair("Cannot validate the API key. Check if it is correct and try again.", null);
+                return Pair("Cannot validate the API key. Check if it is correct and try again.", null)
             }
 
             response.close()
