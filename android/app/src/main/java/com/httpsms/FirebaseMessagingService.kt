@@ -10,8 +10,6 @@ import com.google.firebase.messaging.RemoteMessage
 import timber.log.Timber
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.util.Timer
-
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     // [START receive_message]
