@@ -52,13 +52,13 @@
               :items-per-page="100"
               class="heartbeat--table"
             >
-              <template #item.interval="{ item }">
+              <template #[`item.interval`]="{ item }">
                 {{ formatDuration(item.interval) }}
               </template>
-              <template #item.owner="{ item }">
+              <template #[`item.owner`]="{ item }">
                 {{ item.owner | phoneNumber }}
               </template>
-              <template #item.timestamp="{ item }">
+              <template #[`item.timestamp`]="{ item }">
                 {{ item.timestamp | timestamp }}
               </template>
             </v-data-table>
