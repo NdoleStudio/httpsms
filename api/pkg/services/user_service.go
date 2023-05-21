@@ -131,7 +131,6 @@ func (service *UserService) SendPhoneDeadEmail(ctx context.Context, params *User
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info("sending email")
 	if err = service.mailer.Send(ctx, email); err != nil {
 		msg := fmt.Sprintf("canot send phone dead notification to user [%s]", params.UserID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
