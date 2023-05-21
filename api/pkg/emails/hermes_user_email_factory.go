@@ -114,15 +114,20 @@ func NewHermesUserEmailFactory(config *HermesGeneratorConfig) UserEmailFactory {
 
 // PhoneDead is the email sent to a user when their phone is dead
 func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartbeatTimestamp time.Time, owner string) (*Email, error) {
+	location, err := time.LoadLocation(user.Timezone)
+	if err != nil {
+		location = time.UTC
+	}
+
 	email := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
-				fmt.Sprintf("We haven't received any heartbeat event from your mobile phone %s since %s.", owner, lastHeartbeatTimestamp.Format(time.RFC1123)),
+				fmt.Sprintf("We haven't received any heartbeat event from android  phone %s since %s.", owner, lastHeartbeatTimestamp.In(location).Format(time.RFC1123)),
 				fmt.Sprintf("Check if the mobile phone is powered on and if it has stable internet connection."),
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "Click the button below to upgrade your plan and continue sending more messages",
+					Instructions: "Check your heartbeat events on httpSMS",
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
