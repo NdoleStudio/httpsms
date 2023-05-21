@@ -388,20 +388,36 @@ export const actions = {
     await context.commit('setAxiosError', error)
   },
 
-  async getHeartbeat(context: ActionContext<State, State>) {
-    const response = await axios.get('/v1/heartbeats', {
-      params: {
-        limit: 1,
-        owner: context.getters.getOwner,
-      },
+  getHeartbeat(
+    context: ActionContext<State, State>,
+    limit = 1
+  ): Promise<Array<Heartbeat>> {
+    return new Promise<Array<Heartbeat>>((resolve, reject) => {
+      axios
+        .get('/v1/heartbeats', {
+          params: {
+            limit,
+            owner: context.getters.getOwner,
+          },
+        })
+        .then((response: AxiosResponse) => {
+          if (response.data.data.length > 0) {
+            context.commit('setHeartbeat', response.data.data[0])
+          } else {
+            context.commit('setHeartbeat', null)
+          }
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await context.dispatch('addNotification', {
+            message:
+              error.response?.data?.message ??
+              'Errors while fetching heartbeat',
+            type: 'error',
+          })
+          reject(error)
+        })
     })
-
-    if (response.data.data.length > 0) {
-      context.commit('setHeartbeat', response.data.data[0])
-      return
-    }
-
-    context.commit('setHeartbeat', null)
   },
 
   setPolling(context: ActionContext<State, State>, status: boolean) {

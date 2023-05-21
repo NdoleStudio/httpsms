@@ -57,7 +57,11 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: ['~plugins/filters.ts', { src: '~/plugins/vue-glow', ssr: false }],
+  plugins: [
+    '~plugins/filters.ts',
+    { src: '~/plugins/vue-glow', ssr: false },
+    { src: '~/plugins/chart', ssr: false },
+  ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -143,7 +147,9 @@ export default {
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
-  build: {},
+  build: {
+    transpile: ['chart.js', 'vue-chartjs'],
+  },
 
   server: {
     port: 30000, // default: 3000

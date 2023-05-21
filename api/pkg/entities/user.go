@@ -37,6 +37,7 @@ type User struct {
 	ID                   UserID           `json:"id" gorm:"primaryKey;type:string;" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Email                string           `json:"email" example:"name@email.com"` // gorm:"uniqueIndex"
 	APIKey               string           `json:"api_key" example:"xyz"`          // gorm:"uniqueIndex"
+	Timezone             string           `json:"timezone" example:"Europe/Helsinki" gorm:"default:Africa/Accra"`
 	ActivePhoneID        *uuid.UUID       `json:"active_phone_id" gorm:"type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 	SubscriptionName     SubscriptionName `json:"subscription_name" example:"free"`
 	SubscriptionID       *string          `json:"subscription_id" example:"8f9c71b8-b84e-4417-8408-a62274f65a08"`

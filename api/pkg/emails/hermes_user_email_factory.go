@@ -120,6 +120,17 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 				fmt.Sprintf("We haven't received any heartbeat event from your mobile phone %s since %s.", owner, lastHeartbeatTimestamp.Format(time.RFC1123)),
 				fmt.Sprintf("Check if the mobile phone is powered on and if it has stable internet connection."),
 			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "Click the button below to upgrade your plan and continue sending more messages",
+					Button: hermes.Button{
+						Color:     "#329ef4",
+						TextColor: "#FFFFFF",
+						Text:      "HEARTBEATS",
+						Link:      fmt.Sprintf("https://httpsms.com/heartbeats/%s", owner),
+					},
+				},
+			},
 			Title:     "Hey,",
 			Signature: "Cheers",
 			Outros: []string{

@@ -5,7 +5,7 @@
     :fill-height="$vuetify.breakpoint.lgAndUp"
   >
     <div class="w-full h-full">
-      <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
+      <v-app-bar height="60" fixed :dense="$vuetify.breakpoint.mdAndDown">
         <v-btn icon to="/threads">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
@@ -13,7 +13,7 @@
           <div class="py-16">Settings</div>
         </v-toolbar-title>
       </v-app-bar>
-      <v-container>
+      <v-container class="mt-16">
         <v-row>
           <v-col cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <div v-if="$fire.auth.currentUser" class="text-center">

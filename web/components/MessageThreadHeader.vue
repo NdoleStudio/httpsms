@@ -45,6 +45,10 @@
             <v-btn
               x-small
               v-bind="attrs"
+              :to="{
+                name: 'heartbeats-id',
+                params: { id: $store.getters.getOwner },
+              }"
               color="success"
               class="ml-2 mt-1 mb-n1"
               icon

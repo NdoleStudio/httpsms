@@ -1,13 +1,17 @@
 <template>
   <v-container fluid class="pa-0" :fill-height="$vuetify.breakpoint.lgAndUp">
     <div class="w-full h-full">
-      <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown">
+      <v-app-bar height="60" :dense="$vuetify.breakpoint.mdAndDown" fixed>
         <v-btn icon to="/threads">
           <v-icon>{{ mdiArrowLeft }}</v-icon>
         </v-btn>
-        <v-toolbar-title>New Message</v-toolbar-title>
+        <v-toolbar-title
+          >New Message
+          <v-icon x-small class="mx-2" color="primary">{{ mdiCircle }}</v-icon>
+          {{ $store.getters.getOwner | phoneNumber }}</v-toolbar-title
+        >
       </v-app-bar>
-      <v-container>
+      <v-container class="mt-16">
         <v-row>
           <v-col cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
             <v-form @submit.prevent="sendMessage">
@@ -64,7 +68,7 @@
 </template>
 
 <script>
-import { mdiArrowLeft, mdiSend, mdiSim } from '@mdi/js'
+import { mdiArrowLeft, mdiSend, mdiSim, mdiCircle } from '@mdi/js'
 import axios from '@/plugins/axios'
 
 export default {
@@ -74,6 +78,7 @@ export default {
     return {
       mdiArrowLeft,
       mdiSend,
+      mdiCircle,
       mdiSim,
       simOptions: [
         { title: 'Default', code: 'DEFAULT' },
