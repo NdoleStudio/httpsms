@@ -510,7 +510,10 @@ export const actions = {
         (x: Phone) => x.id === context.getters.getUser.active_phone_id
       )
       if (phone) {
-        await context.dispatch('setOwner', phone.phone_number)
+        await context.dispatch('updateUser', {
+          owner: phone.phone_number,
+          timezone: context.getters.getUser.timezone,
+        })
       }
     }
   },
@@ -550,8 +553,11 @@ export const actions = {
     await context.commit('setAxiosError', null)
   },
 
-  async setOwner(context: ActionContext<State, State>, owner: string) {
-    await context.commit('setOwner', owner)
+  async updateUser(
+    context: ActionContext<State, State>,
+    payload: { owner: string; timezone: string }
+  ) {
+    await context.commit('setOwner', payload.owner)
 
     const phone = context.getters.getActivePhone as Phone | null
     if (!phone) {
@@ -560,6 +566,7 @@ export const actions = {
 
     const response = await axios.put('/v1/users/me', {
       active_phone_id: phone.id,
+      timezone: payload.timezone ?? context.getters.getUser.timezone,
     })
 
     setApiKey(response.data.data.api_key)

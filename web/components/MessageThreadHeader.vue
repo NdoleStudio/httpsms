@@ -210,7 +210,7 @@ export default class MessageThreadHeader extends Vue {
   }
 
   async onOwnerChanged(owner: string) {
-    await this.$store.dispatch('setOwner', owner)
+    await this.$store.dispatch('updateUser', { owner })
     if (this.$route.name !== 'threads') {
       await this.$store.dispatch('setThreadId', null)
       await this.$router.push({ name: 'threads' })

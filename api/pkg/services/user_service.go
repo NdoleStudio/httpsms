@@ -71,6 +71,7 @@ func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser)
 
 // UserUpdateParams are parameters for updating an entities.User
 type UserUpdateParams struct {
+	Timezone      *time.Location
 	ActivePhoneID uuid.UUID
 }
 
@@ -91,6 +92,7 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthUs
 		service.marketingService.AddToList(ctx, user)
 	}
 
+	user.Timezone = params.Timezone.String()
 	user.ActivePhoneID = &params.ActivePhoneID
 
 	if err = service.repository.Update(ctx, user); err != nil {

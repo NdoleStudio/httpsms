@@ -38,6 +38,17 @@
                   {{ mdiShieldCheck }}
                 </v-icon>
               </h4>
+              <v-autocomplete
+                v-if="$store.getters.getUser"
+                dense
+                outlined
+                :value="$store.getters.getUser.timezone"
+                class="mx-auto mt-2"
+                style="max-width: 250px"
+                label="Timezone"
+                :items="timezones"
+                @change="updateUser"
+              ></v-autocomplete>
             </div>
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p class="text--secondary">
@@ -654,10 +665,14 @@ export default Vue.extend({
       }
       return this.$store.getters.getUser.api_key
     },
+    timezones() {
+      return Intl.supportedValuesOf('timeZone')
+    },
   },
   mounted() {
     this.$store.dispatch('clearAxiosError')
     this.$store.dispatch('loadUser')
+    this.$store.dispatch('loadPhones')
     this.loadWebhooks()
     this.loadDiscordIntegrations()
   },
@@ -818,6 +833,27 @@ export default Vue.extend({
         })
         .finally(() => {
           this.updatingWebhook = false
+        })
+    },
+
+    updateUser(timezone) {
+      this.resetErrors()
+      this.$store
+        .dispatch('updateUser', {
+          owner: this.$store.getters.getOwner,
+          timezone,
+        })
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Timezone updated successfully',
+            type: 'success',
+          })
+        })
+        .catch(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Failed to update timezone',
+            type: 'error',
+          })
         })
     },
 
