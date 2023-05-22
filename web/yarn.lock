@@ -2456,7 +2456,7 @@
     node-html-parser "^6.1.5"
     ufo "^1.1.1"
 
-"@nuxt/kit@^3.2.3", "@nuxt/kit@^3.5.0":
+"@nuxt/kit@^3.5.0":
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/@nuxt/kit/-/kit-3.5.1.tgz#b51cb3f24e9067140b77eefa842c77b0c92b7e8a"
   integrity sha512-hC0apW02dSujoBuGQCxd8rvUyKIyfcPueIlYbO4d1SMQUifd/Tz+pYsbmpXX+kD/yXJ2yUaChbJ1IBLl6kep5A==
@@ -2783,13 +2783,15 @@
     minimatch "^3.0.4"
     sitemap "^4.1.1"
 
-"@nuxtjs/stylelint-module@^5.0.1":
-  version "5.0.1"
-  resolved "https://registry.npmjs.org/@nuxtjs/stylelint-module/-/stylelint-module-5.0.1.tgz"
-  integrity sha512-oEtbFazgJaEEeTjuLS43HUNRChfexmAj4AX5FoSz03gO+K9371hnT8akU3N9/QU2an+cXQbNj8ATqyy1XasTOw==
+"@nuxtjs/stylelint-module@^5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@nuxtjs/stylelint-module/-/stylelint-module-5.1.0.tgz#2a197ba8251eb58715baad177632c5281db94a44"
+  integrity sha512-zpWn5nJfFstBh7PUBjsBNu6rFCN2wtz3JyLGuEqCh4yo7orKclDM3S931E3kMD6Tszpvobhq1CMsgbcZL6K3aA==
   dependencies:
-    "@nuxt/kit" "^3.2.3"
-    stylelint-webpack-plugin "^4.1.0"
+    "@nuxt/kit" "^3.5.0"
+    chokidar "^3.5.3"
+    pathe "^1.1.0"
+    stylelint-webpack-plugin "^4.1.1"
     vite-plugin-stylelint "^4.3.0"
 
 "@nuxtjs/vuetify@^1.12.3":
@@ -8893,7 +8895,7 @@ jest-worker@^27.4.5, jest-worker@^27.5.1:
     merge-stream "^2.0.0"
     supports-color "^8.0.0"
 
-jest-worker@^29.4.2, jest-worker@^29.5.0:
+jest-worker@^29.5.0:
   version "29.5.0"
   resolved "https://registry.npmjs.org/jest-worker/-/jest-worker-29.5.0.tgz"
   integrity sha512-NcrQnevGoSp4b5kg+akIpthoAFHxPBcb5P6mYPY0fUNT+sSvmtu6jlkEle3anczUKIKEbMxFimk9oTP/tpIPgA==
@@ -12770,13 +12772,13 @@ stylelint-config-standard@^29.0.0:
   dependencies:
     stylelint-config-recommended "^9.0.0"
 
-stylelint-webpack-plugin@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.npmjs.org/stylelint-webpack-plugin/-/stylelint-webpack-plugin-4.1.0.tgz"
-  integrity sha512-Vm8H2uYflIiF9m4BjSBEn9cpqY2zZ0wDHgBxOVM6aWFDd0FvfNoymrSYYOIG5/ZST0NO/0NCXPWcpRVpv79Uew==
+stylelint-webpack-plugin@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/stylelint-webpack-plugin/-/stylelint-webpack-plugin-4.1.1.tgz#d7f13f2f8610757ee23a510eca3a6b6bcb1a54e8"
+  integrity sha512-yOyd2AfrxfawxKDememazGVJX2vMq9o11E6HvBu4+SKvgK3ZulkjpYdI1muBTxItwoxH2UmfIZzQM+/M5V3kTQ==
   dependencies:
     globby "^11.1.0"
-    jest-worker "^29.4.2"
+    jest-worker "^29.5.0"
     micromatch "^4.0.5"
     normalize-path "^3.0.0"
     schema-utils "^4.0.0"
