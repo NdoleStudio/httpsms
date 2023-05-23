@@ -113,6 +113,19 @@
               >
                 <v-icon>{{ mdiGithub }}</v-icon>
               </v-btn>
+              <v-btn
+                href="https://discord.gg/6qdbY6XN"
+                icon
+                large
+                color="#5865f2"
+              >
+                <v-img
+                  contain
+                  height="24"
+                  width="24"
+                  :src="require('assets/img/discord-logo-blue.svg')"
+                ></v-img>
+              </v-btn>
             </p>
           </v-col>
           <v-col cols="12" md="3">
