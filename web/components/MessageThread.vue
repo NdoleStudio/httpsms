@@ -46,7 +46,16 @@
       <p>
         Install the mobile app on your android phone to start sending messages
       </p>
-      <v-btn class="primary" :href="$store.getters.getAppData.appDownloadUrl">
+      <v-btn
+        class="primary"
+        :href="$store.getters.getAppData.appDownloadUrl"
+        @click="
+          $store.dispatch('addNotification', {
+            type: 'info',
+            message: 'Downloading the httpSMS Android App',
+          })
+        "
+      >
         <v-icon>
           {{ mdiDownload }}
         </v-icon>

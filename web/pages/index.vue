@@ -212,6 +212,12 @@
                         download
                         class="font-weight-bold text-decoration-none"
                         :href="$store.getters.getAppData.appDownloadUrl"
+                        @click="
+                          $store.dispatch('addNotification', {
+                            type: 'info',
+                            message: 'Downloading the httpSMS Android App',
+                          })
+                        "
                         >Download</a
                       >
                       and install the companion android application on your
@@ -609,15 +615,6 @@ export default Vue.extend({
       selectedTab: 'javascript',
       yearlyPricing: false,
     }
-  },
-  methods: {
-    goToPricing() {
-      if (this.$route.name === 'index') {
-        this.$vuetify.goTo('#pricing')
-      } else {
-        this.$router.push('/#pricing')
-      }
-    },
   },
 })
 </script>

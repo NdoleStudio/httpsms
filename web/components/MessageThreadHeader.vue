@@ -129,6 +129,12 @@
             v-if="$store.getters.getOwner"
             :href="$store.getters.getAppData.appDownloadUrl"
             exact
+            @click="
+              $store.dispatch('addNotification', {
+                type: 'info',
+                message: 'Downloading the httpSMS Android App',
+              })
+            "
           >
             <v-list-item-icon class="pl-2">
               <v-icon dense>{{ mdiDownload }}</v-icon>

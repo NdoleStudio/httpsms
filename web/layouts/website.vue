@@ -66,6 +66,7 @@
       </v-container>
     </v-app-bar>
     <v-main>
+      <toast></toast>
       <Nuxt />
     </v-main>
     <v-footer class="pt-4">
