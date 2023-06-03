@@ -3,7 +3,7 @@
     <v-badge
       class="logo-badge"
       :class="{ 'logo-badge--mobile': $vuetify.breakpoint.mdAndDown }"
-      color="#8338ec"
+      color="primary"
       content="Beta"
     >
       <nuxt-link to="/" class="text-decoration-none d-flex">
@@ -23,11 +23,22 @@
       application that converts your android phone into an SMS gateway so you
       can send and receive SMS messages using a simple HTTP API.
     </p>
+    <v-btn :href="$store.getters.getAppData.documentationUrl">
+      <v-icon left>{{ mdiBookOpenVariant }}</v-icon>
+      Documentation
+    </v-btn>
   </div>
 </template>
 
 <script lang="ts">
+import { mdiBookOpenVariant } from '@mdi/js'
+
 export default {
   name: 'BlogInfo',
+  data() {
+    return {
+      mdiBookOpenVariant,
+    }
+  },
 }
 </script>

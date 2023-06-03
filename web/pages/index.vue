@@ -361,7 +361,7 @@ payload = {
 
 response = requests.post(url, headers=headers, data=json.dumps(payload))
 
-print(response.json())
+print(json.dumps(response.json(), indent=4))
 </code>
                     </pre>
                   </v-tab-item>
