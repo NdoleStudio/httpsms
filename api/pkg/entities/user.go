@@ -17,7 +17,10 @@ func (subscription SubscriptionName) Limit() uint {
 	if subscription == SubscriptionNameFree {
 		return 200
 	}
-	return 5000
+	if subscription == SubscriptionNameProMonthly || subscription == SubscriptionNameProYearly || subscription == SubscriptionNameProLifetime {
+		return 5000
+	}
+	return 10000
 }
 
 // SubscriptionNameFree represents a free subscription
@@ -28,6 +31,12 @@ const SubscriptionNameProMonthly = SubscriptionName("pro-monthly")
 
 // SubscriptionNameProYearly represents a yearly pro subscription
 const SubscriptionNameProYearly = SubscriptionName("pro-yearly")
+
+// SubscriptionNameUltraMonthly represents a monthly ultra subscription
+const SubscriptionNameUltraMonthly = SubscriptionName("ultra-monthly")
+
+// SubscriptionNameUltraYearly represents a yearly ultra subscription
+const SubscriptionNameUltraYearly = SubscriptionName("ultra-yearly")
 
 // SubscriptionNameProLifetime represents a pro lifetime subscription
 const SubscriptionNameProLifetime = SubscriptionName("pro-lifetime")
@@ -51,4 +60,9 @@ type User struct {
 // IsOnProPlan checks if a user is on the pro plan
 func (user User) IsOnProPlan() bool {
 	return user.SubscriptionName == SubscriptionNameProLifetime || user.SubscriptionName == SubscriptionNameProMonthly || user.SubscriptionName == SubscriptionNameProYearly
+}
+
+// IsOnUltraPlan checks if a user is on the ultra plan
+func (user User) IsOnUltraPlan() bool {
+	return user.SubscriptionName == SubscriptionNameUltraMonthly || user.SubscriptionName == SubscriptionNameUltraYearly
 }

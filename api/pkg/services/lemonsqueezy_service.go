@@ -101,8 +101,17 @@ func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.
 }
 
 func (service *LemonsqueezyService) subscriptionName(variant string) entities.SubscriptionName {
-	if strings.Contains(strings.ToLower(variant), "monthly") {
-		return entities.SubscriptionNameProMonthly
+	if strings.Contains(strings.ToLower(variant), "pro") {
+		if strings.Contains(strings.ToLower(variant), "monthly") {
+			return entities.SubscriptionNameProMonthly
+		}
+		return entities.SubscriptionNameProYearly
 	}
-	return entities.SubscriptionNameProYearly
+	if strings.Contains(strings.ToLower(variant), "ultra") {
+		if strings.Contains(strings.ToLower(variant), "monthly") {
+			return entities.SubscriptionNameUltraMonthly
+		}
+		return entities.SubscriptionNameUltraYearly
+	}
+	return entities.SubscriptionNameFree
 }

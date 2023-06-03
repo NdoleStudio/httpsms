@@ -468,13 +468,19 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
               <p class="text-h6 mr-3 mt-3">Monthly</p>
               <v-switch v-model="yearlyPricing"></v-switch>
               <p class="text-h6 ml-3 mt-3">
-                Yearly <v-chip color="primary" small>save 20%</v-chip>
+                Yearly
+                <v-chip color="primary" small>
+                  <v-avatar left>
+                    <v-icon small>{{ mdiGift }}</v-icon>
+                  </v-avatar>
+                  2 months free</v-chip
+                >
               </p>
             </div>
           </v-col>
         </v-row>
         <v-row>
-          <v-col cols="12" lg="4" offset-lg="2">
+          <v-col cols="12" lg="4">
             <v-card elevation="4" color="#121212">
               <v-card-text>
                 <h1 class="text-center text-h3 text--primary">Free</h1>
@@ -524,15 +530,17 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   features.
                 </p>
                 <p v-if="!yearlyPricing" class="text-center text--primary">
-                  <span class="text-h3">$6</span>/month
+                  <span class="text-h3">$10</span>/month
                 </p>
                 <p v-else class="text-center text--primary">
-                  <span class="text-h3">$60</span>/year
+                  <span class="text-h3">$100</span>/year
                 </p>
                 <p v-if="!yearlyPricing" class="text-center mt-n3">
-                  or <b>$72</b> per year
+                  or <b>$100</b> per year
                 </p>
-                <p v-else class="text-center mt-n3">or <b>$5</b> per month</p>
+                <p v-else class="text-center mt-n3">
+                  or <b>$8.33</b> per month
+                </p>
                 <v-btn block color="primary" :to="{ name: 'login' }" large
                   >Try For Free</v-btn
                 >
@@ -541,6 +549,54 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                     mdiCheckCircle
                   }}</v-icon
                   >Send or receive up to <b>5,000</b> SMS/month
+                </p>
+                <p class="subtitle-1 mt-n4">
+                  <v-icon color="primary" class="mt-n1" left>
+                    {{ mdiCheckCircle }} </v-icon
+                  >Offline notifications for your phone
+                </p>
+                <p class="subtitle-1 mt-n4">
+                  <v-icon color="primary" class="mt-n1" left>{{
+                    mdiCheckCircle
+                  }}</v-icon
+                  >Forward received messages to your server
+                </p>
+                <p class="subtitle-1 mt-n4">
+                  <v-icon color="primary" class="mt-n1" left>{{
+                    mdiCheckCircle
+                  }}</v-icon
+                  >Priority email support
+                </p>
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="12" lg="4">
+            <v-card elevation="4" color="#121212">
+              <v-card-text>
+                <h1 class="text-center text-h3 text--primary">Ultra</h1>
+                <p class="subtitle-1 text-center">
+                  Send and receive up to 10,000 SMS messages like a power user.
+                </p>
+                <p v-if="!yearlyPricing" class="text-center text--primary">
+                  <span class="text-h3">$20</span>/month
+                </p>
+                <p v-else class="text-center text--primary">
+                  <span class="text-h3">$200</span>/year
+                </p>
+                <p v-if="!yearlyPricing" class="text-center mt-n3">
+                  or <b>$200</b> per year
+                </p>
+                <p v-else class="text-center mt-n3">
+                  or <b>$16.66</b> per month
+                </p>
+                <v-btn block color="default" :to="{ name: 'login' }" large
+                  >Try For Free</v-btn
+                >
+                <p class="mt-8 subtitle-1">
+                  <v-icon color="primary" class="mt-n1" left>{{
+                    mdiCheckCircle
+                  }}</v-icon
+                  >Send or receive up to <b>10,000</b> SMS/month
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>
@@ -574,6 +630,7 @@ import {
   mdiGithub,
   mdiCheckCircle,
   mdiSend,
+  mdiGift,
   mdiForum,
   mdiNumeric1,
   mdiLanguagePython,
@@ -598,6 +655,7 @@ export default Vue.extend({
       mdiGithub,
       mdiCheckCircle,
       mdiSend,
+      mdiGift,
       mdiForum,
       mdiNumeric1,
       mdiNumeric2,

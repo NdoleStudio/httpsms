@@ -160,10 +160,10 @@
                           >
                             Pro - Monthly
                           </h1>
-                          <p class="text--secondary">5,000 messages</p>
+                          <p class="text--secondary">5,000 messages monthly</p>
                         </v-col>
                         <v-col class="shrink">
-                          <span class="text-h5 text--primary">$6</span>/month
+                          <span class="text-h5 text--primary">$10</span>/month
                         </v-col>
                       </v-row>
                     </v-card-text>
@@ -185,13 +185,13 @@
                           >
                             Pro - Yearly
                             <v-chip small color="primary" class="mt-n1"
-                              >Save 20%</v-chip
+                              >2 months free</v-chip
                             >
                           </h1>
-                          <p class="text--secondary">5,000 messages</p>
+                          <p class="text--secondary">5,000 messages monthly</p>
                         </v-col>
                         <v-col class="shrink">
-                          <span class="text-h5 text--primary">$5</span>/month
+                          <span class="text-h5 text--primary">$100</span>/year
                         </v-col>
                       </v-row>
                     </v-card-text>
@@ -365,13 +365,25 @@ export default Vue.extend({
           name: 'PRO - Monthly',
           id: 'pro-monthly',
           messagesPerMonth: 5000,
-          price: 6,
+          price: 10,
         },
         {
           name: 'PRO - Yearly',
           id: 'pro-yearly',
           messagesPerMonth: 5000,
-          price: 60,
+          price: 100,
+        },
+        {
+          name: 'Ultra - Monthly',
+          id: 'ultra-monthly',
+          messagesPerMonth: 5000,
+          price: 20,
+        },
+        {
+          name: 'Ultra - Yearly',
+          id: 'ultra-yearly',
+          messagesPerMonth: 5000,
+          price: 200,
         },
         {
           name: 'PRO - Lifetime',
