@@ -9239,10 +9239,10 @@ levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-libphonenumber-js@^1.10.30:
-  version "1.10.30"
-  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.30.tgz#c0559d6c58dc1a7f189b88b7b23354c98b182848"
-  integrity sha512-PLGc+xfrQrkya/YK2/5X+bPpxRmyJBHM+xxz9krUdSgk4Vs2ZwxX5/Ow0lv3r9PDlDtNWb4u+it8MY5rZ0IyGw==
+libphonenumber-js@^1.10.33:
+  version "1.10.33"
+  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.33.tgz#0e74c2aef4fd3cc18c419f0714029e58d6565366"
+  integrity sha512-izLbQCqXYyLPX65SPjPZb5Kw+0JQeNIq97aZoZ8faoJZRtOz/UN/B3V6SpRcR2riHAgzHOdRs064db7DLMUFHg==
 
 lilconfig@2.1.0, lilconfig@^2.0.3:
   version "2.1.0"
