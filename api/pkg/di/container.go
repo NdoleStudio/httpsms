@@ -1111,10 +1111,11 @@ func (container *Container) UserRepository() repositories.UserRepository {
 
 // InitializeTraceProvider initializes the open telemetry trace provider
 func (container *Container) InitializeTraceProvider() func() {
-	if isLocal() {
-		return container.initializeUptraceProvider(container.version, container.projectID)
-	}
-	return container.initializeGoogleTraceProvider(container.version, container.projectID)
+	return container.initializeUptraceProvider(container.version, container.projectID)
+	//if isLocal() {
+	//	return container.initializeUptraceProvider(container.version, container.projectID)
+	//}
+	//return container.initializeGoogleTraceProvider(container.version, container.projectID)
 }
 
 func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {
