@@ -20,7 +20,7 @@ const (
 func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header string, namespace string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		otelTracer := otel.Tracer(namespace)
-		_, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), c.OriginalURL()))
+		ctx, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), c.OriginalURL()), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 		spanContext := span.SpanContext()
 
@@ -29,16 +29,13 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header s
 			WithString("client.version", c.Get(clientVersionHeader)).
 			Trace(c.OriginalURL())
 
-		newCtx, span := otel.Tracer(namespace).Start(trace.ContextWithRemoteSpanContext(context.Background(), spanContext), "middlewares.OtelTraceContext")
-		defer span.End()
-
 		ctxLogger := tracer.CtxLogger(logger, span)
 		span.SetAttributes(attribute.Key("traceID").String(span.SpanContext().TraceID().String()))
 		span.SetAttributes(attribute.Key("SpanID").String(span.SpanContext().SpanID().String()))
 		span.SetAttributes(attribute.Key("traceFlags").String(spanContext.TraceFlags().String()))
 		span.SetAttributes(attribute.Key("clientVersion").String(c.Get(clientVersionHeader)))
 
-		c.Locals(telemetry.TracerContextKey, trace.ContextWithSpan(newCtx, span))
+		c.Locals(telemetry.TracerContextKey, trace.ContextWithSpan(ctx, span))
 
 		// Go to next middleware:
 		response := c.Next()
