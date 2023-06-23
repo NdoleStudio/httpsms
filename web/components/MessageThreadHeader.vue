@@ -191,7 +191,6 @@ import {
   mdiCircle,
 } from '@mdi/js'
 import { SelectItem } from '~/types'
-import { Phone } from '~/models/phone'
 
 @Component
 export default class MessageThreadHeader extends Vue {
