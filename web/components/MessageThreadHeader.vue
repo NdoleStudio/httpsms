@@ -191,6 +191,7 @@ import {
   mdiCircle,
 } from '@mdi/js'
 import { SelectItem } from '~/types'
+import { EntitiesPhone } from '~/models/api'
 
 @Component
 export default class MessageThreadHeader extends Vue {
@@ -206,12 +207,14 @@ export default class MessageThreadHeader extends Vue {
   mdiCircle = mdiCircle
 
   get owners(): Array<SelectItem> {
-    return this.$store.getters.getPhones.map((phone: Phone): SelectItem => {
-      return {
-        text: this.$options.filters?.phoneNumber(phone.phone_number),
-        value: phone.phone_number,
+    return this.$store.getters.getPhones.map(
+      (phone: EntitiesPhone): SelectItem => {
+        return {
+          text: this.$options.filters?.phoneNumber(phone.phone_number),
+          value: phone.phone_number,
+        }
       }
-    })
+    )
   }
 
   async onOwnerChanged(owner: string) {
