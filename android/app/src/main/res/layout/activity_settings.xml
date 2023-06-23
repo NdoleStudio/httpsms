@@ -55,6 +55,16 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/settings_sim1_outgoing_messages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/settings_outgoing_messages_sim1"
+            android:minHeight="48dp"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/settings_sim1_incoming_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -82,6 +92,16 @@
                 tools:ignore="TextContrastCheck" />
 
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/settings_sim2_outgoing_messages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:text="@string/settings_outgoing_messages_sim2"
+            android:minHeight="48dp"
+            android:layout_marginBottom="16dp"
+            tools:ignore="TouchTargetSizeCheck" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/settings_sim2_incoming_messages"

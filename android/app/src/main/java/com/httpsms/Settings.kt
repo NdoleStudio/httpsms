@@ -8,11 +8,10 @@ import java.net.URI
 object Settings {
     private const val SETTINGS_SIM1_PHONE_NUMBER = "SETTINGS_SIM1_PHONE_NUMBER"
     private const val SETTINGS_SIM2_PHONE_NUMBER = "SETTINGS_SIM2_PHONE_NUMBER"
-    private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
     private const val SETTINGS_SIM1_ACTIVE = "SETTINGS_SIM1_ACTIVE_STATUS"
     private const val SETTINGS_SIM2_ACTIVE = "SETTINGS_SIM2_ACTIVE_STATUS"
     private const val SETTINGS_SIM1_INCOMING_ACTIVE = "SETTINGS_SIM1_INCOMING_ACTIVE"
-    private const val SETTINGS_SIM2_INCOMING_ACTIVE = "SETTINGS_SIM1_INCOMING_ACTIVE"
+    private const val SETTINGS_SIM2_INCOMING_ACTIVE = "SETTINGS_SIM2_INCOMING_ACTIVE"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_SERVER_URL = "SETTINGS_SERVER_URL"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
@@ -43,7 +42,7 @@ object Settings {
             .getString(this.SETTINGS_SIM2_PHONE_NUMBER, null)
 
         if (owner == null) {
-            Timber.e("cannot get owner from preference [${this.SETTINGS_SIM2_PHONE_NUMBER}]")
+            Timber.d("cannot get owner from preference [${this.SETTINGS_SIM2_PHONE_NUMBER}]")
             return ""
         }
 

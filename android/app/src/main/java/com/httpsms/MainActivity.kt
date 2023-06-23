@@ -6,7 +6,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -19,7 +18,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -29,7 +27,6 @@ import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.LinearProgressIndicator
-import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
 import okhttp3.internal.format
@@ -56,7 +53,6 @@ class MainActivity : AppCompatActivity() {
         createChannel()
 
         setCardContent(this)
-        setActiveStatus(this)
         registerListeners()
         refreshToken(this)
 
@@ -89,9 +85,15 @@ class MainActivity : AppCompatActivity() {
     private fun setCardContent(context: Context) {
         val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
         titleText.text = PhoneNumberUtils.formatNumber(Settings.getSIM1PhoneNumber(this), Locale.getDefault().country)
+        if(!Settings.getActiveStatus(context, Constants.SIM1)) {
+            titleText.setCompoundDrawables(null, null, null, null)
+        }
 
         val titleTextSIM2 = findViewById<TextView>(R.id.cardPhoneNumberSIM2)
         titleTextSIM2.text = PhoneNumberUtils.formatNumber(Settings.getSIM2PhoneNumber(this), Locale.getDefault().country)
+        if(!Settings.getActiveStatus(context, Constants.SIM2)) {
+            titleTextSIM2.setCompoundDrawables(null, null, null, null)
+        }
 
         setLastHeartbeatTimestamp(context)
 
@@ -236,69 +238,6 @@ class MainActivity : AppCompatActivity() {
         val switchActivityIntent = Intent(this, LoginActivity::class.java)
         startActivity(switchActivityIntent)
         return true
-    }
-
-    private fun setActiveStatus(context: Context) {
-        val switch = findViewById<SwitchMaterial>(R.id.cardSwitch)
-        switch.isChecked = Settings.getActiveStatus(context, Constants.SIM1)
-        switch.setOnCheckedChangeListener{
-            _, isChecked ->
-            run {
-                if (isChecked && !hasAllPermissions(context)) {
-                    Toast.makeText(context, "PERMISSIONS_NOT_GRANTED", Toast.LENGTH_SHORT).show()
-                } else {
-                    Settings.setActiveStatusAsync(context, isChecked, Constants.SIM1)
-                }
-                if (isChecked) {
-                    Settings.setIncomingActiveSIM1(context, true)
-                    startStickyNotification(context)
-                }
-            }
-        }
-
-        if (!Settings.isDualSIM(context)) {
-            return
-        }
-
-        val switchSIM2 = findViewById<SwitchMaterial>(R.id.cardSwitchSIM2)
-        switchSIM2.isChecked = Settings.getActiveStatus(context, Constants.SIM2)
-        switchSIM2.setOnCheckedChangeListener{
-                _, isChecked ->
-            run {
-                if (isChecked && !hasAllPermissions(context)) {
-                    Toast.makeText(context, "PERMISSIONS_NOT_GRANTED", Toast.LENGTH_SHORT).show()
-                } else {
-                    Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2)
-                }
-                if (isChecked) {
-                    Settings.setIncomingActiveSIM2(context, true)
-                    startStickyNotification(context)
-                }
-            }
-        }
-    }
-
-    private fun hasAllPermissions(context: Context): Boolean {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.SEND_SMS
-            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_PHONE_NUMBERS
-            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECEIVE_SMS
-            ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_PHONE_STATE
-            ) == PackageManager.PERMISSION_GRANTED && (Build.VERSION.SDK_INT < 33 || ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED)
-        ) {
-            return true
-        }
-        return false
     }
 
     private fun setLastHeartbeatTimestamp(context: Context) {

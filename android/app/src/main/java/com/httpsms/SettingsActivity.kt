@@ -30,15 +30,19 @@ class SettingsActivity : AppCompatActivity() {
 
         sim1IncomingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setIncomingActiveSIM1(context, isChecked) } }
 
+        val sim1OutgoingMessages = findViewById<SwitchMaterial>(R.id.settings_sim1_outgoing_messages)
+        sim1OutgoingMessages.isChecked = Settings.getActiveStatus(context, Constants.SIM1)
+        sim1OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM1) } }
+
         if (!Settings.isDualSIM(context)) {
             val layout = findViewById<TextInputLayout>(R.id.settingsSIM2Layout)
             layout.visibility = TextInputLayout.GONE
             val sim2Switch = findViewById<SwitchMaterial>(R.id.settings_sim2_incoming_messages)
             sim2Switch.visibility = SwitchMaterial.GONE
+            val outgoingSwitch = findViewById<SwitchMaterial>(R.id.settings_sim2_outgoing_messages)
+            outgoingSwitch.visibility = SwitchMaterial.GONE
             return
         }
-
-        Timber.e("Settings.isDualSIM(context) = ${Settings.isDualSIM(context)}")
 
         val phoneNumberSIM2 = findViewById<TextInputEditText>(R.id.settingsSIM2InputEdit)
         phoneNumberSIM2.setText(Settings.getSIM2PhoneNumber(context))
@@ -46,8 +50,11 @@ class SettingsActivity : AppCompatActivity() {
 
         val sim2IncomingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_incoming_messages)
         sim2IncomingMessages.isChecked = Settings.isIncomingMessageEnabled(context, Constants.SIM2)
-
         sim2IncomingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setIncomingActiveSIM2(context, isChecked) } }
+
+        val sim2OutgoingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_outgoing_messages)
+        sim2OutgoingMessages.isChecked = Settings.getActiveStatus(context, Constants.SIM2)
+        sim2OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2) } }
     }
 
     private fun registerListeners() {
@@ -56,7 +63,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun onBackClicked() {
-        Timber.e("back button clicked")
+        Timber.d("back button clicked")
         redirectToMain()
     }
 

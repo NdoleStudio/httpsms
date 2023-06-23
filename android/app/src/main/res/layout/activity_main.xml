@@ -58,16 +58,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:text="@string/phone_number"
+                    android:drawablePadding="5dp"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textColor="?android:attr/textColorPrimary"
+                    app:drawableTint="#70ab5c"
+                    app:drawableEndCompat="@drawable/baseline_check_circle_24"
                     android:textSize="28sp" />
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/cardSwitch"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    tools:ignore="TouchTargetSizeCheck" />
             </LinearLayout>
 
 
@@ -111,17 +107,14 @@
                     android:id="@+id/cardPhoneNumberSIM2"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
+                    android:drawablePadding="5dp"
                     android:text="@string/phone_number"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textColor="?android:attr/textColorPrimary"
+                    app:drawableTint="#70ab5c"
+                    app:drawableEndCompat="@drawable/baseline_check_circle_24"
                     android:textSize="28sp" />
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/cardSwitchSIM2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    tools:ignore="TouchTargetSizeCheck" />
             </LinearLayout>
 
 
