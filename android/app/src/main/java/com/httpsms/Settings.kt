@@ -130,9 +130,13 @@ object Settings {
         if (sim == Constants.SIM2) {
             setting = this.SETTINGS_SIM2_ACTIVE
         }
-        val activeStatus = PreferenceManager
+        var activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getBoolean(setting,true)
+
+        if (sim == Constants.SIM2) {
+            activeStatus = activeStatus && isDualSIM(context)
+        }
 
         Timber.d("SETTINGS_${sim}_ACTIVE: [$activeStatus]")
         return activeStatus

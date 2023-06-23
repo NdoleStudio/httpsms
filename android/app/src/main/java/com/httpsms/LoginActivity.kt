@@ -55,7 +55,6 @@ class LoginActivity : AppCompatActivity() {
             sim2Layout.visibility = LinearLayout.VISIBLE
             return
         }
-        Timber.e("is dual sim ${SmsManagerService.isDualSIM(this)}")
         val sim2Layout = findViewById<LinearLayout>(R.id.loginPhoneNumberLayoutSIM2)
         sim2Layout.visibility = View.GONE
     }
