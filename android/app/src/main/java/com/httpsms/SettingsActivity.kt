@@ -18,6 +18,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun registerListeners() {
         appToolbar().setOnClickListener { onBackClicked() }
+        findViewById<MaterialButton>(R.id.settingsLogoutButton).setOnClickListener { onLogoutClick() }
     }
 
     private fun onBackClicked() {

@@ -127,6 +127,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun startStickyNotification(context: Context) {
         Timber.d("starting foreground service")
+        if(!Settings.getActiveStatus(context)) {
+            Timber.d("active status is false, not starting foreground service")
+            return
+        }
         val notificationIntent = Intent(context, StickyNotificationService::class.java)
         val service = context.startForegroundService(notificationIntent)
         Timber.d("foreground service started [${service?.className}]")
@@ -214,6 +218,9 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(context, "PERMISSIONS_NOT_GRANTED", Toast.LENGTH_SHORT).show()
                 } else {
                     Settings.setActiveStatusAsync(context, isChecked)
+                }
+                if (isChecked) {
+                    startStickyNotification(context)
                 }
             }
         }

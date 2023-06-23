@@ -10,6 +10,10 @@ object Settings {
 
     private const val SETTINGS_OWNER = "SETTINGS_OWNER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
+    private const val SETTINGS_SIM1_ACTIVE = "SETTINGS_SIM1_ACTIVE_STATUS"
+    private const val SETTINGS_SIM2_ACTIVE = "SETTINGS_SIM2_ACTIVE_STATUS"
+    private const val SETTINGS_SIM1_INCOMING_ACTIVE = "SETTINGS_SIM1_INCOMING_ACTIVE"
+    private const val SETTINGS_SIM2_INCOMING_ACTIVE = "SETTINGS_SIM1_INCOMING_ACTIVE"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_SERVER_URL = "SETTINGS_SERVER_URL"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
@@ -72,13 +76,37 @@ object Settings {
     }
 
     fun getActiveStatus(context: Context): Boolean {
-        Timber.d(Settings::getActiveStatus.name)
-
         val activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
             .getBoolean(this.SETTINGS_ACTIVE,true)
 
         Timber.d("SETTINGS_ACTIVE: [$activeStatus]")
+        return activeStatus
+    }
+
+    fun getIncomingMessageEnabled(context: Context, sim: String): Boolean {
+        var setting = this.SETTINGS_SIM1_INCOMING_ACTIVE
+        if (sim == Constants.SIM2) {
+            setting = this.SETTINGS_SIM2_INCOMING_ACTIVE
+        }
+        val activeStatus = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getBoolean(setting,true)
+
+        Timber.d("SETTINGS_${sim}_INCOMING_ACTIVE: [$activeStatus]")
+        return activeStatus
+    }
+
+    fun getActiveStatus(context: Context, sim: String): Boolean {
+        var setting = this.SETTINGS_SIM1_ACTIVE
+        if (sim == Constants.SIM2) {
+            setting = this.SETTINGS_SIM2_ACTIVE
+        }
+        val activeStatus = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getBoolean(setting,true)
+
+        Timber.d("SETTINGS_${sim}_ACTIVE: [$activeStatus]")
         return activeStatus
     }
 
