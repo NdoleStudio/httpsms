@@ -183,26 +183,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun registerListeners() {
-        findViewById<MaterialButton>(R.id.mainLogoutButton).setOnClickListener { onLogoutClick() }
+        findViewById<MaterialButton>(R.id.mainSettingsButton).setOnClickListener { onSettingsClick() }
     }
 
     private fun registerReceivers() {
         registerReceiver(SimChangeReceiver(), IntentFilter("android.intent.action.SIM_STATE_CHANGED"))
     }
-    private fun onLogoutClick() {
-        Timber.d("logout button clicked")
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Confirm")
-            .setMessage("Are you sure you want to logout of the Http SMS App?")
-            .setNeutralButton("Cancel"){ _, _ -> Timber.d("logout dialog canceled") }
-            .setPositiveButton("Logout"){_, _ ->
-                Timber.d("logging out user")
-                Settings.setApiKeyAsync(this, null)
-                Settings.setOwnerAsync(this, null)
-                Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
-                redirectToLogin()
-            }
-            .show()
+    private fun onSettingsClick() {
+        Timber.d("settings button clicked")
+        val switchActivityIntent = Intent(this, SettingsActivity::class.java)
+        startActivity(switchActivityIntent)
     }
 
     private fun redirectToLogin():Boolean {

@@ -149,7 +149,7 @@
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/mainLogoutButton"
+        android:id="@+id/mainSettingsButton"
         style="@style/Widget.MaterialComponents.Button.Icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -157,10 +157,10 @@
         android:backgroundTint="@color/black"
         android:drawableTint="@color/white"
         android:padding="10dp"
-        android:text="@string/main_log_out"
+        android:text="@string/main_app_settings"
         android:textColor="@color/white"
         android:textSize="16sp"
-        app:icon="@drawable/ic_login"
+        app:icon="@drawable/baseline_settings_24"
         app:iconTint="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
