@@ -9,7 +9,7 @@
     <string name="img_http_sms_logo">HTTP Sms Logo</string>
     <string name="get_your_api_key">Open\nhttpsms.com/settings\nto get your API key</string>
     <string name="main_log_out">Log Out</string>
-    <string name="login_phone_number_hint">International phone number in E.164 format</string>
+    <string name="login_phone_number_hint">e.g +18005550199 (international format)</string>
     <string name="login_server_url_hint">e.g https://api.httpsms.com</string>
     <string name="phone_number">Phone Number</string>
     <string name="send_heartbeat">Send Heartbeat</string>
@@ -22,4 +22,6 @@
     <string name="settings_sim_2">SIM2</string>
     <string name="settings_incoming_messages_sim1">Incoming Messages (SIM1)</string>
     <string name="settings_incoming_messages_sim2">Incoming Messages (SIM2)</string>
+    <string name="login_phone_number_sim1">Phone Number (SIM1)</string>
+    <string name="login_phone_number_sim2">Phone Number (SIM2)</string>
 </resources>

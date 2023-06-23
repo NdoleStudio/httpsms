@@ -9,8 +9,8 @@
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="145dp"
-        android:layout_height="148dp"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:layout_marginTop="32dp"
         android:contentDescription="@string/img_http_sms_logo"
         app:layout_constraintEnd_toEndOf="parent"
@@ -33,7 +33,8 @@
         app:layout_constraintBottom_toTopOf="@+id/loginApiKeyTextInputLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/loginApiKeyTextInputLayout"
@@ -56,12 +57,12 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/loginPhoneNumberLayout"
+        android:id="@+id/loginPhoneNumberLayoutSIM1"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="224dp"
-        android:hint="@string/phone_number"
+        android:hint="@string/login_phone_number_sim1"
         app:errorEnabled="true"
         app:placeholderText="@string/login_phone_number_hint"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -70,7 +71,7 @@
         tools:layout_editor_absoluteX="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/loginPhoneNumberInput"
+            android:id="@+id/loginPhoneNumberInputSIM1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
@@ -78,29 +79,53 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/loginServerUrlLayout"
+        android:id="@+id/loginPhoneNumberLayoutSIM2"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="-24dp"
-        android:hint="@string/server_url"
+        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM1"
+        android:layout_marginBottom="224dp"
+        android:hint="@string/login_phone_number_sim2"
         app:errorEnabled="true"
-        app:placeholderText="@string/login_server_url_hint"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayout"
-        app:layout_constraintVertical_bias="0.137"
-        tools:layout_editor_absoluteX="16dp">
+        app:placeholderText="@string/login_phone_number_hint"
+        app:layout_constraintVertical_bias="0.137">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/loginServerUrlInput"
+            android:id="@+id/loginPhoneNumberInputSIM2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
             tools:ignore="TextContrastCheck" />
 
     </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:id="@+id/loginServerUrlLayoutContainer"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/loginServerUrlLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/server_url"
+            app:errorEnabled="true"
+            app:placeholderText="@string/login_server_url_hint"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="0.137">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/loginServerUrlInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                tools:ignore="TextContrastCheck" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/linearLayout"
@@ -110,7 +135,7 @@
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginServerUrlLayout">
+        app:layout_constraintTop_toBottomOf="@+id/loginServerUrlLayoutContainer">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/loginButton"

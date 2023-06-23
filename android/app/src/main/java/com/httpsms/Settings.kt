@@ -9,6 +9,8 @@ object Settings {
     private const val DEFAULT_PHONE_NUMBER = "NOT_FOUND"
 
     private const val SETTINGS_OWNER = "SETTINGS_OWNER"
+    private const val SETTINGS_SIM1_PHONE_NUMBER = "SETTINGS_SIM1_PHONE_NUMBER"
+    private const val SETTINGS_SIM2_PHONE_NUMBER = "SETTINGS_SIM2_PHONE_NUMBER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
     private const val SETTINGS_SIM1_ACTIVE = "SETTINGS_SIM1_ACTIVE_STATUS"
     private const val SETTINGS_SIM2_ACTIVE = "SETTINGS_SIM2_ACTIVE_STATUS"
@@ -75,6 +77,24 @@ object Settings {
             .apply()
     }
 
+    fun setSIM1PhoneNumber(context: Context, owner: String?) {
+        Timber.d(Settings::setOwnerAsync.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(this.SETTINGS_OWNER, owner)
+            .apply()
+    }
+
+    fun setSIM2PhoneNumber(context: Context, owner: String?) {
+        Timber.d(Settings::setOwnerAsync.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(this.SETTINGS_OWNER, owner)
+            .apply()
+    }
+
     fun getActiveStatus(context: Context): Boolean {
         val activeStatus = PreferenceManager
             .getDefaultSharedPreferences(context)
@@ -96,6 +116,25 @@ object Settings {
         Timber.d("SETTINGS_${sim}_INCOMING_ACTIVE: [$activeStatus]")
         return activeStatus
     }
+
+    fun setIncomingActiveSIM1(context: Context, status: Boolean) {
+        Timber.d(Settings::setIncomingActiveSIM1.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(this.SETTINGS_SIM1_INCOMING_ACTIVE, status)
+            .apply()
+    }
+
+    fun setIncomingActiveSIM2(context: Context, status: Boolean) {
+        Timber.d(Settings::setIncomingActiveSIM2.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(this.SETTINGS_SIM2_INCOMING_ACTIVE, status)
+            .apply()
+    }
+
 
     fun getActiveStatus(context: Context, sim: String): Boolean {
         var setting = this.SETTINGS_SIM1_ACTIVE

@@ -10,6 +10,7 @@ import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import android.view.View
 import android.webkit.URLUtil
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
@@ -27,11 +28,21 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
         registerListeners()
         setPhoneNumber()
+        disableSim2()
         setServerURL()
     }
 
     private fun registerListeners() {
         loginButton().setOnClickListener { onLoginClick() }
+    }
+
+    private fun disableSim2() {
+        if (SmsManagerService.isDualSIM(this)) {
+            Timber.d("dual sim detected")
+            return
+        }
+        val sim2Layout = findViewById<LinearLayout>(R.id.loginPhoneNumberLayoutSIM2)
+        sim2Layout.visibility = View.GONE
     }
 
     private fun setPhoneNumber() {
@@ -41,7 +52,7 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        val phoneInput = findViewById<TextInputEditText>(R.id.loginPhoneNumberInput)
+        val phoneInput = findViewById<TextInputEditText>(R.id.loginPhoneNumberInputSIM1)
         phoneInput.setText(phoneNumber)
         Timber.d("phone number [$phoneNumber] set successfully")
     }
@@ -96,17 +107,24 @@ class LoginActivity : AppCompatActivity() {
         val serverUrl = findViewById<TextInputEditText>(R.id.loginServerUrlInput)
         serverUrl.isEnabled = false
 
-        val phoneNumberLayout = findViewById<TextInputLayout>(R.id.loginPhoneNumberLayout)
+        val phoneNumberLayout = findViewById<TextInputLayout>(R.id.loginPhoneNumberLayoutSIM1)
         phoneNumberLayout.error = null
 
-        val phoneNumber = findViewById<TextInputEditText>(R.id.loginPhoneNumberInput)
+        val phoneNumber = findViewById<TextInputEditText>(R.id.loginPhoneNumberInputSIM1)
         phoneNumber.isEnabled = false
+
+        val phoneNumberLayoutSIM2 = findViewById<TextInputLayout>(R.id.loginPhoneNumberLayoutSIM2)
+        phoneNumberLayoutSIM2.error = null
+
+        val phoneNumberSIM2 = findViewById<TextInputEditText>(R.id.loginPhoneNumberInputSIM2)
+        phoneNumberSIM2.isEnabled = false
 
         val resetView = fun () {
             apiKey.isEnabled = true
             serverUrl.isEnabled = true
             progressBar.visibility = View.INVISIBLE
             phoneNumber.isEnabled = true
+            phoneNumberSIM2.isEnabled = true
             loginButton().isEnabled = true
         }
 
@@ -117,6 +135,18 @@ class LoginActivity : AppCompatActivity() {
             Timber.e("phone number [${phoneNumber.text.toString()}] is not valid")
             resetView()
             phoneNumberLayout.error = "Invalid E.164 phone number"
+            return
+        }
+
+        if (
+            SmsManagerService.isDualSIM(this) && (
+                    !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumberSIM2.text.toString()) ||
+                    !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumberSIM2.text.toString())
+            )
+        ) {
+            Timber.e("phone number [${phoneNumberSIM2.text.toString()}] is not valid")
+            resetView()
+            phoneNumberLayoutSIM2.error = "Invalid E.164 phone number"
             return
         }
 
@@ -157,7 +187,15 @@ class LoginActivity : AppCompatActivity() {
                     phoneNumber.text.toString(),
                     this.resources.configuration.locales.get(0).country
                 )
-                Settings.setOwnerAsync(this, e164PhoneNumber)
+                Settings.setSIM1PhoneNumber(this, e164PhoneNumber)
+
+                if(SmsManagerService.isDualSIM(this)) {
+                    val sim2PhoneNumber = PhoneNumberUtils.formatNumberToE164(
+                        phoneNumberSIM2.text.toString(),
+                        this.resources.configuration.locales.get(0).country
+                    )
+                    Settings.setSIM2PhoneNumber(this, sim2PhoneNumber)
+                }
 
                 Timber.d("login successfully redirecting to main view")
                 redirectToMain()

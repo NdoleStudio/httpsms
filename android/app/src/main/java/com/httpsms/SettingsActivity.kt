@@ -47,6 +47,11 @@ class SettingsActivity : AppCompatActivity() {
                 Timber.d("logging out user")
                 Settings.setApiKeyAsync(this, null)
                 Settings.setOwnerAsync(this, null)
+                Settings.setSIM1PhoneNumber(this, null)
+                Settings.setSIM2PhoneNumber(this, null)
+                Settings.setActiveStatusAsync(this, true)
+                Settings.setIncomingActiveSIM1(this, true)
+                Settings.setIncomingActiveSIM2(this, true)
                 Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
                 redirectToLogin()
             }
