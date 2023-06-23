@@ -449,6 +449,7 @@ func (container *Container) WebhookHandlerValidator() (validator *validators.Web
 	return validators.NewWebhookHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
+		container.PhoneService(),
 	)
 }
 

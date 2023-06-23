@@ -1,8 +1,6 @@
 package requests
 
 import (
-	"strings"
-
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/google/uuid"
@@ -16,18 +14,18 @@ type WebhookUpdate struct {
 
 // Sanitize sets defaults to WebhookUpdate
 func (input *WebhookUpdate) Sanitize() WebhookUpdate {
-	input.URL = strings.TrimSpace(input.URL)
-	input.Events = input.removeStringDuplicates(input.Events)
+	input.WebhookStore.Sanitize()
 	return *input
 }
 
 // ToUpdateParams converts WebhookUpdate to services.WebhookUpdateParams
 func (input *WebhookUpdate) ToUpdateParams(user entities.AuthUser) *services.WebhookUpdateParams {
 	return &services.WebhookUpdateParams{
-		UserID:     user.ID,
-		WebhookID:  uuid.MustParse(input.WebhookID),
-		SigningKey: input.SigningKey,
-		URL:        input.URL,
-		Events:     input.Events,
+		UserID:       user.ID,
+		WebhookID:    uuid.MustParse(input.WebhookID),
+		SigningKey:   input.SigningKey,
+		URL:          input.URL,
+		PhoneNumbers: input.PhoneNumbers,
+		Events:       input.Events,
 	}
 }

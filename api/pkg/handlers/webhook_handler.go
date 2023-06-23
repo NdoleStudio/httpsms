@@ -154,21 +154,21 @@ func (h *WebhookHandler) Store(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	if errors := h.validator.ValidateStore(ctx, request.Sanitize()); len(errors) != 0 {
+	if errors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while storing webhook [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing webhook")
 	}
 
-	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 1})
+	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 3})
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot index webhooks for user [%s]", h.userIDFomContext(c))))
 		return h.responsePaymentRequired(c, "You can't create more than 1 webhook contact us to upgrade your account.")
 	}
 
-	if len(webhooks) > 0 {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] wants to create more than 1 webhook", h.userIDFomContext(c))))
-		return h.responsePaymentRequired(c, "You can't create more than 1 webhook contact us to upgrade your account.")
+	if len(webhooks) > 1 {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] wants to create more than 2 webhooks", h.userIDFomContext(c))))
+		return h.responsePaymentRequired(c, "You can't create more than 2 webhooks contact us to upgrade your account.")
 	}
 
 	webhook, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
@@ -208,7 +208,7 @@ func (h *WebhookHandler) Update(c *fiber.Ctx) error {
 	}
 
 	request.WebhookID = c.Params("webhookID")
-	if errors := h.validator.ValidateUpdate(ctx, request.Sanitize()); len(errors) != 0 {
+	if errors := h.validator.ValidateUpdate(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating webhook")

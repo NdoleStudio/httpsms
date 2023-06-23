@@ -442,6 +442,20 @@
                 hint="Select multiple httpSMS events to watch for"
                 persistent-hint
               ></v-select>
+              <v-select
+                v-model="activeWebhook.phone_numbers"
+                :items="phoneNumbers"
+                label="Phone Numbers"
+                multiple
+                outlined
+                persistent-placeholder
+                class="mt-6"
+                dense
+                :error="errorMessages.has('phone_numbers')"
+                :error-messages="errorMessages.get('phone_numbers')"
+                hint="Select multiple phone numbers to watch for events"
+                persistent-hint
+              ></v-select>
             </v-col>
           </v-row>
         </v-card-text>
@@ -450,7 +464,6 @@
             v-if="!activeWebhook.id"
             :icon="mdiContentSave"
             :loading="updatingWebhook"
-            small
             @click="createWebhook"
           >
             Save Webhook
@@ -641,6 +654,7 @@ export default Vue.extend({
         id: null,
         url: '',
         signing_key: '',
+        phone_numbers: [],
         events: ['message.phone.received'],
       },
       activeDiscord: {
@@ -676,6 +690,11 @@ export default Vue.extend({
     timezones() {
       return Intl.supportedValuesOf('timeZone')
     },
+    phoneNumbers() {
+      return this.$store.getters.getPhones.map((phone) => {
+        return phone.phone_number
+      })
+    },
   },
   mounted() {
     this.$store.dispatch('clearAxiosError')
@@ -704,6 +723,7 @@ export default Vue.extend({
       this.activeWebhook = {
         id: webhook.id,
         url: webhook.url,
+        phone_numbers: webhook.phone_numbers,
         signing_key: webhook.signing_key,
         events: webhook.events,
       }
@@ -731,6 +751,9 @@ export default Vue.extend({
         id: null,
         url: '',
         signing_key: '',
+        phone_numbers: this.$store.getters.getPhones.map(
+          (phone) => phone.phone_number
+        ),
         events: ['message.phone.received'],
       }
       this.showWebhookEdit = true

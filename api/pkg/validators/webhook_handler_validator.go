@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/services"
+	"github.com/palantir/stacktrace"
+
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -14,18 +19,21 @@ import (
 // WebhookHandlerValidator validates models used in handlers.WebhookHandler
 type WebhookHandlerValidator struct {
 	validator
-	logger telemetry.Logger
-	tracer telemetry.Tracer
+	logger       telemetry.Logger
+	tracer       telemetry.Tracer
+	phoneService *services.PhoneService
 }
 
 // NewWebhookHandlerValidator creates a new handlers.WebhookHandler validator
 func NewWebhookHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
+	phoneService *services.PhoneService,
 ) (v *WebhookHandlerValidator) {
 	return &WebhookHandlerValidator{
-		logger: logger.WithService(fmt.Sprintf("%T", v)),
-		tracer: tracer,
+		logger:       logger.WithService(fmt.Sprintf("%T", v)),
+		tracer:       tracer,
+		phoneService: phoneService,
 	}
 }
 
@@ -54,7 +62,10 @@ func (validator *WebhookHandlerValidator) ValidateIndex(_ context.Context, reque
 }
 
 // ValidateStore validates the requests.WebhookStore request
-func (validator *WebhookHandlerValidator) ValidateStore(_ context.Context, request requests.WebhookStore) url.Values {
+func (validator *WebhookHandlerValidator) ValidateStore(ctx context.Context, userID entities.UserID, request requests.WebhookStore) url.Values {
+	ctx, span := validator.tracer.Start(ctx)
+	defer span.End()
+
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
@@ -72,13 +83,32 @@ func (validator *WebhookHandlerValidator) ValidateStore(_ context.Context, reque
 				"required",
 				webhookEventsRule,
 			},
+			"phone_numbers": []string{
+				"required",
+				multipleContactPhoneNumberRule,
+			},
 		},
 	})
-	return v.ValidateStruct()
+
+	result := v.ValidateStruct()
+	if len(result) > 0 {
+		return result
+	}
+
+	for _, address := range request.PhoneNumbers {
+		_, err := validator.phoneService.Load(ctx, userID, address)
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+			result.Add("from", fmt.Sprintf("The phone number [%s] is not available in your account. Install the android app on your phone to store a webhook with this phone number", address))
+		}
+	}
+	return result
 }
 
 // ValidateUpdate validates the requests.WebhookUpdate request
-func (validator *WebhookHandlerValidator) ValidateUpdate(_ context.Context, request requests.WebhookUpdate) url.Values {
+func (validator *WebhookHandlerValidator) ValidateUpdate(ctx context.Context, userID entities.UserID, request requests.WebhookUpdate) url.Values {
+	ctx, span := validator.tracer.Start(ctx)
+	defer span.End()
+
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
@@ -100,7 +130,23 @@ func (validator *WebhookHandlerValidator) ValidateUpdate(_ context.Context, requ
 				"required",
 				webhookEventsRule,
 			},
+			"phone_numbers": []string{
+				"required",
+				multipleContactPhoneNumberRule,
+			},
 		},
 	})
-	return v.ValidateStruct()
+
+	result := v.ValidateStruct()
+	if len(result) > 0 {
+		return result
+	}
+
+	for _, address := range request.PhoneNumbers {
+		_, err := validator.phoneService.Load(ctx, userID, address)
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+			result.Add("from", fmt.Sprintf("The phone number [%s] is not available in your account. Install the android app on your phone to store a webhook with this phone number", address))
+		}
+	}
+	return result
 }

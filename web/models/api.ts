@@ -208,6 +208,8 @@ export interface EntitiesWebhook {
   events: string[]
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
+  /** @example ["[+18005550199","+18005550100]"] */
+  phone_numbers: string[]
   /** @example "DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY" */
   signing_key: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
@@ -327,12 +329,16 @@ export interface RequestsUserUpdate {
 
 export interface RequestsWebhookStore {
   events: string[]
+  /** @example ["+18005550100","+18005550100"] */
+  phone_numbers: string[]
   signing_key: string
   url: string
 }
 
 export interface RequestsWebhookUpdate {
   events: string[]
+  /** @example ["+18005550100","+18005550100"] */
+  phone_numbers: string[]
   signing_key: string
   url: string
 }

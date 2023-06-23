@@ -87,10 +87,11 @@ func (service *WebhookService) Delete(ctx context.Context, userID entities.UserI
 
 // WebhookStoreParams are parameters for creating a new entities.Webhook
 type WebhookStoreParams struct {
-	UserID     entities.UserID
-	SigningKey string
-	URL        string
-	Events     pq.StringArray
+	UserID       entities.UserID
+	SigningKey   string
+	URL          string
+	PhoneNumbers pq.StringArray
+	Events       pq.StringArray
 }
 
 // Store a new entities.Webhook
@@ -101,13 +102,14 @@ func (service *WebhookService) Store(ctx context.Context, params *WebhookStorePa
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	webhook := &entities.Webhook{
-		ID:         uuid.New(),
-		UserID:     params.UserID,
-		URL:        params.URL,
-		SigningKey: params.SigningKey,
-		Events:     params.Events,
-		CreatedAt:  time.Now().UTC(),
-		UpdatedAt:  time.Now().UTC(),
+		ID:           uuid.New(),
+		UserID:       params.UserID,
+		URL:          params.URL,
+		PhoneNumbers: params.PhoneNumbers,
+		SigningKey:   params.SigningKey,
+		Events:       params.Events,
+		CreatedAt:    time.Now().UTC(),
+		UpdatedAt:    time.Now().UTC(),
 	}
 
 	if err := service.repository.Save(ctx, webhook); err != nil {
@@ -121,11 +123,12 @@ func (service *WebhookService) Store(ctx context.Context, params *WebhookStorePa
 
 // WebhookUpdateParams are parameters for updating an entities.Webhook
 type WebhookUpdateParams struct {
-	UserID     entities.UserID
-	SigningKey string
-	URL        string
-	Events     pq.StringArray
-	WebhookID  uuid.UUID
+	UserID       entities.UserID
+	SigningKey   string
+	URL          string
+	Events       pq.StringArray
+	PhoneNumbers pq.StringArray
+	WebhookID    uuid.UUID
 }
 
 // Update an entities.Webhook
@@ -142,6 +145,7 @@ func (service *WebhookService) Update(ctx context.Context, params *WebhookUpdate
 	webhook.URL = params.URL
 	webhook.SigningKey = params.SigningKey
 	webhook.Events = params.Events
+	webhook.PhoneNumbers = params.PhoneNumbers
 
 	if err = service.repository.Save(ctx, webhook); err != nil {
 		msg := fmt.Sprintf("cannot save webhook with id [%s] after update", webhook.ID)
