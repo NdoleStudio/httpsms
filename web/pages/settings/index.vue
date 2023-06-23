@@ -723,7 +723,9 @@ export default Vue.extend({
       this.activeWebhook = {
         id: webhook.id,
         url: webhook.url,
-        phone_numbers: webhook.phone_numbers,
+        phone_numbers: webhook.phone_numbers.filter(
+          (x) => this.phoneNumbers.find((y) => y === x) !== undefined
+        ),
         signing_key: webhook.signing_key,
         events: webhook.events,
       }
