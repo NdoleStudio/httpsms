@@ -161,12 +161,12 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
     }
 
 
-    fun updatePhone(phoneNumber: String, fcmToken: String, isDualSIM: Boolean): Boolean {
+    fun updatePhone(phoneNumber: String, fcmToken: String, sim: String): Boolean {
         val body = """
             {
               "fcm_token": "$fcmToken",
               "phone_number": "$phoneNumber",
-              "is_dual_sim": $isDualSIM
+              "sim": "$sim"
             }
         """.trimIndent()
 

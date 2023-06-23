@@ -24,14 +24,17 @@ type PhoneUpsert struct {
 
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 
-	// IsDualSIM is true if the phone has more than one SIM active
-	IsDualSIM bool `json:"is_dual_sim" example:"false"`
+	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
+	SIM string `json:"sim" example:"SIM1"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
 func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 	input.FcmToken = strings.TrimSpace(input.FcmToken)
 	input.PhoneNumber = input.sanitizeAddress(input.PhoneNumber)
+	if input.SIM == "" {
+		input.SIM = entities.SIM1.String()
+	}
 	return *input
 }
 
@@ -71,6 +74,6 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) 
 		MaxSendAttempts:           maxSendAttempts,
 		FcmToken:                  fcmToken,
 		UserID:                    user.ID,
-		IsDualSIM:                 input.IsDualSIM,
+		SIM:                       entities.SIM(input.SIM),
 	}
 }

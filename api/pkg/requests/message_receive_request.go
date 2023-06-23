@@ -18,7 +18,7 @@ type MessageReceive struct {
 	To      string `json:"to" example:"+18005550100"`
 	Content string `json:"content" example:"This is a sample text message received on a phone"`
 	// SIM card that received the message
-	SIM entities.SIM `json:"sim" example:"DEFAULT"`
+	SIM entities.SIM `json:"sim" example:"SIM1"`
 	// Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
 	Timestamp time.Time `json:"timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
 }
@@ -27,8 +27,8 @@ type MessageReceive struct {
 func (input *MessageReceive) Sanitize() MessageReceive {
 	input.To = input.sanitizeAddress(input.To)
 	input.From = input.sanitizeAddress(input.From)
-	if strings.TrimSpace(string(input.SIM)) == "" {
-		input.SIM = entities.SIMDefault
+	if strings.TrimSpace(string(input.SIM)) == "" || input.SIM == ("DEFAULT") {
+		input.SIM = entities.SIM1
 	}
 	return *input
 }

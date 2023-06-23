@@ -300,7 +300,6 @@ type MessageSendParams struct {
 	Contact           string
 	Content           string
 	Source            string
-	SIM               entities.SIM
 	UserID            entities.UserID
 	RequestReceivedAt time.Time
 }
@@ -312,15 +311,17 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
+	sendAttempts, sim := service.phoneSettings(ctx, params.UserID, phonenumbers.Format(&params.Owner, phonenumbers.E164))
+
 	eventPayload := events.MessageAPISentPayload{
 		MessageID:         uuid.New(),
 		UserID:            params.UserID,
-		MaxSendAttempts:   service.maxSendAttempts(ctx, params.UserID, phonenumbers.Format(&params.Owner, phonenumbers.E164)),
+		MaxSendAttempts:   sendAttempts,
 		Owner:             phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
-		SIM:               params.SIM,
+		SIM:               sim,
 	}
 
 	event, err := service.createMessageAPISentEvent(params.Source, eventPayload)
@@ -684,7 +685,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 	return nil
 }
 
-func (service *MessageService) maxSendAttempts(ctx context.Context, userID entities.UserID, owner string) uint {
+func (service *MessageService) phoneSettings(ctx context.Context, userID entities.UserID, owner string) (uint, entities.SIM) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -694,10 +695,10 @@ func (service *MessageService) maxSendAttempts(ctx context.Context, userID entit
 	if err != nil {
 		msg := fmt.Sprintf("cannot load phone for userID [%s] and owner [%s]. using default max send attempt of 2", userID, owner)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return 2
+		return 2, entities.SIM1
 	}
 
-	return phone.MaxSendAttemptsSanitized()
+	return phone.MaxSendAttemptsSanitized(), phone.SIM
 }
 
 // storeSentMessage a new message

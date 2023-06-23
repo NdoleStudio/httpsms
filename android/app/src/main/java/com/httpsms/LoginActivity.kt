@@ -78,11 +78,11 @@ class LoginActivity : AppCompatActivity() {
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             Timber.e("cannot get owner because permissions are not granted")
-            return Settings.getOwner(this)
+            return Settings.getSIM1PhoneNumber(this)
         }
 
         if (telephonyManager.line1Number != null && telephonyManager.line1Number  != "") {
-            Settings.setOwnerAsync(context, telephonyManager.line1Number)
+            Settings.setSIM1PhoneNumber(context, telephonyManager.line1Number)
         }
 
         return telephonyManager.line1Number

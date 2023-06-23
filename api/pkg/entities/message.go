@@ -68,9 +68,12 @@ const (
 	SIM1 = SIM("SIM1")
 	// SIM2 use the SIM card in slot 2 to send the message
 	SIM2 = SIM("SIM2")
-	// SIMDefault use the SIM card configured as default communication card to send the message
-	SIMDefault = SIM("DEFAULT")
 )
+
+// String gets the string representation of the SIM
+func (s SIM) String() string {
+	return string(s)
+}
 
 // Message represents a message sent between 2 phone numbers
 type Message struct {

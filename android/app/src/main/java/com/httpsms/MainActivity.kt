@@ -6,7 +6,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -28,10 +27,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.httpsms.receivers.SimChangeReceiver
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
 import okhttp3.internal.format
@@ -70,7 +67,6 @@ class MainActivity : AppCompatActivity() {
         setVersion()
         setHeartbeatListener(this)
         setBatteryOptimizationListener()
-        registerReceivers()
     }
 
     override fun onResume() {
@@ -164,13 +160,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
-            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getOwnerOrDefault(context), Settings.getFcmToken(context) ?: "", SmsManagerService.isDualSIM(this))
+            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getSIM1PhoneNumber(context), Settings.getFcmToken(context) ?: "", Constants.SIM1)
             if (updated) {
                 Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
-                Timber.i("fcm token uploaded successfully")
+                Timber.i("fcm token uploaded successfully for sim1")
                 return@Thread
             }
-            Timber.e("could not update fcm token")
+            Timber.e("could not update fcm token for sim 1")
+
+            if (Settings.isDualSIM(context)) {
+                val sim2Updated = HttpSmsApiService.create(context).updatePhone(Settings.getSIM2PhoneNumber(context), Settings.getFcmToken(context) ?: "", Constants.SIM2)
+                if (sim2Updated) {
+                    Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
+                    Timber.i("fcm token uploaded successfully for sim2")
+                    return@Thread
+                }
+                Timber.e("could not update fcm token for sim 2")
+            }
         }.start()
     }
 
@@ -190,9 +196,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.mainSettingsButton).setOnClickListener { onSettingsClick() }
     }
 
-    private fun registerReceivers() {
-        registerReceiver(SimChangeReceiver(), IntentFilter("android.intent.action.SIM_STATE_CHANGED"))
-    }
     private fun onSettingsClick() {
         Timber.d("settings button clicked")
         val switchActivityIntent = Intent(this, SettingsActivity::class.java)
@@ -220,6 +223,7 @@ class MainActivity : AppCompatActivity() {
                     Settings.setActiveStatusAsync(context, isChecked)
                 }
                 if (isChecked) {
+                    Settings.setIncomingActiveSIM1(context, true)
                     startStickyNotification(context)
                 }
             }
@@ -268,7 +272,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getPhoneNumber(context: Context): String {
-        return Settings.getOwnerOrDefault(context)
+        return Settings.getSIM1PhoneNumber(context)
     }
 
     private fun requestPermissions(context:Context) {
@@ -351,7 +355,7 @@ class MainActivity : AppCompatActivity() {
         Thread {
             var error: String? = null
             try {
-                HttpSmsApiService.create(context).storeHeartbeat(Settings.getOwnerOrDefault(context))
+                HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM1PhoneNumber(context))
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)

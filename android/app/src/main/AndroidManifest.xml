@@ -3,6 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
 
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -71,16 +75,6 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
-
-        <receiver android:enabled="true"
-                  android:name=".receivers.SimChangeReceiver"
-                  android:exported="true"
-                  android:permission="android.permission.READ_PHONE_STATE">
-            <intent-filter>
-                <action android:name="android.intent.action.SIM_STATE_CHANGED"/>
-            </intent-filter>
-        </receiver>
-
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

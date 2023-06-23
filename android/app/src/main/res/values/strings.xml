@@ -20,8 +20,8 @@
     <string name="main_app_settings">App Settings</string>
     <string name="settings_sim1">SIM1</string>
     <string name="settings_sim_2">SIM2</string>
-    <string name="settings_incoming_messages_sim1">Incoming Messages (SIM1)</string>
-    <string name="settings_incoming_messages_sim2">Incoming Messages (SIM2)</string>
+    <string name="settings_incoming_messages_sim1">EnableIncoming Messages (SIM1)</string>
+    <string name="settings_incoming_messages_sim2">Enable Incoming Messages (SIM2)</string>
     <string name="login_phone_number_sim1">Phone Number (SIM1)</string>
     <string name="login_phone_number_sim2">Phone Number (SIM2)</string>
 </resources>

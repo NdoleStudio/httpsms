@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
-
 	"github.com/google/uuid"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -296,7 +294,6 @@ func (h *DiscordHandler) createRequest(payload map[string]any) requests.MessageS
 		From:    getOption("from"),
 		To:      getOption("to"),
 		Content: getOption("message"),
-		SIM:     entities.SIMDefault,
 	}
 }
 

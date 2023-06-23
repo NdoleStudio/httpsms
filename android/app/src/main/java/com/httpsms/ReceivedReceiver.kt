@@ -24,10 +24,22 @@ class ReceivedReceiver: BroadcastReceiver()
             smsBody += smsMessage.messageBody
         }
 
+        var sim = Constants.SIM1
+        var owner = Settings.getSIM1PhoneNumber(context)
+        if (intent.getIntExtra("simSlot", 1) > 1 && Settings.isDualSIM(context)) {
+            owner = Settings.getSIM2PhoneNumber(context)
+            sim = Constants.SIM2
+        }
+
+        if (!Settings.isIncomingMessageEnabled(context, sim)) {
+            Timber.w("[${sim}] is not active for incoming messages")
+            return
+        }
+
         handleMessageReceived(
             context,
             smsSender,
-            Settings.getOwnerOrDefault(context),
+            owner,
             smsBody
         )
     }

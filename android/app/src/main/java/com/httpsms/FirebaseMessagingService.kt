@@ -58,7 +58,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
         Thread {
             try {
-                HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getOwnerOrDefault(applicationContext))
+                HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext))
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)
@@ -88,10 +88,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         Settings.setFcmTokenAsync(this, token)
 
         if (Settings.isLoggedIn(this)) {
-            Timber.d("updating phone with new fcm token")
-            HttpSmsApiService.create(this).updatePhone(Settings.getOwnerOrDefault(this), token, SmsManagerService.isDualSIM(this))
+            Timber.d("updating SIM1 phone with new fcm token")
+            HttpSmsApiService.create(this).updatePhone(Settings.getSIM1PhoneNumber(this), token, Constants.SIM1)
         }
 
+        if(Settings.isDualSIM(this)) {
+            Timber.d("updating SIM2 phone with new fcm token")
+            HttpSmsApiService.create(this).updatePhone(Settings.getSIM2PhoneNumber(this), token, Constants.SIM2)
+        }
     }
 
     private fun initTimber() {

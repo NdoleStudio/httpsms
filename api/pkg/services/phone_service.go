@@ -73,8 +73,9 @@ type PhoneUpsertParams struct {
 	FcmToken                  *string
 	MessagesPerMinute         *uint
 	MaxSendAttempts           *uint
+	WebhookURL                *string
 	MessageExpirationDuration *time.Duration
-	IsDualSIM                 bool
+	SIM                       entities.SIM
 	Source                    string
 	UserID                    entities.UserID
 }
@@ -107,7 +108,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 		UserID:    phone.UserID,
 		Timestamp: phone.UpdatedAt,
 		Owner:     phone.PhoneNumber,
-		IsDualSIM: phone.IsDualSIM,
+		SIM:       phone.SIM,
 	})
 	if err != nil {
 		msg := "cannot create event when phone is updated"
@@ -147,7 +148,7 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 		UserID:    phone.UserID,
 		Timestamp: phone.UpdatedAt,
 		Owner:     phone.PhoneNumber,
-		IsDualSIM: phone.IsDualSIM,
+		SIM:       phone.SIM,
 	})
 	if err != nil {
 		msg := "cannot create event when phone is deleted"
@@ -175,7 +176,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		MessagesPerMinute:        10,
 		MessageExpirationSeconds: 15 * 60, // 15 minutes
 		MaxSendAttempts:          2,
-		IsDualSIM:                params.IsDualSIM,
+		SIM:                      params.SIM,
 		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),
@@ -213,7 +214,7 @@ func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertPar
 		phone.MessageExpirationSeconds = uint(params.MessageExpirationDuration.Seconds())
 	}
 
-	phone.IsDualSIM = params.IsDualSIM
+	phone.SIM = params.SIM
 
 	return phone
 }

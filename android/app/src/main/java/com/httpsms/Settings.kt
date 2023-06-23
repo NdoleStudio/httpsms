@@ -6,9 +6,6 @@ import timber.log.Timber
 import java.net.URI
 
 object Settings {
-    private const val DEFAULT_PHONE_NUMBER = "NOT_FOUND"
-
-    private const val SETTINGS_OWNER = "SETTINGS_OWNER"
     private const val SETTINGS_SIM1_PHONE_NUMBER = "SETTINGS_SIM1_PHONE_NUMBER"
     private const val SETTINGS_SIM2_PHONE_NUMBER = "SETTINGS_SIM2_PHONE_NUMBER"
     private const val SETTINGS_ACTIVE = "SETTINGS_ACTIVE_STATUS"
@@ -22,28 +19,40 @@ object Settings {
     private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
     private const val SETTINGS_HEARTBEAT_TIMESTAMP = "SETTINGS_HEARTBEAT_TIMESTAMP"
 
-    fun getOwner(context: Context): String? {
-        Timber.d(Settings::getOwner.name)
+    fun getSIM1PhoneNumber(context: Context): String {
+        Timber.d(Settings::getSIM1PhoneNumber.name)
 
         val owner = PreferenceManager
             .getDefaultSharedPreferences(context)
-            .getString(this.SETTINGS_OWNER, null)
+            .getString(this.SETTINGS_SIM1_PHONE_NUMBER, null)
 
         if (owner == null) {
-            Timber.e("cannot get owner from preference [${this.SETTINGS_OWNER}]")
-            return null
+            Timber.e("cannot get owner from preference [${this.SETTINGS_SIM1_PHONE_NUMBER}]")
+            return ""
         }
 
-        Timber.d("SETTINGS_OWNER: [$owner]")
+        Timber.d("SETTINGS_SIM1_PHONE_NUMBER: [$owner]")
+        return owner
+    }
+
+    fun getSIM2PhoneNumber(context: Context): String {
+        Timber.d(Settings::getSIM2PhoneNumber.name)
+
+        val owner = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getString(this.SETTINGS_SIM2_PHONE_NUMBER, null)
+
+        if (owner == null) {
+            Timber.e("cannot get owner from preference [${this.SETTINGS_SIM2_PHONE_NUMBER}]")
+            return ""
+        }
+
+        Timber.d("SETTINGS_SIM2_PHONE_NUMBER: [$owner]")
         return owner
     }
 
     fun hasOwner(context: Context): Boolean {
-        return getOwner(context) != null
-    }
-
-    fun getOwnerOrDefault(context: Context): String {
-        return getOwner(context) ?: return DEFAULT_PHONE_NUMBER
+        return getSIM1PhoneNumber(context) != ""
     }
 
     fun getFcmTokenLastUpdateTimestamp(context: Context): Long {
@@ -67,31 +76,21 @@ object Settings {
             .apply()
     }
 
-
-    fun setOwnerAsync(context: Context, owner: String?) {
-        Timber.d(Settings::setOwnerAsync.name)
-
-        PreferenceManager.getDefaultSharedPreferences(context)
-            .edit()
-            .putString(this.SETTINGS_OWNER, owner)
-            .apply()
-    }
-
     fun setSIM1PhoneNumber(context: Context, owner: String?) {
-        Timber.d(Settings::setOwnerAsync.name)
+        Timber.d(Settings::setSIM1PhoneNumber.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
-            .putString(this.SETTINGS_OWNER, owner)
+            .putString(this.SETTINGS_SIM1_PHONE_NUMBER, owner)
             .apply()
     }
 
     fun setSIM2PhoneNumber(context: Context, owner: String?) {
-        Timber.d(Settings::setOwnerAsync.name)
+        Timber.d(Settings::setSIM2PhoneNumber.name)
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
-            .putString(this.SETTINGS_OWNER, owner)
+            .putString(this.SETTINGS_SIM2_PHONE_NUMBER, owner)
             .apply()
     }
 
@@ -104,7 +103,7 @@ object Settings {
         return activeStatus
     }
 
-    fun getIncomingMessageEnabled(context: Context, sim: String): Boolean {
+    fun isIncomingMessageEnabled(context: Context, sim: String): Boolean {
         var setting = this.SETTINGS_SIM1_INCOMING_ACTIVE
         if (sim == Constants.SIM2) {
             setting = this.SETTINGS_SIM2_INCOMING_ACTIVE
@@ -160,6 +159,10 @@ object Settings {
 
     fun isLoggedIn(context: Context): Boolean {
        return getApiKey(context) != null
+    }
+
+    fun isDualSIM(context: Context): Boolean {
+        return getSIM1PhoneNumber(context) != "" && getSIM2PhoneNumber(context) != ""
     }
 
     private fun getApiKey(context: Context): String?{

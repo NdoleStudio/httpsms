@@ -1,7 +1,6 @@
 package requests
 
 import (
-	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -17,8 +16,6 @@ type MessageBulkSend struct {
 	From    string   `json:"from" example:"+18005550199"`
 	To      []string `json:"to" example:"+18005550100,+18005550100"`
 	Content string   `json:"content" example:"This is a sample text message"`
-	// sim card to use to send the message
-	SIM entities.SIM `json:"sim" example:"DEFAULT"`
 }
 
 // Sanitize sets defaults to MessageReceive
@@ -29,9 +26,6 @@ func (input *MessageBulkSend) Sanitize() MessageBulkSend {
 	}
 	input.To = to
 	input.From = input.sanitizeAddress(input.From)
-	if strings.TrimSpace(string(input.SIM)) == "" {
-		input.SIM = entities.SIMDefault
-	}
 	return *input
 }
 
@@ -47,7 +41,6 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 			RequestReceivedAt: time.Now().UTC(),
 			Contact:           to,
 			Content:           input.Content,
-			SIM:               input.SIM,
 		})
 	}
 

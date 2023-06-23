@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
+
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -72,6 +75,10 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 			"max_send_attempts": []string{
 				"min:0",
 				"max:5",
+			},
+			"sim": []string{
+				"required",
+				"in:" + strings.Join([]string{entities.SIM1.String(), entities.SIM2.String()}, ","),
 			},
 			"message_expiration_seconds": []string{
 				"min:60",
