@@ -94,15 +94,6 @@ object Settings {
             .apply()
     }
 
-    fun getActiveStatus(context: Context): Boolean {
-        val activeStatus = PreferenceManager
-            .getDefaultSharedPreferences(context)
-            .getBoolean(this.SETTINGS_ACTIVE,true)
-
-        Timber.d("SETTINGS_ACTIVE: [$activeStatus]")
-        return activeStatus
-    }
-
     fun isIncomingMessageEnabled(context: Context, sim: String): Boolean {
         var setting = this.SETTINGS_SIM1_INCOMING_ACTIVE
         if (sim == Constants.SIM2) {
@@ -148,12 +139,17 @@ object Settings {
         return activeStatus
     }
 
-    fun setActiveStatusAsync(context: Context, status: Boolean) {
+    fun setActiveStatusAsync(context: Context, status: Boolean, sim: String) {
         Timber.d(Settings::setActiveStatusAsync.name)
+
+        var setting = this.SETTINGS_SIM1_ACTIVE
+        if (sim == Constants.SIM2) {
+            setting = this.SETTINGS_SIM2_ACTIVE
+        }
 
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
-            .putBoolean(this.SETTINGS_ACTIVE, status)
+            .putBoolean(setting, status)
             .apply()
     }
 

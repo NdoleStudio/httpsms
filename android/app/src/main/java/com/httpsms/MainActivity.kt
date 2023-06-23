@@ -27,6 +27,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.httpsms.services.StickyNotificationService
@@ -54,51 +55,79 @@ class MainActivity : AppCompatActivity() {
 
         createChannel()
 
-        requestPermissions(this)
-
-        setOwner(getPhoneNumber(this))
+        setCardContent(this)
         setActiveStatus(this)
         registerListeners()
         refreshToken(this)
 
         startStickyNotification(this)
         scheduleHeartbeatWorker(this)
-        setLastHeartbeatTimestamp(this)
         setVersion()
         setHeartbeatListener(this)
         setBatteryOptimizationListener()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        requestPermissions(this)
     }
 
     override fun onResume() {
         super.onResume()
         Timber.d( "on activity resume")
         redirectToLogin()
-        setOwner(getPhoneNumber(this))
         refreshToken(this)
-        setLastHeartbeatTimestamp(this)
+        setCardContent(this)
         setBatteryOptimizationListener()
-    }
-
-    private fun setLastHeartbeatTimestamp(context: Context) {
-        val refreshTimestampView = findViewById<TextView>(R.id.cardRefreshTime)
-        val timestamp = Settings.getHeartbeatTimestamp(context)
-
-        if (timestamp == 0.toLong()) {
-            Timber.d("no heartbeat timestamp has been set")
-            refreshTimestampView.text = "--"
-            return
-        }
-
-        val timestampZdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC)
-        val localTime = timestampZdt.withZoneSameInstant(ZoneId.systemDefault())
-        Timber.d("heartbeat timestamp in UTC is [${timestampZdt}] and local is [$localTime]")
-
-        refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
     }
 
     private fun setVersion() {
         val appVersionView = findViewById<TextView>(R.id.mainAppVersion)
         appVersionView.text = format(getString(R.string.app_version), BuildConfig.VERSION_NAME)
+    }
+
+    private fun setCardContent(context: Context) {
+        val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
+        titleText.text = PhoneNumberUtils.formatNumber(Settings.getSIM1PhoneNumber(this), Locale.getDefault().country)
+
+        val titleTextSIM2 = findViewById<TextView>(R.id.cardPhoneNumberSIM2)
+        titleTextSIM2.text = PhoneNumberUtils.formatNumber(Settings.getSIM2PhoneNumber(this), Locale.getDefault().country)
+
+        setLastHeartbeatTimestamp(context)
+
+        if(!Settings.isDualSIM(context)) {
+            val sim2Card = findViewById<MaterialCardView>(R.id.mainPhoneCardSIM2)
+            sim2Card.visibility = MaterialCardView.GONE
+        }
+    }
+
+    private fun requestPermissions(context:Context) {
+        if(!Settings.isLoggedIn(context)) {
+            return
+        }
+
+        Timber.d("requesting permissions")
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            permissions.entries.forEach {
+                Timber.d("${it.key} = ${it.value}")
+            }
+        }
+
+        var permissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_PHONE_NUMBERS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_PHONE_STATE
+        )
+
+        if(Build.VERSION.SDK_INT >= 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        requestPermissionLauncher.launch(permissions)
+
+        Timber.d("creating permissions launcher")
     }
 
     private fun scheduleHeartbeatWorker(context: Context) {
@@ -123,7 +152,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startStickyNotification(context: Context) {
         Timber.d("starting foreground service")
-        if(!Settings.getActiveStatus(context)) {
+        if(!Settings.getActiveStatus(context, Constants.SIM1) && !Settings.getActiveStatus(context, Constants.SIM2)) {
             Timber.d("active status is false, not starting foreground service")
             return
         }
@@ -159,23 +188,21 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        Thread {
-            val updated = HttpSmsApiService.create(context).updatePhone(Settings.getSIM1PhoneNumber(context), Settings.getFcmToken(context) ?: "", Constants.SIM1)
-            if (updated) {
-                Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
-                Timber.i("fcm token uploaded successfully for sim1")
-                return@Thread
-            }
-            Timber.e("could not update fcm token for sim 1")
+        sendFCMToken(currentTimeStamp, context, Settings.getSIM1PhoneNumber(context), Constants.SIM1)
+        if (Settings.isDualSIM(context)) {
+            sendFCMToken(currentTimeStamp, context, Settings.getSIM2PhoneNumber(context), Constants.SIM2)
+        }
+    }
 
-            if (Settings.isDualSIM(context)) {
-                val sim2Updated = HttpSmsApiService.create(context).updatePhone(Settings.getSIM2PhoneNumber(context), Settings.getFcmToken(context) ?: "", Constants.SIM2)
-                if (sim2Updated) {
-                    Settings.setFcmTokenLastUpdateTimestampAsync(context, currentTimeStamp)
-                    Timber.i("fcm token uploaded successfully for sim2")
-                    return@Thread
-                }
-                Timber.e("could not update fcm token for sim 2")
+    private fun sendFCMToken(timestamp: Long, context:Context, phoneNumber: String, sim: String) {
+        Thread {
+            val updated = HttpSmsApiService.create(context).updatePhone(phoneNumber, Settings.getFcmToken(context) ?: "", sim)
+            if (updated) {
+                Settings.setFcmTokenLastUpdateTimestampAsync(context, timestamp)
+                Timber.i("[${sim}] FCM token uploaded successfully")
+                return@Thread
+            } else {
+                Timber.e("[${sim}] could not update FCM token")
             }
         }.start()
     }
@@ -213,17 +240,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun setActiveStatus(context: Context) {
         val switch = findViewById<SwitchMaterial>(R.id.cardSwitch)
-        switch.isChecked = Settings.getActiveStatus(context)
+        switch.isChecked = Settings.getActiveStatus(context, Constants.SIM1)
         switch.setOnCheckedChangeListener{
             _, isChecked ->
             run {
                 if (isChecked && !hasAllPermissions(context)) {
                     Toast.makeText(context, "PERMISSIONS_NOT_GRANTED", Toast.LENGTH_SHORT).show()
                 } else {
-                    Settings.setActiveStatusAsync(context, isChecked)
+                    Settings.setActiveStatusAsync(context, isChecked, Constants.SIM1)
                 }
                 if (isChecked) {
                     Settings.setIncomingActiveSIM1(context, true)
+                    startStickyNotification(context)
+                }
+            }
+        }
+
+        if (!Settings.isDualSIM(context)) {
+            return
+        }
+
+        val switchSIM2 = findViewById<SwitchMaterial>(R.id.cardSwitchSIM2)
+        switchSIM2.isChecked = Settings.getActiveStatus(context, Constants.SIM2)
+        switchSIM2.setOnCheckedChangeListener{
+                _, isChecked ->
+            run {
+                if (isChecked && !hasAllPermissions(context)) {
+                    Toast.makeText(context, "PERMISSIONS_NOT_GRANTED", Toast.LENGTH_SHORT).show()
+                } else {
+                    Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2)
+                }
+                if (isChecked) {
+                    Settings.setIncomingActiveSIM2(context, true)
                     startStickyNotification(context)
                 }
             }
@@ -253,9 +301,26 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun setOwner(phoneNumber: String) {
-        val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
-        titleText.text = PhoneNumberUtils.formatNumber(phoneNumber, Locale.getDefault().country)
+    private fun setLastHeartbeatTimestamp(context: Context) {
+        val refreshTimestampView = findViewById<TextView>(R.id.cardRefreshTime)
+        val timestamp = Settings.getHeartbeatTimestamp(context)
+
+        if (timestamp == 0.toLong()) {
+            Timber.d("no heartbeat timestamp has been set")
+            refreshTimestampView.text = "--"
+            return
+        }
+
+        val timestampZdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC)
+        val localTime = timestampZdt.withZoneSameInstant(ZoneId.systemDefault())
+        Timber.d("heartbeat timestamp in UTC is [${timestampZdt}] and local is [$localTime]")
+
+        refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+
+        if (Settings.isDualSIM(context)) {
+            val refreshTimestampViewSIM2 = findViewById<TextView>(R.id.cardRefreshTimeSIM2)
+            refreshTimestampViewSIM2.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        }
     }
 
     private fun createChannel() {
@@ -269,40 +334,6 @@ class MainActivity : AppCompatActivity() {
         // or other notification behaviors after this
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(mChannel)
-    }
-
-    private fun getPhoneNumber(context: Context): String {
-        return Settings.getSIM1PhoneNumber(context)
-    }
-
-    private fun requestPermissions(context:Context) {
-        if(!Settings.isLoggedIn(context)) {
-            return
-        }
-
-        Timber.d("requesting permissions")
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            permissions.entries.forEach {
-                Timber.d("${it.key} = ${it.value}")
-                setOwner(getPhoneNumber(context))
-            }
-        }
-
-        var permissions = arrayOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_PHONE_NUMBERS,
-            Manifest.permission.READ_SMS,
-            Manifest.permission.READ_PHONE_STATE
-        )
-
-        if(Build.VERSION.SDK_INT >= 33) {
-            permissions += Manifest.permission.POST_NOTIFICATIONS
-        }
-
-        requestPermissionLauncher.launch(permissions)
-
-        Timber.d("creating permissions launcher")
     }
 
     @SuppressLint("BatteryLife")

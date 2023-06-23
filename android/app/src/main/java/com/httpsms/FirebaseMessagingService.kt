@@ -123,13 +123,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 return Result.failure()
             }
 
-            if (!Settings.getActiveStatus(applicationContext)) {
-                Timber.w("user is not active, stopping processing")
+            val message = getMessage(applicationContext, messageID) ?: return Result.failure()
+            if (!Settings.getActiveStatus(applicationContext, message.sim)) {
+                Timber.w("[${message.sim}] SIM is not active, stopping processing")
                 handleFailed(applicationContext, messageID)
                 return Result.failure()
             }
 
-            val message = getMessage(applicationContext, messageID) ?: return Result.failure()
             val parts = getMessageParts(applicationContext, message)
             if (parts.size == 1) {
                 return handleSingleMessage(applicationContext, message)

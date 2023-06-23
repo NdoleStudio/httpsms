@@ -69,7 +69,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
-    fun receive(from: String, to: String, content: String, timestamp: ZonedDateTime) {
+    fun receive(sim: String, from: String, to: String, content: String, timestamp: ZonedDateTime) {
         val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
         val timestampString = formatter.format(timestamp).replace("+", "Z")
 
@@ -77,6 +77,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         val body = """
             {
               "content": "${StringEscapeUtils.escapeJson(content)}",
+              "sim": "$sim",
               "from": "$from",
               "timestamp": "$timestampString",
               "to": "$to"

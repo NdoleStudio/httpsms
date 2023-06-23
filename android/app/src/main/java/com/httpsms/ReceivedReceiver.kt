@@ -26,7 +26,7 @@ class ReceivedReceiver: BroadcastReceiver()
 
         var sim = Constants.SIM1
         var owner = Settings.getSIM1PhoneNumber(context)
-        if (intent.getIntExtra("simSlot", 1) > 1 && Settings.isDualSIM(context)) {
+        if (intent.getIntExtra("android.telephony.extra.SLOT_INDEX", 0) > 0 && Settings.isDualSIM(context)) {
             owner = Settings.getSIM2PhoneNumber(context)
             sim = Constants.SIM2
         }
@@ -38,28 +38,29 @@ class ReceivedReceiver: BroadcastReceiver()
 
         handleMessageReceived(
             context,
+            sim,
             smsSender,
             owner,
             smsBody
         )
     }
 
-    private fun handleMessageReceived(context: Context, from: String, to : String, content: String) {
+    private fun handleMessageReceived(context: Context, sim: String, from: String, to : String, content: String) {
         val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
 
         if (!Settings.isLoggedIn(context)) {
-            Timber.w("user is not logged in")
+            Timber.w("[${sim}] user is not logged in")
             return
         }
 
-        if (!Settings.getActiveStatus(context)) {
-            Timber.w("user is not active")
+        if (!Settings.getActiveStatus(context, sim)) {
+            Timber.w("[${sim}] user is not active")
             return
         }
 
         Thread {
-            Timber.i("forwarding received message from [${from}]")
-            HttpSmsApiService.create(context).receive(from, to, content, timestamp)
+            Timber.i("[${sim}] forwarding received message from [${from}]")
+            HttpSmsApiService.create(context).receive(sim, from, to, content, timestamp)
         }.start()
     }
 }

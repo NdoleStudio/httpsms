@@ -33,23 +33,6 @@
                 placeholder="Enter your message here"
                 label="Content"
               ></v-textarea>
-              <div style="width: 175px">
-                <v-select
-                  v-if="$store.getters.getActivePhone.is_dual_sim"
-                  v-model="simSelected"
-                  :items="simOptions"
-                  item-text="title"
-                  item-value="code"
-                  persistent-hint
-                  return-object
-                  single-line
-                  solo
-                >
-                  <template #append>
-                    <v-icon>{{ mdiSim }}</v-icon>
-                  </template>
-                </v-select>
-              </div>
               <v-btn
                 type="submit"
                 class="primary"

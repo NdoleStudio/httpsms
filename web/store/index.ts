@@ -4,11 +4,11 @@ import { MessageThread } from '~/models/message-thread'
 import { Message } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
 import axios, { setApiKey, setAuthHeader } from '~/plugins/axios'
-import { Phone } from '~/models/phone'
 import { User } from '~/models/user'
 import { BillingUsage } from '~/models/billing'
 import {
   EntitiesDiscord,
+  EntitiesPhone,
   EntitiesWebhook,
   RequestsDiscordStore,
   RequestsDiscordUpdate,
@@ -55,7 +55,7 @@ export type State = {
   billingUsage: BillingUsage | null
   billingUsageHistory: Array<BillingUsage>
   user: User | null
-  phones: Array<Phone>
+  phones: Array<EntitiesPhone>
   threads: Array<MessageThread>
   threadId: string | null
   heartbeat: null | Heartbeat
@@ -149,15 +149,15 @@ export const getters = {
     return state.owner
   },
 
-  getActivePhone(state: State): Phone | null {
+  getActivePhone(state: State): EntitiesPhone | null {
     return (
-      state.phones.find((x: Phone) => {
+      state.phones.find((x: EntitiesPhone) => {
         return x.phone_number === state.owner
       }) ?? null
     )
   },
 
-  getPhones(state: State): Array<Phone> {
+  getPhones(state: State): Array<EntitiesPhone> {
     return state.phones
   },
 
@@ -233,7 +233,7 @@ export const mutations = {
   disableNotification(state: State) {
     state.notification.active = false
   },
-  setPhones(state: State, payload: Array<Phone>) {
+  setPhones(state: State, payload: Array<EntitiesPhone>) {
     state.phones = payload
 
     const owner = payload.find((x) => x.phone_number === state.owner)
@@ -327,7 +327,7 @@ export const actions = {
 
     if (context.state.user && context.state.user.active_phone_id) {
       const phone = response.data.data.find(
-        (x: Phone) => x.id === context.state.user?.active_phone_id
+        (x: EntitiesPhone) => x.id === context.state.user?.active_phone_id
       )
       if (phone) {
         context.commit('setOwner', phone.phone_number)
@@ -349,10 +349,14 @@ export const actions = {
     context.commit('resetState', false)
   },
 
-  async updatePhone(context: ActionContext<State, State>, phone: Phone) {
+  async updatePhone(
+    context: ActionContext<State, State>,
+    phone: EntitiesPhone
+  ) {
     await axios
       .put(`/v1/phones`, {
         fcm_token: phone.fcm_token,
+        sim: phone.sim,
         phone_number: phone.phone_number,
         message_expiration_seconds: parseInt(
           phone.message_expiration_seconds.toString()
@@ -507,7 +511,7 @@ export const actions = {
       ])
 
       const phone = context.getters.getPhones.find(
-        (x: Phone) => x.id === context.getters.getUser.active_phone_id
+        (x: EntitiesPhone) => x.id === context.getters.getUser.active_phone_id
       )
       if (phone) {
         await context.dispatch('updateUser', {
@@ -559,7 +563,7 @@ export const actions = {
   ) {
     await context.commit('setOwner', payload.owner)
 
-    const phone = context.getters.getActivePhone as Phone | null
+    const phone = context.getters.getActivePhone as EntitiesPhone | null
     if (!phone) {
       return
     }

@@ -320,6 +320,14 @@
                   :value="activePhone.phone_number"
                 >
                 </v-text-field>
+                <v-text-field
+                  outlined
+                  disabled
+                  dense
+                  label="SIM"
+                  :value="activePhone.sim"
+                >
+                </v-text-field>
                 <v-textarea
                   outlined
                   disabled

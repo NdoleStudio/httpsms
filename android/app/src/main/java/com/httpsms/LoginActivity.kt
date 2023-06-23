@@ -5,12 +5,14 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import android.view.View
 import android.webkit.URLUtil
 import android.widget.LinearLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
@@ -32,6 +34,16 @@ class LoginActivity : AppCompatActivity() {
         setServerURL()
     }
 
+    override fun onStart() {
+        super.onStart()
+        Timber.i("on start")
+        requestPermissions()
+    }
+
+    override fun onResume() {
+        super.onResume()
+    }
+
     private fun registerListeners() {
         loginButton().setOnClickListener { onLoginClick() }
     }
@@ -39,8 +51,11 @@ class LoginActivity : AppCompatActivity() {
     private fun disableSim2() {
         if (SmsManagerService.isDualSIM(this)) {
             Timber.d("dual sim detected")
+            val sim2Layout = findViewById<LinearLayout>(R.id.loginPhoneNumberLayoutSIM2)
+            sim2Layout.visibility = LinearLayout.VISIBLE
             return
         }
+        Timber.e("is dual sim ${SmsManagerService.isDualSIM(this)}")
         val sim2Layout = findViewById<LinearLayout>(R.id.loginPhoneNumberLayoutSIM2)
         sim2Layout.visibility = View.GONE
     }
@@ -54,7 +69,7 @@ class LoginActivity : AppCompatActivity() {
 
         val phoneInput = findViewById<TextInputEditText>(R.id.loginPhoneNumberInputSIM1)
         phoneInput.setText(phoneNumber)
-        Timber.d("phone number [$phoneNumber] set successfully")
+        Timber.d("[SIM1] phone number [$phoneNumber] set successfully")
     }
 
     private fun setServerURL() {
@@ -86,6 +101,31 @@ class LoginActivity : AppCompatActivity() {
         }
 
         return telephonyManager.line1Number
+    }
+
+    private fun requestPermissions() {
+        Timber.d("requesting permissions")
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            permissions.entries.forEach {
+                Timber.d("${it.key} = ${it.value}")
+            }
+        }
+
+        var permissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_PHONE_NUMBERS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_PHONE_STATE
+        )
+
+        if(Build.VERSION.SDK_INT >= 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        requestPermissionLauncher.launch(permissions)
+
+        Timber.d("creating permissions launcher")
     }
 
 
@@ -132,7 +172,7 @@ class LoginActivity : AppCompatActivity() {
             !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumber.text.toString()) ||
             !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumber.text.toString())
         ) {
-            Timber.e("phone number [${phoneNumber.text.toString()}] is not valid")
+            Timber.e("[SIM1] phone number [${phoneNumber.text.toString()}] is not valid")
             resetView()
             phoneNumberLayout.error = "Invalid E.164 phone number"
             return
@@ -144,7 +184,7 @@ class LoginActivity : AppCompatActivity() {
                     !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumberSIM2.text.toString())
             )
         ) {
-            Timber.e("phone number [${phoneNumberSIM2.text.toString()}] is not valid")
+            Timber.e("[SIM2] phone number [${phoneNumberSIM2.text.toString()}] is not valid")
             resetView()
             phoneNumberLayoutSIM2.error = "Invalid E.164 phone number"
             return

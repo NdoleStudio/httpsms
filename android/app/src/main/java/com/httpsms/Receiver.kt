@@ -16,7 +16,7 @@ object Receiver {
             return false
         }
 
-        if (!Settings.getActiveStatus(context)) {
+        if (!Settings.getActiveStatus(context, Constants.SIM1) && !Settings.getActiveStatus(context, Constants.SIM2)) {
             Timber.w("cannot handle message with id [$messageId] because the user is not active")
             return false
         }

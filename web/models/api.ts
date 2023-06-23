@@ -150,11 +150,9 @@ export interface EntitiesPhone {
   fcm_token: string
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
-  /** @example false */
-  is_dual_sim: boolean
   /**
    * MaxSendAttempts determines how many times to retry sending an SMS message
-   * @example 1
+   * @example 2
    */
   max_send_attempts: number
   /** MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired. */
@@ -163,6 +161,7 @@ export interface EntitiesPhone {
   messages_per_minute: number
   /** @example "+18005550199" */
   phone_number: string
+  sim: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
@@ -196,6 +195,8 @@ export interface EntitiesUser {
   subscription_renews_at: string
   /** @example "on_trial" */
   subscription_status: string
+  /** @example "Europe/Helsinki" */
+  timezone: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string
 }
@@ -238,11 +239,6 @@ export interface RequestsMessageBulkSend {
   content: string
   /** @example "+18005550199" */
   from: string
-  /**
-   * sim card to use to send the message
-   * @example "DEFAULT"
-   */
-  sim: string
   /** @example ["+18005550100","+18005550100"] */
   to: string[]
 }
@@ -272,7 +268,7 @@ export interface RequestsMessageReceive {
   from: string
   /**
    * SIM card that received the message
-   * @example "DEFAULT"
+   * @example "SIM1"
    */
   sim: string
   /**
@@ -289,11 +285,6 @@ export interface RequestsMessageSend {
   content: string
   /** @example "+18005550199" */
   from: string
-  /**
-   * sim card to use to send the message
-   * @example "DEFAULT"
-   */
-  sim: string
   /** @example "+18005550100" */
   to: string
 }
@@ -306,11 +297,6 @@ export interface RequestsMessageThreadUpdate {
 export interface RequestsPhoneUpsert {
   /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
   fcm_token: string
-  /**
-   * IsDualSIM is true if the phone has more than one SIM active
-   * @example false
-   */
-  is_dual_sim: boolean
   /**
    * MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.
    * @example 2
@@ -325,11 +311,18 @@ export interface RequestsPhoneUpsert {
   messages_per_minute: number
   /** @example "+18005550199" */
   phone_number: string
+  /**
+   * SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
+   * @example "SIM1"
+   */
+  sim: string
 }
 
 export interface RequestsUserUpdate {
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   active_phone_id: string
+  /** @example "Europe/Helsinki" */
+  timezone: string
 }
 
 export interface RequestsWebhookStore {

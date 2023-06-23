@@ -112,7 +112,7 @@ export default {
     dataTableItems() {
       return this.heartbeats.map((heartbeat, index) => {
         let interval = 0
-        if (index < 99) {
+        if (index < this.heartbeats.length - 1) {
           interval = this.getDiff(
             heartbeat.timestamp,
             this.heartbeats[index + 1].timestamp
@@ -143,7 +143,7 @@ export default {
           tooltip: {
             callbacks: {
               label: function (context) {
-                if (context.dataIndex === 99) {
+                if (context.dataIndex === context.dataset.data.length - 1) {
                   return '-'
                 }
                 const duration = intervalToDuration({
