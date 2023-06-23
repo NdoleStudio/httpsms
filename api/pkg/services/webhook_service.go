@@ -157,11 +157,11 @@ func (service *WebhookService) Update(ctx context.Context, params *WebhookUpdate
 }
 
 // Send an event to a subscribed webhook
-func (service *WebhookService) Send(ctx context.Context, userID entities.UserID, event cloudevents.Event) error {
+func (service *WebhookService) Send(ctx context.Context, userID entities.UserID, event cloudevents.Event, phoneNumber string) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	webhooks, err := service.repository.LoadByEvent(ctx, userID, event.Type())
+	webhooks, err := service.repository.LoadByEvent(ctx, userID, event.Type(), phoneNumber)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load webhooks for userID [%s] and event [%s]", userID, event.Type())
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))

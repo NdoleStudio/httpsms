@@ -64,12 +64,15 @@ func (repository *gormWebhookRepository) Index(ctx context.Context, userID entit
 	return webhooks, nil
 }
 
-func (repository *gormWebhookRepository) LoadByEvent(ctx context.Context, userID entities.UserID, event string) ([]*entities.Webhook, error) {
+func (repository *gormWebhookRepository) LoadByEvent(ctx context.Context, userID entities.UserID, event string, phoneNumber string) ([]*entities.Webhook, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	webhooks := make([]*entities.Webhook, 0)
-	err := repository.db.Raw("SELECT * FROM webhooks WHERE user_id = ? AND CAST(? as TEXT) = ANY(events)", userID, event).Scan(&webhooks).Error
+	err := repository.db.
+		Raw("SELECT * FROM webhooks WHERE user_id = ? AND CAST(? as TEXT) = ANY(events) AND CAST(? as TEXT) = ANY(phone_numbers)", userID, event, phoneNumber).
+		Scan(&webhooks).
+		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot load webhooks for user with ID [%s] and event [%s]", userID, event)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

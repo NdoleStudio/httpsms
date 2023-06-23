@@ -46,7 +46,7 @@ func (listener *WebhookListener) OnMessagePhoneReceived(ctx context.Context, eve
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err := listener.service.Send(ctx, payload.UserID, event); err != nil {
+	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

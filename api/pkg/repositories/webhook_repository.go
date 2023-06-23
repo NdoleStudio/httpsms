@@ -17,7 +17,7 @@ type WebhookRepository interface {
 	Index(ctx context.Context, userID entities.UserID, params IndexParams) ([]*entities.Webhook, error)
 
 	// LoadByEvent loads webhooks for a user and event.
-	LoadByEvent(ctx context.Context, userID entities.UserID, event string) ([]*entities.Webhook, error)
+	LoadByEvent(ctx context.Context, userID entities.UserID, event string, phoneNumber string) ([]*entities.Webhook, error)
 
 	// Load loads a webhook by ID.
 	Load(ctx context.Context, userID entities.UserID, webhookID uuid.UUID) (*entities.Webhook, error)
