@@ -1,5 +1,6 @@
 package com.httpsms
 
+import android.content.Context
 import android.os.Build
 import com.beust.klaxon.Klaxon
 import okhttp3.MediaType.Companion.toMediaType
@@ -12,7 +13,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class LogtailTree: Timber.DebugTree() {
+class LogtailTree(val context: Context): Timber.DebugTree() {
     private val client = OkHttpClient()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val queue: ConcurrentLinkedQueue<LogEntry> = ConcurrentLinkedQueue<LogEntry>()
@@ -30,6 +31,7 @@ class LogtailTree: Timber.DebugTree() {
             Build.DEVICE,
             Build.VERSION.SDK_INT,
             ZonedDateTime.now(ZoneOffset.UTC).format(formatter),
+            Settings.getUserID(context),
             t
         )
         queue.add(logEntry)
@@ -76,5 +78,6 @@ class LogtailTree: Timber.DebugTree() {
         val device: String,
         val version: Int,
         val dt: String,
+        val userID: String,
         val throwable: Throwable?)
 }

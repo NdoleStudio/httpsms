@@ -93,6 +93,7 @@ class SettingsActivity : AppCompatActivity() {
                 Settings.setActiveStatusAsync(this, true, Constants.SIM2)
                 Settings.setIncomingActiveSIM1(this, true)
                 Settings.setIncomingActiveSIM2(this, true)
+                Settings.setUserID(this, null)
                 Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
                 redirectToLogin()
             }

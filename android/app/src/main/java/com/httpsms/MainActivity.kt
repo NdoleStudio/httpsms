@@ -198,8 +198,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun sendFCMToken(timestamp: Long, context:Context, phoneNumber: String, sim: String) {
         Thread {
-            val updated = HttpSmsApiService.create(context).updatePhone(phoneNumber, Settings.getFcmToken(context) ?: "", sim)
-            if (updated) {
+            val phone = HttpSmsApiService.create(context).updatePhone(phoneNumber, Settings.getFcmToken(context) ?: "", sim)
+            if (phone != null) {
+                Settings.setUserID(context, phone.userID)
                 Settings.setFcmTokenLastUpdateTimestampAsync(context, timestamp)
                 Timber.i("[${sim}] FCM token uploaded successfully")
                 return@Thread
@@ -217,7 +218,7 @@ class MainActivity : AppCompatActivity() {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
-            Timber.plant(LogtailTree())
+            Timber.plant(LogtailTree(this.applicationContext))
         }
     }
 

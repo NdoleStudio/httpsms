@@ -318,23 +318,26 @@ fetch('https://api.httpsms.com/v1/messages/send', {
                   <v-tab-item value="php">
                     <pre v-highlight class="php w-full mt-n2 mb-n13">
 <code>&#60;?php
-// initialize guzzle client https://github.com/guzzle/guzzle
-$client = new GuzzleHttp\Client();
-
 $apiKey = "Get API Key from https://httpsms.com/settings";
 
-$res = $client->request('POST', 'https://api.httpsms.com/v1/messages/send', [
-  'headers' => [
-    'x-api-key' => $apiKey,
-  ],
-  'json'    => [
-    'content' => 'This is a sample text message',
-    'from'    => "+18005550199",
-    'to'      => '+18005550100'
-  ]
-]);
+$options = array(
+  'http' => array(
+    'method'  => 'POST',
+    'content' => json_encode( [
+        'content' => 'This is a sample text message',
+        'from'    => "+18005550199", // Put the correct phone number here
+        'to'      => "+18005550100"  // Put the correct phone number here
+    ]),
+    'header'=>  "Content-Type: application/json\r\n" .
+                "Accept: application/json\r\n" .
+                "x-api-key: $apiKey\r\n"
+    )
+);
 
-echo $res->getBody();
+$context  = stream_context_create( $options );
+$result = file_get_contents( "https://api.httpsms.com/v1/messages/send", false, $context );
+
+echo $result;
 </code>
                     </pre>
                   </v-tab-item>

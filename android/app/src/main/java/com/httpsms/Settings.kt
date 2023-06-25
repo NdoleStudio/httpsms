@@ -15,6 +15,7 @@ object Settings {
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_SERVER_URL = "SETTINGS_SERVER_URL"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
+    private const val SETTINGS_USER_ID = "SETTINGS_USER_ID"
     private const val SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP = "SETTINGS_FCM_TOKEN_UPDATE_TIMESTAMP"
     private const val SETTINGS_HEARTBEAT_TIMESTAMP = "SETTINGS_HEARTBEAT_TIMESTAMP"
 
@@ -177,6 +178,22 @@ object Settings {
 
     fun getApiKeyOrDefault(context:Context): String {
         return getApiKey(context) ?: ""
+    }
+
+    fun setUserID(context:Context, userID: String?) {
+        Timber.d(Settings::setUserID.name)
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(this.SETTINGS_USER_ID, userID)
+            .apply()
+    }
+
+    // getUserID don't log here as this will create recursion on the LogTail sink
+    fun getUserID(context:Context): String  {
+        val userID = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getString(this.SETTINGS_USER_ID,null)
+        return userID ?: ""
     }
 
     fun getServerUrlOrDefault(context:Context): URI {
