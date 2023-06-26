@@ -31,7 +31,7 @@
     "core-js": "^3.31.0",
     "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
-    "firebase": "^9.22.2",
+    "firebase": "^9.23.0",
     "firebaseui": "^6.0.2",
     "libphonenumber-js": "^1.10.36",
     "moment": "^2.29.4",
