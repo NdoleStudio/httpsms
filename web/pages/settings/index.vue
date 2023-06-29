@@ -91,7 +91,7 @@
                 >Documentation</v-btn
               >
             </div>
-            <h5 class="text-h4 mb-3 mt-12">Webhooks</h5>
+            <h5 id="webhooks" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
               the android phone receives an SMS message we can forward the
@@ -152,10 +152,18 @@
                 </tbody>
               </template>
             </v-simple-table>
-            <v-btn color="primary" @click="onWebhookCreate">
-              <v-icon left>{{ mdiLinkVariant }}</v-icon>
-              Add webhook
-            </v-btn>
+            <div class="d-flex">
+              <v-btn color="primary" @click="onWebhookCreate">
+                <v-icon left>{{ mdiLinkVariant }}</v-icon>
+                Add webhook
+              </v-btn>
+              <v-btn
+                v-if="$vuetify.breakpoint.lgAndUp"
+                class="ml-4"
+                href="https://docs.httpsms.com/webhooks/introduction"
+                >Documentation</v-btn
+              >
+            </div>
             <h5 class="text-h4 mb-3 mt-12">Discord Integration</h5>
             <p class="text--secondary">
               Send and receive SMS messages without leaving your discord server
@@ -220,7 +228,7 @@
               ></v-img>
               Add Discord
             </v-btn>
-            <h5 class="text-h4 mb-3 mt-12">Phones</h5>
+            <h5 id="phones" class="text-h4 mb-3 mt-12">Phones</h5>
             <p class="text--secondary">
               List of mobile phones which are registered for sending and
               receiving SMS messages.
