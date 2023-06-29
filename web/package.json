@@ -31,7 +31,7 @@
     "core-js": "^3.31.0",
     "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
-    "firebase": "^9.22.2",
+    "firebase": "^9.23.0",
     "firebaseui": "^6.0.2",
     "libphonenumber-js": "^1.10.36",
     "moment": "^2.29.4",
@@ -45,12 +45,12 @@
     "vue-server-renderer": "2.6.14",
     "vue-template-compiler": "^2.6.14",
     "vuetify": "^2.6.15",
-    "webpack": "^5.87.0"
+    "webpack": "^5.88.0"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.22.5",
-    "@commitlint/cli": "^17.6.5",
-    "@commitlint/config-conventional": "^17.6.5",
+    "@commitlint/cli": "^17.6.6",
+    "@commitlint/config-conventional": "^17.6.6",
     "@nuxt/types": "^2.17.0",
     "@nuxt/typescript-build": "^2.1.0",
     "@nuxtjs/eslint-config-typescript": "^12.0.0",
@@ -63,7 +63,7 @@
     "eslint": "^8.43.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-nuxt": "^4.0.0",
-    "eslint-plugin-vue": "^9.15.0",
+    "eslint-plugin-vue": "^9.15.1",
     "jest": "^27.4.4",
     "lint-staged": "^13.2.2",
     "postcss-html": "^1.5.0",
