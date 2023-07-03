@@ -385,28 +385,26 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
                   <v-tab-item value="java">
                     <pre v-highlight class="java w-full mt-n2 mb-n13">
 <code>var client = HttpClient.newHttpClient();
-
 var apiKey = "Get API Key from https://httpsms.com/settings";
 
-JSONObject request = new JSONObject();
-request.put("content", "This is a sample text message");
-request.put("from", "+18005550199")
-request.put("to", "+18005550100")
+var payload = """
+        {
+            "content": "This is a sample text message",
+            "from": "+18005550199",
+            "to": "+18005550100"
+        }
+        """;
 
-// create a request
 var request = HttpRequest.newBuilder()
-  .uri(URI.create("https://api.httpsms.com/v1/messages/send"))
-  .header("accept", "application/json")
-  .header("x-api-key", apiKey)
-  .setEntity(new StringEntity(request.toString()))
-  .POST()
-  .build();
+        .uri(URI.create("https://api.httpsms.com/v1/messages/send"))
+        .header("accept", "application/json")
+        .header("Content-Type", "application/json")
+        .header("x-api-key", apiKey)
+        .POST(HttpRequest.BodyPublishers.ofString(payload))
+        .build();
 
-// use the client to send the request
-var response = client.send(request, new JsonBodyHandler&#60;&#62;(APOD.class));
-
-// the response:
-System.out.println(response.body().get());
+var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());
 </code>
                     </pre>
                   </v-tab-item>
