@@ -115,7 +115,7 @@
                 <v-icon>{{ mdiGithub }}</v-icon>
               </v-btn>
               <v-btn
-                href="https://discord.gg/6qdbY6XN"
+                href="https://discord.gg/kGk8HVqeEZ"
                 icon
                 large
                 color="#5865f2"
