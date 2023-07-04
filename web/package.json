@@ -33,7 +33,7 @@
     "dotenv": "^16.3.1",
     "firebase": "^9.23.0",
     "firebaseui": "^6.0.2",
-    "libphonenumber-js": "^1.10.36",
+    "libphonenumber-js": "^1.10.37",
     "moment": "^2.29.4",
     "nuxt": "^2.17.0",
     "nuxt-highlightjs": "^1.0.3",
