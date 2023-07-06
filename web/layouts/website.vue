@@ -4,22 +4,17 @@
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
-            <v-badge class="logo-badge mt-5" color="primary" content="Beta">
-              <nuxt-link to="/" class="text-decoration-none d-flex">
-                <v-avatar
-                  v-if="$vuetify.breakpoint.lgAndUp"
-                  tile
-                  size="33"
-                  class="mt-1"
-                >
-                  <v-img
-                    contain
-                    :src="require('@/assets/img/logo.svg')"
-                  ></v-img>
-                </v-avatar>
-                <h3 class="text-h4 ml-1 text--primary">httpSMS</h3>
-              </nuxt-link>
-            </v-badge>
+            <nuxt-link to="/" class="text-decoration-none d-flex">
+              <v-avatar
+                v-if="$vuetify.breakpoint.lgAndUp"
+                tile
+                size="33"
+                class="mt-1"
+              >
+                <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
+              </v-avatar>
+              <h3 class="text-h4 ml-1 text--primary">httpSMS</h3>
+            </nuxt-link>
             <v-spacer></v-spacer>
             <v-btn
               v-if="$vuetify.breakpoint.lgAndUp"
@@ -73,22 +68,12 @@
       <v-container>
         <v-row>
           <v-col cols="12" md="3">
-            <v-badge
-              class="logo-badge"
-              :class="{ 'logo-badge--mobile': $vuetify.breakpoint.mdAndDown }"
-              color="primary"
-              content="Beta"
-            >
-              <nuxt-link to="/" class="text-decoration-none d-flex">
-                <v-avatar tile size="33" class="mt-1">
-                  <v-img
-                    contain
-                    :src="require('@/assets/img/logo.svg')"
-                  ></v-img>
-                </v-avatar>
-                <h3 class="text-h4 ml-1 text--primary">httpSMS</h3>
-              </nuxt-link>
-            </v-badge>
+            <nuxt-link to="/" class="text-decoration-none d-flex">
+              <v-avatar tile size="33" class="mt-1">
+                <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
+              </v-avatar>
+              <h3 class="text-h4 ml-1 text--primary">httpSMS</h3>
+            </nuxt-link>
             <p class="subtitle-2 text--secondary">
               Made With <v-icon color="#cf1112">{{ mdiHeart }}</v-icon> in
               Tallinn
