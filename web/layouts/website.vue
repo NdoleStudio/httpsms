@@ -4,16 +4,16 @@
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
-            <nuxt-link to="/" class="text-decoration-none d-flex">
-              <v-avatar
-                v-if="$vuetify.breakpoint.lgAndUp"
-                tile
-                size="33"
-                class="mt-1"
-              >
+            <nuxt-link to="/" class="text-decoration-none mt-5 d-flex">
+              <v-avatar tile size="33" class="mt-1">
                 <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
               </v-avatar>
-              <h3 class="text-h4 ml-1 text--primary">httpSMS</h3>
+              <h3
+                v-if="$vuetify.breakpoint.lgAndUp"
+                class="text-h4 ml-1 text--primary"
+              >
+                httpSMS
+              </h3>
             </nuxt-link>
             <v-spacer></v-spacer>
             <v-btn
