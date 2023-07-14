@@ -115,7 +115,7 @@ export default {
         if (index < this.heartbeats.length - 1) {
           interval = this.getDiff(
             heartbeat.timestamp,
-            this.heartbeats[index + 1].timestamp
+            this.heartbeats[index + 1].timestamp,
           )
         }
         const item = {
@@ -148,7 +148,7 @@ export default {
                 }
                 const duration = intervalToDuration({
                   start: new Date(
-                    context.dataset.data[context.dataIndex + 1].x
+                    context.dataset.data[context.dataIndex + 1].x,
                   ),
                   end: new Date(context.dataset.data[context.dataIndex].x),
                 })
