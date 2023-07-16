@@ -42,6 +42,7 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        setPhoneNumber()
     }
 
     private fun registerListeners() {
@@ -160,8 +161,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
         if (
-            !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumber.text.toString()) ||
-            !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumber.text.toString())
+            !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumber.text.toString().trim()) ||
+            !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumber.text.toString().trim())
         ) {
             Timber.e("[SIM1] phone number [${phoneNumber.text.toString()}] is not valid")
             resetView()
@@ -171,8 +172,8 @@ class LoginActivity : AppCompatActivity() {
 
         if (
             SmsManagerService.isDualSIM(this) && (
-                    !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumberSIM2.text.toString()) ||
-                    !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumberSIM2.text.toString())
+                    !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumberSIM2.text.toString().trim()) ||
+                    !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumberSIM2.text.toString().trim())
             )
         ) {
             Timber.e("[SIM2] phone number [${phoneNumberSIM2.text.toString()}] is not valid")
@@ -214,17 +215,11 @@ class LoginActivity : AppCompatActivity() {
                 Settings.setApiKeyAsync(this, apiKey.text.toString())
                 Settings.setServerUrlAsync(this, serverUrl.text.toString().trim())
 
-                val e164PhoneNumber = PhoneNumberUtils.formatNumberToE164(
-                    phoneNumber.text.toString(),
-                    this.resources.configuration.locales.get(0).country
-                )
+                val e164PhoneNumber = formatE164(phoneNumber.text.toString().trim())
                 Settings.setSIM1PhoneNumber(this, e164PhoneNumber)
 
                 if(SmsManagerService.isDualSIM(this)) {
-                    val sim2PhoneNumber = PhoneNumberUtils.formatNumberToE164(
-                        phoneNumberSIM2.text.toString(),
-                        this.resources.configuration.locales.get(0).country
-                    )
+                    val sim2PhoneNumber = formatE164(phoneNumberSIM2.text.toString().trim())
                     Settings.setSIM2PhoneNumber(this, sim2PhoneNumber)
                 }
 
@@ -240,6 +235,19 @@ class LoginActivity : AppCompatActivity() {
         }.start()
     }
 
+    private fun formatE164(number: String): String {
+        return PhoneNumberUtils.formatNumberToE164(
+            addPlus(number.trim()),
+            this.resources.configuration.locales.get(0).country
+        )
+    }
+
+    private fun addPlus(number: String): String {
+        if (number.startsWith("+")) {
+            return number
+        }
+        return "+$number"
+    }
 
     private fun redirectToMain() {
         if (!Settings.isLoggedIn(this)) {
