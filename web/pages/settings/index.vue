@@ -680,7 +680,13 @@ export default Vue.extend({
       updatingPhone: false,
       updatingDiscord: false,
       loadingDiscordIntegrations: false,
-      events: ['message.phone.received'],
+      events: [
+        'message.phone.received',
+        'message.phone.sent',
+        'message.phone.delivered',
+        'message.send.failed',
+        'message.send.expired',
+      ],
     }
   },
   head() {
@@ -732,7 +738,7 @@ export default Vue.extend({
         id: webhook.id,
         url: webhook.url,
         phone_numbers: webhook.phone_numbers.filter(
-          (x) => this.phoneNumbers.find((y) => y === x) !== undefined,
+          (x) => this.phoneNumbers.find((y) => y === x) !== undefined
         ),
         signing_key: webhook.signing_key,
         events: webhook.events,
@@ -762,9 +768,15 @@ export default Vue.extend({
         url: '',
         signing_key: '',
         phone_numbers: this.$store.getters.getPhones.map(
-          (phone) => phone.phone_number,
+          (phone) => phone.phone_number
         ),
-        events: ['message.phone.received'],
+        events: [
+          'message.phone.received',
+          'message.phone.sent',
+          'message.phone.delivered',
+          'message.send.failed',
+          'message.send.expired',
+        ],
       }
       this.showWebhookEdit = true
       this.resetErrors()

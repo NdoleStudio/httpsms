@@ -79,7 +79,11 @@ func init() {
 		}
 
 		validEvents := map[string]bool{
-			events.EventTypeMessagePhoneReceived: true,
+			events.EventTypeMessagePhoneReceived:  true,
+			events.EventTypeMessagePhoneSent:      true,
+			events.EventTypeMessagePhoneDelivered: true,
+			events.EventTypeMessageSendFailed:     true,
+			events.EventTypeMessageSendExpired:    true,
 		}
 
 		for _, event := range input {
