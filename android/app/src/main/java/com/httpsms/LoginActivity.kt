@@ -83,12 +83,6 @@ class LoginActivity : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.READ_SMS
-            ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_PHONE_NUMBERS
-            ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_PHONE_STATE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             Timber.e("cannot get owner because permissions are not granted")
@@ -113,9 +107,7 @@ class LoginActivity : AppCompatActivity() {
         var permissions = arrayOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_PHONE_NUMBERS,
             Manifest.permission.READ_SMS,
-            Manifest.permission.READ_PHONE_STATE
         )
 
         if(Build.VERSION.SDK_INT >= 33) {

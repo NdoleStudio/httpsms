@@ -118,9 +118,7 @@ class MainActivity : AppCompatActivity() {
         var permissions = arrayOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_PHONE_NUMBERS,
-            Manifest.permission.READ_SMS,
-            Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.READ_SMS
         )
 
         if(Build.VERSION.SDK_INT >= 33) {
