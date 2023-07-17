@@ -9,6 +9,7 @@ import android.os.Build
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import androidx.core.app.ActivityCompat
+import timber.log.Timber
 
 
 class SmsManagerService {
@@ -27,6 +28,7 @@ class SmsManagerService {
         fun isDualSIM(context: Context) : Boolean {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED
             ) {
+                Timber.w("cannot check if dual sim, no permission")
                 return false
             }
             val localSubscriptionManager: SubscriptionManager = if (Build.VERSION.SDK_INT < 31) {

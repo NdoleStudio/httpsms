@@ -13,10 +13,12 @@ import (
 // MessageBulkSend is the payload for sending bulk SMS messages
 type MessageBulkSend struct {
 	request
-	From      string   `json:"from" example:"+18005550199"`
-	To        []string `json:"to" example:"+18005550100,+18005550100"`
-	RequestID string   `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
-	Content   string   `json:"content" example:"This is a sample text message"`
+	From    string   `json:"from" example:"+18005550199"`
+	To      []string `json:"to" example:"+18005550100,+18005550100"`
+	Content string   `json:"content" example:"This is a sample text message"`
+
+	// RequestID is an optional parameter used to track a request from the client's perspective
+	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
 }
 
 // Sanitize sets defaults to MessageReceive

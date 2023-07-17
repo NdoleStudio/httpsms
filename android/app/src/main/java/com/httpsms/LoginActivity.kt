@@ -43,6 +43,7 @@ class LoginActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         setPhoneNumber()
+        disableSim2()
     }
 
     private fun registerListeners() {
@@ -56,6 +57,7 @@ class LoginActivity : AppCompatActivity() {
             sim2Layout.visibility = LinearLayout.VISIBLE
             return
         }
+        Timber.d("single sim detected")
         val sim2Layout = findViewById<LinearLayout>(R.id.loginPhoneNumberLayoutSIM2)
         sim2Layout.visibility = View.GONE
     }
@@ -108,6 +110,7 @@ class LoginActivity : AppCompatActivity() {
         var permissions = arrayOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.READ_SMS,
         )
 

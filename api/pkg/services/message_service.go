@@ -668,14 +668,15 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 	}
 
 	event, err := service.createMessageSendExpiredEvent(params.Source, events.MessageSendExpiredPayload{
-		MessageID: message.ID,
-		Owner:     message.Owner,
-		Contact:   message.Contact,
-		RequestID: message.RequestID,
-		UserID:    message.UserID,
-		Timestamp: time.Now().UTC(),
-		Content:   message.Content,
-		SIM:       message.SIM,
+		MessageID:        message.ID,
+		Owner:            message.Owner,
+		Contact:          message.Contact,
+		RequestID:        message.RequestID,
+		SendAttemptCount: message.SendAttemptCount,
+		UserID:           message.UserID,
+		Timestamp:        time.Now().UTC(),
+		Content:          message.Content,
+		SIM:              message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message with id [%s]", events.EventTypeMessageSendExpired, params.MessageID)
