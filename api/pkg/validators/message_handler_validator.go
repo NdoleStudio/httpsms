@@ -82,6 +82,9 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 				"required",
 				contactPhoneNumberRule,
 			},
+			"request_id": []string{
+				"max:255",
+			},
 			"from": []string{
 				"required",
 				phoneNumberRule,

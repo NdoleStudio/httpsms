@@ -15,6 +15,7 @@ const EventTypeMessageSendExpired = "message.send.expired"
 type MessageSendExpiredPayload struct {
 	MessageID uuid.UUID       `json:"message_id"`
 	Owner     string          `json:"owner"`
+	RequestID *string         `json:"request_id"`
 	Contact   string          `json:"contact"`
 	UserID    entities.UserID `json:"user_id"`
 	Timestamp time.Time       `json:"timestamp"`

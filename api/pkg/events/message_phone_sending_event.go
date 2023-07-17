@@ -14,6 +14,7 @@ const EventTypeMessagePhoneSending = "message.phone.sending"
 type MessagePhoneSendingPayload struct {
 	ID        uuid.UUID       `json:"id"`
 	UserID    entities.UserID `json:"user_id"`
+	RequestID *string         `json:"request_id"`
 	Timestamp time.Time       `json:"timestamp"`
 	Owner     string          `json:"owner"`
 	Contact   string          `json:"contact"`

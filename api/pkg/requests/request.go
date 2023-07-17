@@ -28,7 +28,7 @@ func (input *request) sanitizeAddress(value string) string {
 	return value
 }
 
-// getLimit gets the take as a string
+// sanitizeBool sanitizes a boolean string
 func (input *request) sanitizeBool(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "1" || strings.ToLower(value) == "true" {
@@ -40,6 +40,14 @@ func (input *request) sanitizeBool(value string) string {
 	}
 
 	return value
+}
+
+func (input *request) sanitizeStringPointer(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func (input *request) removeStringDuplicates(values []string) []string {

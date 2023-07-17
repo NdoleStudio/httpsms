@@ -221,6 +221,7 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 		ID:        message.ID,
 		Owner:     message.Owner,
 		UserID:    message.UserID,
+		RequestID: message.RequestID,
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
 		Content:   message.Content,
@@ -246,6 +247,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 		ID:        message.ID,
 		Owner:     message.Owner,
 		UserID:    message.UserID,
+		RequestID: message.RequestID,
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
 		Content:   message.Content,
@@ -278,6 +280,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		ErrorMessage: errorMessage,
 		Timestamp:    params.Timestamp,
 		Contact:      message.Contact,
+		RequestID:    message.RequestID,
 		UserID:       message.UserID,
 		Content:      message.Content,
 		SIM:          message.SIM,
@@ -300,6 +303,7 @@ type MessageSendParams struct {
 	Contact           string
 	Content           string
 	Source            string
+	RequestID         *string
 	UserID            entities.UserID
 	RequestReceivedAt time.Time
 }
@@ -317,6 +321,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		MessageID:         uuid.New(),
 		UserID:            params.UserID,
 		MaxSendAttempts:   sendAttempts,
+		RequestID:         params.RequestID,
 		Owner:             phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
@@ -666,6 +671,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		MessageID: message.ID,
 		Owner:     message.Owner,
 		Contact:   message.Contact,
+		RequestID: message.RequestID,
 		UserID:    message.UserID,
 		Timestamp: time.Now().UTC(),
 		Content:   message.Content,
@@ -714,6 +720,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 		Contact:           payload.Contact,
 		UserID:            payload.UserID,
 		Content:           payload.Content,
+		RequestID:         payload.RequestID,
 		SIM:               payload.SIM,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,

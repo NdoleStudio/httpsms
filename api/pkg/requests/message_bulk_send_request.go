@@ -13,9 +13,10 @@ import (
 // MessageBulkSend is the payload for sending bulk SMS messages
 type MessageBulkSend struct {
 	request
-	From    string   `json:"from" example:"+18005550199"`
-	To      []string `json:"to" example:"+18005550100,+18005550100"`
-	Content string   `json:"content" example:"This is a sample text message"`
+	From      string   `json:"from" example:"+18005550199"`
+	To        []string `json:"to" example:"+18005550100,+18005550100"`
+	RequestID string   `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
+	Content   string   `json:"content" example:"This is a sample text message"`
 }
 
 // Sanitize sets defaults to MessageReceive
@@ -37,6 +38,7 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 		result = append(result, services.MessageSendParams{
 			Source:            source,
 			Owner:             *from,
+			RequestID:         input.sanitizeStringPointer(input.RequestID),
 			UserID:            userID,
 			RequestReceivedAt: time.Now().UTC(),
 			Contact:           to,
