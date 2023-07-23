@@ -18,7 +18,7 @@ var Version string
 // @contact.name  HTTP SMS
 // @contact.email support@httpsms.com
 //
-// @license.name MIT
+// @license.name AGPL-3.0
 // @license.url  https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
 //
 // @host     api.httpsms.com
