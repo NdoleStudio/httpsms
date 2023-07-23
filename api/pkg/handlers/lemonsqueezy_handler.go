@@ -80,19 +80,26 @@ func (h *LemonsqueezyHandler) handleRequest(ctx context.Context, c *fiber.Ctx) e
 	eventName := c.Get("X-Event-Name")
 	switch eventName {
 	case "subscription_created":
-		var request lemonsqueezy.WebHookRequestSubscription
+		var request lemonsqueezy.WebhookRequestSubscription
 		err := json.Unmarshal(c.Body(), &request)
 		if err != nil {
 			return stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%s] to [%T]", c.Body(), request))
 		}
 		return h.service.HandleSubscriptionCreatedEvent(ctx, c.OriginalURL(), &request)
 	case "subscription_cancelled":
-		var request lemonsqueezy.WebHookRequestSubscription
+		var request lemonsqueezy.WebhookRequestSubscription
 		err := json.Unmarshal(c.Body(), &request)
 		if err != nil {
 			return stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%s] to [%T]", c.Body(), request))
 		}
 		return h.service.HandleSubscriptionCanceledEvent(ctx, c.OriginalURL(), &request)
+	case "subscription_expired":
+		var request lemonsqueezy.WebhookRequestSubscription
+		err := json.Unmarshal(c.Body(), &request)
+		if err != nil {
+			return stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%s] to [%T]", c.Body(), request))
+		}
+		return h.service.HandleSubscriptionExpiredEvent(ctx, c.OriginalURL(), &request)
 	default:
 		return stacktrace.NewError(fmt.Sprintf("invalid event [%s] received with request [%s]", eventName, c.Body()))
 	}
