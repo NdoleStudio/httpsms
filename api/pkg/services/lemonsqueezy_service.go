@@ -40,7 +40,7 @@ func NewLemonsqueezyService(
 }
 
 // HandleSubscriptionCreatedEvent handles the subscription_created lemonsqueezy event
-func (service *LemonsqueezyService) HandleSubscriptionCreatedEvent(ctx context.Context, source string, request *lemonsqueezy.WebHookRequestSubscription) error {
+func (service *LemonsqueezyService) HandleSubscriptionCreatedEvent(ctx context.Context, source string, request *lemonsqueezy.WebhookRequestSubscription) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -68,7 +68,7 @@ func (service *LemonsqueezyService) HandleSubscriptionCreatedEvent(ctx context.C
 }
 
 // HandleSubscriptionCanceledEvent handles the subscription_cancelled lemonsqueezy event
-func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.Context, source string, request *lemonsqueezy.WebHookRequestSubscription) error {
+func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.Context, source string, request *lemonsqueezy.WebhookRequestSubscription) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -102,7 +102,7 @@ func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.
 }
 
 // HandleSubscriptionExpiredEvent handles the subscription_expired lemonsqueezy event
-func (service *LemonsqueezyService) HandleSubscriptionExpiredEvent(ctx context.Context, source string, request *lemonsqueezy.WebHookRequestSubscription) error {
+func (service *LemonsqueezyService) HandleSubscriptionExpiredEvent(ctx context.Context, source string, request *lemonsqueezy.WebhookRequestSubscription) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
