@@ -36,6 +36,7 @@ func NewUserListener(
 		events.EventTypePhoneHeartbeatDead: l.onPhoneHeartbeatDead,
 		events.UserSubscriptionCreated:     l.OnUserSubscriptionCreated,
 		events.UserSubscriptionCancelled:   l.OnUserSubscriptionCancelled,
+		events.UserSubscriptionExpired:     l.OnUserSubscriptionExpired,
 	}
 }
 
@@ -97,6 +98,25 @@ func (listener *UserListener) OnUserSubscriptionCancelled(ctx context.Context, e
 
 	if err := listener.service.CancelSubscription(ctx, &payload); err != nil {
 		msg := fmt.Sprintf("cannot cancell subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnUserSubscriptionExpired handles the events.UserSubscriptionExpired event
+func (listener *UserListener) OnUserSubscriptionExpired(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserSubscriptionExpiredPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.ExpireSubscription(ctx, &payload); err != nil {
+		msg := fmt.Sprintf("cannot expire subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

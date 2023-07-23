@@ -229,3 +229,28 @@ func (service *UserService) CancelSubscription(ctx context.Context, params *even
 
 	return nil
 }
+
+// ExpireSubscription starts a subscription for an entities.User
+func (service *UserService) ExpireSubscription(ctx context.Context, params *events.UserSubscriptionExpiredPayload) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, params.UserID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	user.SubscriptionID = nil
+	user.SubscriptionName = entities.SubscriptionNameFree
+	user.SubscriptionRenewsAt = nil
+	user.SubscriptionStatus = nil
+	user.SubscriptionEndsAt = nil
+
+	if err = service.repository.Update(ctx, user); err != nil {
+		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after expired subscription update", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}

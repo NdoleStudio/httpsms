@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 
@@ -97,6 +98,41 @@ func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.
 		return stacktrace.Propagate(err, msg)
 	}
 	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] cancelled for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
+	return nil
+}
+
+// HandleSubscriptionExpiredEvent handles the subscription_expired lemonsqueezy event
+func (service *LemonsqueezyService) HandleSubscriptionExpiredEvent(ctx context.Context, source string, request *lemonsqueezy.WebHookRequestSubscription) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.userRepository.LoadBySubscriptionID(ctx, request.Data.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", request.Data.ID)
+		return stacktrace.Propagate(err, msg)
+	}
+
+	payload := &events.UserSubscriptionExpiredPayload{
+		UserID:                user.ID,
+		SubscriptionExpiredAt: time.Now().UTC(),
+		SubscriptionID:        request.Data.ID,
+		IsCancelled:           request.Data.Attributes.Cancelled,
+		SubscriptionName:      service.subscriptionName(request.Data.Attributes.VariantName),
+		SubscriptionEndsAt:    *request.Data.Attributes.EndsAt,
+		SubscriptionStatus:    request.Data.Attributes.Status,
+	}
+
+	event, err := service.createEvent(events.UserSubscriptionExpired, source, payload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot created [%s] event for user [%s]", events.UserSubscriptionExpired, payload.UserID)
+		return stacktrace.Propagate(err, msg)
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), payload.UserID)
+		return stacktrace.Propagate(err, msg)
+	}
+	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] expired for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
 	return nil
 }
 
