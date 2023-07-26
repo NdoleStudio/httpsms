@@ -68,10 +68,10 @@
     "lint-staged": "^13.2.2",
     "postcss-html": "^1.5.0",
     "prettier": "^2.8.8",
-    "stylelint": "^14.16.1",
+    "stylelint": "^15.10.2",
     "stylelint-config-prettier": "^9.0.5",
-    "stylelint-config-recommended-vue": "^1.1.0",
-    "stylelint-config-standard": "^29.0.0",
+    "stylelint-config-recommended-vue": "^1.5.0",
+    "stylelint-config-standard": "^34.0.0",
     "ts-jest": "^27.1.1",
     "vue-jest": "^3.0.4"
   }
