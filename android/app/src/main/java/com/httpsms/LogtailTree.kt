@@ -35,7 +35,7 @@ class LogtailTree(val context: Context): Timber.DebugTree() {
             t
         )
         queue.add(logEntry)
-        if (queue.size < 10) {
+        if (queue.size < 100) {
             return
         }
 
@@ -50,7 +50,8 @@ class LogtailTree(val context: Context): Timber.DebugTree() {
 
         Thread {
             try {
-                client.newCall(request).execute()
+                val response = client.newCall(request).execute()
+                response.body?.close()
             } catch(_: Exception) {
             }
         }.start()
