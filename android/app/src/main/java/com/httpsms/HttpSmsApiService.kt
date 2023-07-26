@@ -93,6 +93,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
+            response.close()
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
             return
         }
@@ -118,6 +119,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
+            response.close()
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending heartbeat [$body] for owner [$phoneNumber]")
             return
         }
@@ -153,6 +155,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
+            response.close()
            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             return
         }
@@ -180,6 +183,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
+            response.close()
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
             return null
         }
@@ -202,6 +206,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         try {
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
+                response.close()
                 Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
                 return Pair("Cannot validate the API key. Check if it is correct and try again.", null)
             }
