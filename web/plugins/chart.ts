@@ -26,7 +26,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   LineElement,
-  ArcElement,
+  ArcElement
 )
 
 Vue.component('BarChart', {

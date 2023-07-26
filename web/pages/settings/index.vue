@@ -738,7 +738,7 @@ export default Vue.extend({
         id: webhook.id,
         url: webhook.url,
         phone_numbers: webhook.phone_numbers.filter(
-          (x) => this.phoneNumbers.find((y) => y === x) !== undefined,
+          (x) => this.phoneNumbers.find((y) => y === x) !== undefined
         ),
         signing_key: webhook.signing_key,
         events: webhook.events,
@@ -768,7 +768,7 @@ export default Vue.extend({
         url: '',
         signing_key: '',
         phone_numbers: this.$store.getters.getPhones.map(
-          (phone) => phone.phone_number,
+          (phone) => phone.phone_number
         ),
         events: [
           'message.phone.received',

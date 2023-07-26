@@ -49,7 +49,7 @@
                         Your next bill is for <b>${{ plan.price }}</b> on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_renews_at,
+                            $store.getters.getUser.subscription_renews_at
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -64,7 +64,7 @@
                         You will be downgraded to the <b>FREE</b> plan on
                         <b>{{
                           new Date(
-                            $store.getters.getUser.subscription_ends_at,
+                            $store.getters.getUser.subscription_ends_at
                           ).toLocaleDateString()
                         }}</b>
                       </p>
@@ -116,7 +116,7 @@
                               of the current billing period on
                               <b>{{
                                 new Date(
-                                  $store.getters.getUser.subscription_renews_at,
+                                  $store.getters.getUser.subscription_renews_at
                                 ).toLocaleDateString()
                               }}</b>
                             </p>
@@ -238,8 +238,8 @@
                   <div class="d-flex">
                     <h2 class="text-h4 font-weight-bold mt-4">
                       {{
-                        $store.getters.getBillingUsage.received_messages
-                          | decimal
+                        $store.getters.getBillingUsage.received_messages |
+                          decimal
                       }}
                     </h2>
                   </div>
@@ -411,7 +411,7 @@ export default Vue.extend({
     plan(): PaymentPlan {
       return this.plans.find(
         (x) =>
-          x.id === (this.$store.getters.getUser?.subscription_name || 'free'),
+          x.id === (this.$store.getters.getUser?.subscription_name || 'free')
       )!
     },
     isOnFreePlan(): boolean {

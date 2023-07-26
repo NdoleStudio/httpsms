@@ -213,7 +213,7 @@ export default class MessageThreadHeader extends Vue {
           text: this.$options.filters?.phoneNumber(phone.phone_number),
           value: phone.phone_number,
         }
-      },
+      }
     )
   }
 
