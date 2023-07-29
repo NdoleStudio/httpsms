@@ -39,15 +39,15 @@
             </v-btn>
             <v-btn
               large
-              color="default"
+              color="#000000"
               target="_blank"
               class="mt-4 mb-4 ml-4"
-              :href="$store.getters.getAppData.githubUrl"
+              href="https://sandbox.httpsms.com"
             >
-              <v-icon v-if="$vuetify.breakpoint.lgAndUp" left>
-                {{ mdiGithub }}
+              <v-icon v-if="$vuetify.breakpoint.lgAndUp" left color="#ffe500">
+                {{ mdiCreation }}
               </v-icon>
-              Open Source
+              Live Demo
             </v-btn>
           </div>
           <div
@@ -633,6 +633,7 @@ import {
   mdiSend,
   mdiGift,
   mdiForum,
+  mdiCreation,
   mdiNumeric1,
   mdiLanguagePython,
   mdiNumeric2,
@@ -657,6 +658,7 @@ export default Vue.extend({
       mdiCheckCircle,
       mdiSend,
       mdiGift,
+      mdiCreation,
       mdiForum,
       mdiNumeric1,
       mdiNumeric2,
