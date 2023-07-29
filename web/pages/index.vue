@@ -39,7 +39,7 @@
             </v-btn>
             <v-btn
               large
-              color="#000000"
+              color="secondary"
               target="_blank"
               class="mt-4 mb-4 ml-4"
               href="https://sandbox.httpsms.com"
