@@ -40,7 +40,6 @@
             <v-btn
               large
               color="secondary"
-              target="_blank"
               class="mt-4 mb-4 ml-4"
               href="https://sandbox.httpsms.com"
             >
