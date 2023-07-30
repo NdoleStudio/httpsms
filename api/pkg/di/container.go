@@ -19,7 +19,6 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/NdoleStudio/go-otelroundtripper"
-	"go.opentelemetry.io/otel/metric/global"
 
 	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/hashicorp/go-retryablehttp"
@@ -674,7 +673,7 @@ func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
 	return otelroundtripper.New(
 		otelroundtripper.WithName(name),
 		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
-		otelroundtripper.WithMeter(global.Meter(container.projectID)),
+		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
 		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
 	)
 }
@@ -1143,7 +1142,7 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
 		metric.WithResource(container.OtelResources(version, namespace)),
 	)
-	global.SetMeterProvider(meterProvider)
+	otel.SetMeterProvider(meterProvider)
 
 	return func() {
 		if err = metricExporter.Shutdown(context.Background()); err != nil {
