@@ -3,6 +3,9 @@ package middlewares
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/gofiber/fiber/v2"
@@ -20,7 +23,7 @@ const (
 func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header string, namespace string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		otelTracer := otel.Tracer(namespace)
-		ctx, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), c.OriginalURL()), trace.WithSpanKind(trace.SpanKindServer))
+		ctx, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), fixURL(c.OriginalURL())), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 		spanContext := span.SpanContext()
 
@@ -49,4 +52,18 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header s
 
 		return response
 	}
+}
+
+func fixURL(url string) string {
+	url = strings.Split(url, "?")[0]
+	parts := strings.Split(url, "/")
+	var result []string
+	for _, part := range parts {
+		if _, err := uuid.Parse(part); err == nil {
+			result = append(result, ":id")
+		} else {
+			result = append(result, part)
+		}
+	}
+	return strings.Join(result, "/")
 }
