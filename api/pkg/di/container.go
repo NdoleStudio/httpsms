@@ -9,19 +9,20 @@ import (
 	"strconv"
 	"time"
 
+	"gorm.io/plugin/opentelemetry/tracing"
+
 	"github.com/NdoleStudio/httpsms/pkg/discord"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
-	"go.opentelemetry.io/otel/sdk/metric"
-
 	"github.com/NdoleStudio/httpsms/pkg/cache"
-	"github.com/redis/go-redis/v9"
-
-	"github.com/NdoleStudio/go-otelroundtripper"
-
 	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel/sdk/metric"
+
+	"github.com/NdoleStudio/go-otelroundtripper"
 
 	"github.com/jinzhu/now"
 
@@ -199,6 +200,10 @@ func (container *Container) DB() (db *gorm.DB) {
 	}
 	container.db = db
 
+	if err = db.Use(tracing.NewPlugin()); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+	}
+
 	container.logger.Debug(fmt.Sprintf("Running migrations for %T", db))
 
 	if err = db.AutoMigrate(&entities.Message{}); err != nil {
@@ -274,7 +279,19 @@ func (container *Container) Cache() cache.Cache {
 		MinVersion: tls.VersionTLS12,
 	}
 
-	return cache.NewRedisCache(container.Tracer(), redis.NewClient(opt))
+	redisClient := redis.NewClient(opt)
+
+	// Enable tracing instrumentation.
+	if err = redisotel.InstrumentTracing(redisClient); err != nil {
+		container.logger.Error(stacktrace.Propagate(err, "cannot instrument redis tracing"))
+	}
+
+	// Enable metrics instrumentation.
+	if err = redisotel.InstrumentMetrics(redisClient); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot instrument redis metrics"))
+	}
+
+	return cache.NewRedisCache(container.Tracer(), redisClient)
 }
 
 // FirebaseAuthClient creates a new instance of auth.Client
