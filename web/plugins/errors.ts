@@ -21,7 +21,7 @@ const sanitize = (key: string, values: Array<string>): Array<string> => {
         .split(' char')
         .join(' character')
         .split(' field ')
-        .join(' ')
+        .join(' '),
     )
   })
 }
