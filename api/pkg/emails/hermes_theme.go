@@ -291,11 +291,11 @@ func (dt *hermesTheme) HTMLTemplate() string {
             <td class="email-masthead">
               <a class="email-masthead_name" style="color: white;" href="{{.Hermes.Product.Link}}" target="_blank">
                 {{ if .Hermes.Product.Logo }}
-                  HTTP SMS
+                  <img src="{{.Hermes.Product.Logo | url }}" class="email-logo" />
                 {{ else }}
                   {{ .Hermes.Product.Name }}
                 {{ end }}
-                </a>
+			  </a>
             </td>
           </tr>
 

@@ -75,6 +75,18 @@ type Container struct {
 	logger          telemetry.Logger
 }
 
+// NewLiteContainer creates a Container without any routes or listeners
+func NewLiteContainer() (container *Container) {
+	// Set location to UTC
+	now.DefaultConfig = &now.Config{
+		TimeLocation: time.UTC,
+	}
+
+	return &Container{
+		logger: logger(3).WithService(fmt.Sprintf("%T", container)),
+	}
+}
+
 // NewContainer creates a new dependency injection container
 func NewContainer(projectID string, version string) (container *Container) {
 	// Set location to UTC
