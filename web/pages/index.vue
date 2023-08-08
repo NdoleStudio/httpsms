@@ -62,6 +62,10 @@
             </v-icon>
             100% Open Source
           </div>
+          <p class="text-body-2">
+            Trusted by <b>1,300+</b> happy users who have sent or received more
+            than <v>175,000</v> messages
+          </p>
           <v-divider
             v-if="$vuetify.breakpoint.mdAndDown"
             class="mt-6 mr-16 success"
@@ -93,7 +97,7 @@
               <h5 class="text-h6 font-weight-light">
                 If you want to build advanced integrations, we support callback
                 URLs. The httpSMS platform can forward SMS messages received on
-                your android phone to your server using a callback URL which you
+                your Android phone to your server using a callback URL which you
                 provide.
               </h5>
             </div>
