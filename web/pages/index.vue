@@ -49,6 +49,10 @@
               Live Demo
             </v-btn>
           </div>
+          <p class="text-body-2 mt-2">
+            Trusted by <b>1,300+</b> happy users who have sent or received more
+            than <b>175,000</b> messages 🎉
+          </p>
           <div
             class="mt-4"
             :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }"
@@ -62,10 +66,6 @@
             </v-icon>
             100% Open Source
           </div>
-          <p class="text-body-2">
-            Trusted by <b>1,300+</b> happy users who have sent or received more
-            than <v>175,000</v> messages
-          </p>
           <v-divider
             v-if="$vuetify.breakpoint.mdAndDown"
             class="mt-6 mr-16 success"
