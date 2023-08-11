@@ -330,6 +330,15 @@ class MainActivity : AppCompatActivity() {
                 Timber.e(exception)
                 error = exception.javaClass.simpleName
             }
+            if (Settings.isDualSIM(context)) {
+                try {
+                    HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM2PhoneNumber(context))
+                    Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
+                } catch (exception: Exception) {
+                    Timber.e(exception)
+                    error = exception.javaClass.simpleName
+                }
+            }
             liveData.postValue(error)
             Timber.d("finished sending pulse")
         }.start()
