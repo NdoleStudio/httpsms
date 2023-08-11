@@ -26,12 +26,12 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
 
     private fun sendSIM1Heartbeat() {
         if (!Settings.getActiveStatus(applicationContext, Constants.SIM1)) {
-            Timber.w("[SIM1]user is not active, stopping processing")
+            Timber.w("[SIM1] user is not active, stopping processing")
             return
         }
 
         HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext))
-        Timber.d("[SIM1]finished sending heartbeat to server")
+        Timber.d("[SIM1] finished sending heartbeat to server")
 
         Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
         Timber.d("[SIM1] set the heartbeat timestamp")
@@ -39,7 +39,7 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
 
     private fun sendSIM2Heartbeat() {
         if (!Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
-            Timber.w("[SIM2]user is not active, stopping processing")
+            Timber.w("[SIM2] user is not active, stopping processing")
             return
         }
 
@@ -47,6 +47,6 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
         Timber.d("[SIM2] finished sending heartbeat to server")
 
         Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
-        Timber.d("[SIM2]set the heartbeat timestamp")
+        Timber.d("[SIM2] set the heartbeat timestamp")
     }
 }
