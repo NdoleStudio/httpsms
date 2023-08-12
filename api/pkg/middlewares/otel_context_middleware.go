@@ -4,24 +4,34 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
 
 const (
-	clientVersionHeader = "X-Client-Version"
+	clientVersionHeader          = "X-Client-Version"
+	metricNameHTTPServerDuration = "http.server.duration"
 )
 
 // OtelTraceContext adds a trace for an HTTP request
-func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header string, namespace string) fiber.Handler {
+func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, resources *resource.Resource, namespace string) fiber.Handler {
+	httpServerDuration, err := otel.GetMeterProvider().Meter(namespace).Int64Histogram(metricNameHTTPServerDuration, metric.WithUnit("ms"), metric.WithDescription("measures the duration inbound HTTP requests"))
+	if err != nil {
+		otel.Handle(err)
+	}
 	return func(c *fiber.Ctx) error {
+		start := time.Now()
 		otelTracer := otel.Tracer(namespace)
 		ctx, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), fixURL(c.OriginalURL())), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
@@ -39,6 +49,14 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, header s
 		span.SetAttributes(attribute.Key("clientVersion").String(c.Get(clientVersionHeader)))
 
 		c.Locals(telemetry.TracerContextKey, trace.ContextWithSpan(ctx, span))
+
+		defer func() {
+			attributes := append([]attribute.KeyValue{
+				semconv.HTTPMethod(c.Method()),
+				semconv.HTTPURL(fixURL(c.OriginalURL())),
+			}, resources.Attributes()...)
+			httpServerDuration.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attributes...))
+		}()
 
 		// Go to next middleware:
 		response := c.Next()

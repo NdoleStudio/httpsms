@@ -151,7 +151,7 @@ func (container *Container) App() (app *fiber.App) {
 		app.Use(fiberLogger.New())
 	}
 
-	app.Use(middlewares.OtelTraceContext(container.Tracer(), container.Logger(), "X-Cloud-Trace-Context", os.Getenv("GCP_PROJECT_ID")))
+	app.Use(middlewares.OtelTraceContext(container.Tracer(), container.Logger(), container.OtelResources(container.version, container.projectID), os.Getenv("GCP_PROJECT_ID")))
 
 	// Default config
 	app.Use(cors.New())
