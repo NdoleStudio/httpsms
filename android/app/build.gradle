@@ -17,15 +17,12 @@ def getGitHash = { ->
 android {
     compileSdk 33
 
-    buildToolsVersion "32.0.0"
-
     defaultConfig {
         applicationId "com.httpsms"
         minSdk 26
         targetSdk 33
         versionCode 1
         versionName "${getGitHash()}"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -55,7 +52,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging-ktx'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.jakewharton.timber:timber:5.0.1'
-    implementation 'androidx.preference:preference:1.2.0'
+    implementation 'androidx.preference:preference:1.2.1'
     implementation 'androidx.work:work-runtime-ktx:2.7.1'
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation "androidx.cardview:cardview:1.0.0"

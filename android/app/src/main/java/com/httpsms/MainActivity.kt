@@ -216,7 +216,7 @@ class MainActivity : AppCompatActivity() {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
-            Timber.plant(LogtailTree(this.applicationContext))
+            Timber.plant(LogzTree(this.applicationContext))
         }
     }
 

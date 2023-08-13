@@ -82,7 +82,7 @@ class SettingsActivity : AppCompatActivity() {
         Timber.d("logout button clicked")
         MaterialAlertDialogBuilder(this)
             .setTitle("Confirm")
-            .setMessage("Are you sure you want to logout of the Http SMS App?")
+            .setMessage("Are you sure you want to logout of the httpSMS App?")
             .setNeutralButton("Cancel"){ _, _ -> Timber.d("logout dialog canceled") }
             .setPositiveButton("Logout"){_, _ ->
                 Timber.d("logging out user")

@@ -68,8 +68,8 @@ class StickyNotificationService: Service() {
         )
 
         return builder
-            .setContentTitle("SMS Listener")
-            .setContentText("HTTP SMS is listening for sent and received SMS messages in the background.")
+            .setContentTitle("httpSMS Listener")
+            .setContentText("httpSMS is listening for sent and received SMS messages in the background.")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSmallIcon(R.drawable.ic_stat_name)
