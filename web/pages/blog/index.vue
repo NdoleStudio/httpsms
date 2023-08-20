@@ -92,7 +92,7 @@ export default {
   },
   head() {
     return {
-      title: 'Blog Posts - SuperButton',
+      title: 'Blog Posts - httpSMS',
     }
   },
 }
