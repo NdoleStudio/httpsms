@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
-	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -14,7 +13,6 @@ import (
 
 // MessageThreadListener handles cloud events which need to update entities.MessageThread
 type MessageThreadListener struct {
-	listener
 	logger  telemetry.Logger
 	tracer  telemetry.Tracer
 	service *services.MessageThreadService
@@ -25,15 +23,11 @@ func NewMessageThreadListener(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	service *services.MessageThreadService,
-	repository repositories.EventListenerLogRepository,
 ) (l *MessageThreadListener, routes map[string]events.EventListener) {
 	l = &MessageThreadListener{
 		logger:  logger.WithService(fmt.Sprintf("%T", l)),
 		tracer:  tracer,
 		service: service,
-		listener: listener{
-			repository: repository,
-		},
 	}
 
 	return l, map[string]events.EventListener{
