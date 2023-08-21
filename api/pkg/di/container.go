@@ -529,7 +529,6 @@ func (container *Container) EventDispatcher() (dispatcher *services.EventDispatc
 	dispatcher = services.NewEventDispatcher(
 		container.Logger(),
 		container.Tracer(),
-		container.EventRepository(),
 		container.EventsQueue(),
 		container.EventsQueueConfiguration(),
 	)
@@ -852,7 +851,6 @@ func (container *Container) RegisterMessageListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.MessageService(),
-		container.EventListenerLogRepository(),
 	)
 
 	for event, handler := range routes {

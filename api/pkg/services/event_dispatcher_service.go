@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
-	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/palantir/stacktrace"
@@ -19,7 +18,6 @@ import (
 type EventDispatcher struct {
 	logger      telemetry.Logger
 	tracer      telemetry.Tracer
-	repository  repositories.EventRepository
 	listeners   map[string][]events.EventListener
 	queue       PushQueue
 	queueConfig PushQueueConfig
@@ -29,7 +27,6 @@ type EventDispatcher struct {
 func NewEventDispatcher(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	repository repositories.EventRepository,
 	queue PushQueue,
 	queueConfig PushQueueConfig,
 ) (dispatcher *EventDispatcher) {
@@ -37,7 +34,6 @@ func NewEventDispatcher(
 		logger:      logger,
 		tracer:      tracer,
 		listeners:   make(map[string][]events.EventListener),
-		repository:  repository,
 		queue:       queue,
 		queueConfig: queueConfig,
 	}
@@ -50,11 +46,6 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 
 	if err := event.Validate(); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type())
-		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	if err := dispatcher.repository.Create(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot save event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

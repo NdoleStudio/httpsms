@@ -10,7 +10,6 @@ require (
 	github.com/NdoleStudio/go-otelroundtripper v0.0.8
 	github.com/NdoleStudio/lemonsqueezy-go v1.0.0
 	github.com/carlmjohnson/requests v0.23.4
-	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/cockroachdb/cockroach-go/v2 v2.3.5
 	github.com/davecgh/go-spew v1.1.1
@@ -66,13 +65,11 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
-	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/fatih/color v1.15.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect

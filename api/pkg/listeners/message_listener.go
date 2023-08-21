@@ -6,7 +6,6 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/events"
-	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -26,15 +25,11 @@ func NewMessageListener(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	service *services.MessageService,
-	repository repositories.EventListenerLogRepository,
 ) (l *MessageListener, routes map[string]events.EventListener) {
 	l = &MessageListener{
 		logger:  logger.WithService(fmt.Sprintf("%T", l)),
 		tracer:  tracer,
 		service: service,
-		listener: listener{
-			repository: repository,
-		},
 	}
 
 	return l, map[string]events.EventListener{
@@ -86,7 +81,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+	return nil
 }
 
 // OnMessagePhoneSent handles the events.EventTypeMessagePhoneSent event
@@ -124,8 +119,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 		msg := fmt.Sprintf("cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
-
-	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+	return nil
 }
 
 // OnMessagePhoneDelivered handles the events.EventTypeMessagePhoneDelivered event
@@ -163,7 +157,7 @@ func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, ev
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+	return nil
 }
 
 // OnMessagePhoneFailed handles the events.EventTypeMessageSendFailed event
@@ -202,7 +196,7 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return listener.storeEventListenerLog(ctx, listener.signature(event), event)
+	return nil
 }
 
 // onMessageNotificationFailed handles the events.EventTypeMessageNotificationFailed event
