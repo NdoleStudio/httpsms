@@ -945,7 +945,6 @@ func (container *Container) RegisterMessageThreadListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.MessageThreadService(),
-		container.EventListenerLogRepository(),
 	)
 
 	for event, handler := range routes {
