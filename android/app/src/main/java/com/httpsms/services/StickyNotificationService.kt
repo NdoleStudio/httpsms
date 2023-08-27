@@ -46,11 +46,9 @@ class StickyNotificationService: Service() {
             notificationChannelId,
             notificationChannelId,
             NotificationManager.IMPORTANCE_HIGH
-        ).let {
-            it.enableLights(true)
-            it.enableVibration(false)
-            it.lightColor = Color.RED
-            it
+        ).apply {
+            enableVibration(false)
+            setShowBadge(false)
         }
         notificationManager.createNotificationChannel(channel)
 

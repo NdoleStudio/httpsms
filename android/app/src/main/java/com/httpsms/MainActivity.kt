@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
-import android.provider.Settings as ProviderSettings
 import android.telephony.PhoneNumberUtils
 import android.view.View
 import android.widget.LinearLayout
@@ -38,6 +37,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
+import android.provider.Settings as ProviderSettings
 
 
 class MainActivity : AppCompatActivity() {
