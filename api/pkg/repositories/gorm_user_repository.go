@@ -35,6 +35,7 @@ func NewGormUserRepository(
 	return &gormUserRepository{
 		logger: logger.WithService(fmt.Sprintf("%T", &gormUserRepository{})),
 		tracer: tracer,
+		cache:  cache,
 		db:     db,
 	}
 }
@@ -112,7 +113,7 @@ func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey s
 	}
 
 	if result := repository.cache.SetWithTTL(apiKey, authUser, 1, 2*time.Hour); !result {
-		msg := fmt.Sprintf("cannot cache [%T] with ID [%s]", authUser, user.ID)
+		msg := fmt.Sprintf("cannot cache [%T] with ID [%s] and result [%t]", authUser, user.ID, result)
 		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError(msg)))
 	}
 
