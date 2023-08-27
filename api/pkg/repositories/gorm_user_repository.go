@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
+	"github.com/dgraph-io/ristretto"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -20,6 +21,7 @@ import (
 type gormUserRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
+	cache  *ristretto.Cache
 	db     *gorm.DB
 }
 
@@ -27,6 +29,7 @@ type gormUserRepository struct {
 func NewGormUserRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
+	cache *ristretto.Cache,
 	db *gorm.DB,
 ) UserRepository {
 	return &gormUserRepository{
@@ -83,8 +86,13 @@ func (repository *gormUserRepository) Update(ctx context.Context, user *entities
 }
 
 func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey string) (entities.AuthUser, error) {
-	ctx, span := repository.tracer.Start(ctx)
+	ctx, span, ctxLogger := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
+
+	if authUser, found := repository.cache.Get(apiKey); found {
+		ctxLogger.Info(fmt.Sprintf("cache hit for user with ID [%s]", authUser.(entities.AuthUser).ID))
+		return authUser.(entities.AuthUser), nil
+	}
 
 	user := new(entities.User)
 	err := repository.db.WithContext(ctx).Where("api_key = ?", apiKey).First(user).Error
@@ -98,10 +106,17 @@ func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey s
 		return entities.AuthUser{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return entities.AuthUser{
+	authUser := entities.AuthUser{
 		ID:    user.ID,
 		Email: user.Email,
-	}, nil
+	}
+
+	if result := repository.cache.SetWithTTL(apiKey, authUser, 1, 2*time.Hour); !result {
+		msg := fmt.Sprintf("cannot cache [%T] with ID [%s]", authUser, user.ID)
+		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError(msg)))
+	}
+
+	return authUser, nil
 }
 
 func (repository *gormUserRepository) Load(ctx context.Context, userID entities.UserID) (*entities.User, error) {

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
+
 	"gorm.io/plugin/opentelemetry/tracing"
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
@@ -1131,8 +1133,23 @@ func (container *Container) UserRepository() repositories.UserRepository {
 	return repositories.NewGormUserRepository(
 		container.Logger(),
 		container.Tracer(),
+		container.RistrettoCache(),
 		container.DB(),
 	)
+}
+
+// RistrettoCache creates an in-memory *ristretto.Cache
+func (container *Container) RistrettoCache() (cache *ristretto.Cache) {
+	container.logger.Debug(fmt.Sprintf("creating %T", cache))
+	ristrettoCache, err := ristretto.NewCache(&ristretto.Config{
+		MaxCost:     5000,
+		NumCounters: 5000 * 10,
+		BufferItems: 64,
+	})
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create ristretto cache"))
+	}
+	return ristrettoCache
 }
 
 // InitializeTraceProvider initializes the open telemetry trace provider
