@@ -4,3 +4,4 @@ docs
 *serviceAccountKey.json
 android/app/debug/
 *main.exe*
+android/app/release/
