@@ -6,10 +6,6 @@ import (
 	"log"
 	"os"
 	"sync"
-	"time"
-
-	"github.com/NdoleStudio/httpsms/pkg/di"
-	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/carlmjohnson/requests"
 
@@ -22,22 +18,12 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	container := di.NewLiteContainer()
-	cache := container.RistrettoCache()
-	logger := container.Logger()
-
-	for i := 0; i < 100; i++ {
-		result := cache.SetWithTTL(fmt.Sprintf("how are you %d", i), entities.AuthUser{
-			ID:    "dasfdfds",
-			Email: "arnoldewin@gmail.com",
-		}, 1, 2*time.Hour)
-		logger.Info(fmt.Sprintf("cached [%t]", result))
-	}
+	loadTest()
 }
 
 func loadTest() {
 	wg := sync.WaitGroup{}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go func(count int) {
 			sendSMS(count)

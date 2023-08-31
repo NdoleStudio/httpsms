@@ -8,6 +8,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.StringEscapeUtils
 import timber.log.Timber
 import java.net.URI
+import java.net.URL
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.logging.Level
@@ -35,7 +36,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
     fun getOutstandingMessage(messageID: String): Message? {
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/messages/outstanding?message_id=${messageID}").toURL())
+            .url(resolveURL("/v1/messages/outstanding?message_id=${messageID}"))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
@@ -85,7 +86,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         """.trimIndent()
 
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/messages/receive").toURL())
+            .url(resolveURL("/v1/messages/receive"))
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
@@ -111,7 +112,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         """.trimIndent()
 
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/heartbeats").toURL())
+            .url(resolveURL("/v1/heartbeats"))
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
@@ -147,7 +148,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         """.trimIndent()
 
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/messages/${messageId}/events").toURL())
+            .url(resolveURL("/v1/messages/${messageId}/events"))
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
@@ -175,7 +176,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         """.trimIndent()
 
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/phones").toURL())
+            .url(resolveURL("/v1/phones"))
             .put(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
@@ -197,7 +198,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
     fun validateApiKey(): Pair<String?, String?> {
         val request: Request = Request.Builder()
-            .url(baseURL.resolve("/v1/users/me").toURL())
+            .url(resolveURL("/v1/users/me"))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .get()
@@ -217,5 +218,9 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         } catch (ex: Exception) {
             return Pair(null, ex.message)
         }
+    }
+
+    private fun resolveURL(path: String): URL {
+        return baseURL.resolve(baseURL.path + path).toURL()
     }
 }

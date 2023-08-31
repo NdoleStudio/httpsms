@@ -12,12 +12,10 @@ import timber.log.Timber
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.ConcurrentLinkedQueue
+import io.sentry.Sentry
 
 class LogzTree(val context: Context): Timber.DebugTree() {
     private val client = OkHttpClient()
-    private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-    private val queue: ConcurrentLinkedQueue<LogEntry> = ConcurrentLinkedQueue<LogEntry>()
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -36,17 +34,8 @@ class LogzTree(val context: Context): Timber.DebugTree() {
             Settings.getUserID(context),
             t
         )
-        queue.add(logEntry)
-        if (queue.size < 100) {
-            return
-        }
 
-        val logEntries = queue.toArray()
-        queue.clear()
-
-        val body = logEntries.joinToString(separator = "\n") { x -> Klaxon().toJsonString(x) }
-            .toRequestBody("application/x-www-form-urlencoded".toMediaType())
-
+        val body = Klaxon().toJsonString(logEntry).toRequestBody("application/x-www-form-urlencoded".toMediaType())
         val request: Request = Request.Builder()
             .url("https://listener.logz.io:8071?token=cTCUVJoTDrPjaFcanAPRzIsYyThyrIDw&type=http-bulk")
             .post(body)
@@ -58,6 +47,7 @@ class LogzTree(val context: Context): Timber.DebugTree() {
                 val response = client.newCall(request).execute()
                 response.body?.close()
             } catch(ex: Exception) {
+                Sentry.captureException(ex)
             }
         }.start()
     }

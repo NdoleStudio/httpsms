@@ -69,9 +69,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun scheduleJob(messageID: String) {
         // [START dispatch_job]
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
         val inputData: Data = workDataOf(Constants.KEY_MESSAGE_ID to messageID)
         val work = OneTimeWorkRequest
             .Builder(SendSmsWorker::class.java)
+            .setConstraints(constraints)
             .setInputData(inputData)
             .addTag(messageID)
             .build()
