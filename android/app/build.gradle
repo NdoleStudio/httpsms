@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId "com.httpsms"
-        minSdk 26
+        minSdk 28
         targetSdk 33
         versionCode 1
         versionName "${getGitHash()}"
