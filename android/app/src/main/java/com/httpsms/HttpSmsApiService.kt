@@ -45,10 +45,10 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         if (response.isSuccessful) {
             val payload = ResponseMessage.fromJson(response.body!!.string())?.data
             if (payload == null) {
+                response.close()
                 Timber.e("cannot decode payload [${response.body}]")
                 return null
             }
-            Timber.w("response code [${response.code}]")
             response.close()
             return payload
         }
@@ -94,8 +94,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            response.close()
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
+            response.close()
             return
         }
 
@@ -120,8 +120,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            response.close()
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending heartbeat [$body] for owner [$phoneNumber]")
+            response.close()
             return
         }
 
@@ -156,8 +156,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             response.close()
-           Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             return
         }
 
@@ -184,8 +184,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            response.close()
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
+            response.close()
             return null
         }
 
@@ -207,8 +207,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         try {
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
-                response.close()
                 Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
+                response.close()
                 return Pair("Cannot validate the API key. Check if it is correct and try again.", null)
             }
 
