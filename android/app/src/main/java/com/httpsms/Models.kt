@@ -1,13 +1,7 @@
-// To parse the JSON, install Klaxon and do:
-//
-//   val welcome4 = Welcome4.fromJson(jsonString)
-
 package com.httpsms
 
 import com.beust.klaxon.Json
 import com.beust.klaxon.Klaxon
-
-private val klaxon = Klaxon()
 
 data class ResponseMessage (
     val data: Message,
@@ -15,7 +9,7 @@ data class ResponseMessage (
     val status: String
 ) {
     companion object {
-        fun fromJson(json: String) = klaxon.parse<ResponseMessage>(json)
+        fun fromJson(json: String) = Klaxon().parse<ResponseMessage>(json)
     }
 }
 data class ResponsePhone (
@@ -24,7 +18,7 @@ data class ResponsePhone (
     val status: String,
 ) {
     companion object {
-        fun fromJson(json: String) = klaxon.parse<ResponsePhone>(json)
+        fun fromJson(json: String) = Klaxon().parse<ResponsePhone>(json)
     }
 }
 
