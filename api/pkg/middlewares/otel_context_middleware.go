@@ -3,7 +3,6 @@ package middlewares
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -33,7 +31,7 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, resource
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 		otelTracer := otel.Tracer(namespace)
-		ctx, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), fixURL(c.OriginalURL())), trace.WithSpanKind(trace.SpanKindServer))
+		ctx, span := otelTracer.Start(context.Background(), fmt.Sprintf("%s %s", c.Method(), c.Route().Path), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 		spanContext := span.SpanContext()
 
@@ -53,7 +51,7 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, resource
 		defer func() {
 			attributes := append([]attribute.KeyValue{
 				semconv.HTTPMethod(c.Method()),
-				semconv.HTTPURL(fixURL(c.OriginalURL())),
+				semconv.HTTPRouteKey.String(c.Route().Path),
 			}, resources.Attributes()...)
 			httpServerDuration.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attributes...))
 		}()
@@ -70,18 +68,4 @@ func OtelTraceContext(tracer telemetry.Tracer, logger telemetry.Logger, resource
 
 		return response
 	}
-}
-
-func fixURL(url string) string {
-	url = strings.Split(url, "?")[0]
-	parts := strings.Split(url, "/")
-	var result []string
-	for _, part := range parts {
-		if _, err := uuid.Parse(part); err == nil {
-			result = append(result, ":id")
-		} else {
-			result = append(result, part)
-		}
-	}
-	return strings.Join(result, "/")
 }
