@@ -239,10 +239,23 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun formatE164(number: String): String {
-        return PhoneNumberUtils.formatNumberToE164(
-            addPlus(number.trim()),
+        var phoneNumber = number.trim()
+        if (!number.startsWith("+")) {
+            phoneNumber = "+$number"
+        }
+
+        Timber.d("formatting phone number [${phoneNumber}] into e164")
+
+        val formattedNumber = PhoneNumberUtils.formatNumberToE164(
+            phoneNumber,
             this.resources.configuration.locales.get(0).country
         )
+
+        if (formattedNumber !== null) {
+            return formattedNumber
+        }
+
+        return phoneNumber;
     }
 
     private fun addPlus(number: String): String {
