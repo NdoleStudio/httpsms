@@ -3,7 +3,6 @@ package com.httpsms
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import androidx.work.*
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -140,15 +139,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             val parts = getMessageParts(applicationContext, message)
             if (parts.size == 1) {
-                return handleSingleMessage(applicationContext, message)
+                return handleSingleMessage(message)
             }
-            return handleMultipartMessage(applicationContext, message, parts)
+            return handleMultipartMessage(message, parts)
         }
 
-        private fun handleMultipartMessage(context: Context, message:Message, parts: ArrayList<String>): Result {
-            registerReceivers(context, message.id)
-
-            Timber.d("sending SMS for message with ID [${message.id}]")
+        private fun handleMultipartMessage(message:Message, parts: ArrayList<String>): Result {
+            Timber.d("sending multipart SMS for message with ID [${message.id}]")
             return try {
                 val sentIntents = ArrayList<PendingIntent>()
                 val deliveredIntents = ArrayList<PendingIntent>()
@@ -162,8 +159,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                         id = message.id
                     }
 
-                    sentIntents.add(createPendingIntent(id, SmsManagerService.sentAction(id)))
-                    deliveredIntents.add(createPendingIntent(id, SmsManagerService.deliveredAction(id)))
+                    sentIntents.add(createPendingIntent(id, SmsManagerService.sentAction()))
+                    deliveredIntents.add(createPendingIntent(id, SmsManagerService.deliveredAction()))
                 }
                 SmsManagerService().sendMultipartMessage(this.applicationContext,message.contact, parts, message.sim, sentIntents, deliveredIntents)
                 Timber.d("sent SMS for message with ID [${message.id}] in [${parts.size}] parts")
@@ -176,25 +173,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
 
-        private fun handleSingleMessage(context: Context, message:Message): Result {
-            registerReceivers(context, message.id)
+        private fun handleSingleMessage(message:Message): Result {
             sendMessage(
                 message,
-                createPendingIntent(message.id, SmsManagerService.sentAction(message.id)),
-                createPendingIntent(message.id, SmsManagerService.deliveredAction(message.id))
+                createPendingIntent(message.id, SmsManagerService.sentAction()),
+                createPendingIntent(message.id, SmsManagerService.deliveredAction())
             )
             return Result.success()
-        }
-
-        private fun registerReceivers(context: Context, messageID: String) {
-            context.registerReceiver(
-                SentReceiver(),
-                IntentFilter(SmsManagerService.sentAction(messageID))
-            )
-            context.registerReceiver(
-                DeliveredReceiver(),
-                IntentFilter(SmsManagerService.deliveredAction(messageID))
-            )
         }
 
         private fun handleFailed(context: Context, messageID: String) {
@@ -249,9 +234,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             return PendingIntent.getBroadcast(
                 this.applicationContext,
-                0,
+                id.hashCode(),
                 intent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                PendingIntent.FLAG_MUTABLE
             )
         }
     }

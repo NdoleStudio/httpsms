@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -41,6 +42,9 @@ import android.provider.Settings as ProviderSettings
 
 
 class MainActivity : AppCompatActivity() {
+    private var sentReceiver: SentReceiver? = null
+    private var deliveredReceiver: DeliveredReceiver? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -55,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         setCardContent(this)
         registerListeners()
         refreshToken(this)
+        registerReceivers(this)
 
         startStickyNotification(this)
         scheduleHeartbeatWorker(this)
@@ -80,6 +85,26 @@ class MainActivity : AppCompatActivity() {
     private fun setVersion() {
         val appVersionView = findViewById<TextView>(R.id.mainAppVersion)
         appVersionView.text = format(getString(R.string.app_version), BuildConfig.VERSION_NAME)
+    }
+
+    private fun registerReceivers(context: Context) {
+        if(sentReceiver == null) {
+            Timber.d("registering [sent] receiver for intent [${SmsManagerService.sentAction()}]")
+            sentReceiver = SentReceiver()
+            context.registerReceiver(
+                sentReceiver,
+                IntentFilter(SmsManagerService.sentAction())
+            )
+        }
+
+        if(deliveredReceiver == null) {
+            Timber.d("registering [delivered] receiver for intent [${SmsManagerService.deliveredAction()}]")
+            deliveredReceiver = DeliveredReceiver()
+            context.registerReceiver(
+                deliveredReceiver,
+                IntentFilter(SmsManagerService.deliveredAction())
+            )
+        }
     }
 
     private fun setCardContent(context: Context) {

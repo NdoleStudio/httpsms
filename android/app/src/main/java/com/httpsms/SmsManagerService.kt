@@ -17,12 +17,12 @@ class SmsManagerService {
         private const val ACTION_SMS_SENT = "SMS_SENT"
         private const val ACTION_SMS_DELIVERED = "SMS_DELIVERED"
 
-        fun sentAction(messageID: String): String {
-            return "$ACTION_SMS_SENT.$messageID"
+        fun sentAction(): String {
+            return "${BuildConfig.APPLICATION_ID}.$ACTION_SMS_SENT"
         }
 
-        fun deliveredAction(messageID: String): String {
-            return "$ACTION_SMS_DELIVERED.$messageID"
+        fun deliveredAction(): String {
+            return "${BuildConfig.APPLICATION_ID}.$ACTION_SMS_DELIVERED"
         }
 
         fun isDualSIM(context: Context) : Boolean {
