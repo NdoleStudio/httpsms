@@ -20,6 +20,12 @@ object Receiver {
             Timber.w("cannot handle message with id [$messageId] because the user is not active")
             return false
         }
+
+        if(messageId.contains(".")) {
+            Timber.d("message id [${messageId}] is for multipart segment [${messageId.split(".")[1]}]")
+            return false
+        }
+
         return true
     }
 }
