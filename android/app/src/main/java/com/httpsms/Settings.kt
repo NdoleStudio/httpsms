@@ -27,7 +27,7 @@ object Settings {
             .getString(this.SETTINGS_SIM1_PHONE_NUMBER, null)
 
         if (owner == null) {
-            Timber.e("cannot get owner from preference [${this.SETTINGS_SIM1_PHONE_NUMBER}]")
+            Timber.i("cannot get owner from preference [${this.SETTINGS_SIM1_PHONE_NUMBER}]")
             return ""
         }
 
@@ -43,7 +43,7 @@ object Settings {
             .getString(this.SETTINGS_SIM2_PHONE_NUMBER, null)
 
         if (owner == null) {
-            Timber.d("cannot get owner from preference [${this.SETTINGS_SIM2_PHONE_NUMBER}]")
+            Timber.i("cannot get owner from preference [${this.SETTINGS_SIM2_PHONE_NUMBER}]")
             return ""
         }
 
@@ -158,7 +158,7 @@ object Settings {
     }
 
     fun isLoggedIn(context: Context): Boolean {
-       return getApiKey(context) != null
+       return getApiKey(context) != null && hasOwner(context)
     }
 
     fun isDualSIM(context: Context): Boolean {
