@@ -63,7 +63,7 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
-		query.Where("quantity ILIKE ?", queryPattern)
+		query.Where("version LIKE ?", queryPattern)
 	}
 
 	heartbeats := new([]entities.Heartbeat)

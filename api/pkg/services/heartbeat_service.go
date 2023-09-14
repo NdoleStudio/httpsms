@@ -69,6 +69,7 @@ func (service *HeartbeatService) Index(ctx context.Context, userID entities.User
 // HeartbeatStoreParams are parameters for creating a new entities.Heartbeat
 type HeartbeatStoreParams struct {
 	Owner     string
+	Version   string
 	Timestamp time.Time
 	UserID    entities.UserID
 }

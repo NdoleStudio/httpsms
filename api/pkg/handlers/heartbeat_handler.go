@@ -121,7 +121,7 @@ func (h *HeartbeatHandler) Store(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing heartbeat")
 	}
 
-	heartbeat, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
+	heartbeat, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c), c.Get("X-Client-Version")))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store heartbeat with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
