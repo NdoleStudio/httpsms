@@ -1,10 +1,33 @@
 package com.httpsms
 
 import android.content.Context
+import android.content.IntentFilter
 import timber.log.Timber
 
-
 object Receiver {
+    private var sentReceiver: SentReceiver? = null;
+    private var deliveredReceiver: DeliveredReceiver? = null;
+
+    fun register(context: Context) {
+        if(sentReceiver == null) {
+            Timber.d("registering [sent] receiver for intent [${SmsManagerService.sentAction()}]")
+            sentReceiver = SentReceiver()
+            context.registerReceiver(
+                sentReceiver,
+                IntentFilter(SmsManagerService.sentAction())
+            )
+        }
+
+        if(deliveredReceiver == null) {
+            Timber.d("registering [delivered] receiver for intent [${SmsManagerService.deliveredAction()}]")
+            deliveredReceiver = DeliveredReceiver()
+            context.registerReceiver(
+                deliveredReceiver,
+                IntentFilter(SmsManagerService.deliveredAction())
+            )
+        }
+    }
+
     fun isValid(context: Context, messageId: String?): Boolean {
         if (messageId == null) {
             Timber.e("cannot handle event because the message ID is null")

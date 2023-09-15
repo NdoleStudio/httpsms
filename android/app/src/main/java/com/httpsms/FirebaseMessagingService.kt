@@ -137,6 +137,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 return Result.failure()
             }
 
+            Receiver.register(applicationContext)
             val parts = getMessageParts(applicationContext, message)
             if (parts.size == 1) {
                 return handleSingleMessage(message)
