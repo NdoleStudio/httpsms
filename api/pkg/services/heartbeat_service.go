@@ -85,6 +85,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		ID:        uuid.New(),
 		Owner:     params.Owner,
 		Timestamp: params.Timestamp,
+		Version:   params.Version,
 		UserID:    params.UserID,
 	}
 
