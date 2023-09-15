@@ -65,7 +65,7 @@
     "eslint-plugin-nuxt": "^4.0.0",
     "eslint-plugin-vue": "^9.16.1",
     "jest": "^27.4.4",
-    "lint-staged": "^13.2.2",
+    "lint-staged": "^14.0.1",
     "postcss-html": "^1.5.0",
     "prettier": "3.0.3",
     "stylelint": "^15.10.2",
