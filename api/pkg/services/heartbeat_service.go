@@ -125,10 +125,12 @@ func (service *HeartbeatService) StoreMonitor(ctx context.Context, params *Heart
 	}
 
 	heartbeatMonitor := &entities.HeartbeatMonitor{
-		ID:      uuid.New(),
-		PhoneID: params.PhoneID,
-		UserID:  params.UserID,
-		Owner:   params.Owner,
+		ID:        uuid.New(),
+		PhoneID:   params.PhoneID,
+		UserID:    params.UserID,
+		Owner:     params.Owner,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 	}
 
 	if err = service.monitorRepository.Store(ctx, heartbeatMonitor); err != nil {

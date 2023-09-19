@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -29,8 +30,10 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 	err := repository.db.
 		Model(&entities.HeartbeatMonitor{}).
 		Where("id = ?", monitorID).
-		UpdateColumn("queue_id", queueID).
-		Error
+		Updates(map[string]any{
+			"queue_id":   queueID,
+			"updated_at": time.Now().UTC(),
+		}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot update heartbeat monitor ID [%s]", monitorID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -73,11 +76,6 @@ func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, use
 	defer span.End()
 
 	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
-	if len(params.Query) > 0 {
-		queryPattern := "%" + params.Query + "%"
-		query.Where("quantity ILIKE ?", queryPattern)
-	}
-
 	heartbeats := new([]entities.Heartbeat)
 	if err := query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error; err != nil {
 		msg := fmt.Sprintf("cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params)
