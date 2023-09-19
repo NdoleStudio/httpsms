@@ -243,7 +243,7 @@ func (service *HeartbeatService) handleMissedMonitor(ctx context.Context, lastTi
 }
 
 func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	err := service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
@@ -270,11 +270,12 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	ctxLogger.Info(fmt.Sprintf("heartbeat monitor with id [%s] and phone id [%s] failed for user [%s]", params.MonitorID, params.PhoneID, params.UserID))
 	return nil
 }
 
 func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	event, err := service.createPhoneHeartbeatCheckEvent(params.Source, &events.PhoneHeartbeatCheckPayload{
@@ -299,6 +300,8 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 		msg := fmt.Sprintf("cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID)
 		service.logger.Error(stacktrace.Propagate(err, msg))
 	}
+
+	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", params.MonitorID, params.PhoneID, queueID, params.UserID))
 
 	return nil
 }
