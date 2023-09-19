@@ -174,7 +174,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		// Android has a limit of 30 SMS messages per minute without user permission, to be safe let's use 10 messages per minute
 		// https://android.googlesource.com/platform/frameworks/opt/telephony/+/master/src/java/com/android/internal/telephony/SmsUsageMonitor.java#80
 		MessagesPerMinute:        10,
-		MessageExpirationSeconds: 15 * 60, // 15 minutes
+		MessageExpirationSeconds: 10 * 60, // 10 minutes
 		MaxSendAttempts:          2,
 		SIM:                      params.SIM,
 		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
@@ -202,7 +202,7 @@ func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertPar
 	if phone.FcmToken != nil {
 		phone.FcmToken = params.FcmToken
 	}
-	if params.MessagesPerMinute != nil {
+	if params.MessagesPerMinute != nil && *params.MessagesPerMinute > 0 {
 		phone.MessagesPerMinute = *params.MessagesPerMinute
 	}
 

@@ -408,7 +408,7 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message with id [%s] in after adding send attempt", message.ID))
+	ctxLogger.Info(fmt.Sprintf("message with id [%s] updated after adding send attempt", message.ID))
 	return nil
 }
 
