@@ -67,12 +67,13 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return nil
 	}
 
-	if err = service.repository.Update(ctx, thread.Update(params.Timestamp, params.MessageID, params.Content)); err != nil {
+	thread = thread.Update(params.Timestamp, params.MessageID, params.Content, params.Status)
+	if err = service.repository.Update(ctx, thread); err != nil {
 		msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s]", thread.ID, thread.LastMessageID))
+	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s] and status [%s]", thread.ID, thread.LastMessageID, thread.Status))
 	return nil
 }
 

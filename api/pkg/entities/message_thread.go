@@ -23,9 +23,10 @@ type MessageThread struct {
 }
 
 // Update a message thread after a message event
-func (thread *MessageThread) Update(timestamp time.Time, messageID uuid.UUID, content string) *MessageThread {
+func (thread *MessageThread) Update(timestamp time.Time, messageID uuid.UUID, content string, status MessageStatus) *MessageThread {
 	thread.OrderTimestamp = timestamp
 	thread.LastMessageID = messageID
+	thread.Status = status
 	thread.LastMessageContent = content
 	return thread
 }
