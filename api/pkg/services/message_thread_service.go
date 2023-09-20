@@ -63,7 +63,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 	}
 
 	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusFailed {
-		ctxLogger.Info(fmt.Sprintf("thread [%s] has timestamp [%s] which is greater than timestamp [%s] for message [%s]", thread.ID, thread.OrderTimestamp, params.Timestamp, params.MessageID))
+		ctxLogger.Info(fmt.Sprintf("thread [%s] has timestamp [%s] and status [%s] which is greater than timestamp [%s] for message [%s] and status [%s]", thread.ID, thread.OrderTimestamp, thread.Status, params.Timestamp, params.MessageID, params.Status))
 		return nil
 	}
 

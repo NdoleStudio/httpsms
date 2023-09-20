@@ -165,9 +165,9 @@ func (listener *MessageThreadListener) OnMessagePhoneFailed(ctx context.Context,
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
-	var payload events.MessagePhoneDeliveredPayload
+	var payload events.MessageSendFailedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		msg := fmt.Sprintf("cannot decode [%s] into [%T] for event [%s]", event.Data(), payload, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
