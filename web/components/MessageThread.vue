@@ -89,27 +89,19 @@
               <v-list-item-action-text>
                 {{ threadDate(thread.order_timestamp) }}
               </v-list-item-action-text>
-              <v-icon
-                v-if="thread.status === 'expired'"
-                color="warning"
-                class="mt-n2"
-                >{{ mdiAlert }}</v-icon
-              >
-              <v-icon
-                v-else-if="thread.status === 'delivered'"
-                color="primary"
-                class="mt-n6"
-              >
+              <v-icon v-if="thread.status === 'expired'" color="warning">{{
+                mdiAlert
+              }}</v-icon>
+              <v-icon v-else-if="thread.status === 'delivered'" color="primary">
                 {{ mdiCheckAll }}
               </v-icon>
-              <v-icon v-else-if="thread.status === 'sent'" class="mt-n6">
+              <v-icon v-else-if="thread.status === 'received'" color="success">
+                {{ mdiCheckAll }}
+              </v-icon>
+              <v-icon v-else-if="thread.status === 'sent'">
                 {{ mdiCheck }}
               </v-icon>
-              <v-icon
-                v-else-if="thread.status === 'failed'"
-                color="error"
-                class="mt-n2"
-              >
+              <v-icon v-else-if="thread.status === 'failed'" color="error">
                 {{ mdiAlert }}
               </v-icon>
             </v-list-item-action>
