@@ -89,6 +89,29 @@
               <v-list-item-action-text>
                 {{ threadDate(thread.order_timestamp) }}
               </v-list-item-action-text>
+              <v-icon
+                v-if="thread.status === 'expired'"
+                color="warning"
+                class="mt-n2"
+                >{{ mdiAlert }}</v-icon
+              >
+              <v-icon
+                v-else-if="thread.status === 'delivered'"
+                color="primary"
+                class="mt-n6"
+              >
+                {{ mdiCheckAll }}
+              </v-icon>
+              <v-icon v-else-if="thread.status === 'sent'" class="mt-n6">
+                {{ mdiCheck }}
+              </v-icon>
+              <v-icon
+                v-else-if="thread.status === 'failed'"
+                color="error"
+                class="mt-n2"
+              >
+                {{ mdiAlert }}
+              </v-icon>
             </v-list-item-action>
           </v-list-item>
         </template>
@@ -99,13 +122,23 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-import { mdiPlus, mdiDownload, mdiAccount } from '@mdi/js'
+import {
+  mdiPlus,
+  mdiDownload,
+  mdiCheckAll,
+  mdiCheck,
+  mdiAlert,
+  mdiAccount,
+} from '@mdi/js'
 
 @Component
 export default class MessageThread extends Vue {
   mdiPlus = mdiPlus
   mdiDownload = mdiDownload
   mdiAccount = mdiAccount
+  mdiAlert = mdiAlert
+  mdiCheck = mdiCheck
+  mdiCheckAll = mdiCheckAll
 
   get threads(): Array<MessageThread> {
     return this.$store.getters.getThreads

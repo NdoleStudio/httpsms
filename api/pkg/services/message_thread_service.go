@@ -36,6 +36,7 @@ func NewMessageThreadService(
 // MessageThreadUpdateParams are parameters for updating a thread
 type MessageThreadUpdateParams struct {
 	Owner     string
+	Status    entities.MessageStatus
 	Contact   string
 	Content   string
 	UserID    entities.UserID
@@ -118,6 +119,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		IsArchived:         false,
 		Color:              service.getColor(),
 		LastMessageContent: params.Content,
+		Status:             params.Status,
 		LastMessageID:      params.MessageID,
 		CreatedAt:          time.Now().UTC(),
 		UpdatedAt:          time.Now().UTC(),

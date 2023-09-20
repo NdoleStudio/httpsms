@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -38,6 +40,7 @@ func NewMessageThreadListener(
 		events.EventTypeMessageSendFailed:            l.OnMessagePhoneFailed,
 		events.EventTypeMessagePhoneReceived:         l.OnMessagePhoneReceived,
 		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
+		events.EventTypeMessageSendExpired:           l.onMessageExpired,
 	}
 }
 
@@ -56,6 +59,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		UserID:    payload.UserID,
+		Status:    entities.MessageStatusSent,
 		Timestamp: payload.RequestReceivedAt,
 		Content:   payload.Content,
 		MessageID: payload.MessageID,
@@ -84,6 +88,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSending(ctx context.Context
 		Owner:     payload.Owner,
 		UserID:    payload.UserID,
 		Contact:   payload.Contact,
+		Status:    entities.MessageStatusSending,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -112,6 +117,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		UserID:    payload.UserID,
+		Status:    entities.MessageStatusSent,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -140,6 +146,7 @@ func (listener *MessageThreadListener) OnMessagePhoneDelivered(ctx context.Conte
 		Owner:     payload.Owner,
 		UserID:    payload.UserID,
 		Contact:   payload.Contact,
+		Status:    entities.MessageStatusDelivered,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -168,6 +175,7 @@ func (listener *MessageThreadListener) OnMessagePhoneFailed(ctx context.Context,
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		UserID:    payload.UserID,
+		Status:    entities.MessageStatusFailed,
 		Timestamp: payload.Timestamp,
 		Content:   payload.Content,
 		MessageID: payload.ID,
@@ -197,6 +205,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 		Contact:   payload.Contact,
 		Timestamp: payload.Timestamp,
 		UserID:    payload.UserID,
+		Status:    entities.MessageStatusReceived,
 		Content:   payload.Content,
 		MessageID: payload.MessageID,
 	}
@@ -226,6 +235,36 @@ func (listener *MessageThreadListener) onMessageNotificationScheduled(ctx contex
 		Timestamp: payload.ScheduledAt,
 		UserID:    payload.UserID,
 		Content:   payload.Content,
+		Status:    entities.MessageStatusScheduled,
+		MessageID: payload.MessageID,
+	}
+
+	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageNotificationScheduled handles the events.EventTypeMessageNotificationScheduled event
+func (listener *MessageThreadListener) onMessageExpired(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageSendExpiredPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	updateParams := services.MessageThreadUpdateParams{
+		Owner:     payload.Owner,
+		Contact:   payload.Contact,
+		Timestamp: payload.Timestamp,
+		UserID:    payload.UserID,
+		Content:   payload.Content,
+		Status:    entities.MessageStatusExpired,
 		MessageID: payload.MessageID,
 	}
 
