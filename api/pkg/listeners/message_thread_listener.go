@@ -59,7 +59,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 		Owner:     payload.Owner,
 		Contact:   payload.Contact,
 		UserID:    payload.UserID,
-		Status:    entities.MessageStatusSent,
+		Status:    entities.MessageStatusPending,
 		Timestamp: payload.RequestReceivedAt,
 		Content:   payload.Content,
 		MessageID: payload.MessageID,
