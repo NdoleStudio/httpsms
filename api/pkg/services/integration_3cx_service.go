@@ -1,7 +1,9 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,7 +15,6 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/carlmjohnson/requests"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/palantir/stacktrace"
 )
@@ -71,22 +72,47 @@ func (service *Integration3CXService) sendNotification(ctx context.Context, even
 
 	payload, err := service.getPayload(event)
 	if err != nil {
-		msg := fmt.Sprintf("cannot generate payload from [%s] event with ID [%s] for user [%s]", event.Type(), event.ID(), integration.UserID)
+		msg := fmt.Sprintf("cannot generate [3cx] payload from [%s] event with ID [%s] for user [%s]", event.Type(), event.ID(), integration.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot marshal [%T] for  [%s] event with ID [%s] for user [%s]", payload, event.Type(), event.ID(), integration.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 	}
 
-	var response string
-	err = requests.URL(integration.WebhookURL).
-		Client(service.client).
-		BodyJSON(payload).
-		ToString(&response).
-		Fetch(ctx)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, integration.WebhookURL, bytes.NewBuffer(body))
+	if err != nil {
+		msg := fmt.Sprintf("cannot create [%T] for [%s] event with ID [%s] for user [%s]", request, event.Type(), event.ID(), integration.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	response, err := service.client.Do(request)
 	if err != nil {
 		msg := fmt.Sprintf("cannot send [%s] event to [3cx] webhook [%s] for user [%s]", event.Type(), integration.WebhookURL, integration.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 	}
+	defer func() {
+		err = response.Body.Close()
+		if err != nil {
+			ctxLogger.Error(stacktrace.Propagate(err, "cannot close response body"))
+		}
+	}()
 
-	ctxLogger.Info(fmt.Sprintf("sent [3cx] webhook to url [%s] for event [%s] with ID [%s] and response [%s]", integration.WebhookURL, event.Type(), event.ID(), response))
+	ctxLogger.Info(
+		fmt.Sprintf(
+			"sent [3cx] webhook to url [%s] for event [%s] with ID [%s] and response [%s] and code [%d]",
+			integration.WebhookURL,
+			event.Type(),
+			event.ID(),
+			response.Status,
+			response.StatusCode,
+		),
+	)
 }
 
 func (service *Integration3CXService) getPayload(event cloudevents.Event) (fiber.Map, error) {
