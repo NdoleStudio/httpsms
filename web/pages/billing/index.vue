@@ -386,6 +386,18 @@ export default Vue.extend({
           price: 200,
         },
         {
+          name: '20k - Monthly',
+          id: '20k-monthly',
+          messagesPerMonth: 20000,
+          price: 35,
+        },
+        {
+          name: '20k - Yearly',
+          id: '20k-yearly',
+          messagesPerMonth: 20000,
+          price: 350,
+        },
+        {
           name: 'PRO - Lifetime',
           id: 'pro-lifetime',
           messagesPerMonth: 10000,
