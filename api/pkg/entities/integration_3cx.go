@@ -14,3 +14,8 @@ type Integration3CX struct {
 	CreatedAt  time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt  time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }
+
+// TableName overrides the table name used by Integration3CX
+func (Integration3CX) TableName() string {
+	return "integration_3cx"
+}

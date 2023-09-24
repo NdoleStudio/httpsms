@@ -560,6 +560,16 @@ func (container *Container) MessageRepository() (repository repositories.Message
 	)
 }
 
+// Integration3CXRepository creates a new instance of repositories.Integration3CxRepository
+func (container *Container) Integration3CXRepository() (repository repositories.Integration3CxRepository) {
+	container.logger.Debug("creating GORM repositories.Integration3CxRepository")
+	return repositories.NewGormIntegration3CXRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
 // PhoneRepository creates a new instance of repositories.PhoneRepository
 func (container *Container) PhoneRepository() (repository repositories.PhoneRepository) {
 	container.logger.Debug("creating GORM repositories.PhoneRepository")

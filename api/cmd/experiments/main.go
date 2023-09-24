@@ -6,6 +6,11 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
+
+	"github.com/NdoleStudio/httpsms/pkg/di"
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/google/uuid"
 
 	"github.com/carlmjohnson/requests"
 
@@ -18,7 +23,19 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	loadTest()
+	container := di.NewLiteContainer()
+	repo := container.Integration3CXRepository()
+
+	err = repo.Save(context.Background(), &entities.Integration3CX{
+		ID:         uuid.MustParse("b0b1acdc-69dd-4aee-8277-ba4adc5d2e90"),
+		UserID:     "XtABz6zdeFMoBLoltz6SREDvRSh2",
+		WebhookURL: "https://lagomtest.3cx.com.au/sms/generic/155e125bf7874f8fae5adbcaac49fdf8",
+		CreatedAt:  time.Now().UTC(),
+		UpdatedAt:  time.Now().UTC(),
+	})
+	if err != nil {
+		container.Logger().Fatal(err)
+	}
 }
 
 func loadTest() {

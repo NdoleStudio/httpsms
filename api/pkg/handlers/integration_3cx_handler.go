@@ -72,6 +72,7 @@ func (h *Integration3CXHandler) Messages(c *fiber.Ctx) error {
 		return h.responsePaymentRequired(c, *msg)
 	}
 
+	request.Sanitize()
 	message, err := h.messageService.SendMessage(ctx, request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot send [3cx] message with paylod [%s]", c.Body())
@@ -79,5 +80,12 @@ func (h *Integration3CXHandler) Messages(c *fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseOK(c, "message added to queue", message)
+	ctxLogger.Info(fmt.Sprintf("[3cx] message sent with ID [%s]", message.ID))
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data": fiber.Map{
+			"payload": fiber.Map{
+				"id": message.ID.String(),
+			},
+		},
+	})
 }
