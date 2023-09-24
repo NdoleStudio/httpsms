@@ -129,6 +129,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterWebhookListeners()
 
 	container.RegisterLemonsqueezyRoutes()
+	container.RegisterIntegration3CXRoutes()
 
 	container.RegisterDiscordRoutes()
 	container.RegisterDiscordListeners()
@@ -163,6 +164,12 @@ func (container *Container) App() (app *fiber.App) {
 
 	container.app = app
 	return app
+}
+
+// BearerAPIKeyMiddleware creates a new instance of middlewares.BearerAPIKeyAuth
+func (container *Container) BearerAPIKeyMiddleware() fiber.Handler {
+	container.logger.Debug("creating middlewares.BearerAPIKeyAuth")
+	return middlewares.BearerAPIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository())
 }
 
 // AuthenticatedMiddleware creates a new instance of middlewares.Authenticated
@@ -266,6 +273,10 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	if err = db.AutoMigrate(&entities.Discord{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Discord{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Integration3CX{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Integration3CX{})))
 	}
 
 	return container.db
@@ -883,6 +894,18 @@ func (container *Container) LemonsqueezyHandler() (handler *handlers.Lemonsqueez
 	)
 }
 
+// Integration3CXHandler creates a new instance of handlers.Integration3CXHandler
+func (container *Container) Integration3CXHandler() (handler *handlers.Integration3CXHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+
+	return handlers.NewIntegration3CxHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageService(),
+		container.BillingService(),
+	)
+}
+
 // DiscordHandler creates a new instance of handlers.DiscordHandler
 func (container *Container) DiscordHandler() (handler *handlers.DiscordHandler) {
 	container.logger.Debug(fmt.Sprintf("creating %T", handler))
@@ -932,6 +955,12 @@ func (container *Container) DiscordClient() (client *discord.Client) {
 func (container *Container) RegisterLemonsqueezyRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.LemonsqueezyHandler{}))
 	container.LemonsqueezyHandler().RegisterRoutes(container.App())
+}
+
+// RegisterIntegration3CXRoutes registers routes for the /integration/3cx prefix
+func (container *Container) RegisterIntegration3CXRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering [%T] routes", &handlers.Integration3CXHandler{}))
+	container.Integration3CXHandler().RegisterRoutes(container.App(), container.BearerAPIKeyMiddleware(), container.AuthenticatedMiddleware())
 }
 
 // RegisterDiscordRoutes registers routes for the /discord prefix
