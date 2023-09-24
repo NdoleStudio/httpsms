@@ -105,12 +105,13 @@ func (service *Integration3CXService) sendNotification(ctx context.Context, even
 
 	ctxLogger.Info(
 		fmt.Sprintf(
-			"sent [3cx] webhook to url [%s] for event [%s] with ID [%s] and response [%s] and code [%d]",
+			"sent [3cx] webhook to url [%s] for event [%s] with ID [%s] and response [%s] and code [%d] and payload [%s]",
 			integration.WebhookURL,
 			event.Type(),
 			event.ID(),
 			response.Status,
 			response.StatusCode,
+			string(body),
 		),
 	)
 }
