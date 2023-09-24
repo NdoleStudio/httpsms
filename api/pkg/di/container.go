@@ -129,7 +129,9 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterWebhookListeners()
 
 	container.RegisterLemonsqueezyRoutes()
+
 	container.RegisterIntegration3CXRoutes()
+	container.RegisterIntegration3CXListeners()
 
 	container.RegisterDiscordRoutes()
 	container.RegisterDiscordListeners()
@@ -709,6 +711,17 @@ func (container *Container) WebhookService() (service *services.WebhookService) 
 	)
 }
 
+// Integration3CXService creates a new instance of services.Integration3CXService
+func (container *Container) Integration3CXService() (service *services.Integration3CXService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewIntegration3CXService(
+		container.Logger(),
+		container.Tracer(),
+		container.HTTPClient("integration_3cx"),
+		container.Integration3CXRepository(),
+	)
+}
+
 // HTTPClient creates a new http.Client
 func (container *Container) HTTPClient(name string) *http.Client {
 	container.logger.Debug(fmt.Sprintf("creating %s %T", name, http.DefaultClient))
@@ -1056,6 +1069,20 @@ func (container *Container) RegisterDiscordListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.DiscordService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterIntegration3CXListeners registers event listeners for listeners.Integration3CXListener
+func (container *Container) RegisterIntegration3CXListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.Integration3CXListener{}))
+	_, routes := listeners.NewIntegration3CXListener(
+		container.Logger(),
+		container.Tracer(),
+		container.Integration3CXService(),
 	)
 
 	for event, handler := range routes {

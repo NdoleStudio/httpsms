@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -28,6 +29,26 @@ func NewGormIntegration3CXRepository(
 		tracer: tracer,
 		db:     db,
 	}
+}
+
+// Load an entities.Integration3CX based on the entities.UserID
+func (repository *gormIntegration3CxRepository) Load(ctx context.Context, userID entities.UserID) (*entities.Integration3CX, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	integration := new(entities.Integration3CX)
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).First(&integration).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("[3cx] integration for user [%s] does not exist", userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot load [3cx] integration for user [%s]", userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return integration, nil
 }
 
 // Save an entities.Integration3CX

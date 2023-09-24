@@ -10,4 +10,7 @@ import (
 type Integration3CxRepository interface {
 	// Save an entities.Integration3CX
 	Save(ctx context.Context, heartbeat *entities.Integration3CX) error
+
+	// Load an entities.Integration3CX based on the entities.UserID
+	Load(ctx context.Context, userID entities.UserID) (*entities.Integration3CX, error)
 }
