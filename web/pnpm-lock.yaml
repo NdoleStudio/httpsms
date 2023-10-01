@@ -80,6 +80,9 @@ dependencies:
   vuetify:
     specifier: ^2.7.1
     version: 2.7.1(vue@2.7.14)
+  vuex:
+    specifier: ^3.6.2
+    version: 3.6.2(vue@2.7.14)
   webpack:
     specifier: ^5.87.0
     version: 5.87.0
