@@ -46,7 +46,6 @@
     "vue-server-renderer": "2.7.14",
     "vue-template-compiler": "^2.7.14",
     "vuetify": "^2.7.1",
-    "vuex": "^4.1.0",
     "webpack": "^5.87.0"
   },
   "devDependencies": {
