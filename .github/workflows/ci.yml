@@ -59,7 +59,7 @@ jobs:
         run: echo GITHUB_SHA=${GITHUB_SHA}
 
       - name: Build 🏗️
-        run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && yarn generate
+        run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && pnpm run generate
 
       - name: Deploy 🚀
         uses: FirebaseExtended/action-hosting-deploy@v0
