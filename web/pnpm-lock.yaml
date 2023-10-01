@@ -17,9 +17,6 @@ dependencies:
   '@nuxtjs/sitemap':
     specifier: ^2.4.0
     version: 2.4.0
-  axios:
-    specifier: ^1.5.1
-    version: 1.5.1
   chart.js:
     specifier: ^4.4.0
     version: 4.4.0
@@ -121,6 +118,9 @@ devDependencies:
   '@vue/test-utils':
     specifier: ^1.3.6
     version: 1.3.6(vue-template-compiler@2.7.14)(vue@2.7.14)
+  axios:
+    specifier: ^0.25.0
+    version: 0.25.0
   babel-core:
     specifier: 7.0.0-bridge.0
     version: 7.0.0-bridge.0(@babel/core@7.23.0)
@@ -139,12 +139,18 @@ devDependencies:
   eslint-plugin-vue:
     specifier: ^9.16.1
     version: 9.16.1(eslint@8.50.0)
+  highlight.js:
+    specifier: ^11.8.0
+    version: 11.8.0
   jest:
     specifier: ^27.4.4
     version: 27.4.4(ts-node@10.9.1)
   lint-staged:
     specifier: ^14.0.1
     version: 14.0.1
+  node-fetch-native:
+    specifier: ^1.2.0
+    version: 1.4.0
   postcss-html:
     specifier: ^1.5.0
     version: 1.5.0
@@ -166,9 +172,18 @@ devDependencies:
   ts-jest:
     specifier: ^27.1.1
     version: 27.1.1(@babel/core@7.23.0)(babel-jest@29.7.0)(jest@27.4.4)(typescript@4.9.5)
+  vue-client-only:
+    specifier: ^2.1.0
+    version: 2.1.0
   vue-jest:
     specifier: ^3.0.4
     version: 3.0.4(babel-core@7.0.0-bridge.0)(vue-template-compiler@2.7.14)(vue@2.7.14)
+  vue-meta:
+    specifier: ^2.4.0
+    version: 2.4.0
+  vue-no-ssr:
+    specifier: ^1.1.1
+    version: 1.1.1
 
 packages:
   /@aashutoshrathi/word-wrap@1.2.6:
@@ -6927,6 +6942,7 @@ packages:
       {
         integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==,
       }
+    dev: true
 
   /at-least-node@1.0.0:
     resolution:
@@ -6970,18 +6986,16 @@ packages:
       }
     engines: { node: '>= 0.4' }
 
-  /axios@1.5.1:
+  /axios@0.25.0:
     resolution:
       {
-        integrity: sha512-Q28iYCWzNHjAm+yEAot5QaAMxhMghWLFVf7rRdwhUI+c2jix2DUXjAHXVi+s1ibs3mjPO/cCgbA++3BjD0vP/A==,
+        integrity: sha512-cD8FOb0tRH3uuEe6+evtAbgJtfxr7ly3fQjYcMcuPlgkwVS9xboaVIpcDV+cYQe+yGykgwZCs1pzjntcGa6l5g==,
       }
     dependencies:
       follow-redirects: 1.15.3
-      form-data: 4.0.0
-      proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-    dev: false
+    dev: true
 
   /babel-code-frame@6.26.0:
     resolution:
@@ -8231,6 +8245,7 @@ packages:
     engines: { node: '>= 0.8' }
     dependencies:
       delayed-stream: 1.0.0
+    dev: true
 
   /commander@10.0.1:
     resolution:
@@ -9460,6 +9475,7 @@ packages:
         integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==,
       }
     engines: { node: '>=0.4.0' }
+    dev: true
 
   /depd@2.0.0:
     resolution:
@@ -11220,7 +11236,7 @@ packages:
     peerDependenciesMeta:
       debug:
         optional: true
-    dev: false
+    dev: true
 
   /for-each@0.3.3:
     resolution:
@@ -11285,18 +11301,6 @@ packages:
       combined-stream: 1.0.8
       mime-types: 2.1.35
     dev: true
-
-  /form-data@4.0.0:
-    resolution:
-      {
-        integrity: sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==,
-      }
-    engines: { node: '>= 6' }
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      mime-types: 2.1.35
-    dev: false
 
   /fraction.js@4.3.6:
     resolution:
@@ -12137,7 +12141,6 @@ packages:
         integrity: sha512-MedQhoqVdr0U6SSnWPzfiadUcDHfN/Wzq25AkXiQv9oiOO/sG0S7XkvpFIqWBl9Yq1UYyYOOVORs5UW2XlPyzg==,
       }
     engines: { node: '>=12.0.0' }
-    dev: false
 
   /hmac-drbg@1.0.1:
     resolution:
@@ -17908,13 +17911,6 @@ packages:
       }
     dev: false
 
-  /proxy-from-env@1.1.0:
-    resolution:
-      {
-        integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==,
-      }
-    dev: false
-
   /prr@1.0.1:
     resolution:
       {
@@ -21216,7 +21212,6 @@ packages:
       {
         integrity: sha512-vKl1skEKn8EK9f8P2ZzhRnuaRHLHrlt1sbRmazlvsx6EiC3A8oWF8YCBrMJzoN+W3OnElwIGbVjsx6/xelY1AA==,
       }
-    dev: false
 
   /vue-eslint-parser@9.3.1(eslint@8.50.0):
     resolution:
@@ -21377,14 +21372,12 @@ packages:
       }
     dependencies:
       deepmerge: 4.3.1
-    dev: false
 
   /vue-no-ssr@1.1.1:
     resolution:
       {
         integrity: sha512-ZMjqRpWabMPqPc7gIrG0Nw6vRf1+itwf0Itft7LbMXs2g3Zs/NFmevjZGN1x7K3Q95GmIjWbQZTVerxiBxI+0g==,
       }
-    dev: false
 
   /vue-property-decorator@9.1.2(vue-class-component@7.2.6)(vue@2.7.14):
     resolution:
