@@ -15,13 +15,13 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import { ProviderId } from 'firebase/auth'
-import { auth } from 'firebaseui'
+import firebaseui from 'firebaseui'
 import firebase from 'firebase/compat'
 import { NotificationRequest } from '~/store'
 
 @Component
 export default class FirebaseAuth extends Vue {
-  ui: auth.AuthUI | null = null
+  ui: firebaseui.auth.AuthUI | null = null
   firebaseUIInitialized = false
 
   @Prop({ required: false, type: String, default: '/' }) to!: string
