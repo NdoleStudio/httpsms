@@ -1,3 +1,4 @@
+// @ts-ignore
 import { AxiosError } from 'axios'
 import Bag from '@/plugins/bag'
 import capitalize from '@/plugins/capitalize'
