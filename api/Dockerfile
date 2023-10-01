@@ -30,6 +30,7 @@ WORKDIR /home/http-sms
 
 COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /zoneinfo.zip
 COPY --from=builder /bin/http-sms ./
+COPY --from=builder /http-sms/root.crt ./
 
 ENV ZONEINFO=/zoneinfo.zip
 

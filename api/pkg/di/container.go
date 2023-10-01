@@ -71,6 +71,7 @@ import (
 type Container struct {
 	projectID       string
 	db              *gorm.DB
+	yugaByteDB      *gorm.DB
 	version         string
 	app             *fiber.App
 	eventDispatcher *services.EventDispatcher
@@ -202,6 +203,39 @@ func (container *Container) GormLogger() gormLogger.Interface {
 		container.Tracer(),
 		container.Logger(6),
 	)
+}
+
+// YugaByteDB creates an instance of gorm.DB if it has not been created already
+func (container *Container) YugaByteDB() (db *gorm.DB) {
+	container.logger.Debug(fmt.Sprintf("creating %T", db))
+	if container.yugaByteDB != nil {
+		return container.yugaByteDB
+	}
+
+	config := &gorm.Config{}
+	if isLocal() {
+		config = &gorm.Config{Logger: container.GormLogger()}
+	}
+
+	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL_YUGABYTE")), config)
+	if err != nil {
+		container.logger.Fatal(err)
+	}
+	if err = db.Use(tracing.NewPlugin()); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+	}
+
+	container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
+	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
+	}
+
+	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
+	}
+
+	container.yugaByteDB = db
+	return container.yugaByteDB
 }
 
 // DB creates an instance of gorm.DB if it has not been created already
@@ -1190,6 +1224,7 @@ func (container *Container) HeartbeatRepository() repositories.HeartbeatReposito
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
+		container.YugaByteDB(),
 	)
 }
 
