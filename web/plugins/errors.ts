@@ -1,11 +1,6 @@
-// @ts-ignore
 import { AxiosError } from 'axios'
 import Bag from '@/plugins/bag'
 import capitalize from '@/plugins/capitalize'
-
-export type ErrorMessagesSerialized = {
-  [name: string]: Array<string>
-}
 
 export class ErrorMessages extends Bag<string> {}
 
@@ -31,15 +26,15 @@ export const getErrorMessages = (error: AxiosError): ErrorMessages => {
   const errors = new ErrorMessages()
   if (
     error === null ||
-    typeof error.response?.data?.data !== 'object' ||
-    error.response?.data?.data === null ||
+    typeof (error.response?.data as any)?.data !== 'object' ||
+    (error.response?.data as any)?.data === null ||
     error.response?.status !== 422
   ) {
     return errors
   }
 
-  Object.keys(error.response.data.data).forEach((key: string) => {
-    errors.addMany(key, sanitize(key, error.response?.data.data[key]))
+  Object.keys((error.response?.data as any).data).forEach((key: string) => {
+    errors.addMany(key, sanitize(key, (error.response?.data as any).data[key]))
   })
 
   return errors

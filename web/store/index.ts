@@ -300,21 +300,21 @@ export const actions = {
     })
 
     await context.dispatch('getHeartbeat')
-    await context.commit('setThreads', response.data.data)
+    context.commit('setThreads', response.data.data)
   },
 
   async loadBillingUsage(context: ActionContext<State, State>) {
     const response = await axios.get('/v1/billing/usage')
-    await context.commit('setBillingUsage', response.data.data)
+    context.commit('setBillingUsage', response.data.data)
   },
 
   async loadBillingUsageHistory(context: ActionContext<State, State>) {
     const response = await axios.get('/v1/billing/usage-history')
-    await context.commit('setBillingUsageHistory', response.data.data)
+    context.commit('setBillingUsageHistory', response.data.data)
   },
 
-  async toggleArchive(context: ActionContext<State, State>) {
-    await context.commit('setArchivedThreads', !context.getters.getIsArchived)
+  toggleArchive(context: ActionContext<State, State>) {
+    context.commit('setArchivedThreads', !context.getters.getIsArchived)
   },
 
   async loadPhones(context: ActionContext<State, State>, force: boolean) {
@@ -381,15 +381,16 @@ export const actions = {
     context: ActionContext<State, State>,
     error: AxiosError,
   ) {
-    const errorMessage =
-      error.response?.data?.data[Object.keys(error.response?.data?.data)[0]][0]
+    const errorMessage = (error.response?.data as any)?.data[
+      Object.keys((error.response?.data as any)?.data)[0]
+    ][0]
     await context.dispatch('addNotification', {
       message:
         (errorMessage ? errorMessage.replaceAll('_', ' ') : null) ??
-        error.response?.data.message,
+        (error.response?.data as any)?.message,
       type: 'error',
     })
-    await context.commit('setAxiosError', error)
+    context.commit('setAxiosError', error)
   },
 
   getHeartbeat(
@@ -415,7 +416,7 @@ export const actions = {
         .catch(async (error: AxiosError) => {
           await context.dispatch('addNotification', {
             message:
-              error.response?.data?.message ??
+              (error.response?.data as any)?.message ??
               'Errors while fetching heartbeat',
             type: 'error',
           })
@@ -441,7 +442,7 @@ export const actions = {
     } catch (e) {
       await context.dispatch('addNotification', {
         message:
-          (e as AxiosError).response?.data?.message ??
+          ((e as AxiosError).response?.data as any)?.message ??
           'Error while sending message',
         type: 'error',
       })
@@ -484,7 +485,8 @@ export const actions = {
         .catch(async (error: AxiosError) => {
           await context.dispatch('addNotification', {
             message:
-              error.response?.data?.message ?? 'Errors while fetching messages',
+              (error.response?.data as any)?.message ??
+              'Errors while fetching messages',
             type: 'error',
           })
           reject(error)
@@ -599,7 +601,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while fetching the update URL',
               type: 'error',
             }),
@@ -620,7 +622,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while cancelling your subscription',
               type: 'error',
             }),
@@ -644,7 +646,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while adding discord integration',
               type: 'error',
             }),
@@ -669,7 +671,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while fetching discord integrations',
               type: 'error',
             }),
@@ -696,7 +698,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while updating discord integration',
               type: 'error',
             }),
@@ -720,7 +722,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while deleting discord integration',
               type: 'error',
             }),
@@ -744,7 +746,8 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ?? 'Error while adding webhook',
+                (error.response?.data as any)?.message ??
+                'Error while adding webhook',
               type: 'error',
             }),
           ])
@@ -768,7 +771,7 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ??
+                (error.response?.data as any)?.message ??
                 'Error while fetching webhooks',
               type: 'error',
             }),
@@ -792,7 +795,8 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ?? 'Error while updating webhook',
+                (error.response?.data as any)?.message ??
+                'Error while updating webhook',
               type: 'error',
             }),
           ])
@@ -812,7 +816,8 @@ export const actions = {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
-                error.response?.data?.message ?? 'Error while deleting webhook',
+                (error.response?.data as any)?.message ??
+                'Error while deleting webhook',
               type: 'error',
             }),
           ])
