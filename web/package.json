@@ -37,6 +37,7 @@
     "moment": "^2.29.4",
     "nuxt": "^2.17.0",
     "nuxt-highlightjs": "^1.0.3",
+    "ufo": "^1.1.2",
     "vue": "^2.7.14",
     "vue-chartjs": "^5.2.0",
     "vue-class-component": "^7.2.6",
