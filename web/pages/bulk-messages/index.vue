@@ -153,7 +153,10 @@ export default Vue.extend({
       this.$store
         .dispatch('sendBulkMessages', this.formFile)
         .then(() => {
-          this.$router.push({ name: 'threads' })
+          setTimeout(() => {
+            this.loading = false
+            this.$router.push({ name: 'threads' })
+          }, 2000)
         })
         .catch((error: AxiosError) => {
           this.errorTitle = capitalize(
@@ -161,8 +164,6 @@ export default Vue.extend({
               'Error while sending bulk messages',
           )
           this.errorMessages = getErrorMessages(error)
-        })
-        .finally(() => {
           this.loading = false
         })
     },
