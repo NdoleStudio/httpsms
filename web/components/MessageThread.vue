@@ -42,7 +42,13 @@
         New Message
       </v-btn>
     </v-sheet>
-    <div v-if="$store.getters.getPhones.length === 0" class="px-4 text-center">
+    <div
+      v-if="
+        $store.getters.getPhones.length === 0 ||
+        $store.getters.getLoadingThreads === false
+      "
+      class="px-4 text-center"
+    >
       <p>
         Install the mobile app on your android phone to start sending messages
       </p>
