@@ -44,7 +44,7 @@
     </v-sheet>
     <div
       v-if="
-        $store.getters.getPhones.length === 0 ||
+        $store.getters.getPhones.length === 0 &&
         $store.getters.getLoadingThreads === false
       "
       class="px-4 text-center"
