@@ -46,37 +46,9 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 	ctx, span, ctxLogger := v.tracer.StartWithLogger(ctx, v.logger)
 	defer span.End()
 
-	result := url.Values{}
-
-	if header.Size >= 5000000 {
-		result.Add("document", fmt.Sprintf("The CSV file must be less than 500 KB the file you uploaded is [%s].", humanize.Bytes(uint64(header.Size))))
-		return nil, result
-	}
-
-	file, err := header.Open()
-	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot open file [%s] for reading", header.Filename)))
-		result.Add("document", fmt.Sprintf("Cannot open the uploaded file with name [%s].", header.Filename))
-		return nil, result
-	}
-	defer func() {
-		if e := file.Close(); e != nil {
-			ctxLogger.Error(stacktrace.Propagate(e, fmt.Sprintf("cannot close file [%s]", header.Filename)))
-		}
-	}()
-
-	b := new(bytes.Buffer)
-	if _, err = io.Copy(b, file); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot copy file [%s] to buffer", header.Filename)))
-		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
-		return nil, result
-	}
-
-	var messages []*requests.BulkMessage
-	if err := csvutil.Unmarshal(b.Bytes(), &messages); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s]", b.Bytes(), messages, header.Filename)))
-		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
-		return nil, result
+	messages, result := v.parseCSV(ctxLogger, userID, header)
+	if len(result) != 0 {
+		return messages, result
 	}
 
 	if len(messages) == 0 {
@@ -100,6 +72,43 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 	}
 
 	return messages, result
+}
+
+func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
+	result := url.Values{}
+
+	if header.Size >= 5000000 {
+		result.Add("document", fmt.Sprintf("The CSV file must be less than 500 KB the file you uploaded is [%s].", humanize.Bytes(uint64(header.Size))))
+		return nil, result
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot open file [%s] for reading for user [%s]", header.Filename, userID)))
+		result.Add("document", fmt.Sprintf("Cannot open the uploaded file with name [%s].", header.Filename))
+		return nil, result
+	}
+	defer func() {
+		if e := file.Close(); e != nil {
+			ctxLogger.Error(stacktrace.Propagate(e, fmt.Sprintf("cannot close file [%s] for user [%s]", header.Filename, userID)))
+		}
+	}()
+
+	b := new(bytes.Buffer)
+	if _, err = io.Copy(b, file); err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot copy file [%s] to buffer for user [%s]", header.Filename, userID)))
+		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
+		return nil, result
+	}
+
+	var messages []*requests.BulkMessage
+	if err := csvutil.Unmarshal(b.Bytes(), &messages); err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", b.Bytes(), messages, header.Filename, userID)))
+		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
+		return nil, result
+	}
+
+	return messages, nil
 }
 
 func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.BulkMessage) url.Values {
