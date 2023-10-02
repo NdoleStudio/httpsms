@@ -35,7 +35,7 @@ func (input *MessageSend) ToMessageSendParams(userID entities.UserID, source str
 	from, _ := phonenumbers.Parse(input.From, phonenumbers.UNKNOWN_REGION)
 	return services.MessageSendParams{
 		Source:            source,
-		Owner:             *from,
+		Owner:             from,
 		RequestID:         input.sanitizeStringPointer(input.RequestID),
 		UserID:            userID,
 		RequestReceivedAt: time.Now().UTC(),

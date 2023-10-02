@@ -377,6 +377,37 @@ export const actions = {
     await context.dispatch('loadPhones', true)
   },
 
+  sendBulkMessages(context: ActionContext<State, State>, document: File) {
+    return new Promise<ResponsesNoContent>((resolve, reject) => {
+      const formData = new FormData()
+      formData.append('document', document)
+      axios
+        .post<ResponsesNoContent>(`/v1/bulk-messages`, formData, {
+          headers: {
+            'content-type': 'multipart/form-data',
+          },
+        })
+        .then(async (response: AxiosResponse<ResponsesNoContent>) => {
+          await context.dispatch('addNotification', {
+            message: response.data.message ?? 'Bulk messages sent successfully',
+            type: 'success',
+          })
+          resolve(response.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Errors while sending bulk messages',
+              type: 'error',
+            }),
+          ])
+          reject(error)
+        })
+    })
+  },
+
   async handleAxiosError(
     context: ActionContext<State, State>,
     error: AxiosError,

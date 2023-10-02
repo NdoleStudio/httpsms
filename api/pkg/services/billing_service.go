@@ -48,8 +48,8 @@ func NewBillingService(
 	}
 }
 
-// IsEntitled checks if a user can send or receive and SMS message
-func (service *BillingService) IsEntitled(ctx context.Context, userID entities.UserID) *string {
+// IsEntitledWithCount checks if a user can send or receive and SMS message
+func (service *BillingService) IsEntitledWithCount(ctx context.Context, userID entities.UserID, count uint) *string {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -60,25 +60,30 @@ func (service *BillingService) IsEntitled(ctx context.Context, userID entities.U
 		return nil
 	}
 
-	billingUsage, err := service.billingUsageRepository.GetCurrent(ctx, userID)
+	usage, err := service.billingUsageRepository.GetCurrent(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load billing usage for user with ID [%s], entitlement successfull", userID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return nil
 	}
 
-	if billingUsage.TotalMessages() >= user.SubscriptionName.Limit() {
-		return service.handleLimitExceeded(ctx, user, billingUsage)
+	if !usage.IsEntitled(count, user.SubscriptionName.Limit()) {
+		return service.handleLimitExceeded(ctx, user)
 	}
 
 	return nil
 }
 
-func (service *BillingService) handleLimitExceeded(ctx context.Context, user *entities.User, usage *entities.BillingUsage) *string {
+// IsEntitled checks if a user can send or receive and SMS message
+func (service *BillingService) IsEntitled(ctx context.Context, userID entities.UserID) *string {
+	return service.IsEntitledWithCount(ctx, userID, 1)
+}
+
+func (service *BillingService) handleLimitExceeded(ctx context.Context, user *entities.User) *string {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	service.sendLimitExceededEmail(ctx, user, usage)
+	service.sendLimitExceededEmail(ctx, user)
 
 	message := fmt.Sprintf(
 		"You have exceeded your limit of [%d] messages on your [%s] plan. Upgrade to send more messages on https://httpsms.com/billing",
@@ -88,7 +93,7 @@ func (service *BillingService) handleLimitExceeded(ctx context.Context, user *en
 	return &message
 }
 
-func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user *entities.User, usage *entities.BillingUsage) {
+func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user *entities.User) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 

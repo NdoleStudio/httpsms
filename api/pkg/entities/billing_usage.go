@@ -23,3 +23,8 @@ type BillingUsage struct {
 func (usage *BillingUsage) TotalMessages() uint {
 	return usage.SentMessages + usage.ReceivedMessages
 }
+
+// IsEntitled checks if a user can send `count` messages
+func (usage *BillingUsage) IsEntitled(count, limit uint) bool {
+	return (usage.TotalMessages() + count) < limit
+}

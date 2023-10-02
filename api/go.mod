@@ -14,6 +14,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.3.5
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/ristretto v0.1.1
+	github.com/dustin/go-humanize v1.0.0
 	github.com/gofiber/fiber/v2 v2.48.0
 	github.com/gofiber/swagger v0.1.12
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -23,6 +24,7 @@ require (
 	github.com/jinzhu/now v1.1.5
 	github.com/joho/godotenv v1.5.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+	github.com/jszwec/csvutil v1.8.0
 	github.com/lib/pq v1.10.9
 	github.com/matcornic/hermes/v2 v2.1.0
 	github.com/nyaruka/phonenumbers v1.1.7
@@ -71,7 +73,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect

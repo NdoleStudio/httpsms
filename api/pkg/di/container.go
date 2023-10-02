@@ -107,6 +107,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
+	container.RegisterBulkMessageRoutes()
 
 	container.RegisterMessageThreadRoutes()
 	container.RegisterMessageThreadListeners()
@@ -453,6 +454,16 @@ func (container *Container) Tracer() (t telemetry.Tracer) {
 func (container *Container) MessageHandlerValidator() (validator *validators.MessageHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
 	return validators.NewMessageHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneService(),
+	)
+}
+
+// BulkMessageHandlerValidator creates a new instance of validators.BulkMessageHandlerValidator
+func (container *Container) BulkMessageHandlerValidator() (validator *validators.BulkMessageHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewBulkMessageHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneService(),
@@ -880,6 +891,18 @@ func (container *Container) MessageHandler() (handler *handlers.MessageHandler) 
 	)
 }
 
+// BulkMessageHandler creates a new instance of handlers.BulkMessageHandler
+func (container *Container) BulkMessageHandler() (handler *handlers.BulkMessageHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+	return handlers.NewBulkMessageHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.BulkMessageHandlerValidator(),
+		container.BillingService(),
+		container.MessageService(),
+	)
+}
+
 // UserHandler creates a new instance of handlers.MessageHandler
 func (container *Container) UserHandler() (handler *handlers.UserHandler) {
 	container.logger.Debug(fmt.Sprintf("creating %T", handler))
@@ -1169,6 +1192,12 @@ func (container *Container) RegisterMessageRoutes() {
 	container.MessageHandler().RegisterRoutes(container.AuthRouter())
 }
 
+// RegisterBulkMessageRoutes registers routes for the /bulk-messages prefix
+func (container *Container) RegisterBulkMessageRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.BulkMessageHandler{}))
+	container.BulkMessageHandler().RegisterRoutes(container.AuthRouter())
+}
+
 // RegisterMessageThreadRoutes registers routes for the /message-threads prefix
 func (container *Container) RegisterMessageThreadRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageThreadHandler{}))
@@ -1223,7 +1252,6 @@ func (container *Container) HeartbeatRepository() repositories.HeartbeatReposito
 	return repositories.NewGormHeartbeatRepository(
 		container.Logger(),
 		container.Tracer(),
-		container.DB(),
 		container.YugaByteDB(),
 	)
 }

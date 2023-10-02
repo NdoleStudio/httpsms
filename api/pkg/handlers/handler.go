@@ -71,6 +71,13 @@ func (h *handler) responseNoContent(c *fiber.Ctx, message string) error {
 	})
 }
 
+func (h *handler) responseAccepted(c *fiber.Ctx, message string) error {
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"status":  "success",
+		"message": message,
+	})
+}
+
 func (h *handler) responseOK(c *fiber.Ctx, message string, data interface{}) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",

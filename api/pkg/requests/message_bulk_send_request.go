@@ -35,11 +35,12 @@ func (input *MessageBulkSend) Sanitize() MessageBulkSend {
 // ToMessageSendParams converts MessageSend to services.MessageSendParams
 func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source string) []services.MessageSendParams {
 	from, _ := phonenumbers.Parse(input.From, phonenumbers.UNKNOWN_REGION)
+
 	var result []services.MessageSendParams
 	for _, to := range input.To {
 		result = append(result, services.MessageSendParams{
 			Source:            source,
-			Owner:             *from,
+			Owner:             from,
 			RequestID:         input.sanitizeStringPointer(input.RequestID),
 			UserID:            userID,
 			RequestReceivedAt: time.Now().UTC(),

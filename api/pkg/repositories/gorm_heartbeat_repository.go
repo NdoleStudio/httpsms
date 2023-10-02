@@ -14,10 +14,9 @@ import (
 
 // gormHeartbeatRepository is responsible for persisting entities.Heartbeat
 type gormHeartbeatRepository struct {
-	logger     telemetry.Logger
-	tracer     telemetry.Tracer
-	db         *gorm.DB
-	yugaByteDB *gorm.DB
+	logger telemetry.Logger
+	tracer telemetry.Tracer
+	db     *gorm.DB
 }
 
 // NewGormHeartbeatRepository creates the GORM version of the HeartbeatRepository
@@ -25,13 +24,11 @@ func NewGormHeartbeatRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	db *gorm.DB,
-	yugaByteDB *gorm.DB,
 ) HeartbeatRepository {
 	return &gormHeartbeatRepository{
-		logger:     logger.WithService(fmt.Sprintf("%T", &gormHeartbeatRepository{})),
-		tracer:     tracer,
-		yugaByteDB: yugaByteDB,
-		db:         db,
+		logger: logger.WithService(fmt.Sprintf("%T", &gormHeartbeatRepository{})),
+		tracer: tracer,
+		db:     db,
 	}
 }
 
@@ -85,11 +82,6 @@ func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat 
 
 	if err := repository.db.WithContext(ctx).Create(heartbeat).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	if err := repository.yugaByteDB.WithContext(ctx).Create(heartbeat).Error; err != nil {
-		msg := fmt.Sprintf("cannot save heartbeat with ID [%s] in yugaByteDB", heartbeat.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

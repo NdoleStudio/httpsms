@@ -30,7 +30,7 @@ func (input *Integration3CXMessage) ToMessageSendParams(userID entities.UserID, 
 	from, _ := phonenumbers.Parse(input.From, phonenumbers.UNKNOWN_REGION)
 	return services.MessageSendParams{
 		Source:            source,
-		Owner:             *from,
+		Owner:             from,
 		RequestID:         input.sanitizeStringPointer("integration-3cx"),
 		UserID:            userID,
 		RequestReceivedAt: time.Now().UTC(),
