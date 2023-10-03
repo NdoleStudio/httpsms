@@ -61,6 +61,10 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 		return messages, result
 	}
 
+	for index, message := range messages {
+		messages[index] = message.Sanitize()
+	}
+
 	result = v.validateMessages(messages)
 	if len(result) != 0 {
 		return messages, result

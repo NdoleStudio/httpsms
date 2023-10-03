@@ -2,6 +2,7 @@ package requests
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -16,6 +17,14 @@ type BulkMessage struct {
 	FromPhoneNumber string `csv:"FromPhoneNumber"`
 	ToPhoneNumber   string `csv:"ToPhoneNumber"`
 	Content         string `csv:"Content"`
+}
+
+// Sanitize sets defaults to BulkMessage
+func (input *BulkMessage) Sanitize() *BulkMessage {
+	input.ToPhoneNumber = input.sanitizeAddress(input.ToPhoneNumber)
+	input.Content = strings.TrimSpace(input.Content)
+	input.FromPhoneNumber = input.sanitizeAddress(input.FromPhoneNumber)
+	return input
 }
 
 // ToMessageSendParams converts BulkMessage to services.MessageSendParams
