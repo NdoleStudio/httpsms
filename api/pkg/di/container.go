@@ -268,24 +268,8 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Message{})))
 	}
 
-	if err = db.AutoMigrate(&repositories.GormEvent{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &repositories.GormEvent{})))
-	}
-
-	if err = db.AutoMigrate(&entities.EventListenerLog{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.EventListenerLog{})))
-	}
-
 	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageThread{})))
-	}
-
-	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
-	}
-
-	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
 	}
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {
@@ -693,7 +677,7 @@ func (container *Container) HeartbeatMonitorRepository() (repository repositorie
 	return repositories.NewGormHeartbeatMonitorRepository(
 		container.Logger(),
 		container.Tracer(),
-		container.DB(),
+		container.YugaByteDB(),
 	)
 }
 

@@ -108,51 +108,67 @@ type HeartbeatMonitorStoreParams struct {
 
 // StoreMonitor a new entities.HeartbeatMonitor
 func (service *HeartbeatService) StoreMonitor(ctx context.Context, params *HeartbeatMonitorStoreParams) (*entities.HeartbeatMonitor, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
-
-	exists, err := service.monitorRepository.Exists(ctx, params.UserID, params.Owner)
+	monitor, scheduleCheck, err := service.phoneMonitor(ctx, params)
 	if err != nil {
-		msg := fmt.Sprintf("cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)
+		msg := fmt.Sprintf("cannot create monitor for with userID [%s] and owner [%s]", params.UserID, params.Owner)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if exists {
-		ctxLogger.Info(fmt.Sprintf("heartbeat monitor exists for owner [%s] and user [%s]", params.Owner, params.UserID))
-		return nil, nil
+	if !scheduleCheck {
+		ctxLogger.Info(fmt.Sprintf("heartbeat monitor [%s] for owner [%s] does not need scheduling because it was updated at [%s]", monitor.ID, monitor.Owner, monitor.UpdatedAt))
+		return monitor, nil
 	}
 
-	heartbeatMonitor := &entities.HeartbeatMonitor{
-		ID:        uuid.New(),
-		PhoneID:   params.PhoneID,
-		UserID:    params.UserID,
-		Owner:     params.Owner,
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-	}
-
-	if err = service.monitorRepository.Store(ctx, heartbeatMonitor); err != nil {
-		msg := fmt.Sprintf("cannot save heartbeat monitor for owner [%s] and user [%s]", heartbeatMonitor.Owner, heartbeatMonitor.UserID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	ctxLogger.Info(fmt.Sprintf("heartbeat monitor saved with id [%s] for owner [%s] and user [%s]", heartbeatMonitor.ID, heartbeatMonitor.Owner, heartbeatMonitor.UserID))
+	ctxLogger.Info(fmt.Sprintf("scheduling heartbeat monitor [%s] for owner [%s] and user [%s]", monitor.ID, monitor.Owner, monitor.UserID))
 
 	monitorParams := &HeartbeatMonitorParams{
-		Owner:     heartbeatMonitor.Owner,
-		PhoneID:   heartbeatMonitor.PhoneID,
-		UserID:    heartbeatMonitor.UserID,
-		MonitorID: heartbeatMonitor.ID,
+		Owner:     monitor.Owner,
+		PhoneID:   monitor.PhoneID,
+		UserID:    monitor.UserID,
+		MonitorID: monitor.ID,
 		Source:    params.Source,
 	}
 	if err = service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), monitorParams); err != nil {
-		msg := fmt.Sprintf("cannot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID)
+		msg := fmt.Sprintf("cannot schedule healthcheck for monitor [%s] with owner [%s] and userID [%s]", monitor.ID, params.Owner, params.UserID)
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return heartbeatMonitor, nil
+	return monitor, nil
+}
+
+func (service *HeartbeatService) phoneMonitor(ctx context.Context, params *HeartbeatMonitorStoreParams) (*entities.HeartbeatMonitor, bool, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		monitor = &entities.HeartbeatMonitor{
+			ID:        uuid.New(),
+			PhoneID:   params.PhoneID,
+			UserID:    params.UserID,
+			Owner:     params.Owner,
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+
+		if err = service.monitorRepository.Store(ctx, monitor); err != nil {
+			msg := fmt.Sprintf("cannot save heartbeat monitor for owner [%s] and user [%s]", monitor.Owner, monitor.UserID)
+			return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+
+		ctxLogger.Info(fmt.Sprintf("heartbeat monitor saved with id [%s] for owner [%s] and user [%s]", monitor.ID, monitor.Owner, monitor.UserID))
+		return monitor, true, nil
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)
+		return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return monitor, monitor.RequiresCheck(), nil
 }
 
 // DeleteMonitor an entities.HeartbeatMonitor

@@ -16,3 +16,8 @@ type HeartbeatMonitor struct {
 	CreatedAt time.Time `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }
+
+// RequiresCheck returns true if the heartbeat monitor requires a check
+func (h *HeartbeatMonitor) RequiresCheck() bool {
+	return h.UpdatedAt.Add(2 * time.Hour).Before(time.Now())
+}
