@@ -2,11 +2,8 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 	"strings"
-
-	"github.com/palantir/stacktrace"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/attribute"
@@ -33,14 +30,7 @@ func (tracer *otelTracer) StartFromFiberCtxWithLogger(c *fiber.Ctx, logger Logge
 }
 
 func (tracer *otelTracer) StartFromFiberCtx(c *fiber.Ctx, name ...string) (context.Context, trace.Span) {
-	parentCtx, ok := c.Locals(TracerContextKey).(context.Context)
-	if !ok {
-		tracer.logger.Error(stacktrace.NewError(fmt.Sprintf("could not get trace from context with key [%s] url[%s] method [%s]", TracerContextKey, c.OriginalURL(), c.Method())))
-		ctx, span := trace.NewNoopTracerProvider().Tracer("").Start(context.Background(), "")
-		defer span.End()
-		parentCtx = ctx
-	}
-	return tracer.Start(parentCtx, getName(name...))
+	return tracer.Start(c.UserContext(), getName(name...))
 }
 
 func (tracer *otelTracer) CtxLogger(logger Logger, span trace.Span) Logger {
@@ -57,7 +47,7 @@ func (tracer *otelTracer) Start(c context.Context, name ...string) (context.Cont
 	ctx, span := parentSpan.TracerProvider().Tracer("").Start(c, getName(name...))
 
 	span.SetAttributes(attribute.Key("traceID").String(parentSpan.SpanContext().TraceID().String()))
-	span.SetAttributes(attribute.Key("SpanID").String(span.SpanContext().SpanID().String()))
+	span.SetAttributes(attribute.Key("spanID").String(span.SpanContext().SpanID().String()))
 	span.SetAttributes(attribute.Key("traceFlags").String(parentSpan.SpanContext().TraceFlags().String()))
 
 	return ctx, span

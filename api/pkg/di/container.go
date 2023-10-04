@@ -11,6 +11,7 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 
+	"github.com/gofiber/contrib/otelfiber"
 	"gorm.io/plugin/opentelemetry/tracing"
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
@@ -158,10 +159,9 @@ func (container *Container) App() (app *fiber.App) {
 		app.Use(fiberLogger.New())
 	}
 
-	app.Use(middlewares.OtelTraceContext(container.Tracer(), container.Logger(), container.OtelResources(container.version, container.projectID), os.Getenv("GCP_PROJECT_ID")))
-
-	// Default config
+	app.Use(otelfiber.Middleware())
 	app.Use(cors.New())
+	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
 
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))

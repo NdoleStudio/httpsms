@@ -102,5 +102,5 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 	}
 
 	wg.Wait()
-	return h.responseAccepted(c, fmt.Sprintf("Added [%d] messages added to queue", len(messages)))
+	return h.responseAccepted(c, fmt.Sprintf("Added %d messages to the queue", len(messages)))
 }

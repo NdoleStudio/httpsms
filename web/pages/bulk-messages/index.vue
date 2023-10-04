@@ -24,12 +24,19 @@
           <v-col cols="12">
             <h5 class="text-h4 mb-3 mt-3">Bulk Messages</h5>
             <p>
-              Fill in our
+              Fill in our bulk SMS
               <a
                 class="text-decoration-none"
                 download
                 href="/templates/httpsms-bulk.csv"
-                >bulk SMS CSV template</a
+                >CSV template</a
+              >
+              or our
+              <a
+                class="text-decoration-none"
+                download
+                href="/templates/httpsms-bulk.xlsx"
+                >Excel template</a
               >
               and upload it here to send your SMS messages to multiple
               recipients at once.
@@ -48,12 +55,12 @@
             <v-form @submit.prevent="sendBulkMessages">
               <v-file-input
                 v-model="formFile"
-                label="CSV File"
+                label="File"
                 :prepend-icon="null"
-                accept=".csv"
+                accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 :error-messages="errorMessages.get('document')"
                 persistent-placeholder
-                placeholder="Click here to upload your bulk SMS CSV file."
+                placeholder="Click here to upload your bulk SMS file."
                 :append-icon="mdiMicrosoftExcel"
                 outlined
               ></v-file-input>
