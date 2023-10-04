@@ -79,12 +79,12 @@ func (s SIM) String() string {
 type Message struct {
 	ID        uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 	RequestID *string       `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4"`
-	Owner     string        `json:"owner" gorm:"index:idx_messages_user_id__owner__contact" example:"+18005550199"`
+	Owner     string        `json:"owner" example:"+18005550199"`
 	UserID    UserID        `json:"user_id" gorm:"index:idx_messages__user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
-	Contact   string        `json:"contact" gorm:"index:idx_messages_user_id__owner__contact" example:"+18005550100"`
+	Contact   string        `json:"contact" example:"+18005550100"`
 	Content   string        `json:"content" example:"This is a sample text message"`
 	Type      MessageType   `json:"type" example:"mobile-terminated"`
-	Status    MessageStatus `json:"status" gorm:"index:idx_messages_status" example:"pending"`
+	Status    MessageStatus `json:"status" example:"pending"`
 	// SIM is the SIM card to use to send the message
 	// * SMS1: use the SIM card in slot 1
 	// * SMS2: use the SIM card in slot 2
@@ -97,7 +97,7 @@ type Message struct {
 	RequestReceivedAt       time.Time  `json:"request_received_at" example:"2022-06-05T14:26:01.520828+03:00"`
 	CreatedAt               time.Time  `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt               time.Time  `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
-	OrderTimestamp          time.Time  `json:"order_timestamp" gorm:"index:idx_messages_order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
+	OrderTimestamp          time.Time  `json:"order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
 	LastAttemptedAt         *time.Time `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	NotificationScheduledAt *time.Time `json:"scheduled_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	SentAt                  *time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
