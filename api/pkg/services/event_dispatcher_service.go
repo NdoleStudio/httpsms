@@ -103,7 +103,7 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 
 	subscribers, ok := dispatcher.listeners[event.Type()]
 	if !ok {
-		ctxLogger.Info(fmt.Sprintf("no listener is configured for event type [%s]", event.Type()))
+		ctxLogger.Info(fmt.Sprintf("no listener is configured for event type [%s] with id [%s]", event.Type(), event.ID()))
 		return
 	}
 

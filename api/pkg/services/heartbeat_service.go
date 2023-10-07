@@ -203,7 +203,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	exists, err := service.monitorRepository.Exists(ctx, params.UserID, params.Owner)
+	exists, err := service.monitorRepository.Exists(ctx, params.UserID, params.MonitorID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
@@ -217,7 +217,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if err != nil {
-		msg := fmt.Sprintf("cannot fetch last heartbeat for userID [%s] and owner [%s] removing check", params.UserID, params.Owner)
+		msg := fmt.Sprintf("cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return nil
 	}

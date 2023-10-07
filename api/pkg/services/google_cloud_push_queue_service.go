@@ -77,7 +77,7 @@ func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, 
 		"item added to [%s] queue with id [%s] and schedule [%s]",
 		queue.queueConfig.Name,
 		queueTask.Name,
-		queueTask.ScheduleTime,
+		queueTask.GetScheduleTime().AsTime(),
 	))
 
 	return queueTask.Name, nil

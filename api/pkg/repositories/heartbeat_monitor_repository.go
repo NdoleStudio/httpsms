@@ -17,7 +17,7 @@ type HeartbeatMonitorRepository interface {
 	Load(ctx context.Context, userID entities.UserID, phoneNumber string) (*entities.HeartbeatMonitor, error)
 
 	// Exists checks if a heartbeat monitor exists for a phone number
-	Exists(ctx context.Context, userID entities.UserID, phoneNumber string) (bool, error)
+	Exists(ctx context.Context, userID entities.UserID, monitorID uuid.UUID) (bool, error)
 
 	// UpdateQueueID updates the queueID of a monitor
 	UpdateQueueID(ctx context.Context, monitorID uuid.UUID, queueID string) error

@@ -123,7 +123,7 @@ func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, user
 }
 
 // Exists checks of a heartbeat monitor exists for the userID and owner
-func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, userID entities.UserID, owner string) (bool, error) {
+func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, userID entities.UserID, monitorID uuid.UUID) (bool, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -132,10 +132,10 @@ func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, us
 		Model(&entities.HeartbeatMonitor{}).
 		Select("count(*) > 0").
 		Where("user_id = ?", userID).
-		Where("owner = ?", owner).
+		Where("id = ?", monitorID).
 		Find(&exists).Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot check if heartbeat monitor exists with userID [%s] and owner [%s]", userID, owner)
+		msg := fmt.Sprintf("cannot check if heartbeat monitor exists with userID [%s] and montiorID [%s]", userID, monitorID)
 		return exists, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

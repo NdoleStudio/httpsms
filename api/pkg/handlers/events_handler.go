@@ -68,9 +68,10 @@ func (h *EventsHandler) Dispatch(c *fiber.Ctx) error {
 		return h.responseForbidden(c)
 	}
 
+	ctxLogger.Info(fmt.Sprintf("handling [%s] event with ID [%s]", request.Type(), request.ID()))
 	err := h.service.DispatchSync(ctx, request)
 	if err != nil {
-		msg := fmt.Sprintf("cannot dispatch event with ID [%s]", request.ID())
+		msg := fmt.Sprintf("cannot dispatch [%s] event with ID [%s]", request.Type(), request.ID())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
