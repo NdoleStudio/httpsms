@@ -187,9 +187,8 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 // case the caller should not continue.
 func (repository *gormUserRepository) generateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
-	_, err := rand.Read(b)
 	// Note that err == nil only if we read len(b) bytes.
-	if err != nil {
+	if _, err := rand.Read(b); err != nil {
 		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot generate [%d] random bytes", n))
 	}
 

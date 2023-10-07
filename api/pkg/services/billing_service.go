@@ -111,11 +111,11 @@ func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user 
 	if err = service.mailer.Send(ctx, email); err != nil {
 		msg := fmt.Sprintf("canot send usage limit exceeded notification to user [%s]", user.ID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return
 	}
 
 	ctxLogger.Info(fmt.Sprintf("usage limit exceeded email sent to user [%s]", user.ID))
-
-	if err = service.cache.Set(ctx, key, "", time.Hour); err != nil {
+	if err = service.cache.Set(ctx, key, "", time.Hour*12); err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot set item in redis with key [%s]", key)))
 	}
 }

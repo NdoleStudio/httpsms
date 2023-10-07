@@ -16,6 +16,7 @@ type MessageSendExpiredPayload struct {
 	MessageID        uuid.UUID       `json:"message_id"`
 	Owner            string          `json:"owner"`
 	SendAttemptCount uint            `json:"send_attempt_count"`
+	IsFinal          bool            `json:"is_final"`
 	RequestID        *string         `json:"request_id"`
 	Contact          string          `json:"contact"`
 	UserID           entities.UserID `json:"user_id"`

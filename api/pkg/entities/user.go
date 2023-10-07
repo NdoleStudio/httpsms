@@ -80,3 +80,12 @@ func (user User) IsOnProPlan() bool {
 func (user User) IsOnUltraPlan() bool {
 	return user.SubscriptionName == SubscriptionNameUltraMonthly || user.SubscriptionName == SubscriptionNameUltraYearly
 }
+
+// UserTimeString converts the time to the user's timezone
+func (user User) UserTimeString(timestamp time.Time) string {
+	location, err := time.LoadLocation(user.Timezone)
+	if err != nil {
+		location = time.UTC
+	}
+	return timestamp.In(location).Format(time.RFC1123)
+}

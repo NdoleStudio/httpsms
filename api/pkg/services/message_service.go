@@ -672,6 +672,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		Owner:            message.Owner,
 		Contact:          message.Contact,
 		RequestID:        message.RequestID,
+		IsFinal:          message.SendAttemptCount == message.MaxSendAttempts,
 		SendAttemptCount: message.SendAttemptCount,
 		UserID:           message.UserID,
 		Timestamp:        time.Now().UTC(),
