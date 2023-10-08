@@ -12,6 +12,7 @@ import (
 )
 
 type hermesNotificationEmailFactory struct {
+	factory
 	config    *HermesGeneratorConfig
 	generator hermes.Hermes
 }
@@ -29,17 +30,17 @@ func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.Use
 		Body: hermes.Body{
 			Title: "Hello",
 			Intros: []string{
-				fmt.Sprintf("The SMS message which you sent to %s has expired at %s and you will need to resend this message.", owner, user.UserTimeString(time.Now())),
+				fmt.Sprintf("The SMS message which you sent to %s has expired at %s and you will need to resend this message.", factory.formatPhoneNumber(contact), user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
 				{"ID", messageID.String()},
-				{"From", owner},
-				{"To", contact},
+				{"From", factory.formatPhoneNumber(owner)},
+				{"To", factory.formatPhoneNumber(contact)},
 				{"Message", content},
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "Messages expire because we couldn't connect with your mobile phone to send the outgoing SMS. You can fix this by making sure your phone is connected to the internet and also connect your phone to the charger all the time since Android may kill the httpSMS app if it has been active for a very long time so save phone battery.",
+					Instructions: "Messages usually expire because we couldn't connect with your mobile phone to send the outgoing SMS. You can fix this by making sure your phone is connected to the internet and also connect your phone to the charger all the time since Android may kill the httpSMS app if it has been active for a very long time so save phone battery.",
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
@@ -78,12 +79,12 @@ func (factory *hermesNotificationEmailFactory) MessageFailed(user *entities.User
 		Body: hermes.Body{
 			Title: "Hello",
 			Intros: []string{
-				fmt.Sprintf("The SMS message which you sent to %s has failed at %s and you will need to resend this message.", owner, user.UserTimeString(time.Now())),
+				fmt.Sprintf("The SMS message which you sent to %s has failed at %s and you will need to resend this message.", factory.formatPhoneNumber(contact), user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
 				{"ID", messageID.String()},
-				{"From", owner},
-				{"To", contact},
+				{"From", factory.formatPhoneNumber(owner)},
+				{"To", factory.formatPhoneNumber(contact)},
 				{"Message", content},
 				{"Failure Reason", reason},
 			},

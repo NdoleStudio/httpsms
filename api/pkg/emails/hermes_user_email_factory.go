@@ -10,6 +10,7 @@ import (
 )
 
 type hermesUserEmailFactory struct {
+	factory
 	config    *HermesGeneratorConfig
 	generator hermes.Hermes
 }
@@ -122,7 +123,7 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 	email := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
-				fmt.Sprintf("We haven't received any heartbeat event from android  phone %s since %s.", owner, lastHeartbeatTimestamp.In(location).Format(time.RFC1123)),
+				fmt.Sprintf("We haven't received any heartbeat event from android  phone %s since %s.", factory.formatPhoneNumber(owner), lastHeartbeatTimestamp.In(location).Format(time.RFC1123)),
 				fmt.Sprintf("Check if the mobile phone is powered on and if it has stable internet connection."),
 			},
 			Actions: []hermes.Action{
