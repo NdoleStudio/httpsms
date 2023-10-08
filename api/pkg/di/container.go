@@ -124,6 +124,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterEventRoutes()
 
 	container.RegisterNotificationListeners()
+	container.RegisterEmailNotificationListeners()
 
 	container.RegisterBillingRoutes()
 	container.RegisterBillingListeners()
@@ -853,6 +854,16 @@ func (container *Container) UserEmailFactory() (factory emails.UserEmailFactory)
 	})
 }
 
+// NotificationEmailFactory creates a new instance of emails.NotificationEmailFactory
+func (container *Container) NotificationEmailFactory() (factory emails.NotificationEmailFactory) {
+	container.logger.Debug("creating emails.UserEmailFactory")
+	return emails.NewHermesNotificationEmailFactory(&emails.HermesGeneratorConfig{
+		AppURL:     os.Getenv("APP_URL"),
+		AppName:    os.Getenv("APP_NAME"),
+		AppLogoURL: os.Getenv("APP_LOGO_URL"),
+	})
+}
+
 // MessageThreadService creates a new instance of services.MessageService
 func (container *Container) MessageThreadService() (service *services.MessageThreadService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -860,6 +871,19 @@ func (container *Container) MessageThreadService() (service *services.MessageThr
 		container.Logger(),
 		container.Tracer(),
 		container.MessageThreadRepository(),
+	)
+}
+
+// EmailNotificationService creates a new instance of services.EmailNotificationService
+func (container *Container) EmailNotificationService() (service *services.EmailNotificationService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewEmailNotificationService(
+		container.Logger(),
+		container.Tracer(),
+		container.UserRepository(),
+		container.NotificationEmailFactory(),
+		container.Mailer(),
+		container.Cache(),
 	)
 }
 
@@ -1040,6 +1064,20 @@ func (container *Container) RegisterMessageThreadListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.MessageThreadService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterEmailNotificationListeners registers event listeners for listeners.EmailNotificationListener
+func (container *Container) RegisterEmailNotificationListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.EmailNotificationListener{}))
+	_, routes := listeners.NewEmailNotificationListener(
+		container.Logger(),
+		container.Tracer(),
+		container.EmailNotificationService(),
 	)
 
 	for event, handler := range routes {
