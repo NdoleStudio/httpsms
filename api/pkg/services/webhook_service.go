@@ -208,7 +208,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 
 	response, err := service.client.Do(request)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)))
+		ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)))
 		service.handleWebhookSendFailed(ctx, event, webhook, owner, err, nil)
 		return
 	}
