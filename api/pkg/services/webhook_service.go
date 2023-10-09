@@ -1,12 +1,17 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -15,7 +20,6 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/carlmjohnson/requests"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -30,6 +34,7 @@ type WebhookService struct {
 	tracer     telemetry.Tracer
 	client     *http.Client
 	repository repositories.WebhookRepository
+	dispatcher *EventDispatcher
 }
 
 // NewWebhookService creates a new WebhookService
@@ -38,11 +43,13 @@ func NewWebhookService(
 	tracer telemetry.Tracer,
 	client *http.Client,
 	repository repositories.WebhookRepository,
+	dispatcher *EventDispatcher,
 ) (s *WebhookService) {
 	return &WebhookService{
 		logger:     logger.WithService(fmt.Sprintf("%T", s)),
 		tracer:     tracer,
 		client:     client,
+		dispatcher: dispatcher,
 		repository: repository,
 	}
 }
@@ -177,7 +184,7 @@ func (service *WebhookService) Send(ctx context.Context, userID entities.UserID,
 		wg.Add(1)
 		go func(webhook *entities.Webhook) {
 			defer wg.Done()
-			service.sendNotification(ctx, event, webhook)
+			service.sendNotification(ctx, event, phoneNumber, webhook)
 		}(webhook)
 	}
 	wg.Wait()
@@ -185,33 +192,71 @@ func (service *WebhookService) Send(ctx context.Context, userID entities.UserID,
 	return nil
 }
 
-func (service *WebhookService) sendNotification(ctx context.Context, event cloudevents.Event, webhook *entities.Webhook) {
+func (service *WebhookService) sendNotification(ctx context.Context, event cloudevents.Event, owner string, webhook *entities.Webhook) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	token, err := service.getAuthToken(webhook)
+	request, err := service.createRequest(ctx, event, webhook)
 	if err != nil {
-		msg := fmt.Sprintf("cannot generate auth token for user [%s] and webhook [%s]", webhook.UserID, webhook.ID)
+		msg := fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
 	}
+
+	response, err := service.client.Do(request)
+	if err != nil {
+		ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID))
+		service.handleWebhookSendFailed(ctx, event, webhook, owner, err, nil)
+		return
+	}
+
+	defer func() {
+		err = response.Body.Close()
+		if err != nil {
+			ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot close response body for [%s] event with ID [%s]", event.Type(), event.ID())))
+		}
+	}()
+
+	if response.StatusCode >= 400 {
+		ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] with response code [%d]", event.Type(), webhook.URL, webhook.UserID, response.StatusCode))
+		service.handleWebhookSendFailed(ctx, event, webhook, owner, stacktrace.NewError(http.StatusText(response.StatusCode)), response)
+		return
+	}
+
+	ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response code [%d]", webhook.URL, event.Type(), event.ID(), response.StatusCode))
+}
+
+func (service *WebhookService) createRequest(ctx context.Context, event cloudevents.Event, webhook *entities.Webhook) (*http.Request, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	var response string
-	err = requests.URL(webhook.URL).
-		Client(service.client).
-		Bearer(token).
-		Header("X-Event-Type", event.Type()).
-		BodyJSON(service.getPayload(ctxLogger, event, webhook)).
-		ToString(&response).
-		Fetch(ctx)
+	payload, err := json.Marshal(service.getPayload(ctxLogger, event, webhook))
 	if err != nil {
-		msg := fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		msg := fmt.Sprintf("cannot marshal payload for user [%s] and webhook [%s] for event [%s]", webhook.UserID, webhook.ID, event.ID())
+		return nil, stacktrace.Propagate(err, msg)
 	}
 
-	ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response [%s]", webhook.URL, event.Type(), event.ID(), response))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, webhook.URL, bytes.NewReader(payload))
+	if err != nil {
+		msg := fmt.Sprintf("cannot create request for user [%s] and webhook [%s] for event [%s]", webhook.UserID, webhook.ID, event.ID())
+		return nil, stacktrace.Propagate(err, msg)
+	}
+
+	request.Header.Add("X-Event-Type", event.Type())
+
+	if strings.TrimSpace(webhook.SigningKey) != "" {
+		token, err := service.getAuthToken(webhook)
+		if err != nil {
+			msg := fmt.Sprintf("cannot generate auth token for user [%s] and webhook [%s]", webhook.UserID, webhook.ID)
+			return nil, stacktrace.Propagate(err, msg)
+		}
+		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
+
+	return request, nil
 }
 
 func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event cloudevents.Event, webhook *entities.Webhook) any {
@@ -224,6 +269,7 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 	}
 
 	payload := new(events.MessagePhoneReceivedPayload)
+
 	err := event.DataAs(payload)
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)))
@@ -271,4 +317,49 @@ func (service *WebhookService) getAuthToken(webhook *entities.Webhook) (string, 
 		Subject:   string(webhook.UserID),
 	})
 	return token.SignedString([]byte(webhook.SigningKey))
+}
+
+func (service *WebhookService) handleWebhookSendFailed(ctx context.Context, event cloudevents.Event, webhook *entities.Webhook, owner string, err error, response *http.Response) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	payload := &events.WebhookSendFailedPayload{
+		WebhookID:              webhook.ID,
+		WebhookURL:             webhook.URL,
+		UserID:                 webhook.UserID,
+		EventID:                event.ID(),
+		Owner:                  owner,
+		EventType:              event.Type(),
+		HTTPResponseStatusCode: nil,
+		ErrorMessage:           err.Error(),
+	}
+
+	if errors.Is(err, context.Canceled) {
+		payload.ErrorMessage = "TIMOUT after 5 seconds"
+	}
+
+	if response != nil {
+		payload.HTTPResponseStatusCode = &response.StatusCode
+		payload.ErrorMessage = http.StatusText(response.StatusCode)
+
+		body, err := io.ReadAll(response.Body)
+		if err == nil && len(body) > 0 {
+			payload.ErrorMessage = string(body)
+		}
+	}
+
+	event, err = service.createEvent(events.EventTypeWebhookSendFailed, event.Source(), payload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for user with id [%s]", events.EventTypeWebhookSendFailed, payload.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event [%s] for user with id [%s]", event.Type(), payload.UserID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return
+	}
+
+	ctxLogger.Info(fmt.Sprintf("dispatched [%s] event with ID [%s] for user with id [%s]", event.Type(), event.ID(), payload.UserID))
 }

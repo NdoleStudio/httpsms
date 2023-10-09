@@ -248,15 +248,23 @@ func (service *DiscordService) sendMessage(ctx context.Context, event cloudevent
 	if err != nil {
 		msg := fmt.Sprintf("cannot send [%s] event to discord channel [%s] for user [%s]", event.Type(), discord.IncomingChannelID, discord.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-		service.handleDiscordMessageFailed(ctx, event.Source(), &events.DiscordMessageFailedPayload{
+
+		eventPayload := &events.DiscordMessageFailedPayload{
 			DiscordID:        discord.ID,
 			UserID:           discord.UserID,
 			MessageID:        payload.MessageID,
+			Owner:            payload.Owner,
 			EventType:        event.Type(),
-			HTTPStatusCode:   response.HTTPResponse.StatusCode,
-			ErrorMessage:     string(*response.Body),
+			ErrorMessage:     err.Error(),
 			DiscordChannelID: discord.IncomingChannelID,
-		})
+		}
+
+		if response != nil {
+			eventPayload.HTTPResponseStatusCode = &response.HTTPResponse.StatusCode
+			eventPayload.ErrorMessage = string(*response.Body)
+		}
+
+		service.handleDiscordMessageFailed(ctx, event.Source(), eventPayload)
 		return
 	}
 
