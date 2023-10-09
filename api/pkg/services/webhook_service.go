@@ -196,10 +196,10 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	requestCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	request, err := service.createRequest(ctx, event, webhook)
+	request, err := service.createRequest(requestCtx, event, webhook)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
@@ -334,7 +334,7 @@ func (service *WebhookService) handleWebhookSendFailed(ctx context.Context, even
 		ErrorMessage:           err.Error(),
 	}
 
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.DeadlineExceeded) {
 		payload.ErrorMessage = "TIMOUT after 5 seconds"
 	}
 
