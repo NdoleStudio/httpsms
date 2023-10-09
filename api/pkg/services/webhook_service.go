@@ -196,9 +196,12 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	request, err := service.createRequest(ctx, event, webhook)
 	if err != nil {
-		msg := fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
+		msg := fmt.Sprintf("cannot create [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return
 	}
@@ -229,9 +232,6 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 func (service *WebhookService) createRequest(ctx context.Context, event cloudevents.Event, webhook *entities.Webhook) (*http.Request, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
-
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
 
 	payload, err := json.Marshal(service.getPayload(ctxLogger, event, webhook))
 	if err != nil {
