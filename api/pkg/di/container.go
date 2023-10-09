@@ -738,6 +738,7 @@ func (container *Container) WebhookService() (service *services.WebhookService) 
 		container.Tracer(),
 		container.HTTPClient("webhook"),
 		container.WebhookRepository(),
+		container.EventDispatcher(),
 	)
 }
 
