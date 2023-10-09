@@ -246,6 +246,7 @@ func (service *WebhookService) createRequest(ctx context.Context, event cloudeve
 	}
 
 	request.Header.Add("X-Event-Type", event.Type())
+	request.Header.Set("Content-Type", "application/json")
 
 	if strings.TrimSpace(webhook.SigningKey) != "" {
 		token, err := service.getAuthToken(webhook)
