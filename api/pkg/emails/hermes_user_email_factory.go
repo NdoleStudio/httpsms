@@ -53,7 +53,7 @@ func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User) (
 
 	return &Email{
 		ToEmail: user.Email,
-		Subject: "⚠ You have exceeded your plan limit",
+		Subject: "⚠️ You have exceeded your plan limit",
 		HTML:    html,
 		Text:    text,
 	}, nil
@@ -99,7 +99,7 @@ func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usag
 
 	return &Email{
 		ToEmail: user.Email,
-		Subject: fmt.Sprintf("⚠ %d%% Usage Limit Alert", percent),
+		Subject: fmt.Sprintf("⚠️ %d%% Usage Limit Alert", percent),
 		HTML:    html,
 		Text:    text,
 	}, nil
@@ -157,7 +157,7 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 
 	return &Email{
 		ToEmail: user.Email,
-		Subject: fmt.Sprintf("⚠ No heartbeat from android phone [%s]", owner),
+		Subject: fmt.Sprintf("⚠️ No heartbeat from android phone [%s]", owner),
 		HTML:    html,
 		Text:    text,
 	}, nil
