@@ -52,7 +52,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	thread, err := service.repository.LoadByOwnerContact(ctx, params.UserID, params.Owner, params.Contact)
-	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact))
 		return service.createThread(ctx, params)
 	}
@@ -62,18 +62,17 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusSending {
+	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusSending && thread.LastMessageID == params.MessageID {
 		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("thread [%s] has timestamp [%s] and status [%s] which is greater than timestamp [%s] for message [%s] and status [%s]", thread.ID, thread.OrderTimestamp, thread.Status, params.Timestamp, params.MessageID, params.Status)))
 		return nil
 	}
 
-	if thread.Status == entities.MessageStatusDelivered {
+	if thread.Status == entities.MessageStatusDelivered && thread.LastMessageID == params.MessageID {
 		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("thread [%s] already has status [%s] not updating with status [%s] for message [%s]", thread.ID, thread.Status, params.Status, params.MessageID)))
 		return nil
 	}
 
-	thread = thread.Update(params.Timestamp, params.MessageID, params.Content, params.Status)
-	if err = service.repository.Update(ctx, thread); err != nil {
+	if err = service.repository.Update(ctx, thread.Update(params.Timestamp, params.MessageID, params.Content, params.Status)); err != nil {
 		msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
