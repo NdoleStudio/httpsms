@@ -70,7 +70,6 @@ func (validator *WebhookHandlerValidator) ValidateStore(ctx context.Context, use
 		Data: &request,
 		Rules: govalidator.MapData{
 			"signing_key": []string{
-				"required",
 				"min:1",
 				"max:255",
 			},

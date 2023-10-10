@@ -429,7 +429,7 @@
                 class="mt-6"
                 persistent-placeholder
                 persistent-hint
-                label="Signing Key"
+                label="Signing Key (optional)"
                 placeholder="******************"
                 :error="errorMessages.has('signing_key')"
                 :error-messages="errorMessages.get('signing_key')"

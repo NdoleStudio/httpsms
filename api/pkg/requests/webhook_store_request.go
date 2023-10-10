@@ -18,7 +18,8 @@ type WebhookStore struct {
 
 // Sanitize sets defaults to WebhookStore
 func (input *WebhookStore) Sanitize() WebhookStore {
-	input.URL = strings.TrimSpace(input.URL)
+	input.URL = input.sanitizeURL(input.URL)
+	input.SigningKey = strings.TrimSpace(input.SigningKey)
 	input.Events = input.removeStringDuplicates(input.Events)
 
 	var phoneNumbers []string

@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode"
@@ -39,6 +40,18 @@ func (input *request) sanitizeBool(value string) string {
 		value = "false"
 	}
 
+	return value
+}
+
+func (input *request) sanitizeURL(value string) string {
+	value = strings.TrimSpace(value)
+	website, err := url.Parse(value)
+	if err != nil {
+		return value
+	}
+	if website.Scheme == "" {
+		return "https://" + value
+	}
 	return value
 }
 
