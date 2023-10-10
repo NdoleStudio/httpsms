@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm/clause"
-
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 	"gorm.io/gorm"
 )
@@ -80,11 +78,10 @@ func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities
 	defer span.End()
 
 	err := repository.db.
-		Clauses(clause.OnConflict{DoNothing: true, OnConstraint: "idx__phones__user_id__phone_number"}).
 		WithContext(ctx).
 		Save(phone).
 		Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrDuplicatedKey) {
 		msg := fmt.Sprintf("cannot save phone with ID [%s]", phone.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
