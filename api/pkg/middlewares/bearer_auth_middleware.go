@@ -33,8 +33,8 @@ func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *au
 
 		token, err := authClient.VerifyIDToken(context.Background(), authToken)
 		if err != nil {
-			msg := fmt.Sprintf("invalid firebase id token %s", authToken)
-			ctxLogger.Error(tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+			msg := fmt.Sprintf("invalid firebase id token [%s]", authToken)
+			ctxLogger.Warn(tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 			return c.Next()
 		}
 

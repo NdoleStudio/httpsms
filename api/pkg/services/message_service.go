@@ -487,8 +487,8 @@ func (service *MessageService) HandleMessageDelivered(ctx context.Context, param
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSent() && !message.IsSending() && !message.IsExpired() {
-		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSent, entities.MessageStatusSending, entities.MessageStatusExpired)
+	if !message.IsSent() && !message.IsSending() && !message.IsExpired() && !message.IsScheduled() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s, %s]", message.Status, entities.MessageStatusSent, entities.MessageStatusScheduled, entities.MessageStatusSending, entities.MessageStatusExpired)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
 

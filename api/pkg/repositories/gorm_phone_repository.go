@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm/clause"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -78,7 +79,12 @@ func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.WithContext(ctx).Save(phone).Error; err != nil {
+	err := repository.db.
+		Clauses(clause.OnConflict{DoNothing: true, OnConstraint: "idx__phones__user_id__phone_number"}).
+		WithContext(ctx).
+		Save(phone).
+		Error
+	if err != nil {
 		msg := fmt.Sprintf("cannot save phone with ID [%s]", phone.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
