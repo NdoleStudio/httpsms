@@ -83,7 +83,7 @@ func (service *EmailNotificationService) NotifyMessageExpired(ctx context.Contex
 
 	ctxLogger.Info(fmt.Sprintf("[%s] email sent to [%s] for message with ID [%s]", events.EventTypeMessageSendExpired, user.ID, payload.MessageID))
 
-	service.addToCache(ctx, fifteenMinuteTimeout, events.EventTypeMessageSendExpired, payload.Owner)
+	service.addToCache(ctx, oneHourTimeout, events.EventTypeMessageSendExpired, payload.Owner)
 	return nil
 }
 
