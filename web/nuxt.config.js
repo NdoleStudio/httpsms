@@ -131,6 +131,7 @@ export default {
   sitemap: {
     hostname: 'https://httpsms.com',
     gzip: true,
+    trailingSlash: true,
     exclude: ['/messages', '/settings', '/threads**', '/billing'],
   },
 
