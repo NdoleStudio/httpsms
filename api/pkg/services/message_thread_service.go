@@ -167,8 +167,8 @@ func (service *MessageThreadService) getColor() string {
 		"deep-orange",
 		"brown",
 	}
-	rand.Seed(time.Now().UnixNano())
-	return colors[rand.Intn(len(colors))]
+	generator := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return colors[generator.Intn(len(colors))]
 }
 
 // MessageThreadGetParams parameters fetching threads
