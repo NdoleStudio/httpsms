@@ -73,8 +73,9 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot send heartbeat FCM to phone with id [%s]", phone.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		msg := fmt.Sprintf("cannot send heartbeat FCM to phone with id [%s] for user [%s]", phone.ID, phone.UserID)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return nil
 	}
 
 	ctxLogger.Info(fmt.Sprintf("successfully sent heartbeat FCM [%s] to phone with ID [%s] for user [%s] and monitor [%s]", result, payload.PhoneID, payload.UserID, payload.MonitorID))

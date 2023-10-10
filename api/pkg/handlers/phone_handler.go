@@ -116,10 +116,6 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	ctxLogger.Info(string(c.Body()))
-
-	ctxLogger.Info(spew.Sdump(request))
-
 	if errors := h.validator.ValidateUpsert(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
