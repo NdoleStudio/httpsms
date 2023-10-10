@@ -112,7 +112,6 @@ func (validator *WebhookHandlerValidator) ValidateUpdate(ctx context.Context, us
 		Data: &request,
 		Rules: govalidator.MapData{
 			"signing_key": []string{
-				"required",
 				"min:1",
 				"max:255",
 			},
