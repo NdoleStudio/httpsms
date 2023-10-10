@@ -249,7 +249,7 @@ func (service *DiscordService) sendMessage(ctx context.Context, event cloudevent
 		msg := fmt.Sprintf("cannot send [%s] event to discord channel [%s] for user [%s]", event.Type(), discord.IncomingChannelID, discord.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 
-		eventPayload := &events.DiscordMessageFailedPayload{
+		eventPayload := &events.DiscordSendFailedPayload{
 			DiscordID:        discord.ID,
 			UserID:           discord.UserID,
 			MessageID:        payload.MessageID,
@@ -301,13 +301,13 @@ func (service *DiscordService) createDiscordMessage(ctxLogger telemetry.Logger, 
 	}
 }
 
-func (service *DiscordService) handleDiscordMessageFailed(ctx context.Context, source string, payload *events.DiscordMessageFailedPayload) {
+func (service *DiscordService) handleDiscordMessageFailed(ctx context.Context, source string, payload *events.DiscordSendFailedPayload) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	event, err := service.createEvent(events.EventTypeDiscordMessageFailed, source, payload)
+	event, err := service.createEvent(events.EventTypeDiscordSendFailed, source, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create event [%s] for user with id [%s]", events.EventTypeDiscordMessageFailed, payload.UserID)
+		msg := fmt.Sprintf("cannot create event [%s] for user with id [%s]", events.EventTypeDiscordSendFailed, payload.UserID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return
 	}

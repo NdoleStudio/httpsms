@@ -5,11 +5,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// EventTypeDiscordMessageFailed is emitted when we can't send a discord message
-const EventTypeDiscordMessageFailed = "discord.message.failed"
+// EventTypeDiscordSendFailed is emitted when we can't send a discord message
+const EventTypeDiscordSendFailed = "discord.send.failed"
 
-// DiscordMessageFailedPayload is the payload of the EventTypeDiscordMessageFailed event
-type DiscordMessageFailedPayload struct {
+// DiscordSendFailedPayload is the payload of the EventTypeDiscordSendFailed event
+type DiscordSendFailedPayload struct {
 	DiscordID              uuid.UUID       `json:"discord_id"`
 	UserID                 entities.UserID `json:"user_id"`
 	MessageID              uuid.UUID       `json:"message_id"`

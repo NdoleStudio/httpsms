@@ -2,6 +2,7 @@ package emails
 
 import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/google/uuid"
 )
 
@@ -14,8 +15,8 @@ type NotificationEmailFactory interface {
 	MessageFailed(user *entities.User, messageID uuid.UUID, owner, contact, content, reason string) (*Email, error)
 
 	// DiscordMessageFailed sends an email when the user's discord message is failed
-	DiscordMessageFailed(user *entities.User, eventName, owner, errorMessage, channelID string, responseHTTPStatusCode *int) (*Email, error)
+	DiscordSendFailed(user *entities.User, payload *events.DiscordSendFailedPayload) (*Email, error)
 
 	// WebhookSendFailed sends an email when the user's webhook message is failed
-	WebhookSendFailed(user *entities.User, eventName, eventID, owner, errorMessage, url string, responseHTTPStatusCode *int) (*Email, error)
+	WebhookSendFailed(user *entities.User, payload *events.WebhookSendFailedPayload) (*Email, error)
 }

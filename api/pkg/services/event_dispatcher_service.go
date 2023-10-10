@@ -8,6 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
+
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -19,6 +22,7 @@ type EventDispatcher struct {
 	logger      telemetry.Logger
 	tracer      telemetry.Tracer
 	listeners   map[string][]events.EventListener
+	meter       metric.Float64Histogram
 	queue       PushQueue
 	queueConfig PushQueueConfig
 }
@@ -27,12 +31,14 @@ type EventDispatcher struct {
 func NewEventDispatcher(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
+	meter metric.Float64Histogram,
 	queue PushQueue,
 	queueConfig PushQueueConfig,
 ) (dispatcher *EventDispatcher) {
 	return &EventDispatcher{
 		logger:      logger,
 		tracer:      tracer,
+		meter:       meter,
 		listeners:   make(map[string][]events.EventListener),
 		queue:       queue,
 		queueConfig: queueConfig,
@@ -99,6 +105,8 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
 
+	start := time.Now()
+
 	ctxLogger := dispatcher.tracer.CtxLogger(dispatcher.logger, span)
 
 	subscribers, ok := dispatcher.listeners[event.Type()]
@@ -120,6 +128,15 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 	}
 
 	wg.Wait()
+
+	dispatcher.meter.Record(
+		ctx,
+		float64(time.Since(start).Microseconds())/1000,
+		metric.WithAttributes(
+			semconv.CloudeventsEventType(event.Type()),
+			semconv.CloudeventsEventSource(event.Source()),
+		),
+	)
 }
 
 func (dispatcher *EventDispatcher) createCloudTask(event cloudevents.Event) (*PushQueueTask, error) {

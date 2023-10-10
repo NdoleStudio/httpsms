@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/events"
+
 	"github.com/google/uuid"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -25,7 +27,7 @@ func NewHermesNotificationEmailFactory(config *HermesGeneratorConfig) Notificati
 	}
 }
 
-func (factory *hermesNotificationEmailFactory) DiscordMessageFailed(user *entities.User, eventName, owner, errorMessage, channelID string, httpResponseStatusCode *int) (*Email, error) {
+func (factory *hermesNotificationEmailFactory) DiscordSendFailed(user *entities.User, payload *events.DiscordSendFailedPayload) (*Email, error) {
 	email := hermes.Email{
 		Body: hermes.Body{
 			Title: "Hello",
@@ -33,11 +35,11 @@ func (factory *hermesNotificationEmailFactory) DiscordMessageFailed(user *entiti
 				fmt.Sprintf("We ran into an error while fowarding an incoming SMS to your discord server at %s", user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"Discord Channel ID", channelID},
-				{"Event Name", eventName},
-				{"Phone Number", factory.formatPhoneNumber(owner)},
-				{"HTTP Response Code", factory.formatHTTPResponseCode(httpResponseStatusCode)},
-				{"Error Message / HTTP Response", errorMessage},
+				{"Discord Channel ID", payload.DiscordChannelID},
+				{"Event Name", payload.EventType},
+				{"Phone Number", factory.formatPhoneNumber(payload.Owner)},
+				{"HTTP Response Code", factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
+				{"Error Message / HTTP Response", payload.ErrorMessage},
 			},
 			Actions: []hermes.Action{
 				{
@@ -75,7 +77,7 @@ func (factory *hermesNotificationEmailFactory) DiscordMessageFailed(user *entiti
 	}, nil
 }
 
-func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.User, eventName, eventID, owner, errorMessage, url string, httpResponseStatusCode *int) (*Email, error) {
+func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.User, payload *events.WebhookSendFailedPayload) (*Email, error) {
 	email := hermes.Email{
 		Body: hermes.Body{
 			Title: "Hello",
@@ -83,12 +85,12 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 				fmt.Sprintf("We ran into an error while fowarding a webhook event from httpSMS to your webserver at %s", user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"Server URL", url},
-				{"Event Name", eventName},
-				{"Event ID", eventID},
-				{"Phone Number", factory.formatPhoneNumber(owner)},
-				{"HTTP Response Code", factory.formatHTTPResponseCode(httpResponseStatusCode)},
-				{"Error Message / HTTP Response", errorMessage},
+				{"Server URL", payload.WebhookURL},
+				{"Event Name", payload.EventType},
+				{"Event ID", payload.EventID},
+				{"Phone Number", factory.formatPhoneNumber(payload.Owner)},
+				{"HTTP Response Code", factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
+				{"Error Message / HTTP Response", payload.ErrorMessage},
 			},
 			Actions: []hermes.Action{
 				{

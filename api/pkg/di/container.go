@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	otelMetric "go.opentelemetry.io/otel/metric"
+
 	"github.com/dgraph-io/ristretto"
 
 	"github.com/gofiber/contrib/otelfiber"
@@ -574,12 +576,27 @@ func (container *Container) EventDispatcher() (dispatcher *services.EventDispatc
 	dispatcher = services.NewEventDispatcher(
 		container.Logger(),
 		container.Tracer(),
+		container.Float64Histogram("event.publisher.duration", "ms", "measures the duration of processing CloudEvents"),
 		container.EventsQueue(),
 		container.EventsQueueConfiguration(),
 	)
 
 	container.eventDispatcher = dispatcher
 	return dispatcher
+}
+
+// Float64Histogram creates a new instance of metric.Float64Histogram
+func (container *Container) Float64Histogram(name, unit, description string) otelMetric.Float64Histogram {
+	container.logger.Debug("creating GORM repositories.MessageRepository")
+	meter := otel.GetMeterProvider().Meter(
+		container.projectID,
+		otelMetric.WithInstrumentationVersion(otel.Version()),
+	)
+	histogram, err := meter.Float64Histogram(name, otelMetric.WithUnit(unit), otelMetric.WithDescription(description))
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create float64 histogram"))
+	}
+	return histogram
 }
 
 // MessageRepository creates a new instance of repositories.MessageRepository
