@@ -2,6 +2,7 @@ package emails
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/nyaruka/phonenumbers"
 )
@@ -16,7 +17,7 @@ func (factory *factory) formatPhoneNumber(number string) string {
 func (factory *factory) formatHTTPResponseCode(code *int) string {
 	responseCode := "-"
 	if code != nil {
-		responseCode = fmt.Sprintf("%d", *code)
+		responseCode = fmt.Sprintf("%d - %s", *code, http.StatusText(*code))
 	}
 	return responseCode
 }

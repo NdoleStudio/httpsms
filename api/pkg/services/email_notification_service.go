@@ -125,7 +125,7 @@ func (service *EmailNotificationService) NotifyWebhookSendFailed(ctx context.Con
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	if !service.canSendEmail(ctx, payload.EventType, payload.Owner) {
+	if !service.canSendEmail(ctx, events.EventTypeWebhookSendFailed, payload.Owner) {
 		ctxLogger.Info(fmt.Sprintf("[%s] email already sent to user [%s] with owner [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.Owner))
 		return nil
 	}
@@ -158,7 +158,7 @@ func (service *EmailNotificationService) NotifyDiscordSendFailed(ctx context.Con
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	if !service.canSendEmail(ctx, payload.EventType, payload.Owner) {
+	if !service.canSendEmail(ctx, events.EventTypeDiscordSendFailed, payload.Owner) {
 		ctxLogger.Info(fmt.Sprintf("[%s] email already sent to user [%s] with owner [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.Owner))
 		return nil
 	}

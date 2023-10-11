@@ -157,7 +157,7 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 
 	return &Email{
 		ToEmail: user.Email,
-		Subject: fmt.Sprintf("⚠️ No heartbeat from android phone [%s]", owner),
+		Subject: fmt.Sprintf("⚠️ No heartbeat from android phone [%s]", factory.formatPhoneNumber(owner)),
 		HTML:    html,
 		Text:    text,
 	}, nil
