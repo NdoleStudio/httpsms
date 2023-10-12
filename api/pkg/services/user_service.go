@@ -104,6 +104,37 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthUs
 	return user, nil
 }
 
+// UserNotificationUpdateParams are parameters for updating the notifications of a user
+type UserNotificationUpdateParams struct {
+	MessageStatusEnabled bool
+	WebhookEnabled       bool
+	HeartbeatEnabled     bool
+}
+
+// UpdateNotificationSettings for an entities.User
+func (service *UserService) UpdateNotificationSettings(ctx context.Context, userID entities.UserID, params *UserNotificationUpdateParams) (*entities.User, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("could not load [%T] with ID [%s]", user, userID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	user.NotificationWebhookEnabled = params.WebhookEnabled
+	user.NotificationHeartbeatEnabled = params.HeartbeatEnabled
+	user.NotificationMessageStatusEnabled = params.MessageStatusEnabled
+
+	if err = service.repository.Update(ctx, user); err != nil {
+		msg := fmt.Sprintf("cannot save user with id [%s] in [%T]", user.ID, service.repository)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("updated notification settings for [%T] with ID [%s] in the [%T]", user, user.ID, service.repository))
+	return user, nil
+}
+
 // UserSendPhoneDeadEmailParams are parameters for notifying a user when a phone is dead
 type UserSendPhoneDeadEmailParams struct {
 	UserID                 entities.UserID

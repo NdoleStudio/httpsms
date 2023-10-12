@@ -14,7 +14,7 @@ type NotificationEmailFactory interface {
 	// MessageFailed sends an email when the user's message is failed
 	MessageFailed(user *entities.User, messageID uuid.UUID, owner, contact, content, reason string) (*Email, error)
 
-	// DiscordMessageFailed sends an email when the user's discord message is failed
+	// DiscordSendFailed sends an email when the user's discord message is failed
 	DiscordSendFailed(user *entities.User, payload *events.DiscordSendFailedPayload) (*Email, error)
 
 	// WebhookSendFailed sends an email when the user's webhook message is failed

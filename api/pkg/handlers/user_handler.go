@@ -41,6 +41,7 @@ func NewUserHandler(
 func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/users/me", h.Show)
 	router.Put("/users/me", h.Update)
+	router.Put("/users/:userID/notifications", h.UpdateNotifications)
 	router.Get("/users/subscription-update-url", h.subscriptionUpdateURL)
 	router.Delete("/users/subscription", h.cancelSubscription)
 }
@@ -117,6 +118,43 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "user updated successfully", user)
+}
+
+// UpdateNotifications an entities.User
+// @Summary      Update notification settings
+// @Description  Update the email notification settings for a user
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        payload   	body 		requests.UserNotificationUpdate  	true 	"Payload of user notification details to update"
+// @Success      200 		{object}	responses.UserResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/{userID}/notifications [put]
+func (h *UserHandler) UpdateNotifications(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.UserNotificationUpdate
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	user, err := h.service.UpdateNotificationSettings(ctx, h.userIDFomContext(c), request.ToUserNotificationUpdateParams())
+	if err != nil {
+		msg := fmt.Sprintf("cannot update notification for [%T] with ID [%s]", user, h.userIDFomContext(c))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "user notification settings updated successfully", user)
 }
 
 // subscriptionUpdateURL returns the subscription update URL for the authenticated entities.User
