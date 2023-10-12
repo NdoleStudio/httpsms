@@ -127,7 +127,8 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        payload   	body 		requests.UserNotificationUpdate  	true 	"Payload of user notification details to update"
+// @Param 		 userID 	path		string 							true 	"ID of the user to update" 				default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Param        payload   	body 		requests.UserNotificationUpdate	true 	"User notification details to update"
 // @Success      200 		{object}	responses.UserResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
