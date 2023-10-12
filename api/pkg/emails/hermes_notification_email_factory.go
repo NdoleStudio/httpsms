@@ -71,7 +71,7 @@ func (factory *hermesNotificationEmailFactory) DiscordSendFailed(user *entities.
 
 	return &Email{
 		ToEmail: user.Email,
-		Subject: "📢 We could not forward an incoming message to your server",
+		Subject: "📢 We could not forward an incoming message to your discord server",
 		HTML:    html,
 		Text:    text,
 	}, nil
