@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* tslint:disable */
 /*
  * ---------------------------------------------------------------
@@ -55,6 +56,8 @@ export interface EntitiesHeartbeat {
   timestamp: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   user_id: string
+  /** @example "344c10f" */
+  version: string
 }
 
 export interface EntitiesMessage {
@@ -86,6 +89,8 @@ export interface EntitiesMessage {
   owner: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   received_at: string
+  /** @example "153554b5-ae44-44a0-8f4f-7bbac5657ad4" */
+  request_id: string
   /** @example "2022-06-05T14:26:01.520828+03:00" */
   request_received_at: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
@@ -106,7 +111,7 @@ export interface EntitiesMessage {
    * * DEFAULT: used the default communication SIM card
    * @example "DEFAULT"
    */
-  sim: string
+  sim: EntitiesSIM
   /** @example "pending" */
   status: string
   /** @example "mobile-terminated" */
@@ -136,6 +141,8 @@ export interface EntitiesMessageThread {
   order_timestamp: string
   /** @example "+18005550199" */
   owner: string
+  /** @example "PENDING" */
+  status: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
@@ -160,36 +167,52 @@ export interface EntitiesPhone {
   messages_per_minute: number
   /** @example "+18005550199" */
   phone_number: string
-  sim: string
+  sim: EntitiesSIM
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   user_id: string
 }
 
+export enum EntitiesSIM {
+  SIM1 = 'SIM1',
+  SIM2 = 'SIM2',
+}
+
+export enum EntitiesSubscriptionName {
+  SubscriptionNameFree = 'free',
+  SubscriptionNameProMonthly = 'pro-monthly',
+  SubscriptionNameProYearly = 'pro-yearly',
+  SubscriptionNameUltraMonthly = 'ultra-monthly',
+  SubscriptionNameUltraYearly = 'ultra-yearly',
+  SubscriptionNameProLifetime = 'pro-lifetime',
+  SubscriptionName20KMonthly = '20k-monthly',
+  SubscriptionName20KYearly = '20k-yearly',
+}
+
 export interface EntitiesUser {
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   active_phone_id: string
-  /**
-   * gorm:"uniqueIndex"
-   * @example "xyz"
-   */
+  /** @example "xyz" */
   api_key: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
-  /**
-   * gorm:"uniqueIndex"
-   * @example "name@email.com"
-   */
+  /** @example "name@email.com" */
   email: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   id: string
+  /** @example true */
+  notification_heartbeat_enabled: boolean
+  /** @example true */
+  notification_message_status_enabled: boolean
+  /** @example true */
+  notification_webhook_enabled: boolean
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   subscription_ends_at: string
   /** @example "8f9c71b8-b84e-4417-8408-a62274f65a08" */
   subscription_id: string
   /** @example "free" */
-  subscription_name: string
+  subscription_name: EntitiesSubscriptionName
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   subscription_renews_at: string
   /** @example "on_trial" */
@@ -240,6 +263,11 @@ export interface RequestsMessageBulkSend {
   content: string
   /** @example "+18005550199" */
   from: string
+  /**
+   * RequestID is an optional parameter used to track a request from the client's perspective
+   * @example "153554b5-ae44-44a0-8f4f-7bbac5657ad4"
+   */
+  request_id?: string
   /** @example ["+18005550100","+18005550100"] */
   to: string[]
 }
@@ -271,7 +299,7 @@ export interface RequestsMessageReceive {
    * SIM card that received the message
    * @example "SIM1"
    */
-  sim: string
+  sim: EntitiesSIM
   /**
    * Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
    * @example "2022-06-05T14:26:09.527976+03:00"
@@ -286,6 +314,11 @@ export interface RequestsMessageSend {
   content: string
   /** @example "+18005550199" */
   from: string
+  /**
+   * RequestID is an optional parameter used to track a request from the client's perspective
+   * @example "153554b5-ae44-44a0-8f4f-7bbac5657ad4"
+   */
+  request_id?: string
   /** @example "+18005550100" */
   to: string
 }
@@ -317,6 +350,15 @@ export interface RequestsPhoneUpsert {
    * @example "SIM1"
    */
   sim: string
+}
+
+export interface RequestsUserNotificationUpdate {
+  /** @example true */
+  heartbeat_enabled: boolean
+  /** @example true */
+  message_status_enabled: boolean
+  /** @example true */
+  webhook_enabled: boolean
 }
 
 export interface RequestsUserUpdate {
@@ -431,7 +473,7 @@ export interface ResponsesMessagesResponse {
 }
 
 export interface ResponsesNoContent {
-  /** @example "phone deleted successfully" */
+  /** @example "action performed successfully" */
   message: string
   /** @example "success" */
   status: string
