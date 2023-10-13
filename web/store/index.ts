@@ -9,15 +9,18 @@ import { BillingUsage } from '~/models/billing'
 import {
   EntitiesDiscord,
   EntitiesPhone,
+  EntitiesUser,
   EntitiesWebhook,
   RequestsDiscordStore,
   RequestsDiscordUpdate,
+  RequestsUserNotificationUpdate,
   RequestsWebhookStore,
   RequestsWebhookUpdate,
   ResponsesDiscordResponse,
   ResponsesDiscordsResponse,
   ResponsesNoContent,
   ResponsesOkString,
+  ResponsesUserResponse,
   ResponsesWebhookResponse,
   ResponsesWebhooksResponse,
 } from '~/models/api'
@@ -849,6 +852,34 @@ export const actions = {
               message:
                 (error.response?.data as any)?.message ??
                 'Error while deleting webhook',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  saveEmailNotifications(
+    context: ActionContext<State, State>,
+    payload: RequestsUserNotificationUpdate,
+  ): Promise<EntitiesUser> {
+    return new Promise<EntitiesUser>((resolve, reject) => {
+      axios
+        .put<ResponsesUserResponse>(
+          `/v1/users/${context.state.user?.id}/notifications`,
+          payload,
+        )
+        .then((response: AxiosResponse<ResponsesUserResponse>) => {
+          context.commit('setUser', response.data.data)
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while updating email notification settings',
               type: 'error',
             }),
           ])

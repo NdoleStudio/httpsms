@@ -301,6 +301,44 @@
                 </tbody>
               </template>
             </v-simple-table>
+            <h5 id="email-notifications" class="text-h4 mb-3 mt-12">
+              Email Notifications
+            </h5>
+            <p class="text--secondary">
+              Manage the email notifications which you receive from httpSMS.
+              Feel free to turn on/off individual notifications anytime so you
+              don't get overloaded with emails
+            </p>
+            <v-switch
+              v-model="notificationSettings.heartbeat_enabled"
+              label="Heartbeat emails"
+              :disabled="updatingEmailNotifications"
+              hint="This switch controls email notifications we send when we don't receive a heartbeat from your phone for 1 hour."
+              persistent-hint
+            ></v-switch>
+            <v-switch
+              v-model="notificationSettings.webhook_enabled"
+              label="Webhook and discord emails"
+              :disabled="updatingEmailNotifications"
+              hint="This switch controls email notifications we send when we can't forward events to your discord server or to your webhook."
+              persistent-hint
+            ></v-switch>
+            <v-switch
+              v-model="notificationSettings.message_status_enabled"
+              label="Message status emails"
+              :disabled="updatingEmailNotifications"
+              hint="This switch controls email notifications we send when we your message is failed or expired."
+              persistent-hint
+            ></v-switch>
+            <v-btn
+              color="primary"
+              :loading="updatingEmailNotifications"
+              class="mt-4"
+              @click="saveEmailNotifications"
+            >
+              <v-icon></v-icon>
+              Save Notification Settings
+            </v-btn>
           </v-col>
         </v-row>
       </v-container>
@@ -671,6 +709,12 @@ export default Vue.extend({
         server_id: '',
         incoming_channel_id: '',
       },
+      updatingEmailNotifications: false,
+      notificationSettings: {
+        webhook_enabled: true,
+        message_status_enabled: true,
+        heartbeat_enabled: true,
+      },
       updatingWebhook: false,
       loadingWebhooks: false,
       discords: [],
@@ -691,7 +735,7 @@ export default Vue.extend({
   },
   head() {
     return {
-      title: 'Settings - Http SMS',
+      title: 'Settings - httpSMS',
     }
   },
   computed: {
@@ -710,15 +754,31 @@ export default Vue.extend({
       })
     },
   },
-  mounted() {
-    this.$store.dispatch('clearAxiosError')
-    this.$store.dispatch('loadUser')
-    this.$store.dispatch('loadPhones')
+  async mounted() {
+    await Promise.all([
+      this.$store.dispatch('clearAxiosError'),
+      this.$store.dispatch('loadUser'),
+      this.$store.dispatch('loadPhones'),
+    ])
     this.loadWebhooks()
     this.loadDiscordIntegrations()
+    this.updateEmailNotifications()
+    if (this.$route.hash) {
+      await this.$vuetify.goTo(this.$route.hash)
+    }
   },
 
   methods: {
+    updateEmailNotifications() {
+      this.notificationSettings = {
+        webhook_enabled:
+          this.$store.getters.getUser.notification_webhook_enabled,
+        message_status_enabled:
+          this.$store.getters.getUser.notification_message_status_enabled,
+        heartbeat_enabled:
+          this.$store.getters.getUser.notification_heartbeat_enabled,
+      }
+    },
     showEditPhone(phoneId) {
       const phone = this.$store.getters.getPhones.find((x) => x.id === phoneId)
       if (!phone) {
@@ -794,7 +854,7 @@ export default Vue.extend({
     },
 
     async updatePhone() {
-      this.updatingPhone = true
+      thisPhone = true
       await this.$store.dispatch('clearAxiosError')
       this.$store.dispatch('updatePhone', this.activePhone).finally(() => {
         if (!this.$store.getters.getAxiosError) {
@@ -827,6 +887,22 @@ export default Vue.extend({
         })
         .finally(() => {
           this.updatingDiscord = false
+        })
+    },
+
+    saveEmailNotifications() {
+      this.updatingEmailNotifications = true
+      this.$store
+        .dispatch('saveEmailNotifications', this.notificationSettings)
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Email notifications saved successfully',
+            type: 'success',
+          })
+          this.updateEmailNotifications()
+        })
+        .finally(() => {
+          this.updatingEmailNotifications = false
         })
     },
 
