@@ -28,7 +28,7 @@ func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User) (
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "Upgrade your httpSMS plan",
+						Text:      "UPGRADE YOUR PLAN",
 						Link:      "https://httpsms.com/billing",
 					},
 				},
@@ -74,7 +74,7 @@ func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usag
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "UPGRADE PLAN",
+						Text:      "UPGRADE YOUR PLAN",
 						Link:      "https://httpsms.com/billing",
 					},
 				},
@@ -140,7 +140,7 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 			Title:     "Hey,",
 			Signature: "Cheers",
 			Outros: []string{
-				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email. You can disable this email notification on https://httpsms.com/settings/#email-notifications"),
 			},
 		},
 	}

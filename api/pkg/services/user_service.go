@@ -156,6 +156,11 @@ func (service *UserService) SendPhoneDeadEmail(ctx context.Context, params *User
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	if !user.NotificationHeartbeatEnabled {
+		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypePhoneHeartbeatDead, params.UserID, params.Owner))
+		return nil
+	}
+
 	email, err := service.emailFactory.PhoneDead(user, params.LastHeartbeatTimestamp, params.Owner)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create phone dead email for user [%s]", params.UserID)

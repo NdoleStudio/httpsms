@@ -47,14 +47,14 @@ func (factory *hermesNotificationEmailFactory) DiscordSendFailed(user *entities.
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "Settings",
-						Link:      "https://httpsms.com/settings",
+						Text:      "DISCORD SETTINGS",
+						Link:      "https://httpsms.com/settings/#discord-settings",
 					},
 				},
 			},
 			Signature: "Cheers",
 			Outros: []string{
-				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email. You can disable this email notification on https://httpsms.com/settings/#email-notifications"),
 			},
 		},
 	}
@@ -98,14 +98,14 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "Settings",
-						Link:      "https://httpsms.com/settings",
+						Text:      "WEBHOOK SETTINGS",
+						Link:      "https://httpsms.com/settings/#webhook-settings",
 					},
 				},
 			},
 			Signature: "Cheers",
 			Outros: []string{
-				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email. You can disable this email notification on https://httpsms.com/settings/#email-notifications"),
 			},
 		},
 	}
@@ -147,14 +147,14 @@ func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.Use
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "View Messages",
+						Text:      "VIEW MESSAGES",
 						Link:      "https://httpsms.com/threads",
 					},
 				},
 			},
 			Signature: "Cheers",
 			Outros: []string{
-				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email. You can disable this email notification on https://httpsms.com/settings/#email-notifications"),
 			},
 		},
 	}
@@ -197,14 +197,14 @@ func (factory *hermesNotificationEmailFactory) MessageFailed(user *entities.User
 					Button: hermes.Button{
 						Color:     "#329ef4",
 						TextColor: "#FFFFFF",
-						Text:      "View Messages",
+						Text:      "VIEW MESSAGES",
 						Link:      "https://httpsms.com/threads",
 					},
 				},
 			},
 			Signature: "Cheers",
 			Outros: []string{
-				fmt.Sprintf("Don't hesitate to contact us by replying to this email."),
+				fmt.Sprintf("Don't hesitate to contact us by replying to this email. You can disable this email notification on https://httpsms.com/settings/#email-notifications"),
 			},
 		},
 	}

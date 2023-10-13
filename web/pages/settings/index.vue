@@ -91,7 +91,7 @@
                 >Documentation</v-btn
               >
             </div>
-            <h5 id="webhooks" class="text-h4 mb-3 mt-12">Webhooks</h5>
+            <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
               the android phone receives an SMS message we can forward the
@@ -164,10 +164,12 @@
                 >Documentation</v-btn
               >
             </div>
-            <h5 class="text-h4 mb-3 mt-12">Discord Integration</h5>
+            <h5 id="discord-settings" class="text-h4 mb-3 mt-12">
+              Discord Integration
+            </h5>
             <p class="text--secondary">
               Send and receive SMS messages without leaving your discord server
-              with the httpsms discord app using the
+              with the httpSMS discord app using the
               <code>/httpsms</code> command.
             </p>
             <div v-if="loadingDiscordIntegrations">
@@ -854,7 +856,7 @@ export default Vue.extend({
     },
 
     async updatePhone() {
-      thisPhone = true
+      this.updatingPhone = true
       await this.$store.dispatch('clearAxiosError')
       this.$store.dispatch('updatePhone', this.activePhone).finally(() => {
         if (!this.$store.getters.getAxiosError) {

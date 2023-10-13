@@ -70,6 +70,11 @@ func (service *EmailNotificationService) NotifyMessageExpired(ctx context.Contex
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}
 
+	if !user.NotificationMessageStatusEnabled {
+		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypeMessageSendExpired, payload.UserID, payload.Owner))
+		return nil
+	}
+
 	email, err := service.factory.MessageExpired(user, payload.MessageID, payload.Owner, payload.Contact, payload.Content)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create email for user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID)
@@ -101,6 +106,11 @@ func (service *EmailNotificationService) NotifyMessageFailed(ctx context.Context
 	if err != nil {
 		msg := fmt.Sprintf("cannot load user with ID [%s] for [%s] message with ID [%s]", payload.UserID, payload.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	if !user.NotificationMessageStatusEnabled {
+		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypeMessageSendFailed, payload.UserID, payload.Owner))
+		return nil
 	}
 
 	email, err := service.factory.MessageFailed(user, payload.ID, payload.Owner, payload.Contact, payload.Content, payload.ErrorMessage)
@@ -136,6 +146,11 @@ func (service *EmailNotificationService) NotifyWebhookSendFailed(ctx context.Con
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}
 
+	if !user.NotificationWebhookEnabled {
+		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.Owner))
+		return nil
+	}
+
 	email, err := service.factory.WebhookSendFailed(user, payload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%s] email for user with ID [%s] for [%s] event with ID [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.EventType, payload.EventID)
@@ -167,6 +182,11 @@ func (service *EmailNotificationService) NotifyDiscordSendFailed(ctx context.Con
 	if err != nil {
 		msg := fmt.Sprintf("cannot load user with ID [%s] for [%s] event for message with ID [%s]", payload.UserID, payload.EventType, payload.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	if !user.NotificationWebhookEnabled {
+		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypeDiscordSendFailed, payload.UserID, payload.Owner))
+		return nil
 	}
 
 	email, err := service.factory.DiscordSendFailed(user, payload)
