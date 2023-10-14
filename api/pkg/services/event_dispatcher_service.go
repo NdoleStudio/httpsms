@@ -62,10 +62,10 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 
 // DispatchWithTimeout dispatches an event with a timeout
 func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, event cloudevents.Event, timeout time.Duration) (queueID string, err error) {
-	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
+	ctx, span := dispatcher.tracer.Start(ctx)
 	defer span.End()
 
-	if err := event.Validate(); err != nil {
+	if err = event.Validate(); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type())
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
