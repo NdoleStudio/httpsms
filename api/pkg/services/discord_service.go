@@ -247,7 +247,7 @@ func (service *DiscordService) sendMessage(ctx context.Context, event cloudevent
 	message, response, err := service.client.Channel.CreateMessage(ctx, discord.IncomingChannelID, request)
 	if err != nil {
 		msg := fmt.Sprintf("cannot send [%s] event to discord channel [%s] for user [%s]", event.Type(), discord.IncomingChannelID, discord.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Warn(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 
 		eventPayload := &events.DiscordSendFailedPayload{
 			DiscordID:        discord.ID,

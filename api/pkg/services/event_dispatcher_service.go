@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -61,7 +62,7 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 
 // DispatchWithTimeout dispatches an event with a timeout
 func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, event cloudevents.Event, timeout time.Duration) (queueID string, err error) {
-	ctx, span := dispatcher.tracer.Start(ctx)
+	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
 	defer span.End()
 
 	if err := event.Validate(); err != nil {
@@ -75,7 +76,17 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if queueID, err = dispatcher.queue.Enqueue(ctx, task, timeout); err != nil {
+	queueID, err = dispatcher.queue.Enqueue(ctx, task, timeout)
+	if errors.Is(err, context.DeadlineExceeded) {
+		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]. publishing locally", event.ID(), event.Type())
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
+		time.AfterFunc(timeout, func() {
+			dispatcher.Publish(ctx, event)
+		})
+	}
+
+	if err != nil {
 		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

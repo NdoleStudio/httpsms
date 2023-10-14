@@ -7,9 +7,9 @@ import (
 	"time"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
+	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/palantir/stacktrace"
-	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -48,13 +48,11 @@ func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, 
 	}
 
 	// Build the Task payload.
-	// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#CreateTaskRequest
-	req := &taskspb.CreateTaskRequest{
+	req := &cloudtaskspb.CreateTaskRequest{
 		Parent: queue.queueConfig.Name,
-		Task: &taskspb.Task{
-			// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#HttpRequest
-			MessageType: &taskspb.Task_HttpRequest{
-				HttpRequest: &taskspb.HttpRequest{
+		Task: &cloudtaskspb.Task{
+			MessageType: &cloudtaskspb.Task_HttpRequest{
+				HttpRequest: &cloudtaskspb.HttpRequest{
 					Headers:    headers,
 					HttpMethod: queue.httpMethodToProtoHTTPMethod(task.Method),
 					Url:        task.URL,
@@ -67,9 +65,12 @@ func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, 
 	// Add a payload message if one is present.
 	req.Task.GetHttpRequest().Body = task.Body
 
-	queueTask, err := queue.client.CreateTask(ctx, req)
+	requestCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+
+	queueTask, err := queue.client.CreateTask(requestCtx, req)
 	if err != nil {
-		msg := fmt.Sprintf("cannot schedule task %s to URL: %s", string(task.Body), task.URL)
+		msg := fmt.Sprintf("cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL)
 		return queueID, queue.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
@@ -83,15 +84,15 @@ func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, 
 	return queueTask.Name, nil
 }
 
-func (queue *googlePushQueue) httpMethodToProtoHTTPMethod(httpMethod string) taskspb.HttpMethod {
-	method, ok := map[string]taskspb.HttpMethod{
-		http.MethodGet:  taskspb.HttpMethod_GET,
-		http.MethodPost: taskspb.HttpMethod_POST,
-		http.MethodPut:  taskspb.HttpMethod_PUT,
+func (queue *googlePushQueue) httpMethodToProtoHTTPMethod(httpMethod string) cloudtaskspb.HttpMethod {
+	method, ok := map[string]cloudtaskspb.HttpMethod{
+		http.MethodGet:  cloudtaskspb.HttpMethod_GET,
+		http.MethodPost: cloudtaskspb.HttpMethod_POST,
+		http.MethodPut:  cloudtaskspb.HttpMethod_PUT,
 	}[httpMethod]
 
 	if !ok {
-		return taskspb.HttpMethod_POST
+		return cloudtaskspb.HttpMethod_POST
 	}
 
 	return method
