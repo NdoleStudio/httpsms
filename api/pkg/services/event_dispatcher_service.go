@@ -76,22 +76,28 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	queueID, err = dispatcher.queue.Enqueue(ctx, task, timeout)
+	if queueID, err = dispatcher.enqueue(ctx, event, task, timeout); err != nil {
+		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
+		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return queueID, nil
+}
+
+func (dispatcher *EventDispatcher) enqueue(ctx context.Context, event cloudevents.Event, task *PushQueueTask, timeout time.Duration) (string, error) {
+	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
+	defer span.End()
+
+	queueID, err := dispatcher.queue.Enqueue(ctx, task, timeout)
 	if errors.Is(err, context.DeadlineExceeded) {
-		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]. publishing locally", event.ID(), event.Type())
+		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s] to [%T]", event.ID(), event.Type(), dispatcher.queue)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
 		time.AfterFunc(timeout, func() {
 			dispatcher.Publish(ctx, event)
 		})
 	}
-
-	if err != nil {
-		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
-		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-
-	return queueID, nil
+	return queueID, err
 }
 
 // Dispatch a new event by adding it to the queue to be processed async
