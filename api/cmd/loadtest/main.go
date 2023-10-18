@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/google/uuid"
+
 	"github.com/joho/godotenv"
 
 	"github.com/carlmjohnson/requests"
@@ -25,12 +27,12 @@ func main() {
 			Host("api.httpsms.com").
 			// Host("localhost:8000").
 			// Scheme("http").
-			Header("x-api-key", os.Getenv("HTTPSMS_API_KEY")).
+			Header("x-api-key", os.Getenv("HTTPSMS_KEY")).
 			BodyJSON(&map[string]string{
-				"content": fmt.Sprintf("testing http api sample: [%d]", i),
-				"from":    os.Getenv("SIM_1"),
-				"to":      os.Getenv("SIM_2"),
-				"sim":     "SIM2",
+				"content":    fmt.Sprintf("Load Test[%d]", i),
+				"from":       os.Getenv("HTTPSMS_FROM"),
+				"to":         os.Getenv("HTTPSMS_TO"),
+				"request_id": fmt.Sprintf("load-%s-%d", uuid.NewString(), i),
 			}).
 			ToString(&responsePayload).
 			Fetch(context.Background())
