@@ -50,8 +50,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>1,581+</b> happy users who have sent or received
-            more than <b>233,412+</b> messages.
+            ⚡Trusted by <b>1,902+</b> happy users who have sent or received
+            more than <b>314,972+</b> messages.
           </p>
           <div
             class="mt-4"
@@ -93,6 +93,45 @@
         <v-row class="mb-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
             <div>
+              <h3 class="text-h3 mb-1">
+                Bulk SMS
+                <v-chip class="ma-2" color="pink" label text-color="white">
+                  <v-icon left>{{ mdiLabel }}</v-icon>
+                  No code
+                </v-chip>
+              </h3>
+              <h5 class="text-h6 font-weight-light">
+                Fill in our bulk SMS
+                <a
+                  class="text-decoration-none"
+                  download
+                  href="/templates/httpsms-bulk.csv"
+                  >CSV template</a
+                >
+                or our
+                <a
+                  class="text-decoration-none"
+                  download
+                  href="/templates/httpsms-bulk.xlsx"
+                  >excel template</a
+                >
+                and upload it on httpSMS to send your SMS messages to multiple
+                recipients at once without writing any code.
+              </h5>
+            </div>
+          </v-col>
+          <v-col cols="12" md="6" :order-lg="1">
+            <v-img
+              class="mb-4"
+              max-height="400"
+              contain
+              :src="require('assets/img/bulk-sms-template.png')"
+            ></v-img>
+          </v-col>
+        </v-row>
+        <v-row class="mb-16">
+          <v-col cols="12" md="6" class="d-flex align-center">
+            <div>
               <h3 class="text-h3 mb-1">Webhooks</h3>
               <h5 class="text-h6 font-weight-light">
                 If you want to build advanced integrations, we support callback
@@ -102,7 +141,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6" :order-lg="1">
+          <v-col cols="12" md="6">
             <v-img
               class="mb-4"
               max-height="300"
@@ -112,7 +151,7 @@
           </v-col>
         </v-row>
         <v-row class="mb-16">
-          <v-col cols="12" md="6" class="d-flex align-center" :order-md="1">
+          <v-col cols="12" md="6" class="d-flex align-center" order-md="2">
             <div>
               <h3 class="text-h3 mb-1">Control Sending</h3>
               <h5 class="text-h6 font-weight-light">
@@ -122,7 +161,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6" :order-md="2">
+          <v-col cols="12" md="6" order-md="1">
             <v-img
               class="mb-4"
               max-height="300"
@@ -132,7 +171,7 @@
           </v-col>
         </v-row>
         <v-row class="mb-16">
-          <v-col cols="12" md="6" class="d-flex align-center" :order-md="2">
+          <v-col cols="12" md="6" class="d-flex align-center">
             <div>
               <h3 class="text-h3 mb-1">Monitoring</h3>
               <h5 class="text-h6 font-weight-light">
@@ -151,7 +190,7 @@
           </v-col>
         </v-row>
         <v-row class="mt-16">
-          <v-col cols="12" md="6" class="d-flex align-center" :order-md="1">
+          <v-col cols="12" md="6" class="d-flex align-center" order-md="2">
             <div>
               <h3 class="text-h3 mb-1">Open Source</h3>
               <h5 class="text-h6 mb-3 font-weight-light">
@@ -170,10 +209,10 @@
               </a>
             </div>
           </v-col>
-          <v-col cols="12" md="6" :order-md="2">
+          <v-col cols="12" md="6" order-md="1">
             <v-img
               class="mb-4"
-              max-height="300"
+              max-height="400"
               contain
               :src="require('assets/img/httpsms-github.png')"
             ></v-img>
@@ -644,6 +683,7 @@ import {
   mdiTallyMark1,
   mdiTallyMark3,
   mdiTallyMark2,
+  mdiLabel,
   mdiLanguageJavascript,
   mdiLanguagePhp,
   mdiLanguageCsharp,
@@ -658,6 +698,7 @@ export default Vue.extend({
   data() {
     return {
       mdiGithub,
+      mdiLabel,
       mdiCheckCircle,
       mdiSend,
       mdiGift,
