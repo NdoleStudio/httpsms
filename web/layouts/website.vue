@@ -84,11 +84,7 @@
               ></v-img>
             </p>
             <p class="mt-n3">
-              <v-btn
-                href="https://twitter.com/acho_arnold"
-                icon
-                color="#1DA1F2"
-              >
+              <v-btn href="https://twitter.com/httpsmsHQ" icon color="#1DA1F2">
                 <v-icon>{{ mdiTwitter }}</v-icon>
               </v-btn>
               <v-btn
