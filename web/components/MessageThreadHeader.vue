@@ -54,7 +54,13 @@
               icon
               v-on="on"
             >
-              <v-icon x-small>{{ mdiCircle }}</v-icon>
+              <v-icon
+                v-if="$store.getters.getHeartbeat.charging"
+                small
+                class="mt-n1"
+                >{{ mdiBatteryCharging }}</v-icon
+              >
+              <v-icon v-else x-small>{{ mdiCircle }}</v-icon>
             </v-btn>
           </template>
           <h4>Last Heartbeat</h4>
@@ -201,6 +207,7 @@ import {
   mdiLogout,
   mdiDownload,
   mdiFinance,
+  mdiBatteryChargingHigh,
   mdiPackageUp,
   mdiPackageDown,
   mdiDotsVertical,
@@ -223,6 +230,7 @@ export default class MessageThreadHeader extends Vue {
   mdiPackageDown = mdiPackageDown
   mdiDotsVertical = mdiDotsVertical
   mdiCircle = mdiCircle
+  mdiBatteryCharging = mdiBatteryChargingHigh
 
   get owners(): Array<SelectItem> {
     return this.$store.getters.getPhones.map(
