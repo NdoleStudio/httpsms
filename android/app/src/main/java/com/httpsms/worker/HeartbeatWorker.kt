@@ -1,13 +1,11 @@
 package com.httpsms.worker
 
 import android.content.Context
-import android.os.BatteryManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.httpsms.Constants
 import com.httpsms.HttpSmsApiService
 import com.httpsms.Settings
-import com.httpsms.utils.Heartbeat
 import timber.log.Timber
 
 class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {

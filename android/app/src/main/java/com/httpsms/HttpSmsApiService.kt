@@ -108,7 +108,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
     fun storeHeartbeat(phoneNumber: String, charging: Boolean) {
         val body = """
             {
-              "charging": "$charging",
+              "charging": $charging,
               "owner": "$phoneNumber"
             }
         """.trimIndent()

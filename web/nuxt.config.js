@@ -16,6 +16,12 @@ export default {
         async: true,
         defer: true,
       },
+      {
+        hid: 'lemonsqueezy',
+        src: 'https://lmsqueezy.com/affiliate.js',
+        async: true,
+        defer: true,
+      },
     ],
     meta: [
       { charset: 'utf-8' },

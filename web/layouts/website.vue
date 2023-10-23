@@ -128,6 +128,18 @@
               <li class="mb-2">
                 <v-hover v-slot="{ hover }">
                   <a
+                    href="https://httpsms.lemonsqueezy.com/affiliates"
+                    class="text--primary text-decoration-none"
+                    :class="{ 'text-decoration-underline': hover }"
+                  >
+                    Affiliates
+                    <v-icon color="warning" small>{{ mdiShieldStar }}</v-icon>
+                  </a>
+                </v-hover>
+              </li>
+              <li class="mb-2">
+                <v-hover v-slot="{ hover }">
+                  <a
                     href="https://status.httpsms.com"
                     class="text--primary text-decoration-none"
                     :class="{ 'text-decoration-underline': hover }"
@@ -186,7 +198,7 @@
                     :class="{ 'text-decoration-underline': hover }"
                   >
                     Sandbox
-                    <v-icon small>{{ mdiCreation }}</v-icon>
+                    <v-icon small color="pink">{{ mdiCreation }}</v-icon>
                   </a>
                 </v-hover>
               </li>
@@ -248,6 +260,7 @@ import {
   mdiCircle,
   mdiTwitter,
   mdiHeart,
+  mdiShieldStar,
   mdiCreation,
   mdiEyeOffOutline,
   mdiPost,
@@ -273,6 +286,7 @@ export default Vue.extend({
       mdiEmailOutline,
       mdiPost,
       mdiCircle,
+      mdiShieldStar,
       mdiBookOpenVariant,
     }
   },
