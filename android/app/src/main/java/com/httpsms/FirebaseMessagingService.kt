@@ -57,7 +57,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
         Thread {
             try {
-                HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext))
+                HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext), Settings.isCharging(applicationContext))
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)

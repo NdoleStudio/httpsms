@@ -10,7 +10,8 @@ import (
 // HeartbeatStore is the payload for fetching entities.Heartbeat of a phone number
 type HeartbeatStore struct {
 	request
-	Owner string `json:"owner"`
+	Charging bool   `json:"charging"`
+	Owner    string `json:"owner"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -24,6 +25,7 @@ func (input *HeartbeatStore) ToStoreParams(user entities.AuthUser, version strin
 	return services.HeartbeatStoreParams{
 		Owner:     input.Owner,
 		Version:   version,
+		Charging:  input.Charging,
 		Timestamp: time.Now().UTC(),
 		UserID:    user.ID,
 	}

@@ -1,11 +1,13 @@
 package com.httpsms.worker
 
 import android.content.Context
+import android.os.BatteryManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.httpsms.Constants
 import com.httpsms.HttpSmsApiService
 import com.httpsms.Settings
+import com.httpsms.utils.Heartbeat
 import timber.log.Timber
 
 class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
@@ -30,7 +32,7 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
             return
         }
 
-        HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext))
+        HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext), Settings.isCharging(applicationContext))
         Timber.d("[SIM1] finished sending heartbeat to server")
 
         Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
@@ -43,7 +45,7 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
             return
         }
 
-        HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM2PhoneNumber(applicationContext))
+        HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM2PhoneNumber(applicationContext), Settings.isCharging(applicationContext))
         Timber.d("[SIM2] finished sending heartbeat to server")
 
         Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())

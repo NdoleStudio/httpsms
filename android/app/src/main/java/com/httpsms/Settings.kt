@@ -1,6 +1,7 @@
 package com.httpsms
 
 import android.content.Context
+import android.os.BatteryManager
 import androidx.preference.PreferenceManager
 import timber.log.Timber
 import java.net.URI
@@ -178,6 +179,11 @@ object Settings {
 
     fun getApiKeyOrDefault(context:Context): String {
         return getApiKey(context) ?: ""
+    }
+
+    fun isCharging(context: Context): Boolean {
+        val myBatteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        return myBatteryManager.isCharging
     }
 
     fun setUserID(context:Context, userID: String?) {

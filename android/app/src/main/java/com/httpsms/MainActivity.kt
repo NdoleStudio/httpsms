@@ -326,9 +326,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
+            var charging = Settings.isCharging(applicationContext)
             var error: String? = null
             try {
-                HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM1PhoneNumber(context))
+                HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM1PhoneNumber(context), charging)
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)
@@ -336,7 +337,7 @@ class MainActivity : AppCompatActivity() {
             }
             if (Settings.isDualSIM(context)) {
                 try {
-                    HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM2PhoneNumber(context))
+                    HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM2PhoneNumber(context), charging)
                     Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
                 } catch (exception: Exception) {
                     Timber.e(exception)

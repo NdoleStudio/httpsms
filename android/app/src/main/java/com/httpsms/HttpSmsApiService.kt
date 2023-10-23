@@ -1,6 +1,7 @@
 package com.httpsms
 
 import android.content.Context
+import android.os.BatteryManager
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -104,9 +105,10 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
     }
 
-    fun storeHeartbeat(phoneNumber: String) {
+    fun storeHeartbeat(phoneNumber: String, charging: Boolean) {
         val body = """
             {
+              "charging": "$charging",
               "owner": "$phoneNumber"
             }
         """.trimIndent()

@@ -70,6 +70,7 @@ func (service *HeartbeatService) Index(ctx context.Context, userID entities.User
 type HeartbeatStoreParams struct {
 	Owner     string
 	Version   string
+	Charging  bool
 	Timestamp time.Time
 	UserID    entities.UserID
 }
@@ -84,6 +85,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 	heartbeat := &entities.Heartbeat{
 		ID:        uuid.New(),
 		Owner:     params.Owner,
+		Charging:  params.Charging,
 		Timestamp: params.Timestamp,
 		Version:   params.Version,
 		UserID:    params.UserID,
