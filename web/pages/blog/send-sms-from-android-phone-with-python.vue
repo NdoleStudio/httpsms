@@ -167,21 +167,7 @@ print(json.dumps(response.json(), indent=4))
           >
         </p>
         <p>Until the next time✌️</p>
-        <div class="d-flex mb-6 mt-8">
-          <v-avatar class="mb-n2">
-            <v-img :src="authorImage"></v-img>
-          </v-avatar>
-          <div class="ml-2">
-            <p class="subtitle-1 mb-n1">{{ authorName }}</p>
-            <a
-              class="mb-n4 text-decoration-none text--primary"
-              href="https://twitter.com/acho_arnold"
-            >
-              {{ authorTwitter }}
-              <v-icon color="#1DA1F2" small>{{ mdiTwitter }}</v-icon>
-            </a>
-          </div>
-        </div>
+        <blog-author-bio></blog-author-bio>
         <v-divider class="mx-16"></v-divider>
         <div class="text-center mt-8 mb-4">
           <back-button></back-button>

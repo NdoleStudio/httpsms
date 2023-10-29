@@ -33,10 +33,10 @@
                       <div class="ml-2">
                         <p class="subtitle-1">{{ post.authorName }}</p>
                         <p class="mt-n5 mb-n4">
-                          {{ post.authorTwitter }}
-                          <v-icon color="#1DA1F2" small>{{
+                          <v-icon small color="#1DA1F2">{{
                             mdiTwitter
                           }}</v-icon>
+                          <v-icon small color="#ffffff">{{ mdiGithub }}</v-icon>
                         </p>
                       </div>
                     </div>
@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts">
-import { mdiTwitter } from '@mdi/js'
+import { mdiGithub, mdiTwitter } from '@mdi/js'
 
 export default {
   name: 'BlogIndex',
@@ -63,7 +63,31 @@ export default {
   data() {
     return {
       mdiTwitter,
+      mdiGithub,
       blogPosts: [
+        {
+          route: '/blog/how-to-send-sms-messages-from-excel',
+          title:
+            'How to send SMS messages to multiple phone numbers from Excel',
+          date: 'October 29, 2023',
+          readTime: '5 min read',
+          authorImage: require('@/assets/img/arnold.png'),
+          description:
+            'Send multiple SMS messages to your customers from a an Excel file using your Android phone as the SMS gateway.',
+          authorName: 'Acho Arnold',
+          authorTwitter: 'acho_arnold',
+        },
+        {
+          route: '/blog/send-bulk-sms-from-csv-file-with-no-code',
+          title: 'Send bulk SMS messages from a CSV file with no code',
+          date: 'October 29, 2023',
+          readTime: '7 min read',
+          authorImage: require('@/assets/img/arnold.png'),
+          description:
+            'Send SMS messages to multiple recipients in your CSV file without writing a single piece of code.',
+          authorName: 'Acho Arnold',
+          authorTwitter: 'acho_arnold',
+        },
         {
           route: '/blog/send-sms-from-android-phone-with-python',
           title: 'Send an SMS from your Android phone with Python',
