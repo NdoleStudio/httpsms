@@ -24,7 +24,9 @@ func main() {
 	}
 
 	container := di.NewLiteContainer()
-	container.Logger().Info("Starting experiments")
+	logger := container.Logger()
+
+	logger.Info("Starting experiments")
 }
 
 func text3CX() {

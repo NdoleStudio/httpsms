@@ -26,7 +26,6 @@ type UserService struct {
 	emailFactory       emails.UserEmailFactory
 	mailer             emails.Mailer
 	repository         repositories.UserRepository
-	marketingService   *MarketingService
 	lemonsqueezyClient *lemonsqueezy.Client
 }
 
@@ -37,14 +36,12 @@ func NewUserService(
 	repository repositories.UserRepository,
 	mailer emails.Mailer,
 	emailFactory emails.UserEmailFactory,
-	marketingService *MarketingService,
 	lemonsqueezyClient *lemonsqueezy.Client,
 ) (s *UserService) {
 	return &UserService{
 		logger:             logger.WithService(fmt.Sprintf("%T", s)),
 		tracer:             tracer,
 		mailer:             mailer,
-		marketingService:   marketingService,
 		emailFactory:       emailFactory,
 		repository:         repository,
 		lemonsqueezyClient: lemonsqueezyClient,
@@ -53,7 +50,7 @@ func NewUserService(
 
 // Get fetches or creates an entities.User
 func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser) (*entities.User, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	user, isNew, err := service.repository.LoadOrStore(ctx, authUser)
@@ -63,7 +60,7 @@ func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser)
 	}
 
 	if isNew {
-		service.marketingService.AddToList(ctx, user)
+		ctxLogger.Info(fmt.Sprintf("created a new user  with ID [%s]", user.ID))
 	}
 
 	return user, nil
@@ -89,7 +86,7 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthUs
 	}
 
 	if isNew {
-		service.marketingService.AddToList(ctx, user)
+		ctxLogger.Info(fmt.Sprintf("created a new user  with ID [%s]", user.ID))
 	}
 
 	user.Timezone = params.Timezone.String()
