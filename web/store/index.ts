@@ -195,6 +195,13 @@ export const getters = {
   getNotification(state: State): Notification {
     return state.notification
   },
+
+  getSubStackLoaded() {
+    if (!process.client) {
+      return false
+    }
+    return (window as any).CustomSubstackWidget.scriptLoaded
+  },
 }
 
 export const mutations = {

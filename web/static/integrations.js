@@ -13,3 +13,11 @@
 
 // LemonSqueezy
 window.lemonSqueezyAffiliateConfig = { store: 'httpsms' }
+
+// substack
+window.CustomSubstackWidget = {
+  substackUrl: 'httpsms.substack.com',
+  placeholder: 'example@gmail.com',
+  buttonText: 'Subscribe',
+  theme: 'green',
+}

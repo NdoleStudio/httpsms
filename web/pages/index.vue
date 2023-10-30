@@ -662,6 +662,25 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             </v-card>
           </v-col>
         </v-row>
+        <client-only>
+          <v-row>
+            <v-col class="text-center" md="6" offset-md="3">
+              <p class="text-h4 text--secondary mt-6 mb-4">
+                Subscribe to my newsletter where I share new features and
+                updates on httpSMS.
+              </p>
+              <v-progress-circular
+                v-if="!substackLoaded"
+                indeterminate
+                size="40"
+                width="2"
+                class="mt-8"
+                color="primary"
+              ></v-progress-circular>
+              <div id="custom-substack-embed" ref="substackEmbed"></div>
+            </v-col>
+          </v-row>
+        </client-only>
       </v-container>
     </v-sheet>
   </div>
@@ -719,7 +738,17 @@ export default Vue.extend({
       mdiLanguageGo,
       selectedTab: 'javascript',
       yearlyPricing: false,
+      substackLoaded: false,
     }
+  },
+  mounted() {
+    setTimeout(() => {
+      const s = document.createElement('script')
+      s.type = 'text/javascript'
+      s.src = 'https://substackapi.com/widget.js'
+      document.getElementsByTagName('head')[0].appendChild(s)
+      this.substackLoaded = true
+    }, 5000)
   },
 })
 </script>
