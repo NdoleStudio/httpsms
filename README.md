@@ -42,7 +42,7 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
 
 ### Android App
 
-[The Android App](https://github.com/NdoleStudio/httpsms/releases/download/v0.0.1/HttpSms.apk) is a native application
+[The Android App](https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk) is a native application
 built using Kotlin with material design principles. This app must be installed on an android phone before you can start
 sending and receiving SMS messages.
 
