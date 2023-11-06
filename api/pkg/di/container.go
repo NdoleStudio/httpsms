@@ -225,9 +225,17 @@ func (container *Container) YugaByteDB() (db *gorm.DB) {
 	if err != nil {
 		container.logger.Fatal(err)
 	}
+
 	if err = db.Use(tracing.NewPlugin()); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
 	}
+
+	sql, err := db.DB()
+	if err != nil {
+		container.logger.Fatal(err)
+	}
+
+	sql.SetMaxOpenConns(7)
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
 	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
