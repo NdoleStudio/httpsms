@@ -236,6 +236,8 @@ func (container *Container) YugaByteDB() (db *gorm.DB) {
 	}
 
 	sql.SetMaxOpenConns(7)
+	sql.SetMaxIdleConns(3)
+	sql.SetConnMaxLifetime(time.Minute * 10)
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
 	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
