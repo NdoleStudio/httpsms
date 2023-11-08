@@ -184,9 +184,29 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         private fun handleFailed(context: Context, messageID: String) {
-            Timber.d("sending failed event for message with ID [${messageID}]")
-            HttpSmsApiService.create(context)
-                .sendFailedEvent(messageID, ZonedDateTime.now(ZoneOffset.UTC), "MOBILE_APP_INACTIVE")
+            Timber.d("sending [FAILED] event for message with ID [${messageID}]")
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val inputData: Data = workDataOf(
+                Constants.KEY_MESSAGE_ID to messageID,
+                Constants.KEY_MESSAGE_REASON to "MOBILE_APP_INACTIVE",
+                Constants.KEY_MESSAGE_TIMESTAMP to Settings.currentTimestamp()
+            )
+
+            val work = OneTimeWorkRequest
+                .Builder(SentReceiver.FailedMessageWorker::class.java)
+                .setConstraints(constraints)
+                .setInputData(inputData)
+                .build()
+
+            WorkManager
+                .getInstance(context)
+                .enqueue(work)
+
+            Timber.d("work enqueued with ID [${work.id}] for [FAILED] message with ID [${messageID}]")
         }
 
         private fun getMessage(context: Context, messageID: String): Message? {
@@ -237,7 +257,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 this.applicationContext,
                 id.hashCode(),
                 intent,
-                PendingIntent.FLAG_MUTABLE
+                PendingIntent.FLAG_IMMUTABLE
             )
         }
     }

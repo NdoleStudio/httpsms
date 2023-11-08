@@ -5,6 +5,9 @@ import android.os.BatteryManager
 import androidx.preference.PreferenceManager
 import timber.log.Timber
 import java.net.URI
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 object Settings {
     private const val SETTINGS_SIM1_PHONE_NUMBER = "SETTINGS_SIM1_PHONE_NUMBER"
@@ -265,6 +268,12 @@ object Settings {
 
         Timber.d("SETTINGS_HEARTBEAT_TIMESTAMP: [$timestamp]")
         return timestamp
+    }
+
+    fun currentTimestamp(): String {
+        return DateTimeFormatter.ofPattern(Constants.TIMESTAMP_PATTERN).format(
+            ZonedDateTime.now(ZoneOffset.UTC)
+        ).replace("+", "Z")
     }
 
 

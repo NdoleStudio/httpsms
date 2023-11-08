@@ -8,6 +8,9 @@ class Constants {
         const val KEY_MESSAGE_SIM = "KEY_MESSAGE_SIM"
         const val KEY_MESSAGE_CONTENT = "KEY_MESSAGE_CONTENT"
         const val KEY_MESSAGE_TIMESTAMP = "KEY_MESSAGE_TIMESTAMP"
+        const val KEY_MESSAGE_REASON = "KEY_MESSAGE_REASON"
+
+
         const val KEY_HEARTBEAT_ID = "KEY_HEARTBEAT_ID"
 
         const val SIM1 = "SIM1"

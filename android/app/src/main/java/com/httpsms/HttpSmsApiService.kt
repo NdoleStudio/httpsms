@@ -59,16 +59,16 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return null
     }
 
-    fun sendDeliveredEvent(messageId: String, timestamp: ZonedDateTime) {
-        sendEvent(messageId, "DELIVERED", timestamp)
+    fun sendDeliveredEvent(messageId: String, timestamp: String): Boolean {
+        return sendEvent(messageId, "DELIVERED", timestamp)
     }
 
-    fun sendSentEvent(messageId: String, timestamp: ZonedDateTime) {
-        sendEvent(messageId, "SENT", timestamp)
+    fun sendSentEvent(messageId: String, timestamp: String): Boolean {
+        return sendEvent(messageId, "SENT", timestamp)
     }
 
-    fun sendFailedEvent(messageId: String, timestamp: ZonedDateTime, reason: String) {
-        sendEvent(messageId, "FAILED", timestamp, reason)
+    fun sendFailedEvent(messageId: String, timestamp: String, reason: String): Boolean {
+        return sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
     fun receive(sim: String, from: String, to: String, content: String, timestamp: String): Boolean {
@@ -129,10 +129,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
     }
 
 
-    private fun sendEvent(messageId: String, event: String, timestamp: ZonedDateTime, reason: String? = null) {
-        val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
-        val timestampString = formatter.format(timestamp).replace("+", "Z")
-
+    private fun sendEvent(messageId: String, event: String, timestamp: String, reason: String? = null): Boolean {
         var reasonString = "null"
         if (reason != null) {
             reasonString = "\"$reason\""
@@ -142,7 +139,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             {
               "event_name": "$event",
               "reason": $reasonString,
-              "timestamp": "$timestampString"
+              "timestamp": "$timestamp"
             }
         """.trimIndent()
 
@@ -157,11 +154,12 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             response.close()
-            return
+            return false
         }
 
         response.close()
         Timber.i( "[$event] event sent successfully for message with ID [$messageId]" )
+        return true
     }
 
 
