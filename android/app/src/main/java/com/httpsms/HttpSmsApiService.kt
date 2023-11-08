@@ -71,17 +71,13 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
-    fun receive(sim: String, from: String, to: String, content: String, timestamp: ZonedDateTime) {
-        val formatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ")
-        val timestampString = formatter.format(timestamp).replace("+", "Z")
-
-
+    fun receive(sim: String, from: String, to: String, content: String, timestamp: String): Boolean {
         val body = """
             {
               "content": "${StringEscapeUtils.escapeJson(content)}",
               "sim": "$sim",
               "from": "$from",
-              "timestamp": "$timestampString",
+              "timestamp": "$timestamp",
               "to": "$to"
             }
         """.trimIndent()
@@ -97,12 +93,13 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
             response.close()
-            return
+            return false
         }
 
         val message = ResponseMessage.fromJson(response.body!!.string())
         response.close()
         Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
+        return true;
     }
 
     fun storeHeartbeat(phoneNumber: String, charging: Boolean) {
