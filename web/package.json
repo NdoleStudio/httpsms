@@ -34,7 +34,7 @@
     "firebaseui": "^6.1.0",
     "libphonenumber-js": "^1.10.49",
     "moment": "^2.29.4",
-    "nuxt": "^2.17.0",
+    "nuxt": "^2.17.2",
     "nuxt-highlightjs": "^1.0.3",
     "ufo": "^1.1.2",
     "vue": "^2.7.14",
