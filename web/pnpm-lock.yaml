@@ -149,8 +149,8 @@ devDependencies:
     specifier: ^14.0.1
     version: 14.0.1
   node-fetch-native:
-    specifier: ^1.2.0
-    version: 1.4.0
+    specifier: ^1.4.1
+    version: 1.4.1
   postcss-html:
     specifier: ^1.5.0
     version: 1.5.0
@@ -3654,7 +3654,7 @@ packages:
     resolution: {integrity: sha512-XdmLkuWfV/pmUmCd0x/ICq4YvipoHOlM9io8Fjbnnz2vVm3CboYGWeI7/bqp7BV4snHXSjWVekZo09VghLkyBA==}
     engines: {node: ^14.18.0 || >=16.10.0}
     dependencies:
-      node-fetch-native: 1.4.0
+      node-fetch-native: 1.4.1
       ufo: 1.3.1
       unfetch: 5.0.0
       vue: 2.7.14
@@ -8811,7 +8811,7 @@ packages:
       defu: 6.1.2
       https-proxy-agent: 5.0.1
       mri: 1.2.0
-      node-fetch-native: 1.4.0
+      node-fetch-native: 1.4.1
       pathe: 1.1.1
       tar: 6.2.0
     transitivePeerDependencies:
@@ -11475,8 +11475,8 @@ packages:
       lodash: 4.17.21
     dev: true
 
-  /node-fetch-native@1.4.0:
-    resolution: {integrity: sha512-F5kfEj95kX8tkDhUCYdV8dg3/8Olx/94zB8+ZNthFs6Bz31UpUi8Xh40TN3thLwXgrwXry1pEg9lJ++tLWTcqA==}
+  /node-fetch-native@1.4.1:
+    resolution: {integrity: sha512-NsXBU0UgBxo2rQLOeWNZqS3fvflWePMECr8CoSWoSTqCqGbVVsvl9vZu1HfQicYN0g5piV9Gh8RTEvo/uP752w==}
 
   /node-fetch@2.6.7:
     resolution: {integrity: sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==}
