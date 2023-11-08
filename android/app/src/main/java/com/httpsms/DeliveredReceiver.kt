@@ -4,9 +4,15 @@ import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.work.Constraints
+import androidx.work.Data
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import timber.log.Timber
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
 
 
 internal class DeliveredReceiver : BroadcastReceiver() {
@@ -18,25 +24,87 @@ internal class DeliveredReceiver : BroadcastReceiver() {
     }
 
     private fun handleMessageDelivered(context: Context, messageId: String?) {
-        val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
         if (!Receiver.isValid(context, messageId)) {
             return
         }
-        Thread {
-            Timber.i("delivered message with ID [${messageId}]")
-            HttpSmsApiService.create(context).sendDeliveredEvent(messageId!!, timestamp)
-        }.start()
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val inputData: Data = workDataOf(
+            Constants.KEY_MESSAGE_ID to messageId,
+            Constants.KEY_MESSAGE_TIMESTAMP to Settings.currentTimestamp()
+        )
+
+        val work = OneTimeWorkRequest
+            .Builder(DeliveredMessageWorker::class.java)
+            .setConstraints(constraints)
+            .setInputData(inputData)
+            .build()
+
+        WorkManager
+            .getInstance(context)
+            .enqueue(work)
+
+        Timber.d("work enqueued with ID [${work.id}] for [DELIVERED] message with ID [${messageId}]")
     }
 
     private fun handleMessageFailed(context: Context, messageId: String?) {
-        val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
         if (!Receiver.isValid(context, messageId)) {
             return
         }
 
-        Thread {
-            Timber.i("message with ID [${messageId}] not delivered")
-            HttpSmsApiService.create(context).sendFailedEvent(messageId!!,timestamp, "NOT_DELIVERED")
-        }.start()
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val inputData: Data = workDataOf(
+            Constants.KEY_MESSAGE_ID to messageId,
+            Constants.KEY_MESSAGE_REASON to "CANNOT BE DELIVERED",
+            Constants.KEY_MESSAGE_TIMESTAMP to Settings.currentTimestamp()
+        )
+
+        val work = OneTimeWorkRequest
+            .Builder(FailedMessageWorker::class.java)
+            .setConstraints(constraints)
+            .setInputData(inputData)
+            .build()
+
+        WorkManager
+            .getInstance(context)
+            .enqueue(work)
+
+        Timber.d("work enqueued with ID [${work.id}] for [FAILED] message with ID [${messageId}]")
+    }
+
+
+    internal class DeliveredMessageWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+        override fun doWork(): Result {
+            val messageId = this.inputData.getString(Constants.KEY_MESSAGE_ID)
+            val timestamp = this.inputData.getString(Constants.KEY_MESSAGE_TIMESTAMP)
+
+            Timber.i("[${timestamp}] sending [SENT] message event with ID [${messageId}]")
+
+            if (HttpSmsApiService.create(applicationContext).sendDeliveredEvent(messageId!!, timestamp!!)){
+                return Result.success()
+            }
+            return Result.retry()
+        }
+    }
+
+    internal class FailedMessageWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+        override fun doWork(): Result {
+            val messageId = this.inputData.getString(Constants.KEY_MESSAGE_ID)
+            val reason = this.inputData.getString(Constants.KEY_MESSAGE_REASON)
+            val timestamp = this.inputData.getString(Constants.KEY_MESSAGE_TIMESTAMP)
+
+            Timber.i("[${timestamp}] sending [FAILED] message event with ID [${messageId}] and reason [$reason]")
+
+            if (HttpSmsApiService.create(applicationContext).sendFailedEvent(messageId!!, timestamp!!, reason!!)){
+                return Result.success()
+            }
+            return Result.retry()
+        }
     }
 }
