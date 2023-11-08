@@ -84,7 +84,7 @@ internal class DeliveredReceiver : BroadcastReceiver() {
             val messageId = this.inputData.getString(Constants.KEY_MESSAGE_ID)
             val timestamp = this.inputData.getString(Constants.KEY_MESSAGE_TIMESTAMP)
 
-            Timber.i("[${timestamp}] sending [SENT] message event with ID [${messageId}]")
+            Timber.i("[${timestamp}] sending [DELIVERED] message event with ID [${messageId}]")
 
             if (HttpSmsApiService.create(applicationContext).sendDeliveredEvent(messageId!!, timestamp!!)){
                 return Result.success()
