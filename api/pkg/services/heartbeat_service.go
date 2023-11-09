@@ -96,7 +96,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("heartbeat saved with id [%s] in the userRepository", heartbeat.ID))
+	ctxLogger.Info(fmt.Sprintf("heartbeat saved with id [%s] for user [%s]", heartbeat.ID, heartbeat.UserID))
 	return heartbeat, nil
 }
 
