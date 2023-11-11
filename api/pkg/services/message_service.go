@@ -734,6 +734,11 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
+	timestamp := payload.RequestReceivedAt
+	if payload.ScheduledSendTime != nil {
+		timestamp = *payload.ScheduledSendTime
+	}
+
 	message := &entities.Message{
 		ID:                payload.MessageID,
 		Owner:             payload.Owner,
@@ -749,7 +754,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 		CreatedAt:         time.Now().UTC(),
 		UpdatedAt:         time.Now().UTC(),
 		MaxSendAttempts:   payload.MaxSendAttempts,
-		OrderTimestamp:    payload.RequestReceivedAt,
+		OrderTimestamp:    timestamp,
 	}
 
 	if err := service.repository.Store(ctx, message); err != nil {
