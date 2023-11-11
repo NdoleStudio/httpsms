@@ -10,8 +10,17 @@
           :src="require('assets/img/person-texting.svg')"
         ></v-img>
         <div class="text-center">
-          <h3 class="text-h5 mt-4">Select a thread</h3>
-          <p class="text--secondary">Send and receive messages using our API</p>
+          <h3 class="text-h5 mt-4">Select a Message</h3>
+          <p class="text--secondary">
+            Don't hesitate to
+            <a
+              href="https://discord.gg/kGk8HVqeEZ"
+              target="_blank"
+              class="text-decoration-none"
+              >message us on Discord</a
+            >
+            if you have any questions
+          </p>
         </div>
       </div>
     </v-row>
