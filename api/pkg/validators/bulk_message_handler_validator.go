@@ -223,6 +223,10 @@ func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.Bulk
 		if len(message.Content) > 1024 {
 			result.Add("document", fmt.Sprintf("Row [%d]: The message content must be less than 1024 characters.", index+2))
 		}
+
+		if message.SendTime != nil && message.SendTime.After(time.Now().Add(24*time.Hour)) {
+			result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] cannot be more than 24 hours in the future.", index+2, message.SendTime.Format(time.RFC3339)))
+		}
 	}
 	return result
 }
