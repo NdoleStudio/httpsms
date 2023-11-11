@@ -20,6 +20,8 @@ type MessageSend struct {
 
 	// RequestID is an optional parameter used to track a request from the client's perspective
 	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
+	// SendAt is an optional parameter used to schedule a message to be sent at a later time
+	SendAt *time.Time `json:"send_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
 }
 
 // Sanitize sets defaults to MessageReceive
@@ -38,6 +40,7 @@ func (input *MessageSend) ToMessageSendParams(userID entities.UserID, source str
 		Owner:             from,
 		RequestID:         input.sanitizeStringPointer(input.RequestID),
 		UserID:            userID,
+		SendAt:            input.SendAt,
 		RequestReceivedAt: time.Now().UTC(),
 		Contact:           input.sanitizeAddress(input.To),
 		Content:           input.Content,

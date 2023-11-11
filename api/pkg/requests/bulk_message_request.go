@@ -14,9 +14,10 @@ import (
 // BulkMessage represents a single message in a bulk SMS request
 type BulkMessage struct {
 	request
-	FromPhoneNumber string `csv:"FromPhoneNumber"`
-	ToPhoneNumber   string `csv:"ToPhoneNumber"`
-	Content         string `csv:"Content"`
+	FromPhoneNumber string     `csv:"FromPhoneNumber"`
+	ToPhoneNumber   string     `csv:"ToPhoneNumber"`
+	Content         string     `csv:"Content"`
+	SendTime        *time.Time `csv:"SendTime(optional)"`
 }
 
 // Sanitize sets defaults to BulkMessage
@@ -35,6 +36,7 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 		Owner:             from,
 		RequestID:         input.sanitizeStringPointer(fmt.Sprintf("bulk-%s", requestID.String())),
 		UserID:            userID,
+		SendAt:            input.SendTime,
 		RequestReceivedAt: time.Now().UTC(),
 		Contact:           input.sanitizeAddress(input.ToPhoneNumber),
 		Content:           input.Content,

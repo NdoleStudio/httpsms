@@ -92,3 +92,12 @@ func (user User) UserTimeString(timestamp time.Time) string {
 	}
 	return timestamp.In(location).Format(time.RFC1123)
 }
+
+// Location gets the timezone of a user
+func (user User) Location() *time.Location {
+	location, err := time.LoadLocation(user.Timezone)
+	if err != nil {
+		location = time.UTC
+	}
+	return location
+}

@@ -464,6 +464,7 @@ func (container *Container) BulkMessageHandlerValidator() (validator *validators
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneService(),
+		container.UserService(),
 	)
 }
 

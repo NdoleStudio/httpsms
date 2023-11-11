@@ -303,6 +303,7 @@ type MessageSendParams struct {
 	Contact           string
 	Content           string
 	Source            string
+	SendAt            *time.Time
 	RequestID         *string
 	UserID            entities.UserID
 	RequestReceivedAt time.Time
@@ -326,6 +327,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
+		ScheduledSendTime: params.SendAt,
 		SIM:               sim,
 	}
 
@@ -336,13 +338,28 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	}
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s] and user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
 
-	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+	timeout := service.getSendDelay(ctxLogger, eventPayload, params.SendAt)
+	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, timeout); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
-	ctxLogger.Info(fmt.Sprintf("[%s] event with ID [%s] dispatched succesfully for message [%s] and user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
 
+	ctxLogger.Info(fmt.Sprintf("[%s] event with ID [%s] dispatched succesfully for message [%s] with user [%s] and delay [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID, timeout))
 	return service.storeSentMessage(ctx, eventPayload)
+}
+
+func (service *MessageService) getSendDelay(ctxLogger telemetry.Logger, eventPayload events.MessageAPISentPayload, sendAt *time.Time) time.Duration {
+	if sendAt == nil {
+		return time.Duration(0)
+	}
+
+	delay := sendAt.Sub(time.Now().UTC())
+	if delay < 0 {
+		ctxLogger.Info(fmt.Sprintf("message [%s] has send time [%s] in the past. sending immediately", eventPayload.MessageID, sendAt.String()))
+		return time.Duration(0)
+	}
+
+	return delay
 }
 
 // StoreReceivedMessage a new message
@@ -725,6 +742,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 		Content:           payload.Content,
 		RequestID:         payload.RequestID,
 		SIM:               payload.SIM,
+		ScheduledSendTime: payload.ScheduledSendTime,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,
 		RequestReceivedAt: payload.RequestReceivedAt,

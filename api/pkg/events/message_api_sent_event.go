@@ -19,6 +19,7 @@ type MessageAPISentPayload struct {
 	RequestID         *string         `json:"request_id"`
 	MaxSendAttempts   uint            `json:"max_send_attempts"`
 	Contact           string          `json:"contact"`
+	ScheduledSendTime *time.Time      `json:"scheduled_send_time"`
 	RequestReceivedAt time.Time       `json:"request_received_at"`
 	Content           string          `json:"content"`
 	SIM               entities.SIM    `json:"sim"`

@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/xuri/excelize/v2"
 
@@ -26,6 +27,7 @@ import (
 type BulkMessageHandlerValidator struct {
 	validator
 	phoneService *services.PhoneService
+	userService  *services.UserService
 	logger       telemetry.Logger
 	tracer       telemetry.Tracer
 }
@@ -35,10 +37,12 @@ func NewBulkMessageHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
+	userService *services.UserService,
 ) (v *BulkMessageHandlerValidator) {
 	return &BulkMessageHandlerValidator{
 		logger:       logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:       tracer,
+		userService:  userService,
 		phoneService: phoneService,
 	}
 }
@@ -48,7 +52,15 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 	ctx, span, ctxLogger := v.tracer.StartWithLogger(ctx, v.logger)
 	defer span.End()
 
-	messages, result := v.parseFile(ctxLogger, userID, header)
+	user, err := v.userService.GetByID(ctx, userID)
+	if err != nil {
+		result := url.Values{}
+		result.Add("document", "Cannot load your account. Please try again later or contact support.")
+		ctxLogger.Error(v.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s]", userID))))
+		return nil, result
+	}
+
+	messages, result := v.parseFile(ctxLogger, user, header)
 	if len(result) != 0 {
 		return messages, result
 	}
@@ -80,37 +92,37 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 	return messages, result
 }
 
-func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
+func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
 	if header.Header.Get("Content-Type") == "text/csv" || strings.HasSuffix(header.Filename, ".csv") {
-		return v.parseCSV(ctxLogger, userID, header)
+		return v.parseCSV(ctxLogger, user, header)
 	}
 	if header.Header.Get("Content-Type") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || strings.HasSuffix(header.Filename, ".xlsx") {
-		return v.parseXlsx(ctxLogger, userID, header)
+		return v.parseXlsx(ctxLogger, user, header)
 	}
 
-	ctxLogger.Error(stacktrace.NewError(fmt.Sprintf("cannot parse file [%s] for user [%s] with content type [%s]", header.Filename, userID, header.Header.Get("Content-Type"))))
+	ctxLogger.Error(stacktrace.NewError(fmt.Sprintf("cannot parse file [%s] for user [%s] with content type [%s]", header.Filename, user.ID, header.Header.Get("Content-Type"))))
 
 	result := url.Values{}
 	result.Add("document", fmt.Sprintf("The file [%s] is not a valid CSV or Excel file.", header.Filename))
 	return nil, result
 }
 
-func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
-	content, result := v.parseBytes(ctxLogger, userID, header)
+func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
+	content, result := v.parseBytes(ctxLogger, user.ID, header)
 	if len(result) != 0 {
 		return nil, result
 	}
 
 	excel, err := excelize.OpenReader(bytes.NewReader(content))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot generate excel file from [%s] for user [%s]", header.Filename, userID)))
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot generate excel file from [%s] for user [%s]", header.Filename, user.ID)))
 		result.Add("document", fmt.Sprintf("Cannot parse the uploaded excel file with name [%s].", header.Filename))
 		return nil, result
 	}
 
 	rows, err := excel.GetRows(excel.GetSheetName(0))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot get rows from excel file [%s] for user [%s]", header.Filename, userID)))
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot get rows from excel file [%s] for user [%s]", header.Filename, user.ID)))
 		result.Add("document", fmt.Sprintf("Cannot parse the uploaded excel file with name [%s].", header.Filename))
 		return nil, result
 	}
@@ -120,14 +132,35 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 		if len(row) < 3 || strings.TrimSpace(row[0]) == "" || index == 0 {
 			continue
 		}
+
+		var sendAt *time.Time
+		if len(row) > 3 && strings.TrimSpace(row[3]) != "" {
+			ctxLogger.Info(fmt.Sprintf("excel time = [%s]", row[3]))
+			sendAt, err = v.convertExcelTime(user, row[3])
+			if err != nil {
+				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] is not in the correct format e.g [2006-01-02T15:04:05] where 2006 is the year, 01 is January, 02 is the second day of the month and the time is 15:04:05", index+1, row[3]))
+				return nil, result
+			}
+		}
+
 		messages = append(messages, &requests.BulkMessage{
 			FromPhoneNumber: strings.TrimSpace(row[0]),
 			ToPhoneNumber:   strings.TrimSpace(row[1]),
 			Content:         row[2],
+			SendTime:        sendAt,
 		})
 	}
 
 	return messages, nil
+}
+
+func (v *BulkMessageHandlerValidator) convertExcelTime(user *entities.User, value string) (*time.Time, error) {
+	t, err := time.ParseInLocation("2006-01-02T15:04:05", value, user.Location())
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse excel time [%s] as [%T]", value, t))
+	}
+
+	return &t, nil
 }
 
 func (v *BulkMessageHandlerValidator) parseBytes(ctxLogger telemetry.Logger, userID entities.UserID, header *multipart.FileHeader) ([]byte, url.Values) {
@@ -160,15 +193,15 @@ func (v *BulkMessageHandlerValidator) parseBytes(ctxLogger telemetry.Logger, use
 	return b.Bytes(), result
 }
 
-func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
-	content, result := v.parseBytes(ctxLogger, userID, header)
+func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
+	content, result := v.parseBytes(ctxLogger, user.ID, header)
 	if len(result) != 0 {
 		return nil, result
 	}
 
 	var messages []*requests.BulkMessage
 	if err := csvutil.Unmarshal(content, &messages); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", content, messages, header.Filename, userID)))
+		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", content, messages, header.Filename, user.ID)))
 		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
 		return nil, result
 	}

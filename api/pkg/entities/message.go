@@ -101,6 +101,7 @@ type Message struct {
 	LastAttemptedAt         *time.Time `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	NotificationScheduledAt *time.Time `json:"scheduled_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	SentAt                  *time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
+	ScheduledSendTime       *time.Time `json:"scheduled_send_time" example:"2022-06-05T14:26:09.527976+03:00"`
 	DeliveredAt             *time.Time `json:"delivered_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	ExpiredAt               *time.Time `json:"expired_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	FailedAt                *time.Time `json:"failed_at" example:"2022-06-05T14:26:09.527976+03:00"`

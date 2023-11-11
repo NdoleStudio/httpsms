@@ -66,6 +66,20 @@ func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser)
 	return user, nil
 }
 
+// GetByID fetches an entities.User
+func (service *UserService) GetByID(ctx context.Context, userID entities.UserID) (*entities.User, error) {
+	ctx, span, _ := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with ID [%s]", user, userID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return user, nil
+}
+
 // UserUpdateParams are parameters for updating an entities.User
 type UserUpdateParams struct {
 	Timezone      *time.Location
