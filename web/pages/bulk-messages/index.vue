@@ -114,6 +114,7 @@ import {
 import { AxiosError } from 'axios'
 import { ErrorMessages, getErrorMessages } from '~/plugins/errors'
 import capitalize from '~/plugins/capitalize'
+import { ResponsesUnprocessableEntity } from '~/models/api'
 
 export default Vue.extend({
   name: 'BulkMessagesIndex',
@@ -165,7 +166,7 @@ export default Vue.extend({
             this.$router.push({ name: 'threads' })
           }, 2000)
         })
-        .catch((error: AxiosError) => {
+        .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
           this.errorTitle = capitalize(
             error.response?.data?.message ??
               'Error while sending bulk messages',

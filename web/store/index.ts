@@ -20,6 +20,7 @@ import {
   ResponsesDiscordsResponse,
   ResponsesNoContent,
   ResponsesOkString,
+  ResponsesUnprocessableEntity,
   ResponsesUserResponse,
   ResponsesWebhookResponse,
   ResponsesWebhooksResponse,
@@ -194,13 +195,6 @@ export const getters = {
 
   getNotification(state: State): Notification {
     return state.notification
-  },
-
-  getSubStackLoaded() {
-    if (!process.client) {
-      return false
-    }
-    return (window as any).CustomSubstackWidget.scriptLoaded
   },
 }
 
@@ -404,7 +398,7 @@ export const actions = {
           })
           resolve(response.data)
         })
-        .catch(async (error: AxiosError) => {
+        .catch(async (error: AxiosError<ResponsesUnprocessableEntity>) => {
           await Promise.all([
             context.dispatch('addNotification', {
               message:
@@ -420,7 +414,7 @@ export const actions = {
 
   async handleAxiosError(
     context: ActionContext<State, State>,
-    error: AxiosError,
+    error: AxiosError<ResponsesUnprocessableEntity>,
   ) {
     const errorMessage = (error.response?.data as any)?.data[
       Object.keys((error.response?.data as any)?.data)[0]
@@ -454,7 +448,7 @@ export const actions = {
           }
           resolve(response.data.data)
         })
-        .catch(async (error: AxiosError) => {
+        .catch(async (error: AxiosError<ResponsesUnprocessableEntity>) => {
           await context.dispatch('addNotification', {
             message:
               (error.response?.data as any)?.message ??
@@ -596,15 +590,15 @@ export const actions = {
     setAuthHeader(await authUser.getIdToken())
   },
 
-  async clearAxiosError(context: ActionContext<State, State>) {
-    await context.commit('setAxiosError', null)
+  clearAxiosError(context: ActionContext<State, State>) {
+    context.commit('setAxiosError', null)
   },
 
   async updateUser(
     context: ActionContext<State, State>,
     payload: { owner: string; timezone: string },
   ) {
-    await context.commit('setOwner', payload.owner)
+    context.commit('setOwner', payload.owner)
 
     const phone = context.getters.getActivePhone as EntitiesPhone | null
     if (!phone) {
@@ -627,7 +621,7 @@ export const actions = {
     await axios.put(`/v1/message-threads/${payload.threadId}`, {
       is_archived: payload.isArchived,
     })
-    await context.commit('setArchivedThreads', payload.isArchived)
+    context.commit('setArchivedThreads', payload.isArchived)
     await context.dispatch('loadThreads')
   },
 
