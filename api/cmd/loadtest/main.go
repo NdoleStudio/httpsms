@@ -27,16 +27,14 @@ func main() {
 func bulkSend() {
 	var to []string
 	for i := 0; i < 100; i++ {
-		to = append(to, os.Getenv("HTTPSMS_TO"))
+		to = append(to, os.Getenv("HTTPSMS_TO_BULK"))
 	}
 
 	var responsePayload string
 	err := requests.
-		URL("/v1/messages/send").
+		URL("/v1/messages/bulk-send").
 		Host("api.httpsms.com").
-		// Host("localhost:8000").
-		// Scheme("http").
-		Header("x-api-key", os.Getenv("HTTPSMS_KEY")).
+		Header("x-api-key", os.Getenv("HTTPSMS_KEY_BULK")).
 		BodyJSON(&map[string]any{
 			"content":    fmt.Sprintf("Bulk Load Test [%s]", time.Now().Format(time.RFC850)),
 			"from":       os.Getenv("HTTPSMS_FROM_BULK"),
@@ -46,7 +44,8 @@ func bulkSend() {
 		ToString(&responsePayload).
 		Fetch(context.Background())
 	if err != nil {
-		log.Fatal(stacktrace.Propagate(err, "cannot create json payload"))
+		log.Println(responsePayload)
+		log.Fatal(stacktrace.Propagate(err, "cannot create request"))
 	}
 	log.Println(responsePayload)
 }
