@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -136,24 +137,30 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending messages")
 	}
 
-	var responses []*entities.Message
-	params := request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL())
-	for _, param := range params {
-		if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
-			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't send a message", h.userIDFomContext(c))))
-			break
-		}
-
-		message, err := h.service.SendMessage(ctx, param)
-		if err != nil {
-			msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
-			ctxLogger.Error(stacktrace.Propagate(err, msg))
-			break
-		}
-		responses = append(responses, message)
+	if msg := h.billingService.IsEntitledWithCount(ctx, h.userIDFomContext(c), uint(len(request.To))); msg != nil {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not entitled to send [%d] messages", h.userIDFomContext(c), len(request.To))))
+		return h.responsePaymentRequired(c, *msg)
 	}
 
-	return h.responseOK(c, "messages added to queue", responses)
+	wg := sync.WaitGroup{}
+	params := request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL())
+	responses := make([]*entities.Message, len(params))
+
+	for index, message := range params {
+		wg.Add(1)
+		go func(message services.MessageSendParams, index int) {
+			response, err := h.service.SendMessage(ctx, message)
+			if err != nil {
+				msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
+				ctxLogger.Error(stacktrace.Propagate(err, msg))
+			}
+			responses[index] = response
+			wg.Done()
+		}(message, index)
+	}
+
+	wg.Wait()
+	return h.responseOK(c, fmt.Sprintf("[%d] messages processed successfully", len(responses)), responses)
 }
 
 // GetOutstanding returns an entities.Message which is still to be sent by the mobile phone

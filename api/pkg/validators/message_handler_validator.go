@@ -127,7 +127,7 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 		Rules: govalidator.MapData{
 			"to": []string{
 				"required",
-				"max:50",
+				"max:1000",
 				"min:1",
 				multipleContactPhoneNumberRule,
 			},
