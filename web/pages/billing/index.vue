@@ -198,6 +198,33 @@
                   </v-card>
                 </v-hover>
               </v-col>
+              <v-col cols="12" md="6" xl="4">
+                <v-hover v-slot="{ hover }">
+                  <v-card
+                    :color="hover ? 'black' : 'default'"
+                    :href="enterpriseCheckoutURL"
+                    outlined
+                  >
+                    <v-card-text>
+                      <v-row align="center">
+                        <v-col class="grow">
+                          <h1
+                            class="subtitle-1 font-weight-bold text-uppercase mt-3"
+                          >
+                            100k - Monthly
+                          </h1>
+                          <p class="text--secondary">
+                            100,000 messages monthly
+                          </p>
+                        </v-col>
+                        <v-col class="shrink">
+                          <span class="text-h5 text--primary">$175</span>/month
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </v-card>
+                </v-hover>
+              </v-col>
             </v-row>
             <h5 class="text-h4 mb-3 mt-4">Overview</h5>
             <p class="text--secondary">
@@ -398,6 +425,18 @@ export default Vue.extend({
           price: 350,
         },
         {
+          name: '100k - Monthly',
+          id: '100k-monthly',
+          messagesPerMonth: 100000,
+          price: 175,
+        },
+        {
+          name: '100k - Yearly',
+          id: '100k-yearly',
+          messagesPerMonth: 100000,
+          price: 1750,
+        },
+        {
           name: 'PRO - Lifetime',
           id: 'pro-lifetime',
           messagesPerMonth: 10000,
@@ -420,6 +459,15 @@ export default Vue.extend({
       url.searchParams.append('checkout[name]', user?.displayName)
       return url.toString()
     },
+    enterpriseCheckoutURL() {
+      const url = new URL(this.$config.enterpriseCheckoutURL)
+      const user = this.$store.getters.getAuthUser
+      url.searchParams.append('checkout[custom][user_id]', user?.id)
+      url.searchParams.append('checkout[email]', user?.email)
+      url.searchParams.append('checkout[name]', user?.displayName)
+      return url.toString()
+    },
+
     plan(): PaymentPlan {
       return this.plans.find(
         (x) =>

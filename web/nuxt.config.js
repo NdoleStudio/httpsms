@@ -143,6 +143,7 @@ export default {
 
   publicRuntimeConfig: {
     checkoutURL: process.env.CHECKOUT_URL,
+    enterpriseCheckoutURL: process.env.ENTERPRISE_CHECKOUT_URL,
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build

@@ -158,5 +158,12 @@ func (service *LemonsqueezyService) subscriptionName(variant string) entities.Su
 		return entities.SubscriptionName20KYearly
 	}
 
+	if strings.Contains(strings.ToLower(variant), "100k") {
+		if strings.Contains(strings.ToLower(variant), "monthly") {
+			return entities.SubscriptionName100KMonthly
+		}
+		return entities.SubscriptionName100KYearly
+	}
+
 	return entities.SubscriptionNameFree
 }

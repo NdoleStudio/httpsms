@@ -28,6 +28,10 @@ func (subscription SubscriptionName) Limit() uint {
 	if subscription == SubscriptionName20KMonthly || subscription == SubscriptionName20KYearly {
 		return 20_000
 	}
+	if subscription == SubscriptionName100KMonthly || subscription == SubscriptionName100KYearly {
+		return 100_000
+	}
+
 	return 200
 }
 
@@ -52,8 +56,14 @@ const SubscriptionNameProLifetime = SubscriptionName("pro-lifetime")
 // SubscriptionName20KMonthly represents a monthly 20k subscription
 const SubscriptionName20KMonthly = SubscriptionName("20k-monthly")
 
+// SubscriptionName100KMonthly represents a monthly 100k subscription
+const SubscriptionName100KMonthly = SubscriptionName("100k-monthly")
+
 // SubscriptionName20KYearly represents a yearly 20k subscription
 const SubscriptionName20KYearly = SubscriptionName("20k-yearly")
+
+// SubscriptionName100KYearly represents a yearly 100k subscription
+const SubscriptionName100KYearly = SubscriptionName("100k-yearly")
 
 // User stores information about a user
 type User struct {
