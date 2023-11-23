@@ -151,7 +151,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 		})
 	}
 
-	return messages, nil
+	return messages, url.Values{}
 }
 
 func (v *BulkMessageHandlerValidator) convertExcelTime(user *entities.User, value string) (*time.Time, error) {
@@ -206,7 +206,7 @@ func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user 
 		return nil, result
 	}
 
-	return messages, nil
+	return messages, url.Values{}
 }
 
 func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.BulkMessage) url.Values {

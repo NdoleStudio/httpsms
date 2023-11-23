@@ -338,6 +338,12 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	}
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s] and user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
 
+	message, err := service.storeSentMessage(ctx, eventPayload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot store message with id [%s]", eventPayload.MessageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
 	timeout := service.getSendDelay(ctxLogger, eventPayload, params.SendAt)
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, timeout); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
@@ -345,7 +351,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] event with ID [%s] dispatched succesfully for message [%s] with user [%s] and delay [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID, timeout))
-	return service.storeSentMessage(ctx, eventPayload)
+	return message, err
 }
 
 func (service *MessageService) getSendDelay(ctxLogger telemetry.Logger, eventPayload events.MessageAPISentPayload, sendAt *time.Time) time.Duration {
