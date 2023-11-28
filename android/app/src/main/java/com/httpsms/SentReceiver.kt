@@ -31,6 +31,10 @@ internal class SentReceiver : BroadcastReceiver() {
     }
 
     private fun handleMessageSent(context: Context, messageId: String?) {
+        if (!Receiver.isValid(context, messageId)) {
+            return
+        }
+
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()

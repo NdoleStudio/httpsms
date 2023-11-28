@@ -20,8 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	bulkSend()
+	sendSingle()
 }
 
 func bulkSend() {
@@ -51,7 +50,7 @@ func bulkSend() {
 }
 
 func sendSingle() {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1; i++ {
 		var responsePayload string
 		err := requests.
 			URL("/v1/messages/send").
@@ -60,7 +59,7 @@ func sendSingle() {
 			// Scheme("http").
 			Header("x-api-key", os.Getenv("HTTPSMS_KEY")).
 			BodyJSON(&map[string]string{
-				"content":    fmt.Sprintf("Load Test[%d]", i),
+				"content":    fmt.Sprintf("[%s] In the quiet of the night, the stars above whisper secrets of the universe. We, mere stardust, seek meaning in their cosmic dance, yearning to unlock the mysteries of existence that stretch far beyond our earthly bounds.", time.Now()),
 				"from":       os.Getenv("HTTPSMS_FROM"),
 				"to":         os.Getenv("HTTPSMS_TO"),
 				"request_id": fmt.Sprintf("load-%s-%d", uuid.NewString(), i),

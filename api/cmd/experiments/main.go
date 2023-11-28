@@ -27,6 +27,7 @@ func main() {
 	logger := container.Logger()
 
 	logger.Info("Starting experiments")
+	loadTest()
 }
 
 func text3CX() {
@@ -51,7 +52,6 @@ func loadTest() {
 		wg.Add(1)
 		go func(count int) {
 			sendSMS(fmt.Sprintf("[%d] In the quiet of the night, the stars above whisper secrets of the universe. We, mere stardust, seek meaning in their cosmic dance, yearning to unlock the mysteries of existence that stretch far beyond our earthly bounds.", count))
-			sendSMS(fmt.Sprintf("[%d] Hello, World", count))
 			wg.Done()
 		}(i)
 
