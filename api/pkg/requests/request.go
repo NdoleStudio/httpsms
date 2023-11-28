@@ -77,6 +77,17 @@ func (input *request) removeStringDuplicates(values []string) []string {
 	return result
 }
 
+func (input *request) sanitizeMessageID(value string) string {
+	id := strings.Builder{}
+	for _, char := range value {
+		if char == '.' {
+			return id.String()
+		}
+		id.WriteRune(char)
+	}
+	return id.String()
+}
+
 // getLimit gets the take as a string
 func (input *request) getBool(value string) bool {
 	if value == "true" {

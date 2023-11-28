@@ -296,6 +296,7 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
+	request.Sanitize()
 	message, err := h.service.GetMessage(ctx, h.userIDFomContext(c), uuid.MustParse(request.MessageID))
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", request.MessageID))

@@ -11,6 +11,8 @@ import (
 
 // MessageEvent is the payload for sending and SMS message
 type MessageEvent struct {
+	request
+
 	// Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
 	Timestamp time.Time `json:"timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
 
@@ -26,8 +28,14 @@ type MessageEvent struct {
 	MessageID string `json:"messageID" swaggerignore:"true"` // used internally for validation
 }
 
+// Sanitize the message event
+func (input *MessageEvent) Sanitize() *MessageEvent {
+	input.MessageID = input.sanitizeMessageID(input.MessageID)
+	return input
+}
+
 // ToMessageStoreEventParams converts MessageEvent to services.MessageStoreEventParams
-func (input MessageEvent) ToMessageStoreEventParams(source string) services.MessageStoreEventParams {
+func (input *MessageEvent) ToMessageStoreEventParams(source string) services.MessageStoreEventParams {
 	return services.MessageStoreEventParams{
 		MessageID:    uuid.MustParse(input.MessageID),
 		Source:       source,
