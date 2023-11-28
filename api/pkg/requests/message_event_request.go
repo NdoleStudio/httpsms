@@ -29,9 +29,9 @@ type MessageEvent struct {
 }
 
 // Sanitize the message event
-func (input *MessageEvent) Sanitize() *MessageEvent {
+func (input *MessageEvent) Sanitize() MessageEvent {
 	input.MessageID = input.sanitizeMessageID(input.MessageID)
-	return input
+	return *input
 }
 
 // ToMessageStoreEventParams converts MessageEvent to services.MessageStoreEventParams

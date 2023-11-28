@@ -290,13 +290,12 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	}
 
 	request.MessageID = c.Params("messageID")
-	if errors := h.validator.ValidateMessageEvent(ctx, request); len(errors) != 0 {
+	if errors := h.validator.ValidateMessageEvent(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while storing event [%s] for message [%s]", spew.Sdump(errors), c.Body(), request.MessageID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
-	request.Sanitize()
 	message, err := h.service.GetMessage(ctx, h.userIDFomContext(c), uuid.MustParse(request.MessageID))
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", request.MessageID))
