@@ -199,7 +199,7 @@ export default {
           hid: 'og:url',
           property: 'og:url',
           content:
-            'https://httpsms.com/blog/how-to-send-sms-messages-from-excel',
+            'https://httpsms.com/blog/how-to-send-sms-messages-from-excel/',
         },
       ],
     }

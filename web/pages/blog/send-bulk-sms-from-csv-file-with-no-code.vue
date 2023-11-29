@@ -208,7 +208,7 @@ export default {
           hid: 'og:url',
           property: 'og:url',
           content:
-            'https://httpsms.com/blog/send-bulk-sms-from-csv-file-with-no-code',
+            'https://httpsms.com/blog/send-bulk-sms-from-csv-file-with-no-code/',
         },
       ],
     }

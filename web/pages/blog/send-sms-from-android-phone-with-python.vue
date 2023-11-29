@@ -225,7 +225,7 @@ export default {
           hid: 'og:url',
           property: 'og:url',
           content:
-            'https://httpsms.com/blog/send-sms-from-android-phone-with-python',
+            'https://httpsms.com/blog/send-sms-from-android-phone-with-python/',
         },
       ],
     }

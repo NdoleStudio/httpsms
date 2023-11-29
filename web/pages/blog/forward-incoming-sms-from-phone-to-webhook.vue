@@ -186,7 +186,7 @@ export default {
           hid: 'og:url',
           property: 'og:url',
           content:
-            'https://httpsms.com/blog/forward-incoming-sms-from-phone-to-webhook',
+            'https://httpsms.com/blog/forward-incoming-sms-from-phone-to-webhook/',
         },
       ],
     }
