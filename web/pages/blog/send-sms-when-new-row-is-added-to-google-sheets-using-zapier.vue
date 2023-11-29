@@ -210,19 +210,19 @@ export default {
   head() {
     return {
       title:
-        'How to send SMS messages to multiple phone numbers from Excel  - httpSMS',
+        'Send an SMS message when a new row is added to Google Sheets using Zapier - httpSMS',
       meta: [
         {
           hid: 'og:title',
           property: 'og:title',
           content:
-            'How to send SMS messages to multiple phone numbers from Excel',
+            'Send an SMS message when a new row is added to Google Sheets using Zapier',
         },
         {
           hid: 'og:description',
           property: 'og:description',
           content:
-            'Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.',
+            "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier. You don't need to write any code to make this happen and you can personalize the SMS messages which are sent out.",
         },
         {
           hid: 'twitter:card',
@@ -233,7 +233,7 @@ export default {
           hid: 'og:url',
           property: 'og:url',
           content:
-            'https://httpsms.com/blog/how-to-send-sms-messages-from-excel',
+            'https://httpsms.com/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/',
         },
       ],
     }
