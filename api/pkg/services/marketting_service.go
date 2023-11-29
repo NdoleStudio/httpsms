@@ -78,17 +78,20 @@ func (service *MarketingService) AddToList(ctx context.Context, user *entities.U
 	ctxLogger.Info(fmt.Sprintf("user [%s] added to list [%s] with job [%s]", user.ID, service.sendgridListID, id))
 }
 
-// ClearList removes all new contacts from the sendgrid list.
-func (service *MarketingService) ClearList(ctx context.Context) error {
+// DeleteContacts deletes contacts from sendgrid
+func (service *MarketingService) DeleteContacts(ctx context.Context, contactIDs []string) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	request := sendgrid.GetRequest(service.sendgridAPIKey, fmt.Sprintf("/v3/contactdb/lists/%s/recipients", service.sendgridListID), "https://api.sendgrid.com")
-	request.Method = "GET"
+	request := sendgrid.GetRequest(service.sendgridAPIKey, "/v3/marketing/contacts", "https://api.sendgrid.com")
+	request.Method = "DELETE"
+	request.QueryParams = map[string]string{
+		"ids": strings.Join(contactIDs, ","),
+	}
 
 	response, err := sendgrid.API(request)
 	if err != nil {
-		return stacktrace.Propagate(err, fmt.Sprintf("cannot get all contacts in a sendgrid list [%s]", service.sendgridListID))
+		return stacktrace.Propagate(err, fmt.Sprintf("cannot delete contacts in a sendgrid list [%s]", service.sendgridListID))
 	}
 
 	ctxLogger.Info(spew.Sdump(response.Body))
