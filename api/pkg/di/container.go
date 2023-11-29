@@ -831,6 +831,18 @@ func (container *Container) PhoneService() (service *services.PhoneService) {
 	)
 }
 
+// MarketingService creates a new instance of services.MarketingService
+func (container *Container) MarketingService() (service *services.MarketingService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewMarketingService(
+		container.Logger(),
+		container.Tracer(),
+		container.FirebaseAuthClient(),
+		os.Getenv("SENDGRID_API_KEY"),
+		os.Getenv("SENDGRID_LIST_ID"),
+	)
+}
+
 // UserService creates a new instance of services.UserService
 func (container *Container) UserService() (service *services.UserService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -840,6 +852,7 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.UserRepository(),
 		container.Mailer(),
 		container.UserEmailFactory(),
+		container.MarketingService(),
 		container.LemonsqueezyClient(),
 	)
 }

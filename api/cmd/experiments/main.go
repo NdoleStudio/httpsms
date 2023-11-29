@@ -27,7 +27,12 @@ func main() {
 	logger := container.Logger()
 
 	logger.Info("Starting experiments")
-	loadTest()
+
+	sendgrid := container.MarketingService()
+	err = sendgrid.ClearList(context.Background())
+	if err != nil {
+		logger.Fatal(err)
+	}
 }
 
 func text3CX() {
