@@ -50,8 +50,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>2,208+</b> happy users who have sent or received
-            more than <b>401,881+</b> messages.
+            ⚡Trusted by <b>2,247+</b> happy users who have sent or received
+            more than <b>417,220+</b> messages.
           </p>
           <div
             class="mt-4"
@@ -130,7 +130,40 @@
           </v-col>
         </v-row>
         <v-row class="mb-16">
-          <v-col cols="12" md="6" class="d-flex align-center">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="1">
+            <div>
+              <h3 class="text-h3 mb-1">
+                Integrations
+                <v-chip class="ma-2" color="pink" label text-color="white">
+                  <v-icon left>{{ mdiLabel }}</v-icon>
+                  No code
+                </v-chip>
+              </h3>
+              <h5 class="text-h6 font-weight-light">
+                Connect your workflow with thousands of other apps with the
+                power of Zapier. For example you can setup an automation to send
+                personalized SMS messages each time someone makes an order from
+                your shopify store or each time a new row is added to a Google
+                spreadsheet.
+              </h5>
+              <v-btn
+                to="/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier"
+                class="primary"
+                >Zapier Integration Guide</v-btn
+              >
+            </div>
+          </v-col>
+          <v-col cols="12" md="6" :order-lg="2">
+            <v-img
+              class="mb-4"
+              max-height="400"
+              contain
+              :src="require('assets/img/zapier-logo.svg')"
+            ></v-img>
+          </v-col>
+        </v-row>
+        <v-row class="mb-16">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
             <div>
               <h3 class="text-h3 mb-1">Webhooks</h3>
               <h5 class="text-h6 font-weight-light">
@@ -141,7 +174,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-col cols="12" md="6" :order-lg="1">
             <v-img
               class="mb-4"
               max-height="300"
@@ -151,7 +184,7 @@
           </v-col>
         </v-row>
         <v-row class="mb-16">
-          <v-col cols="12" md="6" class="d-flex align-center" order-md="2">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="1">
             <div>
               <h3 class="text-h3 mb-1">Control Sending</h3>
               <h5 class="text-h6 font-weight-light">
@@ -161,7 +194,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6" order-md="1">
+          <v-col cols="12" md="6" :order-lg="2">
             <v-img
               class="mb-4"
               max-height="300"
@@ -171,7 +204,7 @@
           </v-col>
         </v-row>
         <v-row class="mb-16">
-          <v-col cols="12" md="6" class="d-flex align-center">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
             <div>
               <h3 class="text-h3 mb-1">Monitoring</h3>
               <h5 class="text-h6 font-weight-light">
@@ -180,7 +213,7 @@
               </h5>
             </div>
           </v-col>
-          <v-col cols="12" md="6" :order-md="1">
+          <v-col cols="12" md="6" :order-lg="1">
             <v-img
               class="mb-4"
               max-height="300"
@@ -190,7 +223,7 @@
           </v-col>
         </v-row>
         <v-row class="mt-16">
-          <v-col cols="12" md="6" class="d-flex align-center" order-md="2">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="1">
             <div>
               <h3 class="text-h3 mb-1">Open Source</h3>
               <h5 class="text-h6 mb-3 font-weight-light">
@@ -209,7 +242,7 @@
               </a>
             </div>
           </v-col>
-          <v-col cols="12" md="6" order-md="1">
+          <v-col cols="12" md="6" :order-lg="2">
             <v-img
               class="mb-4"
               max-height="400"

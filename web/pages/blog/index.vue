@@ -66,6 +66,19 @@ export default {
       mdiGithub,
       blogPosts: [
         {
+          route:
+            '/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier',
+          title:
+            'Send an SMS when a new row is added to Google Sheets using Zapier',
+          date: 'November 29, 2023',
+          readTime: '7 min read',
+          authorImage: require('@/assets/img/arnold.png'),
+          description:
+            'Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier without writing code.',
+          authorName: 'Acho Arnold',
+          authorTwitter: 'acho_arnold',
+        },
+        {
           route: '/blog/how-to-send-sms-messages-from-excel',
           title:
             'How to send SMS messages to multiple phone numbers from Excel',
