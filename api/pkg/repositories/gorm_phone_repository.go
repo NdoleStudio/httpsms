@@ -81,7 +81,7 @@ func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities
 		WithContext(ctx).
 		Save(phone).
 		Error
-	if err != nil && !errors.Is(err, gorm.ErrDuplicatedKey) {
+	if err != nil {
 		msg := fmt.Sprintf("cannot save phone with ID [%s]", phone.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
