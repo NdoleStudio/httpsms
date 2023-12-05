@@ -207,7 +207,7 @@ func (service *BillingService) sendUsageAlert(ctx context.Context, userID entiti
 }
 
 func (service *BillingService) shouldSendAlert(user *entities.User, usage *entities.BillingUsage) bool {
-	if !user.IsOnProPlan() && (usage.TotalMessages() == 160 || usage.TotalMessages() == 180 || usage.TotalMessages() == 190) {
+	if user.IsOnFreePlan() && (usage.TotalMessages() == 160 || usage.TotalMessages() == 180 || usage.TotalMessages() == 190) {
 		return true
 	}
 
@@ -216,6 +216,10 @@ func (service *BillingService) shouldSendAlert(user *entities.User, usage *entit
 	}
 
 	if user.IsOnUltraPlan() && (usage.TotalMessages() == 8000 || usage.TotalMessages() == 9000 || usage.TotalMessages() == 9500) {
+		return true
+	}
+
+	if user.IsOn20kPlan() && (usage.TotalMessages() == 16000 || usage.TotalMessages() == 18000 || usage.TotalMessages() == 19000) {
 		return true
 	}
 

@@ -89,9 +89,19 @@ func (user User) IsOnProPlan() bool {
 	return user.SubscriptionName == SubscriptionNameProLifetime || user.SubscriptionName == SubscriptionNameProMonthly || user.SubscriptionName == SubscriptionNameProYearly
 }
 
+// IsOnFreePlan checks if a user is on the free plan
+func (user User) IsOnFreePlan() bool {
+	return user.SubscriptionName == SubscriptionNameFree || user.SubscriptionName == ""
+}
+
 // IsOnUltraPlan checks if a user is on the ultra plan
 func (user User) IsOnUltraPlan() bool {
 	return user.SubscriptionName == SubscriptionNameUltraMonthly || user.SubscriptionName == SubscriptionNameUltraYearly
+}
+
+// IsOn20kPlan checks if a user is on the 20k plan
+func (user User) IsOn20kPlan() bool {
+	return user.SubscriptionName == SubscriptionName20KMonthly || user.SubscriptionName == SubscriptionName20KYearly
 }
 
 // UserTimeString converts the time to the user's timezone

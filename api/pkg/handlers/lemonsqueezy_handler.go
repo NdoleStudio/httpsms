@@ -100,6 +100,13 @@ func (h *LemonsqueezyHandler) handleRequest(ctx context.Context, c *fiber.Ctx) e
 			return stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%s] to [%T]", c.Body(), request))
 		}
 		return h.service.HandleSubscriptionExpiredEvent(ctx, c.OriginalURL(), &request)
+	case "subscription_updated":
+		var request lemonsqueezy.WebhookRequestSubscription
+		err := json.Unmarshal(c.Body(), &request)
+		if err != nil {
+			return stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%s] to [%T]", c.Body(), request))
+		}
+		return h.service.HandleSubscriptionUpdatedEvent(ctx, c.OriginalURL(), &request)
 	default:
 		return stacktrace.NewError(fmt.Sprintf("invalid event [%s] received with request [%s]", eventName, c.Body()))
 	}

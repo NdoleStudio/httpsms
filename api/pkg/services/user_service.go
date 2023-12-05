@@ -280,7 +280,7 @@ func (service *UserService) CancelSubscription(ctx context.Context, params *even
 	return nil
 }
 
-// ExpireSubscription starts a subscription for an entities.User
+// ExpireSubscription finishes a subscription for an entities.User
 func (service *UserService) ExpireSubscription(ctx context.Context, params *events.UserSubscriptionExpiredPayload) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -299,6 +299,37 @@ func (service *UserService) ExpireSubscription(ctx context.Context, params *even
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after expired subscription update", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// UpdateSubscription updates a subscription for an entities.User
+func (service *UserService) UpdateSubscription(ctx context.Context, params *events.UserSubscriptionUpdatedPayload) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, params.UserID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if params.SubscriptionStatus != "active" {
+		msg := fmt.Sprintf("subscription status is [%s] for [%T] with with ID [%s]", params.SubscriptionStatus, user, params.UserID)
+		ctxLogger.Info(msg)
+		return nil
+	}
+
+	user.SubscriptionID = &params.SubscriptionID
+	user.SubscriptionName = params.SubscriptionName
+	user.SubscriptionEndsAt = &params.SubscriptionEndsAt
+	user.SubscriptionRenewsAt = &params.SubscriptionRenewsAt
+	user.SubscriptionStatus = &params.SubscriptionStatus
+
+	if err = service.repository.Update(ctx, user); err != nil {
+		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after subscription update", user, params.UserID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

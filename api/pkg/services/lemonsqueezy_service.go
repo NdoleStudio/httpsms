@@ -101,6 +101,41 @@ func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.
 	return nil
 }
 
+// HandleSubscriptionUpdatedEvent handles the subscription_cancelled lemonsqueezy event
+func (service *LemonsqueezyService) HandleSubscriptionUpdatedEvent(ctx context.Context, source string, request *lemonsqueezy.WebhookRequestSubscription) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.userRepository.LoadBySubscriptionID(ctx, request.Data.ID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", request.Data.ID)
+		return stacktrace.Propagate(err, msg)
+	}
+
+	payload := &events.UserSubscriptionUpdatedPayload{
+		UserID:                user.ID,
+		SubscriptionUpdatedAt: request.Data.Attributes.UpdatedAt,
+		SubscriptionID:        request.Data.ID,
+		SubscriptionName:      service.subscriptionName(request.Data.Attributes.VariantName),
+		SubscriptionEndsAt:    *request.Data.Attributes.EndsAt,
+		SubscriptionRenewsAt:  request.Data.Attributes.RenewsAt,
+		SubscriptionStatus:    request.Data.Attributes.Status,
+	}
+
+	event, err := service.createEvent(events.UserSubscriptionUpdated, source, payload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot created [%s] event for user [%s]", events.UserSubscriptionUpdated, payload.UserID)
+		return stacktrace.Propagate(err, msg)
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), payload.UserID)
+		return stacktrace.Propagate(err, msg)
+	}
+	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] updated for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
+	return nil
+}
+
 // HandleSubscriptionExpiredEvent handles the subscription_expired lemonsqueezy event
 func (service *LemonsqueezyService) HandleSubscriptionExpiredEvent(ctx context.Context, source string, request *lemonsqueezy.WebhookRequestSubscription) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
