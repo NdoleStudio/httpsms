@@ -205,17 +205,21 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	exists, err := service.monitorRepository.Exists(ctx, params.UserID, params.MonitorID)
+	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
+	if err != nil && stacktrace.GetCode(err) != repositories.ErrCodeNotFound {
+		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
+		return nil
+	}
+
 	if err != nil {
 		msg := fmt.Sprintf("cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	}
 
-	if !exists {
-		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
-		return nil
-	}
+	// Update params in case of ID duplicate
+	params.PhoneID = monitor.PhoneID
+	params.MonitorID = monitor.ID
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if err != nil {
