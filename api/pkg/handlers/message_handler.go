@@ -292,7 +292,7 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 
 	request.MessageID = c.Params("messageID")
 	if strings.Contains(request.MessageID, ".") {
-		return h.responseNoContent(c, "message event stored successfully")
+		return h.responseNoContent(c, "duplicate send event received.")
 	}
 
 	if errors := h.validator.ValidateMessageEvent(ctx, request.Sanitize()); len(errors) != 0 {
