@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -290,6 +291,10 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 	}
 
 	request.MessageID = c.Params("messageID")
+	if strings.Contains(request.MessageID, ".") {
+		return h.responseNoContent(c, "message event stored successfully")
+	}
+
 	if errors := h.validator.ValidateMessageEvent(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while storing event [%s] for message [%s]", spew.Sdump(errors), c.Body(), request.MessageID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
