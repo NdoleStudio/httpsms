@@ -88,7 +88,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	// Add random delay 100ms max to prevent collisions
+	// Add random delay 100ms max to prevent collisions when updating the phone
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 	delay := randomizer.Intn(10) * 10
 	time.Sleep(time.Duration(delay) * time.Millisecond)
