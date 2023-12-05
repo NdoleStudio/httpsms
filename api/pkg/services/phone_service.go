@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
@@ -86,6 +87,11 @@ func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParam
 	defer span.End()
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	// Add random delay 100ms max to prevent collisions
+	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
+	delay := randomizer.Intn(10) * 10
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 
 	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
