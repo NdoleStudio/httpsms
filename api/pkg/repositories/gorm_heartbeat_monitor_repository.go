@@ -27,6 +27,8 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	return stacktrace.NewError("not implemented")
+
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
@@ -47,6 +49,8 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, userID entities.UserID, owner string) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	return stacktrace.NewError("not implemented")
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -81,6 +85,8 @@ func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, use
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	return nil, stacktrace.NewError("not implemented")
+
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
@@ -99,6 +105,8 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	return stacktrace.NewError("not implemented")
+
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
@@ -114,6 +122,8 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, userID entities.UserID, owner string) (*entities.HeartbeatMonitor, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	return nil, stacktrace.NewError("not implemented")
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -141,6 +151,8 @@ func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, user
 func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, userID entities.UserID, monitorID uuid.UUID) (bool, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	return false, stacktrace.NewError("not implemented")
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()

@@ -37,6 +37,8 @@ func (repository *gormHeartbeatRepository) Last(ctx context.Context, userID enti
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	return nil, stacktrace.NewError("not implemented")
+
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
@@ -64,6 +66,8 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	return nil, stacktrace.NewError("not implemented")
+
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
@@ -86,6 +90,8 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat *entities.Heartbeat) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	return stacktrace.NewError("not implemented")
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
