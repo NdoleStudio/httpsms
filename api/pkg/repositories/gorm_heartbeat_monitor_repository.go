@@ -27,6 +27,9 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
 	err := repository.db.
 		Model(&entities.HeartbeatMonitor{}).
 		Where("id = ?", monitorID).
@@ -44,6 +47,9 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, userID entities.UserID, owner string) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 
 	err := repository.db.WithContext(ctx).
 		Where("user_id = ?", userID).
@@ -75,6 +81,9 @@ func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, use
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
 	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
 	heartbeats := new([]entities.Heartbeat)
 	if err := query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error; err != nil {
@@ -90,6 +99,9 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
 	if err := repository.db.WithContext(ctx).Create(heartbeatMonitor).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeatMonitor monitor with ID [%s]", heartbeatMonitor.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -102,6 +114,9 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, userID entities.UserID, owner string) (*entities.HeartbeatMonitor, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 
 	phone := new(entities.HeartbeatMonitor)
 	err := repository.db.WithContext(ctx).
@@ -126,6 +141,9 @@ func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, user
 func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, userID entities.UserID, monitorID uuid.UUID) (bool, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 
 	var exists bool
 	err := repository.db.WithContext(ctx).

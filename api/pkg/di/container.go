@@ -239,14 +239,14 @@ func (container *Container) YugaByteDB() (db *gorm.DB) {
 	sql.SetMaxIdleConns(3)
 	sql.SetConnMaxLifetime(time.Minute * 10)
 
-	container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
-	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
-	}
-
-	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
-	}
+	//container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
+	//if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
+	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
+	//}
+	//
+	//if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
+	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
+	//}
 
 	container.yugaByteDB = db
 	return container.yugaByteDB

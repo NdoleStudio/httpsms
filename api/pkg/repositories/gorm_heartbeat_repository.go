@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -36,6 +37,9 @@ func (repository *gormHeartbeatRepository) Last(ctx context.Context, userID enti
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
 	heartbeat := new(entities.Heartbeat)
 	err := repository.db.WithContext(ctx).
 		Where("user_id = ?", userID).
@@ -60,6 +64,9 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
 	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
@@ -79,6 +86,9 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat *entities.Heartbeat) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 
 	if err := repository.db.WithContext(ctx).Create(heartbeat).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
