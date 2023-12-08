@@ -27,9 +27,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return stacktrace.NewError("not implemented")
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
 	err := repository.db.
@@ -50,9 +48,7 @@ func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, us
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return stacktrace.NewError("not implemented")
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
 	err := repository.db.WithContext(ctx).
@@ -85,9 +81,7 @@ func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, use
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return nil, stacktrace.NewError("not implemented")
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
 	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
@@ -105,9 +99,7 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return stacktrace.NewError("not implemented")
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
 	if err := repository.db.WithContext(ctx).Create(heartbeatMonitor).Error; err != nil {
@@ -123,9 +115,7 @@ func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, user
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return nil, stacktrace.NewError("not implemented")
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
 	phone := new(entities.HeartbeatMonitor)
@@ -152,9 +142,7 @@ func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, us
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return false, stacktrace.NewError("not implemented")
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
 	var exists bool

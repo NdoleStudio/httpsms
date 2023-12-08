@@ -303,9 +303,7 @@ export const actions = {
       },
     })
 
-    try {
-      await context.dispatch('getHeartbeat')
-    } catch (e) {}
+    await context.dispatch('getHeartbeat')
     context.commit('setThreads', response.data.data)
   },
 
