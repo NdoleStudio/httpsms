@@ -215,20 +215,20 @@ func (container *Container) YugaByteDB() (db *gorm.DB) {
 	if container.yugaByteDB != nil {
 		return container.yugaByteDB
 	}
-
-	config := &gorm.Config{}
-	if isLocal() {
-		config = &gorm.Config{Logger: container.GormLogger()}
-	}
-
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL_YUGABYTE")), config)
-	if err != nil {
-		container.logger.Fatal(err)
-	}
-
-	if err = db.Use(tracing.NewPlugin()); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
-	}
+	//
+	//config := &gorm.Config{}
+	//if isLocal() {
+	//	config = &gorm.Config{Logger: container.GormLogger()}
+	//}
+	//
+	//db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL_YUGABYTE")), config)
+	//if err != nil {
+	//	container.logger.Fatal(err)
+	//}
+	//
+	//if err = db.Use(tracing.NewPlugin()); err != nil {
+	//	container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+	//}
 	//
 	//sql, err := db.DB()
 	//if err != nil {
@@ -238,7 +238,7 @@ func (container *Container) YugaByteDB() (db *gorm.DB) {
 	//sql.SetMaxOpenConns(7)
 	//sql.SetMaxIdleConns(3)
 	//sql.SetConnMaxLifetime(time.Minute * 10)
-
+	//
 	//container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
 	//if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
 	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
@@ -247,8 +247,8 @@ func (container *Container) YugaByteDB() (db *gorm.DB) {
 	//if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
 	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
 	//}
-
-	container.yugaByteDB = db
+	//
+	//container.yugaByteDB = db
 	return container.yugaByteDB
 }
 
@@ -277,41 +277,41 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for %T", db))
 
-	//if err = db.AutoMigrate(&entities.Message{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Message{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageThread{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.User{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.Phone{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Phone{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.PhoneNotification{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneNotification{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.BillingUsage{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.BillingUsage{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Webhook{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.Discord{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Discord{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.Integration3CX{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Integration3CX{})))
-	//}
+	if err = db.AutoMigrate(&entities.Message{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Message{})))
+	}
+
+	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageThread{})))
+	}
+
+	if err = db.AutoMigrate(&entities.User{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Phone{})))
+	}
+
+	if err = db.AutoMigrate(&entities.PhoneNotification{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneNotification{})))
+	}
+
+	if err = db.AutoMigrate(&entities.BillingUsage{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.BillingUsage{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Webhook{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Discord{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Discord{})))
+	}
+
+	if err = db.AutoMigrate(&entities.Integration3CX{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Integration3CX{})))
+	}
 
 	return container.db
 }
