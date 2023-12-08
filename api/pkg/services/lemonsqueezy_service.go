@@ -117,7 +117,7 @@ func (service *LemonsqueezyService) HandleSubscriptionUpdatedEvent(ctx context.C
 		SubscriptionUpdatedAt: request.Data.Attributes.UpdatedAt,
 		SubscriptionID:        request.Data.ID,
 		SubscriptionName:      service.subscriptionName(request.Data.Attributes.VariantName),
-		SubscriptionEndsAt:    *request.Data.Attributes.EndsAt,
+		SubscriptionEndsAt:    request.Data.Attributes.EndsAt,
 		SubscriptionRenewsAt:  request.Data.Attributes.RenewsAt,
 		SubscriptionStatus:    request.Data.Attributes.Status,
 	}

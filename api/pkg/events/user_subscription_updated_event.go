@@ -13,7 +13,7 @@ const UserSubscriptionUpdated = "user.subscription.updated"
 type UserSubscriptionUpdatedPayload struct {
 	UserID                entities.UserID           `json:"user_id"`
 	SubscriptionUpdatedAt time.Time                 `json:"subscription_updated_at"`
-	SubscriptionEndsAt    time.Time                 `json:"subscription_ends_at"`
+	SubscriptionEndsAt    *time.Time                `json:"subscription_ends_at"`
 	SubscriptionRenewsAt  time.Time                 `json:"subscription_renews_at"`
 	SubscriptionID        string                    `json:"subscription_id"`
 	SubscriptionName      entities.SubscriptionName `json:"subscription_name"`
