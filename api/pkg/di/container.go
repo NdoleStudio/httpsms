@@ -230,14 +230,14 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
 	}
 
-	container.logger.Debug(fmt.Sprintf("Running migrations for yugabyte [%T]", db))
-	//if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
-	//}
-	//
-	//if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
-	//	container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
-	//}
+	container.logger.Debug(fmt.Sprintf("Running migrations for dedicated [%T]", db))
+	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
+	}
+
+	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
+	}
 
 	container.dedicatedDB = db
 	return container.dedicatedDB

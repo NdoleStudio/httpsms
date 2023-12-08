@@ -17,5 +17,5 @@ const (
 	// ErrCodeNotFound is thrown when an entity does not exist in storage
 	ErrCodeNotFound = stacktrace.ErrorCode(1000)
 
-	dbOperationDuration = 1 * time.Second
+	dbOperationDuration = 5 * time.Second
 )
