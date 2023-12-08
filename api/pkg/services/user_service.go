@@ -324,7 +324,7 @@ func (service *UserService) UpdateSubscription(ctx context.Context, params *even
 
 	user.SubscriptionID = &params.SubscriptionID
 	user.SubscriptionName = params.SubscriptionName
-	user.SubscriptionEndsAt = &params.SubscriptionEndsAt
+	user.SubscriptionEndsAt = params.SubscriptionEndsAt
 	user.SubscriptionRenewsAt = &params.SubscriptionRenewsAt
 	user.SubscriptionStatus = &params.SubscriptionStatus
 
