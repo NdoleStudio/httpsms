@@ -51,8 +51,8 @@ dependencies:
     specifier: ^1.0.3
     version: 1.0.3
   ufo:
-    specifier: ^1.1.2
-    version: 1.3.1
+    specifier: ^1.3.2
+    version: 1.3.2
   vue:
     specifier: ^2.7.15
     version: 2.7.15
@@ -3619,7 +3619,7 @@ packages:
       lodash: 4.17.21
       rc9: 2.1.1
       std-env: 3.4.3
-      ufo: 1.3.1
+      ufo: 1.3.2
     dev: false
 
   /@nuxt/core@2.17.2:
@@ -3667,7 +3667,7 @@ packages:
       fs-extra: 10.1.0
       html-minifier: 4.0.0
       node-html-parser: 6.1.10
-      ufo: 1.3.1
+      ufo: 1.3.2
     dev: false
 
   /@nuxt/kit@3.7.4:
@@ -3688,7 +3688,7 @@ packages:
       pkg-types: 1.0.3
       scule: 1.0.0
       semver: 7.5.4
-      ufo: 1.3.1
+      ufo: 1.3.2
       unctx: 2.3.1
       unimport: 3.4.0
       untyped: 1.4.0
@@ -3733,7 +3733,7 @@ packages:
       pkg-types: 1.0.3
       postcss-import-resolver: 2.0.0
       std-env: 3.4.3
-      ufo: 1.3.1
+      ufo: 1.3.2
       unimport: 3.4.0
       untyped: 1.4.0
     transitivePeerDependencies:
@@ -3761,7 +3761,7 @@ packages:
       serve-placeholder: 2.0.1
       serve-static: 1.15.0
       server-destroy: 1.0.1
-      ufo: 1.3.1
+      ufo: 1.3.2
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -3847,7 +3847,7 @@ packages:
       serialize-javascript: 6.0.1
       signal-exit: 4.1.0
       ua-parser-js: 1.0.36
-      ufo: 1.3.1
+      ufo: 1.3.2
     dev: false
 
   /@nuxt/vue-app@2.17.2:
@@ -3855,7 +3855,7 @@ packages:
     engines: {node: ^14.18.0 || >=16.10.0}
     dependencies:
       node-fetch-native: 1.4.1
-      ufo: 1.3.1
+      ufo: 1.3.2
       unfetch: 5.0.0
       vue: 2.7.15
       vue-client-only: 2.1.0
@@ -3877,7 +3877,7 @@ packages:
       fs-extra: 10.1.0
       lodash: 4.17.21
       lru-cache: 5.1.1
-      ufo: 1.3.1
+      ufo: 1.3.2
       vue: 2.7.15
       vue-meta: 2.4.0
       vue-server-renderer: 2.7.15
@@ -3921,7 +3921,7 @@ packages:
       terser-webpack-plugin: 4.2.3(webpack@4.47.0)
       thread-loader: 3.0.4(webpack@4.47.0)
       time-fix-plugin: 2.0.7(webpack@4.47.0)
-      ufo: 1.3.1
+      ufo: 1.3.2
       upath: 2.0.1
       url-loader: 4.1.1(file-loader@6.2.0)(webpack@4.47.0)
       vue-loader: 15.11.1(babel-core@7.0.0-bridge.0)(cache-loader@4.1.0)(css-loader@5.2.7)(lodash@4.17.21)(prettier@3.0.3)(vue-template-compiler@2.7.15)(webpack@4.47.0)
@@ -11596,7 +11596,7 @@ packages:
       acorn: 8.10.0
       pathe: 1.1.1
       pkg-types: 1.0.3
-      ufo: 1.3.1
+      ufo: 1.3.2
     dev: true
 
   /moment@2.29.4:
@@ -15568,8 +15568,8 @@ packages:
     resolution: {integrity: sha512-znuyCIXzl8ciS3+y3fHJI/2OhQIXbXw9MWC/o3qwyR+RGppjZHrM27CGFSKCJXi2Kctiz537iOu2KnXs1lMQhw==}
     dev: false
 
-  /ufo@1.3.1:
-    resolution: {integrity: sha512-uY/99gMLIOlJPwATcMVYfqDSxUR9//AUcgZMzwfSTJPDKzA1S8mX4VLqa+fiAtveraQUBCz4FFcwVZBGbwBXIw==}
+  /ufo@1.3.2:
+    resolution: {integrity: sha512-o+ORpgGwaYQXgqGDwd+hkS4PuZ3QnmqMMxRuajK/a38L6fTpcE5GPIfrf+L/KemFzfUpeUQc1rRS1iDBozvnFA==}
 
   /uglify-js@3.17.4:
     resolution: {integrity: sha512-T9q82TJI9e/C1TAxYvfb16xO120tMVFZrGA3f9/P4424DNu6ypK103y0GPFVa17yotwSyZW5iYXgjYHkGrJW/g==}
