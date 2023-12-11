@@ -50,7 +50,7 @@
     "webpack": "^5.89.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.22.15",
+    "@babel/eslint-parser": "^7.23.3",
     "@commitlint/cli": "^17.7.2",
     "@commitlint/config-conventional": "^18.4.3",
     "@nuxt/types": "^2.17.2",
