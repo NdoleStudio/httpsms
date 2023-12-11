@@ -84,8 +84,8 @@ dependencies:
     specifier: ^3.6.2
     version: 3.6.2(vue@2.7.15)
   webpack:
-    specifier: ^5.87.0
-    version: 5.87.0
+    specifier: ^5.89.0
+    version: 5.89.0
 
 devDependencies:
   '@babel/eslint-parser':
@@ -102,19 +102,19 @@ devDependencies:
     version: 2.17.2
   '@nuxt/typescript-build':
     specifier: ^2.1.0
-    version: 2.1.0(@nuxt/types@2.17.2)(eslint@8.55.0)(vue-template-compiler@2.7.15)(webpack@5.87.0)
+    version: 2.1.0(@nuxt/types@2.17.2)(eslint@8.55.0)(vue-template-compiler@2.7.15)(webpack@5.89.0)
   '@nuxtjs/eslint-config-typescript':
     specifier: ^12.1.0
     version: 12.1.0(eslint@8.55.0)(typescript@4.9.5)
   '@nuxtjs/eslint-module':
     specifier: ^4.1.0
-    version: 4.1.0(eslint@8.55.0)(vite@4.5.1)(webpack@5.87.0)
+    version: 4.1.0(eslint@8.55.0)(vite@4.5.1)(webpack@5.89.0)
   '@nuxtjs/stylelint-module':
     specifier: ^5.1.0
-    version: 5.1.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.1)(webpack@5.87.0)
+    version: 5.1.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.1)(webpack@5.89.0)
   '@nuxtjs/vuetify':
     specifier: ^1.12.3
-    version: 1.12.3(vue@2.7.15)(webpack@5.87.0)
+    version: 1.12.3(vue@2.7.15)(webpack@5.89.0)
   '@vue/test-utils':
     specifier: ^1.3.6
     version: 1.3.6(vue-template-compiler@2.7.15)(vue@2.7.15)
@@ -3812,15 +3812,15 @@ packages:
       '@types/webpack-hot-middleware': 2.25.5
     dev: true
 
-  /@nuxt/typescript-build@2.1.0(@nuxt/types@2.17.2)(eslint@8.55.0)(vue-template-compiler@2.7.15)(webpack@5.87.0):
+  /@nuxt/typescript-build@2.1.0(@nuxt/types@2.17.2)(eslint@8.55.0)(vue-template-compiler@2.7.15)(webpack@5.89.0):
     resolution: {integrity: sha512-7TLMpfzgOckf3cBkzoPFns6Xl8FzY6MoFfm/5HUE47QeTWAdOG9ZFxMrVhHWieZHYUuV+k6byRtaRv4S/3R8zA==}
     peerDependencies:
       '@nuxt/types': '>=2.13.1'
     dependencies:
       '@nuxt/types': 2.17.2
       consola: 2.15.3
-      fork-ts-checker-webpack-plugin: 6.5.3(eslint@8.55.0)(typescript@4.2.4)(vue-template-compiler@2.7.15)(webpack@5.87.0)
-      ts-loader: 8.4.0(typescript@4.2.4)(webpack@5.87.0)
+      fork-ts-checker-webpack-plugin: 6.5.3(eslint@8.55.0)(typescript@4.2.4)(vue-template-compiler@2.7.15)(webpack@5.89.0)
+      ts-loader: 8.4.0(typescript@4.2.4)(webpack@5.89.0)
       typescript: 4.2.4
     transitivePeerDependencies:
       - eslint
@@ -4046,7 +4046,7 @@ packages:
       - supports-color
     dev: true
 
-  /@nuxtjs/eslint-module@4.1.0(eslint@8.55.0)(vite@4.5.1)(webpack@5.87.0):
+  /@nuxtjs/eslint-module@4.1.0(eslint@8.55.0)(vite@4.5.1)(webpack@5.89.0):
     resolution: {integrity: sha512-lW9ozEjOrnU8Uot3GOAZ/0ThNAds0d6UAp9n46TNxcTvH/MOcAggGbMNs16c0HYT2HlyPQvXORCHQ5+9p87mmw==}
     peerDependencies:
       eslint: '>=7'
@@ -4054,7 +4054,7 @@ packages:
       '@nuxt/kit': 3.7.4
       chokidar: 3.5.3
       eslint: 8.55.0
-      eslint-webpack-plugin: 4.0.1(eslint@8.55.0)(webpack@5.87.0)
+      eslint-webpack-plugin: 4.0.1(eslint@8.55.0)(webpack@5.89.0)
       pathe: 1.1.1
       vite-plugin-eslint: 1.8.1(eslint@8.55.0)(vite@4.5.1)
     transitivePeerDependencies:
@@ -4096,7 +4096,7 @@ packages:
       sitemap: 4.1.1
     dev: false
 
-  /@nuxtjs/stylelint-module@5.1.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.1)(webpack@5.87.0):
+  /@nuxtjs/stylelint-module@5.1.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.1)(webpack@5.89.0):
     resolution: {integrity: sha512-zpWn5nJfFstBh7PUBjsBNu6rFCN2wtz3JyLGuEqCh4yo7orKclDM3S931E3kMD6Tszpvobhq1CMsgbcZL6K3aA==}
     peerDependencies:
       stylelint: '>=13'
@@ -4105,7 +4105,7 @@ packages:
       chokidar: 3.5.3
       pathe: 1.1.1
       stylelint: 15.11.0(typescript@4.9.5)
-      stylelint-webpack-plugin: 4.1.1(stylelint@15.11.0)(webpack@5.87.0)
+      stylelint-webpack-plugin: 4.1.1(stylelint@15.11.0)(webpack@5.89.0)
       vite-plugin-stylelint: 4.3.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.1)
     transitivePeerDependencies:
       - '@types/stylelint'
@@ -4116,14 +4116,14 @@ packages:
       - webpack
     dev: true
 
-  /@nuxtjs/vuetify@1.12.3(vue@2.7.15)(webpack@5.87.0):
+  /@nuxtjs/vuetify@1.12.3(vue@2.7.15)(webpack@5.89.0):
     resolution: {integrity: sha512-6uVL3cfESMB00eVjJTNkyU4jvuPTGPn1yteo7lQTH6v+fxHcPaOgvzVYHIKSHIz1DecuOiB5c9b+YjsRP5+C8A==}
     dependencies:
       deepmerge: 4.3.1
       sass: 1.32.13
-      sass-loader: 10.4.1(sass@1.32.13)(webpack@5.87.0)
+      sass-loader: 10.4.1(sass@1.32.13)(webpack@5.89.0)
       vuetify: 2.7.1(vue@2.7.15)
-      vuetify-loader: 1.9.2(vue@2.7.15)(vuetify@2.7.1)(webpack@5.87.0)
+      vuetify-loader: 1.9.2(vue@2.7.15)(vuetify@2.7.1)(webpack@5.89.0)
     transitivePeerDependencies:
       - fibers
       - gm
@@ -6058,7 +6058,7 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
     dependencies:
-      caniuse-lite: 1.0.30001541
+      caniuse-lite: 1.0.30001561
       electron-to-chromium: 1.4.537
       node-releases: 2.0.13
       update-browserslist-db: 1.0.13(browserslist@4.22.1)
@@ -6279,12 +6279,8 @@ packages:
       lodash.uniq: 4.5.0
     dev: false
 
-  /caniuse-lite@1.0.30001541:
-    resolution: {integrity: sha512-bLOsqxDgTqUBkzxbNlSBt8annkDpQB9NdzdTbO2ooJ+eC/IQcvDspDc058g84ejCelF7vHUx57KIOjEecOHXaw==}
-
   /caniuse-lite@1.0.30001561:
     resolution: {integrity: sha512-NTt0DNoKe958Q0BE0j0c1V9jbUzhBxHIEJy7asmGrpE0yG63KTV7PLHPnK2E1O9RsQrQ081I3NLuXGS6zht3cw==}
-    dev: false
 
   /chalk@1.1.3:
     resolution: {integrity: sha512-U3lRVLMSlsCfjqYPbLyVv11M9CPW4I728d6TCKMAOJueEeB9/8o+eSsMnxPJD+Q+K909sdESg7C+tIkoH6on1A==}
@@ -8218,7 +8214,7 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     dev: true
 
-  /eslint-webpack-plugin@4.0.1(eslint@8.55.0)(webpack@5.87.0):
+  /eslint-webpack-plugin@4.0.1(eslint@8.55.0)(webpack@5.89.0):
     resolution: {integrity: sha512-fUFcXpui/FftGx3NzvWgLZXlLbu+m74sUxGEgxgoxYcUtkIQbS6SdNNZkS99m5ycb23TfoNYrDpp1k/CK5j6Hw==}
     engines: {node: '>= 14.15.0'}
     peerDependencies:
@@ -8231,7 +8227,7 @@ packages:
       micromatch: 4.0.5
       normalize-path: 3.0.0
       schema-utils: 4.2.0
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /eslint@8.55.0:
@@ -8570,7 +8566,7 @@ packages:
       webpack: 4.47.0
     dev: false
 
-  /file-loader@6.2.0(webpack@5.87.0):
+  /file-loader@6.2.0(webpack@5.89.0):
     resolution: {integrity: sha512-qo3glqyTa61Ytg4u73GultjHGjdRyig3tG6lPtyX/jOEJvHif9uB0/OCI2Kif6ctF3caQTW2G5gym21oAsI4pw==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
@@ -8578,7 +8574,7 @@ packages:
     dependencies:
       loader-utils: 2.0.4
       schema-utils: 3.3.0
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /file-uri-to-path@1.0.0:
@@ -8776,7 +8772,7 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: false
 
-  /fork-ts-checker-webpack-plugin@6.5.3(eslint@8.55.0)(typescript@4.2.4)(vue-template-compiler@2.7.15)(webpack@5.87.0):
+  /fork-ts-checker-webpack-plugin@6.5.3(eslint@8.55.0)(typescript@4.2.4)(vue-template-compiler@2.7.15)(webpack@5.89.0):
     resolution: {integrity: sha512-SbH/l9ikmMWycd5puHJKTkZJKddF4iRLyW3DeZ08HTI7NGyLS38MXd/KGgeWumQO7YNQbW2u/NtPT2YowbPaGQ==}
     engines: {node: '>=10', yarn: '>=1.0.0'}
     peerDependencies:
@@ -8806,7 +8802,7 @@ packages:
       tapable: 1.1.3
       typescript: 4.2.4
       vue-template-compiler: 2.7.15
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /form-data@3.0.1:
@@ -14133,7 +14129,7 @@ packages:
   /safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  /sass-loader@10.4.1(sass@1.32.13)(webpack@5.87.0):
+  /sass-loader@10.4.1(sass@1.32.13)(webpack@5.89.0):
     resolution: {integrity: sha512-aX/iJZTTpNUNx/OSYzo2KsjIUQHqvWsAhhUijFjAPdZTEhstjZI9zTNvkTTwsx+uNUJqUwOw5gacxQMx4hJxGQ==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
@@ -14155,7 +14151,7 @@ packages:
       sass: 1.32.13
       schema-utils: 3.3.0
       semver: 7.5.4
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /sass@1.32.13:
@@ -14871,7 +14867,7 @@ packages:
       stylelint-config-recommended: 13.0.0(stylelint@15.11.0)
     dev: true
 
-  /stylelint-webpack-plugin@4.1.1(stylelint@15.11.0)(webpack@5.87.0):
+  /stylelint-webpack-plugin@4.1.1(stylelint@15.11.0)(webpack@5.89.0):
     resolution: {integrity: sha512-yOyd2AfrxfawxKDememazGVJX2vMq9o11E6HvBu4+SKvgK3ZulkjpYdI1muBTxItwoxH2UmfIZzQM+/M5V3kTQ==}
     engines: {node: '>= 14.15.0'}
     peerDependencies:
@@ -14884,7 +14880,7 @@ packages:
       normalize-path: 3.0.0
       schema-utils: 4.2.0
       stylelint: 15.11.0(typescript@4.9.5)
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /stylelint@15.11.0(typescript@4.9.5):
@@ -15106,7 +15102,7 @@ packages:
       - bluebird
     dev: false
 
-  /terser-webpack-plugin@5.3.9(webpack@5.87.0):
+  /terser-webpack-plugin@5.3.9(webpack@5.89.0):
     resolution: {integrity: sha512-ZuXsqE07EcggTWQjXUj+Aot/OMcD0bMKGgF63f7UxYcu5/AJF53aIpK1YoP5xR9l6s/Hy2b+t1AM0bLNPRuhwA==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
@@ -15127,7 +15123,7 @@ packages:
       schema-utils: 3.3.0
       serialize-javascript: 6.0.1
       terser: 5.20.0
-      webpack: 5.87.0
+      webpack: 5.89.0
 
   /terser@4.8.1:
     resolution: {integrity: sha512-4GnLC0x667eJG0ewJTa6z/yXrbLGv80D9Ru6HIpCQmO+Q4PfEtBFi0ObSckqwL6VyQv/7ENJieXHo2ANmdQwgw==}
@@ -15362,7 +15358,7 @@ packages:
       yargs-parser: 20.2.9
     dev: true
 
-  /ts-loader@8.4.0(typescript@4.2.4)(webpack@5.87.0):
+  /ts-loader@8.4.0(typescript@4.2.4)(webpack@5.89.0):
     resolution: {integrity: sha512-6nFY3IZ2//mrPc+ImY3hNWx1vCHyEhl6V+wLmL4CZcm6g1CqX7UKrkc6y0i4FwcfOhxyMPCfaEvh20f4r9GNpw==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
@@ -15375,7 +15371,7 @@ packages:
       micromatch: 4.0.5
       semver: 7.5.4
       typescript: 4.2.4
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /ts-node@10.9.1(@types/node@20.5.1)(typescript@4.9.5):
@@ -16151,7 +16147,7 @@ packages:
       '@vue/compiler-sfc': 2.7.15
       csstype: 3.1.2
 
-  /vuetify-loader@1.9.2(vue@2.7.15)(vuetify@2.7.1)(webpack@5.87.0):
+  /vuetify-loader@1.9.2(vue@2.7.15)(vuetify@2.7.1)(webpack@5.89.0):
     resolution: {integrity: sha512-8PP2w7aAs/rjA+Izec6qY7sHVb75MNrGQrDOTZJ5IEnvl+NiFhVpU2iWdRDZ3eMS842cWxSWStvkr+KJJKy+Iw==}
     peerDependencies:
       gm: ^1.23.0
@@ -16171,11 +16167,11 @@ packages:
       acorn: 8.10.0
       acorn-walk: 8.2.0
       decache: 4.6.2
-      file-loader: 6.2.0(webpack@5.87.0)
+      file-loader: 6.2.0(webpack@5.89.0)
       loader-utils: 2.0.4
       vue: 2.7.15
       vuetify: 2.7.1(vue@2.7.15)
-      webpack: 5.87.0
+      webpack: 5.89.0
     dev: true
 
   /vuetify@2.7.1(vue@2.7.15):
@@ -16365,8 +16361,8 @@ packages:
       - supports-color
     dev: false
 
-  /webpack@5.87.0:
-    resolution: {integrity: sha512-GOu1tNbQ7p1bDEoFRs2YPcfyGs8xq52yyPBZ3m2VGnXGtV9MxjrkABHm4V9Ia280OefsSLzvbVoXcfLxjKY/Iw==}
+  /webpack@5.89.0:
+    resolution: {integrity: sha512-qyfIC10pOr70V+jkmud8tMfajraGCZMBWJtrmuBymQKCrLTRejBI8STDp1MCyZu/QTdZSeacCQYpYNQVOzX5kw==}
     engines: {node: '>=10.13.0'}
     hasBin: true
     peerDependencies:
@@ -16396,7 +16392,7 @@ packages:
       neo-async: 2.6.2
       schema-utils: 3.3.0
       tapable: 2.2.1
-      terser-webpack-plugin: 5.3.9(webpack@5.87.0)
+      terser-webpack-plugin: 5.3.9(webpack@5.89.0)
       watchpack: 2.4.0
       webpack-sources: 3.2.3
     transitivePeerDependencies:
