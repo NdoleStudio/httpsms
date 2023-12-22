@@ -48,6 +48,8 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
 built using Kotlin with material design principles. This app must be installed on an android phone before you can start
 sending and receiving SMS messages.
 
+[<img src=".github/ghbadge.png" alt="Get it on GitHub" height="80">](https://github.com/NdoleStudio/httpsms/releases/)
+
 ### Chat/forum
 
 There are a few ways to get in touch with me and/or the rest of the community. Feel free to use any of these methods. Whatever
