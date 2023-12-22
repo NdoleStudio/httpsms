@@ -1,10 +1,13 @@
-# HTTP SMS
+# httpSMS
 
 [![Build](https://github.com/NdoleStudio/httpsms/actions/workflows/ci.yml/badge.svg)](https://github.com/NdoleStudio/httpsms/actions/workflows/ci.yml)
 [![GitHub contributors](https://img.shields.io/github/contributors/NdoleStudio/httpsms)](https://github.com/NdoleStudio/httpsms/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/NdoleStudio/httpsms?color=brightgreen)](https://github.com/NdoleStudio/httpsms/blob/master/LICENSE)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![Better Stack Badge](https://uptime.betterstack.com/status-badges/v1/monitor/ldl5.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
+[![Discord](https://img.shields.io/discord/1095778291488653372?label=Discord)](https://discord.gg/kGk8HVqeEZ)
 
-[HTTP SMS](https://httpsms.com) is a service that lets you use your android phone as an SMS Gateway to send and receive SMS messages.
+[httpSMS](https://httpsms.com) is a service that lets you use your android phone as an SMS Gateway to send and receive SMS messages.
 You make a request to the API which it triggers your android phone to send an SMS.
 
 Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
@@ -17,9 +20,7 @@ I'm originally from Cameroon and I wanted an automated way to send and receive S
 Unfortunately many countries don't support the ability to buy virtual phone numbers, and I could not find a good ready-made
 solution that could help me send/receive SMS messages using a mobile phone using an intuitive http API.
 
-## Technology
-
-### Web
+### Web UI
 
 The web interface https://httpsms.com is built using [Nuxt](https://nuxtjs.org/) and [Vuetify](https://vuetifyjs.com/en/).
 It is hosted as a single page application on firebase. The source code is in the [web](./web) directory
@@ -45,6 +46,14 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
 [The Android App](https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk) is a native application
 built using Kotlin with material design principles. This app must be installed on an android phone before you can start
 sending and receiving SMS messages.
+
+### Chat/forum
+
+There are a few ways to get in touch with me and/or the rest of the community. Feel free to use any of these methods. Whatever
+works best for you:
+
+- [Discord server](https://discord.gg/kGk8HVqeEZ) - direct chat with the community
+- [GitHub issues](https://github.com/NdoleStudio/httpsms/issues) - questions, features, bugs
 
 ## Features
 
@@ -77,10 +86,10 @@ sequenceDiagram
 User->>+Http Sms API: Call /v1/messages/send API
 Http Sms API-->>+Google Cloud Task: Schedule notification about new message
 Http Sms API-->>-User: Respond with 202 (Accepted)
-Google Cloud Task-->>+Http Sms API: [Async] Send notfication request
+Google Cloud Task-->>+Http Sms API: [Async] Send notification request
 Http Sms API-->>-Android App: Send push notification about new message
 Android App-->>Http Sms API: [Async] Fetch message
-Android App-->>Android App: Send Message using Andoid SMS API
+Android App-->>Android App: Send Message using Android SMS API
 Android App-->>Http Sms API: [Async] Send result of sending SMS
 Android App-->>Http Sms API: [Async] Send Delivery Report
 ```
