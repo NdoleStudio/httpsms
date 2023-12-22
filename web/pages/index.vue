@@ -695,27 +695,97 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             </v-card>
           </v-col>
         </v-row>
-        <client-only>
-          <v-row>
-            <v-col class="text-center" md="6" offset-md="3">
-              <p class="text-h4 text--secondary mt-6 mb-4">
-                Subscribe to my newsletter where I share new features and
-                updates on httpSMS.
-              </p>
-              <v-progress-circular
-                v-if="!substackLoaded"
-                indeterminate
-                size="40"
-                width="2"
-                class="mt-8"
-                color="primary"
-              ></v-progress-circular>
-              <div id="custom-substack-embed" ref="substackEmbed"></div>
-            </v-col>
-          </v-row>
-        </client-only>
+        <v-row>
+          <v-col>
+            <v-alert type="info" :icon="mdiLightbulbOn60" prominent text>
+              Feel free to <a href="mailto:arnold@httpsms.com">contact us</a> if
+              you need a bigger plan, or if you want us to install the httpSMS
+              API on your dedicated server. If would still like to support us,
+              please donate via
+              <a href="https://github.com/sponsors/NdoleStudio"
+                >GitHub Sponsors</a
+              >
+              ❤️
+            </v-alert>
+          </v-col>
+        </v-row>
       </v-container>
     </v-sheet>
+    <v-container>
+      <v-row class="mt-16">
+        <v-col>
+          <h2 class="text-h3 text-center">Frequently Asked Questions</h2>
+          <h4 class="text-center text-h6 mt-4 text--secondary">
+            If you still cannot find the answer to your question,
+            <a href="mailto:arnold@httpsms.com">send us an email</a> or ask in
+            our <a href="https://discord.gg/kGk8HVqeEZ">Discord</a> channel.
+          </h4>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-expansion-panels focusable>
+            <v-expansion-panel>
+              <v-expansion-panel-header>
+                Can I install the app on my Iphone?
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <p class="mt-8">
+                  The httpSMS application works only on Android phones at the
+                  moment since Apple doesn't allow you to install a custom SMS
+                  messaging app.
+                </p>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+            <v-expansion-panel>
+              <v-expansion-panel-header>
+                What's the minimum supported Android version?
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <p class="mt-8">
+                  The httpSMS Android app works from Android 9 (Pie) and above.
+                  So you can install the application on your old Android phone
+                  which you don't use anymore.
+                </p>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+            <v-expansion-panel>
+              <v-expansion-panel-header>
+                Can I send unlimited number of messages per month?
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <p class="mt-8">
+                  We do have packages that allow up to 100,000 SMS messages per
+                  month but you can can
+                  <a href="mailto:arnold@httpsms.com">send us an email</a> if
+                  you will like to send more messages so we create a custom plan
+                  just for you.
+                </p>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </v-col>
+      </v-row>
+      <client-only>
+        <v-row>
+          <v-col class="text-center pb-16" md="6" offset-md="3">
+            <p class="text-h6 text--secondary mt-6 mb-4">
+              Subscribe to my newsletter where I share new features and updates
+              on httpSMS.
+            </p>
+            <v-progress-circular
+              v-if="!substackLoaded"
+              indeterminate
+              size="40"
+              width="2"
+              class="mt-8"
+              color="primary"
+            ></v-progress-circular>
+            <div id="custom-substack-embed" ref="substackEmbed"></div>
+          </v-col>
+        </v-row>
+      </client-only>
+    </v-container>
   </div>
 </template>
 
@@ -726,6 +796,7 @@ import {
   mdiCheckCircle,
   mdiSend,
   mdiGift,
+  mdiLightbulbOn60,
   mdiForum,
   mdiCreation,
   mdiNumeric1,
@@ -751,6 +822,7 @@ export default Vue.extend({
     return {
       mdiGithub,
       mdiLabel,
+      mdiLightbulbOn60,
       mdiCheckCircle,
       mdiSend,
       mdiGift,
@@ -761,6 +833,7 @@ export default Vue.extend({
       mdiNumeric3,
       mdiTallyMark1,
       mdiTallyMark2,
+
       mdiTallyMark3,
       mdiLanguageJavascript,
       mdiLanguagePhp,
