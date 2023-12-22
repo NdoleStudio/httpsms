@@ -8,8 +8,8 @@
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v1/monitor/ldl5.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
 [![Discord](https://img.shields.io/discord/1095778291488653372?label=Discord)](https://discord.gg/kGk8HVqeEZ)
 
-[httpSMS](https://httpsms.com) is a service that lets you use your android phone as an SMS Gateway to send and receive SMS messages.
-You make a request to the API which it triggers your android phone to send an SMS.
+[httpSMS](https://httpsms.com) is a service that lets you use your Android phone as an SMS Gateway to send and receive SMS messages.
+You make a request to a simple HTTP API and it triggers your Android phone to send an SMS. SMS messages received on your android phone can also be fowarded to your webhook endpoint.
 
 Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
 
@@ -21,12 +21,12 @@ I'm originally from Cameroon and I wanted an automated way to send and receive S
 Unfortunately many countries don't support the ability to buy virtual phone numbers, and I could not find a good ready-made
 solution that could help me send/receive SMS messages using a mobile phone using an intuitive http API.
 
-### Web UI
+## Web UI
 
 The web interface https://httpsms.com is built using [Nuxt](https://nuxtjs.org/) and [Vuetify](https://vuetifyjs.com/en/).
 It is hosted as a single page application on firebase. The source code is in the [web](./web) directory
 
-### API
+## API
 
 The API https://api.httpsms.com is built using [Fiber](https://gofiber.io/), Go and [CockroachDB](https://www.cockroachlabs.com/) for the database.
 It rus as a serverless application on Google Cloud Run. The API documentation can be found here https://api.httpsms.com/index.html
@@ -42,7 +42,7 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
 })
 ```
 
-### Android App
+## Android App
 
 [The Android App](https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk) is a native application
 built using Kotlin with material design principles. This app must be installed on an android phone before you can start
@@ -50,7 +50,7 @@ sending and receiving SMS messages.
 
 [<img src=".github/ghbadge.png" alt="Get it on GitHub" height="80">](https://github.com/NdoleStudio/httpsms/releases/)
 
-### Chat/forum
+## Chat/forum
 
 There are a few ways to get in touch with me and/or the rest of the community. Feel free to use any of these methods. Whatever
 works best for you:
