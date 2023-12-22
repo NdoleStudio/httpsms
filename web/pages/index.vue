@@ -697,7 +697,12 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
         </v-row>
         <v-row>
           <v-col>
-            <v-alert type="info" :icon="mdiLightbulbOn60" prominent text>
+            <v-alert
+              color="info"
+              :icon="$vuetify.breakpoint.mdAndUp ? mdiLightbulbOn60 : undefined"
+              :prominent="$vuetify.breakpoint.mdAndUp"
+              text
+            >
               Feel free to <a href="mailto:arnold@httpsms.com">contact us</a> if
               you need a bigger plan, or if you want us to install the httpSMS
               API on your dedicated server. If would still like to support us,
@@ -726,7 +731,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
         <v-col>
           <v-expansion-panels focusable>
             <v-expansion-panel>
-              <v-expansion-panel-header>
+              <v-expansion-panel-header class="text-h6">
                 Can I install the app on my Iphone?
               </v-expansion-panel-header>
               <v-expansion-panel-content>
@@ -738,7 +743,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
               </v-expansion-panel-content>
             </v-expansion-panel>
             <v-expansion-panel>
-              <v-expansion-panel-header>
+              <v-expansion-panel-header class="text-h6">
                 What's the minimum supported Android version?
               </v-expansion-panel-header>
               <v-expansion-panel-content>
@@ -750,7 +755,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
               </v-expansion-panel-content>
             </v-expansion-panel>
             <v-expansion-panel>
-              <v-expansion-panel-header>
+              <v-expansion-panel-header class="text-h6">
                 Can I send unlimited number of messages per month?
               </v-expansion-panel-header>
               <v-expansion-panel-content>
