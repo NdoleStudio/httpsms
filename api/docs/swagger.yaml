@@ -1,0 +1,2395 @@
+basePath: /v1
+definitions:
+  entities.BillingUsage:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      end_timestamp:
+        example: "2022-01-31T23:59:59+00:00"
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      received_messages:
+        example: 465
+        type: integer
+      sent_messages:
+        example: 321
+        type: integer
+      start_timestamp:
+        example: "2022-01-01T00:00:00+00:00"
+        type: string
+      total_cost:
+        example: 0
+        type: integer
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - created_at
+      - end_timestamp
+      - id
+      - received_messages
+      - sent_messages
+      - start_timestamp
+      - total_cost
+      - updated_at
+      - user_id
+    type: object
+  entities.Discord:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      incoming_channel_id:
+        example: "1095780203256627291"
+        type: string
+      name:
+        example: Game Server
+        type: string
+      server_id:
+        example: "1095778291488653372"
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - created_at
+      - id
+      - incoming_channel_id
+      - name
+      - server_id
+      - updated_at
+      - user_id
+    type: object
+  entities.Heartbeat:
+    properties:
+      charging:
+        example: true
+        type: boolean
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      owner:
+        example: "+18005550199"
+        type: string
+      timestamp:
+        example: "2022-06-05T14:26:01.520828+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+      version:
+        example: 344c10f
+        type: string
+    required:
+      - charging
+      - id
+      - owner
+      - timestamp
+      - user_id
+      - version
+    type: object
+  entities.Message:
+    properties:
+      can_be_polled:
+        example: false
+        type: boolean
+      contact:
+        example: "+18005550100"
+        type: string
+      content:
+        example: This is a sample text message
+        type: string
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      delivered_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      expired_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      failed_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      failure_reason:
+        example: UNKNOWN
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      last_attempted_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      max_send_attempts:
+        example: 1
+        type: integer
+      order_timestamp:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      owner:
+        example: "+18005550199"
+        type: string
+      received_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      request_id:
+        example: 153554b5-ae44-44a0-8f4f-7bbac5657ad4
+        type: string
+      request_received_at:
+        example: "2022-06-05T14:26:01.520828+03:00"
+        type: string
+      scheduled_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      send_attempt_count:
+        example: 0
+        type: integer
+      send_time:
+        description:
+          SendDuration is the number of nanoseconds from when the request
+          was received until when the mobile phone send the message
+        example: 133414
+        type: integer
+      sent_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      sim:
+        allOf:
+          - $ref: "#/definitions/entities.SIM"
+        description: |-
+          SIM is the SIM card to use to send the message
+          * SMS1: use the SIM card in slot 1
+          * SMS2: use the SIM card in slot 2
+          * DEFAULT: used the default communication SIM card
+        example: DEFAULT
+      status:
+        example: pending
+        type: string
+      type:
+        example: mobile-terminated
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - can_be_polled
+      - contact
+      - content
+      - created_at
+      - delivered_at
+      - expired_at
+      - failed_at
+      - failure_reason
+      - id
+      - last_attempted_at
+      - max_send_attempts
+      - order_timestamp
+      - owner
+      - received_at
+      - request_id
+      - request_received_at
+      - scheduled_at
+      - send_attempt_count
+      - send_time
+      - sent_at
+      - sim
+      - status
+      - type
+      - updated_at
+      - user_id
+    type: object
+  entities.MessageThread:
+    properties:
+      color:
+        example: indigo
+        type: string
+      contact:
+        example: "+18005550100"
+        type: string
+      created_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703ca
+        type: string
+      is_archived:
+        example: false
+        type: boolean
+      last_message_content:
+        example: This is a sample message content
+        type: string
+      last_message_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703ca
+        type: string
+      order_timestamp:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      owner:
+        example: "+18005550199"
+        type: string
+      status:
+        example: PENDING
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - color
+      - contact
+      - created_at
+      - id
+      - is_archived
+      - last_message_content
+      - last_message_id
+      - order_timestamp
+      - owner
+      - status
+      - updated_at
+      - user_id
+    type: object
+  entities.Phone:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      fcm_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      max_send_attempts:
+        description:
+          MaxSendAttempts determines how many times to retry sending an
+          SMS message
+        example: 2
+        type: integer
+      message_expiration_seconds:
+        description:
+          MessageExpirationSeconds is the duration in seconds after sending
+          a message when it is considered to be expired.
+        type: integer
+      messages_per_minute:
+        example: 1
+        type: integer
+      phone_number:
+        example: "+18005550199"
+        type: string
+      sim:
+        $ref: "#/definitions/entities.SIM"
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - created_at
+      - fcm_token
+      - id
+      - max_send_attempts
+      - message_expiration_seconds
+      - messages_per_minute
+      - phone_number
+      - sim
+      - updated_at
+      - user_id
+    type: object
+  entities.SIM:
+    enum:
+      - SIM1
+      - SIM2
+    type: string
+    x-enum-varnames:
+      - SIM1
+      - SIM2
+  entities.SubscriptionName:
+    enum:
+      - free
+      - pro-monthly
+      - pro-yearly
+      - ultra-monthly
+      - ultra-yearly
+      - pro-lifetime
+      - 20k-monthly
+      - 20k-yearly
+    type: string
+    x-enum-varnames:
+      - SubscriptionNameFree
+      - SubscriptionNameProMonthly
+      - SubscriptionNameProYearly
+      - SubscriptionNameUltraMonthly
+      - SubscriptionNameUltraYearly
+      - SubscriptionNameProLifetime
+      - SubscriptionName20KMonthly
+      - SubscriptionName20KYearly
+  entities.User:
+    properties:
+      active_phone_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      api_key:
+        example: xyz
+        type: string
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      email:
+        example: name@email.com
+        type: string
+      id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+      notification_heartbeat_enabled:
+        example: true
+        type: boolean
+      notification_message_status_enabled:
+        example: true
+        type: boolean
+      notification_webhook_enabled:
+        example: true
+        type: boolean
+      subscription_ends_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      subscription_id:
+        example: 8f9c71b8-b84e-4417-8408-a62274f65a08
+        type: string
+      subscription_name:
+        allOf:
+          - $ref: "#/definitions/entities.SubscriptionName"
+        example: free
+      subscription_renews_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      subscription_status:
+        example: on_trial
+        type: string
+      timezone:
+        example: Europe/Helsinki
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+    required:
+      - active_phone_id
+      - api_key
+      - created_at
+      - email
+      - id
+      - notification_heartbeat_enabled
+      - notification_message_status_enabled
+      - notification_webhook_enabled
+      - subscription_ends_at
+      - subscription_id
+      - subscription_name
+      - subscription_renews_at
+      - subscription_status
+      - timezone
+      - updated_at
+    type: object
+  entities.Webhook:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      events:
+        example:
+          - "[message.phone.received]"
+        items:
+          type: string
+        type: array
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      phone_numbers:
+        example:
+          - "[+18005550199"
+          - +18005550100]
+        items:
+          type: string
+        type: array
+      signing_key:
+        example: DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      url:
+        example: https://example.com
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - created_at
+      - events
+      - id
+      - phone_numbers
+      - signing_key
+      - updated_at
+      - url
+      - user_id
+    type: object
+  requests.DiscordStore:
+    properties:
+      incoming_channel_id:
+        type: string
+      name:
+        type: string
+      server_id:
+        type: string
+    required:
+      - incoming_channel_id
+      - name
+      - server_id
+    type: object
+  requests.DiscordUpdate:
+    properties:
+      incoming_channel_id:
+        type: string
+      name:
+        type: string
+      server_id:
+        type: string
+    required:
+      - incoming_channel_id
+      - name
+      - server_id
+    type: object
+  requests.HeartbeatStore:
+    properties:
+      charging:
+        type: boolean
+      owner:
+        type: string
+    required:
+      - charging
+      - owner
+    type: object
+  requests.MessageBulkSend:
+    properties:
+      content:
+        example: This is a sample text message
+        type: string
+      from:
+        example: "+18005550199"
+        type: string
+      request_id:
+        description:
+          RequestID is an optional parameter used to track a request from
+          the client's perspective
+        example: 153554b5-ae44-44a0-8f4f-7bbac5657ad4
+        type: string
+      to:
+        example:
+          - "+18005550100"
+          - "+18005550100"
+        items:
+          type: string
+        type: array
+    required:
+      - content
+      - from
+      - to
+    type: object
+  requests.MessageEvent:
+    properties:
+      event_name:
+        description: |-
+          EventName is the type of event
+          * SENT: is emitted when a message is sent by the mobile phone
+          * FAILED: is event is emitted when the message could not be sent by the mobile phone
+          * DELIVERED: is event is emitted when a delivery report has been received by the mobile phone
+        example: SENT
+        type: string
+      reason:
+        description: Reason is the exact error message in case the event is an error
+        type: string
+      timestamp:
+        description:
+          Timestamp is the time when the event was emitted, Please send
+          the timestamp in UTC with as much precision as possible
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+    required:
+      - event_name
+      - reason
+      - timestamp
+    type: object
+  requests.MessageReceive:
+    properties:
+      content:
+        example: This is a sample text message received on a phone
+        type: string
+      from:
+        example: "+18005550199"
+        type: string
+      sim:
+        allOf:
+          - $ref: "#/definitions/entities.SIM"
+        description: SIM card that received the message
+        example: SIM1
+      timestamp:
+        description:
+          Timestamp is the time when the event was emitted, Please send
+          the timestamp in UTC with as much precision as possible
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
+      to:
+        example: "+18005550100"
+        type: string
+    required:
+      - content
+      - from
+      - sim
+      - timestamp
+      - to
+    type: object
+  requests.MessageSend:
+    properties:
+      content:
+        example: This is a sample text message
+        type: string
+      from:
+        example: "+18005550199"
+        type: string
+      request_id:
+        description:
+          RequestID is an optional parameter used to track a request from
+          the client's perspective
+        example: 153554b5-ae44-44a0-8f4f-7bbac5657ad4
+        type: string
+      to:
+        example: "+18005550100"
+        type: string
+    required:
+      - content
+      - from
+      - to
+    type: object
+  requests.MessageThreadUpdate:
+    properties:
+      is_archived:
+        example: true
+        type: boolean
+    required:
+      - is_archived
+    type: object
+  requests.PhoneUpsert:
+    properties:
+      fcm_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
+        type: string
+      max_send_attempts:
+        description:
+          MaxSendAttempts is the number of attempts when sending an SMS
+          message to handle the case where the phone is offline.
+        example: 2
+        type: integer
+      message_expiration_seconds:
+        description:
+          MessageExpirationSeconds is the duration in seconds after sending
+          a message when it is considered to be expired.
+        example: 12345
+        type: integer
+      messages_per_minute:
+        example: 1
+        type: integer
+      phone_number:
+        example: "+18005550199"
+        type: string
+      sim:
+        description:
+          SIM is the SIM slot of the phone in case the phone has more than
+          1 SIM slot
+        example: SIM1
+        type: string
+    required:
+      - fcm_token
+      - max_send_attempts
+      - message_expiration_seconds
+      - messages_per_minute
+      - phone_number
+      - sim
+    type: object
+  requests.UserNotificationUpdate:
+    properties:
+      heartbeat_enabled:
+        example: true
+        type: boolean
+      message_status_enabled:
+        example: true
+        type: boolean
+      webhook_enabled:
+        example: true
+        type: boolean
+    required:
+      - heartbeat_enabled
+      - message_status_enabled
+      - webhook_enabled
+    type: object
+  requests.UserUpdate:
+    properties:
+      active_phone_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      timezone:
+        example: Europe/Helsinki
+        type: string
+    required:
+      - active_phone_id
+      - timezone
+    type: object
+  requests.WebhookStore:
+    properties:
+      events:
+        items:
+          type: string
+        type: array
+      phone_numbers:
+        example:
+          - "+18005550100"
+          - "+18005550100"
+        items:
+          type: string
+        type: array
+      signing_key:
+        type: string
+      url:
+        type: string
+    required:
+      - events
+      - phone_numbers
+      - signing_key
+      - url
+    type: object
+  requests.WebhookUpdate:
+    properties:
+      events:
+        items:
+          type: string
+        type: array
+      phone_numbers:
+        example:
+          - "+18005550100"
+          - "+18005550100"
+        items:
+          type: string
+        type: array
+      signing_key:
+        type: string
+      url:
+        type: string
+    required:
+      - events
+      - phone_numbers
+      - signing_key
+      - url
+    type: object
+  responses.BadRequest:
+    properties:
+      data:
+        example: The request body is not a valid JSON string
+        type: string
+      message:
+        example: The request isn't properly formed
+        type: string
+      status:
+        example: error
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.BillingUsageResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.BillingUsage"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.BillingUsagesResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.BillingUsage"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.DiscordResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.Discord"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.DiscordsResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.Discord"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.HeartbeatResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.Heartbeat"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.HeartbeatsResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.Heartbeat"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.InternalServerError:
+    properties:
+      message:
+        example: We ran into an internal error while handling the request.
+        type: string
+      status:
+        example: error
+        type: string
+    required:
+      - message
+      - status
+    type: object
+  responses.MessageResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.Message"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.MessageThreadsResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.MessageThread"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.MessagesResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.Message"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.NoContent:
+    properties:
+      message:
+        example: action performed successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - message
+      - status
+    type: object
+  responses.NotFound:
+    properties:
+      message:
+        example: cannot find message with ID [32343a19-da5e-4b1b-a767-3298a73703ca]
+        type: string
+      status:
+        example: error
+        type: string
+    required:
+      - message
+      - status
+    type: object
+  responses.OkString:
+    properties:
+      data:
+        type: string
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.PhoneResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.Phone"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.PhonesResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.Phone"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.Unauthorized:
+    properties:
+      data:
+        example: Make sure your API key is set in the [X-API-Key] header in the request
+        type: string
+      message:
+        example: You are not authorized to carry out this request.
+        type: string
+      status:
+        example: error
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.UnprocessableEntity:
+    properties:
+      data:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      message:
+        example: validation errors while sending message
+        type: string
+      status:
+        example: error
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.UserResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.User"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.WebhookResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.Webhook"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.WebhooksResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.Webhook"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+host: api.httpsms.com
+info:
+  contact:
+    email: support@httpsms.com
+    name: HTTP SMS
+  description:
+    API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager)
+    via HTTP
+  license:
+    name: AGPL-3.0
+    url: https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
+  title: HTTP SMS API
+  version: "1.0"
+paths:
+  /billing/usage:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get the summary of sent and received messages for a user in the
+        current month
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.BillingUsageResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get Billing Usage.
+      tags:
+        - Billing
+  /billing/usage-history:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get billing usage records of sent and received messages for a user
+        in the past. It will be sorted by timestamp in descending order.
+      parameters:
+        - description: number of heartbeats to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: number of heartbeats to return
+          in: query
+          maximum: 100
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.BillingUsagesResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get billing usage history.
+      tags:
+        - Billing
+  /bulk-messages:
+    post:
+      consumes:
+        - application/json
+      description: Sends bulk SMS messages to multiple users from a CSV file.
+      produces:
+        - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Store bulk SMS file
+      tags:
+        - BulkSMS
+  /discord-integrations:
+    get:
+      consumes:
+        - application/json
+      description: Get the discord integrations of a user
+      parameters:
+        - description: number of discord integrations to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter discord integrations containing query
+          in: query
+          name: query
+          type: string
+        - description: number of discord integrations to return
+          in: query
+          maximum: 20
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.DiscordsResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get discord integrations of a user
+      tags:
+        - DiscordIntegration
+    post:
+      consumes:
+        - application/json
+      description: Store a discord integration for the authenticated user
+      parameters:
+        - description: Payload of the discord integration request
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.DiscordStore"
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: "#/definitions/responses.DiscordResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Store discord integration
+      tags:
+        - DiscordIntegration
+  /discord-integrations/{discordID}:
+    delete:
+      consumes:
+        - application/json
+      description: Delete a discord integration for a user
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the discord integration
+          in: path
+          name: discordID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete discord integration
+      tags:
+        - Webhooks
+    put:
+      consumes:
+        - application/json
+      description: Update a discord integration for the currently authenticated user
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the discord integration
+          in: path
+          name: discordID
+          required: true
+          type: string
+        - description: Payload of discord integration to update
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.DiscordUpdate"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.DiscordResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Update a discord integration
+      tags:
+        - DiscordIntegration
+  /discord/event:
+    post:
+      consumes:
+        - application/json
+      description: Publish a discord event to the registered listeners
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      summary: Consume a discord event
+      tags:
+        - Discord
+  /heartbeats:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get the last time a phone number requested for outstanding messages.
+        It will be sorted by timestamp in descending order.
+      parameters:
+        - default: "+18005550199"
+          description: the owner's phone number
+          in: query
+          name: owner
+          required: true
+          type: string
+        - description: number of heartbeats to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter containing query
+          in: query
+          name: query
+          type: string
+        - description: number of heartbeats to return
+          in: query
+          maximum: 20
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.HeartbeatsResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get heartbeats of an owner phone number
+      tags:
+        - Heartbeats
+    post:
+      consumes:
+        - application/json
+      description:
+        Store the heartbeat to make notify that a phone number is still
+        active
+      parameters:
+        - description: Payload of the heartbeat request
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.HeartbeatStore"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.HeartbeatResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Register heartbeat of an owner phone number
+      tags:
+        - Heartbeats
+  /integration/3cx/messages:
+    post:
+      consumes:
+        - application/json
+      description: Sends an SMS message from the 3CX platform
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      summary: Sends a 3CX SMS message
+      tags:
+        - 3CXIntegration
+  /lemonsqueezy/event:
+    post:
+      consumes:
+        - application/json
+      description: Publish a lemonsqueezy event to the registered listeners
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      summary: Consume a lemonsqueezy event
+      tags:
+        - Lemonsqueezy
+  /message-threads:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get list of contacts which a phone number has communicated with
+        (threads). It will be sorted by timestamp in descending order.
+      parameters:
+        - default: "+18005550199"
+          description: owner phone number
+          in: query
+          name: owner
+          required: true
+          type: string
+        - description: number of messages to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter message threads containing query
+          in: query
+          name: query
+          type: string
+        - description: number of messages to return
+          in: query
+          maximum: 20
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageThreadsResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get message threads for a phone number
+      tags:
+        - Channel Threads
+  /message-threads/{messageThreadID}:
+    put:
+      consumes:
+        - application/json
+      description: Updates the details of a message thread
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the message thread
+          in: path
+          name: messageThreadID
+          required: true
+          type: string
+        - description: Payload of message thread details to update
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageThreadUpdate"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Update a message thread
+      tags:
+        - Channel Threads
+  /messages:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get list of messages which are sent between 2 phone numbers. It
+        will be sorted by timestamp in descending order.
+      parameters:
+        - default: "+18005550199"
+          description: the owner's phone number
+          in: query
+          name: owner
+          required: true
+          type: string
+        - default: "+18005550100"
+          description: the contact's phone number
+          in: query
+          name: contact
+          required: true
+          type: string
+        - description: number of messages to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter messages containing query
+          in: query
+          name: query
+          type: string
+        - description: number of messages to return
+          in: query
+          maximum: 20
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessagesResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get messages which are sent between 2 phone numbers
+      tags:
+        - Messages
+  /messages/{messageID}/events:
+    post:
+      consumes:
+        - application/json
+      description:
+        Use this endpoint to send events for a message when it is failed,
+        sent or delivered by the mobile phone.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the message
+          in: path
+          name: messageID
+          required: true
+          type: string
+        - description: Payload of the event emitted.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageEvent"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Upsert an event for a message on the mobile phone
+      tags:
+        - Messages
+  /messages/bulk-send:
+    post:
+      consumes:
+        - application/json
+      description: Add bulk SMS messages to be sent by the android phone
+      parameters:
+        - description: Bulk send message request payload
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageBulkSend"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: "#/definitions/responses.MessagesResponse"
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Send bulk SMS messages
+      tags:
+        - Messages
+  /messages/outstanding:
+    get:
+      consumes:
+        - application/json
+      description: Get an outstanding message to be sent by an android phone
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703cb
+          description: The ID of the message
+          in: query
+          name: message_id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get an outstanding message
+      tags:
+        - Messages
+  /messages/receive:
+    post:
+      consumes:
+        - application/json
+      description: Add a new message received from a mobile phone
+      parameters:
+        - description: Received message request payload
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageReceive"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Receive a new SMS message from a mobile phone
+      tags:
+        - Messages
+  /messages/send:
+    post:
+      consumes:
+        - application/json
+      description: Add a new SMS message to be sent by the android phone
+      parameters:
+        - description: PostSend message request payload
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageSend"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Send a new SMS message
+      tags:
+        - Messages
+  /phones:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get list of phones which a user has registered on the http sms
+        application
+      parameters:
+        - description: number of heartbeats to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter phones containing query
+          in: query
+          name: query
+          type: string
+        - description: number of phones to return
+          in: query
+          maximum: 20
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhonesResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get phones of a user
+      tags:
+        - Phones
+    put:
+      consumes:
+        - application/json
+      description:
+        Updates properties of a user's phone. If the phone with this number
+        does not exist, a new one will be created. Think of this method like an 'upsert'
+      parameters:
+        - description: Payload of new phone number.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.PhoneUpsert"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Upsert Phone
+      tags:
+        - Phones
+  /phones/{phoneID}:
+    delete:
+      consumes:
+        - application/json
+      description: Delete a phone that has been sored in the database
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone
+          in: path
+          name: phoneID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete Phone
+      tags:
+        - Phones
+  /users/{userID}/notifications:
+    put:
+      consumes:
+        - application/json
+      description: Update the email notification settings for a user
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the user to update
+          in: path
+          name: userID
+          required: true
+          type: string
+        - description: User notification details to update
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.UserNotificationUpdate"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.UserResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Update notification settings
+      tags:
+        - Users
+  /users/me:
+    get:
+      consumes:
+        - application/json
+      description: Get details of the currently authenticated user
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.UserResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get current user
+      tags:
+        - Users
+    put:
+      consumes:
+        - application/json
+      description: Updates the details of the currently authenticated user
+      parameters:
+        - description: Payload of user details to update
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.UserUpdate"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Update a user
+      tags:
+        - Users
+  /users/subscription:
+    delete:
+      description: Cancel the subscription of the authenticated user.
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Cancel the user's subscription
+      tags:
+        - Users
+  /users/subscription-update-url:
+    get:
+      description: Fetches the subscription URL of the authenticated user.
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.OkString"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Currently authenticated user subscription update URL
+      tags:
+        - Users
+  /webhooks:
+    get:
+      consumes:
+        - application/json
+      description: Get the webhooks of a user
+      parameters:
+        - description: number of webhooks to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter webhooks containing query
+          in: query
+          name: query
+          type: string
+        - description: number of webhooks to return
+          in: query
+          maximum: 20
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.WebhooksResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get webhooks of a user
+      tags:
+        - Webhooks
+    post:
+      consumes:
+        - application/json
+      description: Store a webhook for the authenticated user
+      parameters:
+        - description: Payload of the webhook request
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.WebhookStore"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.WebhookResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Store a webhook
+      tags:
+        - Webhooks
+  /webhooks/{webhookID}:
+    delete:
+      consumes:
+        - application/json
+      description: Delete a webhook for a user
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the webhook
+          in: path
+          name: webhookID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete webhook
+      tags:
+        - Webhooks
+    put:
+      consumes:
+        - application/json
+      description: Update a webhook for the currently authenticated user
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the webhook
+          in: path
+          name: webhookID
+          required: true
+          type: string
+        - description: Payload of webhook details to update
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.WebhookUpdate"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.WebhookResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Update a webhook
+      tags:
+        - Webhooks
+schemes:
+  - https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: x-api-Key
+    type: apiKey
+swagger: "2.0"
