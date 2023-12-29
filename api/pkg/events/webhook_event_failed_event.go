@@ -16,6 +16,7 @@ type WebhookSendFailedPayload struct {
 	UserID                 entities.UserID `json:"user_id"`
 	EventID                string          `json:"event_id"`
 	EventType              string          `json:"event_type"`
+	EventPayload           string          `json:"event_payload"`
 	HTTPResponseStatusCode *int            `json:"http_response_status_code"`
 	ErrorMessage           string          `json:"error_message"`
 }

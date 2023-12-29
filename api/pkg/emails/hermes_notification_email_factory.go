@@ -91,6 +91,7 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 				{"Phone Number", factory.formatPhoneNumber(payload.Owner)},
 				{"HTTP Response Code", factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
 				{"Error Message / HTTP Response", payload.ErrorMessage},
+				{"Event Payload", payload.EventPayload},
 			},
 			Actions: []hermes.Action{
 				{

@@ -196,7 +196,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	requestCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	requestCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	request, err := service.createRequest(requestCtx, event, webhook)
@@ -331,12 +331,13 @@ func (service *WebhookService) handleWebhookSendFailed(ctx context.Context, even
 		EventID:                event.ID(),
 		Owner:                  owner,
 		EventType:              event.Type(),
+		EventPayload:           string(event.Data()),
 		HTTPResponseStatusCode: nil,
 		ErrorMessage:           err.Error(),
 	}
 
 	if errors.Is(err, context.DeadlineExceeded) {
-		payload.ErrorMessage = "TIMOUT after 5 seconds"
+		payload.ErrorMessage = "TIMOUT after 10 seconds"
 	}
 
 	if response != nil {
