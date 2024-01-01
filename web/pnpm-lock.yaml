@@ -176,8 +176,8 @@ devDependencies:
     specifier: ^2.1.0
     version: 2.1.0
   vue-jest:
-    specifier: ^3.0.4
-    version: 3.0.4(babel-core@7.0.0-bridge.0)(vue-template-compiler@2.7.15)(vue@2.7.15)
+    specifier: ^3.0.7
+    version: 3.0.7(babel-core@7.0.0-bridge.0)(vue-template-compiler@2.7.15)(vue@2.7.15)
   vue-meta:
     specifier: ^2.4.0
     version: 2.4.0
@@ -5893,8 +5893,6 @@ packages:
     requiresBuild: true
     dependencies:
       file-uri-to-path: 1.0.0
-    dev: false
-    optional: true
 
   /bluebird@3.7.2:
     resolution: {integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==}
@@ -7313,6 +7311,15 @@ packages:
   /de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
 
+  /deasync@0.1.29:
+    resolution: {integrity: sha512-EBtfUhVX23CE9GR6m+F8WPeImEE4hR/FW9RkK0PMl9V1t283s0elqsTD8EZjaKX28SY1BW2rYfCgNsAYdpamUw==}
+    engines: {node: '>=0.11.0'}
+    requiresBuild: true
+    dependencies:
+      bindings: 1.5.0
+      node-addon-api: 1.7.2
+    dev: true
+
   /debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
     peerDependencies:
@@ -8547,8 +8554,6 @@ packages:
   /file-uri-to-path@1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
     requiresBuild: true
-    dev: false
-    optional: true
 
   /fill-range@4.0.0:
     resolution: {integrity: sha512-VcpLTWqWDiTerugjj8e3+esbg+skS3M9e54UuR3iCeIDMXCLTsAH8hTSzDQU/X6/6t3eYkOKoZSef2PlU6U1XQ==}
@@ -11651,6 +11656,10 @@ packages:
       lower-case: 2.0.2
       tslib: 2.6.2
     dev: false
+
+  /node-addon-api@1.7.2:
+    resolution: {integrity: sha512-ibPK3iA+vaY1eEjESkQkM0BbCqFOaZMiXRTtdB0u7b4djtY6JnsjvPdUHVMg6xQt3B8fpTTWHI9A+ADjM9frzg==}
+    dev: true
 
   /node-cache@4.2.1:
     resolution: {integrity: sha512-BOb67bWg2dTyax5kdef5WfU3X8xu4wPg+zHzkvls0Q/QpYycIFRLEEIdAx9Wma43DxG6Qzn4illdZoYseKWa4A==}
@@ -15897,8 +15906,8 @@ packages:
     resolution: {integrity: sha512-BXq3jwIagosjgNVae6tkHzzIk6a8MHFtzAdwhnV5VlvPTFxDCvIttgSiHWjdGoTJvXtmRu5HacExfdarRcFhog==}
     dev: false
 
-  /vue-jest@3.0.4(babel-core@7.0.0-bridge.0)(vue-template-compiler@2.7.15)(vue@2.7.15):
-    resolution: {integrity: sha512-PY9Rwt4OyaVlA+KDJJ0614CbEvNOkffDI9g9moLQC/2DDoo0YrqZm7dHi13Q10uoK5Nt5WCYFdeAheOExPah0w==}
+  /vue-jest@3.0.7(babel-core@7.0.0-bridge.0)(vue-template-compiler@2.7.15)(vue@2.7.15):
+    resolution: {integrity: sha512-PIOxFM+wsBMry26ZpfBvUQ/DGH2hvp5khDQ1n51g3bN0TwFwTy4J85XVfxTRMukqHji/GnAoGUnlZ5Ao73K62w==}
     peerDependencies:
       babel-core: ^6.25.0 || ^7.0.0-0
       vue: ^2.x
@@ -15907,6 +15916,7 @@ packages:
       babel-core: 7.0.0-bridge.0(@babel/core@7.23.2)
       babel-plugin-transform-es2015-modules-commonjs: 6.26.2
       chalk: 2.4.2
+      deasync: 0.1.29
       extract-from-css: 0.4.4
       find-babel-config: 1.2.0
       js-beautify: 1.14.9
