@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@mdi/js": "^7.3.67",
-    "@nuxtjs/dotenv": "^1.4.1",
+    "@nuxtjs/dotenv": "^1.4.2",
     "@nuxtjs/firebase": "^8.2.2",
     "@nuxtjs/sitemap": "^2.4.0",
     "chart.js": "^4.4.0",
