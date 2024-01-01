@@ -79,7 +79,7 @@
     "stylelint-config-standard": "^34.0.0",
     "ts-jest": "^27.1.1",
     "vue-client-only": "^2.1.0",
-    "vue-jest": "^3.0.4",
+    "vue-jest": "^3.0.7",
     "vue-meta": "^2.4.0",
     "vue-no-ssr": "^1.1.1"
   }
