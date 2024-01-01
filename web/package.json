@@ -70,7 +70,7 @@
     "highlight.js": "^11.8.0",
     "jest": "^27.4.4",
     "lint-staged": "^14.0.1",
-    "node-fetch-native": "^1.4.1",
+    "node-fetch-native": "^1.6.1",
     "postcss-html": "^1.5.0",
     "prettier": "3.0.3",
     "stylelint": "^15.11.0",
