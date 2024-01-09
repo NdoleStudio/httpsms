@@ -110,8 +110,8 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	return thread, nil
 }
 
-// DeleteLastMessage in thread after a message has been deleted
-func (service *MessageThreadService) DeleteLastMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+// UpdateAfterDeletedMessage updates a thread after the last message has been deleted
+func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 

@@ -392,7 +392,7 @@ func (h *MessageHandler) Delete(c *fiber.Ctx) error {
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	messageID := c.Params("messageID")
-	if errors := h.validator.ValidateUUID(ctx, "messageID", messageID); len(errors) != 0 {
+	if errors := h.validator.ValidateUUID(ctx, messageID, "messageID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a message with ID [%s]", spew.Sdump(errors), messageID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")

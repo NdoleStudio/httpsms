@@ -34,6 +34,7 @@ func NewMessageThreadListener(
 
 	return l, map[string]events.EventListener{
 		events.EventTypeMessageAPISent:               l.OnMessageAPISent,
+		events.MessageAPIDeleted:                     l.onMessageDeleted,
 		events.EventTypeMessagePhoneSending:          l.OnMessagePhoneSending,
 		events.EventTypeMessagePhoneSent:             l.OnMessagePhoneSent,
 		events.EventTypeMessagePhoneDelivered:        l.OnMessagePhoneDelivered,
@@ -67,6 +68,25 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageDeleted handles the events.MessageAPIDeleted event
+func (listener *MessageThreadListener) onMessageDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageAPIDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.UpdateAfterDeletedMessage(ctx, payload.UserID, payload.MessageID); err != nil {
+		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", payload.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
