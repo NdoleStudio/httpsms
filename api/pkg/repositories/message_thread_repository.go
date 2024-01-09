@@ -24,4 +24,7 @@ type MessageThreadRepository interface {
 
 	// Index message threads for an owner
 	Index(ctx context.Context, userID entities.UserID, owner string, archived bool, params IndexParams) (*[]entities.MessageThread, error)
+
+	// UpdateAfterDeletedMessage updates a thread after the original message has been deleted
+	UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error
 }

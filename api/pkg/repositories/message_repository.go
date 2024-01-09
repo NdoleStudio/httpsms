@@ -23,4 +23,7 @@ type MessageRepository interface {
 
 	// GetOutstanding fetches an entities.Message which is outstanding
 	GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error)
+
+	// Delete an entities.Message by ID
+	Delete(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error
 }

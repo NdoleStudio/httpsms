@@ -62,12 +62,12 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusSending && thread.LastMessageID == params.MessageID {
+	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusSending && thread.HasLastMessage(params.MessageID) {
 		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("thread [%s] has timestamp [%s] and status [%s] which is greater than timestamp [%s] for message [%s] and status [%s]", thread.ID, thread.OrderTimestamp, thread.Status, params.Timestamp, params.MessageID, params.Status)))
 		return nil
 	}
 
-	if thread.Status == entities.MessageStatusDelivered && thread.LastMessageID == params.MessageID {
+	if thread.Status == entities.MessageStatusDelivered && thread.LastMessageID != nil && thread.HasLastMessage(params.MessageID) {
 		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("thread [%s] already has status [%s] not updating with status [%s] for message [%s]", thread.ID, thread.Status, params.Status, params.MessageID)))
 		return nil
 	}
@@ -110,6 +110,20 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	return thread, nil
 }
 
+// DeleteLastMessage in thread after a message has been deleted
+func (service *MessageThreadService) DeleteLastMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.UpdateAfterDeletedMessage(ctx, userID, messageID); err != nil {
+		msg := fmt.Sprintf("cannot delete last message from thread with messageID [%s] and userID [%s]", messageID, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("last message has been removed from thread with messageID [%s] and userID [%s]", messageID, userID))
+	return nil
+}
+
 func (service *MessageThreadService) createThread(ctx context.Context, params MessageThreadUpdateParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -123,9 +137,9 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		UserID:             params.UserID,
 		IsArchived:         false,
 		Color:              service.getColor(),
-		LastMessageContent: params.Content,
+		LastMessageContent: &params.Content,
 		Status:             params.Status,
-		LastMessageID:      params.MessageID,
+		LastMessageID:      &params.MessageID,
 		CreatedAt:          time.Now().UTC(),
 		UpdatedAt:          time.Now().UTC(),
 		OrderTimestamp:     params.Timestamp,

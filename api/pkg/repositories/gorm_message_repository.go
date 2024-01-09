@@ -35,6 +35,20 @@ func NewGormMessageRepository(
 	}
 }
 
+// Delete a message by the ID
+func (repository *gormMessageRepository) Delete(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageID).Delete(&entities.Message{}).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete message with ID [%s] for user with ID [%s]", messageID, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // Index entities.Message between 2 parties
 func (repository *gormMessageRepository) Index(ctx context.Context, userID entities.UserID, owner string, contact string, params IndexParams) (*[]entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)

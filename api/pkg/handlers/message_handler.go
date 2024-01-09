@@ -55,6 +55,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
 	router.Post("/messages/:messageID/events", h.PostEvent)
+	router.Delete("/messages/:messageID", h.Delete)
 }
 
 // PostSend a new entities.Message
@@ -367,4 +368,52 @@ func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "message received successfully", message)
+}
+
+// Delete a message
+// @Summary      Delete a message from the database.
+// @Description  Delete a message from the database and removes the message content from the list of threads.
+// @Security	 ApiKeyAuth
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param 		 messageID 	path		string 							true 	"ID of the message" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      204  		{object} 	responses.NoContent
+// @Failure      400  		{object}  	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure 	 404		{object}	responses.NotFound
+// @Failure      422  		{object} 	responses.UnprocessableEntity
+// @Failure      500  		{object}  	responses.InternalServerError
+// @Router       /messages/{messageID} [delete]
+func (h *MessageHandler) Delete(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	messageID := c.Params("messageID")
+	if errors := h.validator.ValidateUUID(ctx, "messageID", messageID); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while deleting a message with ID [%s]", spew.Sdump(errors), messageID)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
+	}
+
+	message, err := h.service.GetMessage(ctx, h.userIDFomContext(c), uuid.MustParse(messageID))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", messageID))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", messageID)
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	if err = h.service.DeleteMessage(ctx, c.OriginalURL(), message); err != nil {
+		msg := fmt.Sprintf("cannot delete message with ID [%s] for user with ID [%s]", messageID, message.UserID)
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseNoContent(c, "message deleted successfully")
 }

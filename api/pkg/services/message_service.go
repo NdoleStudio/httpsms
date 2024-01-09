@@ -92,6 +92,43 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 	return message, nil
 }
 
+// DeleteMessage deletes a message from the database
+func (service *MessageService) DeleteMessage(ctx context.Context, source string, message *entities.Message) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	if err := service.repository.Delete(ctx, message.UserID, message.ID); err != nil {
+		msg := fmt.Sprintf("could not delete message with ID [%s] for user wit ID [%s]", message.ID, message.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	event, err := service.createEvent(events.MessageAPIDeleted, source, &events.MessageAPIDeletedPayload{
+		MessageID: message.ID,
+		UserID:    message.UserID,
+		Owner:     message.Owner,
+		RequestID: message.RequestID,
+		Contact:   message.Contact,
+		Timestamp: time.Now().UTC(),
+		Content:   message.Content,
+		SIM:       message.SIM,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
+	return nil
+}
+
 // MessageGetParams parameters for sending a new message
 type MessageGetParams struct {
 	repositories.IndexParams

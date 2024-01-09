@@ -35,6 +35,27 @@ func NewGormMessageThreadRepository(
 	}
 }
 
+// UpdateAfterDeletedMessage updates a thread after the original message has been deleted
+func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).Model(&entities.MessageThread{}).
+		Where("user_id = ?", userID).
+		Where("last_message_id = ?", messageID).
+		Updates(map[string]any{
+			"last_message_id":      nil,
+			"last_message_content": nil,
+			"status":               entities.MessageStatusDeleted,
+		}).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot update thread after message is deleted with userID [%s] and messageID [%s]", userID, messageID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // Store a new entities.MessageThread
 func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread *entities.MessageThread) error {
 	ctx, span := repository.tracer.Start(ctx)
