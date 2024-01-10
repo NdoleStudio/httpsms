@@ -161,7 +161,7 @@ const docTemplate = `{
                 "tags": [
                     "BulkSMS"
                 ],
-                "summary": "Save bulk SMS file",
+                "summary": "Store bulk SMS file",
                 "responses": {
                     "202": {
                         "description": "Accepted",
@@ -276,7 +276,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Save a discord integration for the authenticated user",
+                "description": "Store a discord integration for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -286,7 +286,7 @@ const docTemplate = `{
                 "tags": [
                     "DiscordIntegration"
                 ],
-                "summary": "Save discord integration",
+                "summary": "Store discord integration",
                 "parameters": [
                     {
                         "description": "Payload of the discord integration request",
@@ -598,7 +598,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Save the heartbeat to make notify that a phone number is still active",
+                "description": "Store the heartbeat to make notify that a phone number is still active",
                 "consumes": [
                     "application/json"
                 ],
@@ -1224,6 +1224,74 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/messages/{messageID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a message from the database and removes the message content from the list of threads.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Delete a message from the database.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the message",
+                        "name": "messageID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NoContent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
                         }
                     },
                     "422": {
@@ -1878,7 +1946,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Save a webhook for the authenticated user",
+                "description": "Store a webhook for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -1888,7 +1956,7 @@ const docTemplate = `{
                 "tags": [
                     "Webhooks"
                 ],
-                "summary": "Save a webhook",
+                "summary": "Store a webhook",
                 "parameters": [
                     {
                         "description": "Payload of the webhook request",
@@ -2218,6 +2286,7 @@ const docTemplate = `{
                 "request_id",
                 "request_received_at",
                 "scheduled_at",
+                "scheduled_send_time",
                 "send_attempt_count",
                 "send_time",
                 "sent_at",
@@ -2293,6 +2362,10 @@ const docTemplate = `{
                     "example": "2022-06-05T14:26:01.520828+03:00"
                 },
                 "scheduled_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:09.527976+03:00"
+                },
+                "scheduled_send_time": {
                     "type": "string",
                     "example": "2022-06-05T14:26:09.527976+03:00"
                 },
@@ -2481,7 +2554,9 @@ const docTemplate = `{
                 "ultra-yearly",
                 "pro-lifetime",
                 "20k-monthly",
-                "20k-yearly"
+                "100k-monthly",
+                "20k-yearly",
+                "100k-yearly"
             ],
             "x-enum-varnames": [
                 "SubscriptionNameFree",
@@ -2491,7 +2566,9 @@ const docTemplate = `{
                 "SubscriptionNameUltraYearly",
                 "SubscriptionNameProLifetime",
                 "SubscriptionName20KMonthly",
-                "SubscriptionName20KYearly"
+                "SubscriptionName100KMonthly",
+                "SubscriptionName20KYearly",
+                "SubscriptionName100KYearly"
             ]
         },
         "entities.User": {
@@ -2806,6 +2883,11 @@ const docTemplate = `{
                     "description": "RequestID is an optional parameter used to track a request from the client's perspective",
                     "type": "string",
                     "example": "153554b5-ae44-44a0-8f4f-7bbac5657ad4"
+                },
+                "send_at": {
+                    "description": "SendAt is an optional parameter used to schedule a message to be sent at a later time",
+                    "type": "string",
+                    "example": "2022-06-05T14:26:09.527976+03:00"
                 },
                 "to": {
                     "type": "string",

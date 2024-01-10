@@ -153,6 +153,9 @@ definitions:
       scheduled_at:
         example: "2022-06-05T14:26:09.527976+03:00"
         type: string
+      scheduled_send_time:
+        example: "2022-06-05T14:26:09.527976+03:00"
+        type: string
       send_attempt_count:
         example: 0
         type: integer
@@ -204,6 +207,7 @@ definitions:
       - request_id
       - request_received_at
       - scheduled_at
+      - scheduled_send_time
       - send_attempt_count
       - send_time
       - sent_at
@@ -330,7 +334,9 @@ definitions:
       - ultra-yearly
       - pro-lifetime
       - 20k-monthly
+      - 100k-monthly
       - 20k-yearly
+      - 100k-yearly
     type: string
     x-enum-varnames:
       - SubscriptionNameFree
@@ -340,7 +346,9 @@ definitions:
       - SubscriptionNameUltraYearly
       - SubscriptionNameProLifetime
       - SubscriptionName20KMonthly
+      - SubscriptionName100KMonthly
       - SubscriptionName20KYearly
+      - SubscriptionName100KYearly
   entities.User:
     properties:
       active_phone_id:
@@ -577,6 +585,12 @@ definitions:
           RequestID is an optional parameter used to track a request from
           the client's perspective
         example: 153554b5-ae44-44a0-8f4f-7bbac5657ad4
+        type: string
+      send_at:
+        description:
+          SendAt is an optional parameter used to schedule a message to
+          be sent at a later time
+        example: "2022-06-05T14:26:09.527976+03:00"
         type: string
       to:
         example: "+18005550100"
@@ -1688,6 +1702,52 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Get messages which are sent between 2 phone numbers
+      tags:
+        - Messages
+  /messages/{messageID}:
+    delete:
+      consumes:
+        - application/json
+      description:
+        Delete a message from the database and removes the message content
+        from the list of threads.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the message
+          in: path
+          name: messageID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a message from the database.
       tags:
         - Messages
   /messages/{messageID}/events:

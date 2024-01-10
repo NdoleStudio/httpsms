@@ -95,7 +95,7 @@
               >
                 <v-icon>{{ mdiAccount }}</v-icon>
               </v-avatar>
-              <v-menu v-if="canResend(message)" offset-y>
+              <v-menu offset-y>
                 <template #activator="{ on }">
                   <v-btn icon text class="mt-2" v-on="on">
                     <v-icon>{{ mdiDotsVertical }}</v-icon>
@@ -103,13 +103,26 @@
                 </template>
                 <v-list class="px-2" nav dense>
                   <v-list-item-group v-model="selectedMenuItem">
-                    <v-list-item @click.prevent="resendMessage(message)">
+                    <v-list-item
+                      v-if="canResend(message)"
+                      @click.prevent="resendMessage(message)"
+                    >
                       <v-list-item-icon class="pl-2">
                         <v-icon dense>{{ mdiRefresh }}</v-icon>
                       </v-list-item-icon>
                       <v-list-item-content class="ml-n3">
                         <v-list-item-title class="pr-16 py-1">
                           Resend Message
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item @click.prevent="deleteMessage(message)">
+                      <v-list-item-icon class="pl-2">
+                        <v-icon dense color="error">{{ mdiDelete }}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content class="ml-n3">
+                        <v-list-item-title class="pr-16 py-1">
+                          Delete Message
                         </v-list-item-title>
                       </v-list-item-content>
                     </v-list-item>
@@ -243,6 +256,7 @@ import {
   mdiDotsVertical,
   mdiArrowLeft,
   mdiCheckAll,
+  mdiDelete,
   mdiCheck,
   mdiAlert,
   mdiPackageUp,
@@ -270,6 +284,7 @@ export default Vue.extend({
       mdiCheckAll,
       mdiCheck,
       mdiAlert,
+      mdiDelete,
       hideMessages: true,
       loadingMessages: false,
       messages: [] as Message[],
@@ -351,12 +366,12 @@ export default Vue.extend({
         .finally(() => {
           setTimeout(() => {
             this.loadingMessages = false
-          }, 900)
+          }, 1100)
         })
       this.hideMessages = hideMessages
       setTimeout(() => {
         this.scrollToElement()
-      }, 750)
+      }, 950)
     },
 
     async loadData() {
@@ -408,6 +423,16 @@ export default Vue.extend({
         to: message.contact,
         content: message.content,
       })
+
+      setTimeout(() => {
+        this.selectedMenuItem = -1
+      }, 1000)
+
+      this.loadMessages(false)
+    },
+
+    async deleteMessage(message: Message) {
+      await this.$store.dispatch('deleteMessage', message.id)
 
       setTimeout(() => {
         this.selectedMenuItem = -1
