@@ -536,7 +536,7 @@ export const actions = {
           params: {
             contact: context.getters.getThread.contact,
             owner: context.getters.getThread.owner,
-            limit: 100,
+            limit: 50,
           },
         })
         .then((response: AxiosResponse) => {
