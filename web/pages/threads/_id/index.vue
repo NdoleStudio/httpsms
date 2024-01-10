@@ -95,7 +95,7 @@
               >
                 <v-icon>{{ mdiAccount }}</v-icon>
               </v-avatar>
-              <v-menu offset-y>
+              <v-menu v-if="isMT(message)" offset-y>
                 <template #activator="{ on }">
                   <v-btn icon text class="mt-2" v-on="on">
                     <v-icon>{{ mdiDotsVertical }}</v-icon>
@@ -195,6 +195,40 @@
                   </v-tooltip>
                 </div>
               </div>
+              <v-menu v-if="!isMT(message)" offset-y>
+                <template #activator="{ on }">
+                  <v-btn icon text class="mt-2" v-on="on">
+                    <v-icon>{{ mdiDotsVertical }}</v-icon>
+                  </v-btn>
+                </template>
+                <v-list class="px-2" nav dense>
+                  <v-list-item-group v-model="selectedMenuItem">
+                    <v-list-item
+                      v-if="canResend(message)"
+                      @click.prevent="resendMessage(message)"
+                    >
+                      <v-list-item-icon class="pl-2">
+                        <v-icon dense>{{ mdiRefresh }}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content class="ml-n3">
+                        <v-list-item-title class="pr-16 py-1">
+                          Resend Message
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item @click.prevent="deleteMessage(message)">
+                      <v-list-item-icon class="pl-2">
+                        <v-icon dense color="error">{{ mdiDelete }}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content class="ml-n3">
+                        <v-list-item-title class="pr-16 py-1">
+                          Delete Message
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                  </v-list-item-group>
+                </v-list>
+              </v-menu>
             </v-col>
           </v-row>
         </div>
