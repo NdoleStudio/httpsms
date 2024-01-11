@@ -156,29 +156,29 @@ func (h *MessageThreadHandler) Delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
-	messageID := c.Params("messageThreadID")
-	if errors := h.validator.ValidateUUID(ctx, messageID, "messageThreadID"); len(errors) != 0 {
-		msg := fmt.Sprintf("validation errors [%s], while deleting a message thread with ID [%s]", spew.Sdump(errors), messageID)
+	messageThreadID := c.Params("messageThreadID")
+	if errors := h.validator.ValidateUUID(ctx, messageThreadID, "messageThreadID"); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while deleting a thread thread with ID [%s]", spew.Sdump(errors), messageThreadID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
-		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting a message thread")
+		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting a thread thread")
 	}
 
-	message, err := h.service.GetThread(ctx, h.userIDFomContext(c), uuid.MustParse(messageID))
+	thread, err := h.service.GetThread(ctx, h.userIDFomContext(c), uuid.MustParse(messageThreadID))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return h.responseNotFound(c, fmt.Sprintf("cannot find message thread with ID [%s]", messageID))
+		return h.responseNotFound(c, fmt.Sprintf("cannot find thread thread with ID [%s]", messageThreadID))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot find message thread with id [%s]", messageID)
+		msg := fmt.Sprintf("cannot find thread thread with id [%s]", messageThreadID)
 		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return h.responseInternalServerError(c)
 	}
 
-	if err = h.service.DeleteThread(ctx, c.OriginalURL(), message); err != nil {
-		msg := fmt.Sprintf("cannot delete message thread with ID [%s] for user with ID [%s]", messageID, message.UserID)
+	if err = h.service.DeleteThread(ctx, c.OriginalURL(), thread); err != nil {
+		msg := fmt.Sprintf("cannot delete thread thread with ID [%s] for user with ID [%s]", messageThreadID, thread.UserID)
 		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseNoContent(c, "message thread deleted successfully")
+	return h.responseNoContent(c, "thread thread deleted successfully")
 }
