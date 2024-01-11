@@ -59,6 +59,19 @@
                   </v-list-item-title>
                 </v-list-item-content>
               </v-list-item>
+              <v-list-item
+                v-if="$store.getters.hasThread"
+                @click.prevent="deleteThread($store.getters.getThread.id)"
+              >
+                <v-list-item-icon class="pl-2">
+                  <v-icon dense color="error">{{ mdiDelete }}</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content class="ml-n3">
+                  <v-list-item-title class="pr-16 py-1">
+                    Delete Thread
+                  </v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
             </v-list-item-group>
           </v-list>
         </v-menu>
@@ -473,6 +486,11 @@ export default Vue.extend({
       }, 1000)
 
       this.loadMessages(false)
+    },
+
+    async deleteThread(threadID: string) {
+      await this.$store.dispatch('deleteThread', threadID)
+      await this.$router.push({ name: 'threads' })
     },
 
     async sendMessage(event: KeyboardEvent) {

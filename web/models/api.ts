@@ -48,6 +48,8 @@ export interface EntitiesDiscord {
 }
 
 export interface EntitiesHeartbeat {
+  /** @example true */
+  charging: boolean
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
   /** @example "+18005550199" */
@@ -95,6 +97,8 @@ export interface EntitiesMessage {
   request_received_at: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   scheduled_at: string
+  /** @example "2022-06-05T14:26:09.527976+03:00" */
+  scheduled_send_time: string
   /** @example 0 */
   send_attempt_count: number
   /**
@@ -187,7 +191,9 @@ export enum EntitiesSubscriptionName {
   SubscriptionNameUltraYearly = 'ultra-yearly',
   SubscriptionNameProLifetime = 'pro-lifetime',
   SubscriptionName20KMonthly = '20k-monthly',
+  SubscriptionName100KMonthly = '100k-monthly',
   SubscriptionName20KYearly = '20k-yearly',
+  SubscriptionName100KYearly = '100k-yearly',
 }
 
 export interface EntitiesUser {
@@ -255,6 +261,7 @@ export interface RequestsDiscordUpdate {
 }
 
 export interface RequestsHeartbeatStore {
+  charging: boolean
   owner: string
 }
 
@@ -319,6 +326,11 @@ export interface RequestsMessageSend {
    * @example "153554b5-ae44-44a0-8f4f-7bbac5657ad4"
    */
   request_id?: string
+  /**
+   * SendAt is an optional parameter used to schedule a message to be sent at a later time
+   * @example "2022-06-05T14:26:09.527976+03:00"
+   */
+  send_at?: string
   /** @example "+18005550100" */
   to: string
 }

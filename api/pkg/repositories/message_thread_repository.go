@@ -27,4 +27,7 @@ type MessageThreadRepository interface {
 
 	// UpdateAfterDeletedMessage updates a thread after the original message has been deleted
 	UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error
+
+	// Delete an entities.MessageThread by ID
+	Delete(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID) error
 }

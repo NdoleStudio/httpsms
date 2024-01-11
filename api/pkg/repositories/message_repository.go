@@ -26,4 +26,7 @@ type MessageRepository interface {
 
 	// Delete an entities.Message by ID
 	Delete(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error
+
+	// DeleteByOwnerAndContact deletes messages between an owner and a contact
+	DeleteByOwnerAndContact(ctx context.Context, userID entities.UserID, owner string, contact string) error
 }

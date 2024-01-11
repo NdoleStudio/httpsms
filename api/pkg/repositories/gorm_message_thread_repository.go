@@ -35,6 +35,20 @@ func NewGormMessageThreadRepository(
 	}
 }
 
+// Delete the message thread for a user
+func (repository *gormMessageThreadRepository) Delete(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageThreadID).Delete(&entities.MessageThread{}).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete message thread with ID [%s] for user with ID [%s]", messageThreadID, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // UpdateAfterDeletedMessage updates a thread after the original message has been deleted
 func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
 	ctx, span := repository.tracer.Start(ctx)

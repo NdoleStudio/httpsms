@@ -650,6 +650,32 @@ export const actions = {
     await context.dispatch('loadThreads')
   },
 
+  deleteThread(context: ActionContext<State, State>, threadId: string) {
+    return new Promise<void>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(`/v1/message-threads/${threadId}`)
+        .then(async () => {
+          context.commit('setThreadId', null)
+          await context.dispatch('addNotification', {
+            message: 'The message thread has been deleted successfully',
+            type: 'success',
+          })
+          resolve()
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while deleting message thread',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
   getSubscriptionUpdateLink(context: ActionContext<State, State>) {
     return new Promise<string>((resolve, reject) => {
       axios

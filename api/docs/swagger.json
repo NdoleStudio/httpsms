@@ -680,7 +680,7 @@
         "description": "Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
-        "tags": ["Channel Threads"],
+        "tags": ["MessageThreads"],
         "summary": "Get message threads for a phone number",
         "parameters": [
           {
@@ -757,7 +757,7 @@
         "description": "Updates the details of a message thread",
         "consumes": ["application/json"],
         "produces": ["application/json"],
-        "tags": ["Channel Threads"],
+        "tags": ["MessageThreads"],
         "summary": "Update a message thread",
         "parameters": [
           {
@@ -795,6 +795,66 @@
             "description": "Unauthorized",
             "schema": {
               "$ref": "#/definitions/responses.Unauthorized"
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "schema": {
+              "$ref": "#/definitions/responses.UnprocessableEntity"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/responses.InternalServerError"
+            }
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Delete a message thread from the database and also deletes all the messages in the thread.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["MessageThreads"],
+        "summary": "Delete a message thread from the database.",
+        "parameters": [
+          {
+            "type": "string",
+            "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+            "description": "ID of the message thread",
+            "name": "messageID",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "schema": {
+              "$ref": "#/definitions/responses.NoContent"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/responses.BadRequest"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/responses.Unauthorized"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/responses.NotFound"
             }
           },
           "422": {

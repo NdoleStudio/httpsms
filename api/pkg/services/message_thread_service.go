@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/events"
+
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -15,9 +17,11 @@ import (
 
 // MessageThreadService is handles message requests
 type MessageThreadService struct {
-	logger     telemetry.Logger
-	tracer     telemetry.Tracer
-	repository repositories.MessageThreadRepository
+	service
+	logger          telemetry.Logger
+	tracer          telemetry.Tracer
+	repository      repositories.MessageThreadRepository
+	eventDispatcher *EventDispatcher
 }
 
 // NewMessageThreadService creates a new MessageThreadService
@@ -25,11 +29,13 @@ func NewMessageThreadService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	repository repositories.MessageThreadRepository,
+	eventDispatcher *EventDispatcher,
 ) (s *MessageThreadService) {
 	return &MessageThreadService{
-		logger:     logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:     tracer,
-		repository: repository,
+		logger:          logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:          tracer,
+		eventDispatcher: eventDispatcher,
+		repository:      repository,
 	}
 }
 
@@ -208,4 +214,53 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] threads with params [%+#v]", len(*threads), params))
 	return threads, nil
+}
+
+// GetThread fetches an entities.MessageThread  message thread by the ID
+func (service *MessageThreadService) GetThread(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID) (*entities.MessageThread, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	thread, err := service.repository.Load(ctx, userID, messageThreadID)
+	if err != nil {
+		msg := fmt.Sprintf("could not fetch thread with ID [%s] for user [%s]", messageThreadID, userID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	return thread, nil
+}
+
+// DeleteThread deletes an entities.MessageThread from the database
+func (service *MessageThreadService) DeleteThread(ctx context.Context, source string, thread *entities.MessageThread) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.Delete(ctx, thread.UserID, thread.ID); err != nil {
+		msg := fmt.Sprintf("could not delete message thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	event, err := service.createEvent(events.MessageThreadAPIDeleted, source, &events.MessageThreadAPIDeletedPayload{
+		MessageThreadID: thread.ID,
+		UserID:          thread.UserID,
+		Owner:           thread.Owner,
+		Contact:         thread.Contact,
+		IsArchived:      thread.IsArchived,
+		Color:           thread.Color,
+		Status:          thread.Status,
+		Timestamp:       time.Now().UTC(),
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create [%T] for message thread dleted with ID [%s]", event, thread.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID))
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("dispatched [%s] event with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID))
+	return nil
 }

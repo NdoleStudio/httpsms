@@ -129,6 +129,22 @@ func (service *MessageService) DeleteMessage(ctx context.Context, source string,
 	return nil
 }
 
+// DeleteByOwnerAndContact deletes all the messages between an owner and a contact
+func (service *MessageService) DeleteByOwnerAndContact(ctx context.Context, userID entities.UserID, owner, contact string) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	if err := service.repository.DeleteByOwnerAndContact(ctx, userID, owner, contact); err != nil {
+		msg := fmt.Sprintf("could not all delete messages for user with ID [%s] between owner [%s] and contact [%s] ", userID, owner, contact)
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all messages for user with ID [%s] between owner [%s] and contact [%s] ", userID, owner, contact))
+	return nil
+}
+
 // MessageGetParams parameters for sending a new message
 type MessageGetParams struct {
 	repositories.IndexParams

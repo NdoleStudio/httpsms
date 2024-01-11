@@ -26,8 +26,8 @@
     </v-row>
     <v-row v-else justify="end">
       <v-col class="px-0 py-0">
-        <message-thread-header></message-thread-header>
-        <message-thread></message-thread>
+        <message-thread-header />
+        <message-thread />
       </v-col>
     </v-row>
   </v-container>

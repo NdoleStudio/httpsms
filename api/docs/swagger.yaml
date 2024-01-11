@@ -1594,8 +1594,53 @@ paths:
         - ApiKeyAuth: []
       summary: Get message threads for a phone number
       tags:
-        - Channel Threads
+        - MessageThreads
   /message-threads/{messageThreadID}:
+    delete:
+      consumes:
+        - application/json
+      description:
+        Delete a message thread from the database and also deletes all
+        the messages in the thread.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the message thread
+          in: path
+          name: messageID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a message thread from the database.
+      tags:
+        - MessageThreads
     put:
       consumes:
         - application/json
@@ -1640,7 +1685,7 @@ paths:
         - ApiKeyAuth: []
       summary: Update a message thread
       tags:
-        - Channel Threads
+        - MessageThreads
   /messages:
     get:
       consumes:

@@ -35,6 +35,25 @@ func NewGormMessageRepository(
 	}
 }
 
+// DeleteByOwnerAndContact deletes all the messages between and owner and a contact
+func (repository *gormMessageRepository) DeleteByOwnerAndContact(ctx context.Context, userID entities.UserID, owner string, contact string) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("owner = ?", owner).
+		Where("contact = ?", contact).
+		Delete(&entities.Message{}).
+		Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete messages between owner [%s] and contact [%s] for user with ID [%s]", owner, contact, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // Delete a message by the ID
 func (repository *gormMessageRepository) Delete(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
 	ctx, span := repository.tracer.Start(ctx)

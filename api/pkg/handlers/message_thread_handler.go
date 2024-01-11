@@ -3,6 +3,9 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/google/uuid"
+
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -40,13 +43,14 @@ func NewMessageThreadHandler(
 func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/message-threads", h.Index)
 	router.Put("/message-threads/:messageThreadID", h.Update)
+	router.Delete("/message-threads/:messageThreadID", h.Delete)
 }
 
 // Index returns message threads for a phone number
 // @Summary      Get message threads for a phone number
 // @Description  Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order.
 // @Security	 ApiKeyAuth
-// @Tags         Channel Threads
+// @Tags         MessageThreads
 // @Accept       json
 // @Produce      json
 // @Param        owner	query  string  	true 	"owner phone number" 						default(+18005550199)
@@ -94,7 +98,7 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 // @Summary      Update a message thread
 // @Description  Updates the details of a message thread
 // @Security	 ApiKeyAuth
-// @Tags         Channel Threads
+// @Tags         MessageThreads
 // @Accept       json
 // @Produce      json
 // @Param 		 messageThreadID	path		string 							true 	"ID of the message thread" 						default(32343a19-da5e-4b1b-a767-3298a73703ca)
@@ -106,10 +110,8 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 // @Failure      500				{object}	responses.InternalServerError
 // @Router       /message-threads/{messageThreadID} [put]
 func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
-	ctx, span := h.tracer.StartFromFiberCtx(c)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
-
-	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageThreadUpdate
 	if err := c.BodyParser(&request); err != nil {
@@ -133,4 +135,50 @@ func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "message thread updated successfully", thread)
+}
+
+// Delete a message thread
+// @Summary      Delete a message thread from the database.
+// @Description  Delete a message thread from the database and also deletes all the messages in the thread.
+// @Security	 ApiKeyAuth
+// @Tags         MessageThreads
+// @Accept       json
+// @Produce      json
+// @Param 		 messageID 	path		string 							true 	"ID of the message thread" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      204  		{object} 	responses.NoContent
+// @Failure      400  		{object}  	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure 	 404		{object}	responses.NotFound
+// @Failure      422  		{object} 	responses.UnprocessableEntity
+// @Failure      500  		{object}  	responses.InternalServerError
+// @Router       /message-threads/{messageThreadID} [delete]
+func (h *MessageThreadHandler) Delete(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	messageID := c.Params("messageThreadID")
+	if errors := h.validator.ValidateUUID(ctx, messageID, "messageThreadID"); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while deleting a message thread with ID [%s]", spew.Sdump(errors), messageID)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting a message thread")
+	}
+
+	message, err := h.service.GetThread(ctx, h.userIDFomContext(c), uuid.MustParse(messageID))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message thread with ID [%s]", messageID))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message thread with id [%s]", messageID)
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	if err = h.service.DeleteThread(ctx, c.OriginalURL(), message); err != nil {
+		msg := fmt.Sprintf("cannot delete message thread with ID [%s] for user with ID [%s]", messageID, message.UserID)
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseNoContent(c, "message thread deleted successfully")
 }
