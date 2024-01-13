@@ -31,6 +31,7 @@ require (
 	github.com/matcornic/hermes/v2 v2.1.0
 	github.com/nyaruka/phonenumbers v1.3.0
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
 	github.com/redis/go-redis/v9 v9.3.1

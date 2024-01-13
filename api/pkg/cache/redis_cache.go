@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,27 +11,27 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RedisCache is the Cache implementation in redis
-type RedisCache struct {
+// redisCache is the Cache implementation in redis
+type redisCache struct {
 	tracer telemetry.Tracer
 	client *redis.Client
 }
 
 // NewRedisCache creates a new instance of RedisCache
 func NewRedisCache(tracer telemetry.Tracer, client *redis.Client) Cache {
-	return &RedisCache{
+	return &redisCache{
 		tracer: tracer,
 		client: client,
 	}
 }
 
 // Get an item from the redis cache
-func (cache *RedisCache) Get(ctx context.Context, key string) (value string, err error) {
+func (cache *redisCache) Get(ctx context.Context, key string) (value string, err error) {
 	ctx, span := cache.tracer.Start(ctx)
 	defer span.End()
 
 	response, err := cache.client.Get(ctx, key).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return "", stacktrace.Propagate(err, fmt.Sprintf("no item found in redis with key [%s]", key))
 	}
 	if err != nil {
@@ -40,7 +41,7 @@ func (cache *RedisCache) Get(ctx context.Context, key string) (value string, err
 }
 
 // Set an item in the redis cache
-func (cache *RedisCache) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
+func (cache *redisCache) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
 	ctx, span := cache.tracer.Start(ctx)
 	defer span.End()
 

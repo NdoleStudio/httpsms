@@ -61,6 +61,7 @@ import (
 	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 	"github.com/palantir/stacktrace"
+	ttlCache "github.com/patrickmn/go-cache"
 	"gorm.io/gorm"
 
 	"github.com/NdoleStudio/httpsms/pkg/handlers"
@@ -316,6 +317,13 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
 	}
 	return app
+}
+
+// InMemoryCache creates a new instance of the in memory cache.Cache
+func (container *Container) InMemoryCache() cache.Cache {
+	container.logger.Debug("creating an in memory cache")
+	c := ttlCache.New(time.Hour, time.Hour*2)
+	return cache.NewMemoryCache(container.Tracer(), c)
 }
 
 // Cache creates a new instance of cache.Cache
@@ -729,7 +737,7 @@ func (container *Container) BillingService() (service *services.BillingService) 
 	return services.NewBillingService(
 		container.Logger(),
 		container.Tracer(),
-		container.Cache(),
+		container.InMemoryCache(),
 		container.Mailer(),
 		container.UserEmailFactory(),
 		container.BillingUsageRepository(),
