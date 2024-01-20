@@ -60,6 +60,12 @@ works best for you:
 
 ## Features
 
+### End-to-end Encryption
+
+You can encrypt your messages end-to-end ysubg the military grade [AES-256 encryption](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
+algorithm. Your encryption key is stored only on our mobile phone so the even the server won't have any way to view the
+content of your SMS messages which are sent and received on your Android phone.
+
 ### Webhook
 
 If you want to build advanced integrations, we support webhooks. The httpSMS platform can forward SMS messages received

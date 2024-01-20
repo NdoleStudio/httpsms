@@ -4,7 +4,7 @@
       <v-row :class="{ 'py-16': $vuetify.breakpoint.lgAndUp }">
         <v-col
           cols="12"
-          md="4"
+          md="6"
           :class="{
             'text-center pt-16': $vuetify.breakpoint.mdAndDown,
             'py-16': $vuetify.breakpoint.lgAndUp,
@@ -22,7 +22,7 @@
           </h1>
           <h2 class="text--secondary text-h5 mt-8 mb-8">
             Use your android phone to send and receive SMS messages using a
-            simple HTTP API.
+            simple programmable API with end-to-end encryption.
           </h2>
           <div :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }">
             <v-btn
@@ -75,7 +75,7 @@
         <v-col
           v-if="$vuetify.breakpoint.mdAndUp"
           cols="12"
-          md="8"
+          md="6"
           class="py-16"
         >
           <v-img
@@ -129,7 +129,7 @@
             ></v-img>
           </v-col>
         </v-row>
-        <v-row class="mb-16">
+        <v-row class="mb-16 mt-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="1">
             <div>
               <h3 class="text-h3 mb-1">
@@ -162,7 +162,7 @@
             ></v-img>
           </v-col>
         </v-row>
-        <v-row class="mb-16">
+        <v-row class="mb-16 mt-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
             <div>
               <h3 class="text-h3 mb-1">Webhooks</h3>
@@ -183,7 +183,7 @@
             ></v-img>
           </v-col>
         </v-row>
-        <v-row class="mb-16">
+        <v-row class="mb-16 mt-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="1">
             <div>
               <h3 class="text-h3 mb-1">Control Sending</h3>
@@ -203,7 +203,7 @@
             ></v-img>
           </v-col>
         </v-row>
-        <v-row class="mb-16">
+        <v-row class="mb-16 mt-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
             <div>
               <h3 class="text-h3 mb-1">Monitoring</h3>
@@ -222,7 +222,7 @@
             ></v-img>
           </v-col>
         </v-row>
-        <v-row class="mt-16">
+        <v-row class="mt-16 mb-16">
           <v-col cols="12" md="6" class="d-flex align-center" :order-lg="1">
             <div>
               <h3 class="text-h3 mb-1">Open Source</h3>
@@ -248,6 +248,33 @@
               max-height="400"
               contain
               :src="require('assets/img/httpsms-github.png')"
+            ></v-img>
+          </v-col>
+        </v-row>
+        <v-row class="mt-16">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
+            <div>
+              <h3 class="text-h3 mb-1">Encryption 🔐</h3>
+              <h5 class="text-h6 mb-3 font-weight-light">
+                You can encrypt your messages end-to-end using the military
+                grade
+                <a
+                  href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard"
+                  >AES-256 encryption</a
+                >
+                algorithm. Your encryption key is stored only on our mobile
+                phone so our servers won't have any way to view the content of
+                your SMS messages which are sent and received on your Android
+                phone.
+              </h5>
+            </div>
+          </v-col>
+          <v-col cols="12" md="6" :order-lg="1">
+            <v-img
+              class="mb-4"
+              max-height="300"
+              contain
+              :src="require('assets/img/mobile-encryption.svg')"
             ></v-img>
           </v-col>
         </v-row>
