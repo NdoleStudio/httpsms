@@ -19,6 +19,7 @@ type MessageSendFailedPayload struct {
 	RequestID    *string         `json:"request_id"`
 	Contact      string          `json:"contact"`
 	Timestamp    time.Time       `json:"timestamp"`
+	Encrypted    bool            `json:"encrypted"`
 	Content      string          `json:"content"`
 	SIM          entities.SIM    `json:"sim"`
 }

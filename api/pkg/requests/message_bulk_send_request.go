@@ -17,6 +17,9 @@ type MessageBulkSend struct {
 	To      []string `json:"to" example:"+18005550100,+18005550100"`
 	Content string   `json:"content" example:"This is a sample text message"`
 
+	// Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
+	Encrypted bool `json:"encrypted" example:"false"`
+
 	// RequestID is an optional parameter used to track a request from the client's perspective
 	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
 }
@@ -41,6 +44,7 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 		result = append(result, services.MessageSendParams{
 			Source:            source,
 			Owner:             from,
+			Encrypted:         input.Encrypted,
 			RequestID:         input.sanitizeStringPointer(input.RequestID),
 			UserID:            userID,
 			RequestReceivedAt: time.Now().UTC(),

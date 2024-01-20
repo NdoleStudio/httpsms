@@ -14,6 +14,13 @@ func (factory *factory) formatPhoneNumber(number string) string {
 	return phonenumbers.Format(value, phonenumbers.INTERNATIONAL)
 }
 
+func (factory *factory) formatBool(value bool) string {
+	if value == true {
+		return "Yes"
+	}
+	return "No"
+}
+
 func (factory *factory) formatHTTPResponseCode(code *int) string {
 	responseCode := "-"
 	if code != nil {

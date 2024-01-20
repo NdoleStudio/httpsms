@@ -20,5 +20,6 @@ type MessageAPIDeletedPayload struct {
 	Contact   string          `json:"contact"`
 	Timestamp time.Time       `json:"timestamp"`
 	Content   string          `json:"content"`
+	Encrypted bool            `json:"encrypted"`
 	SIM       entities.SIM    `json:"sim"`
 }

@@ -19,6 +19,7 @@ type MessageSendExpiredPayload struct {
 	IsFinal          bool            `json:"is_final"`
 	RequestID        *string         `json:"request_id"`
 	Contact          string          `json:"contact"`
+	Encrypted        bool            `json:"encrypted"`
 	UserID           entities.UserID `json:"user_id"`
 	Timestamp        time.Time       `json:"timestamp"`
 	Content          string          `json:"content"`

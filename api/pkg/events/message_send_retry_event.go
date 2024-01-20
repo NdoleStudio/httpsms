@@ -16,6 +16,7 @@ type MessageSendRetryPayload struct {
 	MessageID uuid.UUID       `json:"message_id"`
 	Owner     string          `json:"owner"`
 	Contact   string          `json:"contact"`
+	Encrypted bool            `json:"encrypted"`
 	UserID    entities.UserID `json:"user_id"`
 	Timestamp time.Time       `json:"timestamp"`
 	Content   string          `json:"content"`

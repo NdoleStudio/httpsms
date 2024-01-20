@@ -6,8 +6,6 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
-	"github.com/google/uuid"
-
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/matcornic/hermes/v2"
 	"github.com/palantir/stacktrace"
@@ -129,18 +127,19 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 	}, nil
 }
 
-func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.User, messageID uuid.UUID, owner string, contact string, content string) (*Email, error) {
+func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.User, payload *events.MessageSendExpiredPayload) (*Email, error) {
 	email := hermes.Email{
 		Body: hermes.Body{
 			Title: "Hello",
 			Intros: []string{
-				fmt.Sprintf("The SMS message which you sent to %s has expired at %s and you will need to resend this message.", factory.formatPhoneNumber(contact), user.UserTimeString(time.Now())),
+				fmt.Sprintf("The SMS message which you sent to %s has expired at %s and you will need to resend this message.", factory.formatPhoneNumber(payload.Contact), user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"ID", messageID.String()},
-				{"From", factory.formatPhoneNumber(owner)},
-				{"To", factory.formatPhoneNumber(contact)},
-				{"Message", content},
+				{"ID", payload.MessageID.String()},
+				{"From", factory.formatPhoneNumber(payload.Owner)},
+				{"To", factory.formatPhoneNumber(payload.Contact)},
+				{"Message", payload.Content},
+				{"Encrypted", factory.formatBool(payload.Encrypted)},
 			},
 			Actions: []hermes.Action{
 				{
@@ -178,19 +177,20 @@ func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.Use
 	}, nil
 }
 
-func (factory *hermesNotificationEmailFactory) MessageFailed(user *entities.User, messageID uuid.UUID, owner, contact, content, reason string) (*Email, error) {
+func (factory *hermesNotificationEmailFactory) MessageFailed(user *entities.User, payload *events.MessageSendFailedPayload) (*Email, error) {
 	email := hermes.Email{
 		Body: hermes.Body{
 			Title: "Hello",
 			Intros: []string{
-				fmt.Sprintf("The SMS message which you sent to %s has failed at %s and you will need to resend this message.", factory.formatPhoneNumber(contact), user.UserTimeString(time.Now())),
+				fmt.Sprintf("The SMS message which you sent to %s has failed at %s and you will need to resend this message.", factory.formatPhoneNumber(payload.Contact), user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"ID", messageID.String()},
-				{"From", factory.formatPhoneNumber(owner)},
-				{"To", factory.formatPhoneNumber(contact)},
-				{"Message", content},
-				{"Failure Reason", reason},
+				{"ID", payload.ID.String()},
+				{"From", factory.formatPhoneNumber(payload.Owner)},
+				{"To", factory.formatPhoneNumber(payload.Contact)},
+				{"Message", payload.Content},
+				{"Encrypted", factory.formatBool(payload.Encrypted)},
+				{"Failure Reason", payload.ErrorMessage},
 			},
 			Actions: []hermes.Action{
 				{

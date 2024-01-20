@@ -75,7 +75,7 @@ func (service *EmailNotificationService) NotifyMessageExpired(ctx context.Contex
 		return nil
 	}
 
-	email, err := service.factory.MessageExpired(user, payload.MessageID, payload.Owner, payload.Contact, payload.Content)
+	email, err := service.factory.MessageExpired(user, payload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create email for user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -113,7 +113,7 @@ func (service *EmailNotificationService) NotifyMessageFailed(ctx context.Context
 		return nil
 	}
 
-	email, err := service.factory.MessageFailed(user, payload.ID, payload.Owner, payload.Contact, payload.Content, payload.ErrorMessage)
+	email, err := service.factory.MessageFailed(user, payload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, payload.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

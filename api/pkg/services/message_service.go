@@ -72,6 +72,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 		Owner:     message.Owner,
 		Contact:   message.Contact,
 		Timestamp: params.Timestamp,
+		Encrypted: message.Encrypted,
 		UserID:    message.UserID,
 		Content:   message.Content,
 		SIM:       message.SIM,
@@ -108,6 +109,7 @@ func (service *MessageService) DeleteMessage(ctx context.Context, source string,
 		MessageID: message.ID,
 		UserID:    message.UserID,
 		Owner:     message.Owner,
+		Encrypted: message.Encrypted,
 		RequestID: message.RequestID,
 		Contact:   message.Contact,
 		Timestamp: time.Now().UTC(),
@@ -227,11 +229,12 @@ type MessageReceiveParams struct {
 	Content   string
 	SIM       entities.SIM
 	Timestamp time.Time
+	Encrypted bool
 	Source    string
 }
 
 // ReceiveMessage handles message received by a mobile phone
-func (service *MessageService) ReceiveMessage(ctx context.Context, params MessageReceiveParams) (*entities.Message, error) {
+func (service *MessageService) ReceiveMessage(ctx context.Context, params *MessageReceiveParams) (*entities.Message, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -240,6 +243,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params Messag
 	eventPayload := events.MessagePhoneReceivedPayload{
 		MessageID: uuid.New(),
 		UserID:    params.UserID,
+		Encrypted: params.Encrypted,
 		Owner:     phonenumbers.Format(&params.Owner, phonenumbers.E164),
 		Contact:   params.Contact,
 		Timestamp: params.Timestamp,
@@ -277,6 +281,7 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 		RequestID: message.RequestID,
 		Timestamp: params.Timestamp,
 		Contact:   message.Contact,
+		Encrypted: message.Encrypted,
 		Content:   message.Content,
 		SIM:       message.SIM,
 	})
@@ -302,6 +307,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 		UserID:    message.UserID,
 		RequestID: message.RequestID,
 		Timestamp: params.Timestamp,
+		Encrypted: message.Encrypted,
 		Contact:   message.Contact,
 		Content:   message.Content,
 		SIM:       message.SIM,
@@ -332,6 +338,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 		Owner:        message.Owner,
 		ErrorMessage: errorMessage,
 		Timestamp:    params.Timestamp,
+		Encrypted:    message.Encrypted,
 		Contact:      message.Contact,
 		RequestID:    message.RequestID,
 		UserID:       message.UserID,
@@ -354,6 +361,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 type MessageSendParams struct {
 	Owner             *phonenumbers.PhoneNumber
 	Contact           string
+	Encrypted         bool
 	Content           string
 	Source            string
 	SendAt            *time.Time
@@ -374,6 +382,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	eventPayload := events.MessageAPISentPayload{
 		MessageID:         uuid.New(),
 		UserID:            params.UserID,
+		Encrypted:         params.Encrypted,
 		MaxSendAttempts:   sendAttempts,
 		RequestID:         params.RequestID,
 		Owner:             phonenumbers.Format(params.Owner, phonenumbers.E164),
@@ -435,6 +444,7 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 		Contact:           params.Contact,
 		Content:           params.Content,
 		SIM:               params.SIM,
+		Encrypted:         params.Encrypted,
 		Type:              entities.MessageTypeMobileOriginated,
 		Status:            entities.MessageStatusReceived,
 		RequestReceivedAt: params.Timestamp,
@@ -660,6 +670,7 @@ func (service *MessageService) HandleMessageExpired(ctx context.Context, params 
 		Timestamp: time.Now().UTC(),
 		Contact:   message.Contact,
 		Owner:     message.Owner,
+		Encrypted: message.Encrypted,
 		UserID:    message.UserID,
 		Content:   message.Content,
 		SIM:       message.SIM,
@@ -748,6 +759,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 		MessageID:        message.ID,
 		Owner:            message.Owner,
 		Contact:          message.Contact,
+		Encrypted:        message.Encrypted,
 		RequestID:        message.RequestID,
 		IsFinal:          message.SendAttemptCount == message.MaxSendAttempts,
 		SendAttemptCount: message.SendAttemptCount,
@@ -806,6 +818,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 		Content:           payload.Content,
 		RequestID:         payload.RequestID,
 		SIM:               payload.SIM,
+		Encrypted:         payload.Encrypted,
 		ScheduledSendTime: payload.ScheduledSendTime,
 		Type:              entities.MessageTypeMobileTerminated,
 		Status:            entities.MessageStatusPending,

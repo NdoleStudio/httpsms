@@ -22,5 +22,6 @@ type MessageAPISentPayload struct {
 	ScheduledSendTime *time.Time      `json:"scheduled_send_time"`
 	RequestReceivedAt time.Time       `json:"request_received_at"`
 	Content           string          `json:"content"`
+	Encrypted         bool            `json:"encrypted"`
 	SIM               entities.SIM    `json:"sim"`
 }

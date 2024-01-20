@@ -94,7 +94,7 @@ type PhoneNotificationSendParams struct {
 
 // Send sends a message when a message is sent
 func (service *PhoneNotificationService) Send(ctx context.Context, params *PhoneNotificationSendParams) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	phone, err := service.phoneRepository.LoadByID(ctx, params.UserID, params.PhoneID)
@@ -120,8 +120,11 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		return service.handleNotificationFailed(ctx, err, params)
+		ctxLogger.Warn(stacktrace.Propagate(err, "cannot send FCM to phone"))
+		msg := fmt.Sprintf("cannot send notification for to your phone [%s]. Reinstall the httpSMS app on your Android phone.", phone.PhoneNumber)
+		return service.handleNotificationFailed(ctx, errors.New(msg), params)
 	}
+
 	return service.handleNotificationSent(ctx, phone, result, params)
 }
 
@@ -130,6 +133,7 @@ type PhoneNotificationScheduleParams struct {
 	UserID    entities.UserID
 	Owner     string
 	Source    string
+	Encrypted bool
 	Contact   string
 	Content   string
 	SIM       entities.SIM
@@ -200,6 +204,7 @@ func (service *PhoneNotificationService) dispatchMessageNotificationScheduled(ct
 		MessageID:      notification.MessageID,
 		Owner:          params.Owner,
 		Contact:        params.Contact,
+		Encrypted:      params.Encrypted,
 		Content:        params.Content,
 		SIM:            params.SIM,
 		UserID:         notification.UserID,

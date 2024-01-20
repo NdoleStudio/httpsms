@@ -17,6 +17,7 @@ type MessagePhoneSendingPayload struct {
 	RequestID *string         `json:"request_id"`
 	Timestamp time.Time       `json:"timestamp"`
 	Owner     string          `json:"owner"`
+	Encrypted bool            `json:"encrypted"`
 	Contact   string          `json:"contact"`
 	Content   string          `json:"content"`
 	SIM       entities.SIM    `json:"sim"`
