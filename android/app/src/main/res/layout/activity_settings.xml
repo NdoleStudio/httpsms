@@ -113,7 +113,34 @@
             android:layout_marginBottom="16dp"
             tools:ignore="TouchTargetSizeCheck" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/settingsEncryptionKeyLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:errorEnabled="true"
+            android:hint="@string/encryption_key"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_editor_absoluteX="16dp">
 
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/settingsEncryptionKeyInputEdit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                tools:ignore="TextContrastCheck" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/settingsEncryptReceivedMessages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:text="@string/encrypt_received_messages"
+            android:minHeight="48dp"
+            android:layout_marginBottom="16dp"
+            tools:ignore="TouchTargetSizeCheck" />
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton

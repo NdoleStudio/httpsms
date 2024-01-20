@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -55,6 +56,37 @@ class SettingsActivity : AppCompatActivity() {
         val sim2OutgoingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_outgoing_messages)
         sim2OutgoingMessages.isChecked = Settings.getActiveStatus(context, Constants.SIM2)
         sim2OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2) } }
+
+        handleEncryptionSettings(context)
+    }
+
+    private fun handleEncryptionSettings(context: Context) {
+        val encryptionKey = findViewById<TextInputEditText>(R.id.settingsEncryptionKeyInputEdit)
+        val encryptReceivedMessages = findViewById<SwitchMaterial>(R.id.settingsEncryptReceivedMessages)
+
+        val key = Settings.getEncryptionKey(context)
+        if(key.isNullOrEmpty()) {
+            encryptReceivedMessages.isEnabled = false
+        } else {
+            encryptionKey.setText(key.trim())
+        }
+
+        encryptionKey.doAfterTextChanged{
+            if (it == null || it.toString().isEmpty()) {
+                Settings.setEncryptionKey(context, null)
+                Settings.setEncryptReceivedMessages(context, false)
+                encryptReceivedMessages.isChecked = false
+                encryptReceivedMessages.isEnabled = false
+            } else {
+                encryptReceivedMessages.isEnabled = true
+                Settings.setEncryptionKey(context, it.toString().trim())
+            }
+        }
+
+        encryptReceivedMessages.isChecked = Settings.encryptReceivedMessages(context)
+        encryptReceivedMessages.setOnCheckedChangeListener{ _, isChecked -> run {
+            Settings.setEncryptReceivedMessages(context, isChecked)
+        }}
     }
 
     private fun registerListeners() {
@@ -66,7 +98,6 @@ class SettingsActivity : AppCompatActivity() {
         Timber.d("back button clicked")
         redirectToMain()
     }
-
 
     private fun redirectToMain() {
         finish()
@@ -94,6 +125,8 @@ class SettingsActivity : AppCompatActivity() {
                 Settings.setIncomingActiveSIM1(this, true)
                 Settings.setIncomingActiveSIM2(this, true)
                 Settings.setUserID(this, null)
+                Settings.setEncryptionKey(this, null)
+                Settings.setEncryptReceivedMessages(this, false)
                 Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
                 redirectToLogin()
             }

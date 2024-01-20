@@ -69,6 +69,11 @@ class ReceivedReceiver: BroadcastReceiver()
             return
         }
 
+        var body = content;
+        if (Settings.encryptReceivedMessages(context)) {
+            body = Encrypter.encrypt(Settings.getEncryptionKey(context)!!, content)
+        }
+
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -77,7 +82,8 @@ class ReceivedReceiver: BroadcastReceiver()
             Constants.KEY_MESSAGE_FROM to from,
             Constants.KEY_MESSAGE_TO to to,
             Constants.KEY_MESSAGE_SIM to sim,
-            Constants.KEY_MESSAGE_CONTENT to content,
+            Constants.KEY_MESSAGE_CONTENT to body,
+            Constants.KEY_MESSAGE_ENCRYPTED to Settings.encryptReceivedMessages(context),
             Constants.KEY_MESSAGE_TIMESTAMP to DateTimeFormatter.ofPattern(Constants.TIMESTAMP_PATTERN).format(timestamp).replace("+", "Z")
         )
 
@@ -103,6 +109,7 @@ class ReceivedReceiver: BroadcastReceiver()
                 this.inputData.getString(Constants.KEY_MESSAGE_FROM)!!,
                 this.inputData.getString(Constants.KEY_MESSAGE_TO)!!,
                 this.inputData.getString(Constants.KEY_MESSAGE_CONTENT)!!,
+                this.inputData.getBoolean(Constants.KEY_MESSAGE_ENCRYPTED, false),
                 this.inputData.getString(Constants.KEY_MESSAGE_TIMESTAMP)!!,
             )) {
                 return Result.success()

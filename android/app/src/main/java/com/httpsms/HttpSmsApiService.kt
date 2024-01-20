@@ -71,13 +71,14 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
-    fun receive(sim: String, from: String, to: String, content: String, timestamp: String): Boolean {
+    fun receive(sim: String, from: String, to: String, content: String, encrypted: Boolean, timestamp: String): Boolean {
         val body = """
             {
               "content": "${StringEscapeUtils.escapeJson(content)}",
               "sim": "$sim",
               "from": "$from",
               "timestamp": "$timestamp",
+              "encrypted": $encrypted,
               "to": "$to"
             }
         """.trimIndent()

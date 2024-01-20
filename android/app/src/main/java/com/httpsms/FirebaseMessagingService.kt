@@ -1,5 +1,6 @@
 package com.httpsms
 
+import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -7,8 +8,6 @@ import androidx.work.*
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import timber.log.Timber
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     // [START receive_message]
@@ -133,14 +132,29 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val message = getMessage(applicationContext, messageID) ?: return Result.failure()
             if (!Settings.getActiveStatus(applicationContext, message.sim)) {
                 Timber.w("[${message.sim}] SIM is not active, stopping processing")
-                handleFailed(applicationContext, messageID)
+                handleFailed(applicationContext, messageID, "Outgoing messages have been disabled on the mobile app")
                 return Result.failure()
+            }
+
+            if (message.encrypted && Settings.getEncryptionKey(applicationContext).isNullOrEmpty()) {
+                Timber.w("[${message.sim}] message is encrypted but the encryption key is empty")
+                handleFailed(applicationContext, messageID, "Outgoing message is encrypted but mobile app has no encryption key")
+                return Result.failure()
+            }
+            if (message.encrypted) {
+                try {
+                    Encrypter.decrypt(Settings.getEncryptionKey(applicationContext)!!, message.content)
+                } catch (exception: Exception) {
+                    Timber.e(exception)
+                    handleFailed(applicationContext, messageID, "Cannot decrypt the outgoing message. Check your encryption key on the Android app.")
+                    return Result.failure()
+                }
             }
 
             Receiver.register(applicationContext)
             val parts = getMessageParts(applicationContext, message)
             if (parts.size == 1) {
-                return handleSingleMessage(message)
+                return handleSingleMessage(message, parts.first())
             }
             return handleMultipartMessage(message, parts)
         }
@@ -174,16 +188,17 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
 
-        private fun handleSingleMessage(message:Message): Result {
+        private fun handleSingleMessage(message:Message, content: String): Result {
             sendMessage(
                 message,
+                content,
                 createPendingIntent(message.id, SmsManagerService.sentAction()),
                 createPendingIntent(message.id, SmsManagerService.deliveredAction())
             )
             return Result.success()
         }
 
-        private fun handleFailed(context: Context, messageID: String) {
+        private fun handleFailed(context: Context, messageID: String, reason: String) {
             Timber.d("sending [FAILED] event for message with ID [${messageID}]")
 
             val constraints = Constraints.Builder()
@@ -192,7 +207,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             val inputData: Data = workDataOf(
                 Constants.KEY_MESSAGE_ID to messageID,
-                Constants.KEY_MESSAGE_REASON to "MOBILE_APP_INACTIVE",
+                Constants.KEY_MESSAGE_REASON to reason,
                 Constants.KEY_MESSAGE_TIMESTAMP to Settings.currentTimestamp()
             )
 
@@ -222,10 +237,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return null
         }
 
-        private fun sendMessage(message: Message, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
+        private fun sendMessage(message: Message, content: String, sentIntent: PendingIntent, deliveredIntent: PendingIntent) {
             Timber.d("sending SMS for message with ID [${message.id}]")
             try {
-                SmsManagerService().sendTextMessage(this.applicationContext,message.contact, message.content, message.sim, sentIntent, deliveredIntent)
+                SmsManagerService().sendTextMessage(this.applicationContext,message.contact, content, message.sim, sentIntent, deliveredIntent)
             } catch (e: Exception) {
                 Timber.e(e)
                 Timber.d("could not send SMS for message with ID [${message.id}]")
@@ -236,15 +251,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         private fun getMessageParts(context: Context, message: Message): ArrayList<String> {
             Timber.d("getting parts for message with ID [${message.id}]")
+
+            var messageBody  = message.content
+            val encryptionKey = Settings.getEncryptionKey(context)
+            if (message.encrypted && !encryptionKey.isNullOrEmpty()) {
+                messageBody = Encrypter.decrypt(encryptionKey, messageBody)
+            }
+
             return try {
-                val parts = SmsManagerService().messageParts(context, message.content)
+                val parts = SmsManagerService().messageParts(context, messageBody)
                 Timber.d("message with ID [${message.id}] has [${parts.size}] parts")
                 parts
             } catch (e: Exception) {
                 Timber.e(e)
                 Timber.d("could not get parts message with ID [${message.id}] returning [1] part with entire content")
                 val list = ArrayList<String>()
-                list.add(message.content)
+                list.add(messageBody)
                 list
             }
         }

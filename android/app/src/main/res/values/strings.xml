@@ -26,4 +26,6 @@
     <string name="settings_outgoing_messages_sim2">Enable Outgoing Messages (SIM2)</string>
     <string name="login_phone_number_sim1">Phone Number (SIM1)</string>
     <string name="login_phone_number_sim2">Phone Number (SIM2)</string>
+    <string name="encryption_key">Encryption Key</string>
+    <string name="encrypt_received_messages">Encrypt Received Messages</string>
 </resources>
