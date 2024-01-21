@@ -3,7 +3,7 @@
     <v-row class="mt-16">
       <v-col cols="12" md="9">
         <v-row>
-          <v-col v-for="post in blogPosts" :key="post.route" cols="12" md="6">
+          <v-col v-for="post in blogPosts" :key="post.route" cols="12">
             <v-hover v-slot="{ hover }">
               <vue-glow
                 color="#329ef4"
@@ -65,6 +65,18 @@ export default {
       mdiTwitter,
       mdiGithub,
       blogPosts: [
+        {
+          route: '/blog/end-to-end-encryption-to-sms-messages',
+          title:
+            'Secure your conversations with end-to-end encryption for SMS messages',
+          date: 'January 21, 2024',
+          readTime: '10 min read',
+          authorImage: require('@/assets/img/arnold.png'),
+          description:
+            'Take control of your privacy by encrypting your SMS messages end-to-end. Safeguard your messages from prying eyes, ensuring absolute confidentiality.',
+          authorName: 'Acho Arnold',
+          authorTwitter: 'acho_arnold',
+        },
         {
           route:
             '/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier',

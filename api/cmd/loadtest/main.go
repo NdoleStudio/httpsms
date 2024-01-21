@@ -63,9 +63,9 @@ func sendSingle() {
 			Host("leading-puma-internal.ngrok-free.app").
 			Header("x-api-key", os.Getenv("HTTPSMS_KEY")).
 			BodyJSON(&map[string]any{
-				"content":    encrypt(fmt.Sprintf("%s", time.Now())),
+				"content":    encrypt("This is a test text message"),
 				"from":       os.Getenv("HTTPSMS_FROM"),
-				"to":         os.Getenv("HTTPSMS_TO_BULK"),
+				"to":         os.Getenv("HTTPSMS_FROM"),
 				"encrypted":  true,
 				"request_id": fmt.Sprintf("load-%s-%d", uuid.NewString(), i),
 			}).
@@ -79,7 +79,7 @@ func sendSingle() {
 }
 
 func encrypt(value string) string {
-	key := sha256.Sum256([]byte(os.Getenv("HTTPSMS_ENCRYPTION_KEY")))
+	key := sha256.Sum256([]byte("Password123"))
 	iv := make([]byte, 16)
 	_, err := rand.Read(iv)
 	if err != nil {
@@ -88,6 +88,7 @@ func encrypt(value string) string {
 	c := ase256(value, key[:], iv)
 	fmt.Println("iv", base64.StdEncoding.EncodeToString(iv))
 	fmt.Println("cypher", base64.StdEncoding.EncodeToString(c))
+	fmt.Println("cypher+iv", base64.StdEncoding.EncodeToString(append(iv, c...)))
 	return base64.StdEncoding.EncodeToString(append(iv, c...))
 }
 

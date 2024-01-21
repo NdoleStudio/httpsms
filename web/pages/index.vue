@@ -18,11 +18,11 @@
               'mt-8': $vuetify.breakpoint.smAndDown,
             }"
           >
-            Convert your android phone into an SMS gateway.
+            Convert your Android phone into an SMS gateway.
           </h1>
           <h2 class="text--secondary text-h5 mt-8 mb-8">
-            Use your android phone to send and receive SMS messages using a
-            simple programmable API with end-to-end encryption.
+            <b>Save money</b> by using your phone to send and receive SMS
+            messages via a simple programmable API with end-to-end encryption.
           </h2>
           <div :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }">
             <v-btn
@@ -256,16 +256,14 @@
             <div>
               <h3 class="text-h3 mb-1">Encryption 🔐</h3>
               <h5 class="text-h6 mb-3 font-weight-light">
-                You can encrypt your messages end-to-end using the military
-                grade
+                Take control of your privacy with our end-to-end encrypted SMS
+                feature. Safeguard your messages from prying eyes, ensuring
+                absolute confidentiality using the military grade
                 <a
                   href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard"
                   >AES-256 encryption</a
                 >
-                algorithm. Your encryption key is stored only on our mobile
-                phone so our servers won't have any way to view the content of
-                your SMS messages which are sent and received on your Android
-                phone.
+                algorithm.
               </h5>
             </div>
           </v-col>
@@ -745,7 +743,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
     </v-sheet>
     <v-container>
       <v-row class="mt-16">
-        <v-col>
+        <v-col md="8" offset-md="2">
           <h2 class="text-h3 text-center">Frequently Asked Questions</h2>
           <h4 class="text-center text-h6 mt-4 text--secondary">
             If you still cannot find the answer to your question,
@@ -755,7 +753,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
         </v-col>
       </v-row>
       <v-row>
-        <v-col>
+        <v-col md="8" offset-md="2" class="mb-16">
           <v-expansion-panels focusable>
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
@@ -798,25 +796,6 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
           </v-expansion-panels>
         </v-col>
       </v-row>
-      <client-only>
-        <v-row>
-          <v-col class="text-center pb-16" md="6" offset-md="3">
-            <p class="text-h6 text--secondary mt-6 mb-4">
-              Subscribe to my newsletter where I share new features and updates
-              on httpSMS.
-            </p>
-            <v-progress-circular
-              v-if="!substackLoaded"
-              indeterminate
-              size="40"
-              width="2"
-              class="mt-8"
-              color="primary"
-            ></v-progress-circular>
-            <div id="custom-substack-embed" ref="substackEmbed"></div>
-          </v-col>
-        </v-row>
-      </client-only>
     </v-container>
   </div>
 </template>
