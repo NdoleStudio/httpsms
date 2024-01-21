@@ -57,15 +57,15 @@
         <p>
           We use the AES-265 encryption algorithm to encrypt the SMS messages.
           This algorithm requires a an encryption key which is 256 bits to work
-          around this, we will hash your encryption key you set on the mobile
-          app using the sha-265 algorithm so that it will produces a key which
-          is always 256 bits.
+          around this, we will hash any encryption key you set on the mobile app
+          using the sha-265 algorithm so that it will always produce a key which
+          is 256 bits.
         </p>
         <p>
           The AES algorithm also has an initialization vector (IV) parameter
           which is used to ensure that the same value encrypted multiple times
           will not produce the same encrypted value. The IV is 16 bits and it is
-          appended to the encrypted message before encoding in base64.
+          appended to the encrypted message before encoding it in base64.
         </p>
         <p>
           When you use our client libraries it will automatically take care of
