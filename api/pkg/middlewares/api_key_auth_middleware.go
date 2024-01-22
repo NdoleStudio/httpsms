@@ -20,6 +20,10 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 		ctxLogger := tracer.CtxLogger(logger, span)
 
 		apiKey := c.Get(authHeaderAPIKey)
+		if len(apiKey) == 0 {
+			apiKey = getAPIKeyFromPayload(c)
+		}
+
 		if len(apiKey) == 0 || apiKey == "undefined" {
 			span.AddEvent(fmt.Sprintf("the request header has no [%s] header", authHeaderAPIKey))
 			return c.Next()
@@ -34,4 +38,20 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
 		return c.Next()
 	}
+}
+
+func getAPIKeyFromPayload(c *fiber.Ctx) string {
+	payload := struct {
+		APIKey string `json:"x-api-key" form:"x-api-key" query:"x-api-key"`
+	}{}
+
+	if err := c.BodyParser(&payload); err != nil || payload.APIKey == "" {
+		return ""
+	}
+
+	if err := c.QueryParser(&payload); err != nil {
+		return ""
+	}
+
+	return payload.APIKey
 }
