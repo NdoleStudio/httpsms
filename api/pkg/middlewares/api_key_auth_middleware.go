@@ -30,6 +30,7 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 			ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot load user with api key [%s]", apiKey)))
 			return c.Next()
 		}
+
 		c.Locals(ContextKeyAuthUserID, authUser)
 		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
 		return c.Next()
