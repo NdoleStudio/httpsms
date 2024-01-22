@@ -202,6 +202,18 @@
                   </a>
                 </v-hover>
               </li>
+              <li class="mb-2">
+                <v-hover v-slot="{ hover }">
+                  <a
+                    href="https://httpsms.featurebase.app"
+                    class="text--primary text-decoration-none"
+                    :class="{ 'text-decoration-underline': hover }"
+                  >
+                    Request Feature
+                    <v-icon small color="yellow">{{ mdiLightbulbOn50 }}</v-icon>
+                  </a>
+                </v-hover>
+              </li>
             </ul>
           </v-col>
           <v-col cols="12" md="3">
@@ -261,6 +273,7 @@ import {
   mdiTwitter,
   mdiHeart,
   mdiShieldStar,
+  mdiLightbulbOn50,
   mdiCreation,
   mdiEyeOffOutline,
   mdiPost,
@@ -287,6 +300,7 @@ export default Vue.extend({
       mdiPost,
       mdiCircle,
       mdiShieldStar,
+      mdiLightbulbOn50,
       mdiBookOpenVariant,
     }
   },

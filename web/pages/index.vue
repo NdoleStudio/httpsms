@@ -21,8 +21,9 @@
             Convert your Android phone into an SMS gateway.
           </h1>
           <h2 class="text--secondary text-h5 mt-8 mb-8">
-            <b>Save money</b> by using your phone to send and receive SMS
-            messages via a simple programmable API with end-to-end encryption.
+            <span class="gradient-underline">Save money</span> by using your
+            phone to send and receive SMS messages via a simple programmable API
+            with end-to-end encryption.
           </h2>
           <div :class="{ 'text-center': $vuetify.breakpoint.mdAndDown }">
             <v-btn
@@ -260,11 +261,17 @@
                 feature. Safeguard your messages from prying eyes, ensuring
                 absolute confidentiality using the military grade
                 <a
+                  class="text-decoration-none"
                   href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard"
                   >AES-256 encryption</a
                 >
                 algorithm.
               </h5>
+              <v-btn
+                to="/blog/end-to-end-encryption-to-sms-messages"
+                class="primary"
+                >Setup end-to-end encryption</v-btn
+              >
             </div>
           </v-col>
           <v-col cols="12" md="6" :order-lg="1">
@@ -395,23 +402,18 @@
                 <v-tabs-items v-model="selectedTab">
                   <v-tab-item value="javascript">
                     <pre v-highlight class="javascript w-full mt-n2 mb-n13">
-<code>let apiKey = "Get API Key from https://httpsms.com/settings";
+<code>import HttpSms from 'httpsms'
 
-fetch('https://api.httpsms.com/v1/messages/send', {
-    method: 'POST',
-    headers: {
-        'x-api-key': apiKey,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        "content": "This is a sample text message",
-        "from": "+18005550199",
-        "to": "+18005550100"
-    })
+const client = new HttpSms('' /* Get the API Key from https://httpsms.com/settings */);
+
+client.messages.postSend({
+    content:   'This is a sample text message',
+    from:      '+18005550199', // Put the correct phone number here
+    to:        '+18005550100', // Put the correct phone number here
 })
-.then(res => res.json())
-.then((data) => console.log(data));
+.then((message) => {
+    console.log(message.id); // log the ID of the sent message
+})
 </code>
                     </pre>
                   </v-tab-item>
@@ -611,7 +613,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Forward received messages to your server
+                  >Forward received messages via webhook
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>{{
@@ -660,13 +662,13 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Forward received messages to your server
+                  >Forward received messages via webhook
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Priority email support
+                  >Priority support
                 </p>
               </v-card-text>
             </v-card>
@@ -708,13 +710,13 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Forward received messages to your server
+                  >Forward received messages via webhook
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Priority email support
+                  >Priority support
                 </p>
               </v-card-text>
             </v-card>
@@ -858,15 +860,6 @@ export default Vue.extend({
       substackLoaded: false,
     }
   },
-  mounted() {
-    setTimeout(() => {
-      const s = document.createElement('script')
-      s.type = 'text/javascript'
-      s.src = 'https://substackapi.com/widget.js'
-      document.getElementsByTagName('head')[0].appendChild(s)
-      this.substackLoaded = true
-    }, 5000)
-  },
 })
 </script>
 
@@ -889,5 +882,9 @@ export default Vue.extend({
   background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.gradient-underline {
+  color: white;
 }
 </style>

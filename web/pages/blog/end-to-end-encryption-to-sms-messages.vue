@@ -21,14 +21,17 @@
           except you.
         </p>
         <p>
-          The way it works is that you set up an encryption key which you use to
-          encrypt your messages before making an API request to httpSMS and you
-          also use the same key to decrypt the messages you receive from httpSMS
-          via our
-          <a href="https://docs.httpsms.com/webhooks/introduction"
+          You setup an encryption key which you use to encrypt your messages
+          before making an API request to httpSMS and you also use the same key
+          to decrypt the messages you receive from httpSMS via our
+          <a
+            class="text-decoration-none"
+            href="https://docs.httpsms.com/webhooks/introduction"
             >webhook events</a
           >. We are using the
-          <a href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard"
+          <a
+            class="text-decoration-none"
+            href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard"
             >AES 265</a
           >
           encryption algorithm to encrypt and decrypt the messages.
@@ -73,22 +76,43 @@
           initialization vector and encoding the payload yourself.
         </p>
         <v-tabs v-model="selectedTab" show-arrows>
+          <v-tab href="#javascript">
+            <v-icon color="#efd81d" class="mr-1">{{
+              mdiLanguageJavascript
+            }}</v-icon>
+            Javascript
+          </v-tab>
           <v-tab href="#go">
-            <v-icon color="#efd81d" class="mr-1">{{ mdiLanguageGo }}</v-icon>
+            <v-icon color="#00aed8" class="mr-1">{{ mdiLanguageGo }}</v-icon>
             Go
           </v-tab>
         </v-tabs>
         <v-tabs-items v-model="selectedTab">
+          <v-tab-item value="javascript">
+            <pre v-highlight class="javascript w-full mb-n12">
+<code>import HttpSms from "httpsms"
+
+const client = new HttpSms("" /* API Key from https://httpsms.com/settings */);
+
+const key = "Password123";
+
+const encryptedMessage = client.cipher.encrypt(key, "This is a sample text message");
+
+// The encrypted message looks like this, note that you will get a different encrypted message when you run this code on your computer
+// Qk3XGN5+Ax38Ig01m4AqaP6Y0b0wYpCXtx59sU23uVLWUU/c7axF7LozDg==
+</code>
+            </pre>
+          </v-tab-item>
           <v-tab-item value="go">
             <pre v-highlight class="go w-full mb-n12">
 <code>import "github.com/NdoleStudio/httpsms-go"
 
-client := htpsms.New(htpsms.WithAPIKey(/* API Key from https://httpsms.com/settings */))
+client := htpsms.New(htpsms.WithAPIKey(""/* API Key from https://httpsms.com/settings */))
 
 key := "Password123" // use the same key on the Android app
 encryptedMessage := client.Cipher.Encrypt(key, "This is a test text message")
 
-// The encrypted message looks like this
+// The encrypted message looks like this, note that you will get a different encrypted message when you run this code on your computer
 // Qk3XGN5+Ax38Ig01m4AqaP6Y0b0wYpCXtx59sU23uVLWUU/c7axF7LozDg==
 </code>
         </pre>
@@ -103,12 +127,33 @@ encryptedMessage := client.Cipher.Encrypt(key, "This is a test text message")
           the Android app before sending to your recipient.
         </p>
         <v-tabs v-model="selectedTab" show-arrows>
+          <v-tab href="#javascript">
+            <v-icon color="#efd81d" class="mr-1">{{
+              mdiLanguageJavascript
+            }}</v-icon>
+            Javascript
+          </v-tab>
           <v-tab href="#go">
-            <v-icon color="#efd81d" class="mr-1">{{ mdiLanguageGo }}</v-icon>
+            <v-icon color="#00aed8" class="mr-1">{{ mdiLanguageGo }}</v-icon>
             Go
           </v-tab>
         </v-tabs>
         <v-tabs-items v-model="selectedTab">
+          <v-tab-item value="javascript">
+            <pre v-highlight class="javascript w-full mb-n12">
+<code>import HttpSms from "httpsms"
+
+client.messages.postSend({
+    content:   encryptedMessage,
+    from:      '+18005550199',
+    encrypted: true,
+    to:        '+18005550100',
+})
+.then((message) => {
+    console.log(message.id); // log the ID of the sent message
+});</code>
+            </pre>
+          </v-tab-item>
           <v-tab-item value="go">
             <pre v-highlight class="go w-full mb-n12">
 <code>import "github.com/NdoleStudio/httpsms-go"
@@ -149,12 +194,54 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
           >
         </p>
         <v-tabs v-model="selectedTab" show-arrows>
+          <v-tab href="#javascript">
+            <v-icon color="#efd81d" class="mr-1">{{
+              mdiLanguageJavascript
+            }}</v-icon>
+            Javascript
+          </v-tab>
           <v-tab href="#go">
-            <v-icon color="#efd81d" class="mr-1">{{ mdiLanguageGo }}</v-icon>
+            <v-icon color="#00aed8" class="mr-1">{{ mdiLanguageGo }}</v-icon>
             Go
           </v-tab>
         </v-tabs>
         <v-tabs-items v-model="selectedTab">
+          <v-tab-item value="javascript">
+            <pre v-highlight class="javascript w-full mb-n12">
+<code>import HttpSms from "httpsms"
+
+const client = new HttpSms("" /* API Key from https://httpsms.com/settings */);
+
+// The payload in the webhook HTTP request looks like this
+/*
+{
+  "specversion": "1.0",
+  "id": "8dca3b0a-446a-4a5d-8d2a-95314926c4ed",
+  "source": "/v1/messages/receive",
+  "type": "message.phone.received",
+  "datacontenttype": "application/json",
+  "time": "2024-01-21T12:27:29.1605708Z",
+  "data": {
+    "message_id": "0681b838-4157-44bb-a4ea-721e40ee7ca7",
+    "user_id": "XtABz6zdeFMoBLoltz6SREDvRSh2",
+    "owner": "+37253920216",
+    "encrypted": true,
+    "contact": "+37253920216",
+    "timestamp": "2024-01-21T12:27:17.949Z",
+    "content": "bdmZ7n6JVf/ST+SoNlSaOGUL1DcL5705ETw8GAB4llYBgE9HOOL+Pu/h+w==",
+    "sim": "SIM1"
+  }
+}
+*/
+
+const encryptedMessage = "bdmZ7n6JVf/ST+SoNlSaOGUL1DcL5705ETw8GAB4llYBgE9HOOL+Pu/h+w==" // get the encrypted message from the request payload
+const encryptionkey = "Password123" // use the same key on the Android app
+const decryptedMessage = client.cipher.decrypt(encryptionkey, encryptedMessage)
+
+// This is a test text message
+</code>
+        </pre>
+          </v-tab-item>
           <v-tab-item value="go">
             <pre v-highlight class="go w-full mb-n12">
 <code>import "github.com/NdoleStudio/httpsms-go"
@@ -184,8 +271,8 @@ client := htpsms.New(htpsms.WithAPIKey(/* API Key from https://httpsms.com/setti
 */
 
 encryptedMessage = "bdmZ7n6JVf/ST+SoNlSaOGUL1DcL5705ETw8GAB4llYBgE9HOOL+Pu/h+w==" // get the encrypted message from the request payload
-key := "Password123" // use the same key on the Android app
-decryptedMessage := client.Cipher.Decrypt(key, encryptedMessage)
+encryptionkey := "Password123" // use the same key on the Android app
+decryptedMessage := client.Cipher.Decrypt(encryptionkey, encryptedMessage)
 
 // This is a test text message
 </code>
@@ -213,7 +300,7 @@ decryptedMessage := client.Cipher.Decrypt(key, encryptedMessage)
 </template>
 
 <script lang="ts">
-import { mdiLanguageGo, mdiTwitter } from '@mdi/js'
+import { mdiLanguageGo, mdiTwitter, mdiLanguageJavascript } from '@mdi/js'
 export default {
   name: 'EndToEndEncryptionToSmsMessages',
   layout: 'website',
@@ -221,7 +308,8 @@ export default {
     return {
       mdiTwitter,
       mdiLanguageGo,
-      selectedTab: 'go',
+      mdiLanguageJavascript,
+      selectedTab: 'javascript',
       authorImage: require('@/assets/img/arnold.png'),
       authorName: 'Acho Arnold',
       postDate: 'January 21, 2024',
@@ -244,7 +332,7 @@ export default {
           hid: 'og:description',
           property: 'og:description',
           content:
-            'Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.',
+            'We have added support for end-to-end encryption for SMS messages so that no one can see the content of the messages you send using httpSMS except you.',
         },
       ],
     }
