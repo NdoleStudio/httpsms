@@ -30,8 +30,8 @@ dependencies:
     specifier: ^2.30.0
     version: 2.30.0
   dotenv:
-    specifier: ^16.3.1
-    version: 16.3.1
+    specifier: ^16.4.1
+    version: 16.4.1
   firebase:
     specifier: ^9.23.0
     version: 9.23.0
@@ -3423,7 +3423,7 @@ packages:
       consola: 3.2.3
       defu: 6.1.2
       destr: 2.0.1
-      dotenv: 16.3.1
+      dotenv: 16.4.1
       lodash: 4.17.21
       rc9: 2.1.1
       std-env: 3.4.3
@@ -5839,7 +5839,7 @@ packages:
     dependencies:
       chokidar: 3.5.3
       defu: 6.1.2
-      dotenv: 16.3.1
+      dotenv: 16.4.1
       giget: 1.1.2
       jiti: 1.20.0
       mlly: 1.4.2
@@ -7368,8 +7368,8 @@ packages:
     dependencies:
       is-obj: 2.0.0
 
-  /dotenv@16.3.1:
-    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
+  /dotenv@16.4.1:
+    resolution: {integrity: sha512-CjA3y+Dr3FyFDOAMnxZEGtnW9KBR2M0JvvUtXNW+dYJL5ROWxP9DUHCwgFqpMk0OXCc0ljhaNTr2w/kutYIcHQ==}
     engines: {node: '>=12'}
 
   /dotenv@8.6.0:
