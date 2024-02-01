@@ -155,8 +155,8 @@ devDependencies:
     specifier: ^1.6.1
     version: 1.6.1
   postcss-html:
-    specifier: ^1.5.0
-    version: 1.5.0
+    specifier: ^1.6.0
+    version: 1.6.0
   prettier:
     specifier: 3.0.3
     version: 3.0.3
@@ -168,7 +168,7 @@ devDependencies:
     version: 9.0.5(stylelint@15.11.0)
   stylelint-config-recommended-vue:
     specifier: ^1.5.0
-    version: 1.5.0(postcss-html@1.5.0)(stylelint@15.11.0)
+    version: 1.5.0(postcss-html@1.6.0)(stylelint@15.11.0)
   stylelint-config-standard:
     specifier: ^34.0.0
     version: 34.0.0(stylelint@15.11.0)
@@ -12429,8 +12429,8 @@ packages:
       postcss: 8.4.31
     dev: false
 
-  /postcss-html@1.5.0:
-    resolution: {integrity: sha512-kCMRWJRHKicpA166kc2lAVUGxDZL324bkj/pVOb6RhjB0Z5Krl7mN0AsVkBhVIRZZirY0lyQXG38HCVaoKVNoA==}
+  /postcss-html@1.6.0:
+    resolution: {integrity: sha512-OWgQ9/Pe23MnNJC0PL4uZp8k0EDaUvqpJFSiwFxOLClAhmD7UEisyhO3x5hVsD4xFrjReVTXydlrMes45dJ71w==}
     engines: {node: ^12 || >=14}
     dependencies:
       htmlparser2: 8.0.2
@@ -14564,14 +14564,14 @@ packages:
       postcss-selector-parser: 6.0.13
     dev: false
 
-  /stylelint-config-html@1.1.0(postcss-html@1.5.0)(stylelint@15.11.0):
+  /stylelint-config-html@1.1.0(postcss-html@1.6.0)(stylelint@15.11.0):
     resolution: {integrity: sha512-IZv4IVESjKLumUGi+HWeb7skgO6/g4VMuAYrJdlqQFndgbj6WJAXPhaysvBiXefX79upBdQVumgYcdd17gCpjQ==}
     engines: {node: ^12 || >=14}
     peerDependencies:
       postcss-html: ^1.0.0
       stylelint: '>=14.0.0'
     dependencies:
-      postcss-html: 1.5.0
+      postcss-html: 1.6.0
       stylelint: 15.11.0(typescript@4.9.5)
     dev: true
 
@@ -14585,17 +14585,17 @@ packages:
       stylelint: 15.11.0(typescript@4.9.5)
     dev: true
 
-  /stylelint-config-recommended-vue@1.5.0(postcss-html@1.5.0)(stylelint@15.11.0):
+  /stylelint-config-recommended-vue@1.5.0(postcss-html@1.6.0)(stylelint@15.11.0):
     resolution: {integrity: sha512-65TAK/clUqkNtkZLcuytoxU0URQYlml+30Nhop7sRkCZ/mtWdXt7T+spPSB3KMKlb+82aEVJ4OrcstyDBdbosg==}
     engines: {node: ^12 || >=14}
     peerDependencies:
       postcss-html: ^1.0.0
       stylelint: '>=14.0.0'
     dependencies:
-      postcss-html: 1.5.0
+      postcss-html: 1.6.0
       semver: 7.5.4
       stylelint: 15.11.0(typescript@4.9.5)
-      stylelint-config-html: 1.1.0(postcss-html@1.5.0)(stylelint@15.11.0)
+      stylelint-config-html: 1.1.0(postcss-html@1.6.0)(stylelint@15.11.0)
       stylelint-config-recommended: 13.0.0(stylelint@15.11.0)
     dev: true
 
