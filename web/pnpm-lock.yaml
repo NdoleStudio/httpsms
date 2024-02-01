@@ -60,8 +60,8 @@ dependencies:
     specifier: ^2.7.15
     version: 2.7.15
   vue-chartjs:
-    specifier: ^5.2.0
-    version: 5.2.0(chart.js@4.4.1)(vue@2.7.15)
+    specifier: ^5.3.0
+    version: 5.3.0(chart.js@4.4.1)(vue@2.7.15)
   vue-class-component:
     specifier: ^7.2.6
     version: 7.2.6(vue@2.7.15)
@@ -15603,8 +15603,8 @@ packages:
     resolution: {integrity: sha512-2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==}
     dev: false
 
-  /vue-chartjs@5.2.0(chart.js@4.4.1)(vue@2.7.15):
-    resolution: {integrity: sha512-d3zpKmGZr2OWHQ1xmxBcAn5ShTG917+/UCLaSpaCDDqT0U7DBsvFzTs69ZnHCgKoXT55GZDW8YEj9Av+dlONLA==}
+  /vue-chartjs@5.3.0(chart.js@4.4.1)(vue@2.7.15):
+    resolution: {integrity: sha512-8XqX0JU8vFZ+WA2/knz4z3ThClduni2Nm0BMe2u0mXgTfd9pXrmJ07QBI+WAij5P/aPmPMX54HCE1seWL37ZdQ==}
     peerDependencies:
       chart.js: ^4.1.1
       vue: ^3.0.0-0 || ^2.7.0
