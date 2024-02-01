@@ -18,11 +18,11 @@ dependencies:
     specifier: ^2.4.0
     version: 2.4.0
   chart.js:
-    specifier: ^4.4.0
-    version: 4.4.0
+    specifier: ^4.4.1
+    version: 4.4.1
   chartjs-adapter-moment:
     specifier: ^1.0.1
-    version: 1.0.1(chart.js@4.4.0)(moment@2.30.1)
+    version: 1.0.1(chart.js@4.4.1)(moment@2.30.1)
   core-js:
     specifier: ^3.33.2
     version: 3.33.2
@@ -61,7 +61,7 @@ dependencies:
     version: 2.7.15
   vue-chartjs:
     specifier: ^5.2.0
-    version: 5.2.0(chart.js@4.4.0)(vue@2.7.15)
+    version: 5.2.0(chart.js@4.4.1)(vue@2.7.15)
   vue-class-component:
     specifier: ^7.2.6
     version: 7.2.6(vue@2.7.15)
@@ -6033,20 +6033,20 @@ packages:
     resolution: {integrity: sha512-mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==}
     dev: false
 
-  /chart.js@4.4.0:
-    resolution: {integrity: sha512-vQEj6d+z0dcsKLlQvbKIMYFHd3t8W/7L2vfJIbYcfyPcRx92CsHqECpueN8qVGNlKyDcr5wBrYAYKnfu/9Q1hQ==}
+  /chart.js@4.4.1:
+    resolution: {integrity: sha512-C74QN1bxwV1v2PEujhmKjOZ7iUM4w6BWs23Md/6aOZZSlwMzeCIDGuZay++rBgChYru7/+QFeoQW0fQoP534Dg==}
     engines: {pnpm: '>=7'}
     dependencies:
       '@kurkle/color': 0.3.2
     dev: false
 
-  /chartjs-adapter-moment@1.0.1(chart.js@4.4.0)(moment@2.30.1):
+  /chartjs-adapter-moment@1.0.1(chart.js@4.4.1)(moment@2.30.1):
     resolution: {integrity: sha512-Uz+nTX/GxocuqXpGylxK19YG4R3OSVf8326D+HwSTsNw1LgzyIGRo+Qujwro1wy6X+soNSnfj5t2vZ+r6EaDmA==}
     peerDependencies:
       chart.js: '>=3.0.0'
       moment: ^2.10.2
     dependencies:
-      chart.js: 4.4.0
+      chart.js: 4.4.1
       moment: 2.30.1
     dev: false
 
@@ -15603,13 +15603,13 @@ packages:
     resolution: {integrity: sha512-2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==}
     dev: false
 
-  /vue-chartjs@5.2.0(chart.js@4.4.0)(vue@2.7.15):
+  /vue-chartjs@5.2.0(chart.js@4.4.1)(vue@2.7.15):
     resolution: {integrity: sha512-d3zpKmGZr2OWHQ1xmxBcAn5ShTG917+/UCLaSpaCDDqT0U7DBsvFzTs69ZnHCgKoXT55GZDW8YEj9Av+dlONLA==}
     peerDependencies:
       chart.js: ^4.1.1
       vue: ^3.0.0-0 || ^2.7.0
     dependencies:
-      chart.js: 4.4.0
+      chart.js: 4.4.1
       vue: 2.7.15
     dev: false
 
