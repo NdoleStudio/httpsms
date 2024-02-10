@@ -234,7 +234,7 @@ func (listener *MessageListener) onMessageSendExpiredCheck(ctx context.Context, 
 		Source:    event.Source(),
 	}
 	if err := listener.service.CheckExpired(ctx, checkParams); err != nil {
-		msg := fmt.Sprintf("cannot check expiration for  ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID)
+		msg := fmt.Sprintf("cannot check expiration for message with ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

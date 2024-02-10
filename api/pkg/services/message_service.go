@@ -745,6 +745,11 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	message, err := service.repository.Load(ctx, params.UserID, params.MessageID)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		ctxLogger.Info(fmt.Sprintf("message has been deleted for userID [%s] and messageID [%s]", params.UserID, params.MessageID))
+		return nil
+	}
+
 	if err != nil {
 		msg := fmt.Sprintf("cannot load message with userID [%s] and messageID [%s]", params.UserID, params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
