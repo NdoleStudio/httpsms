@@ -356,7 +356,7 @@ func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
 	}
 
 	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't receive a message", h.userIDFomContext(c))))
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't receive a message becasuse they have exceeded the limit", h.userIDFomContext(c))))
 		return h.responsePaymentRequired(c, *msg)
 	}
 
