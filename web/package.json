@@ -44,7 +44,7 @@
     "vue-glow": "^1.4.2",
     "vue-property-decorator": "^9.1.2",
     "vue-router": "^3.6.5",
-    "vue-server-renderer": "2.7.14",
+    "vue-server-renderer": "2.7.16",
     "vue-template-compiler": "^2.7.16",
     "vuetify": "^2.7.1",
     "vuex": "^3.6.2",
