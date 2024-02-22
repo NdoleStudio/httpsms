@@ -54,16 +54,17 @@ class SmsManagerService {
 
     @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
-    private fun getSmsManager(context: Context, sim: String = "DEFAULT"): SmsManager {
+    private fun getSmsManager(context: Context, sim: String = Constants.SIM1): SmsManager {
         val localSubscriptionManager: SubscriptionManager = if (Build.VERSION.SDK_INT < 31) {
             SubscriptionManager.from(context)
         } else {
             context.getSystemService(SubscriptionManager::class.java)
         }
 
-        val subscriptionId = if (sim == "SIM1" && localSubscriptionManager.activeSubscriptionInfoList.size > 0) {
+        Timber.d("active subscription info size: [${localSubscriptionManager.activeSubscriptionInfoList.size}]")
+        val subscriptionId = if (sim == Constants.SIM1 && localSubscriptionManager.activeSubscriptionInfoList.size > 0) {
             localSubscriptionManager.activeSubscriptionInfoList[0].subscriptionId
-        } else if (sim == "SIM2" && localSubscriptionManager.activeSubscriptionInfoList.size > 1) {
+        } else if (sim == Constants.SIM2 && localSubscriptionManager.activeSubscriptionInfoList.size > 1) {
             localSubscriptionManager.activeSubscriptionInfoList[1].subscriptionId
         } else{
             SubscriptionManager.getDefaultSmsSubscriptionId()

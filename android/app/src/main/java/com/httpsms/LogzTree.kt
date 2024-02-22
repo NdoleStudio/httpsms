@@ -37,7 +37,7 @@ class LogzTree(val context: Context): Timber.DebugTree() {
 
         val body = Klaxon().toJsonString(logEntry).toRequestBody("application/x-www-form-urlencoded".toMediaType())
         val request: Request = Request.Builder()
-            .url("https://listener.logz.io:8071?token=cTCUVJoTDrPjaFcanAPRzIsYyThyrIDw&type=http-bulk")
+            .url("https://listener.logz.io:8071?token=xPDQiZOOfemERsCaVsJXtMbhKfWdVyNk&type=http-bulk")
             .post(body)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .build()
