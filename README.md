@@ -9,7 +9,7 @@
 [![Discord](https://img.shields.io/discord/1095778291488653372?label=Discord)](https://discord.gg/kGk8HVqeEZ)
 
 [httpSMS](https://httpsms.com) is a service that lets you use your Android phone as an SMS Gateway to send and receive SMS messages.
-You make a request to a simple HTTP API and it triggers your Android phone to send an SMS. SMS messages received on your android phone can also be fowarded to your webhook endpoint.
+You make a request to a simple HTTP API and it triggers your Android phone to send an SMS. SMS messages received on your android phone can also be forwarded to your webhook endpoint.
 
 Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
 
@@ -44,9 +44,8 @@ client.Messages.Send(context.Background(), &httpsms.MessageSendParams{
 
 ## Android App
 
-[The Android App](https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk) is a native application
-built using Kotlin with material design principles. This app must be installed on an android phone before you can start
-sending and receiving SMS messages.
+[The Android App](https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk) is a native application built using Kotlin with material design principles.
+This app must be installed on an Android phone before you can start sending and receiving SMS messages.
 
 [<img src=".github/ghbadge.png" alt="Get it on GitHub" height="80">](https://github.com/NdoleStudio/httpsms/releases/)
 
@@ -85,6 +84,7 @@ will be notified.
 ## API Clients
 
 - Go: https://github.com/NdoleStudio/httpsms-go
+- JavaScript/TypeScript: https://github.com/NdoleStudio/httpsms-node
 
 ## Flows
 
@@ -92,15 +92,15 @@ will be notified.
 
 ```mermaid
 sequenceDiagram
-User->>+Http Sms API: Call /v1/messages/send API
-Http Sms API-->>+Google Cloud Task: Schedule notification about new message
-Http Sms API-->>-User: Respond with 202 (Accepted)
-Google Cloud Task-->>+Http Sms API: [Async] Send notification request
-Http Sms API-->>-Android App: Send push notification about new message
-Android App-->>Http Sms API: [Async] Fetch message
+User->>+httpSMS API: Call /v1/messages/send API
+httpSMS API-->>+Push Queue: Schedule notification about new message
+httpSMS API-->>-User: Respond with 202 (Accepted)
+Push Queue-->>+httpSMS API: [Async] Send notification request
+httpSMS API-->>-Android App: Send push notification about new message
+Android App-->>httpSMS API: [Async] Fetch message
 Android App-->>Android App: Send Message using Android SMS API
-Android App-->>Http Sms API: [Async] Send result of sending SMS
-Android App-->>Http Sms API: [Async] Send Delivery Report
+Android App-->>httpSMS API: [Async] Send result of sending SMS
+Android App-->>httpSMS API: [Async] Send Delivery Report
 ```
 
 ## License
