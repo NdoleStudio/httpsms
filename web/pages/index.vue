@@ -51,8 +51,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>2,615+</b> happy users who have sent or received
-            more than <b>538,192+</b> messages.
+            ⚡Trusted by <b>3,081+</b> happy users who have sent or received
+            more than <b>651,009+</b> messages.
           </p>
           <div
             class="mt-4"
