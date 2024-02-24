@@ -15,6 +15,8 @@ Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
 
 <img width="1115" alt="header" src="https://user-images.githubusercontent.com/4196457/194767449-f12d84a0-22f1-4787-afb2-17398fb459f6.png">
 
+## Table Of Contents
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -131,7 +133,7 @@ Android App-->>httpSMS API: [Async] Send result of sending SMS
 Android App-->>httpSMS API: [Async] Send Delivery Report
 ```
 
-## Local Setup - Docker
+## Self Host Setup - Docker
 
 ### 1. Setup Firebase
 
@@ -202,8 +204,8 @@ GCP_PROJECT_ID=
 
 ### 5. Build and Run
 
-Build and run the API, the web UI, database and cache using the `docker-compose.yml` file. It takes a while for build and download all the docker images.
-When it's finished, you'll be able to access the web UI at http://localhost:3000 and the API at http://localhost:8000
+- Build and run the API, the web UI, database and cache using the `docker-compose.yml` file. It takes a while for build and download all the docker images.
+  When it's finished, you'll be able to access the web UI at http://localhost:3000 and the API at http://localhost:8000
 
 ```bash
 docker compose up --build
@@ -211,12 +213,12 @@ docker compose up --build
 
 ### 6. Create the System User
 
-The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database.
-Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file
+- The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database.
+  Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file
 
 ### 7. Build the Android App.
 
-Before building the Android app in [Android Studio](https://developer.android.com/studio), you need to replace the `google-services.json` file in the `android/app` directory with the file which you got from step 1. You need to do this for the firebase FCM messages to work properly.
+- Before building the Android app in [Android Studio](https://developer.android.com/studio), you need to replace the `google-services.json` file in the `android/app` directory with the file which you got from step 1. You need to do this for the firebase FCM messages to work properly.
 
 ## License
 
