@@ -15,6 +15,34 @@ Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
 
 <img width="1115" alt="header" src="https://user-images.githubusercontent.com/4196457/194767449-f12d84a0-22f1-4787-afb2-17398fb459f6.png">
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Why?](#why)
+- [Web UI](#web-ui)
+- [API](#api)
+- [Android App](#android-app)
+- [Chat/forum](#chatforum)
+- [Features](#features)
+  - [End-to-end Encryption](#end-to-end-encryption)
+  - [Webhook](#webhook)
+  - [Back Pressure](#back-pressure)
+  - [Message Expiration](#message-expiration)
+- [API Clients](#api-clients)
+- [Flows](#flows)
+  - [Sending an SMS Message](#sending-an-sms-message)
+- [Local Setup - Docker](#local-setup---docker)
+  - [1. Setup Firebase](#1-setup-firebase)
+  - [2. Setup SMTP Email service](#2-setup-smtp-email-service)
+  - [3. Download the code](#3-download-the-code)
+  - [4. Setup the environment variables](#4-setup-the-environment-variables)
+  - [5. Build and Run](#5-build-and-run)
+  - [6. Create the System User](#6-create-the-system-user)
+  - [7. Build the Android App.](#7-build-the-android-app)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Why?
 
 I'm originally from Cameroon and I wanted an automated way to send and receive SMS messages using an API.
@@ -83,8 +111,8 @@ will be notified.
 
 ## API Clients
 
-- Go: https://github.com/NdoleStudio/httpsms-go
-- JavaScript/TypeScript: https://github.com/NdoleStudio/httpsms-node
+- [x] Go: https://github.com/NdoleStudio/httpsms-go
+- [x] JavaScript/TypeScript: https://github.com/NdoleStudio/httpsms-node
 
 ## Flows
 
@@ -102,6 +130,93 @@ Android App-->>Android App: Send Message using Android SMS API
 Android App-->>httpSMS API: [Async] Send result of sending SMS
 Android App-->>httpSMS API: [Async] Send Delivery Report
 ```
+
+## Local Setup - Docker
+
+### 1. Setup Firebase
+
+- The httpSMS application uses [firebase cloud messaging](https://firebase.google.com/docs/cloud-messaging) for sending push notifications to your Android phone to trigger an SMS message to be sent out.
+  Visit the [firebase console](https://console.firebase.google.com/) and create a new project and follow the [steps here](https://firebase.google.com/docs/web/setup#register-app) to get your firebase web SDK config credentials.
+  For example, I created a firebase project called `httpsms-docker` and this is my web SDK configuration
+
+```js
+const firebaseConfig = {
+  apiKey: "AIzaSyAKqPvj51igvvNNcRt_gL0A6cgx3ZB-kuQ",
+  authDomain: "httpsms-docker.firebaseapp.com",
+  projectId: "httpsms-docker",
+  storageBucket: "httpsms-docker.appspot.com",
+  messagingSenderId: "668063041624",
+  appId: "1:668063041624:web:29b9e3b7027965ba08a22d",
+  measurementId: "G-18VRYL22PZ",
+};
+```
+
+- Enable `Email/Password` sign-in in the [Firebase console](https://console.firebase.google.com/u/0/), open the **Authentication** section. On the Sign in method tab, enable the `Email/password` sign-in method and click `Save`.
+- Generate your firebase service account credentials by following the [steps here](https://firebase.google.com/docs/admin/setup#initialize_the_sdk_in_non-google_environments) and save the credentials in a file called `firebase-credentials.json` we will use this file to authenticate with the firebase admin SDK.
+- Generate your Android `google-services.json` file using [the instructions here](https://support.google.com/firebase/answer/7015592?hl=en#android&zippy=%2Cin-this-article) we will use it letter to configure the android app.
+
+### 2. Setup SMTP Email service
+
+The httpSMS application uses [SMTP](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) to send emails to users e.g. when your Android phone has been offline for a long period of time.
+You can use a service like [mailtrap](https://mailtrap.io/) to create an SMTP server for development purposes.
+
+### 3. Download the code
+
+Clone the httpSMS GitHub repository
+
+```bash
+git clone https://github.com/NdoleStudio/httpsms.git
+```
+
+### 4. Setup the environment variables
+
+- Copy the `.env.docker` file in the `web` directory into `.env` and update the environment variables with your firebase web SDK configuration.
+
+```bash
+cp web/.env.local.docker web/.env.local
+```
+
+- Copy the `.env.docker` file in the `api` directory into `.env`
+
+```bash
+cp api/.env.local.docker api/.env.local
+```
+
+- Update the environment variables in the `.env` file in the `api` directory with your firebase service account credentials and SMTP server details.
+
+```dotenv
+# SMTP email server settings
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_HOST=
+SMTP_PORT=
+
+# Firebase service account credentials
+FIREBASE_CREDENTIALS=
+
+# This is the `projectId` from your firebase web config
+GCP_PROJECT_ID=
+```
+
+- Don't bother about the `EVENTS_QUEUE_USER_API_KEY` and `EVENTS_QUEUE_USER_ID` settings. We will set that up later.
+
+### 5. Build and Run
+
+Build and run the API, the web UI, database and cache using the `docker-compose.yml` file. It takes a while for build and download all the docker images.
+When it's finished, you'll be able to access the web UI at http://localhost:3000 and the API at http://localhost:8000
+
+```bash
+docker compose up --build
+```
+
+### 6. Create the System User
+
+The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database.
+Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file
+
+### 7. Build the Android App.
+
+Before building the Android app in [Android Studio](https://developer.android.com/studio), you need to replace the `google-services.json` file in the `android/app` directory with the file which you got from step 1. You need to do this for the firebase FCM messages to work properly.
 
 ## License
 

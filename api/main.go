@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/NdoleStudio/httpsms/docs"
+	"github.com/NdoleStudio/httpsms/docs"
 	"github.com/NdoleStudio/httpsms/pkg/di"
 )
 
@@ -22,7 +22,7 @@ var Version string
 // @license.url  https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
 //
 // @host     api.httpsms.com
-// @schemes  https
+// @schemes  http https
 // @BasePath /v1
 //
 // @securitydefinitions.apikey ApiKeyAuth
@@ -32,6 +32,8 @@ func main() {
 	if len(os.Args) == 1 {
 		di.LoadEnv()
 	}
+
+	docs.SwaggerInfo.Host = os.Getenv("SWAGGER_HOST")
 
 	container := di.NewContainer("http-sms", Version)
 	container.Logger().Info(container.App().Listen(fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT"))).Error())

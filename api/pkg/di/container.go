@@ -159,7 +159,7 @@ func (container *Container) App() (app *fiber.App) {
 
 	app = fiber.New()
 
-	if os.Getenv("APP_HTTP_LOGGER") == "true" {
+	if os.Getenv("USE_HTTP_LOGGER") == "true" {
 		app.Use(fiberLogger.New())
 	}
 
@@ -1335,10 +1335,6 @@ func (container *Container) RistrettoCache() (cache *ristretto.Cache) {
 // InitializeTraceProvider initializes the open telemetry trace provider
 func (container *Container) InitializeTraceProvider() func() {
 	return container.initializeUptraceProvider(container.version, container.projectID)
-	//if isLocal() {
-	//	return container.initializeUptraceProvider(container.version, container.projectID)
-	//}
-	//return container.initializeGoogleTraceProvider(container.version, container.projectID)
 }
 
 func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {

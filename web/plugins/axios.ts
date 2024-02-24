@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const client = axios.create({
-  baseURL: process.env.BASE_URL || 'http://localhost:8000',
+  baseURL: process.env.API_BASE_URL || 'http://localhost:8000',
   headers: {
     'X-Client-Version': process.env.GITHUB_SHA || 'dev',
   },

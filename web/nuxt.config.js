@@ -90,13 +90,13 @@ export default {
       '@nuxtjs/firebase',
       {
         config: {
-          apiKey: 'AIzaSyClL8AX2H_F77_n8yu5FgLzBmJTiSM0NsQ',
-          authDomain: 'httpsms-86c51.firebaseapp.com',
-          projectId: 'httpsms-86c51',
-          storageBucket: 'httpsms-86c51.appspot.com',
-          messagingSenderId: '877524083399',
-          appId: '1:877524083399:web:430d6a29a0d808946514e2',
-          measurementId: 'G-EZ5W9DVK8T',
+          apiKey: process.env.FIREBASE_API_KEY,
+          authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.FIREBASE_APP_ID,
+          measurementId: process.env.FIREBASE_MEASUREMENT_ID,
         },
         services: {
           analytics: true,

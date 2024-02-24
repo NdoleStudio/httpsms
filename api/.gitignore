@@ -1,4 +1,4 @@
-.env
+.env.local
 *main.exe
 tmp
 $path
@@ -7,3 +7,4 @@ $path
 .flaskenv*
 !.env.project
 !.env.vault
+!.env.docker
