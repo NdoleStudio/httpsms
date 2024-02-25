@@ -7,11 +7,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// EventTypePhoneHeartbeatDead is emitted when the phone is missing a heartbeat
-const EventTypePhoneHeartbeatDead = "phone.heartbeat.dead"
+// EventTypePhoneHeartbeatOnline is emitted when the phone is missing a heartbeat
+const EventTypePhoneHeartbeatOnline = "phone.heartbeat.online"
 
-// PhoneHeartbeatDeadPayload is the payload of the EventTypePhoneHeartbeatDead event
-type PhoneHeartbeatDeadPayload struct {
+// PhoneHeartbeatOnlinePayload is the payload of the EventTypePhoneHeartbeatOnline event
+type PhoneHeartbeatOnlinePayload struct {
 	PhoneID                uuid.UUID       `json:"phone_id"`
 	UserID                 entities.UserID `json:"user_id"`
 	LastHeartbeatTimestamp time.Time       `json:"last_heartbeat_timestamp"`

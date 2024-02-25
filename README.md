@@ -172,10 +172,22 @@ git clone https://github.com/NdoleStudio/httpsms.git
 
 ### 4. Setup the environment variables
 
-- Copy the `.env.docker` file in the `web` directory into `.env` and update the environment variables with your firebase web SDK configuration.
+- Copy the `.env.docker` file in the `web` directory into `.env`
 
 ```bash
 cp web/.env.local.docker web/.env.local
+```
+
+- Update the environment variables in the `.env` file in the `web` directory with your firebase web SDK configuration in step 1 above
+
+```dotenv
+FIREBASE_API_KEY=
+FIREBASE_AUTH_DOMAIN=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_APP_ID=
+FIREBASE_MEASUREMENT_ID=
 ```
 
 - Copy the `.env.docker` file in the `api` directory into `.env`

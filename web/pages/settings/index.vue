@@ -732,6 +732,8 @@ export default Vue.extend({
         'message.phone.delivered',
         'message.send.failed',
         'message.send.expired',
+        'phone.heartbeat.offline',
+        'phone.heartbeat.online',
       ],
     }
   },

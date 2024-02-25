@@ -33,20 +33,20 @@ func NewUserListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypePhoneHeartbeatDead: l.onPhoneHeartbeatDead,
-		events.UserSubscriptionCreated:     l.OnUserSubscriptionCreated,
-		events.UserSubscriptionCancelled:   l.OnUserSubscriptionCancelled,
-		events.UserSubscriptionUpdated:     l.OnUserSubscriptionUpdated,
-		events.UserSubscriptionExpired:     l.OnUserSubscriptionExpired,
+		events.EventTypePhoneHeartbeatOffline: l.onPhoneHeartbeatDead,
+		events.UserSubscriptionCreated:        l.OnUserSubscriptionCreated,
+		events.UserSubscriptionCancelled:      l.OnUserSubscriptionCancelled,
+		events.UserSubscriptionUpdated:        l.OnUserSubscriptionUpdated,
+		events.UserSubscriptionExpired:        l.OnUserSubscriptionExpired,
 	}
 }
 
-// onPhoneHeartbeatDead handles the events.EventTypePhoneHeartbeatDead event
+// onPhoneHeartbeatDead handles the events.EventTypePhoneHeartbeatOffline event
 func (listener *UserListener) onPhoneHeartbeatDead(ctx context.Context, event cloudevents.Event) error {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
-	var payload events.PhoneHeartbeatDeadPayload
+	var payload events.PhoneHeartbeatOfflinePayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

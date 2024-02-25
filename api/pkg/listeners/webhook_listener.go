@@ -36,6 +36,8 @@ func NewWebhookListener(
 		events.EventTypeMessagePhoneDelivered: l.OnMessagePhoneDelivered,
 		events.EventTypeMessageSendFailed:     l.OnMessageSendFailed,
 		events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
+		events.EventTypePhoneHeartbeatOnline:  l.onPhoneHeartbeatOnline,
+		events.EventTypePhoneHeartbeatOffline: l.onPhoneHeartbeatOffline,
 	}
 }
 
@@ -121,6 +123,44 @@ func (listener *WebhookListener) OnMessagePhoneDelivered(ctx context.Context, ev
 	defer span.End()
 
 	var payload events.MessagePhoneDeliveredPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
+		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnMessagePhoneDelivered handles the events.EventTypeMessagePhoneDelivered event
+func (listener *WebhookListener) onPhoneHeartbeatOffline(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.PhoneHeartbeatOfflinePayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
+		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// OnMessagePhoneDelivered handles the events.EventTypeMessagePhoneDelivered event
+func (listener *WebhookListener) onPhoneHeartbeatOnline(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.PhoneHeartbeatOnlinePayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

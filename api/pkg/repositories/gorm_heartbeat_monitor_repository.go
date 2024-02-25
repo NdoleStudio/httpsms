@@ -22,6 +22,29 @@ type gormHeartbeatMonitorRepository struct {
 	db     *gorm.DB
 }
 
+// UpdatePhoneOnline updates the online status of a phone
+func (repository *gormHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.Context, userID entities.UserID, monitorID uuid.UUID, isOnline bool) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	err := repository.db.
+		Model(&entities.HeartbeatMonitor{}).
+		Where("id = ?", monitorID).
+		Where("user_id = ?", userID).
+		Updates(map[string]any{
+			"phone_online": isOnline,
+			"updated_at":   time.Now().UTC(),
+		}).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot update heartbeat monitor ID [%s] for user [%s]", monitorID, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+	return nil
+}
+
 // UpdateQueueID updates the queueID of a monitor
 func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Context, monitorID uuid.UUID, queueID string) error {
 	ctx, span := repository.tracer.Start(ctx)

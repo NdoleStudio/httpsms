@@ -24,4 +24,7 @@ type HeartbeatMonitorRepository interface {
 
 	// Delete an entities.HeartbeatMonitor
 	Delete(ctx context.Context, userID entities.UserID, phoneNumber string) error
+
+	// UpdatePhoneOnline updates the phone online status of a monitor
+	UpdatePhoneOnline(ctx context.Context, userID entities.UserID, monitorID uuid.UUID, online bool) error
 }

@@ -21,10 +21,11 @@ func (input *HeartbeatStore) Sanitize() HeartbeatStore {
 }
 
 // ToStoreParams converts HeartbeatIndex to repositories.IndexParams
-func (input *HeartbeatStore) ToStoreParams(user entities.AuthUser, version string) services.HeartbeatStoreParams {
+func (input *HeartbeatStore) ToStoreParams(user entities.AuthUser, source string, version string) services.HeartbeatStoreParams {
 	return services.HeartbeatStoreParams{
 		Owner:     input.Owner,
 		Version:   version,
+		Source:    source,
 		Charging:  input.Charging,
 		Timestamp: time.Now().UTC(),
 		UserID:    user.ID,

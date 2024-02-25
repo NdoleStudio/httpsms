@@ -171,7 +171,7 @@ func (service *UserService) SendPhoneDeadEmail(ctx context.Context, params *User
 	}
 
 	if !user.NotificationHeartbeatEnabled {
-		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypePhoneHeartbeatDead, params.UserID, params.Owner))
+		ctxLogger.Info(fmt.Sprintf("[%s] email notifications disabled for user [%s] with owner [%s]", events.EventTypePhoneHeartbeatOffline, params.UserID, params.Owner))
 		return nil
 	}
 
