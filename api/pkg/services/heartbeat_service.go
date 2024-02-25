@@ -126,6 +126,11 @@ func (service *HeartbeatService) handleHeartbeatWhenPhoneWasOffline(ctx context.
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	if err := service.UpdatePhoneOnline(ctx, monitor.UserID, monitor.ID, true); err != nil {
+		msg := fmt.Sprintf("cannot update phone online status for heartbeat monitor [%s]", monitor.ID)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+	}
+
 	event, err := service.createEvent(events.EventTypePhoneHeartbeatOnline, source, &events.PhoneHeartbeatOnlinePayload{
 		PhoneID:                monitor.PhoneID,
 		UserID:                 monitor.UserID,
@@ -240,11 +245,11 @@ func (service *HeartbeatService) UpdatePhoneOnline(ctx context.Context, userID e
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if err := service.monitorRepository.UpdatePhoneOnline(ctx, userID, monitorID, phoneOnline); err != nil {
-		msg := fmt.Sprintf("cannot update heartbeat monitor [%s] with userID [%s] and status [%s]", monitorID, userID, phoneOnline)
+		msg := fmt.Sprintf("cannot update heartbeat monitor [%s] with userID [%s] and status [%t]", monitorID, userID, phoneOnline)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("heartbeat monitor [%s] updated for userID [%s] and status [%s]", monitorID, userID, phoneOnline))
+	ctxLogger.Info(fmt.Sprintf("heartbeat monitor [%s] updated for userID [%s] and status [%t]", monitorID, userID, phoneOnline))
 	return nil
 }
 
