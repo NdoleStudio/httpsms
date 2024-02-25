@@ -317,7 +317,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, time.Second); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -509,6 +509,11 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if message.IsSent() || message.IsDelivered() {
+		ctxLogger.Info(fmt.Sprintf("message [%s] for [%s] has already been processed with status [%s]", message.ID, message.UserID, message.Status))
+		return nil
 	}
 
 	if !message.IsSending() && !message.IsExpired() {
