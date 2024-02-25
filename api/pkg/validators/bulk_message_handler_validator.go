@@ -70,8 +70,8 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 		return messages, result
 	}
 
-	if len(messages) > 100 {
-		result.Add("document", "The uploaded file must contain less than 100 records.")
+	if len(messages) > 1000 {
+		result.Add("document", "The uploaded file must contain less than 1000 records.")
 		return messages, result
 	}
 

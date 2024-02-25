@@ -138,7 +138,13 @@ export default {
     hostname: 'https://httpsms.com',
     gzip: true,
     trailingSlash: true,
-    exclude: ['/messages', '/settings', '/threads**', '/billing'],
+    exclude: [
+      '/messages',
+      '/settings',
+      '/threads**',
+      '/billing',
+      '/bulk-messages',
+    ],
   },
 
   publicRuntimeConfig: {
