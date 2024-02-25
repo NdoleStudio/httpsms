@@ -100,6 +100,10 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 	ctxLogger.Info(fmt.Sprintf("heartbeat saved with id [%s] for user [%s]", heartbeat.ID, heartbeat.UserID))
 
 	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
+		return heartbeat, nil
+	}
 	if err != nil {
 		msg := fmt.Sprintf("cannot load heartbeat monitor for owner [%s] and user [%s]", params.Owner, params.UserID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

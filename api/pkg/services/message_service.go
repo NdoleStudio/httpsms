@@ -318,7 +318,7 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 	}
 
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, time.Second); err != nil {
-		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
+		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 	return nil
