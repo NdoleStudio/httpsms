@@ -152,6 +152,12 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .build()
 
         val response = client.newCall(request).execute()
+        if (response.code == 404) {
+            response.close()
+            Timber.i( "[$event] event sent successfully but message with ID [$messageId] has been deleted" )
+            return true
+        }
+
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             response.close()
