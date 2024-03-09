@@ -61,7 +61,16 @@ jobs:
       - name: Build 🏗️
         run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && pnpm run generate
 
-      - name: Deploy 🚀
+      - name: Cloudflare Deploy 🚀
+        uses: cloudflare/pages-action@1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: httpsms
+          directory: web/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Firebase Deploy 🚀
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
