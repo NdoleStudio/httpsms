@@ -28,20 +28,22 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout
-        app:layout_constraintTop_toBottomOf="@+id/settings_app_bar_layout"
+        android:id="@+id/linearLayout2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingLeft="16dp"
         android:layout_marginTop="16dp"
+        android:orientation="vertical"
+        android:paddingLeft="16dp"
         android:paddingRight="16dp"
-        android:orientation="vertical">
+        app:layout_constraintTop_toBottomOf="@+id/settings_app_bar_layout">
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/settingsSIM1"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:errorEnabled="true"
             android:hint="@string/settings_sim1"
+            app:errorEnabled="true"
             app:layout_constraintTop_toTopOf="parent"
             tools:layout_editor_absoluteX="16dp">
 
@@ -58,20 +60,20 @@
             android:id="@+id/settings_sim1_outgoing_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
             android:layout_marginBottom="16dp"
-            android:text="@string/settings_outgoing_messages_sim1"
             android:minHeight="48dp"
+            android:text="@string/settings_outgoing_messages_sim1"
+            android:textSize="18sp"
             tools:ignore="TouchTargetSizeCheck" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/settings_sim1_incoming_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
             android:layout_marginBottom="16dp"
-            android:text="@string/settings_incoming_messages_sim1"
             android:minHeight="48dp"
+            android:text="@string/settings_incoming_messages_sim1"
+            android:textSize="18sp"
             tools:ignore="TouchTargetSizeCheck" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -79,8 +81,8 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:errorEnabled="true"
             android:hint="@string/settings_sim_2"
+            app:errorEnabled="true"
             app:layout_constraintTop_toTopOf="parent"
             tools:layout_editor_absoluteX="16dp">
 
@@ -97,20 +99,20 @@
             android:id="@+id/settings_sim2_outgoing_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:text="@string/settings_outgoing_messages_sim2"
-            android:minHeight="48dp"
             android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:text="@string/settings_outgoing_messages_sim2"
+            android:textSize="18sp"
             tools:ignore="TouchTargetSizeCheck" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/settings_sim2_incoming_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:text="@string/settings_incoming_messages_sim2"
-            android:minHeight="48dp"
             android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:text="@string/settings_incoming_messages_sim2"
+            android:textSize="18sp"
             tools:ignore="TouchTargetSizeCheck" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -118,8 +120,8 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:errorEnabled="true"
             android:hint="@string/encryption_key"
+            app:errorEnabled="true"
             app:layout_constraintTop_toTopOf="parent"
             tools:layout_editor_absoluteX="16dp">
 
@@ -136,10 +138,20 @@
             android:id="@+id/settingsEncryptReceivedMessages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:text="@string/encrypt_received_messages"
-            android:minHeight="48dp"
             android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:text="@string/encrypt_received_messages"
+            android:textSize="18sp"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/settingEnableDebugLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:text="@string/enable_debug_logs"
+            android:textSize="18sp"
             tools:ignore="TouchTargetSizeCheck" />
     </LinearLayout>
 
@@ -148,17 +160,19 @@
         style="@style/Widget.MaterialComponents.Button.Icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
         android:backgroundTint="@color/black"
         android:drawableTint="@color/white"
         android:padding="10dp"
         android:text="@string/main_log_out"
         android:textColor="@color/white"
         android:textSize="16sp"
+        android:layout_marginTop="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
         app:icon="@drawable/ic_login"
         app:iconTint="@color/white"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
         tools:ignore="TextContrastCheck" />
 </androidx.constraintlayout.widget.ConstraintLayout>

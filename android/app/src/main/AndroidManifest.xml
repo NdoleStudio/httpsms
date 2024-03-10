@@ -48,6 +48,7 @@
         <service
             android:name=".services.StickyNotificationService"
             android:enabled="true"
+            android:foregroundServiceType="remoteMessaging"
             android:exported="false">
         </service>
 

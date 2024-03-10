@@ -16,6 +16,7 @@ object Settings {
     private const val SETTINGS_SIM2_ACTIVE = "SETTINGS_SIM2_ACTIVE_STATUS"
     private const val SETTINGS_SIM1_INCOMING_ACTIVE = "SETTINGS_SIM1_INCOMING_ACTIVE"
     private const val SETTINGS_SIM2_INCOMING_ACTIVE = "SETTINGS_SIM2_INCOMING_ACTIVE"
+    private const val SETTINGS_DEBUG_LOG_ENABLED = "SETTINGS_DEBUG_LOG_ENABLED"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_SERVER_URL = "SETTINGS_SERVER_URL"
     private const val SETTINGS_FCM_TOKEN = "SETTINGS_FCM_TOKEN"
@@ -111,6 +112,23 @@ object Settings {
 
         Timber.d("SETTINGS_${sim}_INCOMING_ACTIVE: [$activeStatus]")
         return activeStatus
+    }
+
+    fun isDebugLogEnabled(context: Context) : Boolean {
+        Timber.d(Settings::isDebugLogEnabled.name)
+
+        return PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getBoolean(this.SETTINGS_DEBUG_LOG_ENABLED, false)
+    }
+
+    fun setDebugLogEnabled(context: Context, status: Boolean) {
+        Timber.d(Settings::setDebugLogEnabled.name)
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(this.SETTINGS_DEBUG_LOG_ENABLED, status)
+            .apply()
     }
 
     fun setIncomingActiveSIM1(context: Context, status: Boolean) {

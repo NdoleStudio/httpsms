@@ -6,7 +6,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +23,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -42,9 +42,6 @@ import android.provider.Settings as ProviderSettings
 
 
 class MainActivity : AppCompatActivity() {
-    private var sentReceiver: SentReceiver? = null
-    private var deliveredReceiver: DeliveredReceiver? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -218,7 +215,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (BuildConfig.DEBUG) {
+        if(Settings.isDebugLogEnabled(this)) {
             Timber.plant(Timber.DebugTree())
             Timber.plant(LogzTree(this.applicationContext))
         }

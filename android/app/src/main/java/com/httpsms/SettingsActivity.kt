@@ -22,6 +22,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun fillSettings(context: Context) {
+        val debugLogs = findViewById<SwitchMaterial>(R.id.settingEnableDebugLogs)
+        debugLogs.isChecked = Settings.isDebugLogEnabled(context)
+        debugLogs.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setDebugLogEnabled(context, isChecked) } }
+
+
         val phoneNumber = findViewById<TextInputEditText>(R.id.settingsSIM1Input)
         phoneNumber.setText(Settings.getSIM1PhoneNumber(context))
         phoneNumber.isEnabled = false

@@ -28,4 +28,5 @@
     <string name="login_phone_number_sim2">Phone Number (SIM2)</string>
     <string name="encryption_key">Encryption Key</string>
     <string name="encrypt_received_messages">Encrypt Received Messages</string>
+    <string name="enable_debug_logs">Enable Debug Logs</string>
 </resources>

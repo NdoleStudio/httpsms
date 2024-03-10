@@ -12,16 +12,20 @@ import android.telephony.TelephonyManager
 import android.view.View
 import android.webkit.URLUtil
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import timber.log.Timber
 import java.net.URI
+
 
 class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,9 +127,29 @@ class LoginActivity : AppCompatActivity() {
         Timber.d("creating permissions launcher")
     }
 
+    private fun isGooglePlayServicesAvailable(): String? {
+        val googleApiAvailability = GoogleApiAvailability.getInstance()
+        val status = googleApiAvailability.isGooglePlayServicesAvailable(this)
+        if (status != ConnectionResult.SUCCESS) {
+            if (googleApiAvailability.isUserResolvableError(status)) {
+                googleApiAvailability.getErrorDialog(this, status, 2404)?.show()
+            }
+            return googleApiAvailability.getErrorString(status)
+        }
+        return null
+    }
+
 
     private fun onLoginClick() {
         Timber.d("login button clicked")
+
+        val error = isGooglePlayServicesAvailable()
+        if (error != null) {
+            Timber.d("google play services not installed [${error}]")
+            Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         loginButton().isEnabled = false
         val progressBar = findViewById<LinearProgressIndicator>(R.id.loginProgressIndicator)
         progressBar.visibility = View.VISIBLE
