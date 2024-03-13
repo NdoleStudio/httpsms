@@ -74,13 +74,21 @@ func (repository *gormPhoneRepository) Delete(ctx context.Context, userID entiti
 
 // Save a new entities.Phone
 func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities.Phone) error {
-	ctx, span := repository.tracer.Start(ctx)
+	ctx, span, ctxLogger := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
 
-	err := repository.db.
-		WithContext(ctx).
-		Save(phone).
-		Error
+	err := repository.db.WithContext(ctx).Save(phone).Error
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		ctxLogger.Info(fmt.Sprintf("phone with user [%s] and number[%s] already exists", phone.UserID, phone.PhoneNumber))
+		loadedPhone, err := repository.Load(ctx, phone.UserID, phone.PhoneNumber)
+		if err != nil {
+			msg := fmt.Sprintf("cannot load phone for user [%s] and number [%s]", phone.UserID, phone.PhoneNumber)
+			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+		*phone = *loadedPhone
+		return nil
+	}
+
 	if err != nil {
 		msg := fmt.Sprintf("cannot save phone with ID [%s]", phone.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

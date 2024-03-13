@@ -217,7 +217,9 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		return container.dedicatedDB
 	}
 
-	config := &gorm.Config{}
+	config := &gorm.Config{
+		TranslateError: true,
+	}
 	if isLocal() {
 		config = &gorm.Config{Logger: container.GormLogger()}
 	}
