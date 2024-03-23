@@ -144,13 +144,13 @@ func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
 // @Tags         MessageThreads
 // @Accept       json
 // @Produce      json
-// @Param 		 messageID 	path		string 							true 	"ID of the message thread" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
-// @Success      204  		{object} 	responses.NoContent
-// @Failure      400  		{object}  	responses.BadRequest
-// @Failure 	 401    	{object}	responses.Unauthorized
-// @Failure 	 404		{object}	responses.NotFound
-// @Failure      422  		{object} 	responses.UnprocessableEntity
-// @Failure      500  		{object}  	responses.InternalServerError
+// @Param 		 messageThreadID	path		string 							true	"ID of the message thread"	default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      204  				{object} 	responses.NoContent
+// @Failure      400  				{object}  	responses.BadRequest
+// @Failure 	 401    			{object}	responses.Unauthorized
+// @Failure 	 404				{object}	responses.NotFound
+// @Failure      422  				{object} 	responses.UnprocessableEntity
+// @Failure      500  				{object}  	responses.InternalServerError
 // @Router       /message-threads/{messageThreadID} [delete]
 func (h *MessageThreadHandler) Delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
