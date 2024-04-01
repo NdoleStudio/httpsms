@@ -28,8 +28,8 @@ firebase.google.com/go v3.13.0+incompatible/go.mod h1:xlah6XbEyW6tbfSklcfe5FHJIw
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.46.0 h1:n3T26hyfDl9RdgcOjWvOFMh1lCBNuZ0JQ/3DM5pou8Y=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.46.0/go.mod h1:3S7qK2nHOO2cLID3xk6H8f55D38XswhVFzKEk0nqIbY=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.21.0 h1:OEgjQy1rH4Fbn5IpuI9d0uhLl+j6DkDvh9Q2Ucd6GK8=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.21.0/go.mod h1:EUfJ8lb3pjD8VasPPwqIvG2XVCE6DOT8tY5tcwbWA+A=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.22.0 h1:xl4IRfBXPZxwu7dIza8n6wdX5zEJpi0boF5dX22MbYE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.22.0/go.mod h1:P69hhmQh4zwnU5iEdGVowFWg1DiP9x2KsCYBOIaP4us=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.46.0 h1:vaXjFX09ygxNxAiHwByzPBVKltYFVZR8HN4U3TR4vn8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.46.0/go.mod h1:V28hx+cUCZC9e3qcqszMb+Sbt8cQZtHTiXOmyDzoDOg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.46.0 h1:xlfPHZ5QFvHad9KmrVDoaPpJUT/XluwNDMNHn+k7z/s=
