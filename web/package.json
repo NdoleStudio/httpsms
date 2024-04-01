@@ -25,7 +25,7 @@
     "@mdi/js": "^7.4.47",
     "@nuxtjs/dotenv": "^1.4.2",
     "@nuxtjs/firebase": "^8.2.2",
-    "@nuxtjs/sitemap": "^2.4.0",
+    "@nuxtjs/sitemap": "^5.1.2",
     "chart.js": "^4.4.1",
     "chartjs-adapter-moment": "^1.0.1",
     "core-js": "^3.36.0",
