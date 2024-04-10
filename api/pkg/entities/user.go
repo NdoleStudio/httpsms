@@ -14,28 +14,20 @@ type SubscriptionName string
 
 // Limit returns the limit of a subscription
 func (subscription SubscriptionName) Limit() uint {
-	if subscription == SubscriptionNameFree {
+	switch subscription {
+	case SubscriptionNameProMonthly, SubscriptionNameProYearly, SubscriptionNameProLifetime:
+		return 5000
+	case SubscriptionNameUltraMonthly, SubscriptionNameUltraYearly:
+		return 10_000
+	case SubscriptionName20KMonthly, SubscriptionName20KYearly:
+		return 20_000
+	case SubscriptionName50KMonthly, SubscriptionName50KYearly:
+		return 50_000
+	case SubscriptionName100KMonthly, SubscriptionName100KYearly:
+		return 100_000
+	default:
 		return 200
 	}
-	if subscription == SubscriptionNameProMonthly || subscription == SubscriptionNameProYearly || subscription == SubscriptionNameProLifetime {
-		return 5000
-	}
-
-	if subscription == SubscriptionNameUltraMonthly || subscription == SubscriptionNameUltraYearly {
-		return 10_000
-	}
-
-	if subscription == SubscriptionName20KMonthly || subscription == SubscriptionName20KYearly {
-		return 20_000
-	}
-	if subscription == SubscriptionName50KMonthly || subscription == SubscriptionName50KYearly {
-		return 50_000
-	}
-	if subscription == SubscriptionName100KMonthly || subscription == SubscriptionName100KYearly {
-		return 100_000
-	}
-
-	return 200
 }
 
 // SubscriptionNameFree represents a free subscription
