@@ -36,7 +36,7 @@ func NewGormPhoneNotificationRepository(
 }
 
 // UpdateStatus of an entities.PhoneNotification
-func (repository gormPhoneNotificationRepository) UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error {
+func (repository *gormPhoneNotificationRepository) UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -54,7 +54,7 @@ func (repository gormPhoneNotificationRepository) UpdateStatus(ctx context.Conte
 }
 
 // Schedule a notification to be sent in the future
-func (repository gormPhoneNotificationRepository) Schedule(ctx context.Context, messagesPerMinute uint, notification *entities.PhoneNotification) error {
+func (repository *gormPhoneNotificationRepository) Schedule(ctx context.Context, messagesPerMinute uint, notification *entities.PhoneNotification) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
