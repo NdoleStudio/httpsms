@@ -425,6 +425,18 @@ export default Vue.extend({
           price: 350,
         },
         {
+          name: '50k - Monthly',
+          id: '50k-monthly',
+          messagesPerMonth: 50000,
+          price: 89,
+        },
+        {
+          name: '50k - Yearly',
+          id: '50k-yearly',
+          messagesPerMonth: 50000,
+          price: 890,
+        },
+        {
           name: '100k - Monthly',
           id: '100k-monthly',
           messagesPerMonth: 100000,
