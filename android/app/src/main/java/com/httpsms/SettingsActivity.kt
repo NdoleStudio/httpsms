@@ -1,9 +1,14 @@
 package com.httpsms
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.Build.VERSION_CODES
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
@@ -112,6 +117,29 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun appToolbar(): MaterialToolbar {
         return findViewById(R.id.settings_toolbar)
+    }
+
+    private fun requestReadCallLogPermission(context: Context) {
+        Timber.d("requesting permissions")
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            permissions.entries.forEach {
+                Timber.d("${it.key} = ${it.value}")
+            }
+        }
+
+        var permissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
+
+        if(Build.VERSION.SDK_INT >= 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        requestPermissionLauncher.launch(permissions)
+
+        Timber.d("creating permissions launcher")
     }
 
     private fun onLogoutClick() {

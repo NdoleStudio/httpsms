@@ -23,7 +23,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -108,26 +107,14 @@ class MainActivity : AppCompatActivity() {
         if(!Settings.isLoggedIn(context)) {
             return
         }
-
         Timber.d("requesting permissions")
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
                 Timber.d("${it.key} = ${it.value}")
             }
         }
-
-        var permissions = arrayOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_SMS
-        )
-
-        if(Build.VERSION.SDK_INT >= 33) {
-            permissions += Manifest.permission.POST_NOTIFICATIONS
-        }
-
+        val permissions = arrayOf(Manifest.permission.READ_CALL_LOG)
         requestPermissionLauncher.launch(permissions)
-
         Timber.d("creating permissions launcher")
     }
 
@@ -323,7 +310,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
-            var charging = Settings.isCharging(applicationContext)
+            val charging = Settings.isCharging(applicationContext)
             var error: String? = null
             try {
                 HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM1PhoneNumber(context), charging)
