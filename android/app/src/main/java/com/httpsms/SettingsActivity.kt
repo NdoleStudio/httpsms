@@ -68,6 +68,16 @@ class SettingsActivity : AppCompatActivity() {
         sim2OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2) } }
 
         handleEncryptionSettings(context)
+        handleIncomingCallEventsSim1(context)
+    }
+
+    private fun handleIncomingCallEventsSim1(context: Context) {
+        val enableIncomingCallEvents = findViewById<SwitchMaterial>(R.id.settingsSim1EnableIncomingCallEvents)
+        enableIncomingCallEvents.isChecked = Settings.isIncomingCallEventsEnabled(context, Constants.SIM1)
+        enableIncomingCallEvents.setOnCheckedChangeListener{ _, isChecked -> run {
+            requestReadCallLogPermission(context)
+            Timber.d("how are you [${isChecked}]")
+        }}
     }
 
     private fun handleEncryptionSettings(context: Context) {
@@ -120,25 +130,21 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun requestReadCallLogPermission(context: Context) {
+        if(!Settings.isLoggedIn(context)) {
+            return
+        }
         Timber.d("requesting permissions")
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
                 Timber.d("${it.key} = ${it.value}")
             }
         }
-
-        var permissions = arrayOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_SMS
+        val permissions = arrayOf(
+            Manifest.permission.READ_CALL_LOG,
+            Manifest.permission.READ_PHONE_STATE
         )
 
-        if(Build.VERSION.SDK_INT >= 33) {
-            permissions += Manifest.permission.POST_NOTIFICATIONS
-        }
-
         requestPermissionLauncher.launch(permissions)
-
         Timber.d("creating permissions launcher")
     }
 

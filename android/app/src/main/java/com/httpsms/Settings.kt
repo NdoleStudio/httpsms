@@ -16,6 +16,8 @@ object Settings {
     private const val SETTINGS_SIM2_ACTIVE = "SETTINGS_SIM2_ACTIVE_STATUS"
     private const val SETTINGS_SIM1_INCOMING_ACTIVE = "SETTINGS_SIM1_INCOMING_ACTIVE"
     private const val SETTINGS_SIM2_INCOMING_ACTIVE = "SETTINGS_SIM2_INCOMING_ACTIVE"
+    private const val SETTINGS_SIM1_INCOMING_CALL_ACTIVE = "SETTINGS_SIM1_INCOMING_CALL_ACTIVE"
+    private const val SETTINGS_SIM2_INCOMING_CALL_ACTIVE = "SETTINGS_SIM2_INCOMING_CALL_ACTIVE"
     private const val SETTINGS_DEBUG_LOG_ENABLED = "SETTINGS_DEBUG_LOG_ENABLED"
     private const val SETTINGS_API_KEY = "SETTINGS_API_KEY"
     private const val SETTINGS_SERVER_URL = "SETTINGS_SERVER_URL"
@@ -113,6 +115,32 @@ object Settings {
         Timber.d("SETTINGS_${sim}_INCOMING_ACTIVE: [$activeStatus]")
         return activeStatus
     }
+
+    fun isIncomingCallEventsEnabled(context: Context, sim: String): Boolean {
+        var setting = this.SETTINGS_SIM1_INCOMING_CALL_ACTIVE
+        if (sim == Constants.SIM2) {
+            setting = this.SETTINGS_SIM2_INCOMING_CALL_ACTIVE
+        }
+        val activeStatus = PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .getBoolean(setting,false)
+
+        Timber.d("SETTINGS_${sim}_INCOMING_CALL_ACTIVE: [$activeStatus]")
+        return activeStatus
+    }
+
+    fun setIncomingCallEventsEnabled(context: Context, sim: String, enabled: Boolean) {
+        var setting = this.SETTINGS_SIM1_INCOMING_CALL_ACTIVE
+        if (sim == Constants.SIM2) {
+            setting = this.SETTINGS_SIM2_INCOMING_CALL_ACTIVE
+        }
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(setting, enabled)
+            .apply()
+    }
+
 
     fun isDebugLogEnabled(context: Context) : Boolean {
         Timber.d(Settings::isDebugLogEnabled.name)

@@ -20,13 +20,14 @@
     <string name="main_app_settings">App Settings</string>
     <string name="settings_sim1">SIM1</string>
     <string name="settings_sim_2">SIM2</string>
-    <string name="settings_outgoing_messages_sim1">Enable Outgoing Messages (SIM1)</string>
-    <string name="settings_incoming_messages_sim1">Enable Incoming Messages (SIM1)</string>
-    <string name="settings_incoming_messages_sim2">Enable Incoming Messages (SIM2)</string>
-    <string name="settings_outgoing_messages_sim2">Enable Outgoing Messages (SIM2)</string>
-    <string name="login_phone_number_sim1">Phone Number (SIM1)</string>
-    <string name="login_phone_number_sim2">Phone Number (SIM2)</string>
+    <string name="settings_outgoing_messages_sim1">Enable SIM1 outgoing messages</string>
+    <string name="settings_incoming_messages_sim1">Enable SIM1 incoming messages</string>
+    <string name="settings_incoming_messages_sim2">Enable SIM2 incoming messages</string>
+    <string name="settings_outgoing_messages_sim2">Enable SIM2 outgoing messages</string>
+    <string name="login_phone_number_sim1">Phone number (SIM1)</string>
+    <string name="login_phone_number_sim2">Phone number (SIM2)</string>
     <string name="encryption_key">Encryption Key</string>
-    <string name="encrypt_received_messages">Encrypt Received Messages</string>
-    <string name="enable_debug_logs">Enable Debug Logs</string>
+    <string name="encrypt_received_messages">Encrypt received messages</string>
+    <string name="enable_debug_logs">Enable debug logs</string>
+    <string name="enable_incoming_call_events_sim1">Enable SIM1 incoming call events</string>
 </resources>

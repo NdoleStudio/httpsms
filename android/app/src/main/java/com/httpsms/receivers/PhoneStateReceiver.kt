@@ -14,5 +14,11 @@ class PhoneStateReceiver : BroadcastReceiver() {
         val subscriptionId = intent.extras!!.getString(TelephonyManager.EXTRA_SUBSCRIPTION_ID)
         val number = intent.extras!!.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)
         Timber.w("state = [${stateStr}] number = [${number}], subscriptionID = [${subscriptionId}]")
+        val bundle = intent.extras
+        if (bundle != null) {
+            for (key in bundle.keySet()) {
+                Timber.w(key + " : " + if (bundle[key] != null) bundle[key] else "NULL")
+            }
+        }
     }
 }

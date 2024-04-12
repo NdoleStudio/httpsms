@@ -76,6 +76,17 @@
             android:textSize="18sp"
             tools:ignore="TouchTargetSizeCheck" />
 
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/settingsSim1EnableIncomingCallEvents"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:text="@string/enable_incoming_call_events_sim1"
+            android:textSize="18sp"
+            tools:ignore="TouchTargetSizeCheck" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/settingsSIM2Layout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"

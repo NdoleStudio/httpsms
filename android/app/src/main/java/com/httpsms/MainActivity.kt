@@ -104,17 +104,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPermissions(context:Context) {
-        if(!Settings.isLoggedIn(context)) {
-            return
-        }
         Timber.d("requesting permissions")
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
                 Timber.d("${it.key} = ${it.value}")
             }
         }
-        val permissions = arrayOf(Manifest.permission.READ_CALL_LOG)
+
+        var permissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
+
+        if(Build.VERSION.SDK_INT >= 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
         requestPermissionLauncher.launch(permissions)
+
         Timber.d("creating permissions launcher")
     }
 
