@@ -108,6 +108,11 @@ class MainActivity : AppCompatActivity() {
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach {
                 Timber.d("${it.key} = ${it.value}")
+                if (it.key == Manifest.permission.READ_CALL_LOG && !it.value) {
+                    Timber.w("disabling incoming call events since for SIM1 and SIM2")
+                    Settings.setIncomingCallEventsEnabled(context, Constants.SIM1, false)
+                    Settings.setIncomingCallEventsEnabled(context, Constants.SIM2, false)
+                }
             }
         }
 
