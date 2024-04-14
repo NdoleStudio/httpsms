@@ -86,6 +86,7 @@ func init() {
 			events.EventTypeMessageSendExpired:    true,
 			events.EventTypePhoneHeartbeatOnline:  true,
 			events.EventTypePhoneHeartbeatOffline: true,
+			events.MessageCallMissed:              true,
 		}
 
 		for _, event := range input {

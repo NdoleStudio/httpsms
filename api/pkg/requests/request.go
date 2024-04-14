@@ -6,18 +6,15 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+
 	"github.com/nyaruka/phonenumbers"
 )
 
 type request struct{}
 
-// getLimit gets the take as a string
 func (input *request) sanitizeAddress(value string) string {
-	value = strings.TrimRight(value, " ")
-	if len(value) > 0 && value[0] == ' ' {
-		value = strings.Replace(value, " ", "+", 1)
-	}
-
+	value = strings.TrimSpace(value)
 	if !strings.HasPrefix(value, "+") && input.isDigits(value) && len(value) > 9 {
 		value = "+" + value
 	}
@@ -41,6 +38,13 @@ func (input *request) sanitizeBool(value string) string {
 	}
 
 	return value
+}
+
+func (input *request) sanitizeSIM(value string) string {
+	if value == entities.SIM1.String() || value == entities.SIM2.String() {
+		return value
+	}
+	return entities.SIM1.String()
 }
 
 func (input *request) sanitizeURL(value string) string {

@@ -32,9 +32,7 @@ type PhoneUpsert struct {
 func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 	input.FcmToken = strings.TrimSpace(input.FcmToken)
 	input.PhoneNumber = input.sanitizeAddress(input.PhoneNumber)
-	if input.SIM == "" {
-		input.SIM = entities.SIM1.String()
-	}
+	input.SIM = input.sanitizeSIM(input.SIM)
 	return *input
 }
 

@@ -52,6 +52,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Post("/messages/send", h.PostSend)
 	router.Post("/messages/bulk-send", h.BulkSend)
 	router.Post("/messages/receive", h.PostReceive)
+	router.Post("/messages/calls/missed", h.PostCallMissed)
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
 	router.Post("/messages/:messageID/events", h.PostEvent)
@@ -416,4 +417,48 @@ func (h *MessageHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return h.responseNoContent(c, "message deleted successfully")
+}
+
+// PostCallMissed registers a missed phone call
+// @Summary      Register a missed call event on the mobile phone
+// @Description  This endpoint is called by the httpSMS android app to register a missed call event on the mobile phone.
+// @Security	 ApiKeyAuth
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        payload   	body 		requests.MessageCallMissed  	true	"Payload of the missed call event."
+// @Success      200  		{object} 	responses.MessageResponse
+// @Failure      400  		{object}  	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure 	 404		{object}	responses.NotFound
+// @Failure      422  		{object} 	responses.UnprocessableEntity
+// @Failure      500  		{object}  	responses.InternalServerError
+// @Router       /messages/calls/missed [post]
+func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageCallMissed
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateCallMissed(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], for missed call event [%s]", spew.Sdump(errors), c.Body())
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while storing missed call event")
+	}
+
+	message, err := h.service.RegisterMissedCall(ctx, request.ToCallMissedParams(h.userIDFomContext(c), c.OriginalURL()))
+	if err != nil {
+		msg := fmt.Sprintf("cannot store missed call event for user [%s] with paylod [%s]", h.userIDFomContext(c), c.Body())
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "missed call event stored successfully", message)
 }

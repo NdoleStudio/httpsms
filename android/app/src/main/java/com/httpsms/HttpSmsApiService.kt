@@ -111,7 +111,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         """.trimIndent()
 
         val request: Request = Request.Builder()
-            .url(resolveURL("/v1/calls/missed"))
+            .url(resolveURL("/v1/messages/calls/missed"))
             .post(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
@@ -121,7 +121,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending missed call event [${body}]")
             response.close()
-            return false
+            return response.code == 422
         }
 
         response.close()

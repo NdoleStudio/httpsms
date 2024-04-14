@@ -416,6 +416,55 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	return message, err
 }
 
+// MissedCallParams parameters for sending a new message
+type MissedCallParams struct {
+	Owner     *phonenumbers.PhoneNumber
+	Contact   string
+	Source    string
+	SIM       entities.SIM
+	Timestamp time.Time
+	UserID    entities.UserID
+}
+
+// RegisterMissedCall a new message
+func (service *MessageService) RegisterMissedCall(ctx context.Context, params *MissedCallParams) (*entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	eventPayload := &events.MessageCallMissedPayload{
+		MessageID: uuid.New(),
+		UserID:    params.UserID,
+		Timestamp: params.Timestamp,
+		Owner:     phonenumbers.Format(params.Owner, phonenumbers.E164),
+		Contact:   params.Contact,
+		SIM:       params.SIM,
+	}
+
+	event, err := service.createEvent(events.MessageCallMissed, params.Source, eventPayload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot create [%T] from payload with message id [%s]", event, eventPayload.MessageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s] and user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
+
+	message, err := service.storeMissedCallMessage(ctx, eventPayload)
+	if err != nil {
+		msg := fmt.Sprintf("cannot store missed call message message with id [%s]", eventPayload.MessageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("[%s] event with ID [%s] dispatched succesfully for message [%s] with user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
+	return message, err
+}
+
 func (service *MessageService) getSendDelay(ctxLogger telemetry.Logger, eventPayload events.MessageAPISentPayload, sendAt *time.Time) time.Duration {
 	if sendAt == nil {
 		return time.Duration(0)
@@ -845,6 +894,36 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", payload.MessageID))
+	return message, nil
+}
+
+// storeMissedCallMessage a new message
+func (service *MessageService) storeMissedCallMessage(ctx context.Context, payload *events.MessageCallMissedPayload) (*entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	message := &entities.Message{
+		ID:                payload.MessageID,
+		Owner:             payload.Owner,
+		Contact:           payload.Contact,
+		UserID:            payload.UserID,
+		SIM:               payload.SIM,
+		Type:              entities.MessageTypeCallMissed,
+		Status:            entities.MessageStatusReceived,
+		RequestReceivedAt: payload.Timestamp,
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
+		OrderTimestamp:    payload.Timestamp,
+	}
+
+	if err := service.repository.Store(ctx, message); err != nil {
+		msg := fmt.Sprintf("cannot save missed call message with id [%s]", payload.MessageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("missed call message saved with id [%s]", payload.MessageID))
 	return message, nil
 }
 

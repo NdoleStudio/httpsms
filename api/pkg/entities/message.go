@@ -15,6 +15,9 @@ const (
 
 	// MessageTypeMobileOriginated means the message comes directly from a mobile phone
 	MessageTypeMobileOriginated = "mobile-originated"
+
+	// MessageTypeCallMissed means the message is generated when a phone call is missed by the android phone
+	MessageTypeCallMissed = "call/missed"
 )
 
 // MessageStatus is the status of the message
@@ -33,7 +36,7 @@ const (
 	// MessageStatusSent means the message has already sent by the mobile phone
 	MessageStatusSent = "sent"
 
-	// MessageStatusReceived means the message was received by tne mobile phone (MO)
+	// MessageStatusReceived means the message was received by the mobile phone (MO) or a phone call is missed by the mobile phone
 	MessageStatusReceived = "received"
 
 	// MessageStatusFailed means the mobile phone could not send the message

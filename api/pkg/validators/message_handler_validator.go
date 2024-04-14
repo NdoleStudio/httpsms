@@ -228,3 +228,28 @@ func (validator MessageHandlerValidator) ValidateMessageEvent(_ context.Context,
 	})
 	return v.ValidateStruct()
 }
+
+// ValidateCallMissed validates the requests.MessageCallMissed request
+func (validator MessageHandlerValidator) ValidateCallMissed(_ context.Context, request requests.MessageCallMissed) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"to": []string{
+				"required",
+				phoneNumberRule,
+			},
+			"from": []string{
+				"required",
+			},
+			"sim": []string{
+				"required",
+				"in:" + strings.Join([]string{
+					string(entities.SIM1),
+					string(entities.SIM2),
+				}, ","),
+			},
+		},
+	})
+
+	return v.ValidateStruct()
+}
