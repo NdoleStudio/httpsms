@@ -24,6 +24,8 @@ type PhoneUpsert struct {
 
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 
+	MissedCallAutoReply *string `json:"missed_call_auto_reply" example:"e.g This phone cannot receive calls. Please send an SMS instead."`
+
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
 }
@@ -33,11 +35,14 @@ func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 	input.FcmToken = strings.TrimSpace(input.FcmToken)
 	input.PhoneNumber = input.sanitizeAddress(input.PhoneNumber)
 	input.SIM = input.sanitizeSIM(input.SIM)
+	if input.MissedCallAutoReply != nil {
+		input.MissedCallAutoReply = input.sanitizeStringPointer(*input.MissedCallAutoReply)
+	}
 	return *input
 }
 
 // ToUpsertParams converts PhoneUpsert to services.PhoneUpsertParams
-func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) services.PhoneUpsertParams {
+func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) *services.PhoneUpsertParams {
 	phone, _ := phonenumbers.Parse(input.PhoneNumber, phonenumbers.UNKNOWN_REGION)
 
 	// ignore value if it's default
@@ -64,9 +69,9 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) 
 		maxSendAttempts = &input.MaxSendAttempts
 	}
 
-	return services.PhoneUpsertParams{
+	return &services.PhoneUpsertParams{
 		Source:                    source,
-		PhoneNumber:               *phone,
+		PhoneNumber:               phone,
 		MessagesPerMinute:         messagesPerMinute,
 		MessageExpirationDuration: timeout,
 		MaxSendAttempts:           maxSendAttempts,

@@ -38,6 +38,7 @@ func NewWebhookListener(
 		events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
 		events.EventTypePhoneHeartbeatOnline:  l.onPhoneHeartbeatOnline,
 		events.EventTypePhoneHeartbeatOffline: l.onPhoneHeartbeatOffline,
+		events.MessageCallMissed:              l.onMessageCallMissed,
 	}
 }
 
@@ -161,6 +162,25 @@ func (listener *WebhookListener) onPhoneHeartbeatOnline(ctx context.Context, eve
 	defer span.End()
 
 	var payload events.PhoneHeartbeatOnlinePayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
+		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageCallMissed handles the events.MessageCallMissed event
+func (listener *WebhookListener) onMessageCallMissed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageCallMissedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))

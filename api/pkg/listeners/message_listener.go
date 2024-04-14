@@ -42,6 +42,7 @@ func NewMessageListener(
 		events.EventTypeMessageSendExpired:           l.onMessageSendExpired,
 		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
 		events.MessageThreadAPIDeleted:               l.onMessageThreadAPIDeleted,
+		events.MessageCallMissed:                     l.onMessageCallMissed,
 	}
 }
 
@@ -303,6 +304,25 @@ func (listener *MessageListener) onMessageThreadAPIDeleted(ctx context.Context, 
 	}
 
 	if err := listener.service.DeleteByOwnerAndContact(ctx, payload.UserID, payload.Owner, payload.Contact); err != nil {
+		msg := fmt.Sprintf("cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageThreadAPIDeleted handles the events.MessageThreadAPIDeleted event
+func (listener *MessageListener) onMessageCallMissed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	payload := new(events.MessageCallMissedPayload)
+	if err := event.DataAs(payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.RespondToMissedCall(ctx, event.Source(), payload); err != nil {
 		msg := fmt.Sprintf("cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

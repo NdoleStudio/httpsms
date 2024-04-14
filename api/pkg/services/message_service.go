@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -144,6 +145,44 @@ func (service *MessageService) DeleteByOwnerAndContact(ctx context.Context, user
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all messages for user with ID [%s] between owner [%s] and contact [%s] ", userID, owner, contact))
+	return nil
+}
+
+// RespondToMissedCall creates an SMS response to a missed phone call on the android phone
+func (service *MessageService) RespondToMissedCall(ctx context.Context, source string, payload *events.MessageCallMissedPayload) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	phone, err := service.phoneService.Load(ctx, payload.UserID, payload.Owner)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find phone with owner [%s] for user with ID [%s] when handling missed phone call message [%s]", payload.Owner, payload.UserID, payload.MessageID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if phone.MissedCallAutoReply == nil || strings.TrimSpace(*phone.MissedCallAutoReply) == "" {
+		ctxLogger.Info(fmt.Sprintf("no auto reply set for phone [%s] for message [%s] with user [%s]", payload.Owner, payload.MessageID, payload.UserID))
+		return nil
+	}
+
+	requestID := fmt.Sprintf("missed-call-%s", payload.MessageID)
+	owner, _ := phonenumbers.Parse(payload.Owner, phonenumbers.UNKNOWN_REGION)
+	message, err := service.SendMessage(ctx, MessageSendParams{
+		Owner:             owner,
+		Contact:           payload.Contact,
+		Encrypted:         false,
+		Content:           *phone.MissedCallAutoReply,
+		Source:            source,
+		SendAt:            nil,
+		RequestID:         &requestID,
+		UserID:            payload.UserID,
+		RequestReceivedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot send auto response message for owner [%s] for user with ID [%s] when handling missed phone call message [%s]", payload.Owner, payload.UserID, payload.MessageID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("created response message with ID [%s] for missed call event [%s] for user [%s]", message.ID, payload.MessageID, message.UserID))
 	return nil
 }
 

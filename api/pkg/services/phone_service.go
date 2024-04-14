@@ -69,25 +69,26 @@ func (service *PhoneService) Load(ctx context.Context, userID entities.UserID, o
 
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
-	PhoneNumber               phonenumbers.PhoneNumber
+	PhoneNumber               *phonenumbers.PhoneNumber
 	FcmToken                  *string
 	MessagesPerMinute         *uint
 	MaxSendAttempts           *uint
 	WebhookURL                *string
 	MessageExpirationDuration *time.Duration
+	MissedCallAutoReply       *string
 	SIM                       entities.SIM
 	Source                    string
 	UserID                    entities.UserID
 }
 
 // Upsert a new entities.Phone
-func (service *PhoneService) Upsert(ctx context.Context, params PhoneUpsertParams) (*entities.Phone, error) {
+func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertParams) (*entities.Phone, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164))
+	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(params.PhoneNumber, phonenumbers.E164))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return service.createPhone(ctx, params)
 	}
@@ -169,7 +170,7 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 	return nil
 }
 
-func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsertParams) (*entities.Phone, error) {
+func (service *PhoneService) createPhone(ctx context.Context, params *PhoneUpsertParams) (*entities.Phone, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -183,7 +184,8 @@ func (service *PhoneService) createPhone(ctx context.Context, params PhoneUpsert
 		MessageExpirationSeconds: 10 * 60, // 10 minutes
 		MaxSendAttempts:          2,
 		SIM:                      params.SIM,
-		PhoneNumber:              phonenumbers.Format(&params.PhoneNumber, phonenumbers.E164),
+		MissedCallAutoReply:      nil,
+		PhoneNumber:              phonenumbers.Format(params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),
 	}
@@ -205,7 +207,7 @@ func (service *PhoneService) createPhoneDeletedEvent(source string, payload even
 	return service.createEvent(events.EventTypePhoneDeleted, source, payload)
 }
 
-func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertParams) *entities.Phone {
+func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertParams) *entities.Phone {
 	if phone.FcmToken != nil {
 		phone.FcmToken = params.FcmToken
 	}
@@ -219,6 +221,10 @@ func (service *PhoneService) update(phone *entities.Phone, params PhoneUpsertPar
 
 	if params.MessageExpirationDuration != nil {
 		phone.MessageExpirationSeconds = uint(params.MessageExpirationDuration.Seconds())
+	}
+
+	if params.MissedCallAutoReply != nil {
+		phone.MissedCallAutoReply = params.MissedCallAutoReply
 	}
 
 	phone.SIM = params.SIM
