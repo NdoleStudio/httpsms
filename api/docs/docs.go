@@ -923,7 +923,7 @@ const docTemplate = `{
                         "type": "string",
                         "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
                         "description": "ID of the message thread",
-                        "name": "messageID",
+                        "name": "messageThreadID",
                         "in": "path",
                         "required": true
                     }
@@ -1108,6 +1108,75 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/messages/calls/missed": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint is called by the httpSMS android app to register a missed call event on the mobile phone.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Register a missed call event on the mobile phone",
+                "parameters": [
+                    {
+                        "description": "Payload of the missed call event.",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.MessageCallMissed"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
                         }
                     },
                     "422": {
@@ -2340,6 +2409,7 @@ const docTemplate = `{
                 "content",
                 "created_at",
                 "delivered_at",
+                "encrypted",
                 "expired_at",
                 "failed_at",
                 "failure_reason",
@@ -2382,6 +2452,10 @@ const docTemplate = `{
                 "delivered_at": {
                     "type": "string",
                     "example": "2022-06-05T14:26:09.527976+03:00"
+                },
+                "encrypted": {
+                    "type": "boolean",
+                    "example": false
                 },
                 "expired_at": {
                     "type": "string",
@@ -2551,6 +2625,7 @@ const docTemplate = `{
                 "max_send_attempts",
                 "message_expiration_seconds",
                 "messages_per_minute",
+                "missed_call_auto_reply",
                 "phone_number",
                 "sim",
                 "updated_at",
@@ -2581,6 +2656,10 @@ const docTemplate = `{
                 "messages_per_minute": {
                     "type": "integer",
                     "example": 1
+                },
+                "missed_call_auto_reply": {
+                    "type": "string",
+                    "example": "This phone cannot receive calls. Please send an SMS instead."
                 },
                 "phone_number": {
                     "type": "string",
@@ -2621,8 +2700,10 @@ const docTemplate = `{
                 "pro-lifetime",
                 "20k-monthly",
                 "100k-monthly",
+                "50k-monthly",
                 "20k-yearly",
-                "100k-yearly"
+                "100k-yearly",
+                "50k-yearly"
             ],
             "x-enum-varnames": [
                 "SubscriptionNameFree",
@@ -2633,8 +2714,10 @@ const docTemplate = `{
                 "SubscriptionNameProLifetime",
                 "SubscriptionName20KMonthly",
                 "SubscriptionName100KMonthly",
+                "SubscriptionName50KMonthly",
                 "SubscriptionName20KYearly",
-                "SubscriptionName100KYearly"
+                "SubscriptionName100KYearly",
+                "SubscriptionName50KYearly"
             ]
         },
         "entities.User": {
@@ -2663,7 +2746,7 @@ const docTemplate = `{
                 },
                 "api_key": {
                     "type": "string",
-                    "example": "xyz"
+                    "example": "x-api-key"
                 },
                 "created_at": {
                     "type": "string",
@@ -2838,6 +2921,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "content",
+                "encrypted",
                 "from",
                 "to"
             ],
@@ -2845,6 +2929,11 @@ const docTemplate = `{
                 "content": {
                     "type": "string",
                     "example": "This is a sample text message"
+                },
+                "encrypted": {
+                    "description": "Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app",
+                    "type": "boolean",
+                    "example": false
                 },
                 "from": {
                     "type": "string",
@@ -2864,6 +2953,33 @@ const docTemplate = `{
                         "+18005550100",
                         "+18005550100"
                     ]
+                }
+            }
+        },
+        "requests.MessageCallMissed": {
+            "type": "object",
+            "required": [
+                "from",
+                "sim",
+                "timestamp",
+                "to"
+            ],
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "example": "+18005550199"
+                },
+                "sim": {
+                    "type": "string",
+                    "example": "SIM1"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:09.527976+03:00"
+                },
+                "to": {
+                    "type": "string",
+                    "example": "+18005550100"
                 }
             }
         },
@@ -2895,6 +3011,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "content",
+                "encrypted",
                 "from",
                 "sim",
                 "timestamp",
@@ -2904,6 +3021,11 @@ const docTemplate = `{
                 "content": {
                     "type": "string",
                     "example": "This is a sample text message received on a phone"
+                },
+                "encrypted": {
+                    "description": "Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app",
+                    "type": "boolean",
+                    "example": false
                 },
                 "from": {
                     "type": "string",
@@ -2933,6 +3055,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "content",
+                "encrypted",
                 "from",
                 "to"
             ],
@@ -2940,6 +3063,11 @@ const docTemplate = `{
                 "content": {
                     "type": "string",
                     "example": "This is a sample text message"
+                },
+                "encrypted": {
+                    "description": "Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app",
+                    "type": "boolean",
+                    "example": false
                 },
                 "from": {
                     "type": "string",
@@ -2980,6 +3108,7 @@ const docTemplate = `{
                 "max_send_attempts",
                 "message_expiration_seconds",
                 "messages_per_minute",
+                "missed_call_auto_reply",
                 "phone_number",
                 "sim"
             ],
@@ -3001,6 +3130,10 @@ const docTemplate = `{
                 "messages_per_minute": {
                     "type": "integer",
                     "example": 1
+                },
+                "missed_call_auto_reply": {
+                    "type": "string",
+                    "example": "e.g This phone cannot receive calls. Please send an SMS instead."
                 },
                 "phone_number": {
                     "type": "string",
@@ -3591,7 +3724,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "api.httpsms.com",
 	BasePath:         "/v1",
-	Schemes:          []string{"https"},
+	Schemes:          []string{"http", "https"},
 	Title:            "HTTP SMS API",
 	Description:      "API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP",
 	InfoInstanceName: "swagger",

@@ -86,7 +86,7 @@ func (service *UserService) GetByID(ctx context.Context, userID entities.UserID)
 // UserUpdateParams are parameters for updating an entities.User
 type UserUpdateParams struct {
 	Timezone      *time.Location
-	ActivePhoneID uuid.UUID
+	ActivePhoneID *uuid.UUID
 }
 
 // Update an entities.User
@@ -107,7 +107,7 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthUs
 	}
 
 	user.Timezone = params.Timezone.String()
-	user.ActivePhoneID = &params.ActivePhoneID
+	user.ActivePhoneID = params.ActivePhoneID
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("cannot save user with id [%s]", user.ID)

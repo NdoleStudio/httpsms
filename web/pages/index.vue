@@ -51,8 +51,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>3,081+</b> happy users who have sent or received
-            more than <b>651,009+</b> messages.
+            ⚡Trusted by <b>3,587+</b> happy users who have sent or received
+            more than <b>816,171+</b> messages.
           </p>
           <div
             class="mt-4"
@@ -792,6 +792,19 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <a href="mailto:arnold@httpsms.com">send us an email</a> if
                   you will like to send more messages so we create a custom plan
                   just for you.
+                </p>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+            <v-expansion-panel>
+              <v-expansion-panel-header class="text-h6">
+                Can I change the sender of the SMS message
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <p class="mt-8">
+                  No you cannot. When you send an SMS message using the httpSMS
+                  app it uses your SIM card to send the message so the recipient
+                  will see your phone number as the sender of the SMS. You
+                  cannot use your brand name as the sender ID.
                 </p>
               </v-expansion-panel-content>
             </v-expansion-panel>

@@ -103,10 +103,13 @@
             >
               <v-spacer v-if="isMT(message)"></v-spacer>
               <v-avatar
-                v-if="!isMT(message)"
+                v-if="isMo(message)"
                 :color="$store.getters.getThread.color"
               >
                 <v-icon>{{ mdiAccount }}</v-icon>
+              </v-avatar>
+              <v-avatar v-if="isMissedCall(message)" color="#1e1e1e">
+                <v-icon large color="red">{{ mdiCallMissed }}</v-icon>
               </v-avatar>
               <v-menu v-if="isMT(message)" offset-y>
                 <template #activator="{ on }">
@@ -151,8 +154,14 @@
                   <v-card-text
                     class="text--primary text-break"
                     style="white-space: pre-line"
-                    >{{ message.content }}</v-card-text
                   >
+                    <span v-if="!isMissedCall(message)">{{
+                      message.content
+                    }}</span>
+                    <span v-else class="text--secondary"
+                      >Missed phone call</span
+                    >
+                  </v-card-text>
                 </v-card>
                 <div class="d-flex">
                   <p class="ml-2 text--secondary caption mr-2">
@@ -304,6 +313,7 @@ import {
   mdiArrowLeft,
   mdiCheckAll,
   mdiDelete,
+  mdiCallMissed,
   mdiCheck,
   mdiAlert,
   mdiPackageUp,
@@ -329,6 +339,7 @@ export default Vue.extend({
       mdiDotsVertical,
       mdiArrowLeft,
       mdiCheckAll,
+      mdiCallMissed,
       mdiCheck,
       mdiAlert,
       mdiDelete,
@@ -434,6 +445,14 @@ export default Vue.extend({
 
     isMT(message: Message): boolean {
       return message.type === 'mobile-terminated'
+    },
+
+    isMo(message: Message): boolean {
+      return message.type === 'mobile-originated'
+    },
+
+    isMissedCall(message: Message): boolean {
+      return message.type === 'call/missed'
     },
 
     scrollToElement() {

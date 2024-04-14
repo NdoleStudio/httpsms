@@ -29,8 +29,15 @@ func (input *UserUpdate) ToUpdateParams() services.UserUpdateParams {
 	if err != nil {
 		location = time.UTC
 	}
+
+	var activePhoneID *uuid.UUID
+	if input.ActivePhoneID != "" {
+		val := uuid.MustParse(input.ActivePhoneID)
+		activePhoneID = &val
+	}
+
 	return services.UserUpdateParams{
-		ActivePhoneID: uuid.MustParse(input.ActivePhoneID),
+		ActivePhoneID: activePhoneID,
 		Timezone:      location,
 	}
 }

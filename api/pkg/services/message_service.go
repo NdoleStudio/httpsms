@@ -742,8 +742,8 @@ func (service *MessageService) HandleMessageExpired(ctx context.Context, params 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if !message.IsSending() && !message.IsScheduled() {
-		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSending, entities.MessageStatusScheduled)
+	if !message.IsSending() && !message.IsScheduled() && !message.IsPending() {
+		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSending, entities.MessageStatusScheduled, entities.MessageStatusPending)
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
 	}
 

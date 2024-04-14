@@ -73,6 +73,8 @@ export interface EntitiesMessage {
   created_at: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   delivered_at: string
+  /** @example false */
+  encrypted: boolean
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   expired_at: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
@@ -169,6 +171,8 @@ export interface EntitiesPhone {
   message_expiration_seconds: number
   /** @example 1 */
   messages_per_minute: number
+  /** @example "This phone cannot receive calls. Please send an SMS instead." */
+  missed_call_auto_reply: string
   /** @example "+18005550199" */
   phone_number: string
   sim: EntitiesSIM
@@ -192,14 +196,16 @@ export enum EntitiesSubscriptionName {
   SubscriptionNameProLifetime = 'pro-lifetime',
   SubscriptionName20KMonthly = '20k-monthly',
   SubscriptionName100KMonthly = '100k-monthly',
+  SubscriptionName50KMonthly = '50k-monthly',
   SubscriptionName20KYearly = '20k-yearly',
   SubscriptionName100KYearly = '100k-yearly',
+  SubscriptionName50KYearly = '50k-yearly',
 }
 
 export interface EntitiesUser {
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   active_phone_id: string
-  /** @example "xyz" */
+  /** @example "x-api-key" */
   api_key: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
@@ -268,6 +274,11 @@ export interface RequestsHeartbeatStore {
 export interface RequestsMessageBulkSend {
   /** @example "This is a sample text message" */
   content: string
+  /**
+   * Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
+   * @example false
+   */
+  encrypted: boolean
   /** @example "+18005550199" */
   from: string
   /**
@@ -277,6 +288,17 @@ export interface RequestsMessageBulkSend {
   request_id?: string
   /** @example ["+18005550100","+18005550100"] */
   to: string[]
+}
+
+export interface RequestsMessageCallMissed {
+  /** @example "+18005550199" */
+  from: string
+  /** @example "SIM1" */
+  sim: string
+  /** @example "2022-06-05T14:26:09.527976+03:00" */
+  timestamp: string
+  /** @example "+18005550100" */
+  to: string
 }
 
 export interface RequestsMessageEvent {
@@ -300,6 +322,11 @@ export interface RequestsMessageEvent {
 export interface RequestsMessageReceive {
   /** @example "This is a sample text message received on a phone" */
   content: string
+  /**
+   * Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
+   * @example false
+   */
+  encrypted: boolean
   /** @example "+18005550199" */
   from: string
   /**
@@ -319,6 +346,11 @@ export interface RequestsMessageReceive {
 export interface RequestsMessageSend {
   /** @example "This is a sample text message" */
   content: string
+  /**
+   * Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
+   * @example false
+   */
+  encrypted: boolean
   /** @example "+18005550199" */
   from: string
   /**
@@ -355,6 +387,8 @@ export interface RequestsPhoneUpsert {
   message_expiration_seconds: number
   /** @example 1 */
   messages_per_minute: number
+  /** @example "e.g. This phone cannot receive calls. Please send an SMS instead." */
+  missed_call_auto_reply: string
   /** @example "+18005550199" */
   phone_number: string
   /**

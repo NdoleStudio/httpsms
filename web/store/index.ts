@@ -365,6 +365,7 @@ export const actions = {
         message_expiration_seconds: parseInt(
           phone.message_expiration_seconds.toString(),
         ),
+        missed_call_auto_reply: phone.missed_call_auto_reply,
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
       })
@@ -637,6 +638,24 @@ export const actions = {
 
     setApiKey(response.data.data.api_key)
     context.commit('setUser', response.data.data)
+  },
+
+  updateTimezone(
+    context: ActionContext<State, State>,
+    payload: string,
+  ): Promise<EntitiesUser> {
+    return new Promise<EntitiesUser>((resolve, reject) => {
+      axios
+        .put<ResponsesUserResponse>(`/v1/users/me`, {
+          timezone: payload ?? context.getters.getUser.timezone,
+        })
+        .then((response: AxiosResponse<ResponsesUserResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch((error: AxiosError) => {
+          reject(getErrorMessages(error))
+        })
+    })
   },
 
   async updateThread(

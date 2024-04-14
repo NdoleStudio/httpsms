@@ -47,7 +47,7 @@
                 style="max-width: 250px"
                 label="Timezone"
                 :items="timezones"
-                @change="updateUser"
+                @change="updateTimezone"
               ></v-autocomplete>
             </div>
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
@@ -345,7 +345,7 @@
         </v-row>
       </v-container>
     </div>
-    <v-dialog v-model="showPhoneEdit" max-width="600px">
+    <v-dialog v-model="showPhoneEdit" max-width="700px">
       <v-card>
         <v-card-title>Edit Phone</v-card-title>
         <v-card-text v-if="activePhone" class="mt-6">
@@ -409,6 +409,17 @@
                   label="Max Send Attempts"
                 >
                 </v-text-field>
+                <v-textarea
+                  v-model="activePhone.missed_call_auto_reply"
+                  outlined
+                  dense
+                  label="Missed Call AutoReply"
+                  persistent-placeholder
+                  persistent-hint
+                  placeholder="We are currently closed at the moment, please send us a text message from  09:00 to 17:00"
+                  hint="Here you can configure an automated SMS message which is sent to the caller when this phone has a missed call"
+                >
+                </v-textarea>
               </v-col>
             </v-row>
           </v-container>
@@ -709,6 +720,7 @@ export default Vue.extend({
         id: null,
         name: '',
         server_id: '',
+        missed_call_auto_reply: '',
         incoming_channel_id: '',
       },
       updatingEmailNotifications: false,
@@ -732,6 +744,7 @@ export default Vue.extend({
         'message.phone.delivered',
         'message.send.failed',
         'message.send.expired',
+        'message.call.missed',
         'phone.heartbeat.offline',
         'phone.heartbeat.online',
       ],
@@ -852,6 +865,7 @@ export default Vue.extend({
         name: '',
         server_id: '',
         incoming_channel_id: '',
+        missed_call_auto_reply: '',
       }
       this.showDiscordEdit = true
       this.resetErrors()
@@ -969,13 +983,10 @@ export default Vue.extend({
         })
     },
 
-    updateUser(timezone) {
+    updateTimezone(timezone) {
       this.resetErrors()
       this.$store
-        .dispatch('updateUser', {
-          owner: this.$store.getters.getOwner,
-          timezone,
-        })
+        .dispatch('updateTimezone', timezone)
         .then(() => {
           this.$store.dispatch('addNotification', {
             message: 'Timezone updated successfully',

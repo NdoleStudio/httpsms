@@ -34,7 +34,6 @@ func (validator *UserHandlerValidator) ValidateUpdate(_ context.Context, request
 		Data: &request,
 		Rules: govalidator.MapData{
 			"active_phone_id": []string{
-				"required",
 				"uuid",
 			},
 		},

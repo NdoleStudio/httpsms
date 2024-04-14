@@ -91,7 +91,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
             response.close()
-            return false
+            return response.code == 422 || response.code == 401
         }
 
         val message = ResponseMessage.fromJson(response.body!!.string())

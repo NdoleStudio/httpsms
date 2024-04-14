@@ -24,7 +24,7 @@ type PhoneUpsert struct {
 
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 
-	MissedCallAutoReply *string `json:"missed_call_auto_reply" example:"e.g This phone cannot receive calls. Please send an SMS instead."`
+	MissedCallAutoReply *string `json:"missed_call_auto_reply" example:"e.g. This phone cannot receive calls. Please send an SMS instead."`
 
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
@@ -73,6 +73,7 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) 
 		Source:                    source,
 		PhoneNumber:               phone,
 		MessagesPerMinute:         messagesPerMinute,
+		MissedCallAutoReply:       input.MissedCallAutoReply,
 		MessageExpirationDuration: timeout,
 		MaxSendAttempts:           maxSendAttempts,
 		FcmToken:                  fcmToken,

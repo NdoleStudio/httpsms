@@ -30,7 +30,7 @@ func (input *MessageCallMissed) Sanitize() MessageCallMissed {
 
 // ToCallMissedParams converts MessageCallMissed to services.MessageSendParams
 func (input *MessageCallMissed) ToCallMissedParams(userID entities.UserID, source string) *services.MissedCallParams {
-	to, _ := phonenumbers.Parse(input.From, phonenumbers.UNKNOWN_REGION)
+	to, _ := phonenumbers.Parse(input.To, phonenumbers.UNKNOWN_REGION)
 	return &services.MissedCallParams{
 		Source:    source,
 		Owner:     to,
