@@ -29,5 +29,6 @@
     <string name="encryption_key">Encryption Key</string>
     <string name="encrypt_received_messages">Encrypt received messages</string>
     <string name="enable_debug_logs">Enable debug logs</string>
-    <string name="enable_incoming_call_events_sim1">Enable SIM1 incoming call events</string>
+    <string name="enable_incoming_call_events_sim1">Enable SIM1 missed call events</string>
+    <string name="enable_sim2_incoming_call_events">Enable SIM2 missed call events</string>
 </resources>

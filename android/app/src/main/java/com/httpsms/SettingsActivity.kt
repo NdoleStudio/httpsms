@@ -1,14 +1,9 @@
 package com.httpsms
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.Build.VERSION_CODES
 import android.os.Bundle
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
@@ -68,15 +63,25 @@ class SettingsActivity : AppCompatActivity() {
         sim2OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2) } }
 
         handleEncryptionSettings(context)
-        handleIncomingCallEventsSim1(context)
+        handleIncomingCallEvents(context)
     }
 
-    private fun handleIncomingCallEventsSim1(context: Context) {
+    private fun handleIncomingCallEvents(context: Context) {
         val enableIncomingCallEvents = findViewById<SwitchMaterial>(R.id.settingsSim1EnableIncomingCallEvents)
         enableIncomingCallEvents.isChecked = Settings.isIncomingCallEventsEnabled(context, Constants.SIM1)
         enableIncomingCallEvents.setOnCheckedChangeListener{ _, isChecked -> run {
-            requestReadCallLogPermission(context)
-            Timber.d("how are you [${isChecked}]")
+            Settings.setIncomingCallEventsEnabled(context, Constants.SIM1, isChecked)
+        }}
+
+        val sim2IncomingCalls = findViewById<SwitchMaterial>(R.id.settingsSim2EnableIncomingCallEvents)
+        if (!Settings.isDualSIM(context)) {
+            sim2IncomingCalls.visibility = SwitchMaterial.GONE
+            return
+        }
+
+        sim2IncomingCalls.isChecked = Settings.isIncomingCallEventsEnabled(context, Constants.SIM2)
+        sim2IncomingCalls.setOnCheckedChangeListener{ _, isChecked -> run {
+            Settings.setIncomingCallEventsEnabled(context, Constants.SIM2, isChecked)
         }}
     }
 
@@ -129,25 +134,6 @@ class SettingsActivity : AppCompatActivity() {
         return findViewById(R.id.settings_toolbar)
     }
 
-    private fun requestReadCallLogPermission(context: Context) {
-        if(!Settings.isLoggedIn(context)) {
-            return
-        }
-        Timber.d("requesting permissions")
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            permissions.entries.forEach {
-                Timber.d("${it.key} = ${it.value}")
-            }
-        }
-        val permissions = arrayOf(
-            Manifest.permission.READ_CALL_LOG,
-            Manifest.permission.READ_PHONE_STATE
-        )
-
-        requestPermissionLauncher.launch(permissions)
-        Timber.d("creating permissions launcher")
-    }
-
     private fun onLogoutClick() {
         Timber.d("logout button clicked")
         MaterialAlertDialogBuilder(this)
@@ -167,6 +153,8 @@ class SettingsActivity : AppCompatActivity() {
                 Settings.setEncryptionKey(this, null)
                 Settings.setEncryptReceivedMessages(this, false)
                 Settings.setFcmTokenLastUpdateTimestampAsync(this, 0)
+                Settings.setIncomingCallEventsEnabled(this,  Constants.SIM1, false)
+                Settings.setIncomingCallEventsEnabled(this, Constants.SIM2, false)
                 redirectToLogin()
             }
             .show()

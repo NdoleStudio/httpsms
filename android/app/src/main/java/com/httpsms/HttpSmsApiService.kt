@@ -1,7 +1,6 @@
 package com.httpsms
 
 import android.content.Context
-import android.os.BatteryManager
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -10,8 +9,6 @@ import org.apache.commons.text.StringEscapeUtils
 import timber.log.Timber
 import java.net.URI
 import java.net.URL
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 
@@ -100,7 +97,36 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         val message = ResponseMessage.fromJson(response.body!!.string())
         response.close()
         Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
-        return true;
+        return true
+    }
+
+    fun sendMissedCallEvent(sim: String, from: String, to: String, timestamp: String): Boolean {
+        val body = """
+            {
+              "sim": "$sim",
+              "from": "$from",
+              "timestamp": "$timestamp",
+              "to": "$to"
+            }
+        """.trimIndent()
+
+        val request: Request = Request.Builder()
+            .url(resolveURL("/v1/calls/missed"))
+            .post(body.toRequestBody(jsonMediaType))
+            .header(apiKeyHeader, apiKey)
+            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending missed call event [${body}]")
+            response.close()
+            return false
+        }
+
+        response.close()
+        Timber.i("missed call from [${from}] to [${to}] sent successfully with timestamp [${timestamp}]" )
+        return true
     }
 
     fun storeHeartbeat(phoneNumber: String, charging: Boolean) {

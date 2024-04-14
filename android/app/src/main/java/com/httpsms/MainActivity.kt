@@ -121,6 +121,11 @@ class MainActivity : AppCompatActivity() {
             permissions += Manifest.permission.POST_NOTIFICATIONS
         }
 
+        if(Settings.isIncomingCallEventsEnabled(context,Constants.SIM1) || Settings.isIncomingCallEventsEnabled(context,Constants.SIM2) ) {
+            permissions += Manifest.permission.READ_CALL_LOG
+            permissions += Manifest.permission.READ_PHONE_STATE
+        }
+
         requestPermissionLauncher.launch(permissions)
 
         Timber.d("creating permissions launcher")

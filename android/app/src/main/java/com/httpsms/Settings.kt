@@ -28,6 +28,13 @@ object Settings {
     private const val SETTINGS_ENCRYPTION_KEY = "SETTINGS_ENCRYPTION_KEY"
     private const val SETTINGS_ENCRYPT_RECEIVED_MESSAGES = "SETTINGS_ENCRYPT_RECEIVED_MESSAGES"
 
+    fun getPhoneNumber(context:Context, sim: String): String {
+        if (sim == Constants.SIM2) {
+            return getSIM2PhoneNumber(context)
+        }
+        return getSIM1PhoneNumber(context)
+    }
+
     fun getSIM1PhoneNumber(context: Context): String {
         Timber.d(Settings::getSIM1PhoneNumber.name)
 
