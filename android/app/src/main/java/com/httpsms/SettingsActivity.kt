@@ -47,20 +47,19 @@ class SettingsActivity : AppCompatActivity() {
             sim2Switch.visibility = SwitchMaterial.GONE
             val outgoingSwitch = findViewById<SwitchMaterial>(R.id.settings_sim2_outgoing_messages)
             outgoingSwitch.visibility = SwitchMaterial.GONE
-            return
+        } else {
+            val phoneNumberSIM2 = findViewById<TextInputEditText>(R.id.settingsSIM2InputEdit)
+            phoneNumberSIM2.setText(Settings.getSIM2PhoneNumber(context))
+            phoneNumberSIM2.isEnabled = false
+
+            val sim2IncomingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_incoming_messages)
+            sim2IncomingMessages.isChecked = Settings.isIncomingMessageEnabled(context, Constants.SIM2)
+            sim2IncomingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setIncomingActiveSIM2(context, isChecked) } }
+
+            val sim2OutgoingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_outgoing_messages)
+            sim2OutgoingMessages.isChecked = Settings.getActiveStatus(context, Constants.SIM2)
+            sim2OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2) } }
         }
-
-        val phoneNumberSIM2 = findViewById<TextInputEditText>(R.id.settingsSIM2InputEdit)
-        phoneNumberSIM2.setText(Settings.getSIM2PhoneNumber(context))
-        phoneNumberSIM2.isEnabled = false
-
-        val sim2IncomingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_incoming_messages)
-        sim2IncomingMessages.isChecked = Settings.isIncomingMessageEnabled(context, Constants.SIM2)
-        sim2IncomingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setIncomingActiveSIM2(context, isChecked) } }
-
-        val sim2OutgoingMessages = findViewById<SwitchMaterial>(R.id.settings_sim2_outgoing_messages)
-        sim2OutgoingMessages.isChecked = Settings.getActiveStatus(context, Constants.SIM2)
-        sim2OutgoingMessages.setOnCheckedChangeListener{ _, isChecked -> run { Settings.setActiveStatusAsync(context, isChecked, Constants.SIM2) } }
 
         handleEncryptionSettings(context)
         handleIncomingCallEvents(context)
@@ -73,8 +72,11 @@ class SettingsActivity : AppCompatActivity() {
             Settings.setIncomingCallEventsEnabled(context, Constants.SIM1, isChecked)
         }}
 
+        Timber.w("we are here")
+
         val sim2IncomingCalls = findViewById<SwitchMaterial>(R.id.settingsSim2EnableIncomingCallEvents)
         if (!Settings.isDualSIM(context)) {
+            Timber.w("we are here")
             sim2IncomingCalls.visibility = SwitchMaterial.GONE
             return
         }
