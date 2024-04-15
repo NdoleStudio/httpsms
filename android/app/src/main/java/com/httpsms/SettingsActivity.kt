@@ -72,11 +72,8 @@ class SettingsActivity : AppCompatActivity() {
             Settings.setIncomingCallEventsEnabled(context, Constants.SIM1, isChecked)
         }}
 
-        Timber.w("we are here")
-
         val sim2IncomingCalls = findViewById<SwitchMaterial>(R.id.settingsSim2EnableIncomingCallEvents)
         if (!Settings.isDualSIM(context)) {
-            Timber.w("we are here")
             sim2IncomingCalls.visibility = SwitchMaterial.GONE
             return
         }
