@@ -78,8 +78,8 @@ export default class FirebaseAuth extends Vue {
       signInSuccessUrl: window.location.href,
       signInOptions: [
         // Leave the lines as is for the providers you want to offer your users.
-        ProviderId.GITHUB,
         ProviderId.GOOGLE,
+        ProviderId.GITHUB,
         ProviderId.PASSWORD,
       ],
       // Terms of service url.
