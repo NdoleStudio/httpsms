@@ -132,6 +132,16 @@
                         </v-list-item-title>
                       </v-list-item-content>
                     </v-list-item>
+                    <v-list-item @click.prevent="copyMessageId(message)">
+                      <v-list-item-icon class="pl-2">
+                        <v-icon dense>{{ mdiContentCopy }}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content class="ml-n3">
+                        <v-list-item-title class="pr-16 py-1">
+                          Copy Message ID
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
                     <v-list-item @click.prevent="deleteMessage(message)">
                       <v-list-item-icon class="pl-2">
                         <v-icon dense color="error">{{ mdiDelete }}</v-icon>
@@ -238,6 +248,16 @@
                         </v-list-item-title>
                       </v-list-item-content>
                     </v-list-item>
+                    <v-list-item @click.prevent="copyMessageId(message)">
+                      <v-list-item-icon class="pl-2">
+                        <v-icon dense>{{ mdiContentCopy }}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content class="ml-n3">
+                        <v-list-item-title class="pr-16 py-1">
+                          Copy Message ID
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
                     <v-list-item @click.prevent="deleteMessage(message)">
                       <v-list-item-icon class="pl-2">
                         <v-icon dense color="error">{{ mdiDelete }}</v-icon>
@@ -321,9 +341,10 @@ import {
   mdiAccount,
   mdiRefresh,
   mdiSim,
+  mdiContentCopy,
 } from '@mdi/js'
 import { Message } from '~/models/message'
-import { SendMessageRequest, SIM } from '~/store'
+import { NotificationRequest, SendMessageRequest, SIM } from '~/store'
 
 export default Vue.extend({
   middleware: ['auth'],
@@ -349,6 +370,7 @@ export default Vue.extend({
       mdiPackageUp,
       mdiPackageDown,
       mdiAccount,
+      mdiContentCopy,
       mdiRefresh,
       mdiSim,
       simOptions: [
@@ -505,6 +527,19 @@ export default Vue.extend({
       }, 1000)
 
       this.loadMessages(false)
+    },
+
+    async copyMessageId(message: Message) {
+      await navigator.clipboard.writeText(message.id).then(() => {
+        this.$store.dispatch('addNotification', {
+          message: 'Message ID copied to clipboard',
+          type: 'success',
+        } as NotificationRequest)
+      })
+
+      setTimeout(() => {
+        this.selectedMenuItem = -1
+      }, 1000)
     },
 
     async deleteThread(threadID: string) {
