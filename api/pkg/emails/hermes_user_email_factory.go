@@ -15,6 +15,54 @@ type hermesUserEmailFactory struct {
 	generator hermes.Hermes
 }
 
+func (factory *hermesUserEmailFactory) APIKeyRotated(emailAddress string, timestamp time.Time, timezone string) (*Email, error) {
+	location, err := time.LoadLocation(timezone)
+	if err != nil {
+		location = time.UTC
+	}
+
+	email := hermes.Email{
+		Body: hermes.Body{
+			Intros: []string{
+				fmt.Sprintf("This is a confirmation email that your httpSMS API Key has been successfully rotated at %s.", timestamp.In(location).Format(time.RFC1123)),
+			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "You can see your new API key in the httpSMS settings page.",
+					Button: hermes.Button{
+						Color:     "#329ef4",
+						TextColor: "#FFFFFF",
+						Text:      "httpSMS Settings",
+						Link:      "https://httpsms.com/settings/",
+					},
+				},
+			},
+			Title:     "Hey,",
+			Signature: "Cheers",
+			Outros: []string{
+				fmt.Sprintf("If you did not trigger this API key rotation please contact us immediately by replying to this email."),
+			},
+		},
+	}
+
+	html, err := factory.generator.GenerateHTML(email)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "cannot generate html email")
+	}
+
+	text, err := factory.generator.GeneratePlainText(email)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "cannot generate text email")
+	}
+
+	return &Email{
+		ToEmail: emailAddress,
+		Subject: "Your httpSMS API Key has been rotated successfully",
+		HTML:    html,
+		Text:    text,
+	}, nil
+}
+
 // UsageLimitExceeded is the email sent when the plan limit is reached
 func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User) (*Email, error) {
 	email := hermes.Email{

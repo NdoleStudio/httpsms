@@ -26,6 +26,7 @@ type UserService struct {
 	emailFactory       emails.UserEmailFactory
 	mailer             emails.Mailer
 	repository         repositories.UserRepository
+	dispatcher         *EventDispatcher
 	marketingService   *MarketingService
 	lemonsqueezyClient *lemonsqueezy.Client
 }
@@ -39,6 +40,7 @@ func NewUserService(
 	emailFactory emails.UserEmailFactory,
 	marketingService *MarketingService,
 	lemonsqueezyClient *lemonsqueezy.Client,
+	dispatcher *EventDispatcher,
 ) (s *UserService) {
 	return &UserService{
 		logger:             logger.WithService(fmt.Sprintf("%T", s)),
@@ -47,6 +49,7 @@ func NewUserService(
 		marketingService:   marketingService,
 		emailFactory:       emailFactory,
 		repository:         repository,
+		dispatcher:         dispatcher,
 		lemonsqueezyClient: lemonsqueezyClient,
 	}
 }
@@ -150,7 +153,7 @@ func (service *UserService) UpdateNotificationSettings(ctx context.Context, user
 }
 
 // RotateAPIKey for an entities.User
-func (service *UserService) RotateAPIKey(ctx context.Context, userID entities.UserID) (*entities.User, error) {
+func (service *UserService) RotateAPIKey(ctx context.Context, source string, userID entities.UserID) (*entities.User, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -161,7 +164,48 @@ func (service *UserService) RotateAPIKey(ctx context.Context, userID entities.Us
 	}
 
 	ctxLogger.Info(fmt.Sprintf("rotated the api key for [%T] with ID [%s] in the [%T]", user, user.ID, service.repository))
+
+	event, err := service.createEvent(events.UserAPIKeyRotated, source, &events.UserAPIKeyRotatedPayload{
+		UserID:    user.ID,
+		Email:     user.Email,
+		Timestamp: time.Now().UTC(),
+		Timezone:  user.Timezone,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for user [%s]", events.UserAPIKeyRotated, user.ID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return user, nil
+	}
+
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), user.ID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return user, nil
+	}
+
 	return user, nil
+}
+
+// SendAPIKeyRotatedEmail sends an email to an entities.User when the API key is rotated
+func (service *UserService) SendAPIKeyRotatedEmail(ctx context.Context, payload *events.UserAPIKeyRotatedPayload) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	email, err := service.emailFactory.APIKeyRotated(payload.Email, payload.Timestamp, payload.Timezone)
+	if err != nil {
+		msg := fmt.Sprintf("cannot create api key rotated email for user [%s]", payload.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.mailer.Send(ctx, email); err != nil {
+		msg := fmt.Sprintf("canot create api key rotated email to user [%s]", payload.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("api key rotated email sent successfully to [%s] with user ID  [%s]", payload.Email, payload.UserID))
+	return nil
 }
 
 // UserSendPhoneDeadEmailParams are parameters for notifying a user when a phone is dead

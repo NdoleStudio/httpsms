@@ -38,6 +38,7 @@ func NewUserListener(
 		events.UserSubscriptionCancelled:      l.OnUserSubscriptionCancelled,
 		events.UserSubscriptionUpdated:        l.OnUserSubscriptionUpdated,
 		events.UserSubscriptionExpired:        l.OnUserSubscriptionExpired,
+		events.UserAPIKeyRotated:              l.onUserAPIKeyRotated,
 	}
 }
 
@@ -61,6 +62,25 @@ func (listener *UserListener) onPhoneHeartbeatDead(ctx context.Context, event cl
 
 	if err := listener.service.SendPhoneDeadEmail(ctx, sendParams); err != nil {
 		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onAPIKeyRotated handles the events.UserAPIKeyRotated event
+func (listener *UserListener) onUserAPIKeyRotated(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	payload := new(events.UserAPIKeyRotatedPayload)
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.SendAPIKeyRotatedEmail(ctx, payload); err != nil {
+		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

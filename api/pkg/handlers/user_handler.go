@@ -241,7 +241,7 @@ func (h *UserHandler) DeleteAPIKey(c *fiber.Ctx) error {
 		return h.responseUnauthorized(c)
 	}
 
-	user, err := h.service.RotateAPIKey(ctx, h.userIDFomContext(c))
+	user, err := h.service.RotateAPIKey(ctx, c.OriginalURL(), h.userIDFomContext(c))
 	if err != nil {
 		msg := fmt.Sprintf("cannot rotate the api key for [%T] with ID [%s]", user, h.userIDFomContext(c))
 		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
