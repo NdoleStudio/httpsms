@@ -7,7 +7,7 @@
     :large="large"
     @click="copy"
   >
-    <v-icon>{{ mdiContentCopy }}</v-icon>
+    <v-icon left>{{ mdiContentCopy }}</v-icon>
     {{ copyText }}
   </v-btn>
 </template>

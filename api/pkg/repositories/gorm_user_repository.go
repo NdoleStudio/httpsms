@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"gorm.io/gorm/clause"
+
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
 	"github.com/dgraph-io/ristretto"
 
@@ -38,6 +40,32 @@ func NewGormUserRepository(
 		cache:  cache,
 		db:     db,
 	}
+}
+
+func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID entities.UserID) (*entities.User, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	apiKey, err := repository.generateAPIKey(64)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot generate apiKey for user [%s]", userID))
+	}
+
+	user := new(entities.User)
+	err = crdbgorm.ExecuteTx(ctx, repository.db, nil,
+		func(tx *gorm.DB) error {
+			return tx.WithContext(ctx).Model(user).
+				Clauses(clause.Returning{}).
+				Where("id = ?", userID).
+				Update("api_key", apiKey).Error
+		},
+	)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("user with ID [%s] does not exist", userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	return user, nil
 }
 
 func (repository *gormUserRepository) LoadBySubscriptionID(ctx context.Context, subscriptionID string) (*entities.User, error) {
@@ -150,7 +178,7 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 
 	apiKey, err := repository.generateAPIKey(64)
 	if err != nil {
-		return nil, false, stacktrace.Propagate(err, "cannot generate apiKey")
+		return nil, false, stacktrace.Propagate(err, fmt.Sprintf("cannot generate apiKey for user [%s]", authUser.ID))
 	}
 
 	user = &entities.User{

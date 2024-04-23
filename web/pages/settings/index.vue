@@ -75,10 +75,8 @@
               class="mb-n2"
               @click:append="apiKeyShow = !apiKeyShow"
             ></v-text-field>
-            <div class="d-flex">
+            <div class="d-flex flex-wrap">
               <copy-button
-                :block="$vuetify.breakpoint.mdAndDown"
-                :large="$vuetify.breakpoint.mdAndDown"
                 :value="apiKey"
                 color="primary"
                 copy-text="Copy API Key"
@@ -90,6 +88,49 @@
                 :href="$store.getters.getAppData.documentationUrl"
                 >Documentation</v-btn
               >
+              <v-spacer></v-spacer>
+              <v-dialog
+                v-model="showRotateApiKey"
+                overlay-opacity="0.9"
+                max-width="550"
+              >
+                <template #activator="{ on, attrs }">
+                  <v-btn
+                    :small="$vuetify.breakpoint.mdAndDown"
+                    :text="$vuetify.breakpoint.lgAndUp"
+                    color="warning"
+                    v-bind="attrs"
+                    v-on="on"
+                  >
+                    <v-icon left>{{ mdiRefresh }}</v-icon>
+                    Rotate API Key
+                  </v-btn>
+                </template>
+                <v-card>
+                  <v-card-title class="text-h5 text-break">
+                    Are you sure you want to rotate your API Key?
+                  </v-card-title>
+                  <v-card-text>
+                    You will have to logout and login again on the
+                    <b>httpSMS</b> Android app with your new API key after you
+                    rotate it.
+                  </v-card-text>
+                  <v-card-actions class="pb-4">
+                    <v-btn
+                      color="primary"
+                      :loading="rotatingApiKey"
+                      @click="rotateApiKey"
+                    >
+                      <v-icon left>{{ mdiRefresh }}</v-icon>
+                      Yes Rotate Key
+                    </v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn text @click="showRotateApiKey = false">
+                      Close
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
             </div>
             <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
@@ -345,7 +386,7 @@
         </v-row>
       </v-container>
     </div>
-    <v-dialog v-model="showPhoneEdit" max-width="700px">
+    <v-dialog v-model="showPhoneEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>Edit Phone</v-card-title>
         <v-card-text v-if="activePhone" class="mt-6">
@@ -441,7 +482,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showWebhookEdit" max-width="600px">
+    <v-dialog v-model="showWebhookEdit" overlay-opacity="0.9" max-width="600px">
       <v-card>
         <v-card-title>
           <span v-if="!activeWebhook.id">Add a new&nbsp;</span>
@@ -556,7 +597,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showDiscordEdit" max-width="700px">
+    <v-dialog v-model="showDiscordEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>
           <span v-if="!activeDiscord.id">Add a new&nbsp;</span>
@@ -682,6 +723,7 @@ import {
   mdiContentSave,
   mdiConnection,
   mdiEye,
+  mdiRefresh,
   mdiLinkVariant,
   mdiEyeOff,
   mdiSquareEditOutline,
@@ -697,6 +739,7 @@ export default Vue.extend({
     return {
       mdiEye,
       mdiEyeOff,
+      mdiRefresh,
       mdiArrowLeft,
       mdiAccountCircle,
       mdiShieldCheck,
@@ -709,6 +752,8 @@ export default Vue.extend({
       apiKeyShow: false,
       showPhoneEdit: false,
       showDiscordEdit: false,
+      showRotateApiKey: false,
+      rotatingApiKey: false,
       activeWebhook: {
         id: null,
         url: '',
@@ -1019,6 +1064,16 @@ export default Vue.extend({
         })
         .finally(() => {
           this.updatingWebhook = false
+        })
+    },
+
+    rotateApiKey() {
+      this.rotatingApiKey = true
+      this.$store
+        .dispatch('rotateApiKey', this.$store.getters.getUser.id)
+        .finally(() => {
+          this.rotatingApiKey = false
+          this.showRotateApiKey = false
         })
     },
 

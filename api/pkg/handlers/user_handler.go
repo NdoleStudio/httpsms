@@ -41,6 +41,7 @@ func NewUserHandler(
 func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/users/me", h.Show)
 	router.Put("/users/me", h.Update)
+	router.Delete("/users/:userID/api-keys", h.DeleteApiKey)
 	router.Put("/users/:userID/notifications", h.UpdateNotifications)
 	router.Get("/users/subscription-update-url", h.subscriptionUpdateURL)
 	router.Delete("/users/subscription", h.cancelSubscription)
@@ -214,4 +215,38 @@ func (h *UserHandler) cancelSubscription(c *fiber.Ctx) error {
 	}
 
 	return h.responseNoContent(c, "Subscription cancelled successfully")
+}
+
+// DeleteAPIKey rotates the API Key for a user
+// @Summary      Rotate the user's API Key
+// @Description  Rotate the user's API key in case the current API Key is compromised
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param 		 userID 	path		string 							true 	"ID of the user to update" 	default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      200 		{object}	responses.UserResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/{userID}/api-keys [delete]
+func (h *UserHandler) DeleteAPIKey(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	if c.Params("userID") != string(h.userIDFomContext(c)) {
+		return h.responseUnauthorized(c)
+	}
+
+	user, err := h.service.RotateAPIKey(ctx, h.userIDFomContext(c))
+	if err != nil {
+		msg := fmt.Sprintf("cannot rotate the api key for [%T] with ID [%s]", user, h.userIDFomContext(c))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "API Key rotated successfully", user)
 }

@@ -149,6 +149,21 @@ func (service *UserService) UpdateNotificationSettings(ctx context.Context, user
 	return user, nil
 }
 
+// RotateAPIKey for an entities.User
+func (service *UserService) RotateAPIKey(ctx context.Context, userID entities.UserID) (*entities.User, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.RotateAPIKey(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("could not rotate API key for [%T] with ID [%s]", user, userID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("rotated the api key for [%T] with ID [%s] in the [%T]", user, user.ID, service.repository))
+	return user, nil
+}
+
 // UserSendPhoneDeadEmailParams are parameters for notifying a user when a phone is dead
 type UserSendPhoneDeadEmailParams struct {
 	UserID                 entities.UserID

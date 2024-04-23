@@ -886,6 +886,33 @@ export const actions = {
     })
   },
 
+  rotateApiKey(context: ActionContext<State, State>, payload: string) {
+    return new Promise<EntitiesUser>((resolve, reject) => {
+      axios
+        .delete<ResponsesUserResponse>(`/v1/users/${payload}/api-keys`)
+        .then((response: AxiosResponse<ResponsesUserResponse>) => {
+          context.commit('setUser', response.data.data)
+          setApiKey(response.data.data.api_key)
+          context.dispatch('addNotification', {
+            message: 'API Key rotated successfully',
+            type: 'success',
+          })
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while rotating your API key',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
   updateWebhook(
     context: ActionContext<State, State>,
     payload: RequestsWebhookUpdate & { id: string },
