@@ -41,7 +41,7 @@ func NewUserHandler(
 func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/users/me", h.Show)
 	router.Put("/users/me", h.Update)
-	router.Delete("/users/:userID/api-keys", h.DeleteApiKey)
+	router.Delete("/users/:userID/api-keys", h.DeleteAPIKey)
 	router.Put("/users/:userID/notifications", h.UpdateNotifications)
 	router.Get("/users/subscription-update-url", h.subscriptionUpdateURL)
 	router.Delete("/users/subscription", h.cancelSubscription)
