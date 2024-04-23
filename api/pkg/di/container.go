@@ -855,6 +855,7 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.UserEmailFactory(),
 		container.MarketingService(),
 		container.LemonsqueezyClient(),
+		container.EventDispatcher(),
 	)
 }
 
