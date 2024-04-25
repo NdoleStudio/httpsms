@@ -31,10 +31,10 @@ func NewIntegration3CXListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypeMessagePhoneReceived:  l.OnMessagePhoneReceived,
-		events.EventTypeMessagePhoneDelivered: l.OnMessagePhoneDelivered,
-		events.EventTypeMessageSendFailed:     l.OnMessageSendFailed,
-		events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
+		// events.EventTypeMessagePhoneReceived:  l.OnMessagePhoneReceived,
+		// events.EventTypeMessagePhoneDelivered: l.OnMessagePhoneDelivered,
+		// events.EventTypeMessageSendFailed:     l.OnMessageSendFailed,
+		// events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
 	}
 }
 
