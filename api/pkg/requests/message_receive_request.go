@@ -28,7 +28,7 @@ type MessageReceive struct {
 // Sanitize sets defaults to MessageReceive
 func (input *MessageReceive) Sanitize() MessageReceive {
 	input.To = input.sanitizeAddress(input.To)
-	input.From = input.sanitizeAddress(input.From)
+	input.From = input.sanitizeContact(input.To, input.From)
 	if strings.TrimSpace(string(input.SIM)) == "" || input.SIM == ("DEFAULT") {
 		input.SIM = entities.SIM1
 	}

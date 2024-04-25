@@ -22,7 +22,7 @@ type MessageCallMissed struct {
 // Sanitize sets defaults to MessageReceive
 func (input *MessageCallMissed) Sanitize() MessageCallMissed {
 	input.To = input.sanitizeAddress(input.To)
-	input.From = input.sanitizeAddress(input.From)
+	input.From = input.sanitizeContact(input.To, input.From)
 	input.SIM = input.sanitizeSIM(input.SIM)
 
 	return *input

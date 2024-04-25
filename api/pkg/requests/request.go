@@ -26,6 +26,25 @@ func (input *request) sanitizeAddress(value string) string {
 	return value
 }
 
+func (input *request) sanitizeContact(owner string, contact string) string {
+	contact = strings.TrimSpace(contact)
+
+	if len(contact) < 8 || !input.isDigits(contact) {
+		return contact
+	}
+
+	regionPhoneNumber, err := phonenumbers.Parse(owner, phonenumbers.UNKNOWN_REGION)
+	if err != nil {
+		return contact
+	}
+
+	if number, err := phonenumbers.Parse(contact, phonenumbers.GetRegionCodeForNumber(regionPhoneNumber)); err == nil {
+		contact = phonenumbers.Format(number, phonenumbers.E164)
+	}
+
+	return contact
+}
+
 // sanitizeBool sanitizes a boolean string
 func (input *request) sanitizeBool(value string) string {
 	value = strings.TrimSpace(value)
