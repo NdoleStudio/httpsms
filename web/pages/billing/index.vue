@@ -83,7 +83,7 @@
                         :loading="loading"
                         @click="updateDetails"
                       >
-                        Update Details
+                        Update Plan
                       </loading-button>
                       <v-btn
                         v-else-if="!isOnLifetimePlan"
@@ -347,6 +347,7 @@ import {
   mdiAccountCircle,
   mdiShieldCheck,
   mdiDelete,
+  mdiCog,
   mdiContentSave,
   mdiEye,
   mdiEyeOff,
@@ -374,6 +375,7 @@ export default Vue.extend({
       mdiAccountCircle,
       mdiShieldCheck,
       mdiDelete,
+      mdiCog,
       mdiContentSave,
       mdiCallReceived,
       mdiCallMade,

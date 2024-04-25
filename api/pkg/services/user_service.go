@@ -311,7 +311,7 @@ func (service *UserService) GetSubscriptionUpdateURL(ctx context.Context, userID
 		return url, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	return subscription.Data.Attributes.Urls.UpdatePaymentMethod, nil
+	return subscription.Data.Attributes.Urls.CustomerPortal, nil
 }
 
 // CancelSubscription starts a subscription for an entities.User
