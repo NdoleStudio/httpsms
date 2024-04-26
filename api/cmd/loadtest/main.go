@@ -25,7 +25,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	fmt.Printf("\n\n%s\n\n", decode("LTa1M0I0nDKNEOIQHFc0uEaRX3AnlZY="))
 	sendSingle()
 }
 
@@ -60,13 +59,13 @@ func sendSingle() {
 		var responsePayload string
 		err := requests.
 			URL("/v1/messages/send").
-			Host("leading-puma-internal.ngrok-free.app").
+			Host("api.httpsms.com").
 			Header("x-api-key", os.Getenv("HTTPSMS_KEY")).
 			BodyJSON(&map[string]any{
-				"content":    encrypt("This is a test text message"),
+				"content":    fmt.Sprintf("This is a test text message [%d]", i),
 				"from":       os.Getenv("HTTPSMS_FROM"),
-				"to":         os.Getenv("HTTPSMS_FROM"),
-				"encrypted":  true,
+				"to":         os.Getenv("HTTPSMS_TO"),
+				"encrypted":  false,
 				"request_id": fmt.Sprintf("load-%s-%d", uuid.NewString(), i),
 			}).
 			ToString(&responsePayload).
