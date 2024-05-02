@@ -54,8 +54,8 @@ dependencies:
     specifier: ^1.0.3
     version: 1.0.3
   ufo:
-    specifier: ^1.4.0
-    version: 1.4.0
+    specifier: ^1.5.3
+    version: 1.5.3
   vue:
     specifier: ^2.7.16
     version: 2.7.16
@@ -114,7 +114,7 @@ devDependencies:
     version: 4.1.0(eslint@8.57.0)(vite@4.5.3)(webpack@5.91.0)
   '@nuxtjs/stylelint-module':
     specifier: ^5.1.0
-    version: 5.1.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.3)(webpack@5.91.0)
+    version: 5.1.0(postcss@8.4.35)(stylelint@15.11.0)(vite@4.5.3)(webpack@5.91.0)
   '@nuxtjs/vuetify':
     specifier: ^1.12.3
     version: 1.12.3(vue@2.7.16)(webpack@5.91.0)
@@ -3613,7 +3613,7 @@ packages:
       lodash: 4.17.21
       rc9: 2.1.1
       std-env: 3.7.0
-      ufo: 1.4.0
+      ufo: 1.5.3
     dev: false
 
   /@nuxt/core@2.17.3:
@@ -3661,7 +3661,7 @@ packages:
       fs-extra: 10.1.0
       html-minifier: 4.0.0
       node-html-parser: 6.1.13
-      ufo: 1.4.0
+      ufo: 1.5.3
     dev: false
 
   /@nuxt/kit@3.7.4:
@@ -3682,7 +3682,7 @@ packages:
       pkg-types: 1.0.3
       scule: 1.0.0
       semver: 7.6.0
-      ufo: 1.4.0
+      ufo: 1.5.3
       unctx: 2.3.1
       unimport: 3.4.0
       untyped: 1.4.0
@@ -3725,7 +3725,7 @@ packages:
       pkg-types: 1.0.3
       postcss-import-resolver: 2.0.0
       std-env: 3.4.3
-      ufo: 1.4.0
+      ufo: 1.5.3
       unimport: 3.4.0
       untyped: 1.4.0
     transitivePeerDependencies:
@@ -3753,7 +3753,7 @@ packages:
       serve-placeholder: 2.0.1
       serve-static: 1.15.0
       server-destroy: 1.0.1
-      ufo: 1.4.0
+      ufo: 1.5.3
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -3841,7 +3841,7 @@ packages:
       serialize-javascript: 6.0.2
       signal-exit: 4.1.0
       ua-parser-js: 1.0.37
-      ufo: 1.4.0
+      ufo: 1.5.3
     dev: false
 
   /@nuxt/vue-app@2.17.3:
@@ -3849,7 +3849,7 @@ packages:
     engines: {node: ^14.18.0 || >=16.10.0}
     dependencies:
       node-fetch-native: 1.6.4
-      ufo: 1.4.0
+      ufo: 1.5.3
       unfetch: 5.0.0
       vue: 2.7.16
       vue-client-only: 2.1.0
@@ -3871,7 +3871,7 @@ packages:
       fs-extra: 10.1.0
       lodash: 4.17.21
       lru-cache: 5.1.1
-      ufo: 1.4.0
+      ufo: 1.5.3
       vue: 2.7.16
       vue-meta: 2.4.0
       vue-server-renderer: 2.7.16
@@ -3915,7 +3915,7 @@ packages:
       terser-webpack-plugin: 4.2.3(webpack@4.47.0)
       thread-loader: 3.0.4(webpack@4.47.0)
       time-fix-plugin: 2.0.7(webpack@4.47.0)
-      ufo: 1.4.0
+      ufo: 1.5.3
       upath: 2.0.1
       url-loader: 4.1.1(file-loader@6.2.0)(webpack@4.47.0)
       vue-loader: 15.11.1(babel-core@7.0.0-bridge.0)(cache-loader@4.1.0)(css-loader@5.2.7)(lodash@4.17.21)(prettier@3.0.3)(vue-template-compiler@2.7.16)(webpack@4.47.0)
@@ -4090,7 +4090,7 @@ packages:
       sitemap: 4.1.1
     dev: false
 
-  /@nuxtjs/stylelint-module@5.1.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.3)(webpack@5.91.0):
+  /@nuxtjs/stylelint-module@5.1.0(postcss@8.4.35)(stylelint@15.11.0)(vite@4.5.3)(webpack@5.91.0):
     resolution: {integrity: sha512-zpWn5nJfFstBh7PUBjsBNu6rFCN2wtz3JyLGuEqCh4yo7orKclDM3S931E3kMD6Tszpvobhq1CMsgbcZL6K3aA==}
     peerDependencies:
       stylelint: '>=13'
@@ -4100,7 +4100,7 @@ packages:
       pathe: 1.1.1
       stylelint: 15.11.0(typescript@4.9.5)
       stylelint-webpack-plugin: 4.1.1(stylelint@15.11.0)(webpack@5.91.0)
-      vite-plugin-stylelint: 4.3.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.3)
+      vite-plugin-stylelint: 4.3.0(postcss@8.4.35)(stylelint@15.11.0)(vite@4.5.3)
     transitivePeerDependencies:
       - '@types/stylelint'
       - postcss
@@ -11475,7 +11475,7 @@ packages:
       acorn: 8.11.3
       pathe: 1.1.2
       pkg-types: 1.0.3
-      ufo: 1.4.0
+      ufo: 1.5.3
     dev: true
 
   /mlly@1.6.1:
@@ -11484,7 +11484,7 @@ packages:
       acorn: 8.11.3
       pathe: 1.1.2
       pkg-types: 1.0.3
-      ufo: 1.4.0
+      ufo: 1.5.3
     dev: true
 
   /moment@2.30.1:
@@ -15446,8 +15446,8 @@ packages:
     resolution: {integrity: sha512-bhTyI94tZofjo+Dn8SN6Zv8nBDvyXTymAdM3LDI/0IboIUwTu1rEhW7v2TfiVsoYWgkQ4kOVqnI8APUFbIQIFQ==}
     dev: false
 
-  /ufo@1.4.0:
-    resolution: {integrity: sha512-Hhy+BhRBleFjpJ2vchUNN40qgkh0366FWJGqVLYBHev0vpHTrXSA0ryT+74UiW6KWsldNurQMKGqCm1M2zBciQ==}
+  /ufo@1.5.3:
+    resolution: {integrity: sha512-Y7HYmWaFwPUmkoQCUIAYpKqkOf+SbVj/2fJJZ4RJMCfZp0rTGwRbzQD+HghfnhKOjL9E01okqz+ncJskGYfBNw==}
 
   /uglify-js@3.17.4:
     resolution: {integrity: sha512-T9q82TJI9e/C1TAxYvfb16xO120tMVFZrGA3f9/P4424DNu6ypK103y0GPFVa17yotwSyZW5iYXgjYHkGrJW/g==}
@@ -15747,7 +15747,7 @@ packages:
       vite: 4.5.3(@types/node@20.8.0)
     dev: true
 
-  /vite-plugin-stylelint@4.3.0(postcss@8.4.31)(stylelint@15.11.0)(vite@4.5.3):
+  /vite-plugin-stylelint@4.3.0(postcss@8.4.35)(stylelint@15.11.0)(vite@4.5.3):
     resolution: {integrity: sha512-S8BONq5X8TndOFt+My4lkeHxVZvkDQRL++TV0nvnuYgOU/CvDddPPOT4V6go+ETzWK0NEtXqCGFnpkmm8c8Xcg==}
     engines: {node: '>=14.18'}
     peerDependencies:
@@ -15766,7 +15766,7 @@ packages:
     dependencies:
       '@rollup/pluginutils': 5.0.4
       chokidar: 3.5.3
-      postcss: 8.4.31
+      postcss: 8.4.35
       stylelint: 15.11.0(typescript@4.9.5)
       vite: 4.5.3(@types/node@20.8.0)
     dev: true
