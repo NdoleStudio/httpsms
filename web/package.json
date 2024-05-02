@@ -36,7 +36,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "libphonenumber-js": "^1.10.59",
     "moment": "^2.30.1",
-    "nuxt": "^2.17.2",
+    "nuxt": "^2.17.3",
     "nuxt-highlightjs": "^1.0.3",
     "ufo": "^1.4.0",
     "vue": "^2.7.16",
