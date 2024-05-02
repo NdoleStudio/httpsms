@@ -34,7 +34,7 @@
     "firebase": "^9.23.0",
     "firebaseui": "^6.1.0",
     "jest-environment-jsdom": "^29.7.0",
-    "libphonenumber-js": "^1.10.59",
+    "libphonenumber-js": "^1.10.61",
     "moment": "^2.30.1",
     "nuxt": "^2.17.3",
     "nuxt-highlightjs": "^1.0.3",
