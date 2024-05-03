@@ -221,7 +221,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val payload = ResponsePhone.fromJson(response.body!!.string())?.data
         response.close()
-        Timber.i("fcm token sent successfully for phone [$phoneNumber]" )
+        Timber.i("fcm token sent successfully for phone [$phoneNumber] and id [${payload?.id}]" )
         return  payload
     }
 
