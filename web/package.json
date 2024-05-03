@@ -40,7 +40,7 @@
     "nuxt-highlightjs": "^1.0.3",
     "ufo": "^1.4.0",
     "vue": "^2.7.16",
-    "vue-chartjs": "^5.3.0",
+    "vue-chartjs": "^5.3.1",
     "vue-class-component": "^7.2.6",
     "vue-glow": "^1.4.2",
     "vue-property-decorator": "^9.1.2",
