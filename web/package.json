@@ -29,7 +29,7 @@
     "chart.js": "^4.4.2",
     "chartjs-adapter-moment": "^1.0.1",
     "core-js": "^3.36.1",
-    "date-fns": "^3.6.0",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.4.1",
     "firebase": "^9.23.0",
     "firebaseui": "^6.1.0",

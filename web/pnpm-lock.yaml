@@ -27,8 +27,8 @@ dependencies:
     specifier: ^3.36.1
     version: 3.36.1
   date-fns:
-    specifier: ^3.6.0
-    version: 3.6.0
+    specifier: ^2.30.0
+    version: 2.30.0
   dotenv:
     specifier: ^16.4.1
     version: 16.4.1
@@ -9475,11 +9475,14 @@ packages:
       whatwg-url: 11.0.0
     dev: false
 
-  /date-fns@3.6.0:
+  /date-fns@2.30.0:
     resolution:
       {
-        integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==,
+        integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==,
       }
+    engines: { node: '>=0.11' }
+    dependencies:
+      '@babel/runtime': 7.24.5
     dev: false
 
   /de-indent@1.0.2:
