@@ -160,15 +160,15 @@ func (h *WebhookHandler) Store(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing webhook")
 	}
 
-	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 3})
+	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 10})
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot index webhooks for user [%s]", h.userIDFomContext(c))))
-		return h.responsePaymentRequired(c, "You can't create more than 1 webhook contact us to upgrade your account.")
+		return h.responseInternalServerError(c)
 	}
 
-	if len(webhooks) > 1 {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] wants to create more than 2 webhooks", h.userIDFomContext(c))))
-		return h.responsePaymentRequired(c, "You can't create more than 2 webhooks contact us to upgrade your account.")
+	if len(webhooks) == 10 {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] wants to create more than 5 webhooks", h.userIDFomContext(c))))
+		return h.responsePaymentRequired(c, "You can't create more than 10 webhooks contact us to upgrade to our enterprise plan.")
 	}
 
 	webhook, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))

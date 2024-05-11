@@ -67,7 +67,7 @@ func (service *WebhookService) Index(ctx context.Context, userID entities.UserID
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(webhooks), params))
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] webhooks with prams [%+#v]", len(webhooks), params))
 	return webhooks, nil
 }
 
@@ -124,7 +124,7 @@ func (service *WebhookService) Store(ctx context.Context, params *WebhookStorePa
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("webhook saved with id [%s] in the [%T]", webhook.ID, service.repository))
+	ctxLogger.Info(fmt.Sprintf("webhook saved with id [%s] for user [%s] in the [%T]", webhook.ID, webhook.UserID, service.repository))
 	return webhook, nil
 }
 
