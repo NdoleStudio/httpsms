@@ -109,6 +109,16 @@
                 ></v-img>
               </v-btn>
             </p>
+            <a
+              href="https://www.saashub.com/httpsms?utm_source=badge&utm_campaign=badge&utm_content=httpsms&badge_variant=color&badge_kind=approved"
+              target="_blank"
+            >
+              <img
+                src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1"
+                alt="httpSMS badge"
+                style="max-width: 150px"
+              />
+            </a>
           </v-col>
           <v-col cols="12" md="3">
             <h2 class="text-h6 mb-2">Resources</h2>
