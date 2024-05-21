@@ -8,6 +8,9 @@ COPY package*.json ./
 # Install pnpm
 RUN npm install -g pnpm
 
+# install python
+RUN apk add --no-cache python3
+
 RUN pnpm install
 COPY . .
 RUN pnpm run generate
