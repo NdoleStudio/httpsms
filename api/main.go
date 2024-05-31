@@ -22,7 +22,7 @@ var Version string
 // @license.url  https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
 //
 // @host     api.httpsms.com
-// @schemes  http https
+// @schemes  https
 // @BasePath /v1
 //
 // @securitydefinitions.apikey ApiKeyAuth
