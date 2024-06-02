@@ -48,8 +48,8 @@ github.com/Masterminds/sprig v2.22.0+incompatible h1:z4yfnGrZ7netVz+0EDJ0Wi+5VZC
 github.com/Masterminds/sprig v2.22.0+incompatible/go.mod h1:y6hNFY5UBTIWBxnzTeuNhlNS5hqE0NB0E6fgfo2Br3o=
 github.com/NdoleStudio/go-otelroundtripper v0.0.9 h1:wbkmz2UOz4TNKnOs15aODqb2THcF0wFoB3C9wdUln8Y=
 github.com/NdoleStudio/go-otelroundtripper v0.0.9/go.mod h1:6SLgW5Bh6dRW3XyYlfqEOzFqak848uv6n1+RaZa3LHc=
-github.com/NdoleStudio/lemonsqueezy-go v1.1.0 h1:Xhbb2sOQh0eVt6jXdPWjgqUbyN3Ohzy/d0yR9S1mG6g=
-github.com/NdoleStudio/lemonsqueezy-go v1.1.0/go.mod h1:yRYTtU1RyapMDPTFKypIEKLEjPAbWq9a5PGqqvIn6/Y=
+github.com/NdoleStudio/lemonsqueezy-go v1.2.3 h1:r7f2R9K2HwNWod1AJW7wlXJOroTNLh2az0CgV8MONx4=
+github.com/NdoleStudio/lemonsqueezy-go v1.2.3/go.mod h1:2uZlWgn9sbNxOx3JQWLlPrDOC6NT/wmSTOgL3U/fMMw=
 github.com/PuerkitoBio/goquery v1.5.0/go.mod h1:qD2PgZ9lccMbQlc7eEOjaeRlFQON7xY8kdmcsrnKqMg=
 github.com/PuerkitoBio/goquery v1.5.1/go.mod h1:GsLWisAFVj4WgDibEWF4pvYnkVQBpKBKeU+7zCJoLcc=
 github.com/PuerkitoBio/goquery v1.9.0 h1:zgjKkdpRY9T97Q5DCtcXwfqkcylSFIVCocZmn2huTp8=
