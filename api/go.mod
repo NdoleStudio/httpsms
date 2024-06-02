@@ -8,7 +8,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.46.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.9
-	github.com/NdoleStudio/lemonsqueezy-go v1.1.0
+	github.com/NdoleStudio/lemonsqueezy-go v1.2.3
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/carlmjohnson/requests v0.23.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
