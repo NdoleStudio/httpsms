@@ -5,7 +5,7 @@ go 1.22
 require (
 	cloud.google.com/go/cloudtasks v1.12.7
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.46.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.47.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.9
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.3
