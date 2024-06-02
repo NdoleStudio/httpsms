@@ -24,8 +24,8 @@ dependencies:
     specifier: ^1.0.1
     version: 1.0.1(chart.js@4.4.3)(moment@2.30.1)
   core-js:
-    specifier: ^3.36.1
-    version: 3.36.1
+    specifier: ^3.37.1
+    version: 3.37.1
   date-fns:
     specifier: ^2.30.0
     version: 2.30.0
@@ -3439,7 +3439,7 @@ packages:
       '@babel/preset-env': 7.24.5(@babel/core@7.24.0)
       '@babel/runtime': 7.24.5
       '@vue/babel-preset-jsx': 1.4.0(@babel/core@7.24.0)(vue@2.7.16)
-      core-js: 3.36.1
+      core-js: 3.37.1
       core-js-compat: 3.37.0
       regenerator-runtime: 0.14.1
     transitivePeerDependencies:
@@ -6783,8 +6783,8 @@ packages:
     requiresBuild: true
     dev: true
 
-  /core-js@3.36.1:
-    resolution: {integrity: sha512-BTvUrwxVBezj5SZ3f10ImnX2oRByMxql3EimVqMysepbC9EeMUOpLwdy6Eoili2x6E4kf+ZUB5k/+Jv55alPfA==}
+  /core-js@3.37.1:
+    resolution: {integrity: sha512-Xn6qmxrQZyB0FFY8E3bgRXei3lWDJHhvI+u0q9TKIYM49G8pAr0FgnnrFRAmsbptZL1yxRADVXn+x5AGsbBfyw==}
     requiresBuild: true
     dev: false
 
