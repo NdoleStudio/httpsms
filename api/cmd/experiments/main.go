@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -30,6 +34,8 @@ func main() {
 	logger := container.Logger()
 
 	logger.Info("Starting experiments")
+
+	sendSingle()
 }
 
 func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
@@ -90,6 +96,40 @@ func loadTest() {
 
 	}
 	wg.Wait()
+}
+
+func sendSingle() {
+	payload, err := json.Marshal(map[string]any{
+		"content":   fmt.Sprintf("This is a test text message"),
+		"from":      os.Getenv("HTTPSMS_FROM"),
+		"to":        os.Getenv("HTTPSMS_TO"),
+		"encrypted": false,
+	})
+	if err != nil {
+		log.Fatal(stacktrace.Propagate(err, "cannot marshal payload"))
+	}
+
+	req, err := http.NewRequest(http.MethodGet, "https://api.httpsms.com/v1/messages/send", bytes.NewBuffer(payload))
+	if err != nil {
+		log.Fatal(stacktrace.Propagate(err, "cannot create request"))
+	}
+
+	req.Header.Add("x-api-key", os.Getenv("HTTPSMS_KEY"))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(stacktrace.Propagate(err, "cannot send request"))
+	}
+
+	fmt.Printf("client: got response!\n")
+	fmt.Printf("client: status code: %d\n", res.StatusCode)
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(stacktrace.Propagate(err, "could not read response body"))
+	}
+
+	fmt.Printf("client: response body: %s\n", resBody)
 }
 
 func sendSMS(content string) {
