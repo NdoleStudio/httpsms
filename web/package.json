@@ -73,7 +73,7 @@
     "jest": "^29.7.0",
     "lint-staged": "^15.2.2",
     "node-fetch-native": "^1.6.4",
-    "postcss-html": "^1.6.0",
+    "postcss-html": "^1.7.0",
     "prettier": "3.0.3",
     "stylelint": "^15.11.0",
     "stylelint-config-prettier": "^9.0.5",
