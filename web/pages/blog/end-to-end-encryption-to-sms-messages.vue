@@ -32,7 +32,7 @@
           <a
             class="text-decoration-none"
             href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard"
-            >AES 265</a
+            >AES 256</a
           >
           encryption algorithm to encrypt and decrypt the messages.
         </p>
@@ -58,10 +58,10 @@
         ></v-img>
         <h3 class="text-h4 mb-4 mt-16">Encrypt your SMS message</h3>
         <p>
-          We use the AES-265 encryption algorithm to encrypt the SMS messages.
+          We use the AES-256 encryption algorithm to encrypt the SMS messages.
           This algorithm requires a an encryption key which is 256 bits to work
           around this, we will hash any encryption key you set on the mobile app
-          using the sha-265 algorithm so that it will always produce a key which
+          using the sha-256 algorithm so that it will always produce a key which
           is 256 bits.
         </p>
         <p>
