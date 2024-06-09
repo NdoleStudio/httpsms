@@ -525,7 +525,7 @@ export const actions = {
         .then((response: AxiosResponse<ResponsesMessagesResponse>) => {
           resolve(response.data.data)
         })
-        .catch(async (error: AxiosError) => {
+        .catch((error: AxiosError) => {
           reject(error)
         })
     })
