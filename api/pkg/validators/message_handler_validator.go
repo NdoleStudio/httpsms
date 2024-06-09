@@ -207,6 +207,59 @@ func (validator MessageHandlerValidator) ValidateMessageIndex(_ context.Context,
 	return v.ValidateStruct()
 }
 
+// ValidateMessageSearch validates the requests.MessageSearch request
+func (validator MessageHandlerValidator) ValidateMessageSearch(_ context.Context, request requests.MessageSearch) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"owners": []string{
+				multipleContactPhoneNumberRule,
+			},
+			"types": []string{
+				multipleInRule + ":" + strings.Join([]string{
+					entities.MessageTypeCallMissed,
+					entities.MessageTypeMobileOriginated,
+					entities.MessageTypeMobileTerminated,
+				}, ","),
+			},
+			"statuses": []string{
+				multipleInRule + ":" + strings.Join([]string{
+					entities.MessageStatusPending,
+					entities.MessageStatusSent,
+					entities.MessageStatusDelivered,
+					entities.MessageStatusFailed,
+					entities.MessageStatusExpired,
+					entities.MessageStatusReceived,
+				}, ","),
+			},
+			"sort_by": []string{
+				"in:" + strings.Join([]string{
+					"created_at",
+					"owner",
+					"contact",
+					"type",
+					"status",
+				}, ","),
+			},
+			"limit": []string{
+				"required",
+				"numeric",
+				"min:1",
+				"max:200",
+			},
+			"skip": []string{
+				"required",
+				"numeric",
+				"min:0",
+			},
+			"query": []string{
+				"max:100",
+			},
+		},
+	})
+	return v.ValidateStruct()
+}
+
 // ValidateMessageEvent validates the requests.MessageEvent request
 func (validator MessageHandlerValidator) ValidateMessageEvent(_ context.Context, request requests.MessageEvent) url.Values {
 	v := govalidator.New(govalidator.Options{

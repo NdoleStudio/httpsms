@@ -117,16 +117,44 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 }
 
 // UpdateAfterDeletedMessage updates a thread after the last message has been deleted
-func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Context, payload *events.MessageAPIDeletedPayload) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	if err := service.repository.UpdateAfterDeletedMessage(ctx, userID, messageID); err != nil {
-		msg := fmt.Sprintf("cannot delete last message from thread with messageID [%s] and userID [%s]", messageID, userID)
+	thread, err := service.repository.LoadByOwnerContact(ctx, payload.UserID, payload.Owner, payload.Contact)
+	if err != nil {
+		msg := fmt.Sprintf("cannot find thread for user [%s] with owner [%s], and contact [%s]", payload.UserID, payload.Owner, payload.Contact)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("last message has been removed from thread with messageID [%s] and userID [%s]", messageID, userID))
+	if payload.PreviousMessageID == nil {
+		if err = service.repository.Delete(ctx, thread.UserID, thread.ID); err != nil {
+			msg := fmt.Sprintf("cannot delete thread with ID [%s] for user [%s] and owner [%s]", thread.ID, thread.UserID, thread.Owner)
+			ctxLogger.Error(stacktrace.Propagate(err, msg))
+			return nil
+		}
+		msg := fmt.Sprintf("previous message ID is nil for thread with ID [%s] and user [%s]", thread.ID, thread.UserID)
+		ctxLogger.Info(msg)
+		return nil
+	}
+
+	if thread.LastMessageID != nil && *thread.LastMessageID != payload.MessageID {
+		msg := fmt.Sprintf("last message ID [%s] does not match message ID [%s] for thread with ID [%s]", *thread.LastMessageID, payload.MessageID, thread.ID)
+		ctxLogger.Info(msg)
+		return nil
+	}
+
+	thread.LastMessageContent = payload.PreviousMessageContent
+	thread.LastMessageID = payload.PreviousMessageID
+	thread.Status = *payload.PreviousMessageStatus
+	thread.UpdatedAt = time.Now().UTC()
+
+	if err = service.repository.Update(ctx, thread); err != nil {
+		msg := fmt.Sprintf("cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("last message has been removed from thread with ID [%s] and userID [%s]", thread.ID, thread.UserID))
 	return nil
 }
 

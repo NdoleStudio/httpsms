@@ -2,7 +2,7 @@ import Vue from 'vue'
 import { intervalToDuration, formatDuration } from 'date-fns'
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js'
 
-Vue.filter('phoneNumber', (value: string): string => {
+export const formatPhoneNumber = (value: string) => {
   if (!isValidPhoneNumber(value)) {
     return value
   }
@@ -11,6 +11,10 @@ Vue.filter('phoneNumber', (value: string): string => {
     return phoneNumber.formatInternational()
   }
   return value
+}
+
+Vue.filter('phoneNumber', (value: string): string => {
+  return formatPhoneNumber(value)
 })
 
 Vue.filter('phoneCountry', (value: string): string => {
@@ -55,4 +59,8 @@ Vue.filter('humanizeTime', (value: string): string => {
     end: new Date(value),
   })
   return formatDuration(durations)
+})
+
+Vue.filter('capitalize', (value: string): string => {
+  return value.charAt(0).toUpperCase() + value.slice(1)
 })

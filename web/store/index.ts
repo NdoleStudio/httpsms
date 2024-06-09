@@ -1,13 +1,14 @@
 import { ActionContext } from 'vuex'
 import { AxiosError, AxiosResponse } from 'axios'
 import { MessageThread } from '~/models/message-thread'
-import { Message } from '~/models/message'
+import { Message, SearchMessagesRequest } from '~/models/message'
 import { Heartbeat } from '~/models/heartbeat'
 import axios, { setApiKey, setAuthHeader } from '~/plugins/axios'
 import { User } from '~/models/user'
 import { BillingUsage } from '~/models/billing'
 import {
   EntitiesDiscord,
+  EntitiesMessage,
   EntitiesPhone,
   EntitiesUser,
   EntitiesWebhook,
@@ -18,6 +19,7 @@ import {
   RequestsWebhookUpdate,
   ResponsesDiscordResponse,
   ResponsesDiscordsResponse,
+  ResponsesMessagesResponse,
   ResponsesNoContent,
   ResponsesOkString,
   ResponsesUnprocessableEntity,
@@ -507,6 +509,24 @@ export const actions = {
             }),
           ])
           reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  searchMessages(
+    _: ActionContext<State, State>,
+    payload: SearchMessagesRequest,
+  ) {
+    return new Promise<EntitiesMessage[]>((resolve, reject) => {
+      axios
+        .get<ResponsesMessagesResponse>(`/v1/messages/search`, {
+          params: payload,
+        })
+        .then((response: AxiosResponse<ResponsesMessagesResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          reject(error)
         })
     })
   },

@@ -21,7 +21,7 @@ import (
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/NdoleStudio/httpsms/pkg/cache"
-	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
+	"github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"

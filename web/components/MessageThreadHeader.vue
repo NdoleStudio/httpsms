@@ -135,6 +135,22 @@
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item
+            v-if="$store.getters.getOwner"
+            :to="{ name: 'search-messages' }"
+            exact
+          >
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>{{ mdiMagnify }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  Search Messages
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
           <v-list-item :to="{ name: 'settings' }" exact>
             <v-list-item-icon class="pl-2">
               <v-icon dense>{{ mdiAccountCog }}</v-icon>
@@ -211,6 +227,7 @@ import {
   mdiPackageUp,
   mdiPackageDown,
   mdiDotsVertical,
+  mdiMagnify,
   mdiCommentTextMultipleOutline,
   mdiCircle,
 } from '@mdi/js'
@@ -231,6 +248,7 @@ export default class MessageThreadHeader extends Vue {
   mdiDotsVertical = mdiDotsVertical
   mdiCircle = mdiCircle
   mdiBatteryCharging = mdiBatteryChargingHigh
+  mdiMagnify = mdiMagnify
 
   get owners(): Array<SelectItem> {
     return this.$store.getters.getPhones.map(

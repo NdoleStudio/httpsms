@@ -79,13 +79,13 @@ func (listener *MessageThreadListener) onMessageDeleted(ctx context.Context, eve
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
-	var payload events.MessageAPIDeletedPayload
-	if err := event.DataAs(&payload); err != nil {
+	payload := new(events.MessageAPIDeletedPayload)
+	if err := event.DataAs(payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err := listener.service.UpdateAfterDeletedMessage(ctx, payload.UserID, payload.MessageID); err != nil {
+	if err := listener.service.UpdateAfterDeletedMessage(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", payload.MessageID, event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

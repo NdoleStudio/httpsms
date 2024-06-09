@@ -682,7 +682,7 @@ definitions:
         example: 1
         type: integer
       missed_call_auto_reply:
-        example: e.g This phone cannot receive calls. Please send an SMS instead.
+        example: e.g. This phone cannot receive calls. Please send an SMS instead.
         type: string
       phone_number:
         example: "+18005550199"
@@ -2068,6 +2068,63 @@ paths:
       summary: Receive a new SMS message from a mobile phone
       tags:
         - Messages
+  /messages/search:
+    get:
+      consumes:
+        - application/json
+      description:
+        This returns the list of all messages based on the filter criteria
+        including missed calls
+      parameters:
+        - default: +18005550199,+18005550100
+          description: the owner's phone numbers
+          in: query
+          name: owners
+          required: true
+          type: string
+        - description: number of messages to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter messages containing query
+          in: query
+          name: query
+          type: string
+        - description: number of messages to return
+          in: query
+          maximum: 200
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessagesResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Search all messages of a user
+      tags:
+        - Messages
   /messages/send:
     post:
       consumes:
@@ -2240,6 +2297,46 @@ paths:
       summary: Delete Phone
       tags:
         - Phones
+  /users/{userID}/api-keys:
+    delete:
+      consumes:
+        - application/json
+      description: Rotate the user's API key in case the current API Key is compromised
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the user to update
+          in: path
+          name: userID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.UserResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Rotate the user's API Key
+      tags:
+        - Users
   /users/{userID}/notifications:
     put:
       consumes:
@@ -2594,7 +2691,6 @@ paths:
       tags:
         - Webhooks
 schemes:
-  - http
   - https
 securityDefinitions:
   ApiKeyAuth:

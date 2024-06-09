@@ -55,6 +55,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
 	router.Post("/messages/calls/missed", h.PostCallMissed)
 	router.Get("/messages/outstanding", h.GetOutstanding)
 	router.Get("/messages", h.Index)
+	router.Get("/messages/search", h.Search)
 	router.Post("/messages/:messageID/events", h.PostEvent)
 	router.Delete("/messages/:messageID", h.Delete)
 }
@@ -461,4 +462,50 @@ func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "missed call event stored successfully", message)
+}
+
+// Search returns a filtered list of messages of a user
+// @Summary      Search all messages of a user
+// @Description  This returns the list of all messages based on the filter criteria including missed calls
+// @Security	 ApiKeyAuth
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        owners		query  string  	true 	"the owner's phone numbers" 		default(+18005550199,+18005550100)
+// @Param        skip		query  int  	false	"number of messages to skip"		minimum(0)
+// @Param        query		query  string  	false 	"filter messages containing query"
+// @Param        limit		query  int  	false	"number of messages to return"		minimum(1)	maximum(200)
+// @Success      200 		{object}	responses.MessagesResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /messages/search [get]
+func (h *MessageHandler) Search(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.MessageSearch
+	if err := c.QueryParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params in [%s] into [%T]", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateMessageSearch(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while searching messages [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while searching messages")
+	}
+
+	messages, err := h.service.SearchMessages(ctx, request.ToSearchParams(h.userIDFomContext(c)))
+	if err != nil {
+		msg := fmt.Sprintf("cannot search messages with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("found %d %s", len(messages), h.pluralize("message", len(messages))), messages)
 }

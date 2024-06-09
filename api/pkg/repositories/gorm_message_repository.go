@@ -92,6 +92,78 @@ func (repository *gormMessageRepository) Index(ctx context.Context, userID entit
 	return messages, nil
 }
 
+func (repository *gormMessageRepository) LastMessage(ctx context.Context, userID entities.UserID, owner string, contact string) (*entities.Message, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	query := repository.db.
+		WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("owner = ?", owner).
+		Where("contact =  ?", contact)
+
+	message := new(entities.Message)
+
+	err := query.Order("order_timestamp DESC").First(&message).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("cannot get last message for [%s] with owner [%s] and contact [%s]", userID, owner, contact)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot get last message for [%s] with owner [%s] and contact [%s]", userID, owner, contact)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return message, nil
+}
+
+func (repository *gormMessageRepository) Search(ctx context.Context, userID entities.UserID, owners []string, types []entities.MessageType, statuses []entities.MessageStatus, params IndexParams) ([]*entities.Message, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	query := repository.db.
+		WithContext(ctx).
+		Where("user_id = ?", userID)
+
+	if len(owners) > 0 {
+		query = query.Where("owner IN ?", owners)
+	}
+	if len(types) > 0 {
+		query = query.Where("type IN ?", types)
+	}
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
+	}
+
+	if len(params.Query) > 0 {
+		queryPattern := "%" + params.Query + "%"
+		subQuery := repository.db.Where("content ILIKE ?", queryPattern).
+			Or("contact ILIKE ?", queryPattern).
+			Or("failure_reason ILIKE ?", queryPattern).
+			Or("request_id ILIKE ?", queryPattern)
+
+		if _, err := uuid.Parse(params.Query); err == nil {
+			subQuery = subQuery.Or("id = ?", params.Query)
+		}
+
+		query = query.Where(subQuery)
+	}
+
+	messages := make([]*entities.Message, 0, params.Limit)
+	err := query.Order(repository.order(params, "created_at")).
+		Limit(params.Limit).
+		Offset(params.Skip).
+		Find(&messages).
+		Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot search messages with for user [%s] params [%+#v]", userID, params)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return messages, nil
+}
+
 // Store a new entities.Message
 func (repository *gormMessageRepository) Store(ctx context.Context, message *entities.Message) error {
 	ctx, span := repository.tracer.Start(ctx)
@@ -170,4 +242,18 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, use
 	}
 
 	return message, nil
+}
+
+func (repository *gormMessageRepository) order(params IndexParams, defaultSortBy string) string {
+	sortBy := defaultSortBy
+	if len(params.SortBy) > 0 {
+		sortBy = params.SortBy
+	}
+
+	direction := "ASC"
+	if params.SortDescending {
+		direction = "DESC"
+	}
+
+	return fmt.Sprintf("%s %s", sortBy, direction)
 }

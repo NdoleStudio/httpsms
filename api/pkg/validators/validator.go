@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
@@ -18,6 +19,7 @@ const (
 	phoneNumberRule                = "phoneNumber"
 	contactPhoneNumberRule         = "contactPhoneNumber"
 	multipleContactPhoneNumberRule = "multipleContactPhoneNumber"
+	multipleInRule                 = "multipleIn"
 	webhookEventsRule              = "webhookEvents"
 )
 
@@ -62,6 +64,31 @@ func init() {
 		for index, number := range phoneNumbers {
 			if match, err := regexp.MatchString("^\\+?[0-9]\\d{1,14}$", number); err != nil || !match {
 				return fmt.Errorf("The %s field in index [%d] must contain only digits and must be less than 14 characters", field, index)
+			}
+		}
+
+		return nil
+	})
+
+	govalidator.AddCustomRule(multipleInRule, func(field string, rule string, message string, value interface{}) error {
+		values, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("the %s field must be a string array", field)
+		}
+
+		allowlist := strings.Split(strings.TrimPrefix(rule, multipleInRule+":"), ",")
+		contains := func(str string) bool {
+			for _, a := range allowlist {
+				if a == str {
+					return true
+				}
+			}
+			return false
+		}
+
+		for index, item := range values {
+			if !contains(item) {
+				return fmt.Errorf("the %s field in contains an invalid value [%s] at index [%d] ", field, item, index)
 			}
 		}
 

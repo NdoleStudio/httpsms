@@ -1313,6 +1313,89 @@ const docTemplate = `{
                 }
             }
         },
+        "/messages/search": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This returns the list of all messages based on the filter criteria including missed calls",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Search all messages of a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "+18005550199,+18005550100",
+                        "description": "the owner's phone numbers",
+                        "name": "owners",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "description": "number of messages to skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter messages containing query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 200,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "number of messages to return",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessagesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/messages/send": {
             "post": {
                 "security": [
@@ -1901,6 +1984,68 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/responses.OkString"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userID}/api-keys": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rotate the user's API key in case the current API Key is compromised",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Rotate the user's API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the user to update",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UserResponse"
                         }
                     },
                     "400": {
@@ -3133,7 +3278,7 @@ const docTemplate = `{
                 },
                 "missed_call_auto_reply": {
                     "type": "string",
-                    "example": "e.g This phone cannot receive calls. Please send an SMS instead."
+                    "example": "e.g. This phone cannot receive calls. Please send an SMS instead."
                 },
                 "phone_number": {
                     "type": "string",
@@ -3724,7 +3869,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "api.httpsms.com",
 	BasePath:         "/v1",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{"https"},
 	Title:            "HTTP SMS API",
 	Description:      "API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP",
 	InfoInstanceName: "swagger",

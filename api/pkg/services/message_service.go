@@ -106,16 +106,29 @@ func (service *MessageService) DeleteMessage(ctx context.Context, source string,
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}
 
+	var prevID *uuid.UUID
+	var prevStatus *entities.MessageStatus
+	var prevContent *string
+	previousMessage, err := service.repository.LastMessage(ctx, message.UserID, message.Owner, message.Contact)
+	if err == nil {
+		prevID = &previousMessage.ID
+		prevStatus = &previousMessage.Status
+		prevContent = &previousMessage.Content
+	}
+
 	event, err := service.createEvent(events.MessageAPIDeleted, source, &events.MessageAPIDeletedPayload{
-		MessageID: message.ID,
-		UserID:    message.UserID,
-		Owner:     message.Owner,
-		Encrypted: message.Encrypted,
-		RequestID: message.RequestID,
-		Contact:   message.Contact,
-		Timestamp: time.Now().UTC(),
-		Content:   message.Content,
-		SIM:       message.SIM,
+		MessageID:              message.ID,
+		UserID:                 message.UserID,
+		Owner:                  message.Owner,
+		Encrypted:              message.Encrypted,
+		RequestID:              message.RequestID,
+		Contact:                message.Contact,
+		Timestamp:              time.Now().UTC(),
+		Content:                message.Content,
+		PreviousMessageID:      prevID,
+		PreviousMessageStatus:  prevStatus,
+		PreviousMessageContent: prevContent,
+		SIM:                    message.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
@@ -878,6 +891,32 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 
 	ctxLogger.Info(fmt.Sprintf("message [%s] has expired with status [%s]", params.MessageID, message.Status))
 	return nil
+}
+
+// MessageSearchParams are parameters for searching messages
+type MessageSearchParams struct {
+	repositories.IndexParams
+	UserID   entities.UserID
+	Owners   []string
+	Types    []entities.MessageType
+	Statuses []entities.MessageStatus
+}
+
+// SearchMessages fetches all the messages for a user
+func (service *MessageService) SearchMessages(ctx context.Context, params *MessageSearchParams) ([]*entities.Message, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	messages, err := service.repository.Search(ctx, params.UserID, params.Owners, params.Types, params.Statuses, params.IndexParams)
+	if err != nil {
+		msg := fmt.Sprintf("could not search messages with parms [%+#v]", params)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(messages), params))
+	return messages, nil
 }
 
 func (service *MessageService) phoneSettings(ctx context.Context, userID entities.UserID, owner string) (uint, entities.SIM) {
