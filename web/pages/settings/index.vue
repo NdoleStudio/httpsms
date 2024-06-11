@@ -154,7 +154,7 @@
                     <th v-if="$vuetify.breakpoint.xlOnly" class="text-left">
                       ID
                     </th>
-                    <th class="text-left">Callback URL</th>
+                    <th class="text-left text-break">Callback URL</th>
                     <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
                       Events
                     </th>
@@ -166,7 +166,7 @@
                     <td v-if="$vuetify.breakpoint.xlOnly" class="text-left">
                       {{ webhook.id }}
                     </td>
-                    <td>{{ webhook.url }}</td>
+                    <td class="text-break">{{ webhook.url }}</td>
                     <td v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
                       <v-chip
                         v-for="event in webhook.events"
@@ -285,9 +285,6 @@
                     </th>
                     <th class="text-left">Phone Number</th>
                     <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
-                      Fcm Token
-                    </th>
-                    <th v-if="$vuetify.breakpoint.lgAndUp" class="text-center">
                       Retries
                     </th>
                     <th class="text-center">Rate</th>
@@ -301,16 +298,6 @@
                       {{ phone.id }}
                     </td>
                     <td>{{ phone.phone_number | phoneNumber }}</td>
-                    <td v-if="$vuetify.breakpoint.lgAndUp">
-                      <div class="d-flex justify-center">
-                        <v-checkbox
-                          readonly
-                          class="mx-auto"
-                          :input-value="true"
-                          color="success"
-                        ></v-checkbox>
-                      </div>
-                    </td>
                     <td v-if="$vuetify.breakpoint.lgAndUp">
                       <div class="d-flex justify-center">
                         {{
