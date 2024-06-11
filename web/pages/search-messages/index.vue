@@ -189,13 +189,13 @@
                   <v-icon small color="error">{{ mdiCallMissed }}</v-icon>
                   missed call
                 </span>
-                <span v-if="props.item.type === 'mobile-terminated'">
-                  <v-icon small>{{ mdiCallReceived }}</v-icon>
-                  outbound
-                </span>
                 <span v-if="props.item.type === 'mobile-originated'">
-                  <v-icon small color="secondary">{{ mdiCallMade }}</v-icon>
+                  <v-icon small>{{ mdiCallReceived }}</v-icon>
                   inbound
+                </span>
+                <span v-if="props.item.type === 'mobile-terminated'">
+                  <v-icon small color="secondary">{{ mdiCallMade }}</v-icon>
+                  outbound
                 </span>
               </template>
               <template #[`item.status`]="props">
