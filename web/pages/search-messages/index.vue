@@ -191,11 +191,11 @@
                 </span>
                 <span v-if="props.item.type === 'mobile-terminated'">
                   <v-icon small>{{ mdiCallReceived }}</v-icon>
-                  inbound
+                  outbound
                 </span>
                 <span v-if="props.item.type === 'mobile-originated'">
                   <v-icon small color="secondary">{{ mdiCallMade }}</v-icon>
-                  outbound
+                  inbound
                 </span>
               </template>
               <template #[`item.status`]="props">
