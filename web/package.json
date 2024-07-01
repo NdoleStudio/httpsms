@@ -59,7 +59,7 @@
     "@nuxt/typescript-build": "^3.0.2",
     "@nuxtjs/eslint-config-typescript": "^12.1.0",
     "@nuxtjs/eslint-module": "^4.1.0",
-    "@nuxtjs/stylelint-module": "^5.1.0",
+    "@nuxtjs/stylelint-module": "^5.2.0",
     "@nuxtjs/vuetify": "^1.12.3",
     "@vue/test-utils": "^1.3.6",
     "axios": "^0.28.1",
