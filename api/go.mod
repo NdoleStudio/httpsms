@@ -7,7 +7,7 @@ require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.47.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0
-	github.com/NdoleStudio/go-otelroundtripper v0.0.9
+	github.com/NdoleStudio/go-otelroundtripper v0.0.10
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.3
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/carlmjohnson/requests v0.23.5
@@ -151,7 +151,7 @@ require (
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.21.0 // indirect
