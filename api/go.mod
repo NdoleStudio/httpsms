@@ -3,7 +3,7 @@ module github.com/NdoleStudio/httpsms
 go 1.22
 
 require (
-	cloud.google.com/go/cloudtasks v1.12.9
+	cloud.google.com/go/cloudtasks v1.12.10
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.0
@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.28.0
 	go.opentelemetry.io/otel/sdk/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.28.0
-	google.golang.org/api v0.186.0
+	google.golang.org/api v0.189.0
 	google.golang.org/protobuf v1.34.2
 	gorm.io/datatypes v1.2.1
 	gorm.io/driver/postgres v1.5.7
@@ -57,15 +57,15 @@ require (
 
 require (
 	cloud.google.com/go v0.115.0 // indirect
-	cloud.google.com/go/auth v0.6.0 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
-	cloud.google.com/go/compute/metadata v0.3.0 // indirect
+	cloud.google.com/go/auth v0.7.2 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/firestore v1.15.0 // indirect
-	cloud.google.com/go/iam v1.1.8 // indirect
-	cloud.google.com/go/longrunning v0.5.7 // indirect
-	cloud.google.com/go/monitoring v1.19.0 // indirect
+	cloud.google.com/go/iam v1.1.10 // indirect
+	cloud.google.com/go/longrunning v0.5.9 // indirect
+	cloud.google.com/go/monitoring v1.20.1 // indirect
 	cloud.google.com/go/storage v1.41.0 // indirect
-	cloud.google.com/go/trace v1.10.7 // indirect
+	cloud.google.com/go/trace v1.10.9 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -156,9 +156,9 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20240617180043-68d350f18fd4 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240617180043-68d350f18fd4 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240617180043-68d350f18fd4 // indirect
+	google.golang.org/genproto v0.0.0-20240722135656-d784300faade // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240722135656-d784300faade // indirect
 	google.golang.org/grpc v1.64.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
