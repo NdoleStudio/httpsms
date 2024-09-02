@@ -45,15 +45,11 @@ class LoginActivity : AppCompatActivity() {
         val apiKeyInputLayout = findViewById<TextInputLayout>(R.id.loginApiKeyTextInputLayout)
         val apiKeyInput = findViewById<TextInputEditText>(R.id.loginApiKeyTextInput)
 
-        // 设置点击监听器启动扫描
         apiKeyInput.setOnClickListener {
-            startQrCodeScan() // 触发 QR Code 扫描
+            startQrCodeScan()
         }
 
-        // 设置 endIcon 的点击事件监听器
         apiKeyInputLayout.setEndIconOnClickListener {
-            Toast.makeText(this, "End icon clicked", Toast.LENGTH_SHORT).show()
-            // 在这里处理 endIcon 的点击事件，例如启动相机扫描
             startQrCodeScan()
         }
     }
