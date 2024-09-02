@@ -30,8 +30,8 @@ filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4
 firebase.google.com/go v3.13.0+incompatible h1:3TdYC3DDi6aHn20qoRkxwGqNgdjtblwVAyRLQwGn/+4=
 firebase.google.com/go v3.13.0+incompatible/go.mod h1:xlah6XbEyW6tbfSklcfe5FHJIwjt8toICdV5Wh9ptHs=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.0 h1:3NFk9VndrMV+XxMOxv9UersPP9FIDxsV6ggF6C1dQqU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.0/go.mod h1:YK6MFiRcmVMbDMnXCKbGtwNv4v28rFLCGQm5pcubBgE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 h1:UQ0AhxogsIRZDkElkblfnwjc3IaltCm2HUMvezQaL7s=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1/go.mod h1:jyqM3eLpJ3IbIFDTKVz2rF9T/xWGW0rIriGwnz8l9Tk=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.1 h1:01bHLeqkrxYSkjvyTBEZ8rxBxDhWm1snWGEW73Te4lU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.1/go.mod h1:UFO9jC3njhKdD/ymLnaKi7Or5miVWq06LvRWQNFfnTU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.48.1 h1:oTX4vsorBZo/Zdum6OKPA4o7544hm6smoRv1QjpTwGo=
