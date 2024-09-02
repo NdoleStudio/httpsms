@@ -52,6 +52,7 @@ android {
 
 dependencies {
     implementation platform('com.google.firebase:firebase-bom:32.7.4')
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.google.firebase:firebase-analytics-ktx'
     implementation 'com.google.firebase:firebase-messaging-ktx'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
