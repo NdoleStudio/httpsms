@@ -5,7 +5,7 @@ go 1.22
 require (
 	cloud.google.com/go/cloudtasks v1.13.0
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.1
 	github.com/NdoleStudio/go-otelroundtripper v0.0.10
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.3
@@ -45,7 +45,7 @@ require (
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/sdk v1.30.0
-	go.opentelemetry.io/otel/sdk/metric v1.29.0
+	go.opentelemetry.io/otel/sdk/metric v1.30.0
 	go.opentelemetry.io/otel/trace v1.30.0
 	google.golang.org/api v0.195.0
 	google.golang.org/protobuf v1.34.2
@@ -67,7 +67,7 @@ require (
 	cloud.google.com/go/storage v1.43.0 // indirect
 	cloud.google.com/go/trace v1.10.12 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
