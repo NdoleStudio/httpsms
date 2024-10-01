@@ -42,11 +42,11 @@ require (
 	github.com/thedevsaddam/govalidator v1.9.10
 	github.com/uptrace/uptrace-go v1.27.1
 	github.com/xuri/excelize/v2 v2.8.1
-	go.opentelemetry.io/otel v1.29.0
-	go.opentelemetry.io/otel/metric v1.29.0
-	go.opentelemetry.io/otel/sdk v1.29.0
+	go.opentelemetry.io/otel v1.30.0
+	go.opentelemetry.io/otel/metric v1.30.0
+	go.opentelemetry.io/otel/sdk v1.30.0
 	go.opentelemetry.io/otel/sdk/metric v1.29.0
-	go.opentelemetry.io/otel/trace v1.29.0
+	go.opentelemetry.io/otel/trace v1.30.0
 	google.golang.org/api v0.195.0
 	google.golang.org/protobuf v1.34.2
 	gorm.io/datatypes v1.2.1
@@ -151,7 +151,7 @@ require (
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
