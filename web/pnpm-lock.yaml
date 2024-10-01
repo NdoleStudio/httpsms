@@ -30,8 +30,8 @@ importers:
         specifier: ^3.38.1
         version: 3.38.1
       date-fns:
-        specifier: ^2.30.0
-        version: 2.30.0
+        specifier: ^4.1.0
+        version: 4.1.0
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
@@ -974,10 +974,6 @@ packages:
 
   '@babel/regjsgen@0.8.0':
     resolution: {integrity: sha512-x/rqGMdzj+fWZvCOYForTghzbtqPDZ5gPwaoNGHdgDfF2QA/XZbCBp4Moo5scrkAMPhB7z26XM/AaHuIJdgauA==}
-
-  '@babel/runtime@7.24.5':
-    resolution: {integrity: sha512-Nms86NXrsaeU9vbBJKni6gXiEXZ4CVpYVzEjDH9Sb8vmZ3UljyA1GSOJl/6LGPO8EHLuSF9H+IxNXHPX8QHJ4g==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.24.7':
     resolution: {integrity: sha512-UwgBRMjJP+xv857DCngvqXI3Iq6J4v0wXmwc6sapg+zyhbwmQX67LUEFrkK5tbyJ30jGuG3ZvWpBiB9LCy1kWw==}
@@ -3719,9 +3715,8 @@ packages:
     resolution: {integrity: sha512-Jy/tj3ldjZJo63sVAvg6LHt2mHvl4V6AgRAmNDtLdm7faqtsx+aJG42rsyCo9JCoRVKwPFzKlIPx3DIibwSIaQ==}
     engines: {node: '>=12'}
 
-  date-fns@2.30.0:
-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
-    engines: {node: '>=0.11'}
+  date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
 
   de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
@@ -4552,7 +4547,7 @@ packages:
     resolution: {integrity: sha512-oWb1Z6mkHIskLzEJ/XWX0srkpkTQ7vaopMQkyaEIoq0fmtFVxOthb8cCxeT+p3ynTdkk/RZwbgG4brR5BeWECw==}
     engines: {node: '>= 4.0'}
     os: [darwin]
-    deprecated: The v1 package contains DANGEROUS / INSECURE binaries. Upgrade to safe fsevents v2
+    deprecated: Upgrade to fsevents v2 to mitigate potential security issues
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -9856,10 +9851,6 @@ snapshots:
 
   '@babel/regjsgen@0.8.0': {}
 
-  '@babel/runtime@7.24.5':
-    dependencies:
-      regenerator-runtime: 0.14.1
-
   '@babel/runtime@7.24.7':
     dependencies:
       regenerator-runtime: 0.14.1
@@ -13786,9 +13777,7 @@ snapshots:
       whatwg-mimetype: 3.0.0
       whatwg-url: 11.0.0
 
-  date-fns@2.30.0:
-    dependencies:
-      '@babel/runtime': 7.24.5
+  date-fns@4.1.0: {}
 
   de-indent@1.0.2: {}
 
