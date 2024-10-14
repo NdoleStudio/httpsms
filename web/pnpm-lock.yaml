@@ -7347,8 +7347,8 @@ packages:
   ripemd160@2.0.2:
     resolution: {integrity: sha512-ii4iagi25WusVoiC4B4lq7pbXfAp3D9v5CwfkY33vffw2+pkDjY1D8GaN7spsxvCSx8dkPqOZCEZyfxcmJG2IA==}
 
-  rollup@2.79.1:
-    resolution: {integrity: sha512-uKxbd0IhMZOhjAiD5oAFp7BqvkA4Dv47qpOCtaNvng4HBwdbWtdOh8f5nZNuk2rp51PMGk3bzfWu5oayNEuYnw==}
+  rollup@2.79.2:
+    resolution: {integrity: sha512-fS6iqSPZDs3dr/y7Od6y5nha8dW1YnbgtsyotCVvoFGKbERG++CVRFv1meyGDE1SNItQA8BrnCw7ScdAhRJ3XQ==}
     engines: {node: '>=10.0.0'}
     hasBin: true
 
@@ -18153,7 +18153,7 @@ snapshots:
       hash-base: 3.1.0
       inherits: 2.0.4
 
-  rollup@2.79.1:
+  rollup@2.79.2:
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -19284,7 +19284,7 @@ snapshots:
       '@rollup/pluginutils': 4.2.1
       '@types/eslint': 8.44.3
       eslint: 8.57.1
-      rollup: 2.79.1
+      rollup: 2.79.2
       vite: 4.5.3(@types/node@20.8.0)(sass@1.32.13)(terser@5.27.0)
 
   vite-plugin-stylelint@5.3.1(postcss@8.4.39)(rollup@3.29.4)(stylelint@15.11.0(typescript@4.9.5))(vite@4.5.3(@types/node@20.8.0)(sass@1.32.13)(terser@5.27.0)):
