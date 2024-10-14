@@ -50,10 +50,10 @@ jobs:
         run: pnpm install
 
       - name: Run linter 👀
-        run: yarn lint
+        run: pnpm lint
 
       - name: Run tests 🧪
-        run: yarn test
+        run: pnpm test
 
       - name: Debug 🐛
         run: echo GITHUB_SHA=${GITHUB_SHA}
