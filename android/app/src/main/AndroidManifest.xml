@@ -45,6 +45,11 @@
             tools:ignore="LockedOrientationActivity" />
         <activity android:name=".SettingsActivity" android:screenOrientation="portrait"
             tools:ignore="LockedOrientationActivity" />
+        <activity
+        android:name="com.journeyapps.barcodescanner.CaptureActivity"
+        android:screenOrientation="portrait"
+        tools:replace="screenOrientation"
+        tools:ignore="DiscouragedApi" />
 
         <service
             android:name=".services.StickyNotificationService"

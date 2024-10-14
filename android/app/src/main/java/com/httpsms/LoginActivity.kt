@@ -23,6 +23,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import timber.log.Timber
 import java.net.URI
 
@@ -36,6 +38,39 @@ class LoginActivity : AppCompatActivity() {
         setPhoneNumber()
         disableSim2()
         setServerURL()
+        setupApiKeyInput()
+    }
+
+    private fun setupApiKeyInput() {
+        val apiKeyInputLayout = findViewById<TextInputLayout>(R.id.loginApiKeyTextInputLayout)
+        val apiKeyInput = findViewById<TextInputEditText>(R.id.loginApiKeyTextInput)
+
+        apiKeyInput.setOnClickListener {
+            startQrCodeScan()
+        }
+
+        apiKeyInputLayout.setEndIconOnClickListener {
+            startQrCodeScan()
+        }
+    }
+
+    private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
+        if (result.contents != null) {
+            val apiKeyInput = findViewById<TextInputEditText>(R.id.loginApiKeyTextInput)
+            apiKeyInput.setText(result.contents)
+            Toast.makeText(this, "Scanned: ${result.contents}", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Scan cancelled", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun startQrCodeScan() {
+        val options = ScanOptions()
+        options.setPrompt("Scan a QR code")
+        options.setBeepEnabled(true)
+        options.setOrientationLocked(false)
+        options.setCameraId(0)
+        barcodeLauncher.launch(options)
     }
 
     override fun onStart() {

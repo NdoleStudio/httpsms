@@ -38,6 +38,7 @@
     "moment": "^2.30.1",
     "nuxt": "^2.18.1",
     "nuxt-highlightjs": "^1.0.3",
+    "qrcode": "^1.5.0",
     "ufo": "^1.5.4",
     "vue": "^2.7.16",
     "vue-chartjs": "^5.3.1",
