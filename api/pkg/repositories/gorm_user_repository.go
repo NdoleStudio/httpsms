@@ -23,7 +23,7 @@ import (
 type gormUserRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
-	cache  *ristretto.Cache
+	cache  *ristretto.Cache[string, entities.AuthUser]
 	db     *gorm.DB
 }
 
@@ -31,7 +31,7 @@ type gormUserRepository struct {
 func NewGormUserRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	cache *ristretto.Cache,
+	cache *ristretto.Cache[string, entities.AuthUser],
 	db *gorm.DB,
 ) UserRepository {
 	return &gormUserRepository{
@@ -119,8 +119,8 @@ func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey s
 	defer span.End()
 
 	if authUser, found := repository.cache.Get(apiKey); found {
-		ctxLogger.Info(fmt.Sprintf("cache hit for user with ID [%s]", authUser.(entities.AuthUser).ID))
-		return authUser.(entities.AuthUser), nil
+		ctxLogger.Info(fmt.Sprintf("cache hit for user with ID [%s]", authUser.ID))
+		return authUser, nil
 	}
 
 	user := new(entities.User)

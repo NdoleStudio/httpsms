@@ -1321,21 +1321,21 @@ func (container *Container) UserRepository() repositories.UserRepository {
 	return repositories.NewGormUserRepository(
 		container.Logger(),
 		container.Tracer(),
-		container.RistrettoCache(),
+		container.UserRistrettoCache(),
 		container.DB(),
 	)
 }
 
-// RistrettoCache creates an in-memory *ristretto.Cache
-func (container *Container) RistrettoCache() (cache *ristretto.Cache) {
+// UserRistrettoCache creates an in-memory *ristretto.Cache[string, entities.AuthUser]
+func (container *Container) UserRistrettoCache() (cache *ristretto.Cache[string, entities.AuthUser]) {
 	container.logger.Debug(fmt.Sprintf("creating %T", cache))
-	ristrettoCache, err := ristretto.NewCache(&ristretto.Config{
+	ristrettoCache, err := ristretto.NewCache[string, entities.AuthUser](&ristretto.Config[string, entities.AuthUser]{
 		MaxCost:     5000,
 		NumCounters: 5000 * 10,
 		BufferItems: 64,
 	})
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create ristretto cache"))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create user ristretto cache"))
 	}
 	return ristrettoCache
 }
