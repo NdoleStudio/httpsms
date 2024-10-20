@@ -305,8 +305,9 @@ export const actions = {
       },
     })
 
-    await context.dispatch('getHeartbeat')
-    context.commit('setThreads', response.data.data)
+    // eslint-disable-next-line no-console
+    context.dispatch('getHeartbeat').catch(console.error)
+    await context.commit('setThreads', response.data.data)
   },
 
   async loadBillingUsage(context: ActionContext<State, State>) {
