@@ -82,6 +82,26 @@
                 copy-text="Copy API Key"
                 notification-text="API Key copied successfully"
               ></copy-button>
+              <v-btn 
+                color="primary" 
+                @click="showQrCodeDialog = true" 
+                class="ml-4"
+              >
+              <v-icon left>{{ mdiQrcode }}</v-icon>
+                  Show QR Code
+              </v-btn>
+              <v-dialog v-model="showQrCodeDialog" max-width="400px">
+                <v-card>
+                  <v-card-title>API Key QR Code</v-card-title>
+                  <v-card-text>
+                    <canvas ref="qrCodeCanvas"></canvas>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" text @click="showQrCodeDialog = false">Close</v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
               <v-btn
                 v-if="$vuetify.breakpoint.lgAndUp"
                 class="ml-4"
@@ -714,7 +734,9 @@ import {
   mdiLinkVariant,
   mdiEyeOff,
   mdiSquareEditOutline,
+  mdiQrcode,
 } from '@mdi/js'
+import QRCode from 'qrcode'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
 
@@ -731,6 +753,7 @@ export default Vue.extend({
       mdiAccountCircle,
       mdiShieldCheck,
       mdiDelete,
+      mdiQrcode,
       mdiLinkVariant,
       mdiContentSave,
       mdiSquareEditOutline,
@@ -741,6 +764,7 @@ export default Vue.extend({
       showDiscordEdit: false,
       showRotateApiKey: false,
       rotatingApiKey: false,
+      showQrCodeDialog: false,
       activeWebhook: {
         id: null,
         url: '',
@@ -803,6 +827,15 @@ export default Vue.extend({
       })
     },
   },
+  watch: {
+    showQrCodeDialog(newVal) {
+      if (newVal && this.apiKey) {
+        this.$nextTick(() => {
+          this.generateQrCode(this.apiKey);
+        });
+      }
+    },
+  },
   async mounted() {
     await Promise.all([
       this.$store.dispatch('clearAxiosError'),
@@ -818,6 +851,16 @@ export default Vue.extend({
   },
 
   methods: {
+    generateQrCode(text) {
+      const canvas = this.$refs.qrCodeCanvas;
+      if (canvas) {
+        QRCode.toCanvas(canvas, text, { errorCorrectionLevel: 'H' }, (err) => {
+          if (err) {
+            console.error(err);
+          }
+        });
+      }
+    },
     updateEmailNotifications() {
       this.notificationSettings = {
         webhook_enabled:
