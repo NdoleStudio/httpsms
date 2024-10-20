@@ -82,23 +82,42 @@
                 copy-text="Copy API Key"
                 notification-text="API Key copied successfully"
               ></copy-button>
-              <v-btn 
-                color="primary" 
-                @click="showQrCodeDialog = true" 
+              <v-btn
+                v-if="$vuetify.breakpoint.mdAndUp"
+                color="primary"
                 class="ml-4"
+                @click="showQrCodeDialog = true"
               >
-              <v-icon left>{{ mdiQrcode }}</v-icon>
-                  Show QR Code
+                <v-icon left>{{ mdiQrcode }}</v-icon>
+                Show QR Code
               </v-btn>
-              <v-dialog v-model="showQrCodeDialog" max-width="400px">
+              <v-dialog
+                v-model="showQrCodeDialog"
+                overlay-opacity="0.9"
+                max-width="400px"
+              >
                 <v-card>
-                  <v-card-title>API Key QR Code</v-card-title>
-                  <v-card-text>
+                  <v-card-title class="justify-center"
+                    >API Key QR Code</v-card-title
+                  >
+                  <v-card-subtitle class="mt-2 text-center"
+                    >Scan this QR code with the
+                    <a :href="$store.getters.getAppData.appDownloadUrl"
+                      >httpSMS app</a
+                    >
+                    on your Android phone to login.</v-card-subtitle
+                  >
+                  <v-card-text class="text-center">
                     <canvas ref="qrCodeCanvas"></canvas>
                   </v-card-text>
                   <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" text @click="showQrCodeDialog = false">Close</v-btn>
+                    <v-btn
+                      color="primary"
+                      block
+                      class="mb-4"
+                      @click="showQrCodeDialog = false"
+                      >Close</v-btn
+                    >
                   </v-card-actions>
                 </v-card>
               </v-dialog>
@@ -831,8 +850,8 @@ export default Vue.extend({
     showQrCodeDialog(newVal) {
       if (newVal && this.apiKey) {
         this.$nextTick(() => {
-          this.generateQrCode(this.apiKey);
-        });
+          this.generateQrCode(this.apiKey)
+        })
       }
     },
   },
@@ -852,13 +871,16 @@ export default Vue.extend({
 
   methods: {
     generateQrCode(text) {
-      const canvas = this.$refs.qrCodeCanvas;
+      const canvas = this.$refs.qrCodeCanvas
       if (canvas) {
         QRCode.toCanvas(canvas, text, { errorCorrectionLevel: 'H' }, (err) => {
           if (err) {
-            console.error(err);
+            this.$store.dispatch('addNotification', {
+              message: 'Failed to generate API key QR code',
+              type: 'error',
+            })
           }
-        });
+        })
       }
     },
     updateEmailNotifications() {
