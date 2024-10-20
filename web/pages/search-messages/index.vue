@@ -92,7 +92,7 @@
                   :disabled="loading"
                   color="primary"
                   class="py-5"
-                  @click="fetchMessages"
+                  @click="fetchMessages(true)"
                 >
                   <v-icon left>{{ mdiMagnify }}</v-icon>
                   Search Messages
@@ -395,7 +395,7 @@ export default Vue.extend({
           message.created_at,
         ).toLocaleString()},${message.owner},${message.contact},${
           message.type
-        },${message.status},${message.content}\n`
+        },${message.status},${this.sanitizeContent(message.content)}\n`
       })
 
       const encodedUri = encodeURI(csvContent)
@@ -413,6 +413,11 @@ export default Vue.extend({
         message: 'The selected messages have been exported successfully',
         type: 'success',
       })
+    },
+
+    sanitizeContent(content: string): string {
+      content = content.replace('"', '""')
+      return content.includes(',') ? '"' + content + '"' : content
     },
 
     deleteMessages() {
@@ -442,10 +447,14 @@ export default Vue.extend({
         })
     },
 
-    fetchMessages() {
+    fetchMessages(reset = false) {
       this.loading = true
       this.errorMessages = new ErrorMessages()
       this.errorTitle = ''
+
+      if (reset) {
+        this.options.page = 1
+      }
 
       this.$store
         .dispatch('searchMessages', {
