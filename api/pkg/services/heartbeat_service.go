@@ -303,7 +303,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	}
 
 	if time.Now().UTC().Sub(heartbeat.Timestamp) > (heartbeatCheckInterval*4) &&
-		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) && !monitor.PhoneIsOffline() {
+		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) && monitor.PhoneOnline {
 		return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
 	}
 

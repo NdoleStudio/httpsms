@@ -34,8 +34,7 @@ func main() {
 	logger := container.Logger()
 
 	logger.Info("Starting experiments")
-
-	sendSingle()
+	deleteContacts(container)
 }
 
 func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
@@ -49,7 +48,7 @@ func deleteContacts(container *di.Container) {
 	sendgrid := container.MarketingService()
 	logger := container.Logger()
 
-	b, err := os.ReadFile("28462979_cf6f5478-3e15-4666-95d7-59149df6f0fd.csv") // just pass the file name
+	b, err := os.ReadFile("28462979_873d41e1-cd34-4782-8992-0762ed247667.csv") // just pass the file name
 	if err != nil {
 		logger.Fatal(stacktrace.Propagate(err, "cannot read file"))
 	}
@@ -57,7 +56,9 @@ func deleteContacts(container *di.Container) {
 	lines := strings.Split(string(b), "\n")[1:]
 	var contacts []string
 	for _, line := range lines {
-		contacts = append(contacts, strings.ReplaceAll(strings.Split(line, ",")[17], "\"", ""))
+		if len(line) >= 17 {
+			contacts = append(contacts, strings.ReplaceAll(strings.Split(line, ",")[17], "\"", ""))
+		}
 	}
 
 	chunks := chunkBy(contacts, 100)
