@@ -21,11 +21,11 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       chart.js:
-        specifier: ^4.4.4
-        version: 4.4.4
+        specifier: ^4.4.6
+        version: 4.4.6
       chartjs-adapter-moment:
         specifier: ^1.0.1
-        version: 1.0.1(chart.js@4.4.4)(moment@2.30.1)
+        version: 1.0.1(chart.js@4.4.6)(moment@2.30.1)
       core-js:
         specifier: ^3.38.1
         version: 3.38.1
@@ -67,7 +67,7 @@ importers:
         version: 2.7.16
       vue-chartjs:
         specifier: ^5.3.1
-        version: 5.3.1(chart.js@4.4.4)(vue@2.7.16)
+        version: 5.3.1(chart.js@4.4.6)(vue@2.7.16)
       vue-class-component:
         specifier: ^7.2.6
         version: 7.2.6(vue@2.7.16)
@@ -3092,8 +3092,8 @@ packages:
   chardet@0.7.0:
     resolution: {integrity: sha512-mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==}
 
-  chart.js@4.4.4:
-    resolution: {integrity: sha512-emICKGBABnxhMjUjlYRR12PmOXhJ2eJjEHL2/dZlWjxRAZT1D8xplLFq5M0tMQK8ja+wBS/tuVEJB5C6r7VxJA==}
+  chart.js@4.4.6:
+    resolution: {integrity: sha512-8Y406zevUPbbIBA/HRk33khEmQPk5+cxeflWE/2rx1NJsjVWMPw/9mSP9rxHP5eqi6LNoPBVMfZHxbwLSgldYA==}
     engines: {pnpm: '>=8'}
 
   chartjs-adapter-moment@1.0.1:
@@ -13230,13 +13230,13 @@ snapshots:
 
   chardet@0.7.0: {}
 
-  chart.js@4.4.4:
+  chart.js@4.4.6:
     dependencies:
       '@kurkle/color': 0.3.2
 
-  chartjs-adapter-moment@1.0.1(chart.js@4.4.4)(moment@2.30.1):
+  chartjs-adapter-moment@1.0.1(chart.js@4.4.6)(moment@2.30.1):
     dependencies:
-      chart.js: 4.4.4
+      chart.js: 4.4.6
       moment: 2.30.1
 
   chokidar@2.1.8:
@@ -19373,9 +19373,9 @@ snapshots:
 
   vm-browserify@1.1.2: {}
 
-  vue-chartjs@5.3.1(chart.js@4.4.4)(vue@2.7.16):
+  vue-chartjs@5.3.1(chart.js@4.4.6)(vue@2.7.16):
     dependencies:
-      chart.js: 4.4.4
+      chart.js: 4.4.6
       vue: 2.7.16
 
   vue-class-component@7.2.6(vue@2.7.16):
