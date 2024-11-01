@@ -5,7 +5,7 @@ go 1.22
 require (
 	cloud.google.com/go/cloudtasks v1.13.1
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.2
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.2
 	github.com/NdoleStudio/go-otelroundtripper v0.0.10
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.3
@@ -67,7 +67,7 @@ require (
 	cloud.google.com/go/storage v1.43.0 // indirect
 	cloud.google.com/go/trace v1.11.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.2 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.3 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
