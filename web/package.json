@@ -41,7 +41,7 @@
     "qrcode": "^1.5.0",
     "ufo": "^1.5.4",
     "vue": "^2.7.16",
-    "vue-chartjs": "^5.3.1",
+    "vue-chartjs": "^5.3.2",
     "vue-class-component": "^7.2.6",
     "vue-glow": "^1.4.2",
     "vue-property-decorator": "^9.1.2",
