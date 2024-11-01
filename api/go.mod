@@ -42,11 +42,11 @@ require (
 	github.com/thedevsaddam/govalidator v1.9.10
 	github.com/uptrace/uptrace-go v1.30.1
 	github.com/xuri/excelize/v2 v2.9.0
-	go.opentelemetry.io/otel v1.30.0
-	go.opentelemetry.io/otel/metric v1.30.0
-	go.opentelemetry.io/otel/sdk v1.30.0
+	go.opentelemetry.io/otel v1.31.0
+	go.opentelemetry.io/otel/metric v1.31.0
+	go.opentelemetry.io/otel/sdk v1.31.0
 	go.opentelemetry.io/otel/sdk/metric v1.30.0
-	go.opentelemetry.io/otel/trace v1.30.0
+	go.opentelemetry.io/otel/trace v1.31.0
 	google.golang.org/api v0.200.0
 	google.golang.org/protobuf v1.35.1
 	gorm.io/datatypes v1.2.4
