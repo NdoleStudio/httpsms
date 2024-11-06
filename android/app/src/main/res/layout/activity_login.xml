@@ -53,8 +53,9 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/loginApiKeyTextInput"
             android:layout_width="match_parent"
+            android:imeOptions="actionDone"
+            android:inputType="text"
             android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
             tools:ignore="TextContrastCheck" />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -64,6 +65,7 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="-40dp"
         android:layout_marginBottom="224dp"
         android:hint="@string/login_phone_number_sim1"
         app:errorEnabled="true"
@@ -76,8 +78,9 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/loginPhoneNumberInputSIM1"
             android:layout_width="match_parent"
+            android:inputType="text"
             android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
+            android:imeOptions="actionDone"
             tools:ignore="TextContrastCheck" />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -98,7 +101,8 @@
             android:id="@+id/loginPhoneNumberInputSIM2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
+            android:imeOptions="actionDone"
+            android:inputType="text"
             tools:ignore="TextContrastCheck" />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -123,8 +127,9 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/loginServerUrlInput"
                 android:layout_width="match_parent"
+                android:imeOptions="actionDone"
+                android:inputType="text"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
                 tools:ignore="TextContrastCheck" />
 
         </com.google.android.material.textfield.TextInputLayout>
