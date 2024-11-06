@@ -120,6 +120,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     @SuppressLint("HardwareIds")
+    @Suppress("DEPRECATION")
     private fun getPhoneNumber(context: Context): String? {
         val telephonyManager = this.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         if (ActivityCompat.checkSelfPermission(
@@ -291,8 +292,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
         Thread {
-            val error = HttpSmsApiService(apiKey.text.toString(), URI(serverUrl.text.toString().trim())).validateApiKey()
-            liveData.postValue(error)
+            val response = HttpSmsApiService(apiKey.text.toString(), URI(serverUrl.text.toString().trim())).validateApiKey()
+            liveData.postValue(response)
             Timber.d("finished validating api URL")
         }.start()
     }

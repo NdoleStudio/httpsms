@@ -36,7 +36,7 @@ class SmsManagerService {
             } else {
                 context.getSystemService(SubscriptionManager::class.java)
             }
-            return localSubscriptionManager.activeSubscriptionInfoList.size > 1
+            return localSubscriptionManager.activeSubscriptionInfoList!!.size > 1
         }
     }
 
@@ -61,11 +61,11 @@ class SmsManagerService {
             context.getSystemService(SubscriptionManager::class.java)
         }
 
-        Timber.d("active subscription info size: [${localSubscriptionManager.activeSubscriptionInfoList.size}]")
-        val subscriptionId = if (sim == Constants.SIM1 && localSubscriptionManager.activeSubscriptionInfoList.size > 0) {
-            localSubscriptionManager.activeSubscriptionInfoList[0].subscriptionId
-        } else if (sim == Constants.SIM2 && localSubscriptionManager.activeSubscriptionInfoList.size > 1) {
-            localSubscriptionManager.activeSubscriptionInfoList[1].subscriptionId
+        Timber.d("active subscription info size: [${localSubscriptionManager.activeSubscriptionInfoList!!.size}]")
+        val subscriptionId = if (sim == Constants.SIM1 && localSubscriptionManager.activeSubscriptionInfoList!!.size > 0) {
+            localSubscriptionManager.activeSubscriptionInfoList!![0].subscriptionId
+        } else if (sim == Constants.SIM2 && localSubscriptionManager.activeSubscriptionInfoList!!.size > 1) {
+            localSubscriptionManager.activeSubscriptionInfoList!![1].subscriptionId
         } else{
             SubscriptionManager.getDefaultSmsSubscriptionId()
         }

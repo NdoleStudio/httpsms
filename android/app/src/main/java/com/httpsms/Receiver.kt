@@ -1,7 +1,10 @@
 package com.httpsms
 
 import android.content.Context
+import android.content.Context.RECEIVER_EXPORTED
 import android.content.IntentFilter
+import android.os.Build
+import androidx.annotation.RequiresApi
 import timber.log.Timber
 
 object Receiver {
@@ -12,19 +15,35 @@ object Receiver {
         if(sentReceiver == null) {
             Timber.d("registering [sent] receiver for intent [${SmsManagerService.sentAction()}]")
             sentReceiver = SentReceiver()
-            context.registerReceiver(
-                sentReceiver,
-                IntentFilter(SmsManagerService.sentAction())
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(
+                    sentReceiver,
+                    IntentFilter(SmsManagerService.sentAction()),
+                    RECEIVER_EXPORTED
+                )
+            } else {
+                context.registerReceiver(
+                    sentReceiver,
+                    IntentFilter(SmsManagerService.sentAction())
+                )
+            }
         }
 
         if(deliveredReceiver == null) {
             Timber.d("registering [delivered] receiver for intent [${SmsManagerService.deliveredAction()}]")
             deliveredReceiver = DeliveredReceiver()
-            context.registerReceiver(
-                deliveredReceiver,
-                IntentFilter(SmsManagerService.deliveredAction())
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(
+                    deliveredReceiver,
+                    IntentFilter(SmsManagerService.deliveredAction()),
+                    RECEIVER_EXPORTED
+                )
+            } else {
+                context.registerReceiver(
+                    deliveredReceiver,
+                    IntentFilter(SmsManagerService.deliveredAction())
+                )
+            }
         }
     }
 

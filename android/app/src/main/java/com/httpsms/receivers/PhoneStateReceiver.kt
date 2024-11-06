@@ -98,7 +98,7 @@ class PhoneStateReceiver : BroadcastReceiver() {
         }
 
         var sim = Constants.SIM1
-        localSubscriptionManager.activeSubscriptionInfoList.forEach {
+        localSubscriptionManager.activeSubscriptionInfoList!!.forEach {
             if (it.subscriptionId == subscriptionId) {
                if (it.simSlotIndex > 0){
                    sim = Constants.SIM2
