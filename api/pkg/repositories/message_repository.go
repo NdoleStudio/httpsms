@@ -35,4 +35,7 @@ type MessageRepository interface {
 
 	// DeleteByOwnerAndContact deletes messages between an owner and a contact
 	DeleteByOwnerAndContact(ctx context.Context, userID entities.UserID, owner string, contact string) error
+
+	// DeleteAllForUser deletes all entities.Message for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

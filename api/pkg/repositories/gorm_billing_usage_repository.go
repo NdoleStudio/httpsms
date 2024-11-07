@@ -35,6 +35,19 @@ func NewGormBillingUsageRepository(
 	}
 }
 
+// DeleteForUser deletes all billing usages for a user
+func (repository *gormBillingUsageRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.BillingUsage{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.BillingUsage{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // RegisterSentMessage registers a message as sent
 func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Context, timestamp time.Time, userID entities.UserID) error {
 	ctx, span := repository.tracer.Start(ctx)

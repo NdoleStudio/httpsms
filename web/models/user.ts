@@ -9,7 +9,7 @@ export interface User {
   /** @example "free" */
   subscription_name: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
-  subscription_renews_at: string
+  subscription_renews_at: string | null
   /** @example "on_trial" */
   subscription_status: string
   created_at: string

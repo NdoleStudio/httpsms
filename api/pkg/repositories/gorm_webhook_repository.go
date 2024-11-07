@@ -32,6 +32,18 @@ func NewGormWebhookRepository(
 	}
 }
 
+func (repository *gormWebhookRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Webhook{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Webhook{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 func (repository *gormWebhookRepository) Save(ctx context.Context, webhook *entities.Webhook) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

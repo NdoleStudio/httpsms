@@ -94,6 +94,20 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 	return message, nil
 }
 
+// DeleteAllForUser deletes all entities.Message for an entities.UserID.
+func (service *MessageService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete [entities.Message] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Message] for user with ID [%s]", userID))
+	return nil
+}
+
 // DeleteMessage deletes a message from the database
 func (service *MessageService) DeleteMessage(ctx context.Context, source string, message *entities.Message) error {
 	ctx, span := service.tracer.Start(ctx)

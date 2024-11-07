@@ -15,4 +15,7 @@ type PhoneNotificationRepository interface {
 
 	// UpdateStatus of a notification
 	UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error
+
+	// DeleteAllForUser deletes all entities.PhoneNotification for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

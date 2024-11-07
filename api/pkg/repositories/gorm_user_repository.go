@@ -42,6 +42,19 @@ func NewGormUserRepository(
 	}
 }
 
+// Delete deletes a user
+func (repository *gormUserRepository) Delete(ctx context.Context, user *entities.User) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Delete(user).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete user with ID [%s]", user.ID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID entities.UserID) (*entities.User, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

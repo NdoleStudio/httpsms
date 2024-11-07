@@ -32,6 +32,18 @@ func NewGormHeartbeatRepository(
 	}
 }
 
+func (repository *gormHeartbeatRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Heartbeat{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Heartbeat{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 func (repository *gormHeartbeatRepository) Last(ctx context.Context, userID entities.UserID, owner string) (*entities.Heartbeat, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

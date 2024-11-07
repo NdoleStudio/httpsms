@@ -9,6 +9,11 @@ import (
 // UserID is the ID of a user
 type UserID string
 
+// String returns the string representation of a UserID
+func (id UserID) String() string {
+	return string(id)
+}
+
 // SubscriptionName is the name of the subscription
 type SubscriptionName string
 

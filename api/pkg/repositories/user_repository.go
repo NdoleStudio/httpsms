@@ -28,4 +28,7 @@ type UserRepository interface {
 
 	// LoadBySubscriptionID loads a user based on the lemonsqueezy subscriptionID
 	LoadBySubscriptionID(ctx context.Context, subscriptionID string) (*entities.User, error)
+
+	// Delete an entities.User by entities.UserID
+	Delete(ctx context.Context, user *entities.User) error
 }

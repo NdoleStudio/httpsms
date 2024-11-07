@@ -661,6 +661,27 @@ export const actions = {
     context.commit('setUser', response.data.data)
   },
 
+  deleteUserAccount(context: ActionContext<State, State>) {
+    return new Promise<string>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(`/v1/users/me`)
+        .then((response: AxiosResponse<ResponsesNoContent>) => {
+          resolve(response.data.message)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while deleting your user account',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
   updateTimezone(
     context: ActionContext<State, State>,
     payload: string,

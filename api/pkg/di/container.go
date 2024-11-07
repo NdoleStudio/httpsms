@@ -696,16 +696,6 @@ func (container *Container) MessageThreadRepository() (repository repositories.M
 	)
 }
 
-// EventRepository creates a new instance of repositories.EventRepository
-func (container *Container) EventRepository() (repository repositories.EventRepository) {
-	container.logger.Debug("creating GORM repositories.EventRepository")
-	return repositories.NewGormEventRepository(
-		container.Logger(),
-		container.Tracer(),
-		container.DB(),
-	)
-}
-
 // HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository
 func (container *Container) HeartbeatMonitorRepository() (repository repositories.HeartbeatMonitorRepository) {
 	container.logger.Debug("creating GORM repositories.HeartbeatMonitorRepository")
@@ -713,16 +703,6 @@ func (container *Container) HeartbeatMonitorRepository() (repository repositorie
 		container.Logger(),
 		container.Tracer(),
 		container.DedicatedDB(),
-	)
-}
-
-// EventListenerLogRepository creates a new instance of repositories.EventListenerLogRepository
-func (container *Container) EventListenerLogRepository() (repository repositories.EventListenerLogRepository) {
-	container.logger.Debug("creating GORM repositories.EventListenerLogRepository")
-	return repositories.NewGormEventListenerLogRepository(
-		container.Logger(),
-		container.Tracer(),
-		container.DB(),
 	)
 }
 
@@ -861,6 +841,7 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.MarketingService(),
 		container.LemonsqueezyClient(),
 		container.EventDispatcher(),
+		container.FirebaseAuthClient(),
 	)
 }
 

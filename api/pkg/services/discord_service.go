@@ -53,6 +53,20 @@ func (service *DiscordService) GetByServerID(ctx context.Context, serverID strin
 	return service.repository.FindByServerID(ctx, serverID)
 }
 
+// DeleteAllForUser deletes all entities.Discord for an entities.UserID.
+func (service *DiscordService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete all [entities.Discord] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Discord] for user with ID [%s]", userID))
+	return nil
+}
+
 // Index fetches the entities.Discord for an entities.UserID
 func (service *DiscordService) Index(ctx context.Context, userID entities.UserID, params repositories.IndexParams) ([]*entities.Discord, error) {
 	ctx, span := service.tracer.Start(ctx)

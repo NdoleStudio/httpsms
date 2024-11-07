@@ -13,4 +13,7 @@ type Integration3CxRepository interface {
 
 	// Load an entities.Integration3CX based on the entities.UserID
 	Load(ctx context.Context, userID entities.UserID) (*entities.Integration3CX, error)
+
+	// DeleteAllForUser deletes all entities.Integration3CX for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

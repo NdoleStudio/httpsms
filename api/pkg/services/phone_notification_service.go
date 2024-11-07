@@ -47,6 +47,20 @@ func NewNotificationService(
 	}
 }
 
+// DeleteAllForUser deletes all entities.PhoneNotification for an entities.UserID.
+func (service *PhoneNotificationService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.phoneNotificationRepository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete all [entities.PhoneNotification] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.PhoneNotification] for user with ID [%s]", userID))
+	return nil
+}
+
 // SendHeartbeatFCM sends a heartbeat message so the phone can request a heartbeat
 func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, payload *events.PhoneHeartbeatMissedPayload) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)

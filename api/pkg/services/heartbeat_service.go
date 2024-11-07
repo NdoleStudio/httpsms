@@ -49,6 +49,25 @@ func NewHeartbeatService(
 	}
 }
 
+// DeleteAllForUser deletes all entities.Heartbeat for an entities.UserID.
+func (service *HeartbeatService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete all [entities.Heartbeat] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := service.monitorRepository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete all [entities.HeartbeatMonitor] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Heartbeat] and [entities.HeartbeatMonitor] for user with ID [%s]", userID))
+	return nil
+}
+
 // Index fetches the heartbeats for a phone number
 func (service *HeartbeatService) Index(ctx context.Context, userID entities.UserID, owner string, params repositories.IndexParams) (*[]entities.Heartbeat, error) {
 	ctx, span := service.tracer.Start(ctx)

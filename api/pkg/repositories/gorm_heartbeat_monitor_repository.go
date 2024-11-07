@@ -22,6 +22,18 @@ type gormHeartbeatMonitorRepository struct {
 	db     *gorm.DB
 }
 
+func (repository *gormHeartbeatMonitorRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.HeartbeatMonitor{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.HeartbeatMonitor{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // UpdatePhoneOnline updates the online status of a phone
 func (repository *gormHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.Context, userID entities.UserID, monitorID uuid.UUID, isOnline bool) error {
 	ctx, span := repository.tracer.Start(ctx)

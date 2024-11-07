@@ -35,6 +35,7 @@ func NewIntegration3CXListener(
 		// events.EventTypeMessagePhoneDelivered: l.OnMessagePhoneDelivered,
 		// events.EventTypeMessageSendFailed:     l.OnMessageSendFailed,
 		// events.EventTypeMessagePhoneSent:      l.OnMessagePhoneSent,
+		events.UserAccountDeleted: l.onUserAccountDeleted,
 	}
 }
 
@@ -108,6 +109,24 @@ func (listener *Integration3CXListener) OnMessagePhoneDelivered(ctx context.Cont
 
 	if err := listener.service.Send(ctx, payload.UserID, event); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+func (listener *Integration3CXListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserAccountDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
+		msg := fmt.Sprintf("cannot delete [entities.Integration3CX] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

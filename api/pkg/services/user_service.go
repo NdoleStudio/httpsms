@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"firebase.google.com/go/auth"
+
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/NdoleStudio/httpsms/pkg/emails"
-	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
+	"github.com/NdoleStudio/lemonsqueezy-go"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/google/uuid"
@@ -28,6 +30,7 @@ type UserService struct {
 	repository         repositories.UserRepository
 	dispatcher         *EventDispatcher
 	marketingService   *MarketingService
+	authClient         *auth.Client
 	lemonsqueezyClient *lemonsqueezy.Client
 }
 
@@ -41,6 +44,7 @@ func NewUserService(
 	marketingService *MarketingService,
 	lemonsqueezyClient *lemonsqueezy.Client,
 	dispatcher *EventDispatcher,
+	authClient *auth.Client,
 ) (s *UserService) {
 	return &UserService{
 		logger:             logger.WithService(fmt.Sprintf("%T", s)),
@@ -50,6 +54,7 @@ func NewUserService(
 		emailFactory:       emailFactory,
 		repository:         repository,
 		dispatcher:         dispatcher,
+		authClient:         authClient,
 		lemonsqueezyClient: lemonsqueezyClient,
 	}
 }
@@ -184,6 +189,46 @@ func (service *UserService) RotateAPIKey(ctx context.Context, source string, use
 	}
 
 	return user, nil
+}
+
+// Delete an entities.User
+func (service *UserService) Delete(ctx context.Context, source string, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load user with ID [%s] from the [%T]", userID, service.repository)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if !user.IsOnFreePlan() && user.SubscriptionRenewsAt != nil && user.SubscriptionRenewsAt.After(time.Now()) {
+		msg := fmt.Sprintf("cannot delete user with ID [%s] because they are have an active [%s] subscription which renews at [%s]", userID, user.SubscriptionName, user.SubscriptionRenewsAt)
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+	}
+
+	if err = service.repository.Delete(ctx, user); err != nil {
+		msg := fmt.Sprintf("could not delete user with ID [%s] from the [%T]", userID, service.repository)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("sucessfully deleted user with ID [%s] in the [%T]", userID, service.repository))
+
+	event, err := service.createEvent(events.UserAccountDeleted, source, &events.UserAccountDeletedPayload{
+		UserID:    userID,
+		Timestamp: time.Now().UTC(),
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for user [%s]", events.UserAccountDeleted, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
 }
 
 // SendAPIKeyRotatedEmail sends an email to an entities.User when the API key is rotated
@@ -392,5 +437,19 @@ func (service *UserService) UpdateSubscription(ctx context.Context, params *even
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	return nil
+}
+
+// DeleteAuthUser deletes an entities.AuthUser from firebase
+func (service *UserService) DeleteAuthUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.authClient.DeleteUser(ctx, userID.String()); err != nil {
+		msg := fmt.Sprintf("could not delete [entities.AuthUser] from firebase with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted [entities.AuthUser] from firebase for user with ID [%s]", userID))
 	return nil
 }

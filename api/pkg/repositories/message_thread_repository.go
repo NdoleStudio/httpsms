@@ -30,4 +30,7 @@ type MessageThreadRepository interface {
 
 	// Delete an entities.MessageThread by ID
 	Delete(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID) error
+
+	// DeleteAllForUser deletes all entities.MessageThread for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

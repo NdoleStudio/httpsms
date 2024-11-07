@@ -34,7 +34,6 @@ func main() {
 	logger := container.Logger()
 
 	logger.Info("Starting experiments")
-	deleteContacts(container)
 }
 
 func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {

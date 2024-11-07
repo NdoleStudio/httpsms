@@ -405,9 +405,75 @@
               class="mt-4"
               @click="saveEmailNotifications"
             >
-              <v-icon></v-icon>
+              <v-icon left>{{ mdiContentSave }}</v-icon>
               Save Notification Settings
             </v-btn>
+            <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-12">
+              Delete Account
+            </h5>
+            <p v-if="hasActiveSubscription" class="text--secondary">
+              You cannot delete your account because you have an active
+              subscription on httpSMS.
+              <router-link class="text-decoration-none" to="/billing"
+                >Cancel your subscription</router-link
+              >
+              before deleting your account.
+            </p>
+            <p v-else class="text--secondary">
+              You can delete all your data on httpSMS by clicking the button
+              below. This action is <b>irreversible</b> and all your data will
+              be permanently deleted from the httpSMS database instantly and it
+              cannot be recovered.
+            </p>
+            <v-btn
+              color="error"
+              :loading="deletingAccount"
+              class="mt-4"
+              :disabled="hasActiveSubscription"
+              @click="showDeleteAccountDialog = true"
+            >
+              <v-icon left>{{ mdiDelete }}</v-icon>
+              Delete your Account
+            </v-btn>
+            <v-dialog
+              v-model="showDeleteAccountDialog"
+              overlay-opacity="0.9"
+              max-width="600px"
+            >
+              <v-card>
+                <v-card-title class="justify-center text-center"
+                  >Delete your httpSMS account</v-card-title
+                >
+                <v-card-text class="mt-2 text-center">
+                  Are you sure you want to delete your account? This action is
+                  <b>irreversible</b> and all your data will be permanently
+                  deleted from the httpSMS database instantly.
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn
+                    color="error"
+                    text
+                    :loading="deletingAccount"
+                    @click="deleteUserAccount"
+                  >
+                    <v-icon v-if="$vuetify.breakpoint.lgAndUp" left>{{
+                      mdiDelete
+                    }}</v-icon>
+                    Delete My Account
+                  </v-btn>
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    color="primary"
+                    @click="showDeleteAccountDialog = false"
+                  >
+                    <span v-if="$vuetify.breakpoint.lgAndUp"
+                      >Keep My account</span
+                    >
+                    <span v-else>Close</span>
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
           </v-col>
         </v-row>
       </v-container>
@@ -784,6 +850,8 @@ export default Vue.extend({
       showRotateApiKey: false,
       rotatingApiKey: false,
       showQrCodeDialog: false,
+      deletingAccount: false,
+      showDeleteAccountDialog: false,
       activeWebhook: {
         id: null,
         url: '',
@@ -836,6 +904,12 @@ export default Vue.extend({
         return ''
       }
       return this.$store.getters.getUser.api_key
+    },
+    hasActiveSubscription() {
+      if (this.$store.getters.getUser === null) {
+        return true
+      }
+      return this.$store.getters.getUser.subscription_renews_at != null
     },
     timezones() {
       return Intl.supportedValuesOf('timeZone')
@@ -1167,6 +1241,31 @@ export default Vue.extend({
         })
         .finally(() => {
           this.loadingDiscordIntegrations = false
+        })
+    },
+
+    deleteUserAccount() {
+      this.deletingAccount = true
+      this.$store
+        .dispatch('deleteUserAccount')
+        .then((message) => {
+          this.$store.dispatch('addNotification', {
+            message: message ?? 'Your account has been deleted successfully',
+            type: 'success',
+          })
+          this.$fire.auth.signOut().then(() => {
+            this.$store.dispatch('setAuthUser', null)
+            this.$store.dispatch('resetState')
+            this.$store.dispatch('addNotification', {
+              type: 'info',
+              message: 'You have successfully logged out',
+            })
+            this.$router.push({ name: 'index' })
+          })
+        })
+        .finally(() => {
+          this.deletingAccount = false
+          this.showDeleteAccountDialog = false
         })
     },
 

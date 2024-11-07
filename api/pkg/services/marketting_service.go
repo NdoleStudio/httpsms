@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/sendgrid/sendgrid-go"
@@ -22,13 +23,21 @@ type MarketingService struct {
 	tracer         telemetry.Tracer
 	authClient     *auth.Client
 	sendgridAPIKey string
+	sendgridHost   string
 	sendgridListID string
 }
 
 type sendgridContact struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	ExternalID string `json:"external_id"`
+	Email      string `json:"email"`
+	ID         string `json:"id,omitempty"`
+}
+
+type sendgridSearchResponse struct {
+	ContactCount int               `json:"contact_count"`
+	Result       []sendgridContact `json:"result"`
 }
 
 type sendgridContactRequest struct {
@@ -48,9 +57,37 @@ func NewMarketingService(
 		logger:         logger.WithService(fmt.Sprintf("%T", &MarketingService{})),
 		tracer:         tracer,
 		authClient:     authClient,
+		sendgridHost:   "https://api.sendgrid.com",
 		sendgridAPIKey: sendgridAPIKey,
 		sendgridListID: sendgridListID,
 	}
+}
+
+// DeleteUser a user if exists in the sendgrid list
+func (service *MarketingService) DeleteUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	request := sendgrid.GetRequest(service.sendgridAPIKey, "/v3/marketing/contacts/search", service.sendgridHost)
+	request.Method = http.MethodPost
+	request.Body = []byte(fmt.Sprintf(`{"query": "external_id = '%s' AND CONTAINS(list_ids, '%s')"}`, userID, service.sendgridListID))
+	response, err := sendgrid.API(request)
+	if err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot search for user with id [%s] in sendgrid list [%s]", userID, service.sendgridListID)))
+	}
+
+	data := new(sendgridSearchResponse)
+	if err = json.Unmarshal([]byte(response.Body), data); err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot [%s] into [%T]", response.Body, data)))
+	}
+
+	if data.ContactCount == 0 {
+		ctxLogger.Info(fmt.Sprintf("user with ID [%s] not found in sendgrid list [%s]", userID, service.sendgridListID))
+		return nil
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleting sendgrid contact with ID [%s] for user with ID [%s]", data.Result[0].ID, userID))
+	return service.DeleteContacts(context.Background(), []string{data.Result[0].ID})
 }
 
 // AddToList adds a new user on the onboarding automation.
@@ -83,7 +120,7 @@ func (service *MarketingService) DeleteContacts(ctx context.Context, contactIDs 
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	request := sendgrid.GetRequest(service.sendgridAPIKey, "/v3/marketing/contacts", "https://api.sendgrid.com")
+	request := sendgrid.GetRequest(service.sendgridAPIKey, "/v3/marketing/contacts", service.sendgridHost)
 	request.Method = "DELETE"
 	request.QueryParams = map[string]string{
 		"ids": strings.Join(contactIDs, ","),
@@ -94,7 +131,7 @@ func (service *MarketingService) DeleteContacts(ctx context.Context, contactIDs 
 		return stacktrace.Propagate(err, fmt.Sprintf("cannot delete contacts in a sendgrid list [%s]", service.sendgridListID))
 	}
 
-	ctxLogger.Info(spew.Sdump(response.Body))
+	ctxLogger.Info(fmt.Sprintf("deleted contacts [%s] from sendgrid list [%s] with sendgrid response [%s]", strings.Join(contactIDs, ","), service.sendgridListID, response.Body))
 	return nil
 }
 
@@ -102,25 +139,28 @@ func (service *MarketingService) toSendgridContact(user *auth.UserRecord) sendgr
 	name := strings.TrimSpace(user.DisplayName)
 	if name == "" {
 		return sendgridContact{
-			FirstName: "",
-			LastName:  "",
-			Email:     user.Email,
+			FirstName:  "",
+			LastName:   "",
+			ExternalID: user.UID,
+			Email:      user.Email,
 		}
 	}
 
 	parts := strings.Split(name, " ")
 	if len(parts) == 1 {
 		return sendgridContact{
-			FirstName: name,
-			LastName:  "",
-			Email:     user.Email,
+			FirstName:  name,
+			LastName:   "",
+			ExternalID: user.UID,
+			Email:      user.Email,
 		}
 	}
 
 	return sendgridContact{
-		FirstName: strings.Join(parts[0:len(parts)-1], " "),
-		LastName:  parts[len(parts)-1],
-		Email:     user.Email,
+		FirstName:  strings.Join(parts[0:len(parts)-1], " "),
+		LastName:   parts[len(parts)-1],
+		ExternalID: user.UID,
+		Email:      user.Email,
 	}
 }
 

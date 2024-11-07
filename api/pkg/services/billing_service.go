@@ -170,6 +170,20 @@ func (service *BillingService) RegisterReceivedMessage(ctx context.Context, mess
 	return nil
 }
 
+// DeleteAllForUser deletes all entities.BillingUsage for an entities.UserID.
+func (service *BillingService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.billingUsageRepository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete [entities.BillingUsage] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.BillingUsage] for user with ID [%s]", userID))
+	return nil
+}
+
 func (service *BillingService) sendUsageAlert(ctx context.Context, userID entities.UserID) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()

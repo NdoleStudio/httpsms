@@ -24,4 +24,7 @@ type PhoneRepository interface {
 
 	// Delete an entities.Phone
 	Delete(ctx context.Context, userID entities.UserID, phoneID uuid.UUID) error
+
+	// DeleteAllForUser deletes all entities.Phone for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

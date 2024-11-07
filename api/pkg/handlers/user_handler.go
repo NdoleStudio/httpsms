@@ -41,6 +41,7 @@ func NewUserHandler(
 func (h *UserHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/users/me", h.Show)
 	router.Put("/users/me", h.Update)
+	router.Delete("/users/me", h.Delete)
 	router.Delete("/users/:userID/api-keys", h.DeleteAPIKey)
 	router.Put("/users/:userID/notifications", h.UpdateNotifications)
 	router.Get("/users/subscription-update-url", h.subscriptionUpdateURL)
@@ -119,6 +120,30 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "user updated successfully", user)
+}
+
+// Delete an entities.User
+// @Summary      Delete a user
+// @Description  Deletes the currently authenticated user together with all their data.
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Success      201 		{object}	responses.NoContent
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/me [delete]
+func (h *UserHandler) Delete(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	if err := h.service.Delete(ctx, c.OriginalURL(), h.userIDFomContext(c)); err != nil {
+		msg := fmt.Sprintf("cannot delete user user with ID [%s]", h.userIDFomContext(c))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseNoContent(c, "user deleted successfully")
 }
 
 // UpdateNotifications an entities.User

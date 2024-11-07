@@ -32,6 +32,18 @@ func NewGormPhoneRepository(
 	}
 }
 
+func (repository *gormPhoneRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Phone{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Phone{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // LoadByID loads a phone by ID
 func (repository *gormPhoneRepository) LoadByID(ctx context.Context, userID entities.UserID, phoneID uuid.UUID) (*entities.Phone, error) {
 	ctx, span := repository.tracer.Start(ctx)

@@ -27,4 +27,7 @@ type DiscordRepository interface {
 
 	// Delete an entities.Discord
 	Delete(ctx context.Context, userID entities.UserID, DiscordID uuid.UUID) error
+
+	// DeleteAllForUser deletes all entities.Discord for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

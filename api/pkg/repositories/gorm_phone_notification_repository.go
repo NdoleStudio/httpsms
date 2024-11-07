@@ -35,6 +35,18 @@ func NewGormPhoneNotificationRepository(
 	}
 }
 
+func (repository *gormPhoneNotificationRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.PhoneNotification{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.PhoneNotification{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // UpdateStatus of an entities.PhoneNotification
 func (repository *gormPhoneNotificationRepository) UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error {
 	ctx, span := repository.tracer.Start(ctx)

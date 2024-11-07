@@ -24,4 +24,7 @@ type WebhookRepository interface {
 
 	// Delete an entities.Webhook
 	Delete(ctx context.Context, userID entities.UserID, webhookID uuid.UUID) error
+
+	// DeleteAllForUser deletes all entities.Webhook for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

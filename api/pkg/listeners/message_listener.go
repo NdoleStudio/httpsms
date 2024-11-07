@@ -43,6 +43,7 @@ func NewMessageListener(
 		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
 		events.MessageThreadAPIDeleted:               l.onMessageThreadAPIDeleted,
 		events.MessageCallMissed:                     l.onMessageCallMissed,
+		events.UserAccountDeleted:                    l.onUserAccountDeleted,
 	}
 }
 
@@ -324,6 +325,24 @@ func (listener *MessageListener) onMessageCallMissed(ctx context.Context, event 
 
 	if err := listener.service.RespondToMissedCall(ctx, event.Source(), payload); err != nil {
 		msg := fmt.Sprintf("cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+func (listener *MessageListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserAccountDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
+		msg := fmt.Sprintf("cannot delete [entities.Message] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

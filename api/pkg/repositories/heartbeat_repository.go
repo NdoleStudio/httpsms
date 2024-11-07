@@ -16,4 +16,7 @@ type HeartbeatRepository interface {
 
 	// Last entities.Heartbeat returns the last heartbeat
 	Last(ctx context.Context, userID entities.UserID, owner string) (*entities.Heartbeat, error)
+
+	// DeleteAllForUser deletes all entities.Heartbeat for a user
+	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

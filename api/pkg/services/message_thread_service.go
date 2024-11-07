@@ -50,6 +50,20 @@ type MessageThreadUpdateParams struct {
 	Timestamp time.Time
 }
 
+// DeleteAllForUser deletes all entities.MessageThread for an entities.UserID.
+func (service *MessageThreadService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete [entities.MessageThread] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.MessageThread] for user with ID [%s]", userID))
+	return nil
+}
+
 // UpdateThread updates a thread between 2 parties when a timestamp changes
 func (service *MessageThreadService) UpdateThread(ctx context.Context, params MessageThreadUpdateParams) error {
 	ctx, span := service.tracer.Start(ctx)

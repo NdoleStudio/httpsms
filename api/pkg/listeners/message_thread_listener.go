@@ -42,6 +42,7 @@ func NewMessageThreadListener(
 		events.EventTypeMessagePhoneReceived:         l.OnMessagePhoneReceived,
 		events.EventTypeMessageNotificationScheduled: l.onMessageNotificationScheduled,
 		events.EventTypeMessageSendExpired:           l.onMessageExpired,
+		events.UserAccountDeleted:                    l.onUserAccountDeleted,
 	}
 }
 
@@ -290,6 +291,24 @@ func (listener *MessageThreadListener) onMessageExpired(ctx context.Context, eve
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+func (listener *MessageThreadListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserAccountDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
+		msg := fmt.Sprintf("cannot delete [entities.MessageThread] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

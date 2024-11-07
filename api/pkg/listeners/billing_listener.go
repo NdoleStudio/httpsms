@@ -34,6 +34,7 @@ func NewBillingListener(
 
 	return l, map[string]events.EventListener{
 		events.EventTypeMessageAPISent:       l.OnMessageAPISent,
+		events.UserAccountDeleted:            l.onUserAccountDeleted,
 		events.EventTypeMessagePhoneReceived: l.OnMessagePhoneReceived,
 	}
 }
@@ -70,6 +71,24 @@ func (listener *BillingListener) OnMessagePhoneReceived(ctx context.Context, eve
 
 	if err := listener.service.RegisterReceivedMessage(ctx, payload.MessageID, payload.Timestamp, payload.UserID); err != nil {
 		msg := fmt.Sprintf("cannot register received message for event [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+func (listener *BillingListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserAccountDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
+		msg := fmt.Sprintf("cannot delete [entities.BillingUsage] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

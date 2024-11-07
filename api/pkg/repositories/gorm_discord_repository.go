@@ -32,6 +32,18 @@ func NewGormDiscordRepository(
 	}
 }
 
+func (repository *gormDiscordRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Discord{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Discord{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 func (repository *gormDiscordRepository) Save(ctx context.Context, Discord *entities.Discord) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

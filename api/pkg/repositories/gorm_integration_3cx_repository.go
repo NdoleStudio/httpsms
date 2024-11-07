@@ -31,6 +31,18 @@ func NewGormIntegration3CXRepository(
 	}
 }
 
+func (repository *gormIntegration3CxRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Integration3CX{}).Error; err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Integration3CX{}, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
 // Load an entities.Integration3CX based on the entities.UserID
 func (repository *gormIntegration3CxRepository) Load(ctx context.Context, userID entities.UserID) (*entities.Integration3CX, error) {
 	ctx, span := repository.tracer.Start(ctx)

@@ -43,6 +43,20 @@ func NewIntegration3CXService(
 	}
 }
 
+// DeleteAllForUser deletes all entities.Integration3CX for an entities.UserID.
+func (service *Integration3CXService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("could not delete all [entities.Integration3CX] for user with ID [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Integration3CX] for user with ID [%s]", userID))
+	return nil
+}
+
 // Send an event to a 3CX webhook
 func (service *Integration3CXService) Send(ctx context.Context, userID entities.UserID, event cloudevents.Event) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)

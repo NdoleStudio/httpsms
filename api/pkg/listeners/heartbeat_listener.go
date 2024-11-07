@@ -37,6 +37,7 @@ func NewHeartbeatListener(
 		events.EventTypePhoneDeleted:          l.onPhoneDeleted,
 		events.EventTypePhoneHeartbeatCheck:   l.onPhoneHeartbeatCheck,
 		events.EventTypePhoneHeartbeatOffline: l.onPhoneHeartbeatOffline,
+		events.UserAccountDeleted:             l.onUserAccountDeleted,
 	}
 }
 
@@ -125,6 +126,24 @@ func (listener *HeartbeatListener) onPhoneHeartbeatOffline(ctx context.Context, 
 
 	if err := listener.service.UpdatePhoneOnline(ctx, payload.UserID, payload.MonitorID, false); err != nil {
 		msg := fmt.Sprintf("cannot delete heartbeat monitor with userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+func (listener *HeartbeatListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserAccountDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
+		msg := fmt.Sprintf("cannot delete [entities.Heartbeat] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
