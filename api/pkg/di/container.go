@@ -143,6 +143,8 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterDiscordRoutes()
 	container.RegisterDiscordListeners()
 
+	container.RegisterMarketingListeners()
+
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
 
@@ -1166,6 +1168,20 @@ func (container *Container) RegisterDiscordListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.DiscordService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterMarketingListeners registers event listeners for listeners.MarketingListener
+func (container *Container) RegisterMarketingListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.MarketingListener{}))
+	_, routes := listeners.NewMarketingListener(
+		container.Logger(),
+		container.Tracer(),
+		container.MarketingService(),
 	)
 
 	for event, handler := range routes {
