@@ -3589,8 +3589,8 @@ packages:
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
 
-  cross-spawn@7.0.3:
-    resolution: {integrity: sha512-iRDPJKUPVEND7dHPO8rkbOnPpyDygcDFtWjpeWNCgy8WP2rXcxXL8TskReQl6OrB2G7+UJrags1q15Fudc7G6w==}
+  cross-spawn@7.0.6:
+    resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
   crypto-browserify@3.12.0:
@@ -11580,11 +11580,11 @@ snapshots:
       cache-loader: 4.1.0(webpack@4.47.0)
       caniuse-lite: 1.0.30001639
       consola: 3.2.3
-      css-loader: 5.2.7(webpack@5.96.0)
+      css-loader: 5.2.7(webpack@4.47.0)
       cssnano: 7.0.3(postcss@8.4.39)
       eventsource-polyfill: 0.9.6
       extract-css-chunks-webpack-plugin: 4.10.0(webpack@4.47.0)
-      file-loader: 6.2.0(webpack@5.96.0)
+      file-loader: 6.2.0(webpack@4.47.0)
       glob: 8.1.0
       hard-source-webpack-plugin: 0.13.1(webpack@4.47.0)
       hash-sum: 2.0.0
@@ -13638,7 +13638,7 @@ snapshots:
 
   create-require@1.1.1: {}
 
-  cross-spawn@7.0.3:
+  cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
       shebang-command: 2.0.0
@@ -13683,7 +13683,7 @@ snapshots:
       postcss-selector-parser: 6.1.0
       postcss-value-parser: 4.2.0
 
-  css-loader@5.2.7(webpack@5.96.0):
+  css-loader@5.2.7(webpack@4.47.0):
     dependencies:
       icss-utils: 5.1.0(postcss@8.4.39)
       loader-utils: 2.0.4
@@ -13695,7 +13695,7 @@ snapshots:
       postcss-value-parser: 4.2.0
       schema-utils: 3.3.0
       semver: 7.6.3
-      webpack: 5.96.0
+      webpack: 4.47.0
 
   css-prefers-color-scheme@9.0.1(postcss@8.4.39):
     dependencies:
@@ -14463,7 +14463,7 @@ snapshots:
       '@ungap/structured-clone': 1.2.0
       ajv: 6.12.6
       chalk: 4.1.2
-      cross-spawn: 7.0.3
+      cross-spawn: 7.0.6
       debug: 4.3.6
       doctrine: 3.0.0
       escape-string-regexp: 4.0.0
@@ -14540,7 +14540,7 @@ snapshots:
 
   execa@5.1.1:
     dependencies:
-      cross-spawn: 7.0.3
+      cross-spawn: 7.0.6
       get-stream: 6.0.1
       human-signals: 2.1.0
       is-stream: 2.0.1
@@ -14552,7 +14552,7 @@ snapshots:
 
   execa@8.0.1:
     dependencies:
-      cross-spawn: 7.0.3
+      cross-spawn: 7.0.6
       get-stream: 8.0.1
       human-signals: 5.0.0
       is-stream: 3.0.0
@@ -14679,6 +14679,12 @@ snapshots:
   file-entry-cache@7.0.1:
     dependencies:
       flat-cache: 3.1.1
+
+  file-loader@6.2.0(webpack@4.47.0):
+    dependencies:
+      loader-utils: 2.0.4
+      schema-utils: 3.3.0
+      webpack: 4.47.0
 
   file-loader@6.2.0(webpack@5.96.0):
     dependencies:
@@ -19332,7 +19338,7 @@ snapshots:
       schema-utils: 3.3.0
       webpack: 4.47.0
     optionalDependencies:
-      file-loader: 6.2.0(webpack@5.96.0)
+      file-loader: 6.2.0(webpack@4.47.0)
 
   url-parse@1.5.10:
     dependencies:
@@ -19480,7 +19486,7 @@ snapshots:
   vue-loader@15.11.1(babel-core@7.0.0-bridge.0(@babel/core@7.24.7))(cache-loader@4.1.0(webpack@4.47.0))(css-loader@5.2.7(webpack@4.47.0))(ejs@3.1.10)(lodash@4.17.21)(prettier@3.3.3)(vue-template-compiler@2.7.16)(webpack@4.47.0):
     dependencies:
       '@vue/component-compiler-utils': 3.3.0(babel-core@7.0.0-bridge.0(@babel/core@7.24.7))(ejs@3.1.10)(lodash@4.17.21)
-      css-loader: 5.2.7(webpack@5.96.0)
+      css-loader: 5.2.7(webpack@4.47.0)
       hash-sum: 1.0.2
       loader-utils: 1.4.2
       vue-hot-reload-api: 2.3.4
