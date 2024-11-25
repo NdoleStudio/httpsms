@@ -172,14 +172,13 @@ definitions:
         example: "2022-06-05T14:26:09.527976+03:00"
         type: string
       sim:
-        allOf:
-          - $ref: "#/definitions/entities.SIM"
         description: |-
           SIM is the SIM card to use to send the message
           * SMS1: use the SIM card in slot 1
           * SMS2: use the SIM card in slot 2
           * DEFAULT: used the default communication SIM card
         example: DEFAULT
+        type: string
       status:
         example: pending
         type: string
@@ -305,7 +304,8 @@ definitions:
         example: "+18005550199"
         type: string
       sim:
-        $ref: "#/definitions/entities.SIM"
+        description: SIM card that received the message
+        type: string
       updated_at:
         example: "2022-06-05T14:26:10.303278+03:00"
         type: string
@@ -325,42 +325,6 @@ definitions:
       - updated_at
       - user_id
     type: object
-  entities.SIM:
-    enum:
-      - SIM1
-      - SIM2
-    type: string
-    x-enum-varnames:
-      - SIM1
-      - SIM2
-  entities.SubscriptionName:
-    enum:
-      - free
-      - pro-monthly
-      - pro-yearly
-      - ultra-monthly
-      - ultra-yearly
-      - pro-lifetime
-      - 20k-monthly
-      - 100k-monthly
-      - 50k-monthly
-      - 20k-yearly
-      - 100k-yearly
-      - 50k-yearly
-    type: string
-    x-enum-varnames:
-      - SubscriptionNameFree
-      - SubscriptionNameProMonthly
-      - SubscriptionNameProYearly
-      - SubscriptionNameUltraMonthly
-      - SubscriptionNameUltraYearly
-      - SubscriptionNameProLifetime
-      - SubscriptionName20KMonthly
-      - SubscriptionName100KMonthly
-      - SubscriptionName50KMonthly
-      - SubscriptionName20KYearly
-      - SubscriptionName100KYearly
-      - SubscriptionName50KYearly
   entities.User:
     properties:
       active_phone_id:
@@ -394,9 +358,8 @@ definitions:
         example: 8f9c71b8-b84e-4417-8408-a62274f65a08
         type: string
       subscription_name:
-        allOf:
-          - $ref: "#/definitions/entities.SubscriptionName"
         example: free
+        type: string
       subscription_renews_at:
         example: "2022-06-05T14:26:02.302718+03:00"
         type: string
@@ -499,11 +462,13 @@ definitions:
     properties:
       charging:
         type: boolean
-      owner:
-        type: string
+      phone_numbers:
+        items:
+          type: string
+        type: array
     required:
       - charging
-      - owner
+      - phone_numbers
     type: object
   requests.MessageBulkSend:
     properties:
@@ -597,10 +562,9 @@ definitions:
         example: "+18005550199"
         type: string
       sim:
-        allOf:
-          - $ref: "#/definitions/entities.SIM"
         description: SIM card that received the message
         example: SIM1
+        type: string
       timestamp:
         description:
           Timestamp is the time when the event was emitted, Please send
@@ -2384,6 +2348,32 @@ paths:
       tags:
         - Users
   /users/me:
+    delete:
+      consumes:
+        - application/json
+      description:
+        Deletes the currently authenticated user together with all their
+        data.
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a user
+      tags:
+        - Users
     get:
       consumes:
         - application/json

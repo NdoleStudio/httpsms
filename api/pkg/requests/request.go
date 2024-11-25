@@ -13,6 +13,14 @@ import (
 
 type request struct{}
 
+func (input *request) sanitizeAddresses(value []string) []string {
+	var result []string
+	for _, address := range value {
+		result = append(result, input.sanitizeAddress(address))
+	}
+	return result
+}
+
 func (input *request) sanitizeAddress(value string) string {
 	value = strings.TrimSpace(value)
 	if !strings.HasPrefix(value, "+") && input.isDigits(value) && len(value) > 9 {

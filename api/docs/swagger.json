@@ -1733,6 +1733,38 @@
             }
           }
         }
+      },
+      "delete": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Deletes the currently authenticated user together with all their data.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["Users"],
+        "summary": "Delete a user",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/responses.NoContent"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/responses.Unauthorized"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/responses.InternalServerError"
+            }
+          }
+        }
       }
     },
     "/users/subscription": {
@@ -2445,11 +2477,7 @@
         },
         "sim": {
           "description": "SIM is the SIM card to use to send the message\n* SMS1: use the SIM card in slot 1\n* SMS2: use the SIM card in slot 2\n* DEFAULT: used the default communication SIM card",
-          "allOf": [
-            {
-              "$ref": "#/definitions/entities.SIM"
-            }
-          ],
+          "type": "string",
           "example": "DEFAULT"
         },
         "status": {
@@ -2587,7 +2615,8 @@
           "example": "+18005550199"
         },
         "sim": {
-          "$ref": "#/definitions/entities.SIM"
+          "description": "SIM card that received the message",
+          "type": "string"
         },
         "updated_at": {
           "type": "string",
@@ -2598,42 +2627,6 @@
           "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
         }
       }
-    },
-    "entities.SIM": {
-      "type": "string",
-      "enum": ["SIM1", "SIM2"],
-      "x-enum-varnames": ["SIM1", "SIM2"]
-    },
-    "entities.SubscriptionName": {
-      "type": "string",
-      "enum": [
-        "free",
-        "pro-monthly",
-        "pro-yearly",
-        "ultra-monthly",
-        "ultra-yearly",
-        "pro-lifetime",
-        "20k-monthly",
-        "100k-monthly",
-        "50k-monthly",
-        "20k-yearly",
-        "100k-yearly",
-        "50k-yearly"
-      ],
-      "x-enum-varnames": [
-        "SubscriptionNameFree",
-        "SubscriptionNameProMonthly",
-        "SubscriptionNameProYearly",
-        "SubscriptionNameUltraMonthly",
-        "SubscriptionNameUltraYearly",
-        "SubscriptionNameProLifetime",
-        "SubscriptionName20KMonthly",
-        "SubscriptionName100KMonthly",
-        "SubscriptionName50KMonthly",
-        "SubscriptionName20KYearly",
-        "SubscriptionName100KYearly",
-        "SubscriptionName50KYearly"
-      ]
     },
     "entities.User": {
       "type": "object",
@@ -2696,11 +2689,7 @@
           "example": "8f9c71b8-b84e-4417-8408-a62274f65a08"
         },
         "subscription_name": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/entities.SubscriptionName"
-            }
-          ],
+          "type": "string",
           "example": "free"
         },
         "subscription_renews_at": {
@@ -2806,13 +2795,16 @@
     },
     "requests.HeartbeatStore": {
       "type": "object",
-      "required": ["charging", "owner"],
+      "required": ["charging", "phone_numbers"],
       "properties": {
         "charging": {
           "type": "boolean"
         },
-        "owner": {
-          "type": "string"
+        "phone_numbers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -2908,11 +2900,7 @@
         },
         "sim": {
           "description": "SIM card that received the message",
-          "allOf": [
-            {
-              "$ref": "#/definitions/entities.SIM"
-            }
-          ],
+          "type": "string",
           "example": "SIM1"
         },
         "timestamp": {

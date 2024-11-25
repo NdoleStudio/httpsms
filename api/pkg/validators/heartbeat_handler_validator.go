@@ -62,9 +62,11 @@ func (validator *HeartbeatHandlerValidator) ValidateStore(_ context.Context, req
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
-			"owner": []string{
+			"phone_numbers": []string{
 				"required",
-				phoneNumberRule,
+				"max:2",
+				"min:1",
+				multiplePhoneNumberRule,
 			},
 		},
 	})

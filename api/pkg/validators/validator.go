@@ -17,6 +17,7 @@ type validator struct{}
 
 const (
 	phoneNumberRule                = "phoneNumber"
+	multiplePhoneNumberRule        = "multiplePhoneNumber"
 	contactPhoneNumberRule         = "contactPhoneNumber"
 	multipleContactPhoneNumberRule = "multipleContactPhoneNumber"
 	multipleInRule                 = "multipleIn"
@@ -35,6 +36,22 @@ func init() {
 		_, err := phonenumbers.Parse(phoneNumber, phonenumbers.UNKNOWN_REGION)
 		if err != nil {
 			return fmt.Errorf("The %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+		}
+
+		return nil
+	})
+
+	govalidator.AddCustomRule(multiplePhoneNumberRule, func(field string, rule string, message string, value interface{}) error {
+		phoneNumbers, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("The %s field must be an array of valid phone numbers", field)
+		}
+
+		for index, number := range phoneNumbers {
+			_, err := phonenumbers.Parse(number, phonenumbers.UNKNOWN_REGION)
+			if err != nil {
+				return fmt.Errorf("The %s field in index [%s] must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field, index)
+			}
 		}
 
 		return nil

@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"sync"
+
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -121,12 +124,23 @@ func (h *HeartbeatHandler) Store(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing heartbeat")
 	}
 
-	heartbeat, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c), c.OriginalURL(), c.Get("X-Client-Version")))
-	if err != nil {
-		msg := fmt.Sprintf("cannot store heartbeat with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return h.responseInternalServerError(c)
+	params := request.ToStoreParams(h.userFromContext(c), c.OriginalURL(), c.Get("X-Client-Version"))
+
+	wg := sync.WaitGroup{}
+	responses := make([]*entities.Heartbeat, len(params))
+	for index, value := range params {
+		wg.Add(1)
+		go func(input services.HeartbeatStoreParams, index int) {
+			response, err := h.service.Store(ctx, input)
+			if err != nil {
+				msg := fmt.Sprintf("cannot store heartbeat with params [%+#v]", request)
+				ctxLogger.Error(stacktrace.Propagate(err, msg))
+			}
+			responses[index] = response
+			wg.Done()
+		}(value, index)
 	}
 
-	return h.responseCreated(c, "heartbeat created successfully", heartbeat)
+	wg.Wait()
+	return h.responseCreated(c, fmt.Sprintf("[%d] heartbeats received successfully", len(responses)), responses)
 }
