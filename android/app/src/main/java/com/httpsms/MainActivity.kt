@@ -20,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ListenableWorker.Result
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -309,7 +310,6 @@ class MainActivity : AppCompatActivity() {
         val progressBar = findViewById<LinearProgressIndicator>(R.id.mainProgressIndicator)
         progressBar.visibility = View.VISIBLE
 
-
         val liveData = MutableLiveData<String?>()
         liveData.observe(this) { exception ->
             run {
@@ -331,20 +331,17 @@ class MainActivity : AppCompatActivity() {
             val charging = Settings.isCharging(applicationContext)
             var error: String? = null
             try {
-                HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM1PhoneNumber(context), charging)
+                val phoneNumbers = mutableListOf<String>()
+                phoneNumbers.add(Settings.getSIM1PhoneNumber(applicationContext))
+                if (Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
+                    phoneNumbers.add(Settings.getSIM2PhoneNumber(applicationContext))
+                }
+                Timber.w("numbers = [${phoneNumbers.joinToString()}]")
+                HttpSmsApiService.create(context).storeHeartbeat(phoneNumbers.toTypedArray(), charging)
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)
                 error = exception.javaClass.simpleName
-            }
-            if (Settings.isDualSIM(context)) {
-                try {
-                    HttpSmsApiService.create(context).storeHeartbeat(Settings.getSIM2PhoneNumber(context), charging)
-                    Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
-                } catch (exception: Exception) {
-                    Timber.e(exception)
-                    error = exception.javaClass.simpleName
-                }
             }
             liveData.postValue(error)
             Timber.d("finished sending pulse")

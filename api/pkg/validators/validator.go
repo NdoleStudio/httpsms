@@ -50,7 +50,7 @@ func init() {
 		for index, number := range phoneNumbers {
 			_, err := phonenumbers.Parse(number, phonenumbers.UNKNOWN_REGION)
 			if err != nil {
-				return fmt.Errorf("The %s field in index [%s] must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field, index)
+				return fmt.Errorf("The %s field in index [%d] must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field, index)
 			}
 		}
 

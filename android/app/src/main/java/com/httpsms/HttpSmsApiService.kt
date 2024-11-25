@@ -129,11 +129,11 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
-    fun storeHeartbeat(phoneNumber: String, charging: Boolean) {
+    fun storeHeartbeat(phoneNumbers: Array<String>, charging: Boolean) {
         val body = """
             {
               "charging": $charging,
-              "owner": "$phoneNumber"
+              "phone_numbers": ${phoneNumbers.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }}
             }
         """.trimIndent()
 
@@ -146,13 +146,13 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending heartbeat [$body] for owner [$phoneNumber]")
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending heartbeat [$body] for phone numbers [${phoneNumbers.joinToString()}]")
             response.close()
             return
         }
 
         response.close()
-        Timber.i( "heartbeat stored successfully for owner [$phoneNumber]" )
+        Timber.i( "heartbeat stored successfully for phone numbers [${phoneNumbers.joinToString()}]" )
     }
 
 

@@ -1,6 +1,5 @@
 package com.httpsms
 
-import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -56,7 +55,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
         Thread {
             try {
-                HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext), Settings.isCharging(applicationContext))
+                val phoneNumbers = mutableListOf<String>()
+                phoneNumbers.add(Settings.getSIM1PhoneNumber(applicationContext))
+                if (Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
+                    phoneNumbers.add(Settings.getSIM2PhoneNumber(applicationContext))
+                }
+
+                HttpSmsApiService.create(applicationContext).storeHeartbeat(phoneNumbers.toTypedArray(), Settings.isCharging(applicationContext))
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)

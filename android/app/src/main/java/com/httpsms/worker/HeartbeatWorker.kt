@@ -16,37 +16,25 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
             return Result.failure()
         }
 
-        sendSIM1Heartbeat()
-        if (Settings.isDualSIM(applicationContext)) {
-            sendSIM2Heartbeat()
+        val phoneNumbers = mutableListOf<String>()
+        if (Settings.getActiveStatus(applicationContext, Constants.SIM1)) {
+            phoneNumbers.add(Settings.getSIM1PhoneNumber(applicationContext))
         }
+        if (Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
+            phoneNumbers.add(Settings.getSIM2PhoneNumber(applicationContext))
+        }
+
+        if (phoneNumbers.isEmpty()) {
+            Timber.w("both [SIM1] and [SIM2] are inactive stopping processing.")
+            return Result.success()
+        }
+
+        HttpSmsApiService.create(applicationContext).storeHeartbeat(phoneNumbers.toTypedArray(), Settings.isCharging(applicationContext))
+        Timber.d("finished sending heartbeats to server")
+
+        Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
+        Timber.d("Set the heartbeat timestamp")
 
         return Result.success()
-    }
-
-    private fun sendSIM1Heartbeat() {
-        if (!Settings.getActiveStatus(applicationContext, Constants.SIM1)) {
-            Timber.w("[SIM1] user is not active, stopping processing")
-            return
-        }
-
-        HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM1PhoneNumber(applicationContext), Settings.isCharging(applicationContext))
-        Timber.d("[SIM1] finished sending heartbeat to server")
-
-        Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
-        Timber.d("[SIM1] set the heartbeat timestamp")
-    }
-
-    private fun sendSIM2Heartbeat() {
-        if (!Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
-            Timber.w("[SIM2] user is not active, stopping processing")
-            return
-        }
-
-        HttpSmsApiService.create(applicationContext).storeHeartbeat(Settings.getSIM2PhoneNumber(applicationContext), Settings.isCharging(applicationContext))
-        Timber.d("[SIM2] finished sending heartbeat to server")
-
-        Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
-        Timber.d("[SIM2] set the heartbeat timestamp")
     }
 }
