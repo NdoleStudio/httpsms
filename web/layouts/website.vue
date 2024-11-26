@@ -37,7 +37,10 @@
               Blog
             </v-btn>
             <v-btn
-              v-if="$vuetify.breakpoint.lgAndUp"
+              v-if="
+                $vuetify.breakpoint.lgAndUp &&
+                $store.getters.getAuthUser === null
+              "
               large
               text
               color="primary"
@@ -47,14 +50,25 @@
               Login
             </v-btn>
             <v-btn
+              v-if="$store.getters.getAuthUser === null"
               exact-path
               color="primary"
-              class="my-5"
+              class="mt-5"
               :large="$vuetify.breakpoint.lgAndUp"
               :to="{ name: 'login' }"
             >
               Get Started
               <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
+            </v-btn>
+            <v-btn
+              v-if="$store.getters.getAuthUser !== null"
+              exact-path
+              color="primary"
+              class="mt-5"
+              :large="$vuetify.breakpoint.lgAndUp"
+              :to="{ name: 'threads' }"
+            >
+              Dashboard
             </v-btn>
           </v-col>
         </v-row>
