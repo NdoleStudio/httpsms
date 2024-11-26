@@ -8,3 +8,4 @@ $path
 !.env.project
 !.env.vault
 !.env.docker
+cmd/experiments/*

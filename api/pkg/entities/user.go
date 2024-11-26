@@ -85,6 +85,7 @@ type User struct {
 	NotificationMessageStatusEnabled bool             `json:"notification_message_status_enabled" gorm:"default:true" example:"true"`
 	NotificationWebhookEnabled       bool             `json:"notification_webhook_enabled" gorm:"default:true" example:"true"`
 	NotificationHeartbeatEnabled     bool             `json:"notification_heartbeat_enabled" gorm:"default:true" example:"true"`
+	NotificationNewsletterEnabled    bool             `json:"notification_newsletter_enabled" gorm:"default:true" example:"true"`
 	CreatedAt                        time.Time        `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt                        time.Time        `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }

@@ -399,6 +399,13 @@
               hint="This switch controls email notifications we send when we your message is failed or expired."
               persistent-hint
             ></v-switch>
+            <v-switch
+              v-model="notificationSettings.newsletter_enabled"
+              label="Newsletter emails"
+              :disabled="updatingEmailNotifications"
+              hint="This switch controls newsletter emails about new features, updates, and promotions."
+              persistent-hint
+            ></v-switch>
             <v-btn
               color="primary"
               :loading="updatingEmailNotifications"
@@ -870,6 +877,7 @@ export default Vue.extend({
       notificationSettings: {
         webhook_enabled: true,
         message_status_enabled: true,
+        newsletter_enabled: true,
         heartbeat_enabled: true,
       },
       updatingWebhook: false,
@@ -965,6 +973,8 @@ export default Vue.extend({
           this.$store.getters.getUser.notification_message_status_enabled,
         heartbeat_enabled:
           this.$store.getters.getUser.notification_heartbeat_enabled,
+        newsletter_enabled:
+          this.$store.getters.getUser.notification_newsletter_enabled,
       }
     },
     showEditPhone(phoneId) {

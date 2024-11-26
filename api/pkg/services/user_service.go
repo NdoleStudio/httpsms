@@ -131,6 +131,7 @@ type UserNotificationUpdateParams struct {
 	MessageStatusEnabled bool
 	WebhookEnabled       bool
 	HeartbeatEnabled     bool
+	NewsletterEnabled    bool
 }
 
 // UpdateNotificationSettings for an entities.User
@@ -147,6 +148,7 @@ func (service *UserService) UpdateNotificationSettings(ctx context.Context, user
 	user.NotificationWebhookEnabled = params.WebhookEnabled
 	user.NotificationHeartbeatEnabled = params.HeartbeatEnabled
 	user.NotificationMessageStatusEnabled = params.MessageStatusEnabled
+	user.NotificationNewsletterEnabled = params.NewsletterEnabled
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("cannot save user with id [%s] in [%T]", user.ID, service.repository)
