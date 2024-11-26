@@ -248,6 +248,31 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 	return container.dedicatedDB
 }
 
+// DBWithoutMigration creates an instance of gorm.DB if it has not been created already
+func (container *Container) DBWithoutMigration() (db *gorm.DB) {
+	if container.db != nil {
+		return container.db
+	}
+
+	container.logger.Debug(fmt.Sprintf("creating %T", db))
+
+	config := &gorm.Config{TranslateError: true}
+	if isLocal() {
+		config.Logger = container.GormLogger()
+	}
+
+	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), config)
+	if err != nil {
+		container.logger.Fatal(err)
+	}
+	container.db = db
+
+	if err = db.Use(tracing.NewPlugin()); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+	}
+	return container.db
+}
+
 // DB creates an instance of gorm.DB if it has not been created already
 func (container *Container) DB() (db *gorm.DB) {
 	if container.db != nil {
