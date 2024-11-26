@@ -17,7 +17,7 @@
             </nuxt-link>
             <v-spacer></v-spacer>
             <v-btn
-              v-if="$vuetify.breakpoint.lgAndUp"
+              v-show="$vuetify.breakpoint.lgAndUp"
               large
               text
               color="primary"
@@ -27,7 +27,7 @@
               Pricing
             </v-btn>
             <v-btn
-              v-if="$vuetify.breakpoint.lgAndUp"
+              v-show="$vuetify.breakpoint.lgAndUp"
               large
               text
               color="primary"
@@ -37,7 +37,7 @@
               Blog
             </v-btn>
             <v-btn
-              v-if="
+              v-show="
                 $vuetify.breakpoint.lgAndUp &&
                 $store.getters.getAuthUser === null
               "
@@ -50,7 +50,7 @@
               Login
             </v-btn>
             <v-btn
-              v-if="$store.getters.getAuthUser === null"
+              v-show="$store.getters.getAuthUser === null"
               exact-path
               color="primary"
               class="mt-5"
@@ -58,10 +58,10 @@
               :to="{ name: 'login' }"
             >
               Get Started
-              <span v-if="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
+              <span v-show="$vuetify.breakpoint.lgAndUp">&nbsp;For Free</span>
             </v-btn>
             <v-btn
-              v-if="$store.getters.getAuthUser !== null"
+              v-show="$store.getters.getAuthUser !== null"
               exact-path
               color="primary"
               class="mt-5"
