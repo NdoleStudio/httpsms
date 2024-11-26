@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +14,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"firebase.google.com/go/auth"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"google.golang.org/api/iterator"
 
 	"github.com/palantir/stacktrace"
 
@@ -33,7 +39,45 @@ func main() {
 	container := di.NewLiteContainer()
 	logger := container.Logger()
 
+	authClient := container.FirebaseAuthClient()
+
+	var users []*auth.ExportedUserRecord
+	iter := authClient.Users(context.Background(), "")
+	for {
+		user, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			logger.Fatal(err)
+		}
+		users = append(users, user)
+	}
+
+	logger.Info(fmt.Sprintf("fetched %d users", len(users)))
+	exportUsers(logger, users)
+
 	logger.Info("Starting experiments")
+}
+
+func exportUsers(logger telemetry.Logger, users []*auth.ExportedUserRecord) {
+	records := [][]string{
+		{"First name", "Email address", "External ID"},
+	}
+
+	for _, user := range users {
+		records = append(records, []string{user.UserInfo.DisplayName, user.UserInfo.Email, user.UserInfo.UID})
+	}
+
+	file, err := os.Create("result.csv")
+	if err != nil {
+		logger.Fatal(stacktrace.Propagate(err, "cannot create file"))
+	}
+
+	w := csv.NewWriter(file)
+	if err = w.WriteAll(records); err != nil {
+		logger.Fatal(stacktrace.Propagate(err, "cannot write csv"))
+	}
 }
 
 func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
