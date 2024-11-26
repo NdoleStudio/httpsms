@@ -13,9 +13,9 @@
               <v-col class="grow">
                 <p class="text-h6 mb-0">Black Friday Deal</p>
                 <p class="mb-0">
-                  Get <b>40%</b> off all yearly plans on httpSMS until on
-                  December 2<sup>nd</sup> by using the discount code
-                  <b>BF2024</b> at checkout
+                  Get <b>40%</b> off all yearly plans on httpSMS until December
+                  2<sup>nd</sup> by using the discount code <b>BF2024</b> at
+                  checkout
                 </p>
                 <v-btn
                   v-show="!$vuetify.breakpoint.mdAndUp"
