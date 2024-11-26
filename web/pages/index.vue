@@ -3,35 +3,33 @@
     <v-container>
       <v-row class="mt-16 pt-8 mb-n8">
         <v-col>
-          <client-only>
-            <v-alert
-              text
-              :icon="$vuetify.breakpoint.mdAndUp ? mdiSale : undefined"
-              :prominent="$vuetify.breakpoint.mdAndUp"
-              color="success"
-            >
-              <v-row align="center">
-                <v-col class="grow">
-                  <p class="text-h6 mb-0">Black Friday Deal</p>
-                  <p class="mb-0">
-                    Get <b>40%</b> off all yearly plans on httpSMS until on
-                    December 2<sup>nd</sup> by using the discount code
-                    <b>BF2024</b> at checkout
-                  </p>
-                  <v-btn
-                    v-if="!$vuetify.breakpoint.mdAndUp"
-                    to="/billing"
-                    block
-                    color="pink"
-                    >Upgrade Now</v-btn
-                  >
-                </v-col>
-                <v-col v-if="$vuetify.breakpoint.mdAndUp" class="shrink">
-                  <v-btn color="pink" to="/billing">Upgrade Now</v-btn>
-                </v-col>
-              </v-row>
-            </v-alert>
-          </client-only>
+          <v-alert
+            text
+            :icon="$vuetify.breakpoint.mdAndUp ? mdiSale : undefined"
+            :prominent="$vuetify.breakpoint.mdAndUp"
+            color="success"
+          >
+            <v-row align="center">
+              <v-col class="grow">
+                <p class="text-h6 mb-0">Black Friday Deal</p>
+                <p class="mb-0">
+                  Get <b>40%</b> off all yearly plans on httpSMS until on
+                  December 2<sup>nd</sup> by using the discount code
+                  <b>BF2024</b> at checkout
+                </p>
+                <v-btn
+                  v-show="!$vuetify.breakpoint.mdAndUp"
+                  to="/billing"
+                  block
+                  color="pink"
+                  >Upgrade Now</v-btn
+                >
+              </v-col>
+              <v-col v-show="$vuetify.breakpoint.mdAndUp" class="shrink">
+                <v-btn color="pink" to="/billing">Upgrade Now</v-btn>
+              </v-col>
+            </v-row>
+          </v-alert>
         </v-col>
       </v-row>
       <v-row :class="{ 'pb-16 pt-0': $vuetify.breakpoint.lgAndUp }">
@@ -905,7 +903,6 @@ export default Vue.extend({
       mdiLanguageGo,
       selectedTab: 'javascript',
       yearlyPricing: false,
-      substackLoaded: false,
     }
   },
 })

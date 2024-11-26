@@ -88,7 +88,7 @@
               </v-avatar>
               <h3 class="text-h4 ml-1 text--primary">httpSMS</h3>
             </nuxt-link>
-            <p class="subtitle-2 text--secondary">
+            <div class="subtitle-2 mb-4 text--secondary">
               Made With <v-icon color="#cf1112">{{ mdiHeart }}</v-icon> in
               Tallinn
               <v-img
@@ -96,7 +96,7 @@
                 width="20"
                 src="https://upload.wikimedia.org/wikipedia/commons/8/8f/Flag_of_Estonia.svg"
               ></v-img>
-            </p>
+            </div>
             <p class="mt-n3">
               <v-btn href="https://twitter.com/httpsmsHQ" icon color="#1DA1F2">
                 <v-icon>{{ mdiTwitter }}</v-icon>
