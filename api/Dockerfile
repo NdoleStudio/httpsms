@@ -16,8 +16,6 @@ RUN go get github.com/swaggo/swag/gen@latest
 RUN go get github.com/swaggo/swag/cmd/swag@latest
 RUN go install github.com/swaggo/swag/cmd/swag
 RUN swag init
-RUN go install github.com/gobuffalo/packr/v2/packr2@latest
-RUN packr2
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$GIT_COMMIT" -o /bin/http-sms .
 
