@@ -51,7 +51,7 @@ require (
 	google.golang.org/protobuf v1.35.2
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.12
-	gorm.io/plugin/opentelemetry v0.1.8
+	gorm.io/plugin/opentelemetry v0.1.10
 )
 
 require (
