@@ -37,7 +37,7 @@ require (
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/rs/zerolog v1.33.0
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.4
 	github.com/thedevsaddam/govalidator v1.9.10
 	github.com/uptrace/uptrace-go v1.31.0
