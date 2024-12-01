@@ -145,8 +145,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0(eslint@8.57.1)
       eslint-plugin-vue:
-        specifier: ^9.30.0
-        version: 9.30.0(eslint@8.57.1)
+        specifier: ^9.32.0
+        version: 9.32.0(eslint@8.57.1)
       highlight.js:
         specifier: ^11.10.0
         version: 11.10.0
@@ -4320,8 +4320,8 @@ packages:
     peerDependencies:
       eslint: '>=8.23.1'
 
-  eslint-plugin-vue@9.30.0:
-    resolution: {integrity: sha512-CyqlRgShvljFkOeYK8wN5frh/OGTvkj1S7wlr2Q2pUvwq+X5VYiLd6ZjujpgSgLnys2W8qrBLkXQ41SUYaoPIQ==}
+  eslint-plugin-vue@9.32.0:
+    resolution: {integrity: sha512-b/Y05HYmnB/32wqVcjxjHZzNpwxj1onBOvqW89W+V+XNG1dRuaFbNd3vT9CLbr2LXjEoq+3vn8DanWf7XU22Ug==}
     engines: {node: ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: ^6.2.0 || ^7.0.0 || ^8.0.0 || ^9.0.0
@@ -12049,7 +12049,7 @@ snapshots:
       eslint: 8.57.1
       eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.7.3(eslint@8.57.1)(typescript@4.9.5))(eslint-plugin-import@2.28.1)(eslint@8.57.1)
       eslint-plugin-import: 2.28.1(@typescript-eslint/parser@6.7.3(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.1)
-      eslint-plugin-vue: 9.30.0(eslint@8.57.1)
+      eslint-plugin-vue: 9.32.0(eslint@8.57.1)
     transitivePeerDependencies:
       - eslint-import-resolver-node
       - eslint-import-resolver-webpack
@@ -12065,7 +12065,7 @@ snapshots:
       eslint-plugin-node: 11.1.0(eslint@8.57.1)
       eslint-plugin-promise: 6.1.1(eslint@8.57.1)
       eslint-plugin-unicorn: 44.0.2(eslint@8.57.1)
-      eslint-plugin-vue: 9.30.0(eslint@8.57.1)
+      eslint-plugin-vue: 9.32.0(eslint@8.57.1)
       local-pkg: 0.4.3
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
@@ -14770,7 +14770,7 @@ snapshots:
 
   eslint-plugin-nuxt@4.0.0(eslint@8.57.1):
     dependencies:
-      eslint-plugin-vue: 9.30.0(eslint@8.57.1)
+      eslint-plugin-vue: 9.32.0(eslint@8.57.1)
       semver: 7.5.4
       vue-eslint-parser: 9.3.1(eslint@8.57.1)
     transitivePeerDependencies:
@@ -14799,7 +14799,7 @@ snapshots:
       semver: 7.6.3
       strip-indent: 3.0.0
 
-  eslint-plugin-vue@9.30.0(eslint@8.57.1):
+  eslint-plugin-vue@9.32.0(eslint@8.57.1):
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.1)
       eslint: 8.57.1
