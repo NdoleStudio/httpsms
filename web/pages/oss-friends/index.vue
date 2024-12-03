@@ -2,9 +2,17 @@
   <v-container class="mt-16">
     <v-row>
       <v-col cols="10" offset="1" class="mt-16">
-        <h1 class="text-h2 mb-4 text-center">Open Source Friends</h1>
+        <h1
+          class="mb-4 text-center"
+          :class="{
+            'text-h2': $vuetify.breakpoint.lgAndUp,
+            'text-h3': !$vuetify.breakpoint.lgAndUp,
+          }"
+        >
+          Open Source Friends
+        </h1>
         <p class="text-h5 text--secondary text-center">
-          Here are some of our favorites open-source projects.
+          Here are some of our favorite open-source projects.
         </p>
         <v-row class="mb-8 mt-8">
           <v-col v-if="apps.length == 0" class="text-center my-16">
@@ -21,6 +29,7 @@
               <v-card-actions>
                 <v-btn text :href="app.href" color="primary">
                   Learn More
+                  <v-icon right>{{ mdiOpenInNew }}</v-icon>
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -39,6 +48,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { mdiOpenInNew } from '@mdi/js'
 
 type AppData = {
   name: string
@@ -50,6 +60,7 @@ export default Vue.extend({
   name: 'OpenSourceFriendsIndex',
   layout: 'website',
   data: () => ({
+    mdiOpenInNew,
     apps: [] as AppData[],
   }),
   async fetch() {
