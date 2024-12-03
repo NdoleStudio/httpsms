@@ -63,16 +63,19 @@ export default Vue.extend({
     mdiOpenInNew,
     apps: [] as AppData[],
   }),
-  async fetch() {
-    const response = await fetch(
-      'https://corsproxy.io/?https%3A%2F%2Fformbricks.com%2Fapi%2Foss-friends',
-    ).then((res) => res.json())
-    this.apps = response.data
-  },
   head() {
     return {
       title: 'Open Source Friends - httpSMS',
     }
+  },
+  mounted() {
+    fetch(
+      'https://corsproxy.io/?https%3A%2F%2Fformbricks.com%2Fapi%2Foss-friends',
+    )
+      .then((res) => res.json())
+      .then((response: any) => {
+        this.apps = response.data
+      })
   },
 })
 </script>
