@@ -279,18 +279,6 @@
                   </a>
                 </v-hover>
               </li>
-              <li class="mt-2">
-                <v-hover v-slot="{ hover }">
-                  <nuxt-link
-                    class="text--primary text-decoration-none"
-                    :class="{ 'text-decoration-underline': hover }"
-                    to="/oss-friends"
-                  >
-                    OSS Friends
-                    <v-icon small>{{ mdiDomain }}</v-icon>
-                  </nuxt-link>
-                </v-hover>
-              </li>
             </ul>
           </v-col>
         </v-row>
