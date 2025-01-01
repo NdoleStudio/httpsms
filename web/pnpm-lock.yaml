@@ -148,8 +148,8 @@ importers:
         specifier: ^9.32.0
         version: 9.32.0(eslint@8.57.1)
       highlight.js:
-        specifier: ^11.10.0
-        version: 11.10.0
+        specifier: ^11.11.1
+        version: 11.11.1
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.8.0)
@@ -4855,8 +4855,8 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
-  highlight.js@11.10.0:
-    resolution: {integrity: sha512-SYVnVFswQER+zu1laSya563s+F8VDGt7o35d4utbamowvUNLLMovFqwCLSocpZTz3MgaSRA1IbqRWZv97dtErQ==}
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
     engines: {node: '>=12.0.0'}
 
   hmac-drbg@1.0.1:
@@ -15284,7 +15284,7 @@ snapshots:
 
   he@1.2.0: {}
 
-  highlight.js@11.10.0: {}
+  highlight.js@11.11.1: {}
 
   hmac-drbg@1.0.1:
     dependencies:
@@ -16865,7 +16865,7 @@ snapshots:
 
   nuxt-highlightjs@1.0.3:
     dependencies:
-      highlight.js: 11.10.0
+      highlight.js: 11.11.1
 
   nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.24.7))(consola@3.2.3)(ejs@3.1.10)(prettier@3.4.1)(typescript@4.9.5)(vue@2.7.16):
     dependencies:
