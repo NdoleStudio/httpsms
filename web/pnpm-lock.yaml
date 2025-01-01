@@ -33,8 +33,8 @@ importers:
         specifier: ^2.30.0
         version: 2.30.0
       dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
+        specifier: ^16.4.7
+        version: 16.4.7
       firebase:
         specifier: ^10.14.1
         version: 10.14.1
@@ -3974,8 +3974,8 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv@16.4.5:
-    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
+  dotenv@16.4.7:
+    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
 
   dotenv@8.6.0:
@@ -11332,7 +11332,7 @@ snapshots:
       consola: 3.2.3
       defu: 6.1.4
       destr: 2.0.3
-      dotenv: 16.4.5
+      dotenv: 16.4.7
       lodash: 4.17.21
       rc9: 2.1.2
       std-env: 3.7.0
@@ -13131,7 +13131,7 @@ snapshots:
       chokidar: 3.6.0
       confbox: 0.1.7
       defu: 6.1.4
-      dotenv: 16.4.5
+      dotenv: 16.4.7
       giget: 1.2.3
       jiti: 1.21.6
       mlly: 1.7.1
@@ -13145,7 +13145,7 @@ snapshots:
     dependencies:
       chokidar: 3.6.0
       defu: 6.1.4
-      dotenv: 16.4.5
+      dotenv: 16.4.7
       giget: 1.1.2
       jiti: 1.21.6
       mlly: 1.7.1
@@ -14084,7 +14084,7 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv@16.4.5: {}
+  dotenv@16.4.7: {}
 
   dotenv@8.6.0: {}
 
