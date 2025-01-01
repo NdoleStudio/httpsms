@@ -44,11 +44,11 @@ require (
 	github.com/thedevsaddam/govalidator v1.9.10
 	github.com/uptrace/uptrace-go v1.32.0
 	github.com/xuri/excelize/v2 v2.9.0
-	go.opentelemetry.io/otel v1.32.0
-	go.opentelemetry.io/otel/metric v1.32.0
+	go.opentelemetry.io/otel v1.33.0
+	go.opentelemetry.io/otel/metric v1.33.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/sdk/metric v1.32.0
-	go.opentelemetry.io/otel/trace v1.32.0
+	go.opentelemetry.io/otel/trace v1.33.0
 	google.golang.org/api v0.209.0
 	google.golang.org/protobuf v1.35.2
 	gorm.io/driver/postgres v1.5.7
@@ -131,6 +131,7 @@ require (
 	github.com/xuri/efp v0.0.0-20240408161823-9ad904a10d6d // indirect
 	github.com/xuri/nfp v0.0.0-20240318013403-ab9948c2c4a7 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib v1.27.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
