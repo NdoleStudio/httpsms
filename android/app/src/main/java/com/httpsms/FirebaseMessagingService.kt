@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.work.*
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.httpsms.SentReceiver.FailedMessageWorker
 import timber.log.Timber
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
@@ -188,10 +189,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             } catch (e: Exception) {
                 Timber.e(e)
                 Timber.d("could not send SMS for message with ID [${message.id}] in [${parts.size}] parts")
+                handleFailed(this.applicationContext, message.id, e.message ?: e.javaClass.simpleName)
                 Result.failure()
             }
         }
-
 
         private fun handleSingleMessage(message:Message, content: String): Result {
             sendMessage(
@@ -217,7 +218,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             )
 
             val work = OneTimeWorkRequest
-                .Builder(SentReceiver.FailedMessageWorker::class.java)
+                .Builder(FailedMessageWorker::class.java)
                 .setConstraints(constraints)
                 .setInputData(inputData)
                 .build()
@@ -249,6 +250,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             } catch (e: Exception) {
                 Timber.e(e)
                 Timber.d("could not send SMS for message with ID [${message.id}]")
+                handleFailed(this.applicationContext, message.id, e.message ?: e.javaClass.simpleName)
                 return
             }
             Timber.d("sent SMS for message with ID [${message.id}]")
