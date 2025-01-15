@@ -1,5 +1,16 @@
 <template>
   <v-app>
+    <v-btn
+      v-if="$vuetify.breakpoint.lgAndUp"
+      class="feedback-btn"
+      href="https://httpsms.featurebase.app"
+      color="#82a865"
+      flat
+      large
+    >
+      <v-icon left>{{ mdiBullhorn }}</v-icon>
+      Feedback
+    </v-btn>
     <v-divider v-if="$store.getters.isLocal" class="py-1 warning"></v-divider>
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.lgAndUp && hasDrawer"
@@ -28,11 +39,13 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
+import { mdiBullhorn } from '@mdi/js'
 import { setAuthHeader } from '~/plugins/axios'
 
 @Component
 export default class DefaultLayout extends Vue {
   poller: number | null = null
+  mdiBullhorn: string = mdiBullhorn
 
   get hasDrawer(): boolean {
     return ['threads', 'threads-id'].includes(this.$route.name ?? '')
@@ -128,5 +141,20 @@ export default class DefaultLayout extends Vue {
   code.hljs {
     font-size: 16px;
   }
+}
+
+.feedback-btn {
+  position: fixed;
+  z-index: 15;
+  right: -56px;
+  margin: 0;
+  top: 45%;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  transform: rotate(-90deg);
+  -moz-transform: rotate(-90deg);
+  -ms-transform: rotate(-90deg);
+  -o-transform: rotate(-90deg);
+  -webkit-transform: rotate(-90deg);
 }
 </style>
