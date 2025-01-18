@@ -482,10 +482,8 @@ func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages/search [get]
 func (h *MessageHandler) Search(c *fiber.Ctx) error {
-	ctx, span := h.tracer.StartFromFiberCtx(c)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
-
-	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageSearch
 	if err := c.QueryParser(&request); err != nil {
@@ -493,6 +491,9 @@ func (h *MessageHandler) Search(c *fiber.Ctx) error {
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
 	}
+
+	ctxLogger.Info(fmt.Sprintf("searching messages with URL [%s] and params [%+#v]", c.OriginalURL(), request))
+	return h.responseForbidden(c)
 
 	if errors := h.validator.ValidateMessageSearch(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while searching messages [%+#v]", spew.Sdump(errors), request)
