@@ -492,9 +492,6 @@ func (h *MessageHandler) Search(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	ctxLogger.Info(fmt.Sprintf("searching messages with URL [%s] and params [%+#v]", c.OriginalURL(), request))
-	return h.responseForbidden(c)
-
 	if errors := h.validator.ValidateMessageSearch(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while searching messages [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
