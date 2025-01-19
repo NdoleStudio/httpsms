@@ -253,7 +253,7 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(_ context.Context
 				"min:0",
 			},
 			"query": []string{
-				"max:100",
+				"max:20",
 			},
 		},
 	})
