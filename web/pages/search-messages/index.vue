@@ -301,6 +301,7 @@ interface Turnstile {
     container: string | HTMLElement,
     params?: {
       sitekey: string
+      action: string
       callback?: (token: string) => void
       'error-callback'?: ((error: string) => void) | undefined
     },
@@ -408,6 +409,7 @@ export default Vue.extend({
             callback: (token) => {
               resolve(token)
             },
+            action: 'search_messages',
             'error-callback': (error: string) => {
               reject(error)
             },
@@ -485,38 +487,44 @@ export default Vue.extend({
         this.options.page = 1
       }
 
-      this.getCaptcha().then((token: string) => {
-        this.$store
-          .dispatch('searchMessages', {
-            token,
-            owners: this.formOwners,
-            types: this.formTypes,
-            statuses: this.formStatuses,
-            query: this.formQuery,
-            sort_by: this.options.sortBy[0],
-            sort_descending: this.options.sortDesc[0],
-            skip: (this.options.page - 1) * this.options.itemsPerPage,
-            limit: this.options.itemsPerPage,
-          } as SearchMessagesRequest)
-          .then((messages: EntitiesMessage[]) => {
-            this.messages = messages
-            this.totalMessages =
-              (this.options.page - 1) * this.options.itemsPerPage +
-              messages.length
-            if (messages.length === this.options.itemsPerPage) {
-              this.totalMessages = this.totalMessages + 1
-            }
-          })
-          .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
-            this.errorTitle = capitalize(
-              error.response?.data?.message ?? 'Error while searching messages',
-            )
-            this.errorMessages = getErrorMessages(error)
-          })
-          .finally(() => {
-            this.loading = false
-          })
-      })
+      this.getCaptcha()
+        .then((token: string) => {
+          this.$store
+            .dispatch('searchMessages', {
+              token,
+              owners: this.formOwners,
+              types: this.formTypes,
+              statuses: this.formStatuses,
+              query: this.formQuery,
+              sort_by: this.options.sortBy[0],
+              sort_descending: this.options.sortDesc[0],
+              skip: (this.options.page - 1) * this.options.itemsPerPage,
+              limit: this.options.itemsPerPage,
+            } as SearchMessagesRequest)
+            .then((messages: EntitiesMessage[]) => {
+              this.messages = messages
+              this.totalMessages =
+                (this.options.page - 1) * this.options.itemsPerPage +
+                messages.length
+              if (messages.length === this.options.itemsPerPage) {
+                this.totalMessages = this.totalMessages + 1
+              }
+            })
+            .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
+              this.errorTitle = capitalize(
+                error.response?.data?.message ??
+                  'Error while searching messages',
+              )
+              this.errorMessages = getErrorMessages(error)
+            })
+            .finally(() => {
+              this.loading = false
+            })
+        })
+        .catch((error: string) => {
+          this.errorTitle = error
+          this.loading = false
+        })
     },
   },
 })
