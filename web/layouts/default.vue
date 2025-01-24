@@ -5,7 +5,6 @@
       class="feedback-btn"
       href="https://httpsms.featurebase.app"
       color="#82a865"
-      flat
       large
     >
       <v-icon left>{{ mdiBullhorn }}</v-icon>

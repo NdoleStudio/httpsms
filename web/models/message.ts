@@ -22,6 +22,7 @@ export interface SearchMessagesRequest {
   statuses: string[]
   query: string
   sort_by: string
+  token?: string
   sort_descending: boolean
   skip: number
   limit: number

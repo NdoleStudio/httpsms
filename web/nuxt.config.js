@@ -22,6 +22,10 @@ export default {
         async: true,
         defer: true,
       },
+      {
+        hid: 'cloudflare',
+        src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
+      },
     ],
     meta: [
       { charset: 'utf-8' },
@@ -150,6 +154,7 @@ export default {
   publicRuntimeConfig: {
     checkoutURL: process.env.CHECKOUT_URL,
     enterpriseCheckoutURL: process.env.ENTERPRISE_CHECKOUT_URL,
+    cloudflareTurnstileSiteKey: process.env.CLOUDFLARE_TURNSTILE_SITE_KEY,
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build

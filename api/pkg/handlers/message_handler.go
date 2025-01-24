@@ -471,6 +471,7 @@ func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
+// @Param        token    	header string   true   	"Cloudflare turnstile token https://www.cloudflare.com/en-gb/application-services/products/turnstile/"
 // @Param        owners		query  string  	true 	"the owner's phone numbers" 		default(+18005550199,+18005550100)
 // @Param        skip		query  int  	false	"number of messages to skip"		minimum(0)
 // @Param        query		query  string  	false 	"filter messages containing query"
@@ -491,6 +492,9 @@ func (h *MessageHandler) Search(c *fiber.Ctx) error {
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
 	}
+
+	request.IPAddress = c.IP()
+	request.Token = c.Get("token")
 
 	if errors := h.validator.ValidateMessageSearch(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while searching messages [%+#v]", spew.Sdump(errors), request)

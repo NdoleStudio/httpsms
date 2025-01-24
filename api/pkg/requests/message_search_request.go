@@ -21,6 +21,9 @@ type MessageSearch struct {
 	SortBy         string   `json:"sort_by" query:"sort_by"`
 	SortDescending bool     `json:"sort_descending" query:"sort_descending"`
 	Limit          string   `json:"limit" query:"limit"`
+
+	IPAddress string `json:"ip_address" swaggerignore:"true"`
+	Token     string `json:"token" swaggerignore:"true"`
 }
 
 // Sanitize sets defaults to MessageSearch

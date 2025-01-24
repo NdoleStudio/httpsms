@@ -20,9 +20,10 @@ import (
 // MessageHandlerValidator validates models used in handlers.MessageHandler
 type MessageHandlerValidator struct {
 	validator
-	logger       telemetry.Logger
-	tracer       telemetry.Tracer
-	phoneService *services.PhoneService
+	logger         telemetry.Logger
+	tracer         telemetry.Tracer
+	phoneService   *services.PhoneService
+	tokenValidator *TurnstileTokenValidator
 }
 
 // NewMessageHandlerValidator creates a new handlers.MessageHandler validator
@@ -30,11 +31,13 @@ func NewMessageHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
+	tokenValidator *TurnstileTokenValidator,
 ) (v *MessageHandlerValidator) {
 	return &MessageHandlerValidator{
-		logger:       logger.WithService(fmt.Sprintf("%T", v)),
-		tracer:       tracer,
-		phoneService: phoneService,
+		logger:         logger.WithService(fmt.Sprintf("%T", v)),
+		tracer:         tracer,
+		phoneService:   phoneService,
+		tokenValidator: tokenValidator,
 	}
 }
 
@@ -208,7 +211,7 @@ func (validator MessageHandlerValidator) ValidateMessageIndex(_ context.Context,
 }
 
 // ValidateMessageSearch validates the requests.MessageSearch request
-func (validator MessageHandlerValidator) ValidateMessageSearch(_ context.Context, request requests.MessageSearch) url.Values {
+func (validator MessageHandlerValidator) ValidateMessageSearch(ctx context.Context, request requests.MessageSearch) url.Values {
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
@@ -257,7 +260,17 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(_ context.Context
 			},
 		},
 	})
-	return v.ValidateStruct()
+
+	errors := v.ValidateStruct()
+	if len(errors) > 0 {
+		return errors
+	}
+
+	if !validator.tokenValidator.ValidateToken(ctx, request.IPAddress, request.Token) {
+		errors.Add("token", "The captcha token from turnstile is invalid")
+	}
+
+	return errors
 }
 
 // ValidateMessageEvent validates the requests.MessageEvent request

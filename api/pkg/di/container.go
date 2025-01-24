@@ -487,6 +487,18 @@ func (container *Container) MessageHandlerValidator() (validator *validators.Mes
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneService(),
+		container.TurnstileTokenValidator(),
+	)
+}
+
+// TurnstileTokenValidator creates a new instance of validators.TurnstileTokenValidator
+func (container *Container) TurnstileTokenValidator() (validator *validators.TurnstileTokenValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewTurnstileTokenValidator(
+		container.Logger(),
+		container.Tracer(),
+		os.Getenv("CLOUDFLARE_TURNSTILE_SECRET_KEY"),
+		container.HTTPClient("turnstile"),
 	)
 }
 

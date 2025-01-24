@@ -518,10 +518,13 @@ export const actions = {
     _: ActionContext<State, State>,
     payload: SearchMessagesRequest,
   ) {
+    const token = payload.token
+    delete payload.token
     return new Promise<EntitiesMessage[]>((resolve, reject) => {
       axios
         .get<ResponsesMessagesResponse>(`/v1/messages/search`, {
           params: payload,
+          headers: { token },
         })
         .then((response: AxiosResponse<ResponsesMessagesResponse>) => {
           resolve(response.data.data)

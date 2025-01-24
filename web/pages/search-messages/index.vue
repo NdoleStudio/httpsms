@@ -87,6 +87,7 @@
                 ></v-text-field>
               </v-col>
               <v-col cols="4">
+                <div id="cloudflare-turnstile" class="d-none"></div>
                 <v-btn
                   :loading="loading"
                   :disabled="loading"
@@ -294,6 +295,18 @@ import {
 import { formatPhoneNumber } from '~/plugins/filters'
 import { SearchMessagesRequest } from '~/models/message'
 
+interface Turnstile {
+  ready(callback: () => void): void
+  render(
+    container: string | HTMLElement,
+    params?: {
+      sitekey: string
+      callback?: (token: string) => void
+      'error-callback'?: ((error: string) => void) | undefined
+    },
+  ): string | null | undefined
+}
+
 export default Vue.extend({
   name: 'SearchMessagesIndex',
   middleware: ['auth'],
@@ -386,6 +399,22 @@ export default Vue.extend({
   },
 
   methods: {
+    getCaptcha(): Promise<string> {
+      return new Promise<string>((resolve, reject) => {
+        const turnstile = (window as any).turnstile as Turnstile
+        turnstile.ready(() => {
+          turnstile.render('#cloudflare-turnstile', {
+            sitekey: this.$config.cloudflareTurnstileSiteKey,
+            callback: (token) => {
+              resolve(token)
+            },
+            'error-callback': (error: string) => {
+              reject(error)
+            },
+          })
+        })
+      })
+    },
     exportMessages() {
       let csvContent = 'data:text/csv;charset=utf-8,'
       csvContent +=
@@ -456,35 +485,38 @@ export default Vue.extend({
         this.options.page = 1
       }
 
-      this.$store
-        .dispatch('searchMessages', {
-          owners: this.formOwners,
-          types: this.formTypes,
-          statuses: this.formStatuses,
-          query: this.formQuery,
-          sort_by: this.options.sortBy[0],
-          sort_descending: this.options.sortDesc[0],
-          skip: (this.options.page - 1) * this.options.itemsPerPage,
-          limit: this.options.itemsPerPage,
-        } as SearchMessagesRequest)
-        .then((messages: EntitiesMessage[]) => {
-          this.messages = messages
-          this.totalMessages =
-            (this.options.page - 1) * this.options.itemsPerPage +
-            messages.length
-          if (messages.length === this.options.itemsPerPage) {
-            this.totalMessages = this.totalMessages + 1
-          }
-        })
-        .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
-          this.errorTitle = capitalize(
-            error.response?.data?.message ?? 'Error while searching messages',
-          )
-          this.errorMessages = getErrorMessages(error)
-        })
-        .finally(() => {
-          this.loading = false
-        })
+      this.getCaptcha().then((token: string) => {
+        this.$store
+          .dispatch('searchMessages', {
+            token,
+            owners: this.formOwners,
+            types: this.formTypes,
+            statuses: this.formStatuses,
+            query: this.formQuery,
+            sort_by: this.options.sortBy[0],
+            sort_descending: this.options.sortDesc[0],
+            skip: (this.options.page - 1) * this.options.itemsPerPage,
+            limit: this.options.itemsPerPage,
+          } as SearchMessagesRequest)
+          .then((messages: EntitiesMessage[]) => {
+            this.messages = messages
+            this.totalMessages =
+              (this.options.page - 1) * this.options.itemsPerPage +
+              messages.length
+            if (messages.length === this.options.itemsPerPage) {
+              this.totalMessages = this.totalMessages + 1
+            }
+          })
+          .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
+            this.errorTitle = capitalize(
+              error.response?.data?.message ?? 'Error while searching messages',
+            )
+            this.errorMessages = getErrorMessages(error)
+          })
+          .finally(() => {
+            this.loading = false
+          })
+      })
     },
   },
 })
