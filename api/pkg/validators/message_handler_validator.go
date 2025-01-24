@@ -258,6 +258,9 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(ctx context.Conte
 			"query": []string{
 				"max:20",
 			},
+			"token": []string{
+				"required"
+			},
 		},
 	})
 
