@@ -12,7 +12,7 @@ import (
 // Version is injected at runtime
 var Version string
 
-// @title       HTTP SMS API
+// @title       httpSMS API Reference
 // @version     1.0
 // @description API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP
 //
@@ -41,6 +41,6 @@ func main() {
 		docs.SwaggerInfo.Version = Version
 	}
 
-	container := di.NewContainer("http-sms", Version)
+	container := di.NewContainer(os.Getenv("GCP_PROJECT_ID"), Version)
 	container.Logger().Info(container.App().Listen(fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT"))).Error())
 }
