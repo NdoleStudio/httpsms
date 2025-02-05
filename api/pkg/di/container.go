@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/docs"
+
 	otelMetric "go.opentelemetry.io/otel/metric"
 
 	"github.com/dgraph-io/ristretto"
@@ -1344,7 +1346,16 @@ func (container *Container) RegisterEventRoutes() {
 // RegisterSwaggerRoutes registers routes for swagger
 func (container *Container) RegisterSwaggerRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", swagger.HandlerDefault))
-	container.App().Get("/*", swagger.HandlerDefault)
+	container.App().Get("/*", swagger.New(swagger.Config{
+		Title: docs.SwaggerInfo.Title,
+		CustomScript: `
+		document.addEventListener("DOMContentLoaded", function(event) {
+			var links = document.querySelectorAll("link[rel~='icon']");
+			links.forEach(function (link) {
+				link.href = 'https://httpsms.com/favicon.ico';
+			});
+		});`,
+	}))
 }
 
 // HeartbeatRepository registers a new instance of repositories.HeartbeatRepository

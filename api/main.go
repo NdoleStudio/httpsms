@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/NdoleStudio/httpsms/docs"
 	"github.com/NdoleStudio/httpsms/pkg/di"
@@ -33,7 +34,12 @@ func main() {
 		di.LoadEnv()
 	}
 
-	docs.SwaggerInfo.Host = os.Getenv("SWAGGER_HOST")
+	if host := strings.TrimSpace(os.Getenv("SWAGGER_HOST")); len(host) > 0 {
+		docs.SwaggerInfo.Host = host
+	}
+	if len(Version) > 0 {
+		docs.SwaggerInfo.Version = Version
+	}
 
 	container := di.NewContainer("http-sms", Version)
 	container.Logger().Info(container.App().Listen(fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT"))).Error())
