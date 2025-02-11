@@ -121,7 +121,7 @@
               </h5>
               <v-btn
                 to="/blog/how-to-send-sms-messages-from-excel"
-                class="primary"
+                class="primary mt-4"
               >
                 <v-icon left>{{ mdiMicrosoftExcel }}</v-icon>
                 Integration Guide
@@ -156,7 +156,7 @@
               </h5>
               <v-btn
                 to="/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier"
-                class="primary"
+                class="primary mt-4"
               >
                 Zapier Integration Guide
               </v-btn>
@@ -183,7 +183,7 @@
               </h5>
               <v-btn
                 to="https://docs.httpsms.com/webhooks/introduction"
-                class="primary"
+                class="primary mt-4"
               >
                 <v-icon left>{{ mdiWebhook }}</v-icon>
                 Documentation
