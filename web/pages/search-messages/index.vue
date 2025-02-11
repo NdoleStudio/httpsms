@@ -447,7 +447,7 @@ export default Vue.extend({
     },
 
     sanitizeContent(content: string): string {
-      content = content.replace('"', '""')
+      content = content.replaceAll('"', '""')
       return content.includes(',') ? '"' + content + '"' : content
     },
 
