@@ -143,13 +143,13 @@ Android App-->>httpSMS API: [Async] Send Delivery Report
 
 ```js
 const firebaseConfig = {
-  apiKey: "AIzaSyAKqPvj51igvvNNcRt_gL0A6cgx3ZB-kuQ",
+  apiKey: "AIzaSyAKqPvj51igvvNNcRtxxxxx",
   authDomain: "httpsms-docker.firebaseapp.com",
   projectId: "httpsms-docker",
   storageBucket: "httpsms-docker.appspot.com",
   messagingSenderId: "668063041624",
-  appId: "1:668063041624:web:29b9e3b7027965ba08a22d",
-  measurementId: "G-18VRYL22PZ",
+  appId: "1:668063041624:web:29b9e3b702796xxxx",
+  measurementId: "G-18VRYL2xxxx",
 };
 ```
 
