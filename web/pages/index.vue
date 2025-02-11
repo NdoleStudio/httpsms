@@ -119,6 +119,13 @@
                 and upload it on httpSMS to send your SMS messages to multiple
                 recipients at once without writing any code.
               </h5>
+              <v-btn
+                to="/blog/how-to-send-sms-messages-from-excel"
+                class="primary"
+              >
+                <v-icon left>{{ mdiMicrosoftExcel }}</v-icon>
+                Integration Guide
+              </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="6" :order-lg="1">
@@ -150,8 +157,9 @@
               <v-btn
                 to="/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier"
                 class="primary"
-                >Zapier Integration Guide</v-btn
               >
+                Zapier Integration Guide
+              </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="6" :order-lg="2">
@@ -173,6 +181,13 @@
                 your Android phone to your server using a callback URL which you
                 provide.
               </h5>
+              <v-btn
+                to="https://docs.httpsms.com/webhooks/introduction"
+                class="primary"
+              >
+                <v-icon left>{{ mdiWebhook }}</v-icon>
+                Documentation
+              </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="6" :order-lg="1">
@@ -838,6 +853,8 @@ import {
   mdiLanguagePhp,
   mdiLanguageCsharp,
   mdiLanguageJava,
+  mdiMicrosoftExcel,
+  mdiWebhook,
   mdiPowershell,
   mdiLanguageGo,
 } from '@mdi/js'
@@ -847,6 +864,8 @@ export default Vue.extend({
   layout: 'website',
   data() {
     return {
+      mdiMicrosoftExcel,
+      mdiWebhook,
       mdiGithub,
       mdiLabel,
       mdiLightbulbOn60,
