@@ -11,7 +11,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
+	"github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/palantir/stacktrace"
 )
 
@@ -39,13 +39,39 @@ func NewLemonsqueezyService(
 	}
 }
 
+// GetUserID gets the user ID from the request
+func (service *LemonsqueezyService) GetUserID(ctx context.Context, request *lemonsqueezy.WebhookRequestSubscription) (entities.UserID, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	userID, ok := request.Meta.CustomData["user_id"].(string)
+	if ok {
+		return entities.UserID(userID), nil
+	}
+
+	ctxLogger.Info(fmt.Sprintf("user_id not found in request meta data. Searching via email [%s]", request.Data.Attributes.UserEmail))
+	user, err := service.userRepository.LoadByEmail(ctx, request.Data.Attributes.UserEmail)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load user with email [%s]", request.Data.Attributes.UserEmail)
+		return "", service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return user.ID, nil
+}
+
 // HandleSubscriptionCreatedEvent handles the subscription_created lemonsqueezy event
 func (service *LemonsqueezyService) HandleSubscriptionCreatedEvent(ctx context.Context, source string, request *lemonsqueezy.WebhookRequestSubscription) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	userID, err := service.GetUserID(ctx, request)
+	if err != nil {
+		msg := fmt.Sprintf("cannot get user ID for subscription created event with ID [%s]", request.Data.ID)
+		return stacktrace.Propagate(err, msg)
+	}
+
 	payload := &events.UserSubscriptionCreatedPayload{
-		UserID:                entities.UserID(request.Meta.CustomData["user_id"].(string)),
+		UserID:                userID,
 		SubscriptionCreatedAt: request.Data.Attributes.CreatedAt,
 		SubscriptionID:        request.Data.ID,
 		SubscriptionName:      service.subscriptionName(request.Data.Attributes.VariantName),

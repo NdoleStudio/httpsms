@@ -103,6 +103,28 @@ func (repository *gormUserRepository) LoadBySubscriptionID(ctx context.Context, 
 	return user, nil
 }
 
+func (repository *gormUserRepository) LoadByEmail(ctx context.Context, email string) (*entities.User, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	user := new(entities.User)
+	err := repository.db.WithContext(ctx).
+		Where("email = ?", email).
+		First(user).
+		Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		msg := fmt.Sprintf("user with email [%s] does not exist", email)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot load user with email ID [%s]", email)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return user, nil
+}
+
 func (repository *gormUserRepository) Store(ctx context.Context, user *entities.User) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
