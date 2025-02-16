@@ -4,7 +4,11 @@
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
-            <nuxt-link to="/" class="text-decoration-none mt-5 d-flex">
+            <nuxt-link
+              to="/"
+              class="text-decoration-none d-flex"
+              :class="{ 'mt-5': $vuetify.breakpoint.mdAndUp }"
+            >
               <v-avatar tile size="33" class="mt-1">
                 <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
               </v-avatar>
@@ -53,7 +57,10 @@
               v-show="$store.getters.getAuthUser === null"
               exact-path
               color="primary"
-              class="mt-5"
+              :class="{
+                'mt-5': $vuetify.breakpoint.mdAndUp,
+                'mt-1': !$vuetify.breakpoint.mdAndUp,
+              }"
               :large="$vuetify.breakpoint.lgAndUp"
               :to="{ name: 'login' }"
             >
@@ -64,7 +71,10 @@
               v-show="$store.getters.getAuthUser !== null"
               exact-path
               color="primary"
-              class="mt-5"
+              :class="{
+                'mt-5': $vuetify.breakpoint.mdAndUp,
+                'mt-1': !$vuetify.breakpoint.mdAndUp,
+              }"
               :large="$vuetify.breakpoint.lgAndUp"
               :to="{ name: 'threads' }"
             >
