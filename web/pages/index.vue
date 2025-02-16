@@ -51,8 +51,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>5,952+</b> happy users who have sent or received
-            more than <b>2,860,049+</b> messages.
+            ⚡Trusted by <b>6,913+</b> happy users who have sent or received
+            more than <b>3,564,030+</b> messages.
           </p>
           <div
             class="mt-4"
@@ -66,6 +66,15 @@
               {{ mdiCheckCircle }}
             </v-icon>
             100% Open Source
+          </div>
+          <div v-if="$vuetify.breakpoint.xl">
+            <a href="https://www.uneed.best/tool/httpsmscom">
+              <img
+                src="https://www.uneed.best/POTD1A.png"
+                style="width: 250px"
+                alt="Uneed POTD1 Badge"
+              />
+            </a>
           </div>
           <v-divider
             v-if="$vuetify.breakpoint.mdAndDown"
