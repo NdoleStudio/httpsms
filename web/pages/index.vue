@@ -67,7 +67,7 @@
             </v-icon>
             100% Open Source
           </div>
-          <div v-if="$vuetify.breakpoint.xl">
+          <div v-if="$vuetify.breakpoint.xl" class="mt-4">
             <a href="https://www.uneed.best/tool/httpsmscom">
               <img
                 src="https://www.uneed.best/POTD1A.png"
