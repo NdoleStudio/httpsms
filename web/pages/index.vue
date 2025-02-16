@@ -760,6 +760,85 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
     </v-sheet>
     <v-container>
       <v-row class="mt-16">
+        <v-col cols="12" md="6">
+          <v-card
+            href="https://www.g2.com/products/httpsms/reviews/httpsms-review-8589834"
+          >
+            <v-card-text>
+              <div class="d-flex">
+                <v-avatar>
+                  <v-img
+                    alt="Joysankar M."
+                    src="https://images.g2crowd.com/uploads/avatar/image/1662077/thumb_square_d5706804d1b343744a8feb693827fe34.jpeg"
+                  ></v-img>
+                </v-avatar>
+                <div>
+                  <p class="title ml-3">Joysankar M.</p>
+                  <v-rating
+                    class="mt-n7"
+                    color="yellow darken-3"
+                    :value="4.5"
+                    half-increments
+                  ></v-rating>
+                </div>
+                <v-spacer />
+                <div style="width: 30px">
+                  <v-img
+                    max-height="30"
+                    contain
+                    src="https://company.g2.com/hs-fs/hubfs/brand-guide/reversed-g2@2x.png"
+                  />
+                </div>
+              </div>
+              <p class="blockquote mb-0">
+                "httpSMS is free platform which transforms your phone into an
+                sms server! It has no hard limit also. It is an
+                <b>innovative</b> idea, I have not seen such tech before. If you
+                have an <b>sms active pack</b> in your phone then good to go
+                with httpSMS."
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-card href="https://www.uneed.best/tool/httpsmscom?tab=comments">
+            <v-card-text>
+              <div class="d-flex">
+                <v-avatar>
+                  <v-img
+                    alt="Edmund Ciego Profile Picture"
+                    src="https://lh3.googleusercontent.com/a/ACg8ocJktUViyMcJvzkPNpza7SZ3ql_nwOAzYk0uJ27TF5L_z0bRoPKE=s96-c"
+                  ></v-img>
+                </v-avatar>
+                <div>
+                  <p class="title ml-3">Edmund Ciego</p>
+                  <v-rating
+                    class="mt-n7"
+                    color="yellow darken-3"
+                    :value="5"
+                    half-increments
+                  ></v-rating>
+                </div>
+                <v-spacer />
+                <div>
+                  <v-img
+                    contain
+                    max-width="64"
+                    :src="require('@/assets/img/logos/uneed.svg')"
+                  />
+                </div>
+              </div>
+              <p class="blockquote mb-0">
+                "<b>Outstanding product</b>. Literally have been using this for
+                years since we don't have an sms gateways that can handle http
+                requests costing less than <b>50 cent per sms</b> in my Country.
+                Love the product and the support! Great work Arnold!"
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+      <v-row class="mt-16">
         <v-col md="8" offset-md="2">
           <h2 class="text-h3 text-center">Frequently Asked Questions</h2>
           <h4 class="text-center text-h6 mt-4 text--secondary">
@@ -771,10 +850,14 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
       </v-row>
       <v-row>
         <v-col md="8" offset-md="2" class="mb-16">
-          <v-expansion-panels focusable>
+          <v-expansion-panels v-model="faqPanel" focusable>
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 Can I install the app on my Iphone?
+                <template v-slot:actions>
+                  <v-icon v-if="faqPanel === 0">{{ mdiMinus }}</v-icon>
+                  <v-icon v-else>{{ mdiPlus }}</v-icon>
+                </template>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <p class="mt-8">
@@ -787,6 +870,10 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 What's the minimum supported Android version?
+                <template v-slot:actions>
+                  <v-icon v-if="faqPanel === 1">{{ mdiMinus }}</v-icon>
+                  <v-icon v-else>{{ mdiPlus }}</v-icon>
+                </template>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <p class="mt-8">
@@ -799,6 +886,10 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 Can I send unlimited number of messages per month?
+                <template v-slot:actions>
+                  <v-icon v-if="faqPanel === 2">{{ mdiMinus }}</v-icon>
+                  <v-icon v-else>{{ mdiPlus }}</v-icon>
+                </template>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <p class="mt-8">
@@ -813,6 +904,10 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 Can I change the sender of the SMS message
+                <template v-slot:actions>
+                  <v-icon v-if="faqPanel === 3">{{ mdiMinus }}</v-icon>
+                  <v-icon v-else>{{ mdiPlus }}</v-icon>
+                </template>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <p class="mt-8">
@@ -851,6 +946,8 @@ import {
   mdiLabel,
   mdiLanguageJavascript,
   mdiLanguagePhp,
+  mdiPlus,
+  mdiMinus,
   mdiLanguageCsharp,
   mdiLanguageJava,
   mdiMicrosoftExcel,
@@ -880,7 +977,8 @@ export default Vue.extend({
       mdiTallyMark1,
       mdiSale,
       mdiTallyMark2,
-
+      mdiPlus,
+      mdiMinus,
       mdiTallyMark3,
       mdiLanguageJavascript,
       mdiLanguagePhp,
@@ -891,6 +989,7 @@ export default Vue.extend({
       mdiLanguageGo,
       selectedTab: 'javascript',
       yearlyPricing: false,
+      faqPanel: null,
     }
   },
 })
