@@ -9,7 +9,7 @@
             'text-h3': !$vuetify.breakpoint.mdAndUp,
           }"
         >
-          How to grant SEND_SMS and RECEIVE_SMS permissions on Android 15+
+          How to grant SMS permissions on Android 15+
         </h1>
         <p class="subtitle-2 mt-2">
           <span class="text-uppercase blue--text">{{ postDate }}</span>
@@ -18,7 +18,7 @@
         <p class="text--secondary subtitle-1 mt-2">
           In Android 15 (Vanilla Ice Cream), the
           <code>android.permission.SEND_SMS</code> and
-          <code>android.permission.SEND_SMS</code> permissions are now hard
+          <code>android.permission.RECEIVE_SMS</code> permissions are now hard
           restricted and cannot be granted
           <a
             class="text-decoration-none"
