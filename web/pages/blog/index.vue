@@ -75,8 +75,7 @@ export default {
       blogPosts: [
         {
           route: '/blog/grant-send-and-read-sms-permissions-on-android',
-          title:
-            'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 15+',
+          title: 'How to grant SMS permissions on Android 15+',
           date: 'February 18, 2025',
           readTime: '5 min read',
           authorImage: require('@/assets/img/arnold.png'),
