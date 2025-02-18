@@ -1,18 +1,11 @@
 <template>
   <div>
-    <v-badge
-      class="logo-badge"
-      :class="{ 'logo-badge--mobile': $vuetify.breakpoint.mdAndDown }"
-      color="primary"
-      content="Beta"
-    >
-      <nuxt-link to="/" class="text-decoration-none d-flex">
-        <v-avatar tile size="33" class="mt-1">
-          <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
-        </v-avatar>
-        <h3 class="text-h4 text--primary ml-1">httpSMS</h3>
-      </nuxt-link>
-    </v-badge>
+    <nuxt-link to="/" class="text-decoration-none d-flex">
+      <v-avatar tile size="33" class="mt-1">
+        <v-img contain :src="require('@/assets/img/logo.svg')"></v-img>
+      </v-avatar>
+      <h3 class="text-h4 text--primary ml-1">httpSMS</h3>
+    </nuxt-link>
     <p>
       httpSMS is an
       <a

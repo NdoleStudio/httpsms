@@ -3,7 +3,15 @@
     <v-row class="mt-16">
       <v-col cols="12" md="9">
         <v-row>
-          <v-col v-for="post in blogPosts" :key="post.route" cols="12">
+          <v-col cols="12" class="mt-4">
+            <h1 class="text-h2">Blog</h1>
+            <h2 class="text--secondary mt-2 mb-n4 title font-weight-light">
+              Learn more about httpSMS through our blog!
+            </h2>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col v-for="post in blogPosts" :key="post.route" cols="12" xl="6">
             <v-hover v-slot="{ hover }">
               <vue-glow
                 color="#329ef4"
@@ -65,6 +73,18 @@ export default {
       mdiTwitter,
       mdiGithub,
       blogPosts: [
+        {
+          route: '/blog/grant-send-and-read-sms-permissions-on-android',
+          title:
+            'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 15+',
+          date: 'February 18, 2025',
+          readTime: '5 min read',
+          authorImage: require('@/assets/img/arnold.png'),
+          description:
+            'Take control of your privacy by encrypting your SMS messages end-to-end. Safeguard your messages from prying eyes, ensuring absolute confidentiality.',
+          authorName: 'Acho Arnold',
+          authorTwitter: 'acho_arnold',
+        },
         {
           route: '/blog/end-to-end-encryption-to-sms-messages',
           title:
