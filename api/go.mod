@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/cloudtasks v1.13.3
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.51.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.26.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.27.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.11
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.4
 	github.com/avast/retry-go v3.0.0+incompatible
