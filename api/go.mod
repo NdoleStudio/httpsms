@@ -1,7 +1,6 @@
 module github.com/NdoleStudio/httpsms
 
 go 1.22.7
-
 toolchain go1.23.2
 
 require (
@@ -14,7 +13,7 @@ require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/carlmjohnson/requests v0.24.3
 	github.com/cloudevents/sdk-go/v2 v2.15.2
-	github.com/cockroachdb/cockroach-go/v2 v2.3.8
+	github.com/cockroachdb/cockroach-go/v2 v2.4.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/ristretto v1.0.0
 	github.com/dustin/go-humanize v1.0.1
@@ -51,7 +50,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0
 	google.golang.org/api v0.219.0
 	google.golang.org/protobuf v1.36.5
-	gorm.io/driver/postgres v1.5.7
+	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 	gorm.io/plugin/opentelemetry v0.1.11
 )
@@ -95,9 +94,9 @@ require (
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
-	github.com/jackc/pgx/v5 v5.6.0 // indirect
-	github.com/jackc/puddle/v2 v2.2.1 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.7.2 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
