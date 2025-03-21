@@ -1,7 +1,7 @@
 module github.com/NdoleStudio/httpsms
 
 go 1.22.7
-toolchain go1.23.2
+toolchain go1.24.1
 
 require (
 	cloud.google.com/go/cloudtasks v1.13.3
@@ -35,7 +35,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.7.1
-	github.com/redis/go-redis/v9 v9.7.1
+	github.com/redis/go-redis/v9 v9.7.3
 	github.com/rs/zerolog v1.33.0
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	github.com/stretchr/testify v1.10.0
