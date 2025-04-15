@@ -191,7 +191,8 @@
                 provide.
               </h5>
               <v-btn
-                to="https://docs.httpsms.com/webhooks/introduction"
+                target="_blank"
+                href="https://docs.httpsms.com/webhooks/introduction"
                 class="primary mt-4"
               >
                 <v-icon left>{{ mdiWebhook }}</v-icon>

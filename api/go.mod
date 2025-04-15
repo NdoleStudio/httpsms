@@ -1,7 +1,8 @@
 module github.com/NdoleStudio/httpsms
 
-go 1.22.7
-toolchain go1.23.2
+go 1.23.0
+
+toolchain go1.24.0
 
 require (
 	cloud.google.com/go/cloudtasks v1.13.3
