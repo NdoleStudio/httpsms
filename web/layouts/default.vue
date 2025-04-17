@@ -1,15 +1,5 @@
 <template>
   <v-app>
-    <v-btn
-      v-if="$vuetify.breakpoint.lgAndUp"
-      class="feedback-btn"
-      href="https://httpsms.featurebase.app"
-      color="#82a865"
-      large
-    >
-      <v-icon left>{{ mdiBullhorn }}</v-icon>
-      Feedback
-    </v-btn>
     <v-divider v-if="$store.getters.isLocal" class="py-1 warning"></v-divider>
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.lgAndUp && hasDrawer"
