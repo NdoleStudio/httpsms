@@ -153,6 +153,15 @@ func NewContainer(projectID string, version string) (container *Container) {
 	return container
 }
 
+func GetEnvWithDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	return value
+}
+
 // App creates a new instance of fiber.App
 func (container *Container) App() (app *fiber.App) {
 	if container.app != nil {
@@ -168,7 +177,15 @@ func (container *Container) App() (app *fiber.App) {
 	}
 
 	app.Use(otelfiber.Middleware())
-	app.Use(cors.New())
+	app.Use(cors.New(
+		cors.Config{
+			AllowOrigins:     GetEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
+			AllowHeaders:     GetEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
+			AllowMethods:     GetEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
+			AllowCredentials: false,
+			ExposeHeaders:    GetEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
+		}))
+
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
 
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
