@@ -111,7 +111,7 @@ func (h *WebhookHandler) Delete(c *fiber.Ctx) error {
 	defer span.End()
 
 	webhookID := c.Params("webhookID")
-	if errors := h.validator.ValidateUUID(ctx, webhookID, "webhookID"); len(errors) != 0 {
+	if errors := h.validator.ValidateUUID(webhookID, "webhookID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting webhook with ID [%s]", spew.Sdump(errors), webhookID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting webhook")

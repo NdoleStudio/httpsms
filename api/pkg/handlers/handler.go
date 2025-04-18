@@ -115,3 +115,15 @@ func (h *handler) userIDFomContext(c *fiber.Ctx) entities.UserID {
 func (h *handler) computeRoute(middlewares []fiber.Handler, route fiber.Handler) []fiber.Handler {
 	return append(append([]fiber.Handler{}, middlewares...), route)
 }
+
+func (h *handler) mergeErrors(errors ...url.Values) url.Values {
+	result := url.Values{}
+	for _, item := range errors {
+		for key, values := range item {
+			for _, value := range values {
+				result.Add(key, value)
+			}
+		}
+	}
+	return result
+}

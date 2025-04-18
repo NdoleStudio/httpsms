@@ -157,7 +157,7 @@ func (h *MessageThreadHandler) Delete(c *fiber.Ctx) error {
 	defer span.End()
 
 	messageThreadID := c.Params("messageThreadID")
-	if errors := h.validator.ValidateUUID(ctx, messageThreadID, "messageThreadID"); len(errors) != 0 {
+	if errors := h.validator.ValidateUUID(messageThreadID, "messageThreadID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a thread thread with ID [%s]", spew.Sdump(errors), messageThreadID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting a thread thread")

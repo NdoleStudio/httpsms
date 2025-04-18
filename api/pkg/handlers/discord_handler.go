@@ -128,7 +128,7 @@ func (h *DiscordHandler) Delete(c *fiber.Ctx) error {
 	defer span.End()
 
 	discordID := c.Params("discordID")
-	if errors := h.validator.ValidateUUID(ctx, discordID, "discordID"); len(errors) != 0 {
+	if errors := h.validator.ValidateUUID(discordID, "discordID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting discord integration with ID [%s]", spew.Sdump(errors), discordID)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting discord integration")

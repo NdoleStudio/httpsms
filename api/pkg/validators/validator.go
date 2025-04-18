@@ -1,7 +1,6 @@
 package validators
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -144,7 +143,7 @@ func init() {
 }
 
 // ValidateUUID that the payload is a UUID
-func (validator *validator) ValidateUUID(_ context.Context, ID string, name string) url.Values {
+func (validator *validator) ValidateUUID(ID string, name string) url.Values {
 	request := map[string]string{
 		name: ID,
 	}
