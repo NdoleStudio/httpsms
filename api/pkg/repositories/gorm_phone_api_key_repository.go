@@ -180,7 +180,7 @@ WHERE id = ?;
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	repository.cache.Clear()
+	repository.cache.Del(phoneAPIKey.APIKey)
 
 	return nil
 }
