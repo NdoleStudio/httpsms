@@ -101,8 +101,8 @@ func (h *handler) pluralize(value string, count int) string {
 	return value + "s"
 }
 
-func (h *handler) userFromContext(c *fiber.Ctx) entities.AuthUser {
-	if tokenUser, ok := c.Locals(middlewares.ContextKeyAuthUserID).(entities.AuthUser); ok && !tokenUser.IsNoop() {
+func (h *handler) userFromContext(c *fiber.Ctx) entities.AuthContext {
+	if tokenUser, ok := c.Locals(middlewares.ContextKeyAuthUserID).(entities.AuthContext); ok && !tokenUser.IsNoop() {
 		return tokenUser
 	}
 	panic("user does not exist in context.")

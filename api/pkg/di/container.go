@@ -153,15 +153,6 @@ func NewContainer(projectID string, version string) (container *Container) {
 	return container
 }
 
-func GetEnvWithDefault(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-
-	return value
-}
-
 // App creates a new instance of fiber.App
 func (container *Container) App() (app *fiber.App) {
 	if container.app != nil {
@@ -179,15 +170,14 @@ func (container *Container) App() (app *fiber.App) {
 	app.Use(otelfiber.Middleware())
 	app.Use(cors.New(
 		cors.Config{
-			AllowOrigins:     GetEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
-			AllowHeaders:     GetEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
-			AllowMethods:     GetEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
+			AllowOrigins:     getEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
+			AllowHeaders:     getEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
+			AllowMethods:     getEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
 			AllowCredentials: false,
-			ExposeHeaders:    GetEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
-		}))
-
+			ExposeHeaders:    getEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
+		}),
+	)
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
-
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
 
@@ -1396,10 +1386,10 @@ func (container *Container) UserRepository() repositories.UserRepository {
 	)
 }
 
-// UserRistrettoCache creates an in-memory *ristretto.Cache[string, entities.AuthUser]
-func (container *Container) UserRistrettoCache() (cache *ristretto.Cache[string, entities.AuthUser]) {
+// UserRistrettoCache creates an in-memory *ristretto.Cache[string, entities.AuthContext]
+func (container *Container) UserRistrettoCache() (cache *ristretto.Cache[string, entities.AuthContext]) {
 	container.logger.Debug(fmt.Sprintf("creating %T", cache))
-	ristrettoCache, err := ristretto.NewCache[string, entities.AuthUser](&ristretto.Config[string, entities.AuthUser]{
+	ristrettoCache, err := ristretto.NewCache[string, entities.AuthContext](&ristretto.Config[string, entities.AuthContext]{
 		MaxCost:     5000,
 		NumCounters: 5000 * 10,
 		BufferItems: 64,

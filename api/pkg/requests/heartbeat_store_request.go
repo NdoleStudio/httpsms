@@ -28,7 +28,7 @@ func (input *HeartbeatStore) Sanitize() HeartbeatStore {
 }
 
 // ToStoreParams converts HeartbeatIndex to repositories.IndexParams
-func (input *HeartbeatStore) ToStoreParams(user entities.AuthUser, source string, version string) []services.HeartbeatStoreParams {
+func (input *HeartbeatStore) ToStoreParams(user entities.AuthContext, source string, version string) []services.HeartbeatStoreParams {
 	var params []services.HeartbeatStoreParams
 	for _, phoneNumber := range input.PhoneNumbers {
 		params = append(params, services.HeartbeatStoreParams{

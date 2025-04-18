@@ -19,7 +19,7 @@ func (input *DiscordUpdate) Sanitize() DiscordUpdate {
 }
 
 // ToUpdateParams converts DiscordUpdate to services.DiscordUpdateParams
-func (input *DiscordUpdate) ToUpdateParams(user entities.AuthUser) *services.DiscordUpdateParams {
+func (input *DiscordUpdate) ToUpdateParams(user entities.AuthContext) *services.DiscordUpdateParams {
 	return &services.DiscordUpdateParams{
 		UserID:            user.ID,
 		Name:              input.Name,

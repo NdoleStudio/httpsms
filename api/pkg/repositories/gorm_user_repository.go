@@ -23,7 +23,7 @@ import (
 type gormUserRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
-	cache  *ristretto.Cache[string, entities.AuthUser]
+	cache  *ristretto.Cache[string, entities.AuthContext]
 	db     *gorm.DB
 }
 
@@ -31,7 +31,7 @@ type gormUserRepository struct {
 func NewGormUserRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	cache *ristretto.Cache[string, entities.AuthUser],
+	cache *ristretto.Cache[string, entities.AuthContext],
 	db *gorm.DB,
 ) UserRepository {
 	return &gormUserRepository{
@@ -149,7 +149,7 @@ func (repository *gormUserRepository) Update(ctx context.Context, user *entities
 	return nil
 }
 
-func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey string) (entities.AuthUser, error) {
+func (repository *gormUserRepository) LoadAuthContext(ctx context.Context, apiKey string) (entities.AuthContext, error) {
 	ctx, span, ctxLogger := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
 
@@ -162,15 +162,15 @@ func (repository *gormUserRepository) LoadAuthUser(ctx context.Context, apiKey s
 	err := repository.db.WithContext(ctx).Where("api_key = ?", apiKey).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with api key [%s] does not exist", apiKey)
-		return entities.AuthUser{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load user with api key [%s]", apiKey)
-		return entities.AuthUser{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	authUser := entities.AuthUser{
+	authUser := entities.AuthContext{
 		ID:    user.ID,
 		Email: user.Email,
 	}
@@ -202,7 +202,7 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	return user, nil
 }
 
-func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser entities.AuthUser) (*entities.User, bool, error) {
+func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser entities.AuthContext) (*entities.User, bool, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 

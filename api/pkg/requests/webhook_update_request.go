@@ -19,7 +19,7 @@ func (input *WebhookUpdate) Sanitize() WebhookUpdate {
 }
 
 // ToUpdateParams converts WebhookUpdate to services.WebhookUpdateParams
-func (input *WebhookUpdate) ToUpdateParams(user entities.AuthUser) *services.WebhookUpdateParams {
+func (input *WebhookUpdate) ToUpdateParams(user entities.AuthContext) *services.WebhookUpdateParams {
 	return &services.WebhookUpdateParams{
 		UserID:       user.ID,
 		WebhookID:    uuid.MustParse(input.WebhookID),

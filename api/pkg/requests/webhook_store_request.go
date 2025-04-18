@@ -31,7 +31,7 @@ func (input *WebhookStore) Sanitize() WebhookStore {
 }
 
 // ToStoreParams converts WebhookStore to services.WebhookStoreParams
-func (input *WebhookStore) ToStoreParams(user entities.AuthUser) *services.WebhookStoreParams {
+func (input *WebhookStore) ToStoreParams(user entities.AuthContext) *services.WebhookStoreParams {
 	return &services.WebhookStoreParams{
 		UserID:       user.ID,
 		SigningKey:   input.SigningKey,

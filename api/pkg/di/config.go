@@ -2,6 +2,7 @@ package di
 
 import (
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -12,4 +13,13 @@ func LoadEnv(filenames ...string) {
 	if err != nil {
 		log.Fatalf("Fatal: cannot load .env file: %v", err)
 	}
+}
+
+func getEnvWithDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	return value
 }

@@ -40,7 +40,7 @@ func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *au
 
 		span.AddEvent(fmt.Sprintf("[%s] token is valid", bearerScheme))
 
-		authUser := entities.AuthUser{
+		authUser := entities.AuthContext{
 			Email: token.Claims["email"].(string),
 			ID:    entities.UserID(token.Claims["user_id"].(string)),
 		}

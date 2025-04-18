@@ -42,7 +42,7 @@ func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 }
 
 // ToUpsertParams converts PhoneUpsert to services.PhoneUpsertParams
-func (input *PhoneUpsert) ToUpsertParams(user entities.AuthUser, source string) *services.PhoneUpsertParams {
+func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source string) *services.PhoneUpsertParams {
 	phone, _ := phonenumbers.Parse(input.PhoneNumber, phonenumbers.UNKNOWN_REGION)
 
 	// ignore value if it's default

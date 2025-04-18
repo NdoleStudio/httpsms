@@ -24,7 +24,7 @@ func (input *DiscordStore) Sanitize() DiscordStore {
 }
 
 // ToStoreParams converts DiscordStore to services.WebhookStoreParams
-func (input *DiscordStore) ToStoreParams(user entities.AuthUser) *services.DiscordStoreParams {
+func (input *DiscordStore) ToStoreParams(user entities.AuthContext) *services.DiscordStoreParams {
 	return &services.DiscordStoreParams{
 		UserID:            user.ID,
 		Name:              input.Name,

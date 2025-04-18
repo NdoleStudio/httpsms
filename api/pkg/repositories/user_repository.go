@@ -14,8 +14,8 @@ type UserRepository interface {
 	// Update a new entities.User
 	Update(ctx context.Context, user *entities.User) error
 
-	// LoadAuthUser fetches an entities.AuthUser by apiKey
-	LoadAuthUser(ctx context.Context, apiKey string) (entities.AuthUser, error)
+	// LoadAuthContext fetches an entities.AuthContext by apiKey
+	LoadAuthContext(ctx context.Context, apiKey string) (entities.AuthContext, error)
 
 	// Load an entities.User by entities.UserID
 	Load(ctx context.Context, userID entities.UserID) (*entities.User, error)
@@ -23,8 +23,8 @@ type UserRepository interface {
 	// RotateAPIKey updates the API Key of a user
 	RotateAPIKey(ctx context.Context, userID entities.UserID) (*entities.User, error)
 
-	// LoadOrStore an entities.User by entities.AuthUser
-	LoadOrStore(ctx context.Context, user entities.AuthUser) (*entities.User, bool, error)
+	// LoadOrStore an entities.User by entities.AuthContext
+	LoadOrStore(ctx context.Context, user entities.AuthContext) (*entities.User, bool, error)
 
 	// LoadBySubscriptionID loads a user based on the lemonsqueezy subscriptionID
 	LoadBySubscriptionID(ctx context.Context, subscriptionID string) (*entities.User, error)

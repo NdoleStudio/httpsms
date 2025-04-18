@@ -57,7 +57,7 @@ func (service *PhoneService) DeleteAllForUser(ctx context.Context, userID entiti
 }
 
 // Index fetches the heartbeats for a phone number
-func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthUser, params repositories.IndexParams) (*[]entities.Phone, error) {
+func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthContext, params repositories.IndexParams) (*[]entities.Phone, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 

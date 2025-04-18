@@ -60,7 +60,7 @@ func NewUserService(
 }
 
 // Get fetches or creates an entities.User
-func (service *UserService) Get(ctx context.Context, authUser entities.AuthUser) (*entities.User, error) {
+func (service *UserService) Get(ctx context.Context, authUser entities.AuthContext) (*entities.User, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -98,7 +98,7 @@ type UserUpdateParams struct {
 }
 
 // Update an entities.User
-func (service *UserService) Update(ctx context.Context, authUser entities.AuthUser, params UserUpdateParams) (*entities.User, error) {
+func (service *UserService) Update(ctx context.Context, authUser entities.AuthContext, params UserUpdateParams) (*entities.User, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -442,16 +442,16 @@ func (service *UserService) UpdateSubscription(ctx context.Context, params *even
 	return nil
 }
 
-// DeleteAuthUser deletes an entities.AuthUser from firebase
+// DeleteAuthUser deletes an entities.AuthContext from firebase
 func (service *UserService) DeleteAuthUser(ctx context.Context, userID entities.UserID) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	if err := service.authClient.DeleteUser(ctx, userID.String()); err != nil {
-		msg := fmt.Sprintf("could not delete [entities.AuthUser] from firebase with ID [%s]", userID)
+		msg := fmt.Sprintf("could not delete [entities.AuthContext] from firebase with ID [%s]", userID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("deleted [entities.AuthUser] from firebase for user with ID [%s]", userID))
+	ctxLogger.Info(fmt.Sprintf("deleted [entities.AuthContext] from firebase for user with ID [%s]", userID))
 	return nil
 }
