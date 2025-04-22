@@ -103,7 +103,7 @@ func (h *PhoneAPIKeyHandler) Store(c *fiber.Ctx) error {
 // @Failure 	 404		{object}	responses.NotFound
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
-// @Router       /messages/{phoneAPIKeyID} [delete]
+// @Router       /api-keys/{phoneAPIKeyID} [delete]
 func (h *PhoneAPIKeyHandler) Delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
@@ -144,7 +144,7 @@ func (h *PhoneAPIKeyHandler) Delete(c *fiber.Ctx) error {
 // @Failure 	 404			{object}	responses.NotFound
 // @Failure      422  			{object} 	responses.UnprocessableEntity
 // @Failure      500  			{object}  	responses.InternalServerError
-// @Router       /messages/{phoneAPIKeyID}/phones/{phoneID} [delete]
+// @Router       /api-keys/{phoneAPIKeyID}/phones/{phoneID} [delete]
 func (h *PhoneAPIKeyHandler) DeletePhone(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()

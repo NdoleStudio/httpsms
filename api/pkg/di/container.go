@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pusher/pusher-http-go/v5"
+
 	"github.com/NdoleStudio/httpsms/docs"
 
 	otelMetric "go.opentelemetry.io/otel/metric"
@@ -149,6 +151,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterPhoneAPIKeyListeners()
 
 	container.RegisterMarketingListeners()
+	container.RegisterWebsocketListeners()
 
 	// this has to be last since it registers the /* route
 	container.RegisterSwaggerRoutes()
@@ -1142,6 +1145,18 @@ func (container *Container) LemonsqueezyClient() (client *lemonsqueezy.Client) {
 	)
 }
 
+// PusherClient creates a new instance of pusher.Client
+func (container *Container) PusherClient() (client *pusher.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+	return &pusher.Client{
+		AppID:   os.Getenv("PUSHER_APP_ID"),
+		Key:     os.Getenv("PUSHER_KEY"),
+		Secret:  os.Getenv("PUSHER_SECRET"),
+		Cluster: os.Getenv("PUSHER_CLUSTER"),
+		Secure:  true,
+	}
+}
+
 // DiscordClient creates a new instance of discord.Client
 func (container *Container) DiscordClient() (client *discord.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
@@ -1309,6 +1324,26 @@ func (container *Container) RegisterPhoneAPIKeyListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneAPIKeyService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterWebsocketListeners registers event listeners for listeners.WebsocketListener
+func (container *Container) RegisterWebsocketListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.WebsocketListener{}))
+
+	if os.Getenv("PUSHER_SECRET") == "" {
+		container.logger.Warn(stacktrace.NewError("skipping websocket listeners because the PUSHER_SECRET env variable is not set"))
+		return
+	}
+
+	_, routes := listeners.NewWebsocketListener(
+		container.Logger(),
+		container.Tracer(),
+		container.PusherClient(),
 	)
 
 	for event, handler := range routes {
