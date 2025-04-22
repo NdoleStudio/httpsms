@@ -20,7 +20,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.ListenableWorker.Result
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -203,9 +202,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun sendFCMToken(timestamp: Long, context:Context, phoneNumber: String, sim: String) {
         Thread {
-            val phone = HttpSmsApiService.create(context).updatePhone(phoneNumber, Settings.getFcmToken(context) ?: "", sim)
-            if (phone != null) {
-                Settings.setUserID(context, phone.userID)
+            val response = HttpSmsApiService.create(context).updateFcmToken(phoneNumber, sim,Settings.getFcmToken(context) ?: "")
+            if (response.first != null) {
+                Settings.setUserID(context, response.first!!.userID)
                 Settings.setFcmTokenLastUpdateTimestampAsync(context, timestamp)
                 Timber.i("[${sim}] FCM token uploaded successfully")
                 return@Thread
@@ -318,10 +317,10 @@ class MainActivity : AppCompatActivity() {
 
                 if (exception != null) {
                     Timber.w("heartbeat sending failed with [$exception]")
-                    Toast.makeText(context, exception, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, exception, Toast.LENGTH_LONG).show()
                     return@run
                 }
-                Toast.makeText(context, "Heartbeat Sent", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Heartbeat sent successfully", Toast.LENGTH_SHORT).show()
 
                 setLastHeartbeatTimestamp(this)
             }
@@ -337,7 +336,10 @@ class MainActivity : AppCompatActivity() {
                     phoneNumbers.add(Settings.getSIM2PhoneNumber(applicationContext))
                 }
                 Timber.w("numbers = [${phoneNumbers.joinToString()}]")
-                HttpSmsApiService.create(context).storeHeartbeat(phoneNumbers.toTypedArray(), charging)
+                val isStored = HttpSmsApiService.create(context).storeHeartbeat(phoneNumbers.toTypedArray(), charging)
+                if (!isStored) {
+                    error = "Could not send heartbeat make sure the phone is connected to the internet"
+                }
                 Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
             } catch (exception: Exception) {
                 Timber.e(exception)

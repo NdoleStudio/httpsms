@@ -180,9 +180,15 @@ class LoginActivity : AppCompatActivity() {
         Timber.d("login button clicked")
 
         val error = isGooglePlayServicesAvailable()
-        if (error != null) {
+        if (error != null || Settings.getFcmToken(this) == null) {
             Timber.d("google play services not installed [${error}]")
             Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (Settings.getFcmToken(this) == null) {
+            Timber.d("The FCM token is not set")
+            Toast.makeText(this, "Cannot find FCM token. Make sure you have google play services installed", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -292,8 +298,20 @@ class LoginActivity : AppCompatActivity() {
         }
 
         Thread {
-            val response = HttpSmsApiService(apiKey.text.toString(), URI(serverUrl.text.toString().trim())).validateApiKey()
-            liveData.postValue(response)
+            val service = HttpSmsApiService(apiKey.text.toString(), URI(serverUrl.text.toString().trim()))
+
+            var e164PhoneNumber = formatE164(phoneNumber.text.toString().trim())
+            var response = service.updateFcmToken(e164PhoneNumber, Constants.SIM1, Settings.getFcmToken(this) ?: "")
+            if(response.second != null || response.third != null || !SmsManagerService.isDualSIM(this)) {
+                Timber.e("error updating fcm token [${response.second}]")
+                liveData.postValue(Pair(response.second, response.third))
+                return@Thread
+            }
+
+            e164PhoneNumber = formatE164(phoneNumberSIM2.text.toString().trim())
+            response = service.updateFcmToken(e164PhoneNumber, Constants.SIM2, Settings.getFcmToken(this) ?: "")
+
+            liveData.postValue(Pair(response.second, response.third))
             Timber.d("finished validating api URL")
         }.start()
     }

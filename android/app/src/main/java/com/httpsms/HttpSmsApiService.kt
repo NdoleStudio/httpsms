@@ -129,7 +129,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
-    fun storeHeartbeat(phoneNumbers: Array<String>, charging: Boolean) {
+    fun storeHeartbeat(phoneNumbers: Array<String>, charging: Boolean): Boolean {
         val body = """
             {
               "charging": $charging,
@@ -148,11 +148,12 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         if (!response.isSuccessful) {
             Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending heartbeat [$body] for phone numbers [${phoneNumbers.joinToString()}]")
             response.close()
-            return
+            return false
         }
 
         response.close()
         Timber.i( "heartbeat stored successfully for phone numbers [${phoneNumbers.joinToString()}]" )
+        return true
     }
 
 
@@ -195,8 +196,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
-
-    fun updatePhone(phoneNumber: String, fcmToken: String, sim: String): Phone?  {
+    fun updateFcmToken(phoneNumber: String, sim: String, fcmToken: String): Triple<Phone?, String?, String?> {
         val body = """
             {
               "fcm_token": "$fcmToken",
@@ -206,47 +206,27 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         """.trimIndent()
 
         val request: Request = Request.Builder()
-            .url(resolveURL("/v1/phones"))
+            .url(resolveURL("/v1/phones/fcm-token"))
             .put(body.toRequestBody(jsonMediaType))
             .header(apiKeyHeader, apiKey)
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending fcm token [${body}]")
-            response.close()
-            return null
-        }
-
-        val payload = ResponsePhone.fromJson(response.body!!.string())?.data
-        response.close()
-        Timber.i("fcm token sent successfully for phone [$phoneNumber] and id [${payload?.id}]" )
-        return  payload
-    }
-
-
-    fun validateApiKey(): Pair<String?, String?> {
-        val request: Request = Request.Builder()
-            .url(resolveURL("/v1/users/me"))
-            .header(apiKeyHeader, apiKey)
-            .header(clientVersionHeader, BuildConfig.VERSION_NAME)
-            .get()
-            .build()
-
         try {
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
-                Timber.e("error response [${response.body?.string()}] with code [${response.code}] while verifying apiKey [$apiKey]")
+                Timber.e("error response [${response.body?.string()}] with code [${response.code}] while updating FCM token [$fcmToken] with apiKey [$apiKey]")
                 response.close()
-                return Pair("Cannot validate the API key. Check if it is correct and try again.", null)
+                return Triple(null,"Cannot validate the API key. Check if it is correct and try again.", null)
             }
 
             response.close()
-            Timber.i("api key [$apiKey] and server url [$baseURL] are valid" )
-            return Pair(null, null)
+            Timber.i("FCM token submitted correctly with API key [$apiKey] and server url [$baseURL]" )
+
+            val payload = ResponsePhone.fromJson(response.body!!.string())?.data
+            return Triple(payload, null, null)
         } catch (ex: Exception) {
-            return Pair(null, ex.message)
+            return Triple(null, null, ex.message)
         }
     }
 
