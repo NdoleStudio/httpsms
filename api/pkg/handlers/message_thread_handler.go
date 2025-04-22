@@ -41,9 +41,9 @@ func NewMessageThreadHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/message-threads", h.Index)
-	router.Put("/message-threads/:messageThreadID", h.Update)
-	router.Delete("/message-threads/:messageThreadID", h.Delete)
+	router.Get("/v1/message-threads", h.computeRoute(middlewares, h.Index)...)
+	router.Put("/v1/message-threads/:messageThreadID", h.computeRoute(middlewares, h.Update)...)
+	router.Delete("/v1/message-threads/:messageThreadID", h.computeRoute(middlewares, h.Delete)...)
 }
 
 // Index returns message threads for a phone number

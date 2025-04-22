@@ -155,6 +155,8 @@ export default {
     checkoutURL: process.env.CHECKOUT_URL,
     enterpriseCheckoutURL: process.env.ENTERPRISE_CHECKOUT_URL,
     cloudflareTurnstileSiteKey: process.env.CLOUDFLARE_TURNSTILE_SITE_KEY,
+    pusherKey: process.env.PUSHER_KEY,
+    pusherCluster: process.env.PUSHER_CLUSTER,
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build

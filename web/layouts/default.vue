@@ -29,6 +29,7 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import { mdiBullhorn } from '@mdi/js'
+import Pusher from 'pusher-js'
 import { setAuthHeader } from '~/plugins/axios'
 
 @Component
@@ -41,15 +42,18 @@ export default class DefaultLayout extends Vue {
   }
 
   mounted() {
-    // this.startPoller()
-    setTimeout(
-      () => {
-        if (this.poller) {
-          clearInterval(this.poller)
-        }
-      },
-      60 * 1000 * 60,
-    )
+    setTimeout(() => {
+      const pusher = new Pusher(this.$config.pusherKey, {
+        cluster: this.$config.pusherCluster,
+      })
+
+      const channel = pusher.subscribe(this.$store.getters.getAuthUser.id)
+      channel.bind('phone.updated', () => {
+        this.$store.dispatch('setCanPoll', true)
+      })
+
+      this.startPoller()
+    }, 5000) // delay so that the auth user is present
   }
 
   beforeDestroy(): void {
@@ -60,6 +64,13 @@ export default class DefaultLayout extends Vue {
 
   startPoller() {
     this.poller = window.setInterval(async () => {
+      if (
+        !this.$store.getters.getCanPoll ||
+        this.$store.getters.getAuthUser == null
+      ) {
+        return
+      }
+
       await this.$store.dispatch('setPolling', true)
 
       const promises = []
@@ -70,12 +81,12 @@ export default class DefaultLayout extends Vue {
           this.$store.dispatch('getHeartbeat'),
         )
       }
+      promises.push(
+        this.$store.dispatch('loadPhones', true),
+        this.$store.dispatch('setCanPoll', false),
+      )
 
-      if (this.$store.getters.getAuthUser) {
-        promises.push(this.$store.dispatch('loadPhones', true))
-      }
-
-      if (this.$store.getters.hasThread && this.$store.getters.getUser) {
+      if (this.$store.getters.hasThread) {
         promises.push(
           this.$store.dispatch(
             'loadThreadMessages',

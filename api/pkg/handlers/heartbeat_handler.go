@@ -41,12 +41,12 @@ func NewHeartbeatHandler(
 
 // RegisterRoutes registers the routes for the HeartbeatHandler
 func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/heartbeats", h.computeRoute(middlewares, h.Index)...)
+	router.Get("/v1/heartbeats", h.computeRoute(middlewares, h.Index)...)
 }
 
 // RegisterPhoneAPIKeyRoutes registers the routes for the HeartbeatHandler
 func (h *HeartbeatHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Post("/heartbeats", h.computeRoute(middlewares, h.Store)...)
+	router.Post("/v1/heartbeats", h.computeRoute(middlewares, h.Store)...)
 }
 
 // Index returns the heartbeats of a phone number
