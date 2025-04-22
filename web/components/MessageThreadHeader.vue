@@ -163,6 +163,18 @@
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item :to="{ name: 'phone-api-keys' }" exact>
+            <v-list-item-icon class="pl-2">
+              <v-icon dense>{{ mdiCellphoneKey }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content class="ml-n3">
+              <v-list-item-title class="pr-16 py-1">
+                <span :class="{ 'pr-16': $vuetify.breakpoint.mdAndUp }">
+                  Phone API Keys
+                </span>
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
           <v-list-item
             v-if="$store.getters.getOwner"
             :href="$store.getters.getAppData.appDownloadUrl"
@@ -221,6 +233,7 @@ import {
   mdiPlus,
   mdiAccountCog,
   mdiLogout,
+  mdiCellphoneKey,
   mdiDownload,
   mdiFinance,
   mdiBatteryChargingHigh,
@@ -241,6 +254,7 @@ export default class MessageThreadHeader extends Vue {
   mdiAccountCog = mdiAccountCog
   mdiLogout = mdiLogout
   mdiDownload = mdiDownload
+  mdiCellphoneKey = mdiCellphoneKey
   mdiPackageUp = mdiPackageUp
   mdiCommentTextMultipleOutline = mdiCommentTextMultipleOutline
   mdiFinance = mdiFinance

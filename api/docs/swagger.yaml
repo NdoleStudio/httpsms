@@ -325,6 +325,54 @@ definitions:
       - updated_at
       - user_id
     type: object
+  entities.PhoneAPIKey:
+    properties:
+      api_key:
+        example: pk_DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY
+        type: string
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      name:
+        example: Business Phone Key
+        type: string
+      phone_ids:
+        example:
+          - "[32343a19-da5e-4b1b-a767-3298a73703cb"
+          - 32343a19-da5e-4b1b-a767-3298a73703cc]
+        items:
+          type: string
+        type: array
+      phone_numbers:
+        example:
+          - "[+18005550199"
+          - +18005550100]
+        items:
+          type: string
+        type: array
+      updated_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      user_email:
+        example: user@gmail.com
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+      - api_key
+      - created_at
+      - id
+      - name
+      - phone_ids
+      - phone_numbers
+      - updated_at
+      - user_email
+      - user_id
+    type: object
   entities.User:
     properties:
       active_phone_id:
@@ -346,6 +394,9 @@ definitions:
         example: true
         type: boolean
       notification_message_status_enabled:
+        example: true
+        type: boolean
+      notification_newsletter_enabled:
         example: true
         type: boolean
       notification_webhook_enabled:
@@ -380,6 +431,7 @@ definitions:
       - id
       - notification_heartbeat_enabled
       - notification_message_status_enabled
+      - notification_newsletter_enabled
       - notification_webhook_enabled
       - subscription_ends_at
       - subscription_id
@@ -625,6 +677,33 @@ definitions:
     required:
       - is_archived
     type: object
+  requests.PhoneAPIKeyStoreRequest:
+    properties:
+      name:
+        example: My Phone API Key
+        type: string
+    required:
+      - name
+    type: object
+  requests.PhoneFCMToken:
+    properties:
+      fcm_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
+        type: string
+      phone_number:
+        example: "[+18005550199]"
+        type: string
+      sim:
+        description:
+          SIM is the SIM slot of the phone in case the phone has more than
+          1 SIM slot
+        example: SIM1
+        type: string
+    required:
+      - fcm_token
+      - phone_number
+      - sim
+    type: object
   requests.PhoneUpsert:
     properties:
       fcm_token:
@@ -674,12 +753,16 @@ definitions:
       message_status_enabled:
         example: true
         type: boolean
+      newsletter_enabled:
+        example: true
+        type: boolean
       webhook_enabled:
         example: true
         type: boolean
     required:
       - heartbeat_enabled
       - message_status_enabled
+      - newsletter_enabled
       - webhook_enabled
     type: object
   requests.UserUpdate:
@@ -952,6 +1035,38 @@ definitions:
       - message
       - status
     type: object
+  responses.PhoneAPIKeyResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.PhoneAPIKey"
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.PhoneAPIKeysResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.PhoneAPIKey"
+        type: array
+      message:
+        example: item created successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
   responses.PhoneResponse:
     properties:
       data:
@@ -1077,9 +1192,199 @@ info:
   license:
     name: AGPL-3.0
     url: https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
-  title: HTTP SMS API
+  title: httpSMS API Reference
   version: "1.0"
 paths:
+  /api-keys:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get list phone API keys which a user has registered on the httpSMS
+        application
+      parameters:
+        - description: number of heartbeats to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter api keys with name containing query
+          in: query
+          name: query
+          type: string
+        - description: number of phone api keys to return
+          in: query
+          maximum: 100
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneAPIKeysResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get the phone API keys of a user
+      tags:
+        - PhoneAPIKeys
+    post:
+      consumes:
+        - application/json
+      description:
+        Creates a new phone API key which can be used to log in to the
+        httpSMS app on your Android phone
+      parameters:
+        - description: Payload of new phone API key.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.PhoneAPIKeyStoreRequest"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneAPIKeyResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Store phone API key
+      tags:
+        - PhoneAPIKeys
+  /api-keys/{phoneAPIKeyID}:
+    delete:
+      consumes:
+        - application/json
+      description:
+        Delete a phone API Key from the database and cannot be used for
+        authentication anymore.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone API key
+          in: path
+          name: phoneAPIKeyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a phone API key from the database.
+      tags:
+        - PhoneAPIKeys
+  /api-keys/{phoneAPIKeyID}/phones/{phoneID}:
+    delete:
+      consumes:
+        - application/json
+      description:
+        You will need to login again to the httpSMS app on your Android
+        phone with a new phone API key.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone API key
+          in: path
+          name: phoneAPIKeyID
+          required: true
+          type: string
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone
+          in: path
+          name: phoneID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Remove the association of a phone from the phone API key.
+      tags:
+        - PhoneAPIKeys
   /billing/usage:
     get:
       consumes:
@@ -2040,6 +2345,11 @@ paths:
         This returns the list of all messages based on the filter criteria
         including missed calls
       parameters:
+        - description: Cloudflare turnstile token https://www.cloudflare.com/en-gb/application-services/products/turnstile/
+          in: header
+          name: token
+          required: true
+          type: string
         - default: +18005550199,+18005550100
           description: the owner's phone numbers
           in: query
@@ -2259,6 +2569,48 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Delete Phone
+      tags:
+        - Phones
+  /phones/fcm-token:
+    put:
+      consumes:
+        - application/json
+      description:
+        Updates the FCM token of a phone. If the phone with this number
+        does not exist, a new one will be created. Think of this method like an 'upsert'
+      parameters:
+        - description: Payload of new FCM token.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.PhoneFCMToken"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Upserts the FCM token of a phone
       tags:
         - Phones
   /users/{userID}/api-keys:

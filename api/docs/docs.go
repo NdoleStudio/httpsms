@@ -23,6 +23,286 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api-keys": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get list phone API keys which a user has registered on the httpSMS application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Get the phone API keys of a user",
+                "parameters": [
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "description": "number of heartbeats to skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter api keys with name containing query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "number of phone api keys to return",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PhoneAPIKeysResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates a new phone API key which can be used to log in to the httpSMS app on your Android phone",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Store phone API key",
+                "parameters": [
+                    {
+                        "description": "Payload of new phone API key.",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.PhoneAPIKeyStoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PhoneAPIKeyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api-keys/{phoneAPIKeyID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a phone API Key from the database and cannot be used for authentication anymore.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Delete a phone API key from the database.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the phone API key",
+                        "name": "phoneAPIKeyID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NoContent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api-keys/{phoneAPIKeyID}/phones/{phoneID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "You will need to login again to the httpSMS app on your Android phone with a new phone API key.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Remove the association of a phone from the phone API key.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the phone API key",
+                        "name": "phoneAPIKeyID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the phone",
+                        "name": "phoneID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NoContent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/billing/usage": {
             "get": {
                 "security": [
@@ -1334,6 +1614,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Cloudflare turnstile token https://www.cloudflare.com/en-gb/application-services/products/turnstile/",
+                        "name": "token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "default": "+18005550199,+18005550100",
                         "description": "the owner's phone numbers",
                         "name": "owners",
@@ -1703,6 +1990,69 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/requests.PhoneUpsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PhoneResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/phones/fcm-token": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates the FCM token of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Phones"
+                ],
+                "summary": "Upserts the FCM token of a phone",
+                "parameters": [
+                    {
+                        "description": "Payload of new FCM token.",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.PhoneFCMToken"
                         }
                     }
                 ],
@@ -2858,6 +3208,70 @@ const docTemplate = `{
                 }
             }
         },
+        "entities.PhoneAPIKey": {
+            "type": "object",
+            "required": [
+                "api_key",
+                "created_at",
+                "id",
+                "name",
+                "phone_ids",
+                "phone_numbers",
+                "updated_at",
+                "user_email",
+                "user_id"
+            ],
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "example": "pk_DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Business Phone Key"
+                },
+                "phone_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[32343a19-da5e-4b1b-a767-3298a73703cb",
+                        "32343a19-da5e-4b1b-a767-3298a73703cc]"
+                    ]
+                },
+                "phone_numbers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[+18005550199",
+                        "+18005550100]"
+                    ]
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "user_email": {
+                    "type": "string",
+                    "example": "user@gmail.com"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
+                }
+            }
+        },
         "entities.User": {
             "type": "object",
             "required": [
@@ -2868,6 +3282,7 @@ const docTemplate = `{
                 "id",
                 "notification_heartbeat_enabled",
                 "notification_message_status_enabled",
+                "notification_newsletter_enabled",
                 "notification_webhook_enabled",
                 "subscription_ends_at",
                 "subscription_id",
@@ -2903,6 +3318,10 @@ const docTemplate = `{
                     "example": true
                 },
                 "notification_message_status_enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "notification_newsletter_enabled": {
                     "type": "boolean",
                     "example": true
                 },
@@ -3234,6 +3653,41 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.PhoneAPIKeyStoreRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "My Phone API Key"
+                }
+            }
+        },
+        "requests.PhoneFCMToken": {
+            "type": "object",
+            "required": [
+                "fcm_token",
+                "phone_number",
+                "sim"
+            ],
+            "properties": {
+                "fcm_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
+                },
+                "phone_number": {
+                    "type": "string",
+                    "example": "[+18005550199]"
+                },
+                "sim": {
+                    "description": "SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot",
+                    "type": "string",
+                    "example": "SIM1"
+                }
+            }
+        },
         "requests.PhoneUpsert": {
             "type": "object",
             "required": [
@@ -3284,6 +3738,7 @@ const docTemplate = `{
             "required": [
                 "heartbeat_enabled",
                 "message_status_enabled",
+                "newsletter_enabled",
                 "webhook_enabled"
             ],
             "properties": {
@@ -3292,6 +3747,10 @@ const docTemplate = `{
                     "example": true
                 },
                 "message_status_enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "newsletter_enabled": {
                     "type": "boolean",
                     "example": true
                 },
@@ -3682,6 +4141,51 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.PhoneAPIKeyResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/entities.PhoneAPIKey"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "item created successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.PhoneAPIKeysResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.PhoneAPIKey"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "item created successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "responses.PhoneResponse": {
             "type": "object",
             "required": [
@@ -3858,7 +4362,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "api.httpsms.com",
 	BasePath:         "/v1",
 	Schemes:          []string{"https"},
-	Title:            "HTTP SMS API",
+	Title:            "httpSMS API Reference",
 	Description:      "API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

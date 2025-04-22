@@ -10,6 +10,7 @@ import {
   EntitiesDiscord,
   EntitiesMessage,
   EntitiesPhone,
+  EntitiesPhoneAPIKey,
   EntitiesUser,
   EntitiesWebhook,
   RequestsDiscordStore,
@@ -22,6 +23,8 @@ import {
   ResponsesMessagesResponse,
   ResponsesNoContent,
   ResponsesOkString,
+  ResponsesPhoneAPIKeyResponse,
+  ResponsesPhoneAPIKeysResponse,
   ResponsesUnprocessableEntity,
   ResponsesUserResponse,
   ResponsesWebhookResponse,
@@ -428,6 +431,119 @@ export const actions = {
             }),
           ])
           reject(error)
+        })
+    })
+  },
+
+  storePhoneApiKey(context: ActionContext<State, State>, name: string) {
+    return new Promise<ResponsesPhoneAPIKeyResponse>((resolve, reject) => {
+      axios
+        .post<ResponsesPhoneAPIKeyResponse>(`/v1/api-keys`, { name })
+        .then(async (response: AxiosResponse<ResponsesPhoneAPIKeyResponse>) => {
+          await context.dispatch('addNotification', {
+            message:
+              response.data.message ?? 'Phone API Key created successfully',
+            type: 'success',
+          })
+          resolve(response.data)
+        })
+        .catch(async (error: AxiosError<ResponsesUnprocessableEntity>) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                error.response?.data?.message ??
+                'Errors while creating phone API key',
+              type: 'error',
+            }),
+          ])
+          reject(error)
+        })
+    })
+  },
+
+  indexPhoneApiKeys(context: ActionContext<State, State>) {
+    return new Promise<Array<EntitiesPhoneAPIKey>>((resolve, reject) => {
+      axios
+        .get<ResponsesPhoneAPIKeysResponse>(`/v1/api-keys`, {
+          params: {
+            limit: 100,
+          },
+        })
+        .then((response: AxiosResponse<ResponsesPhoneAPIKeysResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while fetching phone API keys',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  deletePhoneApiKey(
+    context: ActionContext<State, State>,
+    phoneAPIKeyID: string,
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(`/v1/api-keys/${phoneAPIKeyID}`)
+        .then(async (response: AxiosResponse<ResponsesNoContent>) => {
+          await context.dispatch('addNotification', {
+            message:
+              response.data.message ??
+              'The phone API key has been deleted successfully',
+            type: 'success',
+          })
+          resolve()
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while deleting phone API key',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  deletePhoneFromPhoneApiKey(
+    context: ActionContext<State, State>,
+    payload: { phoneAPIKeyID: string; phoneID: string },
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(
+          `/v1/api-keys/${payload.phoneAPIKeyID}/phones/${payload.phoneID}`,
+        )
+        .then(async (response: AxiosResponse<ResponsesNoContent>) => {
+          await context.dispatch('addNotification', {
+            message:
+              response.data.message ??
+              'The phone has been removed from the phone API key successfully',
+            type: 'success',
+          })
+          resolve()
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while deleting phone API key',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
         })
     })
   },

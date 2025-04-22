@@ -34,11 +34,36 @@ func (validator *PhoneAPIKeyHandlerValidator) ValidateStore(_ context.Context, r
 		Data: &request,
 		Rules: govalidator.MapData{
 			"name": []string{
+				"required",
 				"min:1",
 				"max:60",
 			},
 		},
 	})
 
+	return v.ValidateStruct()
+}
+
+// ValidateIndex validates the requests.HeartbeatIndex request
+func (validator *PhoneAPIKeyHandlerValidator) ValidateIndex(_ context.Context, request requests.PhoneAPIKeyIndex) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"limit": []string{
+				"required",
+				"numeric",
+				"min:1",
+				"max:100",
+			},
+			"skip": []string{
+				"required",
+				"numeric",
+				"min:0",
+			},
+			"query": []string{
+				"max:100",
+			},
+		},
+	})
 	return v.ValidateStruct()
 }

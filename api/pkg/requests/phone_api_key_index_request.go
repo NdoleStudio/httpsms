@@ -6,8 +6,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 )
 
-// PhoneIndex is the payload fetching registered phones
-type PhoneIndex struct {
+// PhoneAPIKeyIndex is the payload for fetching entities.PhoneAPIKey of a user
+type PhoneAPIKeyIndex struct {
 	request
 	Skip  string `json:"skip" query:"skip"`
 	Query string `json:"query" query:"query"`
@@ -15,9 +15,9 @@ type PhoneIndex struct {
 }
 
 // Sanitize sets defaults to MessageOutstanding
-func (input *PhoneIndex) Sanitize() PhoneIndex {
+func (input *PhoneAPIKeyIndex) Sanitize() PhoneAPIKeyIndex {
 	if strings.TrimSpace(input.Limit) == "" {
-		input.Limit = "10"
+		input.Limit = "1"
 	}
 	input.Query = strings.TrimSpace(input.Query)
 	input.Skip = strings.TrimSpace(input.Skip)
@@ -28,7 +28,7 @@ func (input *PhoneIndex) Sanitize() PhoneIndex {
 }
 
 // ToIndexParams converts HeartbeatIndex to repositories.IndexParams
-func (input *PhoneIndex) ToIndexParams() repositories.IndexParams {
+func (input *PhoneAPIKeyIndex) ToIndexParams() repositories.IndexParams {
 	return repositories.IndexParams{
 		Skip:  input.getInt(input.Skip),
 		Query: input.Query,

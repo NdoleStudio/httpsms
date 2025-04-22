@@ -38,6 +38,21 @@ func NewPhoneAPIKeyService(
 	}
 }
 
+// Index fetches the entities.Webhook for an entities.UserID
+func (service *PhoneAPIKeyService) Index(ctx context.Context, userID entities.UserID, params repositories.IndexParams) ([]*entities.PhoneAPIKey, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	phoneAPIKeys, err := service.repository.Index(ctx, userID, params)
+	if err != nil {
+		msg := fmt.Sprintf("could not fetch phone API Keys with params [%+#v]", params)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] phone API Keys with prams [%+#v]", len(phoneAPIKeys), params))
+	return phoneAPIKeys, nil
+}
+
 // Create a new entities.PhoneAPIKey
 func (service *PhoneAPIKeyService) Create(ctx context.Context, authContext entities.AuthContext, name string) (*entities.PhoneAPIKey, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)

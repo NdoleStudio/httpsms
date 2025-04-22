@@ -13,7 +13,7 @@
     "lint:prettier": "prettier --check .",
     "lint": "yarn lint:js && yarn lint:style && yarn lint:prettier",
     "lintfix": "prettier --write --list-different . && yarn lint:js --fix && yarn lint:style --fix",
-    "api:models": "npx swagger-typescript-api -p ..\\api\\docs\\swagger.json -o ./models -n api.ts --no-client",
+    "api:models": "npx swagger-typescript-api generate -p ..\\api\\docs\\swagger.json -o ./models -n api.ts --no-client",
     "test": "jest"
   },
   "lint-staged": {
@@ -63,6 +63,7 @@
     "@nuxtjs/eslint-module": "^4.1.0",
     "@nuxtjs/stylelint-module": "^5.2.0",
     "@nuxtjs/vuetify": "^1.12.3",
+    "@types/qrcode": "^1.5.5",
     "@vue/test-utils": "^1.3.6",
     "axios": "^0.30.0",
     "babel-core": "7.0.0-bridge.0",

@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -117,7 +118,7 @@ export interface EntitiesMessage {
    * * DEFAULT: used the default communication SIM card
    * @example "DEFAULT"
    */
-  sim: EntitiesSIM
+  sim: string
   /** @example "pending" */
   status: string
   /** @example "mobile-terminated" */
@@ -175,31 +176,33 @@ export interface EntitiesPhone {
   missed_call_auto_reply: string
   /** @example "+18005550199" */
   phone_number: string
-  sim: EntitiesSIM
+  /** SIM card that received the message */
+  sim: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   user_id: string
 }
 
-export enum EntitiesSIM {
-  SIM1 = 'SIM1',
-  SIM2 = 'SIM2',
-}
-
-export enum EntitiesSubscriptionName {
-  SubscriptionNameFree = 'free',
-  SubscriptionNameProMonthly = 'pro-monthly',
-  SubscriptionNameProYearly = 'pro-yearly',
-  SubscriptionNameUltraMonthly = 'ultra-monthly',
-  SubscriptionNameUltraYearly = 'ultra-yearly',
-  SubscriptionNameProLifetime = 'pro-lifetime',
-  SubscriptionName20KMonthly = '20k-monthly',
-  SubscriptionName100KMonthly = '100k-monthly',
-  SubscriptionName50KMonthly = '50k-monthly',
-  SubscriptionName20KYearly = '20k-yearly',
-  SubscriptionName100KYearly = '100k-yearly',
-  SubscriptionName50KYearly = '50k-yearly',
+export interface EntitiesPhoneAPIKey {
+  /** @example "pk_DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY" */
+  api_key: string
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  id: string
+  /** @example "Business Phone Key" */
+  name: string
+  /** @example ["[32343a19-da5e-4b1b-a767-3298a73703cb","32343a19-da5e-4b1b-a767-3298a73703cc]"] */
+  phone_ids: string[]
+  /** @example ["[+18005550199","+18005550100]"] */
+  phone_numbers: string[]
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  updated_at: string
+  /** @example "user@gmail.com" */
+  user_email: string
+  /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
+  user_id: string
 }
 
 export interface EntitiesUser {
@@ -218,13 +221,15 @@ export interface EntitiesUser {
   /** @example true */
   notification_message_status_enabled: boolean
   /** @example true */
+  notification_newsletter_enabled: boolean
+  /** @example true */
   notification_webhook_enabled: boolean
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   subscription_ends_at: string
   /** @example "8f9c71b8-b84e-4417-8408-a62274f65a08" */
   subscription_id: string
   /** @example "free" */
-  subscription_name: EntitiesSubscriptionName
+  subscription_name: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   subscription_renews_at: string
   /** @example "on_trial" */
@@ -268,7 +273,7 @@ export interface RequestsDiscordUpdate {
 
 export interface RequestsHeartbeatStore {
   charging: boolean
-  owner: string
+  phone_numbers: string[]
 }
 
 export interface RequestsMessageBulkSend {
@@ -333,7 +338,7 @@ export interface RequestsMessageReceive {
    * SIM card that received the message
    * @example "SIM1"
    */
-  sim: EntitiesSIM
+  sim: string
   /**
    * Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
    * @example "2022-06-05T14:26:09.527976+03:00"
@@ -372,6 +377,23 @@ export interface RequestsMessageThreadUpdate {
   is_archived: boolean
 }
 
+export interface RequestsPhoneAPIKeyStoreRequest {
+  /** @example "My Phone API Key" */
+  name: string
+}
+
+export interface RequestsPhoneFCMToken {
+  /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
+  fcm_token: string
+  /** @example "[+18005550199]" */
+  phone_number: string
+  /**
+   * SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
+   * @example "SIM1"
+   */
+  sim: string
+}
+
 export interface RequestsPhoneUpsert {
   /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
   fcm_token: string
@@ -403,6 +425,8 @@ export interface RequestsUserNotificationUpdate {
   heartbeat_enabled: boolean
   /** @example true */
   message_status_enabled: boolean
+  /** @example true */
+  newsletter_enabled: boolean
   /** @example true */
   webhook_enabled: boolean
 }
@@ -535,6 +559,22 @@ export interface ResponsesNotFound {
 export interface ResponsesOkString {
   data: string
   /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesPhoneAPIKeyResponse {
+  data: EntitiesPhoneAPIKey
+  /** @example "item created successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesPhoneAPIKeysResponse {
+  data: EntitiesPhoneAPIKey[]
+  /** @example "item created successfully" */
   message: string
   /** @example "success" */
   status: string

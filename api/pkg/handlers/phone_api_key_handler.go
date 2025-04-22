@@ -41,9 +41,53 @@ func NewPhoneAPIKeyHandler(
 // RegisterRoutes registers the routes for the PhoneAPIKeyHandler
 func (h *PhoneAPIKeyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
 	router := app.Group("/v1/api-keys/")
+	router.Get("/", h.computeRoute(middlewares, h.Index)...)
 	router.Post("/", h.computeRoute(middlewares, h.Store)...)
 	router.Delete("/:phoneAPIKeyID", h.computeRoute(middlewares, h.Delete)...)
 	router.Delete("/:phoneAPIKeyID/phones/:phoneID", h.computeRoute(middlewares, h.DeletePhone)...)
+}
+
+// Index returns the phone API Keys of a user
+// @Summary      Get the phone API keys of a user
+// @Description  Get list phone API keys which a user has registered on the httpSMS application
+// @Security	 ApiKeyAuth
+// @Tags         PhoneAPIKeys
+// @Accept       json
+// @Produce      json
+// @Param        skip		query  int  	false	"number of heartbeats to skip"					minimum(0)
+// @Param        query		query  string  	false 	"filter api keys with name containing query"
+// @Param        limit		query  int  	false	"number of phone api keys to return"			minimum(1)	maximum(100)
+// @Success      200 		{object}	responses.PhoneAPIKeysResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /api-keys [get]
+func (h *PhoneAPIKeyHandler) Index(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	var request requests.PhoneAPIKeyIndex
+	if err := c.QueryParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateIndex(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while fetching phone API keys [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching phone API keys")
+	}
+
+	apiKeys, err := h.service.Index(ctx, h.userIDFomContext(c), request.ToIndexParams())
+	if err != nil {
+		msg := fmt.Sprintf("cannot index phone API keys with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("fetched %d phone API %s", len(apiKeys), h.pluralize("key", len(apiKeys))), apiKeys)
 }
 
 // Store a new Phone API key
@@ -54,17 +98,15 @@ func (h *PhoneAPIKeyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber
 // @Accept       json
 // @Produce      json
 // @Param        payload   	body 		requests.PhoneAPIKeyStoreRequest 	true 	"Payload of new phone API key."
-// @Success      200 		{object}	responses.Ok[*entities.PhoneAPIKey]
+// @Success      200 		{object}	responses.PhoneAPIKeyResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /api-keys [post]
 func (h *PhoneAPIKeyHandler) Store(c *fiber.Ctx) error {
-	ctx, span := h.tracer.StartFromFiberCtx(c)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
-
-	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.PhoneAPIKeyStoreRequest
 	if err := c.BodyParser(&request); err != nil {
