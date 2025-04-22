@@ -49,10 +49,11 @@ func NewMessageService(
 
 // MessageGetOutstandingParams parameters for sending a new message
 type MessageGetOutstandingParams struct {
-	Source    string
-	UserID    entities.UserID
-	Timestamp time.Time
-	MessageID uuid.UUID
+	Source       string
+	UserID       entities.UserID
+	PhoneNumbers []string
+	Timestamp    time.Time
+	MessageID    uuid.UUID
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
@@ -62,7 +63,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID)
+	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID, params.PhoneNumbers)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch outstanding messages with params [%s]", spew.Sdump(params))
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))

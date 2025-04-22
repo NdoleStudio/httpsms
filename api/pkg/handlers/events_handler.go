@@ -37,8 +37,8 @@ func NewEventsHandler(
 }
 
 // RegisterRoutes registers the routes for the MessageHandler
-func (h *EventsHandler) RegisterRoutes(router fiber.Router) {
-	router.Post("/events", h.Dispatch)
+func (h *EventsHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Post("/v1/events", h.computeRoute(middlewares, h.Dispatch)...)
 }
 
 // Dispatch a cloud event

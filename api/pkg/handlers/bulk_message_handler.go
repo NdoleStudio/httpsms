@@ -43,8 +43,8 @@ func NewBulkMessageHandler(
 }
 
 // RegisterRoutes registers the routes for the MessageHandler
-func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router) {
-	router.Post("/bulk-messages", h.Store)
+func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Post("/v1/bulk-messages", h.computeRoute(middlewares, h.Store)...)
 }
 
 // Store sends bulk SMS messages from a CSV file.

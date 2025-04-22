@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/url"
+	"slices"
+	"strings"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/middlewares"
@@ -32,6 +35,14 @@ func (h *handler) responseUnauthorized(c *fiber.Ctx) error {
 		"status":  "error",
 		"message": "You are not authorized to carry out this request.",
 		"data":    "Make sure your API key is set in the [X-API-Key] header in the request",
+	})
+}
+
+func (h *handler) responsePhoneAPIKeyUnauthorized(c *fiber.Ctx, owner string, authCtx entities.AuthContext) error {
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		"status":  "error",
+		"message": "You are not authorized to carry out the request for this phone number",
+		"data":    fmt.Sprintf("The phone API key is does not have permission to carry out actions on the phone number [%s]. The API key is only configured for these phone numbers [%s]", owner, strings.Join(authCtx.PhoneNumbers, ",")),
 	})
 }
 
@@ -126,4 +137,12 @@ func (h *handler) mergeErrors(errors ...url.Values) url.Values {
 		}
 	}
 	return result
+}
+
+func (h *handler) authorizePhoneAPIKey(c *fiber.Ctx, phoneNumber string) bool {
+	user := h.userFromContext(c)
+	if user.PhoneAPIKeyID == nil {
+		return true
+	}
+	return slices.Contains(user.PhoneNumbers, phoneNumber)
 }

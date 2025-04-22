@@ -104,7 +104,14 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 
 	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(params.PhoneNumber, phonenumbers.E164))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return service.createPhone(ctx, params)
+		return service.createPhone(ctx, &PhoneFCMTokenParams{
+			Source:        params.Source,
+			PhoneNumber:   params.PhoneNumber,
+			PhoneAPIKeyID: nil,
+			UserID:        params.UserID,
+			FcmToken:      params.FcmToken,
+			SIM:           params.SIM,
+		})
 	}
 
 	if err != nil {
@@ -118,19 +125,27 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
-	return phone, service.dispatchPhoneUpdatedEvent(ctx, params.Source, phone)
+	return phone, service.dispatchPhoneUpdatedEvent(ctx, phone, &PhoneFCMTokenParams{
+		Source:        params.Source,
+		PhoneNumber:   params.PhoneNumber,
+		PhoneAPIKeyID: nil,
+		UserID:        params.UserID,
+		FcmToken:      params.FcmToken,
+		SIM:           params.SIM,
+	})
 }
 
-func (service *PhoneService) dispatchPhoneUpdatedEvent(ctx context.Context, source string, phone *entities.Phone) error {
+func (service *PhoneService) dispatchPhoneUpdatedEvent(ctx context.Context, phone *entities.Phone, input *PhoneFCMTokenParams) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	event, err := service.createPhoneUpdatedEvent(source, events.PhoneUpdatedPayload{
-		PhoneID:   phone.ID,
-		UserID:    phone.UserID,
-		Timestamp: phone.UpdatedAt,
-		Owner:     phone.PhoneNumber,
-		SIM:       phone.SIM,
+	event, err := service.createPhoneUpdatedEvent(input.Source, events.PhoneUpdatedPayload{
+		PhoneID:       phone.ID,
+		UserID:        phone.UserID,
+		Timestamp:     phone.UpdatedAt,
+		PhoneAPIKeyID: input.PhoneAPIKeyID,
+		Owner:         phone.PhoneNumber,
+		SIM:           phone.SIM,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event when phone [%s] is updated for user [%s]", phone.ID, phone.UserID)
@@ -184,7 +199,44 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 	return nil
 }
 
-func (service *PhoneService) createPhone(ctx context.Context, params *PhoneUpsertParams) (*entities.Phone, error) {
+// PhoneFCMTokenParams are parameters for upserting an entities.Phone
+type PhoneFCMTokenParams struct {
+	Source        string
+	PhoneNumber   *phonenumbers.PhoneNumber
+	PhoneAPIKeyID *uuid.UUID
+	UserID        entities.UserID
+	FcmToken      *string
+	SIM           entities.SIM
+}
+
+// UpsertFCMToken the FCM token for an entities.Phone
+func (service *PhoneService) UpsertFCMToken(ctx context.Context, params *PhoneFCMTokenParams) (*entities.Phone, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(params.PhoneNumber, phonenumbers.E164))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return service.createPhone(ctx, params)
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot upsert FCM token for user with id [%s] and number [%s]", params.UserID, params.PhoneNumber)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	phone.FcmToken = params.FcmToken
+	phone.SIM = params.SIM
+
+	if err = service.repository.Save(ctx, phone); err != nil {
+		msg := fmt.Sprintf("cannot update phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
+	return phone, service.dispatchPhoneUpdatedEvent(ctx, phone, params)
+}
+
+func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTokenParams) (*entities.Phone, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -210,7 +262,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params *PhoneUpser
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
-	return phone, service.dispatchPhoneUpdatedEvent(ctx, params.Source, phone)
+	return phone, service.dispatchPhoneUpdatedEvent(ctx, phone, params)
 }
 
 func (service *PhoneService) createPhoneUpdatedEvent(source string, payload events.PhoneUpdatedPayload) (cloudevents.Event, error) {

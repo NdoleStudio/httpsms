@@ -22,11 +22,12 @@ func (input *MessageOutstanding) Sanitize() MessageOutstanding {
 }
 
 // ToGetOutstandingParams converts MessageOutstanding into services.MessageGetOutstandingParams
-func (input *MessageOutstanding) ToGetOutstandingParams(source string, userID entities.UserID, timestamp time.Time) services.MessageGetOutstandingParams {
+func (input *MessageOutstanding) ToGetOutstandingParams(source string, authCtx entities.AuthContext, timestamp time.Time) services.MessageGetOutstandingParams {
 	return services.MessageGetOutstandingParams{
-		Source:    source,
-		UserID:    userID,
-		MessageID: uuid.MustParse(input.MessageID),
-		Timestamp: timestamp,
+		Source:       source,
+		PhoneNumbers: authCtx.PhoneNumbers,
+		UserID:       authCtx.ID,
+		MessageID:    uuid.MustParse(input.MessageID),
+		Timestamp:    timestamp,
 	}
 }

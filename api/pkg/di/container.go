@@ -145,6 +145,9 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterDiscordRoutes()
 	container.RegisterDiscordListeners()
 
+	container.RegisterPhoneAPIKeyRoutes()
+	container.RegisterPhoneAPIKeyListeners()
+
 	container.RegisterMarketingListeners()
 
 	// this has to be last since it registers the /* route
@@ -191,16 +194,16 @@ func (container *Container) BearerAPIKeyMiddleware() fiber.Handler {
 	return middlewares.BearerAPIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository())
 }
 
+// PhoneAPIKeyMiddleware creates a new instance of middlewares.BearerAPIKeyAuth
+func (container *Container) PhoneAPIKeyMiddleware() fiber.Handler {
+	container.logger.Debug("creating middlewares.PhoneAPIKeyMiddleware")
+	return middlewares.PhoneAPIKeyAuth(container.Logger(), container.Tracer(), container.PhoneAPIKeyRepository())
+}
+
 // AuthenticatedMiddleware creates a new instance of middlewares.Authenticated
 func (container *Container) AuthenticatedMiddleware() fiber.Handler {
 	container.logger.Debug("creating middlewares.Authenticated")
 	return middlewares.Authenticated(container.Tracer())
-}
-
-// AuthRouter creates router for authenticated requests
-func (container *Container) AuthRouter() fiber.Router {
-	container.logger.Debug("creating authRouter")
-	return container.App().Group("v1").Use(container.AuthenticatedMiddleware())
 }
 
 // Logger creates a new instance of telemetry.Logger
@@ -686,6 +689,17 @@ func (container *Container) MessageRepository() (repository repositories.Message
 	)
 }
 
+// PhoneAPIKeyRepository creates a new instance of repositories.PhoneAPIKeyRepository
+func (container *Container) PhoneAPIKeyRepository() (repository repositories.PhoneAPIKeyRepository) {
+	container.logger.Debug("creating GORM repositories.PhoneAPIKeyRepository")
+	return repositories.NewGormPhoneAPIKeyRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+		container.UserRistrettoCache(),
+	)
+}
+
 // Integration3CXRepository creates a new instance of repositories.Integration3CxRepository
 func (container *Container) Integration3CXRepository() (repository repositories.Integration3CxRepository) {
 	container.logger.Debug("creating GORM repositories.Integration3CxRepository")
@@ -1072,6 +1086,18 @@ func (container *Container) Integration3CXHandler() (handler *handlers.Integrati
 	)
 }
 
+// PhoneAPIKeyHandler creates a new instance of handlers.PhoneAPIKeyHandler
+func (container *Container) PhoneAPIKeyHandler() (handler *handlers.PhoneAPIKeyHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+
+	return handlers.NewPhoneAPIKeyHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneAPIKeyHandlerValidator(),
+		container.PhoneAPIKeyService(),
+	)
+}
+
 // DiscordHandler creates a new instance of handlers.DiscordHandler
 func (container *Container) DiscordHandler() (handler *handlers.DiscordHandler) {
 	container.logger.Debug(fmt.Sprintf("creating %T", handler))
@@ -1094,6 +1120,15 @@ func (container *Container) LemonsqueezyHandlerValidator() (validator *validator
 		container.Logger(),
 		container.Tracer(),
 		container.LemonsqueezyClient(),
+	)
+}
+
+// PhoneAPIKeyHandlerValidator creates a new instance of validators.PhoneAPIKeyHandlerValidator
+func (container *Container) PhoneAPIKeyHandlerValidator() (validator *validators.PhoneAPIKeyHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewPhoneAPIKeyHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
 	)
 }
 
@@ -1127,6 +1162,12 @@ func (container *Container) RegisterLemonsqueezyRoutes() {
 func (container *Container) RegisterIntegration3CXRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering [%T] routes", &handlers.Integration3CXHandler{}))
 	container.Integration3CXHandler().RegisterRoutes(container.App(), container.BearerAPIKeyMiddleware(), container.AuthenticatedMiddleware())
+}
+
+// RegisterPhoneAPIKeyRoutes registers routes for the /phone-api-key prefix
+func (container *Container) RegisterPhoneAPIKeyRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering [%T] routes", &handlers.Integration3CXHandler{}))
+	container.PhoneAPIKeyHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterDiscordRoutes registers routes for the /discord prefix
@@ -1261,6 +1302,20 @@ func (container *Container) RegisterIntegration3CXListeners() {
 	}
 }
 
+// RegisterPhoneAPIKeyListeners registers event listeners for listeners.PhoneAPIKeyListener
+func (container *Container) RegisterPhoneAPIKeyListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.PhoneAPIKeyListener{}))
+	_, routes := listeners.NewPhoneAPIKeyListener(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneAPIKeyService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
 // RegisterWebhookListeners registers event listeners for listeners.WebhookListener
 func (container *Container) RegisterWebhookListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.WebhookListener{}))
@@ -1287,6 +1342,17 @@ func (container *Container) MessageService() (service *services.MessageService) 
 	)
 }
 
+// PhoneAPIKeyService creates a new instance of services.PhoneAPIKeyService
+func (container *Container) PhoneAPIKeyService() (service *services.PhoneAPIKeyService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewPhoneAPIKeyService(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneRepository(),
+		container.PhoneAPIKeyRepository(),
+	)
+}
+
 // NotificationService creates a new instance of services.PhoneNotificationService
 func (container *Container) NotificationService() (service *services.PhoneNotificationService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -1303,31 +1369,33 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 // RegisterMessageRoutes registers routes for the /messages prefix
 func (container *Container) RegisterMessageRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
-	container.MessageHandler().RegisterRoutes(container.AuthRouter())
+	container.MessageHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+	container.MessageHandler().RegisterPhoneAPIKeyRoutes(container.App(), container.PhoneAPIKeyMiddleware(), container.AuthenticatedMiddleware())
 }
 
 // RegisterBulkMessageRoutes registers routes for the /bulk-messages prefix
 func (container *Container) RegisterBulkMessageRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.BulkMessageHandler{}))
-	container.BulkMessageHandler().RegisterRoutes(container.AuthRouter())
+	container.BulkMessageHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterMessageThreadRoutes registers routes for the /message-threads prefix
 func (container *Container) RegisterMessageThreadRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageThreadHandler{}))
-	container.MessageThreadHandler().RegisterRoutes(container.AuthRouter())
+	container.MessageThreadHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterHeartbeatRoutes registers routes for the /heartbeats prefix
 func (container *Container) RegisterHeartbeatRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.HeartbeatHandler{}))
-	container.HeartbeatHandler().RegisterRoutes(container.AuthRouter())
+	container.HeartbeatHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+	container.HeartbeatHandler().RegisterPhoneAPIKeyRoutes(container.App(), container.PhoneAPIKeyMiddleware(), container.AuthenticatedMiddleware())
 }
 
 // RegisterBillingRoutes registers routes for the /billing prefix
 func (container *Container) RegisterBillingRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.BillingHandler{}))
-	container.BillingHandler().RegisterRoutes(container.AuthRouter())
+	container.BillingHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterWebhookRoutes registers routes for the /webhooks prefix
@@ -1339,19 +1407,20 @@ func (container *Container) RegisterWebhookRoutes() {
 // RegisterPhoneRoutes registers routes for the /phone prefix
 func (container *Container) RegisterPhoneRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.PhoneHandler{}))
-	container.PhoneHandler().RegisterRoutes(container.AuthRouter())
+	container.PhoneHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+	container.PhoneHandler().RegisterPhoneAPIKeyRoutes(container.App(), container.PhoneAPIKeyMiddleware(), container.AuthenticatedMiddleware())
 }
 
 // RegisterUserRoutes registers routes for the /users prefix
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
-	container.UserHandler().RegisterRoutes(container.AuthRouter())
+	container.UserHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterEventRoutes registers routes for the /events prefix
 func (container *Container) RegisterEventRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.EventsHandler{}))
-	container.EventsHandler().RegisterRoutes(container.AuthRouter())
+	container.EventsHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterSwaggerRoutes registers routes for swagger

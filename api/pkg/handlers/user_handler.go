@@ -38,14 +38,14 @@ func NewUserHandler(
 }
 
 // RegisterRoutes registers the routes for the MessageHandler
-func (h *UserHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/users/me", h.Show)
-	router.Put("/users/me", h.Update)
-	router.Delete("/users/me", h.Delete)
-	router.Delete("/users/:userID/api-keys", h.DeleteAPIKey)
-	router.Put("/users/:userID/notifications", h.UpdateNotifications)
-	router.Get("/users/subscription-update-url", h.subscriptionUpdateURL)
-	router.Delete("/users/subscription", h.cancelSubscription)
+func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Get("/v1/users/me", h.computeRoute(middlewares, h.Show)...)
+	router.Put("/v1/users/me", h.computeRoute(middlewares, h.Update)...)
+	router.Delete("/v1/users/me", h.computeRoute(middlewares, h.Delete)...)
+	router.Delete("/v1/users/:userID/api-keys", h.computeRoute(middlewares, h.DeleteAPIKey)...)
+	router.Put("/v1/users/:userID/notifications", h.computeRoute(middlewares, h.UpdateNotifications)...)
+	router.Get("/v1/users/subscription-update-url", h.computeRoute(middlewares, h.subscriptionUpdateURL)...)
+	router.Delete("/v1/users/subscription", h.computeRoute(middlewares, h.cancelSubscription)...)
 }
 
 // Show returns an entities.User

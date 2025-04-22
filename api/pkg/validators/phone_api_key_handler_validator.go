@@ -21,8 +21,8 @@ type PhoneAPIKeyHandlerValidator struct {
 func NewPhoneAPIKeyHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-) (v *PhoneHandlerValidator) {
-	return &PhoneHandlerValidator{
+) (v *PhoneAPIKeyHandlerValidator) {
+	return &PhoneAPIKeyHandlerValidator{
 		logger: logger.WithService(fmt.Sprintf("%T", v)),
 		tracer: tracer,
 	}

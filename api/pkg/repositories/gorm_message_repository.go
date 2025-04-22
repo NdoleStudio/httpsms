@@ -223,18 +223,23 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
-func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error) {
+func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID, phoneNumbers []string) (*entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	message := new(entities.Message)
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
-			return tx.WithContext(ctx).Model(message).
+			query := tx.WithContext(ctx).Model(message).
 				Clauses(clause.Returning{}).
 				Where("user_id = ?", userID).
-				Where("id = ?", messageID).
-				Where(repository.db.Where("status = ?", entities.MessageStatusScheduled).Or("status = ?", entities.MessageStatusPending).Or("status = ?", entities.MessageStatusExpired)).
+				Where("id = ?", messageID)
+
+			if len(phoneNumbers) > 0 {
+				query = query.Where("owner IN ?", phoneNumbers)
+			}
+
+			return query.Where(repository.db.Where("status = ?", entities.MessageStatusScheduled).Or("status = ?", entities.MessageStatusPending).Or("status = ?", entities.MessageStatusExpired)).
 				Update("status", entities.MessageStatusSending).Error
 		},
 	)

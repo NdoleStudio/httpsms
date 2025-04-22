@@ -12,9 +12,10 @@ const EventTypePhoneUpdated = "phone.updated"
 
 // PhoneUpdatedPayload is the payload of the EventTypePhoneUpdated event
 type PhoneUpdatedPayload struct {
-	PhoneID   uuid.UUID       `json:"phone_id"`
-	UserID    entities.UserID `json:"user_id"`
-	Timestamp time.Time       `json:"timestamp"`
-	Owner     string          `json:"owner"`
-	SIM       entities.SIM    `json:"sim"`
+	PhoneID       uuid.UUID       `json:"phone_id"`
+	UserID        entities.UserID `json:"user_id"`
+	PhoneAPIKeyID *uuid.UUID      `json:"phone_api_key_id"`
+	Timestamp     time.Time       `json:"timestamp"`
+	Owner         string          `json:"owner"`
+	SIM           entities.SIM    `json:"sim"`
 }

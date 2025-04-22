@@ -17,11 +17,10 @@ import (
 // PhoneAPIKeyHandler handles phone API key http requests
 type PhoneAPIKeyHandler struct {
 	handler
-	logger       telemetry.Logger
-	tracer       telemetry.Tracer
-	validator    *validators.PhoneAPIKeyHandlerValidator
-	service      *services.PhoneAPIKeyService
-	phoneService *services.PhoneService
+	logger    telemetry.Logger
+	tracer    telemetry.Tracer
+	validator *validators.PhoneAPIKeyHandlerValidator
+	service   *services.PhoneAPIKeyService
 }
 
 // NewPhoneAPIKeyHandler creates a new PhoneAPIKeyHandler
@@ -30,14 +29,12 @@ func NewPhoneAPIKeyHandler(
 	tracer telemetry.Tracer,
 	validator *validators.PhoneAPIKeyHandlerValidator,
 	service *services.PhoneAPIKeyService,
-	phoneService *services.PhoneService,
 ) *PhoneAPIKeyHandler {
 	return &PhoneAPIKeyHandler{
-		logger:       logger.WithService(fmt.Sprintf("%T", &PhoneAPIKeyHandler{})),
-		tracer:       tracer,
-		validator:    validator,
-		service:      service,
-		phoneService: phoneService,
+		logger:    logger.WithService(fmt.Sprintf("%T", &PhoneAPIKeyHandler{})),
+		tracer:    tracer,
+		validator: validator,
+		service:   service,
 	}
 }
 

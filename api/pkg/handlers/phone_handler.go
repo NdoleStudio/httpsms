@@ -38,10 +38,15 @@ func NewPhoneHandler(
 }
 
 // RegisterRoutes registers the routes for the PhoneHandler
-func (h *PhoneHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/phones", h.Index)
-	router.Put("/phones", h.Upsert)
-	router.Delete("/phones/:phoneID", h.Delete)
+func (h *PhoneHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Get("/v1/phones", h.computeRoute(middlewares, h.Index)...)
+	router.Put("/v1/phones", h.computeRoute(middlewares, h.Upsert)...)
+	router.Delete("/v1/phones/:phoneID", h.computeRoute(middlewares, h.Delete)...)
+}
+
+// RegisterPhoneAPIKeyRoutes registers the routes for the PhoneHandler
+func (h *PhoneHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Put("/v1/phones/fcm-token", h.computeRoute(middlewares, h.UpsertFCMToken)...)
 }
 
 // Index returns the phones of a user
@@ -167,4 +172,47 @@ func (h *PhoneHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "phone deleted successfully", nil)
+}
+
+// UpsertFCMToken upserts the FCM token of a phone
+// @Summary      Upserts the FCM token of a phone
+// @Description  Updates the FCM token of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'
+// @Security	 ApiKeyAuth
+// @Tags         Phones
+// @Accept       json
+// @Produce      json
+// @Param        payload   	body 		requests.PhoneFCMToken  			true 	"Payload of new FCM token."
+// @Success      200 		{object}	responses.PhoneResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /phones/fcm-token [put]
+func (h *PhoneHandler) UpsertFCMToken(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	var request requests.PhoneFCMToken
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateFCMToken(ctx, request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
+	}
+
+	phone, err := h.service.UpsertFCMToken(ctx, request.ToPhoneFCMTokenParams(h.userFromContext(c), c.OriginalURL()))
+	if err != nil {
+		msg := fmt.Sprintf("cannot delete phones with params [%+#v]", request)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "FCM token updated successfully", phone)
 }

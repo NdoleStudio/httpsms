@@ -99,6 +99,29 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 	return result
 }
 
+// ValidateFCMToken validates requests.PhoneFCMToken
+func (validator *PhoneHandlerValidator) ValidateFCMToken(_ context.Context, request requests.PhoneFCMToken) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"phone_number": []string{
+				"required",
+				phoneNumberRule,
+			},
+			"fcm_token": []string{
+				"min:0",
+				"max:1000",
+			},
+			"sim": []string{
+				"required",
+				"in:" + strings.Join([]string{entities.SIM1.String(), entities.SIM2.String()}, ","),
+			},
+		},
+	})
+
+	return v.ValidateStruct()
+}
+
 // ValidateDelete ValidateUpsert validates requests.PhoneDelete
 func (validator *PhoneHandlerValidator) ValidateDelete(_ context.Context, request requests.PhoneDelete) url.Values {
 	v := govalidator.New(govalidator.Options{

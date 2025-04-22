@@ -37,9 +37,9 @@ func NewBillingHandler(
 }
 
 // RegisterRoutes registers the routes for the MessageHandler
-func (h *BillingHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/billing/usage-history", h.UsageHistory)
-	router.Get("/billing/usage", h.Usage)
+func (h *BillingHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Get("/billing/usage-history", h.computeRoute(middlewares, h.UsageHistory)...)
+	router.Get("/billing/usage", h.computeRoute(middlewares, h.Usage)...)
 }
 
 // UsageHistory returns the usage history of a user

@@ -48,16 +48,20 @@ func NewMessageHandler(
 }
 
 // RegisterRoutes registers the routes for the MessageHandler
-func (h *MessageHandler) RegisterRoutes(router fiber.Router) {
-	router.Post("/messages/send", h.PostSend)
-	router.Post("/messages/bulk-send", h.BulkSend)
-	router.Post("/messages/receive", h.PostReceive)
-	router.Post("/messages/calls/missed", h.PostCallMissed)
-	router.Get("/messages/outstanding", h.GetOutstanding)
-	router.Get("/messages", h.Index)
-	router.Get("/messages/search", h.Search)
-	router.Post("/messages/:messageID/events", h.PostEvent)
-	router.Delete("/messages/:messageID", h.Delete)
+func (h *MessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Post("/v1/messages/send", h.computeRoute(middlewares, h.PostSend)...)
+	router.Post("/v1/messages/bulk-send", h.computeRoute(middlewares, h.BulkSend)...)
+	router.Get("/v1/messages", h.computeRoute(middlewares, h.Index)...)
+	router.Get("/v1/messages/search", h.computeRoute(middlewares, h.Search)...)
+	router.Delete("/v1/messages/:messageID", h.computeRoute(middlewares, h.Delete)...)
+}
+
+// RegisterPhoneAPIKeyRoutes registers the routes for the MessageHandler
+func (h *MessageHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Post("/v1/messages/:messageID/events", h.computeRoute(middlewares, h.PostEvent)...)
+	router.Post("/v1/messages/receive", h.computeRoute(middlewares, h.PostReceive)...)
+	router.Post("/v1/messages/calls/missed", h.computeRoute(middlewares, h.PostCallMissed)...)
+	router.Get("/v1/messages/outstanding", h.computeRoute(middlewares, h.GetOutstanding)...)
 }
 
 // PostSend a new entities.Message
@@ -201,11 +205,11 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching outstanding messages")
 	}
 
-	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.Path(), h.userIDFomContext(c), timestamp))
+	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.Path(), h.userFromContext(c), timestamp))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		msg := fmt.Sprintf("outstanding message with id [%s] already fetched", request.MessageID)
+		msg := fmt.Sprintf("Cannot find outstanding message with ID [%s]", request.MessageID)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
-		return h.responseNotFound(c, "outstanding message already processed")
+		return h.responseNotFound(c, msg)
 	}
 
 	if err != nil {
@@ -315,6 +319,11 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
+	if !h.authorizePhoneAPIKey(c, message.Owner) {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not authorized to send event for message with ID [%s]", h.userIDFomContext(c), request.MessageID)))
+		return h.responsePhoneAPIKeyUnauthorized(c, message.Owner, h.userFromContext(c))
+	}
+
 	message, err = h.service.StoreEvent(ctx, message, request.ToMessageStoreEventParams(c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store event for message [%s] with paylod [%s]", request.MessageID, c.Body())
@@ -360,6 +369,11 @@ func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
 	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
 		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't receive a message becasuse they have exceeded the limit", h.userIDFomContext(c))))
 		return h.responsePaymentRequired(c, *msg)
+	}
+
+	if !h.authorizePhoneAPIKey(c, request.To) {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not authorized to receive message to phone number [%s]", h.userIDFomContext(c), request.To)))
+		return h.responsePhoneAPIKeyUnauthorized(c, request.To, h.userFromContext(c))
 	}
 
 	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(h.userIDFomContext(c), c.OriginalURL()))
@@ -452,6 +466,11 @@ func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("validation errors [%s], for missed call event [%s]", spew.Sdump(errors), c.Body())
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing missed call event")
+	}
+
+	if !h.authorizePhoneAPIKey(c, request.To) {
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not authorized to register missed phone call for phone number [%s]", h.userIDFomContext(c), request.To)))
+		return h.responsePhoneAPIKeyUnauthorized(c, request.To, h.userFromContext(c))
 	}
 
 	message, err := h.service.RegisterMissedCall(ctx, request.ToCallMissedParams(h.userIDFomContext(c), c.OriginalURL()))

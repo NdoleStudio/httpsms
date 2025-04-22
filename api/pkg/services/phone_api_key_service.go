@@ -40,7 +40,7 @@ func NewPhoneAPIKeyService(
 
 // Create a new entities.PhoneAPIKey
 func (service *PhoneAPIKeyService) Create(ctx context.Context, authContext entities.AuthContext, name string) (*entities.PhoneAPIKey, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	apiKey, err := service.generateAPIKey(64)
@@ -65,12 +65,13 @@ func (service *PhoneAPIKeyService) Create(ctx context.Context, authContext entit
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	ctxLogger.Info(fmt.Sprintf("created [%T] with ID [%s] for user ID [%s]", phoneAPIKey, phoneAPIKey.ID, authContext.ID))
 	return phoneAPIKey, nil
 }
 
 // Delete an entities.PhoneAPIKey
 func (service *PhoneAPIKeyService) Delete(ctx context.Context, userID entities.UserID, phoneAPIKeyID uuid.UUID) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	phoneAPIKey, err := service.repository.Load(ctx, userID, phoneAPIKeyID)
@@ -84,12 +85,13 @@ func (service *PhoneAPIKeyService) Delete(ctx context.Context, userID entities.U
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	ctxLogger.Info(fmt.Sprintf("deleted [%T] with ID [%s] for user ID [%s]", phoneAPIKey, phoneAPIKey.ID, userID))
 	return nil
 }
 
 // RemovePhone removes the phone from the phone API key
 func (service *PhoneAPIKeyService) RemovePhone(ctx context.Context, userID entities.UserID, phoneAPIKeyID uuid.UUID, phoneID uuid.UUID) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	phone, err := service.phoneRepository.LoadByID(ctx, userID, phoneID)
@@ -109,6 +111,61 @@ func (service *PhoneAPIKeyService) RemovePhone(ctx context.Context, userID entit
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	ctxLogger.Info(fmt.Sprintf("removed [%T] with ID [%s] from [%T] with ID [%s] for user ID [%s]", phone, phoneID, phoneAPIKey, phoneAPIKeyID, userID))
+	return nil
+}
+
+// RemovePhoneByID removes the phone from the phone API key by phone number and phoneID
+func (service *PhoneAPIKeyService) RemovePhoneByID(ctx context.Context, userID entities.UserID, phoneID uuid.UUID, phoneNumber string) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.RemovePhoneByID(ctx, userID, phoneID, phoneNumber); err != nil {
+		msg := fmt.Sprintf("cannot remove [%T] with ID [%s] and number [%s] for user [%s]", &entities.Phone{}, phoneID, phoneNumber, userID.String())
+		return stacktrace.Propagate(err, msg)
+	}
+
+	ctxLogger.Info(fmt.Sprintf("removed phone with ID [%s] from [%T] for user ID [%s]", phoneID, &entities.PhoneAPIKey{}, userID))
+	return nil
+}
+
+// DeleteAllForUser removes all entities.PhoneAPIKey for a user
+func (service *PhoneAPIKeyService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		msg := fmt.Sprintf("cannot delete all [%T] for user ID [%s]", &entities.PhoneAPIKey{}, userID)
+		return stacktrace.Propagate(err, msg)
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted all [%T] for user ID [%s]", &entities.PhoneAPIKey{}, userID))
+	return nil
+}
+
+// AddPhone adds a phone to the phone API key
+func (service *PhoneAPIKeyService) AddPhone(ctx context.Context, userID entities.UserID, phoneAPIKeyID uuid.UUID, phoneID uuid.UUID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	phone, err := service.phoneRepository.LoadByID(ctx, userID, phoneID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load [%T] with ID [%s] for user [%s]", &entities.Phone{}, phoneID, userID.String())
+		return stacktrace.Propagate(err, msg)
+	}
+
+	phoneAPIKey, err := service.repository.Load(ctx, userID, phoneAPIKeyID)
+	if err != nil {
+		msg := fmt.Sprintf("cannot load [%T] with ID [%s] for user [%s]", &entities.PhoneAPIKey{}, phoneAPIKeyID, userID.String())
+		return stacktrace.Propagate(err, msg)
+	}
+
+	if err = service.repository.AddPhone(ctx, phoneAPIKey, phone); err != nil {
+		msg := fmt.Sprintf("cannot add [%T] with ID [%s] to phone API key with ID [%s] for user [%s]", phone, phone.ID, phoneAPIKey.ID, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("added [%T] with ID [%s] to [%T] with ID [%s] for user ID [%s]", phone, phone.ID, phoneAPIKey, phoneAPIKeyID, userID))
 	return nil
 }
 

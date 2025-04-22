@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -20,8 +21,8 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 		ctxLogger := tracer.CtxLogger(logger, span)
 
 		apiKey := getAPIKeyFromRequest(c)
-		if len(apiKey) == 0 || apiKey == "undefined" {
-			span.AddEvent(fmt.Sprintf("the request header has no [%s] header", authHeaderAPIKey))
+		if len(apiKey) == 0 || apiKey == "undefined" || strings.HasPrefix(apiKey, "pk_") {
+			span.AddEvent(fmt.Sprintf("the request header has no primary [%s] header", authHeaderAPIKey))
 			return c.Next()
 		}
 

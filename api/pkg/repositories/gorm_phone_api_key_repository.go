@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
+
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/dgraph-io/ristretto"
@@ -26,8 +28,8 @@ type gormPhoneAPIKeyRepository struct {
 func NewGormPhoneAPIKeyRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	cache *ristretto.Cache[string, entities.AuthContext],
 	db *gorm.DB,
+	cache *ristretto.Cache[string, entities.AuthContext],
 ) PhoneAPIKeyRepository {
 	return &gormPhoneAPIKeyRepository{
 		logger: logger.WithService(fmt.Sprintf("%T", &gormPhoneAPIKeyRepository{})),
@@ -37,7 +39,29 @@ func NewGormPhoneAPIKeyRepository(
 	}
 }
 
-// Load an entities.Integration3CX based on the entities.UserID
+func (repository *gormPhoneAPIKeyRepository) RemovePhoneByID(ctx context.Context, userID entities.UserID, phoneID uuid.UUID, phoneNumber string) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	query := `
+UPDATE ?
+SET phone_ids = array_remove(phone_ids, ?),
+    phone_numbers = array_remove(phone_numbers, ?)
+WHERE user_id = ? AND array_position(phone_ids, ?) IS NOT NULL;
+`
+	err := repository.db.WithContext(ctx).
+		Raw(query, (entities.PhoneAPIKey{}).TableName(), phoneID, phoneNumber, userID, phoneID).
+		Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot remove phone with ID [%s] and number [%s] for user with ID [%s] ", phoneID, phoneNumber, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	repository.cache.Clear()
+	return nil
+}
+
+// Load an entities.PhoneAPIKey based on the entities.UserID
 func (repository *gormPhoneAPIKeyRepository) Load(ctx context.Context, userID entities.UserID, phoneAPIKeyID uuid.UUID) (*entities.PhoneAPIKey, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -138,27 +162,45 @@ func (repository *gormPhoneAPIKeyRepository) Delete(ctx context.Context, phoneAP
 	return nil
 }
 
-func (repository *gormPhoneAPIKeyRepository) AddPhone(ctx context.Context, authContext entities.AuthContext, phoneID uuid.UUID, phoneNumber string) error {
+func (repository *gormPhoneAPIKeyRepository) AddPhone(ctx context.Context, phoneAPIKey *entities.PhoneAPIKey, phone *entities.Phone) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	query := `
+	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
+		query := `
+UPDATE ?
+SET phone_ids = array_remove(phone_ids, ?),
+    phone_numbers = array_remove(phone_numbers, ?)
+WHERE  user_id  = ?;
+`
+		err := tx.WithContext(ctx).
+			Raw(query, phoneAPIKey.TableName(), phone.ID, phone.PhoneNumber, phone.UserID).
+			Error
+		if err != nil {
+			msg := fmt.Sprintf("cannot remove phone with ID [%s] from API Key with ID [%s] for user with ID [%s]", phone.ID, phoneAPIKey.ID, phone.UserID)
+			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+
+		query = `
 UPDATE ?
 SET phone_ids = array_append(phone_ids, ?),
     phone_numbers = array_append(phone_numbers, ?)
 WHERE array_position(phone_ids, ?) IS NULL AND id = ?;
 `
-
-	err := repository.db.WithContext(ctx).
-		Raw(query, (entities.PhoneAPIKey{}).TableName(), phoneID, phoneNumber, phoneID, *authContext.PhoneAPIKeyID).
-		Error
+		err = repository.db.WithContext(ctx).
+			Raw(query, phoneAPIKey.TableName(), phone.ID, phone.PhoneNumber, phoneAPIKey.ID).
+			Error
+		if err != nil {
+			msg := fmt.Sprintf("cannot add [%T] with ID [%s] from API Key with ID [%s] for user with ID [%s]", phone, phone.ID, phoneAPIKey.ID, phone.UserID)
+			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+		return nil
+	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot add phone with ID [%s] to phone API key with ID [%s]", phoneID, *authContext.PhoneAPIKeyID)
+		msg := fmt.Sprintf("cannot add [%T] with ID [%s] from API Key with ID [%s] for user with ID [%s]", phone, phone.ID, phoneAPIKey.ID, phone.UserID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
-
 	repository.cache.Clear()
-
 	return nil
 }
 
@@ -173,7 +215,7 @@ SET phone_ids = array_remove(phone_ids, ?),
 WHERE id = ?;
 `
 	err := repository.db.WithContext(ctx).
-		Raw(query, (entities.PhoneAPIKey{}).TableName(), phone.ID, phone.PhoneNumber, phoneAPIKey.ID).
+		Raw(query, phoneAPIKey.TableName(), phone.ID, phone.PhoneNumber, phoneAPIKey.ID).
 		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot remove phone with ID [%s] from phone API key with ID [%s]", phone.ID, phoneAPIKey.ID)

@@ -40,7 +40,7 @@ func NewMessageThreadHandler(
 }
 
 // RegisterRoutes registers the routes for the MessageHandler
-func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router) {
+func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	router.Get("/message-threads", h.Index)
 	router.Put("/message-threads/:messageThreadID", h.Update)
 	router.Delete("/message-threads/:messageThreadID", h.Delete)

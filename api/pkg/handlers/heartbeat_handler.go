@@ -39,10 +39,14 @@ func NewHeartbeatHandler(
 	}
 }
 
-// RegisterRoutes registers the routes for the MessageHandler
-func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/heartbeats", h.Index)
-	router.Post("/heartbeats", h.Store)
+// RegisterRoutes registers the routes for the HeartbeatHandler
+func (h *HeartbeatHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Get("/heartbeats", h.computeRoute(middlewares, h.Index)...)
+}
+
+// RegisterPhoneAPIKeyRoutes registers the routes for the HeartbeatHandler
+func (h *HeartbeatHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Post("/heartbeats", h.computeRoute(middlewares, h.Store)...)
 }
 
 // Index returns the heartbeats of a phone number
@@ -122,6 +126,13 @@ func (h *HeartbeatHandler) Store(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("validation errors [%s], while storing heartbeat [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing heartbeat")
+	}
+
+	for _, phoneNumber := range request.PhoneNumbers {
+		if !h.authorizePhoneAPIKey(c, phoneNumber) {
+			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("phone API Key ID [%s] is not authorized to store heartbeat for phone number [%s]", h.userFromContext(c).PhoneAPIKeyID, phoneNumber)))
+			return h.responsePhoneAPIKeyUnauthorized(c, phoneNumber, h.userFromContext(c))
+		}
 	}
 
 	params := request.ToStoreParams(h.userFromContext(c), c.OriginalURL(), c.Get("X-Client-Version"))
