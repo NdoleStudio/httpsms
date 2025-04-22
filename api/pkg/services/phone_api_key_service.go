@@ -70,7 +70,7 @@ func (service *PhoneAPIKeyService) Create(ctx context.Context, authContext entit
 		UserEmail:    authContext.Email,
 		PhoneNumbers: nil,
 		PhoneIDs:     nil,
-		APIKey:       apiKey,
+		APIKey:       "pk_" + apiKey,
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
 	}
