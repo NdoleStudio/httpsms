@@ -302,9 +302,15 @@ class LoginActivity : AppCompatActivity() {
 
             var e164PhoneNumber = formatE164(phoneNumber.text.toString().trim())
             var response = service.updateFcmToken(e164PhoneNumber, Constants.SIM1, Settings.getFcmToken(this) ?: "")
-            if(response.second != null || response.third != null || !SmsManagerService.isDualSIM(this)) {
-                Timber.e("error updating fcm token [${response.second}]")
+            if(response.second != null || response.third != null) {
+                Timber.e("error updating fcm token [${response.second}], third [${response.third}]")
                 liveData.postValue(Pair(response.second, response.third))
+                return@Thread
+            }
+
+            if (!SmsManagerService.isDualSIM(this)) {
+                Timber.d("single sim detected, no need to update sim2")
+                liveData.postValue(Pair(null, null))
                 return@Thread
             }
 

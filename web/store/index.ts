@@ -518,12 +518,12 @@ export const actions = {
 
   deletePhoneFromPhoneApiKey(
     context: ActionContext<State, State>,
-    payload: { phoneAPIKeyID: string; phoneID: string },
+    payload: { phoneApiKeyId: string; phoneId: string },
   ) {
     return new Promise<void>((resolve, reject) => {
       axios
         .delete<ResponsesNoContent>(
-          `/v1/api-keys/${payload.phoneAPIKeyID}/phones/${payload.phoneID}`,
+          `/v1/api-keys/${payload.phoneApiKeyId}/phones/${payload.phoneId}`,
         )
         .then(async (response: AxiosResponse<ResponsesNoContent>) => {
           await context.dispatch('addNotification', {

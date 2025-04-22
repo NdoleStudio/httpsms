@@ -119,7 +119,7 @@
                     </td>
                     <td>{{ phoneApiKey.created_at | timestamp }}</td>
                     <td>
-                      <ul v-if="phoneApiKey.phone_numbers" class="ml-n3">
+                      <ul v-if="phoneApiKey.phone_numbers.length" class="ml-n3">
                         <li
                           v-for="phoneNumber in phoneApiKey.phone_numbers"
                           :key="phoneNumber"
@@ -141,7 +141,7 @@
                           </v-btn>
                         </li>
                       </ul>
-                      <span v-else>-</span>
+                      <span v-else class="text--secondary">-</span>
                     </td>
                     <td>
                       <v-btn
@@ -405,7 +405,7 @@ export default Vue.extend({
       this.loading = true
       this.$store
         .dispatch('indexPhoneApiKeys')
-        .then((phoneApiKeys) => {
+        .then((phoneApiKeys: Array<EntitiesPhoneAPIKey>) => {
           this.phoneApiKeys = phoneApiKeys
         })
         .finally(() => {
@@ -423,7 +423,7 @@ export default Vue.extend({
           )?.id,
         })
         .then(() => {
-          this.deleteApiKeyDialog = false
+          this.removePhoneFromApiKeyDialog = false
           this.loadPhoneApiKeys()
         })
         .finally(() => {

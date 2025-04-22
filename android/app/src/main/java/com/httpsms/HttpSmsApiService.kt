@@ -220,10 +220,9 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
                 return Triple(null,"Cannot validate the API key. Check if it is correct and try again.", null)
             }
 
-            response.close()
             Timber.i("FCM token submitted correctly with API key [$apiKey] and server url [$baseURL]" )
-
             val payload = ResponsePhone.fromJson(response.body!!.string())?.data
+            response.close()
             return Triple(payload, null, null)
         } catch (ex: Exception) {
             return Triple(null, null, ex.message)

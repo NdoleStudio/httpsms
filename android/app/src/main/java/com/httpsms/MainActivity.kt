@@ -335,7 +335,6 @@ class MainActivity : AppCompatActivity() {
                 if (Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
                     phoneNumbers.add(Settings.getSIM2PhoneNumber(applicationContext))
                 }
-                Timber.w("numbers = [${phoneNumbers.joinToString()}]")
                 val isStored = HttpSmsApiService.create(context).storeHeartbeat(phoneNumbers.toTypedArray(), charging)
                 if (!isStored) {
                     error = "Could not send heartbeat make sure the phone is connected to the internet"

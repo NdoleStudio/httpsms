@@ -35,11 +35,12 @@ class LogzTree(val context: Context): Timber.DebugTree() {
             t
         )
 
-        val body = Klaxon().toJsonString(logEntry).toRequestBody("application/x-www-form-urlencoded".toMediaType())
+        val body = Klaxon().toJsonString(listOf(logEntry)).toRequestBody("application/json".toMediaType())
         val request: Request = Request.Builder()
-            .url("https://listener.logz.io:8071?token=xPDQiZOOfemERsCaVsJXtMbhKfWdVyNk&type=http-bulk")
+            .url("https://api.axiom.co/v1/datasets/production/ingest")
             .post(body)
-            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer xaat-2a2e0b73-3702-4971-a80f-be3956934950")
             .build()
 
         Thread {
