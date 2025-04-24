@@ -328,7 +328,7 @@ definitions:
   entities.PhoneAPIKey:
     properties:
       api_key:
-        example: pk_DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY
+        example: pk_DGW8NwQp7mxKaSZ72Xq9v6xxxxx
         type: string
       created_at:
         example: "2022-06-05T14:26:02.302718+03:00"
@@ -1203,7 +1203,7 @@ paths:
         Get list phone API keys which a user has registered on the httpSMS
         application
       parameters:
-        - description: number of heartbeats to skip
+        - description: number of api keys to skip
           in: query
           minimum: 0
           name: skip
@@ -1212,7 +1212,7 @@ paths:
           in: query
           name: query
           type: string
-        - description: number of phone api keys to return
+        - description: number of api keys to return
           in: query
           maximum: 100
           minimum: 1
@@ -1284,7 +1284,7 @@ paths:
             $ref: "#/definitions/responses.InternalServerError"
       security:
         - ApiKeyAuth: []
-      summary: Store phone API key
+      summary: store phone API key
       tags:
         - PhoneAPIKeys
   /api-keys/{phoneAPIKeyID}:

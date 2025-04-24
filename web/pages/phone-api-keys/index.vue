@@ -354,7 +354,9 @@ export default Vue.extend({
     })
     this.webhookChannel = pusher.subscribe(this.$store.getters.getAuthUser.id)
     this.webhookChannel.bind('phone.updated', () => {
-      this.loadPhoneApiKeys()
+      if (!this.loading) {
+        this.loadPhoneApiKeys()
+      }
     })
   },
   beforeDestroy() {
@@ -384,7 +386,6 @@ export default Vue.extend({
     },
     generateQrCode(text: string) {
       const canvas = this.$refs.qrCodeCanvas
-      console.log(canvas)
       if (canvas) {
         QRCode.toCanvas(
           canvas,

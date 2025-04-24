@@ -45,7 +45,7 @@ const docTemplate = `{
                     {
                         "minimum": 0,
                         "type": "integer",
-                        "description": "number of heartbeats to skip",
+                        "description": "number of api keys to skip",
                         "name": "skip",
                         "in": "query"
                     },
@@ -59,7 +59,7 @@ const docTemplate = `{
                         "maximum": 100,
                         "minimum": 1,
                         "type": "integer",
-                        "description": "number of phone api keys to return",
+                        "description": "number of api keys to return",
                         "name": "limit",
                         "in": "query"
                     }
@@ -113,7 +113,7 @@ const docTemplate = `{
                 "tags": [
                     "PhoneAPIKeys"
                 ],
-                "summary": "Store phone API key",
+                "summary": "store phone API key",
                 "parameters": [
                     {
                         "description": "Payload of new phone API key.",
@@ -3224,7 +3224,7 @@ const docTemplate = `{
             "properties": {
                 "api_key": {
                     "type": "string",
-                    "example": "pk_DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY"
+                    "example": "pk_DGW8NwQp7mxKaSZ72Xq9v6xxxxx"
                 },
                 "created_at": {
                     "type": "string",

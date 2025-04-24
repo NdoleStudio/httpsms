@@ -40,30 +40,29 @@ func NewPhoneAPIKeyHandler(
 
 // RegisterRoutes registers the routes for the PhoneAPIKeyHandler
 func (h *PhoneAPIKeyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
-	router := app.Group("/v1/api-keys/")
-	router.Get("/", h.computeRoute(middlewares, h.Index)...)
-	router.Post("/", h.computeRoute(middlewares, h.Store)...)
-	router.Delete("/:phoneAPIKeyID", h.computeRoute(middlewares, h.Delete)...)
-	router.Delete("/:phoneAPIKeyID/phones/:phoneID", h.computeRoute(middlewares, h.DeletePhone)...)
+	router := app.Group("/v1/phone-api-keys/")
+	router.Get("/", h.computeRoute(middlewares, h.index)...)
+	router.Post("/", h.computeRoute(middlewares, h.store)...)
+	router.Delete("/:phoneAPIKeyID", h.computeRoute(middlewares, h.delete)...)
+	router.Delete("/:phoneAPIKeyID/phones/:phoneID", h.computeRoute(middlewares, h.deletePhone)...)
 }
 
-// Index returns the phone API Keys of a user
 // @Summary      Get the phone API keys of a user
 // @Description  Get list phone API keys which a user has registered on the httpSMS application
 // @Security	 ApiKeyAuth
 // @Tags         PhoneAPIKeys
 // @Accept       json
 // @Produce      json
-// @Param        skip		query  int  	false	"number of heartbeats to skip"					minimum(0)
-// @Param        query		query  string  	false 	"filter api keys with name containing query"
-// @Param        limit		query  int  	false	"number of phone api keys to return"			minimum(1)	maximum(100)
+// @Param        skip		query  int  	false	"number of phone api keys to skip"					minimum(0)
+// @Param        query		query  string  	false 	"filter phone api keys with name containing query"
+// @Param        limit		query  int  	false	"number of phone api keys to return"					minimum(1)	maximum(100)
 // @Success      200 		{object}	responses.PhoneAPIKeysResponse
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /api-keys [get]
-func (h *PhoneAPIKeyHandler) Index(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) index(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -90,7 +89,6 @@ func (h *PhoneAPIKeyHandler) Index(c *fiber.Ctx) error {
 	return h.responseOK(c, fmt.Sprintf("fetched %d phone API %s", len(apiKeys), h.pluralize("key", len(apiKeys))), apiKeys)
 }
 
-// Store a new Phone API key
 // @Summary      Store phone API key
 // @Description  Creates a new phone API key which can be used to log in to the httpSMS app on your Android phone
 // @Security	 ApiKeyAuth
@@ -104,7 +102,7 @@ func (h *PhoneAPIKeyHandler) Index(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /api-keys [post]
-func (h *PhoneAPIKeyHandler) Store(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) store(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -121,24 +119,23 @@ func (h *PhoneAPIKeyHandler) Store(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
-	phone, err := h.service.Create(ctx, h.userFromContext(c), request.Name)
+	phoneAPIKey, err := h.service.Create(ctx, h.userFromContext(c), request.Name)
 	if err != nil {
 		msg := fmt.Sprintf("cannot update phones with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseOK(c, "phone updated successfully", phone)
+	return h.responseOK(c, "phone API key created successfully", phoneAPIKey)
 }
 
-// Delete a phone API Key
 // @Summary      Delete a phone API key from the database.
 // @Description  Delete a phone API Key from the database and cannot be used for authentication anymore.
 // @Security	 ApiKeyAuth
 // @Tags         PhoneAPIKeys
 // @Accept       json
 // @Produce      json
-// @Param 		 phoneAPIKeyID 	path		string 							true 	"ID of the phone API key" 	default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Param 		 phoneAPIKeyID 	path	string 							true 	"ID of the phone API key" 	default(32343a19-da5e-4b1b-a767-3298a73703ca)
 // @Success      204  		{object} 	responses.NoContent
 // @Failure      400  		{object}  	responses.BadRequest
 // @Failure 	 401    	{object}	responses.Unauthorized
@@ -146,7 +143,7 @@ func (h *PhoneAPIKeyHandler) Store(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /api-keys/{phoneAPIKeyID} [delete]
-func (h *PhoneAPIKeyHandler) Delete(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -171,7 +168,6 @@ func (h *PhoneAPIKeyHandler) Delete(c *fiber.Ctx) error {
 	return h.responseNoContent(c, "phone API key deleted successfully")
 }
 
-// DeletePhone removes a phone from a phone API key
 // @Summary      Remove the association of a phone from the phone API key.
 // @Description  You will need to login again to the httpSMS app on your Android phone with a new phone API key.
 // @Security	 ApiKeyAuth
@@ -187,7 +183,7 @@ func (h *PhoneAPIKeyHandler) Delete(c *fiber.Ctx) error {
 // @Failure      422  			{object} 	responses.UnprocessableEntity
 // @Failure      500  			{object}  	responses.InternalServerError
 // @Router       /api-keys/{phoneAPIKeyID}/phones/{phoneID} [delete]
-func (h *PhoneAPIKeyHandler) DeletePhone(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) deletePhone(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 

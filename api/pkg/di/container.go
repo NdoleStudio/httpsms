@@ -699,6 +699,7 @@ func (container *Container) PhoneAPIKeyRepository() (repository repositories.Pho
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
+		container.UserRistrettoCache(),
 	)
 }
 

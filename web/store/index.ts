@@ -438,7 +438,7 @@ export const actions = {
   storePhoneApiKey(context: ActionContext<State, State>, name: string) {
     return new Promise<ResponsesPhoneAPIKeyResponse>((resolve, reject) => {
       axios
-        .post<ResponsesPhoneAPIKeyResponse>(`/v1/api-keys`, { name })
+        .post<ResponsesPhoneAPIKeyResponse>(`/v1/phone-api-keys`, { name })
         .then(async (response: AxiosResponse<ResponsesPhoneAPIKeyResponse>) => {
           await context.dispatch('addNotification', {
             message:
@@ -464,7 +464,7 @@ export const actions = {
   indexPhoneApiKeys(context: ActionContext<State, State>) {
     return new Promise<Array<EntitiesPhoneAPIKey>>((resolve, reject) => {
       axios
-        .get<ResponsesPhoneAPIKeysResponse>(`/v1/api-keys`, {
+        .get<ResponsesPhoneAPIKeysResponse>(`/v1/phone-api-keys`, {
           params: {
             limit: 100,
           },
@@ -492,7 +492,7 @@ export const actions = {
   ) {
     return new Promise<void>((resolve, reject) => {
       axios
-        .delete<ResponsesNoContent>(`/v1/api-keys/${phoneAPIKeyID}`)
+        .delete<ResponsesNoContent>(`/v1/phone-api-keys/${phoneAPIKeyID}`)
         .then(async (response: AxiosResponse<ResponsesNoContent>) => {
           await context.dispatch('addNotification', {
             message:
@@ -523,7 +523,7 @@ export const actions = {
     return new Promise<void>((resolve, reject) => {
       axios
         .delete<ResponsesNoContent>(
-          `/v1/api-keys/${payload.phoneApiKeyId}/phones/${payload.phoneId}`,
+          `/v1/phone-api-keys/${payload.phoneApiKeyId}/phones/${payload.phoneId}`,
         )
         .then(async (response: AxiosResponse<ResponsesNoContent>) => {
           await context.dispatch('addNotification', {

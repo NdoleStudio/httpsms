@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -68,8 +70,8 @@ func (service *PhoneAPIKeyService) Create(ctx context.Context, authContext entit
 		Name:         name,
 		UserID:       authContext.ID,
 		UserEmail:    authContext.Email,
-		PhoneNumbers: nil,
-		PhoneIDs:     nil,
+		PhoneNumbers: pq.StringArray{},
+		PhoneIDs:     pq.StringArray{},
 		APIKey:       "pk_" + apiKey,
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
