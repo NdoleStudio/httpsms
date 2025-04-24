@@ -8,7 +8,7 @@ steps:
       - "--dockerfile=Dockerfile"
       - "--context=."
       - "--build-arg=GIT_COMMIT=$SHORT_SHA"
-      - "--snapshotMode=time"
+      - "--snapshot-mode=time"
 
   - id: "Deploy to cloud run"
     name: "gcr.io/cloud-builders/gcloud"
