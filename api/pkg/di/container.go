@@ -321,11 +321,6 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for %T", db))
 
-	// This prevents a bug in the Gorm AutoMigrate where it tries to delete this no existent constraints
-	db.Exec(`
-ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS uni_users_api_key CHECK (api_key IS NOT NULL);
-ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (server_id IS NOT NULL);`)
-
 	if err = db.AutoMigrate(&entities.Message{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Message{})))
 	}
