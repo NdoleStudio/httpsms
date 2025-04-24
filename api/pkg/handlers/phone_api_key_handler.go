@@ -61,7 +61,7 @@ func (h *PhoneAPIKeyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
-// @Router       /api-keys [get]
+// @Router       /phone-api-keys [get]
 func (h *PhoneAPIKeyHandler) index(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
@@ -101,7 +101,7 @@ func (h *PhoneAPIKeyHandler) index(c *fiber.Ctx) error {
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
-// @Router       /api-keys [post]
+// @Router       /phone-api-keys [post]
 func (h *PhoneAPIKeyHandler) store(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
@@ -142,7 +142,7 @@ func (h *PhoneAPIKeyHandler) store(c *fiber.Ctx) error {
 // @Failure 	 404		{object}	responses.NotFound
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
-// @Router       /api-keys/{phoneAPIKeyID} [delete]
+// @Router       /phone-api-keys/{phoneAPIKeyID} [delete]
 func (h *PhoneAPIKeyHandler) delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
@@ -182,7 +182,7 @@ func (h *PhoneAPIKeyHandler) delete(c *fiber.Ctx) error {
 // @Failure 	 404			{object}	responses.NotFound
 // @Failure      422  			{object} 	responses.UnprocessableEntity
 // @Failure      500  			{object}  	responses.InternalServerError
-// @Router       /api-keys/{phoneAPIKeyID}/phones/{phoneID} [delete]
+// @Router       /phone-api-keys/{phoneAPIKeyID}/phones/{phoneID} [delete]
 func (h *PhoneAPIKeyHandler) deletePhone(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
