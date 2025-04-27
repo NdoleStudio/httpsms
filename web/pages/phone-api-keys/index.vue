@@ -84,6 +84,14 @@
                   </v-card-actions>
                 </v-card>
               </v-dialog>
+              <v-spacer />
+              <v-btn
+                v-if="$vuetify.breakpoint.lgAndUp"
+                href="https://docs.httpsms.com/features/phone-api-keys"
+                color="secondary"
+                class="mt-1"
+                >Documentation</v-btn
+              >
             </div>
             <p class="text--secondary">
               If you have multiple phones, you can create a unique phone API

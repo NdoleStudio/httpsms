@@ -51,8 +51,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>6,913+</b> happy users who have sent or received
-            more than <b>3,564,030+</b> messages.
+            ⚡Trusted by <b>8,370+</b> happy users who have sent or received
+            more than <b>3,994,092+</b> messages.
           </p>
           <div
             class="mt-4"
@@ -305,6 +305,33 @@
               max-height="300"
               contain
               :src="require('assets/img/mobile-encryption.svg')"
+            ></v-img>
+          </v-col>
+        </v-row>
+        <v-row class="mt-16">
+          <v-col cols="12" md="6" class="d-flex align-center">
+            <div>
+              <h3 class="text-h3 mb-1">Multiple Phones</h3>
+              <h5 class="text-h6 mb-3 font-weight-light">
+                Setup the httpSMS gateway Android app on multiple phones
+                independently and securely without sharing data under one
+                account by creating unique phone API keys.
+              </h5>
+              <v-btn
+                href="https://docs.httpsms.com/features/phone-api-keys"
+                class="primary"
+              >
+                <v-icon left>{{ mdiCellphoneKey }}</v-icon
+                >Documentation
+              </v-btn>
+            </div>
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-img
+              class="mb-4"
+              max-height="300"
+              contain
+              :src="require('assets/img/manage-phones.svg')"
             ></v-img>
           </v-col>
         </v-row>
@@ -950,6 +977,7 @@ import {
   mdiLanguagePython,
   mdiNumeric2,
   mdiNumeric3,
+  mdiCellphoneKey,
   mdiTallyMark1,
   mdiTallyMark3,
   mdiTallyMark2,
@@ -995,6 +1023,7 @@ export default Vue.extend({
       mdiLanguagePython,
       mdiLanguageCsharp,
       mdiLanguageJava,
+      mdiCellphoneKey,
       mdiPowershell,
       mdiLanguageGo,
       selectedTab: 'javascript',
