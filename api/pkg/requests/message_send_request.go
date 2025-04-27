@@ -18,8 +18,8 @@ type MessageSend struct {
 	To      string `json:"to" example:"+18005550100"`
 	Content string `json:"content" example:"This is a sample text message"`
 
-	// Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
-	Encrypted bool `json:"encrypted" example:"false"`
+	// Encrypted is an optional parameter used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
+	Encrypted bool `json:"encrypted" example:"false" validate:"optional"`
 	// RequestID is an optional parameter used to track a request from the client's perspective
 	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
 	// SendAt is an optional parameter used to schedule a message to be sent at a later time

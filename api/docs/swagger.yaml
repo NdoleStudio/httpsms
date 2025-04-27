@@ -341,15 +341,15 @@ definitions:
         type: string
       phone_ids:
         example:
-          - "[32343a19-da5e-4b1b-a767-3298a73703cb"
-          - 32343a19-da5e-4b1b-a767-3298a73703cc]
+          - 32343a19-da5e-4b1b-a767-3298a73703cb
+          - 32343a19-da5e-4b1b-a767-3298a73703cc
         items:
           type: string
         type: array
       phone_numbers:
         example:
-          - "[+18005550199"
-          - +18005550100]
+          - "+18005550199"
+          - "+18005550100"
         items:
           type: string
         type: array
@@ -448,7 +448,7 @@ definitions:
         type: string
       events:
         example:
-          - "[message.phone.received]"
+          - message.phone.received
         items:
           type: string
         type: array
@@ -457,8 +457,8 @@ definitions:
         type: string
       phone_numbers:
         example:
-          - "[+18005550199"
-          - +18005550100]
+          - "+18005550199"
+          - "+18005550100"
         items:
           type: string
         type: array
@@ -641,8 +641,9 @@ definitions:
         type: string
       encrypted:
         description:
-          Encrypted is used to determine if the content is end-to-end encrypted.
-          Make sure to set the encryption key on the httpSMS mobile app
+          Encrypted is an optional parameter used to determine if the content
+          is end-to-end encrypted. Make sure to set the encryption key on the httpSMS
+          mobile app
         example: false
         type: boolean
       from:
@@ -665,7 +666,6 @@ definitions:
         type: string
     required:
       - content
-      - encrypted
       - from
       - to
     type: object
@@ -844,7 +844,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.BillingUsage"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -861,7 +861,7 @@ definitions:
           $ref: "#/definitions/entities.BillingUsage"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -876,7 +876,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.Discord"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -893,7 +893,7 @@ definitions:
           $ref: "#/definitions/entities.Discord"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -908,7 +908,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.Heartbeat"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -925,7 +925,7 @@ definitions:
           $ref: "#/definitions/entities.Heartbeat"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -952,7 +952,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.Message"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -969,7 +969,7 @@ definitions:
           $ref: "#/definitions/entities.MessageThread"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -986,7 +986,7 @@ definitions:
           $ref: "#/definitions/entities.Message"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1040,7 +1040,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.PhoneAPIKey"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1057,7 +1057,7 @@ definitions:
           $ref: "#/definitions/entities.PhoneAPIKey"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1072,7 +1072,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.Phone"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1089,7 +1089,7 @@ definitions:
           $ref: "#/definitions/entities.Phone"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1124,7 +1124,7 @@ definitions:
           type: array
         type: object
       message:
-        example: validation errors while sending message
+        example: validation errors while handling request
         type: string
       status:
         example: error
@@ -1139,7 +1139,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.User"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1154,7 +1154,7 @@ definitions:
       data:
         $ref: "#/definitions/entities.Webhook"
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1171,7 +1171,7 @@ definitions:
           $ref: "#/definitions/entities.Webhook"
         type: array
       message:
-        example: item created successfully
+        example: Request handled successfully
         type: string
       status:
         example: success
@@ -1195,196 +1195,6 @@ info:
   title: httpSMS API Reference
   version: "1.0"
 paths:
-  /api-keys:
-    get:
-      consumes:
-        - application/json
-      description:
-        Get list phone API keys which a user has registered on the httpSMS
-        application
-      parameters:
-        - description: number of api keys to skip
-          in: query
-          minimum: 0
-          name: skip
-          type: integer
-        - description: filter api keys with name containing query
-          in: query
-          name: query
-          type: string
-        - description: number of api keys to return
-          in: query
-          maximum: 100
-          minimum: 1
-          name: limit
-          type: integer
-      produces:
-        - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: "#/definitions/responses.PhoneAPIKeysResponse"
-        "400":
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/responses.BadRequest"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/responses.Unauthorized"
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: "#/definitions/responses.UnprocessableEntity"
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/responses.InternalServerError"
-      security:
-        - ApiKeyAuth: []
-      summary: Get the phone API keys of a user
-      tags:
-        - PhoneAPIKeys
-    post:
-      consumes:
-        - application/json
-      description:
-        Creates a new phone API key which can be used to log in to the
-        httpSMS app on your Android phone
-      parameters:
-        - description: Payload of new phone API key.
-          in: body
-          name: payload
-          required: true
-          schema:
-            $ref: "#/definitions/requests.PhoneAPIKeyStoreRequest"
-      produces:
-        - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: "#/definitions/responses.PhoneAPIKeyResponse"
-        "400":
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/responses.BadRequest"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/responses.Unauthorized"
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: "#/definitions/responses.UnprocessableEntity"
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/responses.InternalServerError"
-      security:
-        - ApiKeyAuth: []
-      summary: store phone API key
-      tags:
-        - PhoneAPIKeys
-  /api-keys/{phoneAPIKeyID}:
-    delete:
-      consumes:
-        - application/json
-      description:
-        Delete a phone API Key from the database and cannot be used for
-        authentication anymore.
-      parameters:
-        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
-          description: ID of the phone API key
-          in: path
-          name: phoneAPIKeyID
-          required: true
-          type: string
-      produces:
-        - application/json
-      responses:
-        "204":
-          description: No Content
-          schema:
-            $ref: "#/definitions/responses.NoContent"
-        "400":
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/responses.BadRequest"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/responses.Unauthorized"
-        "404":
-          description: Not Found
-          schema:
-            $ref: "#/definitions/responses.NotFound"
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: "#/definitions/responses.UnprocessableEntity"
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/responses.InternalServerError"
-      security:
-        - ApiKeyAuth: []
-      summary: Delete a phone API key from the database.
-      tags:
-        - PhoneAPIKeys
-  /api-keys/{phoneAPIKeyID}/phones/{phoneID}:
-    delete:
-      consumes:
-        - application/json
-      description:
-        You will need to login again to the httpSMS app on your Android
-        phone with a new phone API key.
-      parameters:
-        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
-          description: ID of the phone API key
-          in: path
-          name: phoneAPIKeyID
-          required: true
-          type: string
-        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
-          description: ID of the phone
-          in: path
-          name: phoneID
-          required: true
-          type: string
-      produces:
-        - application/json
-      responses:
-        "204":
-          description: No Content
-          schema:
-            $ref: "#/definitions/responses.NoContent"
-        "400":
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/responses.BadRequest"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/responses.Unauthorized"
-        "404":
-          description: Not Found
-          schema:
-            $ref: "#/definitions/responses.NotFound"
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: "#/definitions/responses.UnprocessableEntity"
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/responses.InternalServerError"
-      security:
-        - ApiKeyAuth: []
-      summary: Remove the association of a phone from the phone API key.
-      tags:
-        - PhoneAPIKeys
   /billing/usage:
     get:
       consumes:
@@ -2439,6 +2249,196 @@ paths:
       summary: Send a new SMS message
       tags:
         - Messages
+  /phone-api-keys:
+    get:
+      consumes:
+        - application/json
+      description:
+        Get list phone API keys which a user has registered on the httpSMS
+        application
+      parameters:
+        - description: number of phone api keys to skip
+          in: query
+          minimum: 0
+          name: skip
+          type: integer
+        - description: filter phone api keys with name containing query
+          in: query
+          name: query
+          type: string
+        - description: number of phone api keys to return
+          in: query
+          maximum: 100
+          minimum: 1
+          name: limit
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneAPIKeysResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get the phone API keys of a user
+      tags:
+        - PhoneAPIKeys
+    post:
+      consumes:
+        - application/json
+      description:
+        Creates a new phone API key which can be used to log in to the
+        httpSMS app on your Android phone
+      parameters:
+        - description: Payload of new phone API key.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.PhoneAPIKeyStoreRequest"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.PhoneAPIKeyResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Store phone API key
+      tags:
+        - PhoneAPIKeys
+  /phone-api-keys/{phoneAPIKeyID}:
+    delete:
+      consumes:
+        - application/json
+      description:
+        Delete a phone API Key from the database and cannot be used for
+        authentication anymore.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone API key
+          in: path
+          name: phoneAPIKeyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a phone API key from the database.
+      tags:
+        - PhoneAPIKeys
+  /phone-api-keys/{phoneAPIKeyID}/phones/{phoneID}:
+    delete:
+      consumes:
+        - application/json
+      description:
+        You will need to login again to the httpSMS app on your Android
+        phone with a new phone API key.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone API key
+          in: path
+          name: phoneAPIKeyID
+          required: true
+          type: string
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the phone
+          in: path
+          name: phoneID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.NoContent"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Remove the association of a phone from the phone API key.
+      tags:
+        - PhoneAPIKeys
   /phones:
     get:
       consumes:

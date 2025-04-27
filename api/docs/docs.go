@@ -23,286 +23,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api-keys": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get list phone API keys which a user has registered on the httpSMS application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PhoneAPIKeys"
-                ],
-                "summary": "Get the phone API keys of a user",
-                "parameters": [
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "description": "number of api keys to skip",
-                        "name": "skip",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter api keys with name containing query",
-                        "name": "query",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "number of api keys to return",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/responses.PhoneAPIKeysResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/responses.UnprocessableEntity"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Creates a new phone API key which can be used to log in to the httpSMS app on your Android phone",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PhoneAPIKeys"
-                ],
-                "summary": "store phone API key",
-                "parameters": [
-                    {
-                        "description": "Payload of new phone API key.",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/requests.PhoneAPIKeyStoreRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/responses.PhoneAPIKeyResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/responses.UnprocessableEntity"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api-keys/{phoneAPIKeyID}": {
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Delete a phone API Key from the database and cannot be used for authentication anymore.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PhoneAPIKeys"
-                ],
-                "summary": "Delete a phone API key from the database.",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
-                        "description": "ID of the phone API key",
-                        "name": "phoneAPIKeyID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NoContent"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NotFound"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/responses.UnprocessableEntity"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api-keys/{phoneAPIKeyID}/phones/{phoneID}": {
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "You will need to login again to the httpSMS app on your Android phone with a new phone API key.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PhoneAPIKeys"
-                ],
-                "summary": "Remove the association of a phone from the phone API key.",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
-                        "description": "ID of the phone API key",
-                        "name": "phoneAPIKeyID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
-                        "description": "ID of the phone",
-                        "name": "phoneID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NoContent"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NotFound"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/responses.UnprocessableEntity"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
         "/billing/usage": {
             "get": {
                 "security": [
@@ -1891,6 +1611,286 @@ const docTemplate = `{
                 }
             }
         },
+        "/phone-api-keys": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get list phone API keys which a user has registered on the httpSMS application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Get the phone API keys of a user",
+                "parameters": [
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "description": "number of phone api keys to skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter phone api keys with name containing query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "number of phone api keys to return",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PhoneAPIKeysResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates a new phone API key which can be used to log in to the httpSMS app on your Android phone",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Store phone API key",
+                "parameters": [
+                    {
+                        "description": "Payload of new phone API key.",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.PhoneAPIKeyStoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PhoneAPIKeyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/phone-api-keys/{phoneAPIKeyID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a phone API Key from the database and cannot be used for authentication anymore.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Delete a phone API key from the database.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the phone API key",
+                        "name": "phoneAPIKeyID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NoContent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/phone-api-keys/{phoneAPIKeyID}/phones/{phoneID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "You will need to login again to the httpSMS app on your Android phone with a new phone API key.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PhoneAPIKeys"
+                ],
+                "summary": "Remove the association of a phone from the phone API key.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the phone API key",
+                        "name": "phoneAPIKeyID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "32343a19-da5e-4b1b-a767-3298a73703ca",
+                        "description": "ID of the phone",
+                        "name": "phoneID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NoContent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/phones": {
             "get": {
                 "security": [
@@ -3244,8 +3244,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "[32343a19-da5e-4b1b-a767-3298a73703cb",
-                        "32343a19-da5e-4b1b-a767-3298a73703cc]"
+                        "32343a19-da5e-4b1b-a767-3298a73703cb",
+                        "32343a19-da5e-4b1b-a767-3298a73703cc"
                     ]
                 },
                 "phone_numbers": {
@@ -3254,8 +3254,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "[+18005550199",
-                        "+18005550100]"
+                        "+18005550199",
+                        "+18005550100"
                     ]
                 },
                 "updated_at": {
@@ -3382,7 +3382,7 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "[message.phone.received]"
+                        "message.phone.received"
                     ]
                 },
                 "id": {
@@ -3395,8 +3395,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "[+18005550199",
-                        "+18005550100]"
+                        "+18005550199",
+                        "+18005550100"
                     ]
                 },
                 "signing_key": {
@@ -3607,7 +3607,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "content",
-                "encrypted",
                 "from",
                 "to"
             ],
@@ -3617,7 +3616,7 @@ const docTemplate = `{
                     "example": "This is a sample text message"
                 },
                 "encrypted": {
-                    "description": "Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app",
+                    "description": "Encrypted is an optional parameter used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app",
                     "type": "boolean",
                     "example": false
                 },
@@ -3878,7 +3877,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -3902,7 +3901,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -3923,7 +3922,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -3947,7 +3946,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -3968,7 +3967,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -3992,7 +3991,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4030,7 +4029,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4054,7 +4053,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4078,7 +4077,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4154,7 +4153,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4178,7 +4177,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4199,7 +4198,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4223,7 +4222,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4272,7 +4271,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "validation errors while sending message"
+                    "example": "validation errors while handling request"
                 },
                 "status": {
                     "type": "string",
@@ -4293,7 +4292,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4314,7 +4313,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
@@ -4338,7 +4337,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "item created successfully"
+                    "example": "Request handled successfully"
                 },
                 "status": {
                     "type": "string",
