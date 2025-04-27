@@ -14,9 +14,9 @@ var Version string
 
 // @title       httpSMS API Reference
 // @version     1.0
-// @description API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP
+// @description Use your Android phone to send and receive SMS messages via a simple programmable API with end-to-end encryption.
 //
-// @contact.name  HTTP SMS
+// @contact.name  support@httpsms.com
 // @contact.email support@httpsms.com
 //
 // @license.name AGPL-3.0
