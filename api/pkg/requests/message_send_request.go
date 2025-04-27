@@ -22,7 +22,7 @@ type MessageSend struct {
 	Encrypted bool `json:"encrypted" example:"false" validate:"optional"`
 	// RequestID is an optional parameter used to track a request from the client's perspective
 	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
-	// SendAt is an optional parameter used to schedule a message to be sent at a later time
+	// SendAt is an optional parameter used to schedule a message to be sent in the future. The time is considered to be in your profile's local timezone.
 	SendAt *time.Time `json:"send_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
 }
 
