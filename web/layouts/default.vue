@@ -50,12 +50,6 @@ export default class DefaultLayout extends Vue {
       channel.bind('phone.updated', () => {
         this.canPoll = true
       })
-      channel.bind('message.phone.sent', () => {
-        this.canPoll = true
-      })
-      channel.bind('message.send.failed', () => {
-        this.canPoll = true
-      })
 
       this.startPoller()
     }, 10_000) // delay so that the auth user is present
@@ -79,21 +73,12 @@ export default class DefaultLayout extends Vue {
       if (this.$store.getters.getAuthUser && this.$store.getters.getOwner) {
         setAuthHeader((await this.$fire.auth.currentUser?.getIdToken()) ?? '')
         promises.push(
+          promises.push(this.$store.dispatch('loadPhones', true)),
           this.$store.dispatch('loadThreads'),
           this.$store.dispatch('getHeartbeat'),
         )
       }
-      promises.push(this.$store.dispatch('loadPhones', true))
-
       this.canPoll = false
-      if (this.$store.getters.hasThread) {
-        promises.push(
-          this.$store.dispatch(
-            'loadThreadMessages',
-            this.$store.getters.getThread.id,
-          ),
-        )
-      }
       await Promise.all(promises)
 
       setTimeout(() => {

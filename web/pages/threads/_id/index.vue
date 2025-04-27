@@ -343,6 +343,7 @@ import {
   mdiSim,
   mdiContentCopy,
 } from '@mdi/js'
+import Pusher, { Channel } from 'pusher-js'
 import { Message } from '~/models/message'
 import { NotificationRequest, SendMessageRequest, SIM } from '~/store'
 
@@ -382,6 +383,7 @@ export default Vue.extend({
       formMessage: '',
       formMessageRules,
       submitting: false,
+      webhookChannel: null as Channel | null,
       selectedMenuItem: -1,
     }
   },
@@ -410,6 +412,27 @@ export default Vue.extend({
 
   async mounted() {
     await this.loadData()
+
+    const pusher = new Pusher(this.$config.pusherKey, {
+      cluster: this.$config.pusherCluster,
+    })
+    this.webhookChannel = pusher.subscribe(this.$store.getters.getAuthUser.id)
+    this.webhookChannel.bind('message.phone.sent', () => {
+      if (!this.loadingMessages) {
+        this.loadMessages(false)
+      }
+    })
+    this.webhookChannel.bind('message.send.failed', () => {
+      if (!this.loadingMessages) {
+        this.loadMessages(false)
+      }
+    })
+  },
+
+  beforeDestroy() {
+    if (this.webhookChannel) {
+      this.webhookChannel.unsubscribe()
+    }
   },
 
   methods: {
