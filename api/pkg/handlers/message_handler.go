@@ -157,6 +157,11 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 	for index, message := range params {
 		wg.Add(1)
 		go func(message services.MessageSendParams, index int) {
+			if message.SendAt == nil {
+				sentAt := time.Now().UTC().Add(time.Duration(index) * time.Second)
+				message.SendAt = &sentAt
+			}
+
 			response, err := h.service.SendMessage(ctx, message)
 			if err != nil {
 				msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
