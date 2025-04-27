@@ -32,8 +32,48 @@ func NewWebsocketListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypePhoneUpdated: l.onPhoneUpdated,
+		events.EventTypePhoneUpdated:      l.onPhoneUpdated,
+		events.EventTypeMessagePhoneSent:  l.onMessagePhoneSent,
+		events.EventTypeMessageSendFailed: l.onMessagePhoneFailed,
 	}
+}
+
+// onMessagePhoneSent handles the events.EventTypeMessagePhoneSent event
+func (listener *WebsocketListener) onMessagePhoneSent(ctx context.Context, event cloudevents.Event) error {
+	ctx, span, _ := listener.tracer.StartWithLogger(ctx, listener.logger)
+	defer span.End()
+
+	var payload events.MessagePhoneSentPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
+		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessagePhoneFailed handles the events.EventTypeMessageSendFailed event
+func (listener *WebsocketListener) onMessagePhoneFailed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span, _ := listener.tracer.StartWithLogger(ctx, listener.logger)
+	defer span.End()
+
+	var payload events.MessageSendFailedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
+		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
 }
 
 // onPhoneUpdated handles the events.EventTypePhoneUpdated event
@@ -47,7 +87,7 @@ func (listener *WebsocketListener) onPhoneUpdated(ctx context.Context, event clo
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event); err != nil {
+	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
 		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

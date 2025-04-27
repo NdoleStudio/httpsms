@@ -28,14 +28,13 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-import { mdiBullhorn } from '@mdi/js'
 import Pusher from 'pusher-js'
 import { setAuthHeader } from '~/plugins/axios'
 
 @Component
 export default class DefaultLayout extends Vue {
   poller: number | null = null
-  mdiBullhorn: string = mdiBullhorn
+  canPoll: boolean = false
 
   get hasDrawer(): boolean {
     return ['threads', 'threads-id'].includes(this.$route.name ?? '')
@@ -49,11 +48,17 @@ export default class DefaultLayout extends Vue {
 
       const channel = pusher.subscribe(this.$store.getters.getAuthUser.id)
       channel.bind('phone.updated', () => {
-        this.$store.dispatch('setCanPoll', true)
+        this.canPoll = true
+      })
+      channel.bind('message.phone.sent', () => {
+        this.canPoll = true
+      })
+      channel.bind('message.send.failed', () => {
+        this.canPoll = true
       })
 
       this.startPoller()
-    }, 5000) // delay so that the auth user is present
+    }, 10_000) // delay so that the auth user is present
   }
 
   beforeDestroy(): void {
@@ -64,10 +69,7 @@ export default class DefaultLayout extends Vue {
 
   startPoller() {
     this.poller = window.setInterval(async () => {
-      if (
-        !this.$store.getters.getCanPoll ||
-        this.$store.getters.getAuthUser == null
-      ) {
+      if (!this.canPoll || this.$store.getters.getAuthUser == null) {
         return
       }
 
@@ -81,11 +83,9 @@ export default class DefaultLayout extends Vue {
           this.$store.dispatch('getHeartbeat'),
         )
       }
-      promises.push(
-        this.$store.dispatch('loadPhones', true),
-        this.$store.dispatch('setCanPoll', false),
-      )
+      promises.push(this.$store.dispatch('loadPhones', true))
 
+      this.canPoll = false
       if (this.$store.getters.hasThread) {
         promises.push(
           this.$store.dispatch(
@@ -99,7 +99,7 @@ export default class DefaultLayout extends Vue {
       setTimeout(() => {
         this.$store.dispatch('setPolling', false)
       }, 1000)
-    }, 10000)
+    }, 10_000)
   }
 }
 </script>

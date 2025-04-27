@@ -69,7 +69,6 @@ export type State = {
   threadId: string | null
   heartbeat: null | Heartbeat
   pooling: boolean
-  canPoll: boolean
   notification: Notification
 }
 
@@ -84,7 +83,6 @@ export const state = (): State => ({
   billingUsageHistory: [],
   archivedThreads: false,
   pooling: false,
-  canPoll: true,
   phones: [],
   user: null,
   owner: null,
@@ -196,10 +194,6 @@ export const getters = {
     return state.pooling
   },
 
-  getCanPoll(state: State): boolean {
-    return state.canPoll
-  },
-
   getIsArchived(state: State): boolean {
     return state.archivedThreads
   },
@@ -273,10 +267,6 @@ export const mutations = {
     state.loadingThreads = payload
   },
 
-  setCanPoll(state: State, payload: boolean) {
-    state.canPoll = payload
-  },
-
   resetState(state: State) {
     state.threads = []
     state.billingUsage = null
@@ -285,7 +275,6 @@ export const mutations = {
     state.user = null
     state.threadId = null
     state.archivedThreads = false
-    state.canPoll = false
     state.pooling = false
     state.owner = null
     setApiKey('')
@@ -337,10 +326,6 @@ export const actions = {
 
   toggleArchive(context: ActionContext<State, State>) {
     context.commit('setArchivedThreads', !context.getters.getIsArchived)
-  },
-
-  setCanPoll(context: ActionContext<State, State>, payload: boolean) {
-    context.commit('setCanPoll', payload)
   },
 
   async loadPhones(context: ActionContext<State, State>, force: boolean) {
