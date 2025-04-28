@@ -70,7 +70,7 @@ func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID e
 			return tx.WithContext(ctx).Model(user).
 				Clauses(clause.Returning{}).
 				Where("id = ?", userID).
-				Update("api_key", apiKey).Error
+				Update("api_key", "uk_"+apiKey).Error
 		},
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -219,7 +219,7 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 	user = &entities.User{
 		ID:               authUser.ID,
 		Email:            authUser.Email,
-		APIKey:           apiKey,
+		APIKey:           "uk_" + apiKey,
 		SubscriptionName: entities.SubscriptionNameFree,
 		CreatedAt:        time.Now().UTC(),
 		UpdatedAt:        time.Now().UTC(),
