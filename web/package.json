@@ -51,7 +51,7 @@
     "vue-template-compiler": "^2.7.16",
     "vuetify": "^2.7.2",
     "vuex": "^3.6.2",
-    "webpack": "^5.97.1"
+    "webpack": "^5.99.7"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.25.9",
