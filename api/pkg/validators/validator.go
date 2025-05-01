@@ -29,12 +29,12 @@ func init() {
 	govalidator.AddCustomRule(phoneNumberRule, func(field string, rule string, message string, value interface{}) error {
 		phoneNumber, ok := value.(string)
 		if !ok {
-			return fmt.Errorf("The %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+			return fmt.Errorf("The %s field must be a valid E.164 phone number in the international format e.g +18005550100", field)
 		}
 
 		_, err := phonenumbers.Parse(phoneNumber, phonenumbers.UNKNOWN_REGION)
 		if err != nil {
-			return fmt.Errorf("The %s field must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field)
+			return fmt.Errorf("The %s field must be a valid E.164 phone number in the international format e.g +18005550100", field)
 		}
 
 		return nil
@@ -49,7 +49,7 @@ func init() {
 		for index, number := range phoneNumbers {
 			_, err := phonenumbers.Parse(number, phonenumbers.UNKNOWN_REGION)
 			if err != nil {
-				return fmt.Errorf("The %s field in index [%d] must be a valid E.164 phone number: https://en.wikipedia.org/wiki/E.164", field, index)
+				return fmt.Errorf("The %s field in index [%d] must be a valid E.164 phone number in the international format e.g +18005550100", field, index)
 			}
 		}
 

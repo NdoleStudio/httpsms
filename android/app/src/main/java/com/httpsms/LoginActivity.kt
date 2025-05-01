@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import android.view.View
 import android.webkit.URLUtil
@@ -23,6 +22,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.httpsms.validators.PhoneNumberValidator
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import timber.log.Timber
@@ -180,7 +180,7 @@ class LoginActivity : AppCompatActivity() {
         Timber.d("login button clicked")
 
         val error = isGooglePlayServicesAvailable()
-        if (error != null || Settings.getFcmToken(this) == null) {
+        if (error != null) {
             Timber.d("google play services not installed [${error}]")
             Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
             return
@@ -188,7 +188,7 @@ class LoginActivity : AppCompatActivity() {
 
         if (Settings.getFcmToken(this) == null) {
             Timber.d("The FCM token is not set")
-            Toast.makeText(this, "Cannot find FCM token. Make sure you have google play services installed", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Cannot find FCM token. Make sure you have Google Play Services installed", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -220,6 +220,8 @@ class LoginActivity : AppCompatActivity() {
         val phoneNumberSIM2 = findViewById<TextInputEditText>(R.id.loginPhoneNumberInputSIM2)
         phoneNumberSIM2.isEnabled = false
 
+        val countryCode =  getCountryCode()
+
         val resetView = fun () {
             apiKey.isEnabled = true
             serverUrl.isEnabled = true
@@ -229,25 +231,17 @@ class LoginActivity : AppCompatActivity() {
             loginButton().isEnabled = true
         }
 
-        if (
-            !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumber.text.toString().trim()) ||
-            !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumber.text.toString().trim())
-        ) {
+        if (!PhoneNumberValidator.isValidPhoneNumber(phoneNumber.text.toString().trim(), countryCode)) {
             Timber.e("[SIM1] phone number [${phoneNumber.text.toString()}] is not valid")
             resetView()
-            phoneNumberLayout.error = "Invalid E.164 phone number"
+            phoneNumberLayout.error = "Enter an international phone number in the E.164 format"
             return
         }
 
-        if (
-            SmsManagerService.isDualSIM(this) && (
-                    !PhoneNumberUtils.isWellFormedSmsAddress(phoneNumberSIM2.text.toString().trim()) ||
-                    !PhoneNumberUtils.isGlobalPhoneNumber(phoneNumberSIM2.text.toString().trim())
-            )
-        ) {
+        if (SmsManagerService.isDualSIM(this) && !PhoneNumberValidator.isValidPhoneNumber(phoneNumberSIM2.text.toString().trim(), countryCode)) {
             Timber.e("[SIM2] phone number [${phoneNumberSIM2.text.toString()}] is not valid")
             resetView()
-            phoneNumberLayoutSIM2.error = "Invalid E.164 phone number"
+            phoneNumberLayoutSIM2.error = "Enter an international phone number in the E.164 format"
             return
         }
 
@@ -284,11 +278,11 @@ class LoginActivity : AppCompatActivity() {
                 Settings.setApiKeyAsync(this, apiKey.text.toString())
                 Settings.setServerUrlAsync(this, serverUrl.text.toString().trim())
 
-                val e164PhoneNumber = formatE164(phoneNumber.text.toString().trim())
+                val e164PhoneNumber = PhoneNumberValidator.formatE164(phoneNumber.text.toString().trim(), countryCode)
                 Settings.setSIM1PhoneNumber(this, e164PhoneNumber)
 
                 if(SmsManagerService.isDualSIM(this)) {
-                    val sim2PhoneNumber = formatE164(phoneNumberSIM2.text.toString().trim())
+                    val sim2PhoneNumber = PhoneNumberValidator.formatE164(phoneNumberSIM2.text.toString().trim(), countryCode)
                     Settings.setSIM2PhoneNumber(this, sim2PhoneNumber)
                 }
 
@@ -300,7 +294,7 @@ class LoginActivity : AppCompatActivity() {
         Thread {
             val service = HttpSmsApiService(apiKey.text.toString(), URI(serverUrl.text.toString().trim()))
 
-            var e164PhoneNumber = formatE164(phoneNumber.text.toString().trim())
+            var e164PhoneNumber = PhoneNumberValidator.formatE164(phoneNumber.text.toString().trim(), countryCode)
             var response = service.updateFcmToken(e164PhoneNumber, Constants.SIM1, Settings.getFcmToken(this) ?: "")
             if(response.second != null || response.third != null) {
                 Timber.e("error updating fcm token [${response.second}], third [${response.third}]")
@@ -314,39 +308,12 @@ class LoginActivity : AppCompatActivity() {
                 return@Thread
             }
 
-            e164PhoneNumber = formatE164(phoneNumberSIM2.text.toString().trim())
+            e164PhoneNumber = PhoneNumberValidator.formatE164(phoneNumberSIM2.text.toString().trim(), countryCode)
             response = service.updateFcmToken(e164PhoneNumber, Constants.SIM2, Settings.getFcmToken(this) ?: "")
 
             liveData.postValue(Pair(response.second, response.third))
             Timber.d("finished validating api URL")
         }.start()
-    }
-
-    private fun formatE164(number: String): String {
-        var phoneNumber = number.trim()
-        if (!number.startsWith("+")) {
-            phoneNumber = "+$number"
-        }
-
-        Timber.d("formatting phone number [${phoneNumber}] into e164")
-
-        val formattedNumber = PhoneNumberUtils.formatNumberToE164(
-            phoneNumber,
-            this.resources.configuration.locales.get(0).country
-        )
-
-        if (formattedNumber !== null) {
-            return formattedNumber
-        }
-
-        return phoneNumber;
-    }
-
-    private fun addPlus(number: String): String {
-        if (number.startsWith("+")) {
-            return number
-        }
-        return "+$number"
     }
 
     private fun redirectToMain() {
@@ -361,5 +328,19 @@ class LoginActivity : AppCompatActivity() {
 
     private fun loginButton(): MaterialButton {
         return findViewById(R.id.loginButton)
+    }
+
+    private fun getCountryCode() : String {
+        // Get the TelephonyManager from the system services
+        val tm = this.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        // Get the network country ISO code and convert it to uppercase
+        val code = tm.networkCountryIso.uppercase()
+
+        // If the country code is empty, retrieve the country code from the device's locale
+        if (code.isEmpty()) {
+            return this.resources.configuration.locales.get(0).country.uppercase()
+        }
+        return code
     }
 }
