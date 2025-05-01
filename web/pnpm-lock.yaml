@@ -100,8 +100,8 @@ importers:
         version: 5.99.7
     devDependencies:
       '@babel/eslint-parser':
-        specifier: ^7.25.9
-        version: 7.25.9(@babel/core@7.24.7)(eslint@8.57.1)
+        specifier: ^7.27.1
+        version: 7.27.1(@babel/core@7.24.7)(eslint@8.57.1)
       '@commitlint/cli':
         specifier: ^19.8.0
         version: 19.8.0(@types/node@20.8.0)(typescript@4.9.5)
@@ -241,8 +241,8 @@ packages:
     resolution: {integrity: sha512-nykK+LEK86ahTkX/3TgauT0ikKoNCfKHEaZYTUVupJdTLzGNvrblu4u6fa7DhZONAltdf8e662t/abY8idrd/g==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/eslint-parser@7.25.9':
-    resolution: {integrity: sha512-5UXfgpK0j0Xr/xIdgdLEhOFxaDZ0bRPWJJchRpqOSur/3rZoPbqqki5mm0p4NE2cs28krBEiSM2MB7//afRSQQ==}
+  '@babel/eslint-parser@7.27.1':
+    resolution: {integrity: sha512-q8rjOuadH0V6Zo4XLMkJ3RMQ9MSBqwaDByyYB0izsYdaIWGNLmEblbCOf1vyFHICcg16CD7Fsi51vcQnYxmt6Q==}
     engines: {node: ^10.13.0 || ^12.13.0 || >=14.0.0}
     peerDependencies:
       '@babel/core': ^7.11.0
@@ -9055,7 +9055,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/eslint-parser@7.25.9(@babel/core@7.24.7)(eslint@8.57.1)':
+  '@babel/eslint-parser@7.27.1(@babel/core@7.24.7)(eslint@8.57.1)':
     dependencies:
       '@babel/core': 7.24.7
       '@nicolo-ribaudo/eslint-scope-5-internals': 5.1.1-v1
@@ -11438,7 +11438,7 @@ snapshots:
       minimist: 1.2.8
       opener: 1.5.2
       pretty-bytes: 5.6.0
-      semver: 7.6.3
+      semver: 7.7.1
       serve-static: 1.16.2
       std-env: 3.7.0
       upath: 2.0.1
@@ -11455,7 +11455,7 @@ snapshots:
       glob: 7.2.3
       globby: 11.1.0
       scule: 0.2.1
-      semver: 7.6.3
+      semver: 7.7.1
       upath: 2.0.1
       vue-template-compiler: 2.7.16
 
@@ -11523,7 +11523,7 @@ snapshots:
       pathe: 1.1.2
       pkg-types: 1.1.2
       scule: 1.3.0
-      semver: 7.6.3
+      semver: 7.7.1
       ufo: 1.6.1
       unctx: 2.3.1
       unimport: 3.7.2(rollup@3.29.5)
@@ -11548,7 +11548,7 @@ snapshots:
       pathe: 1.1.2
       pkg-types: 1.1.2
       scule: 1.0.0
-      semver: 7.6.3
+      semver: 7.7.1
       ufo: 1.6.1
       unctx: 2.3.1
       unimport: 3.4.0(rollup@3.29.5)
@@ -11694,7 +11694,7 @@ snapshots:
       jiti: 1.21.6
       lodash: 4.17.21
       proper-lockfile: 4.1.2
-      semver: 7.6.3
+      semver: 7.7.1
       serialize-javascript: 6.0.2
       signal-exit: 4.1.0
       ua-parser-js: 1.0.38
@@ -11758,7 +11758,7 @@ snapshots:
       postcss-loader: 4.3.0(postcss@8.4.39)(webpack@4.47.0)
       postcss-preset-env: 9.5.15(postcss@8.4.39)
       postcss-url: 10.1.3(postcss@8.4.39)
-      semver: 7.6.3
+      semver: 7.7.1
       std-env: 3.7.0
       style-resources-loader: 1.5.0(webpack@4.47.0)
       terser-webpack-plugin: 4.2.3(webpack@4.47.0)
@@ -12264,7 +12264,7 @@ snapshots:
       graphemer: 1.4.0
       ignore: 5.3.1
       natural-compare: 1.4.0
-      semver: 7.6.3
+      semver: 7.7.1
       ts-api-utils: 1.0.3(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
@@ -12310,7 +12310,7 @@ snapshots:
       debug: 4.3.6
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.6.3
+      semver: 7.7.1
       ts-api-utils: 1.0.3(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
@@ -12326,7 +12326,7 @@ snapshots:
       '@typescript-eslint/types': 6.7.3
       '@typescript-eslint/typescript-estree': 6.7.3(typescript@4.9.5)
       eslint: 8.57.1
-      semver: 7.6.3
+      semver: 7.7.1
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -13878,7 +13878,7 @@ snapshots:
       postcss-modules-values: 4.0.0(postcss@8.4.39)
       postcss-value-parser: 4.2.0
       schema-utils: 3.3.0
-      semver: 7.6.3
+      semver: 7.7.1
       webpack: 4.47.0
 
   css-loader@5.2.7(webpack@5.99.7):
@@ -13892,7 +13892,7 @@ snapshots:
       postcss-modules-values: 4.0.0(postcss@8.4.39)
       postcss-value-parser: 4.2.0
       schema-utils: 3.3.0
-      semver: 7.6.3
+      semver: 7.7.1
       webpack: 5.99.7
 
   css-prefers-color-scheme@9.0.1(postcss@8.4.39):
@@ -14285,7 +14285,7 @@ snapshots:
       '@one-ini/wasm': 0.1.1
       commander: 10.0.1
       minimatch: 9.0.1
-      semver: 7.6.3
+      semver: 7.7.1
 
   ee-first@1.1.1: {}
 
@@ -14567,7 +14567,7 @@ snapshots:
       is-core-module: 2.13.0
       minimatch: 3.1.2
       resolve: 1.22.6
-      semver: 7.6.3
+      semver: 7.7.1
 
   eslint-plugin-node@11.1.0(eslint@8.57.1):
     dependencies:
@@ -14607,7 +14607,7 @@ snapshots:
       read-pkg-up: 7.0.1
       regexp-tree: 0.1.27
       safe-regex: 2.1.1
-      semver: 7.6.3
+      semver: 7.7.1
       strip-indent: 3.0.0
 
   eslint-plugin-vue@9.32.0(eslint@8.57.1):
@@ -15071,7 +15071,7 @@ snapshots:
       memfs: 3.5.3
       minimatch: 3.1.2
       schema-utils: 2.7.0
-      semver: 7.6.3
+      semver: 7.7.1
       tapable: 1.1.3
       typescript: 4.9.5
       webpack: 5.99.7
@@ -16220,7 +16220,7 @@ snapshots:
       jest-util: 29.7.0
       natural-compare: 1.4.0
       pretty-format: 29.7.0
-      semver: 7.6.3
+      semver: 7.7.1
     transitivePeerDependencies:
       - supports-color
 
@@ -17071,7 +17071,7 @@ snapshots:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.13.0
-      semver: 7.6.3
+      semver: 7.7.1
       validate-npm-package-license: 3.0.4
 
   normalize-path@2.1.1:
@@ -17699,7 +17699,7 @@ snapshots:
       loader-utils: 2.0.4
       postcss: 8.4.39
       schema-utils: 3.3.0
-      semver: 7.6.3
+      semver: 7.7.1
       webpack: 4.47.0
 
   postcss-logical@7.0.1(postcss@8.4.39):
@@ -18566,7 +18566,7 @@ snapshots:
       loader-utils: 2.0.4
       neo-async: 2.6.2
       schema-utils: 3.3.0
-      semver: 7.6.3
+      semver: 7.7.1
       webpack: 5.99.7
     optionalDependencies:
       sass: 1.32.13
@@ -19352,7 +19352,7 @@ snapshots:
       enhanced-resolve: 4.5.0
       loader-utils: 2.0.4
       micromatch: 4.0.8
-      semver: 7.6.3
+      semver: 7.7.1
       typescript: 4.9.5
       webpack: 5.99.7
 
@@ -19705,7 +19705,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.5.0
       lodash: 4.17.21
-      semver: 7.6.3
+      semver: 7.7.1
     transitivePeerDependencies:
       - supports-color
 
@@ -19718,7 +19718,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.5.0
       lodash: 4.17.21
-      semver: 7.6.3
+      semver: 7.7.1
     transitivePeerDependencies:
       - supports-color
 
