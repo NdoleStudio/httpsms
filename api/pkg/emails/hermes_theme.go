@@ -1,6 +1,6 @@
 package emails
 
-import "github.com/matcornic/hermes/v2"
+import "github.com/matcornic/hermes"
 
 // hermesTheme is the theme by default
 type hermesTheme struct{}
