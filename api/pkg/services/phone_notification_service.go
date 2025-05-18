@@ -134,7 +134,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot send FCM to phone"))
+		ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot send FCM to phone with ID [%s] for user with ID [%s] and message [%s]", phone.ID, phone.UserID, params.MessageID)))
 		msg := fmt.Sprintf("cannot send notification for to your phone [%s]. Reinstall the httpSMS app on your Android phone.", phone.PhoneNumber)
 		return service.handleNotificationFailed(ctx, errors.New(msg), params)
 	}
