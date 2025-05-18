@@ -214,10 +214,18 @@
             <div>
               <h3 class="text-h3 mb-1">Control Sending</h3>
               <h5 class="text-h6 font-weight-light">
-                Send bulk messages without mobile carrier limitations. If you
-                set a rate e.g 3 messages per minute, we will queue up your
-                messages and send them at a rate of 1 message per 20 seconds.
+                Send SMS messages without going over your mobile carrier
+                limitations. If you set a rate e.g 3 messages per minute, we
+                will queue up your messages and send them at a rate of 1 message
+                per 20 seconds.
               </h5>
+              <v-btn
+                href="https://docs.httpsms.com/features/control-sms-send-rate"
+                class="primary"
+              >
+                <v-icon left>{{ mdiArrowRightThin }}</v-icon
+                >Documentation
+              </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="6" :order-lg="2">
@@ -990,6 +998,7 @@ import {
   mdiLanguageJava,
   mdiMicrosoftExcel,
   mdiWebhook,
+  mdiArrowRightThin,
   mdiPowershell,
   mdiLanguageGo,
 } from '@mdi/js'
@@ -1007,6 +1016,7 @@ export default Vue.extend({
       mdiCheckCircle,
       mdiSend,
       mdiGift,
+      mdiArrowRightThin,
       mdiCreation,
       mdiForum,
       mdiNumeric1,
