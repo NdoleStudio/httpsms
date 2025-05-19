@@ -198,5 +198,5 @@ func (service *PhoneAPIKeyService) generateRandomBytes(n int) ([]byte, error) {
 
 func (service *PhoneAPIKeyService) generateAPIKey(n int) (string, error) {
 	b, err := service.generateRandomBytes(n)
-	return base64.URLEncoding.EncodeToString(b)[0:n], stacktrace.Propagate(err, fmt.Sprintf("cannot generate [%s] random bytes", n))
+	return base64.URLEncoding.EncodeToString(b)[0:n], stacktrace.Propagate(err, fmt.Sprintf("cannot generate [%d] random bytes", n))
 }
