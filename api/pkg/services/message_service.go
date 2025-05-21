@@ -397,7 +397,7 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 
 	errorMessage := "UNKNOWN ERROR"
 	if params.ErrorMessage != nil {
-		errorMessage = *params.ErrorMessage
+		errorMessage = service.enrichErrorMessage(*params.ErrorMessage)
 	}
 
 	event, err := service.createMessageSendFailedEvent(params.Source, events.MessageSendFailedPayload{
@@ -1018,6 +1018,13 @@ func (service *MessageService) storeMissedCallMessage(ctx context.Context, paylo
 
 	ctxLogger.Info(fmt.Sprintf("missed call message saved with id [%s]", payload.MessageID))
 	return message, nil
+}
+
+func (service *MessageService) enrichErrorMessage(message string) string {
+	if strings.Contains(message, "android.permission.SEND_SMS") {
+		return message + " You need to grant the SMS permission to the httpSMS Android app https://httpsms.com/blog/grant-send-and-read-sms-permissions-on-android"
+	}
+	return message
 }
 
 func (service *MessageService) createMessageSendExpiredEvent(source string, payload events.MessageSendExpiredPayload) (cloudevents.Event, error) {
