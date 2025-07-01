@@ -21,11 +21,11 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       chart.js:
-        specifier: ^4.4.9
-        version: 4.4.9
+        specifier: ^4.5.0
+        version: 4.5.0
       chartjs-adapter-moment:
         specifier: ^1.0.1
-        version: 1.0.1(chart.js@4.4.9)(moment@2.30.1)
+        version: 1.0.1(chart.js@4.5.0)(moment@2.30.1)
       core-js:
         specifier: ^3.39.0
         version: 3.39.0
@@ -70,7 +70,7 @@ importers:
         version: 2.7.16
       vue-chartjs:
         specifier: ^5.3.2
-        version: 5.3.2(chart.js@4.4.9)(vue@2.7.16)
+        version: 5.3.2(chart.js@4.5.0)(vue@2.7.16)
       vue-class-component:
         specifier: ^7.2.6
         version: 7.2.6(vue@2.7.16)
@@ -3142,8 +3142,8 @@ packages:
   chardet@0.7.0:
     resolution: {integrity: sha512-mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==}
 
-  chart.js@4.4.9:
-    resolution: {integrity: sha512-EyZ9wWKgpAU0fLJ43YAEIF8sr5F2W3LqbS40ZJyHIner2lY14ufqv2VMp69MAiZ2rpwxEUxEhIH/0U3xyRynxg==}
+  chart.js@4.5.0:
+    resolution: {integrity: sha512-aYeC/jDgSEx8SHWZvANYMioYMZ2KX02W6f6uVfyteuCGcadDLcYVHdfdygsTQkQ4TKn5lghoojAsPj5pu0SnvQ==}
     engines: {pnpm: '>=8'}
 
   chartjs-adapter-moment@1.0.1:
@@ -7137,8 +7137,8 @@ packages:
     resolution: {integrity: sha512-0vzE+lAiG7hZl1/9I8yzKLx3aR9Xbof3fBHKunvMfOCYAtMhrsnccJY2iTURb9EZd5+pLuiNV9/c/GZJOHsgIw==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.3:
-    resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
+  postcss@8.5.6:
+    resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
   prelude-ls@1.2.1:
@@ -13419,13 +13419,13 @@ snapshots:
 
   chardet@0.7.0: {}
 
-  chart.js@4.4.9:
+  chart.js@4.5.0:
     dependencies:
       '@kurkle/color': 0.3.4
 
-  chartjs-adapter-moment@1.0.1(chart.js@4.4.9)(moment@2.30.1):
+  chartjs-adapter-moment@1.0.1(chart.js@4.5.0)(moment@2.30.1):
     dependencies:
-      chart.js: 4.4.9
+      chart.js: 4.5.0
       moment: 2.30.1
 
   chokidar@2.1.8:
@@ -18080,7 +18080,7 @@ snapshots:
       picocolors: 1.0.1
       source-map-js: 1.2.0
 
-  postcss@8.5.3:
+  postcss@8.5.6:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -19647,7 +19647,7 @@ snapshots:
   vite@4.5.3(@types/node@20.8.0)(sass@1.32.13)(terser@5.39.0):
     dependencies:
       esbuild: 0.18.20
-      postcss: 8.5.3
+      postcss: 8.5.6
       rollup: 3.29.5
     optionalDependencies:
       '@types/node': 20.8.0
@@ -19657,9 +19657,9 @@ snapshots:
 
   vm-browserify@1.1.2: {}
 
-  vue-chartjs@5.3.2(chart.js@4.4.9)(vue@2.7.16):
+  vue-chartjs@5.3.2(chart.js@4.5.0)(vue@2.7.16):
     dependencies:
-      chart.js: 4.4.9
+      chart.js: 4.5.0
       vue: 2.7.16
 
   vue-class-component@7.2.6(vue@2.7.16):
