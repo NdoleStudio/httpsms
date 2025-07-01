@@ -40,7 +40,7 @@ require (
 	github.com/redis/go-redis/extra/redisotel/v9 v9.8.0
 	github.com/redis/go-redis/v9 v9.9.0
 	github.com/rs/zerolog v1.34.0
-	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
+	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.4
 	github.com/thedevsaddam/govalidator v1.9.10
