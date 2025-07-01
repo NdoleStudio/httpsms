@@ -151,8 +151,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0(eslint@8.57.1)
       eslint-plugin-vue:
-        specifier: ^9.32.0
-        version: 9.32.0(eslint@8.57.1)
+        specifier: ^9.33.0
+        version: 9.33.0(eslint@8.57.1)
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -1495,6 +1495,12 @@ packages:
 
   '@eslint-community/eslint-utils@4.4.0':
     resolution: {integrity: sha512-1/sA4dwrzBAyeUoQ6oxahHKmrZvsnLCg4RfxW3ZFGGmQkSNQPFNLV9CUEFQP1x9EYXHTo5p6xdhZM1Ne9p/AfA==}
+    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    peerDependencies:
+      eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
+
+  '@eslint-community/eslint-utils@4.7.0':
+    resolution: {integrity: sha512-dyybb3AcajC7uha6CvhdVRJqaKyn7w2YKqKyAN37NKYgZT36w+iRb0Dymmc5qEJ549c/S31cMMSFd75bteCpCw==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
@@ -3835,6 +3841,15 @@ packages:
       supports-color:
         optional: true
 
+  debug@4.4.1:
+    resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
   decache@4.6.2:
     resolution: {integrity: sha512-2LPqkLeu8XWHU8qNCS3kcF6sCcb5zIzvWaAHYSvPfwhdd7mHuah29NssMzrTYyHN4F5oFy2ko9OBYxegtU0FEw==}
 
@@ -4269,8 +4284,8 @@ packages:
     peerDependencies:
       eslint: '>=8.23.1'
 
-  eslint-plugin-vue@9.32.0:
-    resolution: {integrity: sha512-b/Y05HYmnB/32wqVcjxjHZzNpwxj1onBOvqW89W+V+XNG1dRuaFbNd3vT9CLbr2LXjEoq+3vn8DanWf7XU22Ug==}
+  eslint-plugin-vue@9.33.0:
+    resolution: {integrity: sha512-174lJKuNsuDIlLpjeXc5E2Tss8P44uIimAfGD0b90k0NoirJqpG7stLuU9Vp/9ioTOrQdWVREc4mRd1BD+CvGw==}
     engines: {node: ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: ^6.2.0 || ^7.0.0 || ^8.0.0 || ^9.0.0
@@ -4333,6 +4348,10 @@ packages:
 
   esquery@1.5.0:
     resolution: {integrity: sha512-YQLXUplAwJgCydQ78IMJywZCceoqk1oH01OERdSAJc/7U2AylwjhSCLDEtqwg811idIS/9fIU5GjG73IgjKMVg==}
+    engines: {node: '>=0.10'}
+
+  esquery@1.6.0:
+    resolution: {integrity: sha512-ca9pw9fomFcKPvFLXhBKUK90ZvGibiGOvRJNbjljY7s7uq/5YO4BOzcYtJqExdx99rF6aAcnRxHmcUHcz6sQsg==}
     engines: {node: '>=0.10'}
 
   esrecurse@4.3.0:
@@ -7084,8 +7103,8 @@ packages:
     resolution: {integrity: sha512-EaV1Gl4mUEV4ddhDnv/xtj7sxwrwxdetHdWUGnT4VJQf+4d05v6lHYZr8N573k5Z0BViss7BDhfWtKS3+sfAqQ==}
     engines: {node: '>=4'}
 
-  postcss-selector-parser@6.1.0:
-    resolution: {integrity: sha512-UMz42UD0UY0EApS0ZL9o1XnLhSTtvvvLe5Dc2H2O56fvRZi+KulDyf5ctDhhtYJBGKStV2FL1fy6253cmLgqVQ==}
+  postcss-selector-parser@6.1.2:
+    resolution: {integrity: sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg==}
     engines: {node: '>=4'}
 
   postcss-svgo@5.1.0:
@@ -7601,11 +7620,6 @@ packages:
 
   semver@7.5.4:
     resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
-    engines: {node: '>=10'}
-    hasBin: true
-
-  semver@7.6.3:
-    resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -9000,7 +9014,7 @@ snapshots:
       '@babel/traverse': 7.24.0
       '@babel/types': 7.24.7
       convert-source-map: 2.0.0
-      debug: 4.3.6
+      debug: 4.4.1
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -9020,7 +9034,7 @@ snapshots:
       '@babel/traverse': 7.24.0
       '@babel/types': 7.24.7
       convert-source-map: 2.0.0
-      debug: 4.3.6
+      debug: 4.4.1
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -9040,7 +9054,7 @@ snapshots:
       '@babel/traverse': 7.24.7
       '@babel/types': 7.24.7
       convert-source-map: 2.0.0
-      debug: 4.3.6
+      debug: 4.4.1
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -9147,7 +9161,7 @@ snapshots:
       '@babel/core': 7.24.7
       '@babel/helper-compilation-targets': 7.24.7
       '@babel/helper-plugin-utils': 7.24.7
-      debug: 4.3.6
+      debug: 4.4.1
       lodash.debounce: 4.0.8
       resolve: 1.22.6
     transitivePeerDependencies:
@@ -10075,7 +10089,7 @@ snapshots:
       '@babel/helper-split-export-declaration': 7.22.6
       '@babel/parser': 7.24.7
       '@babel/types': 7.24.7
-      debug: 4.3.6
+      debug: 4.4.1
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -10090,7 +10104,7 @@ snapshots:
       '@babel/helper-split-export-declaration': 7.24.7
       '@babel/parser': 7.24.7
       '@babel/types': 7.24.7
-      debug: 4.3.6
+      debug: 4.4.1
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -10268,9 +10282,9 @@ snapshots:
 
   '@csstools/postcss-cascade-layers@4.0.6(postcss@8.4.39)':
     dependencies:
-      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.0)
+      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.2)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   '@csstools/postcss-color-function@3.0.17(postcss@8.4.39)':
     dependencies:
@@ -10341,9 +10355,9 @@ snapshots:
 
   '@csstools/postcss-is-pseudo-class@4.0.8(postcss@8.4.39)':
     dependencies:
-      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.0)
+      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.2)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   '@csstools/postcss-light-dark-function@1.0.6(postcss@8.4.39)':
     dependencies:
@@ -10428,7 +10442,7 @@ snapshots:
   '@csstools/postcss-scope-pseudo-class@3.0.1(postcss@8.4.39)':
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   '@csstools/postcss-stepped-value-functions@3.0.9(postcss@8.4.39)':
     dependencies:
@@ -10454,17 +10468,17 @@ snapshots:
     dependencies:
       postcss: 8.4.39
 
-  '@csstools/selector-resolve-nested@1.1.0(postcss-selector-parser@6.1.0)':
+  '@csstools/selector-resolve-nested@1.1.0(postcss-selector-parser@6.1.2)':
     dependencies:
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   '@csstools/selector-specificity@3.0.0(postcss-selector-parser@6.0.13)':
     dependencies:
       postcss-selector-parser: 6.0.13
 
-  '@csstools/selector-specificity@3.1.1(postcss-selector-parser@6.1.0)':
+  '@csstools/selector-specificity@3.1.1(postcss-selector-parser@6.1.2)':
     dependencies:
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   '@csstools/utilities@1.0.0(postcss@8.4.39)':
     dependencies:
@@ -10539,6 +10553,11 @@ snapshots:
     optional: true
 
   '@eslint-community/eslint-utils@4.4.0(eslint@8.57.1)':
+    dependencies:
+      eslint: 8.57.1
+      eslint-visitor-keys: 3.4.3
+
+  '@eslint-community/eslint-utils@4.7.0(eslint@8.57.1)':
     dependencies:
       eslint: 8.57.1
       eslint-visitor-keys: 3.4.3
@@ -11841,7 +11860,7 @@ snapshots:
       eslint: 8.57.1
       eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.7.3(eslint@8.57.1)(typescript@4.9.5))(eslint-plugin-import@2.28.1)(eslint@8.57.1)
       eslint-plugin-import: 2.28.1(@typescript-eslint/parser@6.7.3(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.1)
-      eslint-plugin-vue: 9.32.0(eslint@8.57.1)
+      eslint-plugin-vue: 9.33.0(eslint@8.57.1)
     transitivePeerDependencies:
       - eslint-import-resolver-node
       - eslint-import-resolver-webpack
@@ -11857,7 +11876,7 @@ snapshots:
       eslint-plugin-node: 11.1.0(eslint@8.57.1)
       eslint-plugin-promise: 6.1.1(eslint@8.57.1)
       eslint-plugin-unicorn: 44.0.2(eslint@8.57.1)
-      eslint-plugin-vue: 9.32.0(eslint@8.57.1)
+      eslint-plugin-vue: 9.33.0(eslint@8.57.1)
       local-pkg: 0.4.3
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
@@ -12276,7 +12295,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/typescript-estree': 6.7.3(typescript@4.9.5)
       '@typescript-eslint/utils': 6.7.3(eslint@8.57.1)(typescript@4.9.5)
-      debug: 4.3.6
+      debug: 4.4.0
       eslint: 8.57.1
       ts-api-utils: 1.0.3(typescript@4.9.5)
     optionalDependencies:
@@ -12290,7 +12309,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 6.7.3
       '@typescript-eslint/visitor-keys': 6.7.3
-      debug: 4.3.6
+      debug: 4.4.0
       globby: 11.1.0
       is-glob: 4.0.3
       semver: 7.7.2
@@ -12302,7 +12321,7 @@ snapshots:
 
   '@typescript-eslint/utils@6.7.3(eslint@8.57.1)(typescript@4.9.5)':
     dependencies:
-      '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.1)
+      '@eslint-community/eslint-utils': 4.7.0(eslint@8.57.1)
       '@types/json-schema': 7.0.15
       '@types/semver': 7.5.3
       '@typescript-eslint/scope-manager': 6.7.3
@@ -12407,7 +12426,7 @@ snapshots:
       lru-cache: 4.1.5
       merge-source-map: 1.1.0
       postcss: 7.0.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
       source-map: 0.6.1
       vue-template-es2015-compiler: 1.9.1
     optionalDependencies:
@@ -12682,7 +12701,7 @@ snapshots:
 
   agent-base@6.0.2:
     dependencies:
-      debug: 4.3.6
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -13829,7 +13848,7 @@ snapshots:
   css-blank-pseudo@6.0.2(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   css-declaration-sorter@6.4.1(postcss@8.4.39):
     dependencies:
@@ -13843,9 +13862,9 @@ snapshots:
 
   css-has-pseudo@6.0.5(postcss@8.4.39):
     dependencies:
-      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.0)
+      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.2)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
       postcss-value-parser: 4.2.0
 
   css-loader@5.2.7(webpack@4.47.0):
@@ -14072,6 +14091,10 @@ snapshots:
       ms: 2.1.2
 
   debug@4.4.0:
+    dependencies:
+      ms: 2.1.3
+
+  debug@4.4.1:
     dependencies:
       ms: 2.1.3
 
@@ -14562,7 +14585,7 @@ snapshots:
 
   eslint-plugin-nuxt@4.0.0(eslint@8.57.1):
     dependencies:
-      eslint-plugin-vue: 9.32.0(eslint@8.57.1)
+      eslint-plugin-vue: 9.33.0(eslint@8.57.1)
       semver: 7.5.4
       vue-eslint-parser: 9.3.1(eslint@8.57.1)
     transitivePeerDependencies:
@@ -14580,7 +14603,7 @@ snapshots:
       clean-regexp: 1.0.0
       eslint: 8.57.1
       eslint-utils: 3.0.0(eslint@8.57.1)
-      esquery: 1.5.0
+      esquery: 1.6.0
       indent-string: 4.0.0
       is-builtin-module: 3.2.1
       lodash: 4.17.21
@@ -14591,15 +14614,15 @@ snapshots:
       semver: 7.7.2
       strip-indent: 3.0.0
 
-  eslint-plugin-vue@9.32.0(eslint@8.57.1):
+  eslint-plugin-vue@9.33.0(eslint@8.57.1):
     dependencies:
-      '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.1)
+      '@eslint-community/eslint-utils': 4.7.0(eslint@8.57.1)
       eslint: 8.57.1
       globals: 13.24.0
       natural-compare: 1.4.0
       nth-check: 2.1.1
-      postcss-selector-parser: 6.1.0
-      semver: 7.6.3
+      postcss-selector-parser: 6.1.2
+      semver: 7.7.2
       vue-eslint-parser: 9.4.3(eslint@8.57.1)
       xml-name-validator: 4.0.0
     transitivePeerDependencies:
@@ -14697,6 +14720,10 @@ snapshots:
   esprima@4.0.1: {}
 
   esquery@1.5.0:
+    dependencies:
+      estraverse: 5.3.0
+
+  esquery@1.6.0:
     dependencies:
       estraverse: 5.3.0
 
@@ -15587,7 +15614,7 @@ snapshots:
     dependencies:
       '@tootallnate/once': 2.0.0
       agent-base: 6.0.2
-      debug: 4.3.6
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -15596,7 +15623,7 @@ snapshots:
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.3.6
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -15912,7 +15939,7 @@ snapshots:
 
   istanbul-lib-source-maps@4.0.1:
     dependencies:
-      debug: 4.3.6
+      debug: 4.4.1
       istanbul-lib-coverage: 3.2.0
       source-map: 0.6.1
     transitivePeerDependencies:
@@ -16406,7 +16433,7 @@ snapshots:
     dependencies:
       '@types/express': 4.17.18
       '@types/jsonwebtoken': 8.5.9
-      debug: 4.3.6
+      debug: 4.4.1
       jose: 2.0.7
       limiter: 1.1.5
       lru-memoizer: 2.2.0
@@ -17482,18 +17509,18 @@ snapshots:
   postcss-attribute-case-insensitive@6.0.3(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-calc@10.0.0(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
       postcss-value-parser: 4.2.0
 
   postcss-calc@8.2.4(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
       postcss-value-parser: 4.2.0
 
   postcss-clamp@4.1.0(postcss@8.4.39):
@@ -17573,12 +17600,12 @@ snapshots:
       '@csstools/css-parser-algorithms': 2.7.0(@csstools/css-tokenizer@2.3.2)
       '@csstools/css-tokenizer': 2.3.2
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-dir-pseudo-class@8.0.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-discard-comments@5.1.2(postcss@8.4.39):
     dependencies:
@@ -17587,7 +17614,7 @@ snapshots:
   postcss-discard-comments@7.0.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-discard-duplicates@5.1.0(postcss@8.4.39):
     dependencies:
@@ -17623,12 +17650,12 @@ snapshots:
   postcss-focus-visible@9.0.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-focus-within@8.0.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-font-variant@5.0.0(postcss@8.4.39):
     dependencies:
@@ -17704,7 +17731,7 @@ snapshots:
       caniuse-api: 3.0.0
       cssnano-utils: 3.1.0(postcss@8.4.39)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-merge-rules@7.0.2(postcss@8.4.39):
     dependencies:
@@ -17712,7 +17739,7 @@ snapshots:
       caniuse-api: 3.0.0
       cssnano-utils: 5.0.0(postcss@8.4.39)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-minify-font-values@5.1.0(postcss@8.4.39):
     dependencies:
@@ -17755,13 +17782,13 @@ snapshots:
   postcss-minify-selectors@5.2.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-minify-selectors@7.0.2(postcss@8.4.39):
     dependencies:
       cssesc: 3.0.0
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-modules-extract-imports@3.0.0(postcss@8.4.39):
     dependencies:
@@ -17771,13 +17798,13 @@ snapshots:
     dependencies:
       icss-utils: 5.1.0(postcss@8.4.39)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
       postcss-value-parser: 4.2.0
 
   postcss-modules-scope@3.0.0(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-modules-values@4.0.0(postcss@8.4.39):
     dependencies:
@@ -17786,10 +17813,10 @@ snapshots:
 
   postcss-nesting@12.1.5(postcss@8.4.39):
     dependencies:
-      '@csstools/selector-resolve-nested': 1.1.0(postcss-selector-parser@6.1.0)
-      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.0)
+      '@csstools/selector-resolve-nested': 1.1.0(postcss-selector-parser@6.1.2)
+      '@csstools/selector-specificity': 3.1.1(postcss-selector-parser@6.1.2)
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-normalize-charset@5.1.0(postcss@8.4.39):
     dependencies:
@@ -17979,7 +18006,7 @@ snapshots:
   postcss-pseudo-class-any-link@9.0.2(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-reduce-initial@5.1.2(postcss@8.4.39):
     dependencies:
@@ -18020,14 +18047,14 @@ snapshots:
   postcss-selector-not@7.0.2(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-selector-parser@6.0.13:
     dependencies:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
 
-  postcss-selector-parser@6.1.0:
+  postcss-selector-parser@6.1.2:
     dependencies:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
@@ -18047,12 +18074,12 @@ snapshots:
   postcss-unique-selectors@5.1.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-unique-selectors@7.0.1(postcss@8.4.39):
     dependencies:
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   postcss-url@10.1.3(postcss@8.4.39):
     dependencies:
@@ -18462,7 +18489,7 @@ snapshots:
 
   retry-request@4.2.2:
     dependencies:
-      debug: 4.3.6
+      debug: 4.4.1
       extend: 3.0.2
     transitivePeerDependencies:
       - supports-color
@@ -18604,8 +18631,6 @@ snapshots:
   semver@7.5.4:
     dependencies:
       lru-cache: 6.0.0
-
-  semver@7.6.3: {}
 
   semver@7.7.2: {}
 
@@ -18985,13 +19010,13 @@ snapshots:
     dependencies:
       browserslist: 4.24.4
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   stylehacks@7.0.2(postcss@8.4.39):
     dependencies:
       browserslist: 4.24.4
       postcss: 8.4.39
-      postcss-selector-parser: 6.1.0
+      postcss-selector-parser: 6.1.2
 
   stylelint-config-html@1.1.0(postcss-html@1.7.0)(stylelint@15.11.0(typescript@4.9.5)):
     dependencies:
@@ -19693,14 +19718,14 @@ snapshots:
 
   vue-eslint-parser@9.4.3(eslint@8.57.1):
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.1
       eslint: 8.57.1
       eslint-scope: 7.2.2
       eslint-visitor-keys: 3.4.3
       espree: 9.6.1
-      esquery: 1.5.0
+      esquery: 1.6.0
       lodash: 4.17.21
-      semver: 7.6.3
+      semver: 7.7.2
     transitivePeerDependencies:
       - supports-color
 
