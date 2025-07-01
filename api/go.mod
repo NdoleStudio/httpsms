@@ -23,7 +23,7 @@ require (
 	github.com/gofiber/swagger v1.1.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hirosassa/zerodriver v0.1.4
 	github.com/jaswdr/faker/v2 v2.5.0
 	github.com/jinzhu/now v1.1.5
