@@ -30,7 +30,7 @@
     "chartjs-adapter-moment": "^1.0.1",
     "core-js": "^3.39.0",
     "date-fns": "^2.30.0",
-    "dotenv": "^16.5.0",
+    "dotenv": "^17.0.1",
     "firebase": "^10.14.1",
     "firebaseui": "^6.1.0",
     "jest-environment-jsdom": "^29.7.0",
