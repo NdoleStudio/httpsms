@@ -536,7 +536,7 @@ gorm.io/driver/postgres v1.6.0/go.mod h1:vUw0mrGgrTK+uPHEhAdV4sfFELrByKVGnaVRkXD
 gorm.io/driver/sqlite v1.5.0 h1:zKYbzRCpBrT1bNijRnxLDJWPjVfImGEn0lSnUY5gZ+c=
 gorm.io/driver/sqlite v1.5.0/go.mod h1:kDMDfntV9u/vuMmz8APHtHF0b4nyBB7sfCieC6G8k8I=
 gorm.io/gorm v1.25.7/go.mod h1:hbnx/Oo0ChWMn1BIhpy1oYozzpM15i4YPuHDmfYtwg8=
-gorm.io/gorm v1.26.0 h1:9lqQVPG5aNNS6AyHdRiwScAVnXHg/L/Srzx55G5fOgs=
-gorm.io/gorm v1.26.0/go.mod h1:8Z33v652h4//uMA76KjeDH8mJXPm1QNCYrMeatR0DOE=
+gorm.io/gorm v1.30.0 h1:qbT5aPv1UH8gI99OsRlvDToLxW5zR7FzS9acZDOZcgs=
+gorm.io/gorm v1.30.0/go.mod h1:8Z33v652h4//uMA76KjeDH8mJXPm1QNCYrMeatR0DOE=
 gorm.io/plugin/opentelemetry v0.1.13 h1:aUtOF1vXPxYGHKW93ULAG9WmNBNT3F+fLx4zrV4duQg=
 gorm.io/plugin/opentelemetry v0.1.13/go.mod h1:ZAp4v5vU1CCcK9Oo8/va5rl6NStrzpSU+a70evd+W/g=
