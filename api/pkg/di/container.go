@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	brevo "github.com/getbrevo/brevo-go/lib"
+
 	"github.com/pusher/pusher-http-go/v5"
 
 	"github.com/NdoleStudio/httpsms/docs"
@@ -423,6 +425,21 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
 	}
 	return authClient
+}
+
+// BrevoClient creates a new instance of brevo.APIClient
+func (container *Container) BrevoClient() (client *brevo.APIClient) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+
+	apiKey := os.Getenv("BREVO_API_KEY")
+	if apiKey == "" {
+		container.logger.Info("BREVO_API_KEY environment variable is not set")
+		return nil
+	}
+
+	cfg := brevo.NewConfiguration()
+	cfg.AddDefaultHeader("api-key", apiKey)
+	return brevo.NewAPIClient(cfg)
 }
 
 // CloudTasksClient creates a new instance of cloudtasks.Client
@@ -902,8 +919,7 @@ func (container *Container) MarketingService() (service *services.MarketingServi
 		container.Logger(),
 		container.Tracer(),
 		container.FirebaseAuthClient(),
-		os.Getenv("SENDGRID_API_KEY"),
-		os.Getenv("SENDGRID_LIST_ID"),
+		container.BrevoClient(),
 	)
 }
 
