@@ -43,7 +43,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.6
 	github.com/thedevsaddam/govalidator v1.9.10
-	github.com/uptrace/uptrace-go v1.35.1
+	github.com/uptrace/uptrace-go v1.37.0
 	github.com/xuri/excelize/v2 v2.9.1
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/metric v1.37.0
@@ -178,7 +178,7 @@ require (
 	golang.org/x/tools v0.34.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250728155136-f173205681a0 // indirect
 	google.golang.org/grpc v1.74.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
