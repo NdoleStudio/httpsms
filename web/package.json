@@ -73,7 +73,7 @@
     "eslint-plugin-nuxt": "^4.0.0",
     "eslint-plugin-vue": "^9.33.0",
     "highlight.js": "^11.11.1",
-    "jest": "^29.7.0",
+    "jest": "^30.0.5",
     "lint-staged": "^15.5.1",
     "node-fetch-native": "^1.6.4",
     "postcss-html": "^1.7.0",
