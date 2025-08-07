@@ -178,8 +178,8 @@ importers:
         specifier: ^9.0.5
         version: 9.0.5(stylelint@15.11.0(typescript@4.9.5))
       stylelint-config-recommended-vue:
-        specifier: ^1.6.1
-        version: 1.6.1(postcss-html@1.7.0)(stylelint@15.11.0(typescript@4.9.5))
+        specifier: ^1.5.0
+        version: 1.5.0(postcss-html@1.7.0)(stylelint@15.11.0(typescript@4.9.5))
       stylelint-config-standard:
         specifier: ^34.0.0
         version: 34.0.0(stylelint@15.11.0(typescript@4.9.5))
@@ -8198,8 +8198,8 @@ packages:
     peerDependencies:
       stylelint: '>= 11.x < 15'
 
-  stylelint-config-recommended-vue@1.6.1:
-    resolution: {integrity: sha512-lLW7hTIMBiTfjenGuDq2kyHA6fBWd/+Df7MO4/AWOxiFeXP9clbpKgg27kHfwA3H7UNMGC7aeP3mNlZB5LMmEQ==}
+  stylelint-config-recommended-vue@1.5.0:
+    resolution: {integrity: sha512-65TAK/clUqkNtkZLcuytoxU0URQYlml+30Nhop7sRkCZ/mtWdXt7T+spPSB3KMKlb+82aEVJ4OrcstyDBdbosg==}
     engines: {node: ^12 || >=14}
     peerDependencies:
       postcss-html: ^1.0.0
@@ -8210,12 +8210,6 @@ packages:
     engines: {node: ^14.13.1 || >=16.0.0}
     peerDependencies:
       stylelint: ^15.10.0
-
-  stylelint-config-recommended@17.0.0:
-    resolution: {integrity: sha512-WaMSdEiPfZTSFVoYmJbxorJfA610O0tlYuU2aEwY33UQhSPgFbClrVJYWvy3jGJx+XW37O+LyNLiZOEXhKhJmA==}
-    engines: {node: '>=18.12.0'}
-    peerDependencies:
-      stylelint: ^16.23.0
 
   stylelint-config-standard@34.0.0:
     resolution: {integrity: sha512-u0VSZnVyW9VSryBG2LSO+OQTjN7zF9XJaAJRX/4EwkmU0R2jYwmBSN10acqZisDitS0CLiEiGjX7+Hrq8TAhfQ==}
@@ -19420,19 +19414,15 @@ snapshots:
     dependencies:
       stylelint: 15.11.0(typescript@4.9.5)
 
-  stylelint-config-recommended-vue@1.6.1(postcss-html@1.7.0)(stylelint@15.11.0(typescript@4.9.5)):
+  stylelint-config-recommended-vue@1.5.0(postcss-html@1.7.0)(stylelint@15.11.0(typescript@4.9.5)):
     dependencies:
       postcss-html: 1.7.0
-      semver: 7.7.2
+      semver: 7.5.4
       stylelint: 15.11.0(typescript@4.9.5)
       stylelint-config-html: 1.1.0(postcss-html@1.7.0)(stylelint@15.11.0(typescript@4.9.5))
-      stylelint-config-recommended: 17.0.0(stylelint@15.11.0(typescript@4.9.5))
+      stylelint-config-recommended: 13.0.0(stylelint@15.11.0(typescript@4.9.5))
 
   stylelint-config-recommended@13.0.0(stylelint@15.11.0(typescript@4.9.5)):
-    dependencies:
-      stylelint: 15.11.0(typescript@4.9.5)
-
-  stylelint-config-recommended@17.0.0(stylelint@15.11.0(typescript@4.9.5)):
     dependencies:
       stylelint: 15.11.0(typescript@4.9.5)
 
@@ -20134,7 +20124,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.5.0
       lodash: 4.17.21
-      semver: 7.5.4
+      semver: 7.7.2
     transitivePeerDependencies:
       - supports-color
 
