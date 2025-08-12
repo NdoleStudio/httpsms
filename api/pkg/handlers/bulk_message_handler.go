@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/google/uuid"
@@ -85,22 +86,25 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 
 	requestID := uuid.New()
 	wg := sync.WaitGroup{}
-	for _, message := range messages {
+	count := atomic.Int64{}
+
+	for index, message := range messages {
 		wg.Add(1)
-		go func(message *requests.BulkMessage) {
+		go func(message *requests.BulkMessage, index int) {
+			count.Add(1)
 			_, err = h.messageService.SendMessage(
 				ctx,
 				message.ToMessageSendParams(h.userIDFomContext(c), requestID, c.OriginalURL()),
 			)
-
 			if err != nil {
-				msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
+				count.Add(-1)
+				msg := fmt.Sprintf("cannot send message with paylod [%s] at index [%d]", spew.Sdump(message), index)
 				ctxLogger.Error(stacktrace.Propagate(err, msg))
 			}
 			wg.Done()
-		}(message)
+		}(message, index)
 	}
 
 	wg.Wait()
-	return h.responseAccepted(c, fmt.Sprintf("Added %d messages to the queue", len(messages)))
+	return h.responseAccepted(c, fmt.Sprintf("Added %d out of %d messages to the queue", count.Load(), len(messages)))
 }

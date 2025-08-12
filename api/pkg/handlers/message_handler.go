@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -153,10 +154,12 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 	wg := sync.WaitGroup{}
 	params := request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL())
 	responses := make([]*entities.Message, len(params))
+	count := atomic.Int64{}
 
 	for index, message := range params {
 		wg.Add(1)
 		go func(message services.MessageSendParams, index int) {
+			count.Add(1)
 			if message.SendAt == nil {
 				sentAt := time.Now().UTC().Add(time.Duration(index) * time.Second)
 				message.SendAt = &sentAt
@@ -164,7 +167,8 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 
 			response, err := h.service.SendMessage(ctx, message)
 			if err != nil {
-				msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
+				count.Add(-1)
+				msg := fmt.Sprintf("cannot send message with paylod [%s] at index [%d]", spew.Sdump(message), index)
 				ctxLogger.Error(stacktrace.Propagate(err, msg))
 			}
 			responses[index] = response
@@ -173,7 +177,7 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 	}
 
 	wg.Wait()
-	return h.responseOK(c, fmt.Sprintf("[%d] messages processed successfully", len(responses)), responses)
+	return h.responseOK(c, fmt.Sprintf("%d out of %d messages processed successfully", count.Load(), len(responses)), responses)
 }
 
 // GetOutstanding returns an entities.Message which is still to be sent by the mobile phone
