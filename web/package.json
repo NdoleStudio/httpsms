@@ -28,7 +28,7 @@
     "@nuxtjs/sitemap": "^2.4.0",
     "chart.js": "^4.5.0",
     "chartjs-adapter-moment": "^1.0.1",
-    "core-js": "^3.39.0",
+    "core-js": "^3.44.0",
     "date-fns": "^2.30.0",
     "dotenv": "^17.2.1",
     "firebase": "^10.14.1",
