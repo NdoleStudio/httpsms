@@ -881,6 +881,7 @@ func (container *Container) RetryHTTPRoundTripper() http.RoundTripper {
 	container.logger.Debug(fmt.Sprintf("initializing retry %T", http.DefaultTransport))
 	retryClient := retryablehttp.NewClient()
 	retryClient.Logger = container.Logger()
+	retryClient.RetryMax = 2
 	return retryClient.StandardClient().Transport
 }
 
