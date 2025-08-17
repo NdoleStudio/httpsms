@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/pkg/errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -210,37 +211,52 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	requestCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
+	attempts := 0
+	err := retry.Do(func() error {
+		attempts++
 
-	request, err := service.createRequest(requestCtx, event, webhook)
-	if err != nil {
-		msg := fmt.Sprintf("cannot create [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
-		return
-	}
+		requestCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
 
-	response, err := service.client.Do(request)
-	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s]", event.Type(), webhook.URL, webhook.UserID)))
-		service.handleWebhookSendFailed(ctx, event, webhook, owner, err, nil)
-		return
-	}
-
-	defer func() {
-		err = response.Body.Close()
+		request, err := service.createRequest(requestCtx, event, webhook)
 		if err != nil {
-			ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot close response body for [%s] event with ID [%s]", event.Type(), event.ID())))
+			msg := fmt.Sprintf("cannot create [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 		}
-	}()
 
-	if response.StatusCode >= 400 {
-		ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] with response code [%d]", event.Type(), webhook.URL, webhook.UserID, response.StatusCode))
-		service.handleWebhookSendFailed(ctx, event, webhook, owner, stacktrace.NewError(http.StatusText(response.StatusCode)), response)
-		return
+		response, err := service.client.Do(request)
+		if err != nil {
+			ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)))
+			if attempts == 1 {
+				return err
+			}
+			service.handleWebhookSendFailed(ctx, event, webhook, owner, err, nil)
+			return nil
+		}
+
+		defer func() {
+			err = response.Body.Close()
+			if err != nil {
+				ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot close response body for [%s] event with ID [%s] after [%d] attempts", event.Type(), event.ID(), attempts)))
+			}
+		}()
+
+		if response.StatusCode >= 400 {
+			ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] with response code [%d]", event.Type(), webhook.URL, webhook.UserID, response.StatusCode))
+			if attempts == 1 {
+				return stacktrace.NewError(http.StatusText(response.StatusCode))
+			}
+			service.handleWebhookSendFailed(ctx, event, webhook, owner, stacktrace.NewError(http.StatusText(response.StatusCode)), response)
+			return nil
+		}
+
+		ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response code [%d]", webhook.URL, event.Type(), event.ID(), response.StatusCode))
+		return nil
+	}, retry.Attempts(2))
+	if err != nil {
+		msg := fmt.Sprintf("cannot handle [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 	}
-
-	ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response code [%d]", webhook.URL, event.Type(), event.ID(), response.StatusCode))
 }
 
 func (service *WebhookService) createRequest(ctx context.Context, event cloudevents.Event, webhook *entities.Webhook) (*http.Request, error) {
