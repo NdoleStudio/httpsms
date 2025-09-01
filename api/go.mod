@@ -38,7 +38,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pusher/pusher-http-go/v5 v5.1.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.11.0
-	github.com/redis/go-redis/v9 v9.11.0
+	github.com/redis/go-redis/v9 v9.12.1
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.6
