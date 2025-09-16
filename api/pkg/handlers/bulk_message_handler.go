@@ -50,12 +50,12 @@ func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...
 
 // Store sends bulk SMS messages from a CSV or Excel file.
 // @Summary      Store bulk SMS file
-// @Description  Sends bulk SMS messages to multiple users from a CSV or Excel file.
+// @Description  Sends bulk SMS messages to multiple users based on our [CSV template](https://httpsms.com/templates/httpsms-bulk.csv) or our [Excel template](https://httpsms.com/templates/httpsms-bulk.xlsx).
 // @Security	 ApiKeyAuth
 // @Tags         BulkSMS
 // @Accept       multipart/form-data
 // @Produce      json
-// @Param        document	formData  	file   							true	"The Excel or CSV file formatted according to the templates"
+// @Param        document	formData  	file   							true	"The Excel or CSV file containing the messages to be sent."
 // @Success      202 		{object}	responses.NoContent
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401	    {object}	responses.Unauthorized
