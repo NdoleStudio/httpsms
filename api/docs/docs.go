@@ -11,7 +11,7 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {
-            "name": "HTTP SMS",
+            "name": "support@httpsms.com",
             "email": "support@httpsms.com"
         },
         "license": {
@@ -151,9 +151,9 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Sends bulk SMS messages to multiple users from a CSV file.",
+                "description": "Sends bulk SMS messages to multiple users from a CSV or Excel file.",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -162,6 +162,15 @@ const docTemplate = `{
                     "BulkSMS"
                 ],
                 "summary": "Store bulk SMS file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "The Excel or CSV file formatted according to the templates",
+                        "name": "document",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "202": {
                         "description": "Accepted",
@@ -3630,7 +3639,7 @@ const docTemplate = `{
                     "example": "153554b5-ae44-44a0-8f4f-7bbac5657ad4"
                 },
                 "send_at": {
-                    "description": "SendAt is an optional parameter used to schedule a message to be sent at a later time",
+                    "description": "SendAt is an optional parameter used to schedule a message to be sent in the future. The time is considered to be in your profile's local timezone.",
                     "type": "string",
                     "example": "2022-06-05T14:26:09.527976+03:00"
                 },
@@ -4362,7 +4371,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/v1",
 	Schemes:          []string{"https"},
 	Title:            "httpSMS API Reference",
-	Description:      "API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager) via HTTP",
+	Description:      "Use your Android phone to send and receive SMS messages via a simple programmable API with end-to-end encryption.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

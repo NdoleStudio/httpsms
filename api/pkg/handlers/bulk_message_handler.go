@@ -48,13 +48,14 @@ func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...
 	router.Post("/v1/bulk-messages", h.computeRoute(middlewares, h.Store)...)
 }
 
-// Store sends bulk SMS messages from a CSV file.
+// Store sends bulk SMS messages from a CSV or Excel file.
 // @Summary      Store bulk SMS file
-// @Description  Sends bulk SMS messages to multiple users from a CSV file.
+// @Description  Sends bulk SMS messages to multiple users from a CSV or Excel file.
 // @Security	 ApiKeyAuth
 // @Tags         BulkSMS
-// @Accept       json
+// @Accept       multipart/form-data
 // @Produce      json
+// @Param        document	formData  	file   							true	"The Excel or CSV file formatted according to the templates"
 // @Success      202 		{object}	responses.NoContent
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401	    {object}	responses.Unauthorized

@@ -658,7 +658,8 @@ definitions:
       send_at:
         description:
           SendAt is an optional parameter used to schedule a message to
-          be sent at a later time
+          be sent in the future. The time is considered to be in your profile's local
+          timezone.
         example: "2022-06-05T14:26:09.527976+03:00"
         type: string
       to:
@@ -1185,10 +1186,10 @@ host: api.httpsms.com
 info:
   contact:
     email: support@httpsms.com
-    name: HTTP SMS
+    name: support@httpsms.com
   description:
-    API to send SMS messages using android [SmsManager](https://developer.android.com/reference/android/telephony/SmsManager)
-    via HTTP
+    Use your Android phone to send and receive SMS messages via a simple
+    programmable API with end-to-end encryption.
   license:
     name: AGPL-3.0
     url: https://raw.githubusercontent.com/NdoleStudio/http-sms-manager/main/LICENSE
@@ -1280,8 +1281,14 @@ paths:
   /bulk-messages:
     post:
       consumes:
-        - application/json
-      description: Sends bulk SMS messages to multiple users from a CSV file.
+        - multipart/form-data
+      description: Sends bulk SMS messages to multiple users from a CSV or Excel file.
+      parameters:
+        - description: The Excel or CSV file formatted according to the templates
+          in: formData
+          name: document
+          required: true
+          type: file
       produces:
         - application/json
       responses:
