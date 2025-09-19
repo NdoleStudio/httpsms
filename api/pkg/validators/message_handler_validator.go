@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -103,6 +104,10 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 	result := v.ValidateStruct()
 	if len(result) != 0 {
 		return result
+	}
+
+	if request.SendAt != nil && request.SendAt.After(time.Now().Add(480*time.Hour)) {
+		result.Add("send_at", "the scheduled time cannot be more than 20 days (480 hours) in the future")
 	}
 
 	_, err := validator.phoneService.Load(ctx, userID, request.From)
