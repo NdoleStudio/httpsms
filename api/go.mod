@@ -12,7 +12,7 @@ require (
 	github.com/NdoleStudio/go-otelroundtripper v0.0.12
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.4
 	github.com/avast/retry-go v3.0.0+incompatible
-	github.com/carlmjohnson/requests v0.24.3
+	github.com/carlmjohnson/requests v0.25.1
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/cockroachdb/cockroach-go/v2 v2.4.1
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
