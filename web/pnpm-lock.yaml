@@ -16,7 +16,7 @@ importers:
         version: 1.4.2
       '@nuxtjs/firebase':
         specifier: ^8.2.2
-        version: 8.2.2(@firebase/app-types@0.9.2)(firebase@10.14.1)(nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16))
+        version: 8.2.2(@firebase/app-types@0.9.2)(firebase@10.14.1)(nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16))
       '@nuxtjs/sitemap':
         specifier: ^2.4.0
         version: 2.4.0
@@ -52,7 +52,7 @@ importers:
         version: 2.30.1
       nuxt:
         specifier: ^2.18.1
-        version: 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
+        version: 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
       nuxt-highlightjs:
         specifier: ^1.0.3
         version: 1.0.3
@@ -184,8 +184,8 @@ importers:
         specifier: ^34.0.0
         version: 34.0.0(stylelint@15.11.0(typescript@4.9.5))
       ts-jest:
-        specifier: ^29.4.0
-        version: 29.4.0(@babel/core@7.28.4)(@jest/transform@30.2.0)(@jest/types@30.2.0)(babel-jest@30.2.0(@babel/core@7.28.4))(jest-util@30.2.0)(jest@30.2.0(@types/node@24.6.2))(typescript@4.9.5)
+        specifier: ^29.4.4
+        version: 29.4.4(@babel/core@7.28.4)(@jest/transform@30.2.0)(@jest/types@30.2.0)(babel-jest@30.2.0(@babel/core@7.28.4))(jest-util@30.2.0)(jest@30.2.0(@types/node@24.6.2))(typescript@4.9.5)
       vue-client-only:
         specifier: ^2.1.0
         version: 2.1.0
@@ -5088,6 +5088,11 @@ packages:
     resolution: {integrity: sha512-ax7ZYomf6jqPTQ4+XCpUGyXKHk5WweS+e05MBO4/y3WJ5RkmPXNKvX+bx1behVILVwr6JSQvZAku021CHPXG3Q==}
     engines: {node: '>=10'}
 
+  handlebars@4.7.8:
+    resolution: {integrity: sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==}
+    engines: {node: '>=0.4.7'}
+    hasBin: true
+
   hard-rejection@2.1.0:
     resolution: {integrity: sha512-VIZB+ibDhx7ObhAe7OVtoEbuP4h/MuOTHJ+J8h/eBXotJYl0fBgR72xDFCKgIh22OJZIOVNxBMWuhAr10r8HdA==}
     engines: {node: '>=6'}
@@ -5611,8 +5616,8 @@ packages:
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
-  jake@10.9.2:
-    resolution: {integrity: sha512-2P4SQ0HrLQ+fw6llpLnOaGAvN2Zu6778SJMrCUwns4fOoG9ayrTiZk3VV8sCPkVZF8ab0zksVpS8FDY5pRCNBA==}
+  jake@10.9.4:
+    resolution: {integrity: sha512-wpHYzhxiVQL+IV05BLE2Xn34zW1S223hvjtqk0+gsPrwd/8JNLXJgZZM/iPFsYc1xyphF+6M6EvdE5E9MBGkDA==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -8063,9 +8068,9 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  source-map@0.7.4:
-    resolution: {integrity: sha512-l3BikUxvPOcn5E74dZiq5BGsTb5yEwhaTSzccU6t4sDOH8NWJCstKO5QT2CvtFoK6F0saL7p9xHAqHOlCPJygA==}
-    engines: {node: '>= 8'}
+  source-map@0.7.6:
+    resolution: {integrity: sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ==}
+    engines: {node: '>= 12'}
 
   spdx-correct@3.2.0:
     resolution: {integrity: sha512-kN9dJbvnySHULIluDHy32WHRUu3Og7B9sbY7tsFLctQkIqnMh3hErYgdMjTYuqmcXX+lK5T1lnUt3G7zNswmZA==}
@@ -8522,8 +8527,8 @@ packages:
     peerDependencies:
       typescript: '>=4.2.0'
 
-  ts-jest@29.4.0:
-    resolution: {integrity: sha512-d423TJMnJGu80/eSgfQ5w/R+0zFJvdtTxwtF9KzFFunOpSeD+79lHJQIiAhluJoyGRbvj9NZJsl9WjCUo0ND7Q==}
+  ts-jest@29.4.4:
+    resolution: {integrity: sha512-ccVcRABct5ZELCT5U0+DZwkXMCcOCLi2doHRrKy1nK/s7J7bch6TzJMsrY09WxgUUIP/ITfmcDS8D2yl63rnXw==}
     engines: {node: ^14.15.0 || ^16.10.0 || ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
@@ -8649,6 +8654,11 @@ packages:
 
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
+
+  uglify-js@3.19.3:
+    resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
+    engines: {node: '>=0.8.0'}
+    hasBin: true
 
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
@@ -9120,6 +9130,9 @@ packages:
   widest-line@3.1.0:
     resolution: {integrity: sha512-NsmoXalsWVDMGupxZ5R08ka9flZjjiLvHVAWYOKtiKM8ujtZWr9cRffak+uSE48+Ob8ObalXpwyeUiyDD6QFgg==}
     engines: {node: '>=8'}
+
+  wordwrap@1.0.0:
+    resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
 
   worker-farm@1.7.0:
     resolution: {integrity: sha512-rvw3QTZc8lAxyVrqcSGVm5yP/IJ2UcB3U0graE3LCFoZ0Yn2x4EoVSqJKdB/T5M+FLcRPjz4TDacRf3OCfNUzw==}
@@ -11733,12 +11746,12 @@ snapshots:
       - supports-color
       - vue
 
-  '@nuxt/builder@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)':
+  '@nuxt/builder@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)':
     dependencies:
       '@nuxt/devalue': 2.0.2
       '@nuxt/utils': 2.18.1
       '@nuxt/vue-app': 2.18.1
-      '@nuxt/webpack': 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
+      '@nuxt/webpack': 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
       chalk: 4.1.2
       chokidar: 3.6.0
       consola: 3.2.3
@@ -12124,7 +12137,7 @@ snapshots:
       vue-meta: 2.4.0
       vue-server-renderer: 2.7.16
 
-  '@nuxt/webpack@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)':
+  '@nuxt/webpack@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)':
     dependencies:
       '@babel/core': 7.24.7
       '@nuxt/babel-preset-app': 2.18.1(vue@2.7.16)
@@ -12164,7 +12177,7 @@ snapshots:
       ufo: 1.6.1
       upath: 2.0.1
       url-loader: 4.1.1(file-loader@6.2.0(webpack@5.102.0))(webpack@4.47.0)
-      vue-loader: 15.11.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(cache-loader@4.1.0(webpack@4.47.0))(css-loader@5.2.7(webpack@5.102.0))(ejs@3.1.10)(lodash@4.17.21)(prettier@3.6.2)(vue-template-compiler@2.7.16)(webpack@4.47.0)
+      vue-loader: 15.11.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(cache-loader@4.1.0(webpack@4.47.0))(css-loader@5.2.7(webpack@5.102.0))(ejs@3.1.10)(handlebars@4.7.8)(lodash@4.17.21)(prettier@3.6.2)(vue-template-compiler@2.7.16)(webpack@4.47.0)
       vue-style-loader: 4.1.3
       vue-template-compiler: 2.7.16
       watchpack: 2.4.4
@@ -12289,11 +12302,11 @@ snapshots:
       - vite
       - webpack
 
-  '@nuxtjs/firebase@8.2.2(@firebase/app-types@0.9.2)(firebase@10.14.1)(nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16))':
+  '@nuxtjs/firebase@8.2.2(@firebase/app-types@0.9.2)(firebase@10.14.1)(nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16))':
     dependencies:
       consola: 2.15.3
       firebase: 10.14.1
-      nuxt: 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
+      nuxt: 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
     optionalDependencies:
       firebase-admin: 10.3.0(@firebase/app-types@0.9.2)
     transitivePeerDependencies:
@@ -12636,7 +12649,7 @@ snapshots:
     dependencies:
       '@types/node': 16.18.55
       '@types/source-list-map': 0.1.3
-      source-map: 0.7.4
+      source-map: 0.7.6
 
   '@types/webpack@4.41.38':
     dependencies:
@@ -12880,9 +12893,9 @@ snapshots:
     optionalDependencies:
       prettier: 2.8.8
 
-  '@vue/component-compiler-utils@3.3.0(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(lodash@4.17.21)':
+  '@vue/component-compiler-utils@3.3.0(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(lodash@4.17.21)':
     dependencies:
-      consolidate: 0.15.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(lodash@4.17.21)
+      consolidate: 0.15.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(lodash@4.17.21)
       hash-sum: 1.0.2
       lru-cache: 4.1.5
       merge-source-map: 1.1.0
@@ -13367,7 +13380,8 @@ snapshots:
       retry: 0.13.1
     optional: true
 
-  async@3.2.6: {}
+  async@3.2.6:
+    optional: true
 
   asynckit@0.4.0: {}
 
@@ -14138,12 +14152,13 @@ snapshots:
 
   console-browserify@1.2.0: {}
 
-  consolidate@0.15.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(lodash@4.17.21):
+  consolidate@0.15.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(lodash@4.17.21):
     dependencies:
       bluebird: 3.7.2
     optionalDependencies:
       babel-core: 7.0.0-bridge.0(@babel/core@7.28.4)
       ejs: 3.1.10
+      handlebars: 4.7.8
       lodash: 4.17.21
 
   constants-browserify@1.0.0: {}
@@ -14722,7 +14737,8 @@ snapshots:
 
   ejs@3.1.10:
     dependencies:
-      jake: 10.9.2
+      jake: 10.9.4
+    optional: true
 
   electron-to-chromium@1.5.227: {}
 
@@ -15348,6 +15364,7 @@ snapshots:
   filelist@1.0.4:
     dependencies:
       minimatch: 5.1.6
+    optional: true
 
   fill-range@4.0.0:
     dependencies:
@@ -15875,6 +15892,15 @@ snapshots:
   gzip-size@6.0.0:
     dependencies:
       duplexer: 0.1.2
+
+  handlebars@4.7.8:
+    dependencies:
+      minimist: 1.2.8
+      neo-async: 2.6.2
+      source-map: 0.6.1
+      wordwrap: 1.0.0
+    optionalDependencies:
+      uglify-js: 3.19.3
 
   hard-rejection@2.1.0: {}
 
@@ -16404,12 +16430,12 @@ snapshots:
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
 
-  jake@10.9.2:
+  jake@10.9.4:
     dependencies:
       async: 3.2.6
-      chalk: 4.1.2
       filelist: 1.0.4
-      minimatch: 3.1.2
+      picocolors: 1.1.1
+    optional: true
 
   jest-changed-files@30.2.0:
     dependencies:
@@ -17649,10 +17675,10 @@ snapshots:
     dependencies:
       highlight.js: 11.11.1
 
-  nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16):
+  nuxt@2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(consola@3.2.3)(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16):
     dependencies:
       '@nuxt/babel-preset-app': 2.18.1(vue@2.7.16)
-      '@nuxt/builder': 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
+      '@nuxt/builder': 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
       '@nuxt/cli': 2.18.1
       '@nuxt/components': 2.2.1(consola@3.2.3)
       '@nuxt/config': 2.18.1
@@ -17665,7 +17691,7 @@ snapshots:
       '@nuxt/utils': 2.18.1
       '@nuxt/vue-app': 2.18.1
       '@nuxt/vue-renderer': 2.18.1
-      '@nuxt/webpack': 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
+      '@nuxt/webpack': 2.18.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(prettier@3.6.2)(typescript@4.9.5)(vue@2.7.16)
     transitivePeerDependencies:
       - '@vue/compiler-sfc'
       - arc-templates
@@ -19367,7 +19393,7 @@ snapshots:
 
   source-map@0.6.1: {}
 
-  source-map@0.7.4: {}
+  source-map@0.7.6: {}
 
   spdx-correct@3.2.0:
     dependencies:
@@ -19885,11 +19911,11 @@ snapshots:
     dependencies:
       typescript: 4.9.5
 
-  ts-jest@29.4.0(@babel/core@7.28.4)(@jest/transform@30.2.0)(@jest/types@30.2.0)(babel-jest@30.2.0(@babel/core@7.28.4))(jest-util@30.2.0)(jest@30.2.0(@types/node@24.6.2))(typescript@4.9.5):
+  ts-jest@29.4.4(@babel/core@7.28.4)(@jest/transform@30.2.0)(@jest/types@30.2.0)(babel-jest@30.2.0(@babel/core@7.28.4))(jest-util@30.2.0)(jest@30.2.0(@types/node@24.6.2))(typescript@4.9.5):
     dependencies:
       bs-logger: 0.2.6
-      ejs: 3.1.10
       fast-json-stable-stringify: 2.1.0
+      handlebars: 4.7.8
       jest: 30.2.0(@types/node@24.6.2)
       json5: 2.2.3
       lodash.memoize: 4.1.2
@@ -20001,6 +20027,9 @@ snapshots:
   ua-parser-js@1.0.38: {}
 
   ufo@1.6.1: {}
+
+  uglify-js@3.19.3:
+    optional: true
 
   unbox-primitive@1.0.2:
     dependencies:
@@ -20294,7 +20323,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.5.0
       lodash: 4.17.21
-      semver: 7.7.2
+      semver: 7.5.4
     transitivePeerDependencies:
       - supports-color
 
@@ -20336,9 +20365,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vue-loader@15.11.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(cache-loader@4.1.0(webpack@4.47.0))(css-loader@5.2.7(webpack@5.102.0))(ejs@3.1.10)(lodash@4.17.21)(prettier@3.6.2)(vue-template-compiler@2.7.16)(webpack@4.47.0):
+  vue-loader@15.11.1(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(cache-loader@4.1.0(webpack@4.47.0))(css-loader@5.2.7(webpack@5.102.0))(ejs@3.1.10)(handlebars@4.7.8)(lodash@4.17.21)(prettier@3.6.2)(vue-template-compiler@2.7.16)(webpack@4.47.0):
     dependencies:
-      '@vue/component-compiler-utils': 3.3.0(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(lodash@4.17.21)
+      '@vue/component-compiler-utils': 3.3.0(babel-core@7.0.0-bridge.0(@babel/core@7.28.4))(ejs@3.1.10)(handlebars@4.7.8)(lodash@4.17.21)
       css-loader: 5.2.7(webpack@5.102.0)
       hash-sum: 1.0.2
       loader-utils: 1.4.2
@@ -20671,6 +20700,8 @@ snapshots:
   widest-line@3.1.0:
     dependencies:
       string-width: 4.2.3
+
+  wordwrap@1.0.0: {}
 
   worker-farm@1.7.0:
     dependencies:
