@@ -163,8 +163,8 @@ importers:
         specifier: ^16.1.4
         version: 16.1.4
       node-fetch-native:
-        specifier: ^1.6.4
-        version: 1.6.4
+        specifier: ^1.6.7
+        version: 1.6.7
       postcss-html:
         specifier: ^1.7.0
         version: 1.7.0
@@ -6465,8 +6465,8 @@ packages:
     resolution: {integrity: sha512-BOb67bWg2dTyax5kdef5WfU3X8xu4wPg+zHzkvls0Q/QpYycIFRLEEIdAx9Wma43DxG6Qzn4illdZoYseKWa4A==}
     engines: {node: '>= 0.4.6'}
 
-  node-fetch-native@1.6.4:
-    resolution: {integrity: sha512-IhOigYzAKHd244OC0JIMIUrjzctirCmPkaIfhDeGcEETWof5zKYUW7e7MYvChGWh/4CJeXEgsRyGzuF334rOOQ==}
+  node-fetch-native@1.6.7:
+    resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
 
   node-fetch@2.7.0:
     resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
@@ -11981,7 +11981,7 @@ snapshots:
     dependencies:
       chalk: 4.1.2
       consola: 3.2.3
-      node-fetch-native: 1.6.4
+      node-fetch-native: 1.6.7
 
   '@nuxt/schema@3.12.2(rollup@3.29.5)':
     dependencies:
@@ -12112,7 +12112,7 @@ snapshots:
 
   '@nuxt/vue-app@2.18.1':
     dependencies:
-      node-fetch-native: 1.6.4
+      node-fetch-native: 1.6.7
       ufo: 1.6.1
       unfetch: 5.0.0
       vue: 2.7.16
@@ -15698,7 +15698,7 @@ snapshots:
       defu: 6.1.4
       https-proxy-agent: 5.0.1
       mri: 1.2.0
-      node-fetch-native: 1.6.4
+      node-fetch-native: 1.6.7
       pathe: 1.1.2
       tar: 6.2.0
     transitivePeerDependencies:
@@ -15709,7 +15709,7 @@ snapshots:
       citty: 0.1.6
       consola: 3.2.3
       defu: 6.1.4
-      node-fetch-native: 1.6.4
+      node-fetch-native: 1.6.7
       nypm: 0.3.9
       ohash: 1.1.4
       pathe: 1.1.2
@@ -17569,7 +17569,7 @@ snapshots:
       clone: 2.1.2
       lodash: 4.17.21
 
-  node-fetch-native@1.6.4: {}
+  node-fetch-native@1.6.7: {}
 
   node-fetch@2.7.0:
     dependencies:
