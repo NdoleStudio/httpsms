@@ -177,7 +177,7 @@ git clone https://github.com/NdoleStudio/httpsms.git
 - Copy the `.env.docker` file in the `web` directory into `.env`
 
 ```bash
-cp web/.env.local.docker web/.env.local
+cp web/.env.docker web/.env
 ```
 
 - Update the environment variables in the `.env` file in the `web` directory with your firebase web SDK configuration in step 1 above
