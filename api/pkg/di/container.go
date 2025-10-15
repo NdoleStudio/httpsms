@@ -828,7 +828,10 @@ func (container *Container) WebhookService() (service *services.WebhookService) 
 	return services.NewWebhookService(
 		container.Logger(),
 		container.Tracer(),
-		container.HTTPClient("webhook"),
+		&http.Client{
+			Timeout:   6 * time.Second,
+			Transport: container.HTTPRoundTripperWithoutRetry("webhook"),
+		},
 		container.WebhookRepository(),
 		container.EventDispatcher(),
 	)
@@ -860,6 +863,16 @@ func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
 	return otelroundtripper.New(
 		otelroundtripper.WithName(name),
 		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
+		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
+		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
+	)
+}
+
+// HTTPRoundTripperWithoutRetry creates an open telemetry http.RoundTripper without retry
+func (container *Container) HTTPRoundTripperWithoutRetry(name string) http.RoundTripper {
+	container.logger.Debug(fmt.Sprintf("Debug: initializing %s %T", name, http.DefaultTransport))
+	return otelroundtripper.New(
+		otelroundtripper.WithName(name),
 		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
 		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
 	)
