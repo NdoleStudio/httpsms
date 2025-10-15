@@ -230,7 +230,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 			if attempts == 1 {
 				return err
 			}
-			service.handleWebhookSendFailed(ctx, event, webhook, owner, err, nil)
+			service.handleWebhookSendFailed(ctx, event, webhook, owner, err, response)
 			return nil
 		}
 
