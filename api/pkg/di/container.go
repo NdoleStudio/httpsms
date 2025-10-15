@@ -15,7 +15,7 @@ import (
 
 	otelMetric "go.opentelemetry.io/otel/metric"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 
 	"github.com/gofiber/contrib/otelfiber"
 	"gorm.io/plugin/opentelemetry/tracing"

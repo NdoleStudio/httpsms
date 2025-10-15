@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"

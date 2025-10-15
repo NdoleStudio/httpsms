@@ -22,7 +22,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/palantir/stacktrace"
@@ -339,12 +339,12 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 }
 
 func (service *WebhookService) getAuthToken(webhook *entities.Webhook) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Audience:  webhook.URL,
-		ExpiresAt: time.Now().UTC().Add(10 * time.Minute).Unix(),
-		IssuedAt:  time.Now().UTC().Unix(),
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Audience:  []string{webhook.URL},
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(10 * time.Minute)),
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		Issuer:    "api.httpsms.com",
-		NotBefore: time.Now().UTC().Add(-10 * time.Minute).Unix(),
+		NotBefore: jwt.NewNumericDate(time.Now().UTC().Add(-10 * time.Minute)),
 		Subject:   string(webhook.UserID),
 	})
 	return token.SignedString([]byte(webhook.SigningKey))
