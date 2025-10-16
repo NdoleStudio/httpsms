@@ -112,7 +112,7 @@ type Message struct {
 	DeliveredAt             *time.Time `json:"delivered_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
 	ExpiredAt               *time.Time `json:"expired_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
 	FailedAt                *time.Time `json:"failed_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
-	CanBePolled             bool       `json:"can_be_polled" example:"false" swaggerignore:"true"`
+	CanBePolled             bool       `json:"-" example:"false" swaggerignore:"true"`
 	SendAttemptCount        uint       `json:"send_attempt_count" example:"0"`
 	MaxSendAttempts         uint       `json:"max_send_attempts" example:"1"`
 	ReceivedAt              *time.Time `json:"received_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`

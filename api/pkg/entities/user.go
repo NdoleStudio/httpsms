@@ -78,7 +78,7 @@ type User struct {
 	Timezone                         string           `json:"timezone" example:"Europe/Helsinki" gorm:"default:Africa/Accra"`
 	ActivePhoneID                    *uuid.UUID       `json:"active_phone_id" gorm:"type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb" validate:"optional"`
 	SubscriptionName                 SubscriptionName `json:"subscription_name" example:"free"`
-	SubscriptionID                   *string          `json:"subscription_id" example:"8f9c71b8-b84e-4417-8408-a62274f65a08" swaggerignore:"true"`
+	SubscriptionID                   *string          `json:"-" example:"8f9c71b8-b84e-4417-8408-a62274f65a08" swaggerignore:"true"`
 	SubscriptionStatus               *string          `json:"subscription_status" example:"on_trial" validate:"optional"`
 	SubscriptionRenewsAt             *time.Time       `json:"subscription_renews_at" example:"2022-06-05T14:26:02.302718+03:00" validate:"optional"`
 	SubscriptionEndsAt               *time.Time       `json:"subscription_ends_at" example:"2022-06-05T14:26:02.302718+03:00" validate:"optional"`
