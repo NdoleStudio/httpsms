@@ -355,6 +355,7 @@
               <v-btn
                 to="https://docs.httpsms.com/features/scheduling-sms-messages"
                 class="primary"
+                ><v-icon left>{{ mdiClockOutline }}</v-icon
                 >Documentation</v-btn
               >
             </div>
@@ -1023,6 +1024,7 @@ import {
   mdiLanguageJava,
   mdiMicrosoftExcel,
   mdiWebhook,
+  mdiClockOutline,
   mdiArrowRightThin,
   mdiPowershell,
   mdiLanguageGo,
@@ -1042,6 +1044,7 @@ export default Vue.extend({
       mdiSend,
       mdiGift,
       mdiArrowRightThin,
+      mdiClockOutline,
       mdiCreation,
       mdiForum,
       mdiNumeric1,

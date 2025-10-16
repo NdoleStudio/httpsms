@@ -1479,6 +1479,7 @@ func (container *Container) RegisterSwaggerRoutes() {
 		Title: docs.SwaggerInfo.Title,
 		CustomScript: `
 		document.addEventListener("DOMContentLoaded", function(event) {
+			document.body.style.margin = '0';
 			var links = document.querySelectorAll("link[rel~='icon']");
 			links.forEach(function (link) {
 				link.href = 'https://httpsms.com/favicon.ico';
