@@ -66,13 +66,13 @@ func (h *MessageHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewa
 }
 
 // PostSend a new entities.Message
-// @Summary      Send a new SMS message
-// @Description  Add a new SMS message to be sent by the android phone
+// @Summary      Send an SMS message
+// @Description  Add a new SMS message to be sent by your Android phone
 // @Security	 ApiKeyAuth
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        payload   body requests.MessageSend  true  "PostSend message request payload"
+// @Param        payload   body requests.MessageSend  true  "Send message request payload"
 // @Success      200  {object}  responses.MessageResponse
 // @Failure      400  {object}  responses.BadRequest
 // @Failure 	 401  {object}	responses.Unauthorized

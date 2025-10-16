@@ -51,8 +51,8 @@
             </v-btn>
           </div>
           <p class="text-body-2 mt-2">
-            ⚡Trusted by <b>8,370+</b> happy users who have sent or received
-            more than <b>3,994,092+</b> messages.
+            ⚡Trusted by <b>13,195+</b> happy users who have sent or received
+            more than <b>5,263,593+</b> messages.
           </p>
           <div
             class="mt-4"
@@ -125,7 +125,7 @@
                   href="/templates/httpsms-bulk.xlsx"
                   >excel template</a
                 >
-                and upload it on httpSMS to send your SMS messages to multiple
+                and upload it on httpSMS to send SMS messages to up to 1,000
                 recipients at once without writing any code.
               </h5>
               <v-btn
@@ -340,6 +340,31 @@
               max-height="300"
               contain
               :src="require('assets/img/manage-phones.svg')"
+            ></v-img>
+          </v-col>
+        </v-row>
+        <v-row class="mt-16">
+          <v-col cols="12" md="6" class="d-flex align-center" :order-lg="2">
+            <div>
+              <h3 class="text-h3 mb-1">Schedule Text Messages</h3>
+              <h5 class="text-h6 mb-3 font-weight-light">
+                Control when your SMS will reach your recipients, allowing you
+                to perfectly time promotions, critical alerts etc by scheduling
+                your messages in advance.
+              </h5>
+              <v-btn
+                to="https://docs.httpsms.com/features/scheduling-sms-messages"
+                class="primary"
+                >Documentation</v-btn
+              >
+            </div>
+          </v-col>
+          <v-col cols="12" md="6" :order-lg="1">
+            <v-img
+              class="mb-4"
+              max-height="300"
+              contain
+              :src="require('assets/img/schedule-messages.svg')"
             ></v-img>
           </v-col>
         </v-row>

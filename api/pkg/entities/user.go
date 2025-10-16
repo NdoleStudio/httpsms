@@ -76,12 +76,12 @@ type User struct {
 	Email                            string           `json:"email" example:"name@email.com"`
 	APIKey                           string           `json:"api_key" gorm:"uniqueIndex:idx_users_api_key;NOT NULL" example:"x-api-key"`
 	Timezone                         string           `json:"timezone" example:"Europe/Helsinki" gorm:"default:Africa/Accra"`
-	ActivePhoneID                    *uuid.UUID       `json:"active_phone_id" gorm:"type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	ActivePhoneID                    *uuid.UUID       `json:"active_phone_id" gorm:"type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb" validate:"optional"`
 	SubscriptionName                 SubscriptionName `json:"subscription_name" example:"free"`
-	SubscriptionID                   *string          `json:"subscription_id" example:"8f9c71b8-b84e-4417-8408-a62274f65a08"`
-	SubscriptionStatus               *string          `json:"subscription_status" example:"on_trial"`
-	SubscriptionRenewsAt             *time.Time       `json:"subscription_renews_at" example:"2022-06-05T14:26:02.302718+03:00"`
-	SubscriptionEndsAt               *time.Time       `json:"subscription_ends_at" example:"2022-06-05T14:26:02.302718+03:00"`
+	SubscriptionID                   *string          `json:"subscription_id" example:"8f9c71b8-b84e-4417-8408-a62274f65a08" swaggerignore:"true"`
+	SubscriptionStatus               *string          `json:"subscription_status" example:"on_trial" validate:"optional"`
+	SubscriptionRenewsAt             *time.Time       `json:"subscription_renews_at" example:"2022-06-05T14:26:02.302718+03:00" validate:"optional"`
+	SubscriptionEndsAt               *time.Time       `json:"subscription_ends_at" example:"2022-06-05T14:26:02.302718+03:00" validate:"optional"`
 	NotificationMessageStatusEnabled bool             `json:"notification_message_status_enabled" gorm:"default:true" example:"true"`
 	NotificationWebhookEnabled       bool             `json:"notification_webhook_enabled" gorm:"default:true" example:"true"`
 	NotificationHeartbeatEnabled     bool             `json:"notification_heartbeat_enabled" gorm:"default:true" example:"true"`

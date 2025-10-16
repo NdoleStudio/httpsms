@@ -23,7 +23,7 @@ type MessageSend struct {
 	// RequestID is an optional parameter used to track a request from the client's perspective
 	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
 	// SendAt is an optional parameter used to schedule a message to be sent in the future. The time is considered to be in your profile's local timezone and you can queue messages for up to 20 days (480 hours) in the future.
-	SendAt *time.Time `json:"send_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	SendAt *time.Time `json:"send_at" example:"2025-12-19T16:39:57-08:00" validate:"optional"`
 }
 
 // Sanitize sets defaults to MessageReceive

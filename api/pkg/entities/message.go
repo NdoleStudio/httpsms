@@ -84,7 +84,7 @@ func (s SIM) String() string {
 // Message represents a message sent between 2 phone numbers
 type Message struct {
 	ID        uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	RequestID *string       `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4"`
+	RequestID *string       `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
 	Owner     string        `json:"owner" example:"+18005550199"`
 	UserID    UserID        `json:"user_id" gorm:"index:idx_messages__user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Contact   string        `json:"contact" example:"+18005550100"`
@@ -99,24 +99,24 @@ type Message struct {
 	SIM SIM `json:"sim" example:"DEFAULT"`
 
 	// SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
-	SendDuration *int64 `json:"send_time" example:"133414"`
+	SendDuration *int64 `json:"send_time" example:"133414" validate:"optional"`
 
 	RequestReceivedAt       time.Time  `json:"request_received_at" example:"2022-06-05T14:26:01.520828+03:00"`
 	CreatedAt               time.Time  `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt               time.Time  `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 	OrderTimestamp          time.Time  `json:"order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
-	LastAttemptedAt         *time.Time `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	NotificationScheduledAt *time.Time `json:"scheduled_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	SentAt                  *time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	ScheduledSendTime       *time.Time `json:"scheduled_send_time" example:"2022-06-05T14:26:09.527976+03:00"`
-	DeliveredAt             *time.Time `json:"delivered_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	ExpiredAt               *time.Time `json:"expired_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	FailedAt                *time.Time `json:"failed_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	CanBePolled             bool       `json:"can_be_polled" example:"false"`
+	LastAttemptedAt         *time.Time `json:"last_attempted_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	NotificationScheduledAt *time.Time `json:"scheduled_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	SentAt                  *time.Time `json:"sent_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	ScheduledSendTime       *time.Time `json:"scheduled_send_time" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	DeliveredAt             *time.Time `json:"delivered_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	ExpiredAt               *time.Time `json:"expired_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	FailedAt                *time.Time `json:"failed_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	CanBePolled             bool       `json:"can_be_polled" example:"false" swaggerignore:"true"`
 	SendAttemptCount        uint       `json:"send_attempt_count" example:"0"`
 	MaxSendAttempts         uint       `json:"max_send_attempts" example:"1"`
-	ReceivedAt              *time.Time `json:"received_at" example:"2022-06-05T14:26:09.527976+03:00"`
-	FailureReason           *string    `json:"failure_reason" example:"UNKNOWN"`
+	ReceivedAt              *time.Time `json:"received_at" example:"2022-06-05T14:26:09.527976+03:00" validate:"optional"`
+	FailureReason           *string    `json:"failure_reason" example:"UNKNOWN" validate:"optional"`
 }
 
 // IsSending determines if a message is being sent

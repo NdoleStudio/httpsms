@@ -44,18 +44,7 @@ func (h *LemonsqueezyHandler) RegisterRoutes(app *fiber.App, middlewares ...fibe
 	router.Post("/event", h.computeRoute(middlewares, h.Event)...)
 }
 
-// Event consumes a lemonsqueezy event
-// @Summary      Consume a lemonsqueezy event
-// @Description  Publish a lemonsqueezy event to the registered listeners
-// @Tags         Lemonsqueezy
-// @Accept       json
-// @Produce      json
-// @Success      204 		{object}	responses.NoContent
-// @Failure      400		{object}	responses.BadRequest
-// @Failure 	 401    	{object}	responses.Unauthorized
-// @Failure      422		{object}	responses.UnprocessableEntity
-// @Failure      500		{object}	responses.InternalServerError
-// @Router       /lemonsqueezy/event [post]
+// Event handles lemonsqueezy events
 func (h *LemonsqueezyHandler) Event(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
