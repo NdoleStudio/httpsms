@@ -242,7 +242,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 		}()
 
 		if response.StatusCode >= 400 {
-			ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] with response code [%d]", event.Type(), webhook.URL, webhook.UserID, response.StatusCode))
+			ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] with response code [%d] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, response.StatusCode, attempts))
 			if attempts == 1 {
 				return stacktrace.NewError(http.StatusText(response.StatusCode))
 			}
