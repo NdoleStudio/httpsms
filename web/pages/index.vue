@@ -353,7 +353,7 @@
                 your messages in advance.
               </h5>
               <v-btn
-                to="https://docs.httpsms.com/features/scheduling-sms-messages"
+                href="https://docs.httpsms.com/features/scheduling-sms-messages"
                 class="primary"
                 ><v-icon left>{{ mdiClockOutline }}</v-icon
                 >Documentation</v-btn
