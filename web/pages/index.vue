@@ -669,6 +669,26 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
           </v-col>
         </v-row>
         <v-row>
+          <v-col cols="12">
+            <v-slider
+              v-model="pricing"
+              :tick-labels="
+                $vuetify.breakpoint.lgAndUp ? pricingLabelsFull : pricingLabels
+              "
+              :max="4"
+              step="1"
+              thumb-label="always"
+              thumb-size="32"
+              tick-size="4"
+              tick
+            >
+              <template v-slot:thumb-label>
+                {{ pricingLabels[pricing] }}
+              </template>
+            </v-slider>
+          </v-col>
+        </v-row>
+        <v-row>
           <v-col cols="12" lg="4">
             <v-card elevation="4" color="#121212">
               <v-card-text>
@@ -760,23 +780,28 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             </v-card>
           </v-col>
           <v-col cols="12" lg="4">
-            <v-card elevation="4" color="#121212">
+            <v-card color="#121212" border outlined>
               <v-card-text>
-                <h1 class="text-center text-h3 text--primary">Ultra</h1>
+                <h1 class="text-center text-h3 text--primary">
+                  {{ pricingLabels[pricing] }} Plan
+                </h1>
                 <p class="subtitle-1 text-center">
-                  Send and receive up to 10,000 SMS messages like a power user.
+                  Send and receive up to {{ planMessages }} SMS messages like a
+                  power user.
                 </p>
                 <p v-if="!yearlyPricing" class="text-center text--primary">
-                  <span class="text-h3">$20</span>/month
+                  <span class="text-h3">${{ planMonthlyPrice }}</span
+                  >/month
                 </p>
                 <p v-else class="text-center text--primary">
-                  <span class="text-h3">$200</span>/year
+                  <span class="text-h3">${{ planYearlyPrice }}</span
+                  >/year
                 </p>
                 <p v-if="!yearlyPricing" class="text-center mt-n3">
-                  or <b>$200</b> per year
+                  or <b>${{ planYearlyPrice }}</b> per year
                 </p>
                 <p v-else class="text-center mt-n3">
-                  or <b>$16.66</b> per month
+                  or <b>${{ planYearlyMonthlyPrice }}</b> per month
                 </p>
                 <v-btn block color="default" :to="{ name: 'login' }" large
                   >Try For Free</v-btn
@@ -785,7 +810,8 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
                   <v-icon color="primary" class="mt-n1" left>{{
                     mdiCheckCircle
                   }}</v-icon
-                  >Send or receive up to <b>10,000</b> SMS/month
+                  >Send or receive up to
+                  <b>{{ pricingLabels[pricing] }}</b> SMS/month
                 </p>
                 <p class="subtitle-1 mt-n4">
                   <v-icon color="primary" class="mt-n1" left>
@@ -1067,7 +1093,28 @@ export default Vue.extend({
       selectedTab: 'javascript',
       yearlyPricing: false,
       faqPanel: null,
+      pricing: 0,
+      pricingLabels: ['10K', '20K', '50K', '100K', '200K'],
+      pricingLabelsFull: ['10,000', '20,000', '50,000', '100,000', '200,000'],
     }
+  },
+  computed: {
+    planMessages() {
+      const plan = this.pricingLabels[this.pricing]
+      return plan.replace('K', ',000')
+    },
+    planMonthlyPrice() {
+      const prices = [20, 35, 89, 175, 350]
+      return prices[this.pricing]
+    },
+    planYearlyPrice() {
+      const prices = [200, 350, 1068, 2100, 4200]
+      return prices[this.pricing]
+    },
+    planYearlyMonthlyPrice() {
+      const prices = [16.66, 29.16, 89, 175, 350]
+      return prices[this.pricing]
+    },
   },
 })
 </script>
