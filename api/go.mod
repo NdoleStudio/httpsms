@@ -9,7 +9,7 @@ require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.30.0
-	github.com/NdoleStudio/go-otelroundtripper v0.0.12
+	github.com/NdoleStudio/go-otelroundtripper v0.0.13
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.4
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/carlmjohnson/requests v0.25.1
