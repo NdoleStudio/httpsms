@@ -90,8 +90,8 @@ importers:
         specifier: ^2.7.16
         version: 2.7.16
       vuetify:
-        specifier: ^2.7.2
-        version: 2.7.2(vue@2.7.16)
+        specifier: ^3.0.0
+        version: 3.0.0(vue@2.7.16)
       vuex:
         specifier: ^3.6.2
         version: 3.6.2(vue@2.7.16)
@@ -8958,6 +8958,22 @@ packages:
     deprecated: This version is deprecated
     peerDependencies:
       vue: ^2.6.4
+
+  vuetify@3.0.0:
+    resolution: {integrity: sha512-0olLmKWb+oTaebGTM02+1fWaAgnGDuIt86K3jDv2LnALQ2atSzhDS1SSASJsJCZ2PgFBdDAeJVLcNWWavRYAlQ==}
+    engines: {node: ^12.20 || >=14.13}
+    peerDependencies:
+      vite-plugin-vuetify: ^1.0.0-alpha.12
+      vue: ^3.2.0
+      vue-i18n: ^9.0.0
+      webpack-plugin-vuetify: ^2.0.0-alpha.11
+    peerDependenciesMeta:
+      vite-plugin-vuetify:
+        optional: true
+      vue-i18n:
+        optional: true
+      webpack-plugin-vuetify:
+        optional: true
 
   vuex@3.6.2:
     resolution: {integrity: sha512-ETW44IqCgBpVomy520DT5jf8n0zoCac+sxWnn+hMe/CzaSejb/eVw2YToiXYX+Ex/AuHHia28vWTq4goAexFbw==}
@@ -20350,6 +20366,10 @@ snapshots:
       webpack: 5.102.0
 
   vuetify@2.7.2(vue@2.7.16):
+    dependencies:
+      vue: 2.7.16
+
+  vuetify@3.0.0(vue@2.7.16):
     dependencies:
       vue: 2.7.16
 
