@@ -29,7 +29,6 @@ type UserService struct {
 	mailer             emails.Mailer
 	repository         repositories.UserRepository
 	dispatcher         *EventDispatcher
-	marketingService   *MarketingService
 	authClient         *auth.Client
 	lemonsqueezyClient *lemonsqueezy.Client
 }
@@ -41,7 +40,6 @@ func NewUserService(
 	repository repositories.UserRepository,
 	mailer emails.Mailer,
 	emailFactory emails.UserEmailFactory,
-	marketingService *MarketingService,
 	lemonsqueezyClient *lemonsqueezy.Client,
 	dispatcher *EventDispatcher,
 	authClient *auth.Client,
@@ -50,7 +48,6 @@ func NewUserService(
 		logger:             logger.WithService(fmt.Sprintf("%T", s)),
 		tracer:             tracer,
 		mailer:             mailer,
-		marketingService:   marketingService,
 		emailFactory:       emailFactory,
 		repository:         repository,
 		dispatcher:         dispatcher,
@@ -60,7 +57,7 @@ func NewUserService(
 }
 
 // Get fetches or creates an entities.User
-func (service *UserService) Get(ctx context.Context, authUser entities.AuthContext) (*entities.User, error) {
+func (service *UserService) Get(ctx context.Context, source string, authUser entities.AuthContext) (*entities.User, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -71,10 +68,31 @@ func (service *UserService) Get(ctx context.Context, authUser entities.AuthConte
 	}
 
 	if isNew {
-		service.marketingService.AddToList(ctx, user)
+		service.dispatchUserCreatedEvent(ctx, source, user)
 	}
 
 	return user, nil
+}
+
+func (service *UserService) dispatchUserCreatedEvent(ctx context.Context, source string, user *entities.User) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	event, err := service.createEvent(events.UserAccountCreated, source, &events.UserAccountCreatedPayload{
+		UserID:    user.ID,
+		Timestamp: time.Now().UTC(),
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create event [%s] for user [%s]", events.UserAccountCreated, user.ID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return
+	}
+
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), user.ID)
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return
+	}
 }
 
 // GetByID fetches an entities.User
@@ -98,7 +116,7 @@ type UserUpdateParams struct {
 }
 
 // Update an entities.User
-func (service *UserService) Update(ctx context.Context, authUser entities.AuthContext, params UserUpdateParams) (*entities.User, error) {
+func (service *UserService) Update(ctx context.Context, source string, authUser entities.AuthContext, params UserUpdateParams) (*entities.User, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -111,7 +129,7 @@ func (service *UserService) Update(ctx context.Context, authUser entities.AuthCo
 	}
 
 	if isNew {
-		service.marketingService.AddToList(ctx, user)
+		service.dispatchUserCreatedEvent(ctx, source, user)
 	}
 
 	user.Timezone = params.Timezone.String()
@@ -218,6 +236,7 @@ func (service *UserService) Delete(ctx context.Context, source string, userID en
 
 	event, err := service.createEvent(events.UserAccountDeleted, source, &events.UserAccountDeletedPayload{
 		UserID:    userID,
+		UserEmail: user.Email,
 		Timestamp: time.Now().UTC(),
 	})
 	if err != nil {

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/carlmjohnson/requests"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
 	"firebase.google.com/go/auth"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	plunk "github.com/NdoleStudio/plunk-go"
 	"github.com/gofiber/fiber/v2"
 	"github.com/palantir/stacktrace"
 )
@@ -19,7 +20,7 @@ type MarketingService struct {
 	logger      telemetry.Logger
 	tracer      telemetry.Tracer
 	authClient  *auth.Client
-	brevoAPIKey string
+	plunkClient *plunk.Client
 }
 
 // NewMarketingService creates a new instance of the MarketingService
@@ -27,70 +28,71 @@ func NewMarketingService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	authClient *auth.Client,
-	brevoAPIKey string,
+	plunkClient *plunk.Client,
 ) *MarketingService {
 	return &MarketingService{
 		logger:      logger.WithService(fmt.Sprintf("%T", &MarketingService{})),
 		tracer:      tracer,
 		authClient:  authClient,
-		brevoAPIKey: brevoAPIKey,
+		plunkClient: plunkClient,
 	}
 }
 
-// DeleteUser a user if exists in the sendgrid list
-func (service *MarketingService) DeleteUser(ctx context.Context, userID entities.UserID) error {
+// DeleteContact a user if exists as a contact
+func (service *MarketingService) DeleteContact(ctx context.Context, email string) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	err := requests.URL(fmt.Sprintf("https://api.brevo.com/v3/contacts/%s?identifierType=ext_id", userID)).
-		Header("api-key", service.brevoAPIKey).
-		Delete().
-		CheckStatus(fiber.StatusNoContent).
-		Fetch(ctx)
+	response, _, err := service.plunkClient.Contacts.List(ctx, map[string]string{"limit": "1", "search": email})
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot delete user with id [%s] from brevo list", userID)))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot search for contact with email [%s]", email)))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("deleted user with ID [%s] from brevo list with status [%s]", userID, fiber.StatusNoContent))
+	if len(response.Contacts) == 0 {
+		ctxLogger.Info(fmt.Sprintf("no contact found with email [%s], skipping deletion", email))
+		return nil
+	}
+
+	contact := response.Contacts[0]
+	if _, err = service.plunkClient.Contacts.Delete(ctx, contact.ID); err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot delete user with ID [%s] from contacts", contact.Data[string(semconv.EnduserIDKey)])))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted user with ID [%s] from as marketting contact with ID [%s]", contact.Data[string(semconv.EnduserIDKey)], contact.ID))
 	return nil
 }
 
-// AddToList adds a new user on the onboarding automation.
-func (service *MarketingService) AddToList(ctx context.Context, user *entities.User) {
+// CreateContact adds a new user on the onboarding automation.
+func (service *MarketingService) CreateContact(ctx context.Context, userID entities.UserID) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	userRecord, err := service.authClient.GetUser(ctx, string(user.ID))
+	userRecord, err := service.authClient.GetUser(ctx, userID.String())
 	if err != nil {
-		msg := fmt.Sprintf("cannot get auth user with id [%s]", user.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return
+		msg := fmt.Sprintf("cannot get auth user with id [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	var response string
-	err = requests.URL("https://api.brevo.com/v3/contacts").
-		Header("api-key", service.brevoAPIKey).
-		Post().
-		BodyJSON(fiber.Map{
-			"email":         userRecord.Email,
-			"ext_id":        userRecord.UID,
-			"attributes":    service.brevoAttributes(userRecord),
-			"listIds":       []int64{9},
-			"updateEnabled": true,
-		}).
-		CheckStatus(fiber.StatusCreated, fiber.StatusNoContent).
-		ToString(&response).
-		Fetch(ctx)
+	data := service.attributes(userRecord)
+	data[string(semconv.ServiceNameKey)] = "httpsms.com"
+	data[string(semconv.EnduserIDKey)] = userRecord.UID
+
+	event, _, err := service.plunkClient.Tracker.TrackEvent(ctx, &plunk.TrackEventRequest{
+		Email:      userRecord.Email,
+		Event:      "contact.created",
+		Subscribed: true,
+		Data:       data,
+	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot add user with id [%s] to brevo list", user.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
-		return
+		msg := fmt.Sprintf("cannot create contact for user with id [%s]", userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("user [%s] added to list brevo list with brevo response [%s]", user.ID, response))
+	ctxLogger.Info(fmt.Sprintf("user [%s] added to marketting list with contact ID [%s] and event ID [%s]", userID, event.Data.Contact, event.Data.Event))
+	return nil
 }
 
-func (service *MarketingService) brevoAttributes(user *auth.UserRecord) map[string]any {
+func (service *MarketingService) attributes(user *auth.UserRecord) map[string]any {
 	name := strings.TrimSpace(user.DisplayName)
 	if name == "" {
 		return fiber.Map{}
@@ -98,11 +100,13 @@ func (service *MarketingService) brevoAttributes(user *auth.UserRecord) map[stri
 
 	parts := strings.Split(name, " ")
 	if len(parts) == 1 {
-		return fiber.Map{"FIRSTNAME": name}
+		return fiber.Map{
+			"firstName": name,
+		}
 	}
 
 	return fiber.Map{
-		"FIRSTNAME": strings.Join(parts[0:len(parts)-1], " "),
-		"LASTNAME":  parts[len(parts)-1],
+		"firstName": strings.Join(parts[0:len(parts)-1], " "),
+		"lastName":  parts[len(parts)-1],
 	}
 }

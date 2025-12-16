@@ -32,7 +32,26 @@ func NewMarketingListener(
 
 	return l, map[string]events.EventListener{
 		events.UserAccountDeleted: l.onUserAccountDeleted,
+		events.UserAccountCreated: l.onUserAccountCreated,
 	}
+}
+
+func (listener *MarketingListener) onUserAccountCreated(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.UserAccountCreatedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.CreateContact(ctx, payload.UserID); err != nil {
+		msg := fmt.Sprintf("cannot create [contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
 }
 
 func (listener *MarketingListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {
@@ -45,8 +64,8 @@ func (listener *MarketingListener) onUserAccountDeleted(ctx context.Context, eve
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err := listener.service.DeleteUser(ctx, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot delete [sendgrid contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
+	if err := listener.service.DeleteContact(ctx, payload.UserEmail); err != nil {
+		msg := fmt.Sprintf("cannot delete [contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

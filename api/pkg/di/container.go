@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	plunk "github.com/NdoleStudio/plunk-go"
 	"github.com/pusher/pusher-http-go/v5"
 
 	"github.com/NdoleStudio/httpsms/docs"
@@ -916,7 +917,7 @@ func (container *Container) MarketingService() (service *services.MarketingServi
 		container.Logger(),
 		container.Tracer(),
 		container.FirebaseAuthClient(),
-		os.Getenv("BREVO_API_KEY"),
+		container.PlunkClient(),
 	)
 }
 
@@ -929,7 +930,6 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.UserRepository(),
 		container.Mailer(),
 		container.UserEmailFactory(),
-		container.MarketingService(),
 		container.LemonsqueezyClient(),
 		container.EventDispatcher(),
 		container.FirebaseAuthClient(),
@@ -1181,6 +1181,16 @@ func (container *Container) DiscordClient() (client *discord.Client) {
 	)
 }
 
+// PlunkClient creates a new instance of plunk.Client
+func (container *Container) PlunkClient() (client *plunk.Client) {
+	container.logger.Debug(fmt.Sprintf("creating %T", client))
+	return plunk.New(
+		plunk.WithHTTPClient(container.HTTPClient("plunk")),
+		plunk.WithSecretKey(os.Getenv("PLUNK_SECRET_KEY")),
+		plunk.WithPublicKey(os.Getenv("PLUNK_PUBLIC_KEY")),
+	)
+}
+
 // RegisterLemonsqueezyRoutes registers routes for the /lemonsqueezy prefix
 func (container *Container) RegisterLemonsqueezyRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.LemonsqueezyHandler{}))
@@ -1306,6 +1316,12 @@ func (container *Container) RegisterDiscordListeners() {
 // RegisterMarketingListeners registers event listeners for listeners.MarketingListener
 func (container *Container) RegisterMarketingListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.MarketingListener{}))
+
+	if os.Getenv("PLUNK_SECRET_KEY") == "" {
+		container.logger.Debug("skipping marketing listeners because the PLUNK_SECRET_KEY env variable is not set")
+		return
+	}
+
 	_, routes := listeners.NewMarketingListener(
 		container.Logger(),
 		container.Tracer(),

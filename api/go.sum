@@ -58,6 +58,8 @@ github.com/NdoleStudio/go-otelroundtripper v0.0.13 h1:fDgdxcNJov4LTrMhXqJnF/E3jO
 github.com/NdoleStudio/go-otelroundtripper v0.0.13/go.mod h1:UIUQ22ErFoBUyLuPDrVNRRKmBHBTfzQO9GF1ztqDvqo=
 github.com/NdoleStudio/lemonsqueezy-go v1.2.4 h1:BhWlCUH+DIPfSn4g/V7f2nFkMCQuzno9DXKZ7YDrXXA=
 github.com/NdoleStudio/lemonsqueezy-go v1.2.4/go.mod h1:2uZlWgn9sbNxOx3JQWLlPrDOC6NT/wmSTOgL3U/fMMw=
+github.com/NdoleStudio/plunk-go v0.0.1 h1:nWPr5pcwFDvhYGZS5n3a3cKGkQvg5re9DSAiFMZCFvs=
+github.com/NdoleStudio/plunk-go v0.0.1/go.mod h1:pqG3zKhpn/A2bL1K+WsWzvfTpOeSkYgXhNk5H65uEc8=
 github.com/PuerkitoBio/goquery v1.10.3 h1:pFYcNSqHxBD06Fpj/KsbStFRsgRATgnf3LeXiUkhzPo=
 github.com/PuerkitoBio/goquery v1.10.3/go.mod h1:tMUX0zDMHXYlAQk6p35XxQMqMweEKB7iK7iLNd4RH4Y=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=

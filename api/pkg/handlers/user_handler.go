@@ -62,14 +62,11 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.H
 // @Failure      500	{object}		responses.InternalServerError
 // @Router       /users/me [get]
 func (h *UserHandler) Show(c *fiber.Ctx) error {
-	ctx, span := h.tracer.StartFromFiberCtx(c)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
-	ctxLogger := h.tracer.CtxLogger(h.logger, span)
-
 	authUser := h.userFromContext(c)
-
-	user, err := h.service.Get(ctx, authUser)
+	user, err := h.service.Get(ctx, c.OriginalURL(), authUser)
 	if err != nil {
 		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
@@ -112,7 +109,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating user")
 	}
 
-	user, err := h.service.Update(ctx, h.userFromContext(c), request.ToUpdateParams())
+	user, err := h.service.Update(ctx, c.OriginalURL(), h.userFromContext(c), request.ToUpdateParams())
 	if err != nil {
 		msg := fmt.Sprintf("cannot update user with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
