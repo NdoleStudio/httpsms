@@ -722,6 +722,7 @@ func (container *Container) PhoneRepository() (repository repositories.PhoneRepo
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
+		container.PhoneRistrettoCache(),
 	)
 }
 
@@ -1523,6 +1524,20 @@ func (container *Container) UserRepository() repositories.UserRepository {
 		container.UserRistrettoCache(),
 		container.DB(),
 	)
+}
+
+// PhoneRistrettoCache creates an in-memory *ristretto.Cache[string, *entities.Phone]
+func (container *Container) PhoneRistrettoCache() (cache *ristretto.Cache[string, *entities.Phone]) {
+	container.logger.Debug(fmt.Sprintf("creating %T", cache))
+	ristrettoCache, err := ristretto.NewCache[string, *entities.Phone](&ristretto.Config[string, *entities.Phone]{
+		MaxCost:     5000,
+		NumCounters: 5000 * 10,
+		BufferItems: 64,
+	})
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create user ristretto cache"))
+	}
+	return ristrettoCache
 }
 
 // UserRistrettoCache creates an in-memory *ristretto.Cache[string, entities.AuthContext]

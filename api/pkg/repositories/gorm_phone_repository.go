@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 	"gorm.io/gorm"
@@ -16,6 +18,7 @@ import (
 type gormPhoneRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
+	cache  *ristretto.Cache[string, *entities.Phone]
 	db     *gorm.DB
 }
 
@@ -24,11 +27,13 @@ func NewGormPhoneRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	db *gorm.DB,
+	cache *ristretto.Cache[string, *entities.Phone],
 ) PhoneRepository {
 	return &gormPhoneRepository{
 		logger: logger.WithService(fmt.Sprintf("%T", &gormPhoneRepository{})),
 		tracer: tracer,
 		db:     db,
+		cache:  cache,
 	}
 }
 
@@ -41,6 +46,7 @@ func (repository *gormPhoneRepository) DeleteAllForUser(ctx context.Context, use
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	repository.cache.Clear()
 	return nil
 }
 
@@ -81,6 +87,7 @@ func (repository *gormPhoneRepository) Delete(ctx context.Context, userID entiti
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	repository.cache.Clear()
 	return nil
 }
 
@@ -106,13 +113,19 @@ func (repository *gormPhoneRepository) Save(ctx context.Context, phone *entities
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	repository.cache.Del(repository.getCacheKey(phone.UserID, phone.PhoneNumber))
 	return nil
 }
 
 // Load a phone based on entities.UserID and phoneNumber
 func (repository *gormPhoneRepository) Load(ctx context.Context, userID entities.UserID, phoneNumber string) (*entities.Phone, error) {
-	ctx, span := repository.tracer.Start(ctx)
+	ctx, span, ctxLogger := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
+
+	if phone, found := repository.cache.Get(repository.getCacheKey(userID, phoneNumber)); found {
+		ctxLogger.Info(fmt.Sprintf("cache hit for [%T] with ID [%s]", phone, userID))
+		return phone, nil
+	}
 
 	phone := new(entities.Phone)
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("phone_number = ?", phoneNumber).First(phone).Error
@@ -124,6 +137,11 @@ func (repository *gormPhoneRepository) Load(ctx context.Context, userID entities
 	if err != nil {
 		msg := fmt.Sprintf("cannot load phone phone with userID [%s] and phoneNumber [%s]", userID, phoneNumber)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if result := repository.cache.SetWithTTL(repository.getCacheKey(userID, phoneNumber), phone, 1, 30*time.Minute); !result {
+		msg := fmt.Sprintf("cannot cache [%T] with ID [%s] and result [%t]", phone, phone.ID, result)
+		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError(msg)))
 	}
 
 	return phone, nil
@@ -146,4 +164,8 @@ func (repository *gormPhoneRepository) Index(ctx context.Context, userID entitie
 	}
 
 	return phones, nil
+}
+
+func (repository *gormPhoneRepository) getCacheKey(userID entities.UserID, phoneNumber string) string {
+	return fmt.Sprintf("user:%s:phone:%s", userID, phoneNumber)
 }
