@@ -195,7 +195,7 @@ FIREBASE_MEASUREMENT_ID=
 - Copy the `.env.docker` file in the `api` directory into `.env`
 
 ```bash
-cp api/.env.local.docker api/.env.local
+cp api/.env.docker api/.env
 ```
 
 - Update the environment variables in the `.env` file in the `api` directory with your firebase service account credentials and SMTP server details.
