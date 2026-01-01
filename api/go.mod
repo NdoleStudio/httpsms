@@ -15,7 +15,7 @@ require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/cloudevents/sdk-go/v2 v2.16.2
-	github.com/cockroachdb/cockroach-go/v2 v2.4.2
+	github.com/cockroachdb/cockroach-go/v2 v2.4.3
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/dustin/go-humanize v1.0.1
