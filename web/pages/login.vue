@@ -14,9 +14,9 @@
           <span class="text-h3">Welcome</span>
         </div>
         <p class="subtitle-1 text-center text--secondary mt-1 mb-4">
-          Join <b>13,195+</b> happy users who have sent or
+          Join <b>16,212+</b> happy users who have sent or
           <br />
-          received more than <b>5,263,593+</b> SMS messages
+          received more than <b>5,921,545+</b> SMS messages
         </p>
         <v-card max-width="360" class="mx-auto">
           <v-card-text class="px-0">
