@@ -43,17 +43,17 @@ func (service *MarketingService) DeleteContact(ctx context.Context, email string
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	response, _, err := service.plunkClient.Contacts.List(ctx, map[string]string{"limit": "1", "search": email})
+	response, _, err := service.plunkClient.Contacts.List(ctx, map[string]string{"search": email})
 	if err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot search for contact with email [%s]", email)))
 	}
 
-	if len(response.Contacts) == 0 {
+	if len(response.Data) == 0 {
 		ctxLogger.Info(fmt.Sprintf("no contact found with email [%s], skipping deletion", email))
 		return nil
 	}
 
-	contact := response.Contacts[0]
+	contact := response.Data[0]
 	if _, err = service.plunkClient.Contacts.Delete(ctx, contact.ID); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot delete user with ID [%s] from contacts", contact.Data[string(semconv.EnduserIDKey)])))
 	}

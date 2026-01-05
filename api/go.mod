@@ -11,7 +11,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.30.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.13
 	github.com/NdoleStudio/lemonsqueezy-go v1.2.4
-	github.com/NdoleStudio/plunk-go v0.0.1
+	github.com/NdoleStudio/plunk-go v0.0.2
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/cloudevents/sdk-go/v2 v2.16.2
