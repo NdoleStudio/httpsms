@@ -1111,21 +1111,6 @@ definitions:
       - message
       - status
     type: object
-  responses.UserInvoicesResponse:
-    properties:
-      data:
-        $ref: "#/definitions/responses.subscriptionInvoicesAPIResponse"
-      message:
-        example: Request handled successfully
-        type: string
-      status:
-        example: success
-        type: string
-    required:
-      - data
-      - message
-      - status
-    type: object
   responses.UserResponse:
     properties:
       data:
@@ -1141,39 +1126,7 @@ definitions:
       - message
       - status
     type: object
-  responses.WebhookResponse:
-    properties:
-      data:
-        $ref: "#/definitions/entities.Webhook"
-      message:
-        example: Request handled successfully
-        type: string
-      status:
-        example: success
-        type: string
-    required:
-      - data
-      - message
-      - status
-    type: object
-  responses.WebhooksResponse:
-    properties:
-      data:
-        items:
-          $ref: "#/definitions/entities.Webhook"
-        type: array
-      message:
-        example: Request handled successfully
-        type: string
-      status:
-        example: success
-        type: string
-    required:
-      - data
-      - message
-      - status
-    type: object
-  responses.subscriptionInvoicesAPIResponse:
+  responses.UserSubscriptionPaymentsResponse:
     properties:
       data:
         items:
@@ -1233,10 +1186,6 @@ definitions:
                   type: integer
                 updated_at:
                   type: string
-                user_email:
-                  type: string
-                user_name:
-                  type: string
               required:
                 - billing_reason
                 - card_brand
@@ -1265,8 +1214,6 @@ definitions:
                 - total_formatted
                 - total_usd
                 - updated_at
-                - user_email
-                - user_name
               type: object
             id:
               type: string
@@ -1278,8 +1225,48 @@ definitions:
             - type
           type: object
         type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
     required:
       - data
+      - message
+      - status
+    type: object
+  responses.WebhookResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.Webhook"
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.WebhooksResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.Webhook"
+        type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
     type: object
 host: api.httpsms.com
 info:
@@ -2936,47 +2923,13 @@ paths:
       summary: Currently authenticated user subscription update URL
       tags:
         - Users
-  /users/subscription/invoices:
-    get:
-      consumes:
-        - application/json
-      description:
-        Subscription invoices are generated throughout the lifecycle of
-        a subscription, typically there is one at the time of purchase and then one
-        for each renewal.
-      produces:
-        - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: "#/definitions/responses.UserInvoicesResponse"
-        "400":
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/responses.BadRequest"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/responses.Unauthorized"
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: "#/definitions/responses.UnprocessableEntity"
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/responses.InternalServerError"
-      security:
-        - ApiKeyAuth: []
-      summary: Get the last 10 subscription invoices.
-      tags:
-        - Users
   /users/subscription/invoices/{subscriptionInvoiceID}:
     post:
       consumes:
         - application/json
-      description: Generates a new invoice for the given subscription with given parameters.
+      description:
+        Generates a new invoice PDF file for the given subscription payment
+        with given parameters.
       produces:
         - application/pdf
       responses:
@@ -3003,6 +2956,42 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Generate a subscription invoice
+      tags:
+        - Users
+  /users/subscription/payments:
+    get:
+      consumes:
+        - application/json
+      description:
+        Subscription payments are generated throughout the lifecycle of
+        a subscription, typically there is one at the time of purchase and then one
+        for each renewal.
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.UserSubscriptionPaymentsResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get the last 10 subscription payments.
       tags:
         - Users
   /webhooks:

@@ -2145,23 +2145,23 @@
         }
       }
     },
-    "/users/subscription/invoices": {
-      "get": {
+    "/users/subscription/invoices/{subscriptionInvoiceID}": {
+      "post": {
         "security": [
           {
             "ApiKeyAuth": []
           }
         ],
-        "description": "Subscription invoices are generated throughout the lifecycle of a subscription, typically there is one at the time of purchase and then one for each renewal.",
+        "description": "Generates a new invoice PDF file for the given subscription payment with given parameters.",
         "consumes": ["application/json"],
-        "produces": ["application/json"],
+        "produces": ["application/pdf"],
         "tags": ["Users"],
-        "summary": "Get the last 10 subscription invoices.",
+        "summary": "Generate a subscription invoice",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/responses.UserInvoicesResponse"
+              "type": "file"
             }
           },
           "400": {
@@ -2191,23 +2191,23 @@
         }
       }
     },
-    "/users/subscription/invoices/{subscriptionInvoiceID}": {
-      "post": {
+    "/users/subscription/payments": {
+      "get": {
         "security": [
           {
             "ApiKeyAuth": []
           }
         ],
-        "description": "Generates a new invoice for the given subscription with given parameters.",
+        "description": "Subscription payments are generated throughout the lifecycle of a subscription, typically there is one at the time of purchase and then one for each renewal.",
         "consumes": ["application/json"],
-        "produces": ["application/pdf"],
+        "produces": ["application/json"],
         "tags": ["Users"],
-        "summary": "Generate a subscription invoice",
+        "summary": "Get the last 10 subscription payments.",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "type": "file"
+              "$ref": "#/definitions/responses.UserSubscriptionPaymentsResponse"
             }
           },
           "400": {
@@ -3901,23 +3901,6 @@
         }
       }
     },
-    "responses.UserInvoicesResponse": {
-      "type": "object",
-      "required": ["data", "message", "status"],
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/responses.subscriptionInvoicesAPIResponse"
-        },
-        "message": {
-          "type": "string",
-          "example": "Request handled successfully"
-        },
-        "status": {
-          "type": "string",
-          "example": "success"
-        }
-      }
-    },
     "responses.UserResponse": {
       "type": "object",
       "required": ["data", "message", "status"],
@@ -3935,46 +3918,9 @@
         }
       }
     },
-    "responses.WebhookResponse": {
+    "responses.UserSubscriptionPaymentsResponse": {
       "type": "object",
       "required": ["data", "message", "status"],
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/entities.Webhook"
-        },
-        "message": {
-          "type": "string",
-          "example": "Request handled successfully"
-        },
-        "status": {
-          "type": "string",
-          "example": "success"
-        }
-      }
-    },
-    "responses.WebhooksResponse": {
-      "type": "object",
-      "required": ["data", "message", "status"],
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/entities.Webhook"
-          }
-        },
-        "message": {
-          "type": "string",
-          "example": "Request handled successfully"
-        },
-        "status": {
-          "type": "string",
-          "example": "success"
-        }
-      }
-    },
-    "responses.subscriptionInvoicesAPIResponse": {
-      "type": "object",
-      "required": ["data"],
       "properties": {
         "data": {
           "type": "array",
@@ -4011,9 +3957,7 @@
                   "total",
                   "total_formatted",
                   "total_usd",
-                  "updated_at",
-                  "user_email",
-                  "user_name"
+                  "updated_at"
                 ],
                 "properties": {
                   "billing_reason": {
@@ -4094,12 +4038,6 @@
                   },
                   "updated_at": {
                     "type": "string"
-                  },
-                  "user_email": {
-                    "type": "string"
-                  },
-                  "user_name": {
-                    "type": "string"
                   }
                 }
               },
@@ -4111,6 +4049,51 @@
               }
             }
           }
+        },
+        "message": {
+          "type": "string",
+          "example": "Request handled successfully"
+        },
+        "status": {
+          "type": "string",
+          "example": "success"
+        }
+      }
+    },
+    "responses.WebhookResponse": {
+      "type": "object",
+      "required": ["data", "message", "status"],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/entities.Webhook"
+        },
+        "message": {
+          "type": "string",
+          "example": "Request handled successfully"
+        },
+        "status": {
+          "type": "string",
+          "example": "success"
+        }
+      }
+    },
+    "responses.WebhooksResponse": {
+      "type": "object",
+      "required": ["data", "message", "status"],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entities.Webhook"
+          }
+        },
+        "message": {
+          "type": "string",
+          "example": "Request handled successfully"
+        },
+        "status": {
+          "type": "string",
+          "example": "success"
         }
       }
     }
