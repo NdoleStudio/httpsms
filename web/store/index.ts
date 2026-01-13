@@ -25,7 +25,9 @@ import {
   ResponsesOkString,
   ResponsesPhoneAPIKeyResponse,
   ResponsesPhoneAPIKeysResponse,
+  ResponsesSubscriptionInvoicesAPIResponse,
   ResponsesUnprocessableEntity,
+  ResponsesUserInvoicesResponse,
   ResponsesUserResponse,
   ResponsesWebhookResponse,
   ResponsesWebhooksResponse,
@@ -531,6 +533,36 @@ export const actions = {
           reject(getErrorMessages(error))
         })
     })
+  },
+
+  indexSubscriptionPayments(context: ActionContext<State, State>) {
+    return new Promise<ResponsesSubscriptionInvoicesAPIResponse>(
+      (resolve, reject) => {
+        axios
+          .get<ResponsesUserInvoicesResponse>(
+            `/v1/users/subscription/payments`,
+            {
+              params: {
+                limit: 100,
+              },
+            },
+          )
+          .then((response: AxiosResponse<ResponsesUserInvoicesResponse>) => {
+            resolve(response.data.data)
+          })
+          .catch(async (error: AxiosError) => {
+            await Promise.all([
+              context.dispatch('addNotification', {
+                message:
+                  (error.response?.data as any)?.message ??
+                  'Error while fetching subscription payments.',
+                type: 'error',
+              }),
+            ])
+            reject(getErrorMessages(error))
+          })
+      },
+    )
   },
 
   async handleAxiosError(

@@ -46,6 +46,8 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.H
 	router.Put("/v1/users/:userID/notifications", h.computeRoute(middlewares, h.UpdateNotifications)...)
 	router.Get("/v1/users/subscription-update-url", h.computeRoute(middlewares, h.subscriptionUpdateURL)...)
 	router.Delete("/v1/users/subscription", h.computeRoute(middlewares, h.cancelSubscription)...)
+	router.Get("/v1/users/subscription/invoices", h.computeRoute(middlewares, h.subscriptionPayments)...)
+	router.Post("/v1/users/subscription/invoices/:subscriptionInvoiceID", h.computeRoute(middlewares, h.subscriptionInvoice)...)
 }
 
 // Show returns an entities.User
@@ -271,4 +273,63 @@ func (h *UserHandler) DeleteAPIKey(c *fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, "API Key rotated successfully", user)
+}
+
+// subscriptionPayments returns the last 10 payments of the currently authenticated user
+// @Summary      Get the last 10 subscription payments.
+// @Description  Subscription payments are generated throughout the lifecycle of a subscription, typically there is one at the time of purchase and then one for each renewal.
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Success      200 		{object}	responses.UserSubscriptionPaymentsResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401	    {object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/subscription/payments [get]
+func (h *UserHandler) subscriptionPayments(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	invoices, err := h.service.GetSubscriptionPayments(ctx, h.userIDFomContext(c))
+	if err != nil {
+		msg := fmt.Sprintf("cannot get current subscription invoices for user [%s]", h.userFromContext(c))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, "fetched subscription invoices billing usage", invoices)
+}
+
+// subscriptionInvoice generates an invoice for a given subscription invoice ID
+// @Summary      Generate a subscription invoice
+// @Description  Generates a new invoice PDF file for the given subscription payment with given parameters.
+// @Security	 ApiKeyAuth
+// @Tags         Users
+// @Accept       json
+// @Produce  	 application/pdf
+// @Success      200 		{file} 		file
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401	    {object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /users/subscription/invoices/{subscriptionInvoiceID} [post]
+func (h *UserHandler) subscriptionInvoice(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	invoiceID := c.Params("subscriptionInvoiceID")
+
+	data, err := h.service.GenerateReceipt(ctx, h.userIDFomContext(c))
+	if err != nil {
+		msg := fmt.Sprintf("cannot generate receipt for invoice ID [%s] and user [%s]", invoiceID, h.userFromContext(c))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	c.Set(fiber.HeaderContentType, "application/pdf")
+	c.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s.pdf\"", invoiceID))
+
+	return c.SendStream(data)
 }

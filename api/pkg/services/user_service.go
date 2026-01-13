@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"firebase.google.com/go/auth"
-
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/NdoleStudio/httpsms/pkg/emails"
@@ -54,6 +54,42 @@ func NewUserService(
 		authClient:         authClient,
 		lemonsqueezyClient: lemonsqueezyClient,
 	}
+}
+
+// GetSubscriptionPayments fetches the subscription payments for an entities.User
+func (service *UserService) GetSubscriptionPayments(ctx context.Context, userID entities.UserID) (invoices []lemonsqueezy.ApiResponseData[lemonsqueezy.SubscriptionInvoiceAttributes, lemonsqueezy.APIResponseRelationshipsSubscriptionInvoice], err error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	user, err := service.repository.Load(ctx, userID)
+	if err != nil {
+		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, userID)
+		return invoices, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if user.SubscriptionID == nil {
+		ctxLogger.Info(fmt.Sprintf("no subscription ID found for [%T] with ID [%s], returning empty invoices", user, user.ID))
+		return invoices, nil
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetching subscription payments for [%T] with ID [%s] and subscription [%s]", user, user.ID, *user.SubscriptionID))
+	invoicesResponse, _, err := service.lemonsqueezyClient.SubscriptionInvoices.List(ctx, map[string]string{"filter[subscription_id]": *user.SubscriptionID})
+	if err != nil {
+		msg := fmt.Sprintf("could not get invoices for subscription [%s] for [%T] with with ID [%s]", *user.SubscriptionID, user, user.ID)
+		return invoices, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] payments for [%T] with ID [%s] and subscription ID [%s]", len(invoicesResponse.Data), user, user.ID, *user.SubscriptionID))
+	return invoicesResponse.Data, nil
+}
+
+// GenerateReceipt generates a receipt for a subscription payment.
+func (service *UserService) GenerateReceipt(ctx context.Context, userID entities.UserID) (reader io.Reader, err error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	ctxLogger.Info(fmt.Sprintf("generating receipt for user [%s]", userID))
+	return nil, nil
 }
 
 // Get fetches or creates an entities.User

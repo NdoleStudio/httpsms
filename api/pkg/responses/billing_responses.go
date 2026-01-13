@@ -1,6 +1,8 @@
 package responses
 
-import "github.com/NdoleStudio/httpsms/pkg/entities"
+import (
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+)
 
 // BillingUsagesResponse is the payload containing []entities.BillingUsage
 type BillingUsagesResponse struct {

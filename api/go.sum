@@ -56,8 +56,8 @@ github.com/Masterminds/sprig v2.22.0+incompatible h1:z4yfnGrZ7netVz+0EDJ0Wi+5VZC
 github.com/Masterminds/sprig v2.22.0+incompatible/go.mod h1:y6hNFY5UBTIWBxnzTeuNhlNS5hqE0NB0E6fgfo2Br3o=
 github.com/NdoleStudio/go-otelroundtripper v0.0.13 h1:fDgdxcNJov4LTrMhXqJnF/E3jO4HJVczj90wkxh5PSc=
 github.com/NdoleStudio/go-otelroundtripper v0.0.13/go.mod h1:UIUQ22ErFoBUyLuPDrVNRRKmBHBTfzQO9GF1ztqDvqo=
-github.com/NdoleStudio/lemonsqueezy-go v1.2.4 h1:BhWlCUH+DIPfSn4g/V7f2nFkMCQuzno9DXKZ7YDrXXA=
-github.com/NdoleStudio/lemonsqueezy-go v1.2.4/go.mod h1:2uZlWgn9sbNxOx3JQWLlPrDOC6NT/wmSTOgL3U/fMMw=
+github.com/NdoleStudio/lemonsqueezy-go v1.3.1 h1:lMUVgdAx2onbOUJIVPR05xAANYuCMXBRaGWpAdA4LiM=
+github.com/NdoleStudio/lemonsqueezy-go v1.3.1/go.mod h1:xKRsRX1jSI6mLrVXyWh2sF/1isxTioZrSjWy6HpA3xQ=
 github.com/NdoleStudio/plunk-go v0.0.2 h1:afPW7MHK4Z3rsybpJBnmTmxKCLKF1M7sPI+BNGPf35A=
 github.com/NdoleStudio/plunk-go v0.0.2/go.mod h1:pqG3zKhpn/A2bL1K+WsWzvfTpOeSkYgXhNk5H65uEc8=
 github.com/PuerkitoBio/goquery v1.10.3 h1:pFYcNSqHxBD06Fpj/KsbStFRsgRATgnf3LeXiUkhzPo=

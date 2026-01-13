@@ -102,9 +102,6 @@ definitions:
     type: object
   entities.Message:
     properties:
-      can_be_polled:
-        example: false
-        type: boolean
       contact:
         example: "+18005550100"
         type: string
@@ -192,28 +189,16 @@ definitions:
         example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
         type: string
     required:
-      - can_be_polled
       - contact
       - content
       - created_at
-      - delivered_at
       - encrypted
-      - expired_at
-      - failed_at
-      - failure_reason
       - id
-      - last_attempted_at
       - max_send_attempts
       - order_timestamp
       - owner
-      - received_at
-      - request_id
       - request_received_at
-      - scheduled_at
-      - scheduled_send_time
       - send_attempt_count
-      - send_time
-      - sent_at
       - sim
       - status
       - type
@@ -314,12 +299,10 @@ definitions:
         type: string
     required:
       - created_at
-      - fcm_token
       - id
       - max_send_attempts
       - message_expiration_seconds
       - messages_per_minute
-      - missed_call_auto_reply
       - phone_number
       - sim
       - updated_at
@@ -405,9 +388,6 @@ definitions:
       subscription_ends_at:
         example: "2022-06-05T14:26:02.302718+03:00"
         type: string
-      subscription_id:
-        example: 8f9c71b8-b84e-4417-8408-a62274f65a08
-        type: string
       subscription_name:
         example: free
         type: string
@@ -424,7 +404,6 @@ definitions:
         example: "2022-06-05T14:26:10.303278+03:00"
         type: string
     required:
-      - active_phone_id
       - api_key
       - created_at
       - email
@@ -433,11 +412,7 @@ definitions:
       - notification_message_status_enabled
       - notification_newsletter_enabled
       - notification_webhook_enabled
-      - subscription_ends_at
-      - subscription_id
       - subscription_name
-      - subscription_renews_at
-      - subscription_status
       - timezone
       - updated_at
     type: object
@@ -659,8 +634,9 @@ definitions:
         description:
           SendAt is an optional parameter used to schedule a message to
           be sent in the future. The time is considered to be in your profile's local
-          timezone.
-        example: "2022-06-05T14:26:09.527976+03:00"
+          timezone and you can queue messages for up to 20 days (480 hours) in the
+          future.
+        example: "2025-12-19T16:39:57-08:00"
         type: string
       to:
         example: "+18005550100"
@@ -1135,6 +1111,21 @@ definitions:
       - message
       - status
     type: object
+  responses.UserInvoicesResponse:
+    properties:
+      data:
+        $ref: "#/definitions/responses.subscriptionInvoicesAPIResponse"
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
   responses.UserResponse:
     properties:
       data:
@@ -1181,6 +1172,114 @@ definitions:
       - data
       - message
       - status
+    type: object
+  responses.subscriptionInvoicesAPIResponse:
+    properties:
+      data:
+        items:
+          properties:
+            attributes:
+              properties:
+                billing_reason:
+                  type: string
+                card_brand:
+                  type: string
+                card_last_four:
+                  type: string
+                created_at:
+                  type: string
+                currency:
+                  type: string
+                currency_rate:
+                  type: string
+                discount_total:
+                  type: integer
+                discount_total_formatted:
+                  type: string
+                discount_total_usd:
+                  type: integer
+                refunded:
+                  type: boolean
+                refunded_amount:
+                  type: integer
+                refunded_amount_formatted:
+                  type: string
+                refunded_amount_usd:
+                  type: integer
+                refunded_at: {}
+                status:
+                  type: string
+                status_formatted:
+                  type: string
+                subtotal:
+                  type: integer
+                subtotal_formatted:
+                  type: string
+                subtotal_usd:
+                  type: integer
+                tax:
+                  type: integer
+                tax_formatted:
+                  type: string
+                tax_inclusive:
+                  type: boolean
+                tax_usd:
+                  type: integer
+                total:
+                  type: integer
+                total_formatted:
+                  type: string
+                total_usd:
+                  type: integer
+                updated_at:
+                  type: string
+                user_email:
+                  type: string
+                user_name:
+                  type: string
+              required:
+                - billing_reason
+                - card_brand
+                - card_last_four
+                - created_at
+                - currency
+                - currency_rate
+                - discount_total
+                - discount_total_formatted
+                - discount_total_usd
+                - refunded
+                - refunded_amount
+                - refunded_amount_formatted
+                - refunded_amount_usd
+                - refunded_at
+                - status
+                - status_formatted
+                - subtotal
+                - subtotal_formatted
+                - subtotal_usd
+                - tax
+                - tax_formatted
+                - tax_inclusive
+                - tax_usd
+                - total
+                - total_formatted
+                - total_usd
+                - updated_at
+                - user_email
+                - user_name
+              type: object
+            id:
+              type: string
+            type:
+              type: string
+          required:
+            - attributes
+            - id
+            - type
+          type: object
+        type: array
+    required:
+      - data
     type: object
 host: api.httpsms.com
 info:
@@ -1282,9 +1381,11 @@ paths:
     post:
       consumes:
         - multipart/form-data
-      description: Sends bulk SMS messages to multiple users from a CSV or Excel file.
+      description:
+        Sends bulk SMS messages to multiple users based on our [CSV template](https://httpsms.com/templates/httpsms-bulk.csv)
+        or our [Excel template](https://httpsms.com/templates/httpsms-bulk.xlsx).
       parameters:
-        - description: The Excel or CSV file formatted according to the templates
+        - description: The Excel or CSV file containing the messages to be sent.
           in: formData
           name: document
           required: true
@@ -1650,37 +1751,6 @@ paths:
       summary: Sends a 3CX SMS message
       tags:
         - 3CXIntegration
-  /lemonsqueezy/event:
-    post:
-      consumes:
-        - application/json
-      description: Publish a lemonsqueezy event to the registered listeners
-      produces:
-        - application/json
-      responses:
-        "204":
-          description: No Content
-          schema:
-            $ref: "#/definitions/responses.NoContent"
-        "400":
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/responses.BadRequest"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/responses.Unauthorized"
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: "#/definitions/responses.UnprocessableEntity"
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/responses.InternalServerError"
-      summary: Consume a lemonsqueezy event
-      tags:
-        - Lemonsqueezy
   /message-threads:
     get:
       consumes:
@@ -2220,9 +2290,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: Add a new SMS message to be sent by the android phone
+      description: Add a new SMS message to be sent by your Android phone
       parameters:
-        - description: PostSend message request payload
+        - description: Send message request payload
           in: body
           name: payload
           required: true
@@ -2253,7 +2323,7 @@ paths:
             $ref: "#/definitions/responses.InternalServerError"
       security:
         - ApiKeyAuth: []
-      summary: Send a new SMS message
+      summary: Send an SMS message
       tags:
         - Messages
   /phone-api-keys:
@@ -2864,6 +2934,75 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Currently authenticated user subscription update URL
+      tags:
+        - Users
+  /users/subscription/invoices:
+    get:
+      consumes:
+        - application/json
+      description:
+        Subscription invoices are generated throughout the lifecycle of
+        a subscription, typically there is one at the time of purchase and then one
+        for each renewal.
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.UserInvoicesResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get the last 10 subscription invoices.
+      tags:
+        - Users
+  /users/subscription/invoices/{subscriptionInvoiceID}:
+    post:
+      consumes:
+        - application/json
+      description: Generates a new invoice for the given subscription with given parameters.
+      produces:
+        - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Generate a subscription invoice
       tags:
         - Users
   /webhooks:

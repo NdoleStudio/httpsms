@@ -288,6 +288,76 @@
                 </v-alert>
               </v-col>
             </v-row>
+            <template v-if="$store.getters.getUser?.subscription_id != null">
+              <h5 class="text-h4 mb-3 mt-12">Subscription Payments</h5>
+              <p class="text--secondary">
+                This is a list of your last 10 subscription payments made using
+                our payment provider
+                <a
+                  class="text-decoration-none"
+                  href="https://www.lemonsqueezy.com"
+                  >Lemon Squeezy</a
+                >.
+              </p>
+              <v-progress-circular
+                v-if="invoices == null && loadingSubscriptionInvoices"
+                :size="20"
+                :width="2"
+                color="primary"
+                indeterminate
+              ></v-progress-circular>
+              <v-simple-table v-if="invoices">
+                <template #default>
+                  <thead>
+                    <tr class="text-uppercase">
+                      <th class="text-left">Timestamp</th>
+                      <th class="text-left">Status</th>
+                      <th v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
+                        Tax
+                      </th>
+                      <th class="text-left">Total</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="payment in invoices.data" :key="payment.id">
+                      <td>
+                        {{ payment.attributes.created_at | timestamp }}
+                      </td>
+                      <td>
+                        <v-chip
+                          v-if="payment.attributes.status === 'paid'"
+                          color="success"
+                        >
+                          <v-avatar size="4" left class="green darken-4">
+                            <v-icon small>{{ mdiCheck }}</v-icon>
+                          </v-avatar>
+                          {{ payment.attributes.status_formatted }}
+                        </v-chip>
+                        <v-chip v-else color="error">
+                          <v-avatar size="4" left class="red darken-4">
+                            <v-icon small>{{ mdiAlert }}</v-icon>
+                          </v-avatar>
+                          {{ payment.attributes.status_formatted }}
+                        </v-chip>
+                      </td>
+                      <td v-if="$vuetify.breakpoint.lgAndUp">
+                        {{ payment.attributes.tax_formatted }}
+                      </td>
+                      <td class="font-weight-bold">
+                        {{ payment.attributes.total_formatted }}
+                      </td>
+                      <td class="text-right">
+                        <v-btn color="primary" small>
+                          <v-icon left>{{ mdiInvoice }}</v-icon>
+                          Invoice
+                        </v-btn>
+                      </td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+            </template>
             <h5 class="text-h4 mb-3 mt-12">Usage History</h5>
             <p class="text--secondary">
               Summary of all the sent and received messages in the past 12
@@ -349,6 +419,9 @@ import {
   mdiDelete,
   mdiCog,
   mdiContentSave,
+  mdiCheck,
+  mdiAlert,
+  mdiInvoice,
   mdiEye,
   mdiEyeOff,
   mdiCallReceived,
@@ -356,6 +429,10 @@ import {
   mdiCreditCard,
   mdiSquareEditOutline,
 } from '@mdi/js'
+import {
+  EntitiesPhoneAPIKey,
+  ResponsesSubscriptionInvoicesAPIResponse,
+} from '~/models/api'
 
 type PaymentPlan = {
   name: string
@@ -373,6 +450,9 @@ export default Vue.extend({
       mdiEyeOff,
       mdiArrowLeft,
       mdiAccountCircle,
+      mdiCheck,
+      mdiAlert,
+      mdiInvoice,
       mdiShieldCheck,
       mdiDelete,
       mdiCog,
@@ -382,7 +462,9 @@ export default Vue.extend({
       mdiCreditCard,
       mdiSquareEditOutline,
       loading: true,
+      loadingSubscriptionInvoices: false,
       dialog: false,
+      invoices: null as ResponsesSubscriptionInvoicesAPIResponse | null,
       plans: [
         {
           name: 'Free',
@@ -513,7 +595,22 @@ export default Vue.extend({
         this.$store.dispatch('loadBillingUsageHistory'),
       ])
       this.loading = false
+      this.loadSubscriptionInvoices()
     },
+
+    loadSubscriptionInvoices() {
+      this.loadingSubscriptionInvoices = true
+      this.$store
+        .dispatch('indexSubscriptionPayments')
+        .then((invoices: ResponsesSubscriptionInvoicesAPIResponse) => {
+          console.log(invoices)
+          this.invoices = invoices
+        })
+        .finally(() => {
+          this.loadingSubscriptionInvoices = false
+        })
+    },
+
     updateDetails() {
       this.loading = true
       this.$store

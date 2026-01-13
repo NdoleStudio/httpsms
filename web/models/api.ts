@@ -64,8 +64,6 @@ export interface EntitiesHeartbeat {
 }
 
 export interface EntitiesMessage {
-  /** @example false */
-  can_be_polled: boolean
   /** @example "+18005550100" */
   contact: string
   /** @example "This is a sample text message" */
@@ -73,19 +71,19 @@ export interface EntitiesMessage {
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  delivered_at: string
+  delivered_at?: string
   /** @example false */
   encrypted: boolean
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  expired_at: string
+  expired_at?: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  failed_at: string
+  failed_at?: string
   /** @example "UNKNOWN" */
-  failure_reason: string
+  failure_reason?: string
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  last_attempted_at: string
+  last_attempted_at?: string
   /** @example 1 */
   max_send_attempts: number
   /** @example "2022-06-05T14:26:09.527976+03:00" */
@@ -93,24 +91,24 @@ export interface EntitiesMessage {
   /** @example "+18005550199" */
   owner: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  received_at: string
+  received_at?: string
   /** @example "153554b5-ae44-44a0-8f4f-7bbac5657ad4" */
-  request_id: string
+  request_id?: string
   /** @example "2022-06-05T14:26:01.520828+03:00" */
   request_received_at: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  scheduled_at: string
+  scheduled_at?: string
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  scheduled_send_time: string
+  scheduled_send_time?: string
   /** @example 0 */
   send_attempt_count: number
   /**
    * SendDuration is the number of nanoseconds from when the request was received until when the mobile phone send the message
    * @example 133414
    */
-  send_time: number
+  send_time?: number
   /** @example "2022-06-05T14:26:09.527976+03:00" */
-  sent_at: string
+  sent_at?: string
   /**
    * SIM is the SIM card to use to send the message
    * * SMS1: use the SIM card in slot 1
@@ -160,7 +158,7 @@ export interface EntitiesPhone {
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
   /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
-  fcm_token: string
+  fcm_token?: string
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
   /**
@@ -173,7 +171,7 @@ export interface EntitiesPhone {
   /** @example 1 */
   messages_per_minute: number
   /** @example "This phone cannot receive calls. Please send an SMS instead." */
-  missed_call_auto_reply: string
+  missed_call_auto_reply?: string
   /** @example "+18005550199" */
   phone_number: string
   /** SIM card that received the message */
@@ -185,7 +183,7 @@ export interface EntitiesPhone {
 }
 
 export interface EntitiesPhoneAPIKey {
-  /** @example "pk_DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY" */
+  /** @example "pk_DGW8NwQp7mxKaSZ72Xq9v6xxxxx" */
   api_key: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
@@ -193,9 +191,9 @@ export interface EntitiesPhoneAPIKey {
   id: string
   /** @example "Business Phone Key" */
   name: string
-  /** @example ["[32343a19-da5e-4b1b-a767-3298a73703cb","32343a19-da5e-4b1b-a767-3298a73703cc]"] */
+  /** @example ["32343a19-da5e-4b1b-a767-3298a73703cb","32343a19-da5e-4b1b-a767-3298a73703cc"] */
   phone_ids: string[]
-  /** @example ["[+18005550199","+18005550100]"] */
+  /** @example ["+18005550199","+18005550100"] */
   phone_numbers: string[]
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   updated_at: string
@@ -207,7 +205,7 @@ export interface EntitiesPhoneAPIKey {
 
 export interface EntitiesUser {
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
-  active_phone_id: string
+  active_phone_id?: string
   /** @example "x-api-key" */
   api_key: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
@@ -225,15 +223,13 @@ export interface EntitiesUser {
   /** @example true */
   notification_webhook_enabled: boolean
   /** @example "2022-06-05T14:26:02.302718+03:00" */
-  subscription_ends_at: string
-  /** @example "8f9c71b8-b84e-4417-8408-a62274f65a08" */
-  subscription_id: string
+  subscription_ends_at?: string
   /** @example "free" */
   subscription_name: string
   /** @example "2022-06-05T14:26:02.302718+03:00" */
-  subscription_renews_at: string
+  subscription_renews_at?: string
   /** @example "on_trial" */
-  subscription_status: string
+  subscription_status?: string
   /** @example "Europe/Helsinki" */
   timezone: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
@@ -243,11 +239,11 @@ export interface EntitiesUser {
 export interface EntitiesWebhook {
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
-  /** @example ["[message.phone.received]"] */
+  /** @example ["message.phone.received"] */
   events: string[]
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   id: string
-  /** @example ["[+18005550199","+18005550100]"] */
+  /** @example ["+18005550199","+18005550100"] */
   phone_numbers: string[]
   /** @example "DGW8NwQp7mxKaSZ72Xq9v67SLqSbWQvckzzmK8D6rvd7NywSEkdMJtuxKyEkYnCY" */
   signing_key: string
@@ -352,10 +348,10 @@ export interface RequestsMessageSend {
   /** @example "This is a sample text message" */
   content: string
   /**
-   * Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
+   * Encrypted is an optional parameter used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
    * @example false
    */
-  encrypted: boolean
+  encrypted?: boolean
   /** @example "+18005550199" */
   from: string
   /**
@@ -364,8 +360,8 @@ export interface RequestsMessageSend {
    */
   request_id?: string
   /**
-   * SendAt is an optional parameter used to schedule a message to be sent at a later time
-   * @example "2022-06-05T14:26:09.527976+03:00"
+   * SendAt is an optional parameter used to schedule a message to be sent in the future. The time is considered to be in your profile's local timezone and you can queue messages for up to 20 days (480 hours) in the future.
+   * @example "2025-12-19T16:39:57-08:00"
    */
   send_at?: string
   /** @example "+18005550100" */
@@ -465,7 +461,7 @@ export interface ResponsesBadRequest {
 
 export interface ResponsesBillingUsageResponse {
   data: EntitiesBillingUsage
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -473,7 +469,7 @@ export interface ResponsesBillingUsageResponse {
 
 export interface ResponsesBillingUsagesResponse {
   data: EntitiesBillingUsage[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -481,7 +477,7 @@ export interface ResponsesBillingUsagesResponse {
 
 export interface ResponsesDiscordResponse {
   data: EntitiesDiscord
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -489,7 +485,7 @@ export interface ResponsesDiscordResponse {
 
 export interface ResponsesDiscordsResponse {
   data: EntitiesDiscord[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -497,7 +493,7 @@ export interface ResponsesDiscordsResponse {
 
 export interface ResponsesHeartbeatResponse {
   data: EntitiesHeartbeat
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -505,7 +501,7 @@ export interface ResponsesHeartbeatResponse {
 
 export interface ResponsesHeartbeatsResponse {
   data: EntitiesHeartbeat[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -520,7 +516,7 @@ export interface ResponsesInternalServerError {
 
 export interface ResponsesMessageResponse {
   data: EntitiesMessage
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -528,7 +524,7 @@ export interface ResponsesMessageResponse {
 
 export interface ResponsesMessageThreadsResponse {
   data: EntitiesMessageThread[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -536,7 +532,7 @@ export interface ResponsesMessageThreadsResponse {
 
 export interface ResponsesMessagesResponse {
   data: EntitiesMessage[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -566,7 +562,7 @@ export interface ResponsesOkString {
 
 export interface ResponsesPhoneAPIKeyResponse {
   data: EntitiesPhoneAPIKey
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -574,7 +570,7 @@ export interface ResponsesPhoneAPIKeyResponse {
 
 export interface ResponsesPhoneAPIKeysResponse {
   data: EntitiesPhoneAPIKey[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -582,7 +578,7 @@ export interface ResponsesPhoneAPIKeysResponse {
 
 export interface ResponsesPhoneResponse {
   data: EntitiesPhone
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -590,7 +586,7 @@ export interface ResponsesPhoneResponse {
 
 export interface ResponsesPhonesResponse {
   data: EntitiesPhone[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -607,15 +603,23 @@ export interface ResponsesUnauthorized {
 
 export interface ResponsesUnprocessableEntity {
   data: Record<string, string[]>
-  /** @example "validation errors while sending message" */
+  /** @example "validation errors while handling request" */
   message: string
   /** @example "error" */
   status: string
 }
 
+export interface ResponsesUserInvoicesResponse {
+  data: ResponsesSubscriptionInvoicesAPIResponse
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
 export interface ResponsesUserResponse {
   data: EntitiesUser
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -623,7 +627,7 @@ export interface ResponsesUserResponse {
 
 export interface ResponsesWebhookResponse {
   data: EntitiesWebhook
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
@@ -631,8 +635,46 @@ export interface ResponsesWebhookResponse {
 
 export interface ResponsesWebhooksResponse {
   data: EntitiesWebhook[]
-  /** @example "item created successfully" */
+  /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
   status: string
+}
+
+export interface ResponsesSubscriptionInvoicesAPIResponse {
+  data: {
+    attributes: {
+      billing_reason: string
+      card_brand: string
+      card_last_four: string
+      created_at: string
+      currency: string
+      currency_rate: string
+      discount_total: number
+      discount_total_formatted: string
+      discount_total_usd: number
+      refunded: boolean
+      refunded_amount: number
+      refunded_amount_formatted: string
+      refunded_amount_usd: number
+      refunded_at: any
+      status: string
+      status_formatted: string
+      subtotal: number
+      subtotal_formatted: string
+      subtotal_usd: number
+      tax: number
+      tax_formatted: string
+      tax_inclusive: boolean
+      tax_usd: number
+      total: number
+      total_formatted: string
+      total_usd: number
+      updated_at: string
+      user_email: string
+      user_name: string
+    }
+    id: string
+    type: string
+  }[]
 }

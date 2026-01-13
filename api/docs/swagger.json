@@ -133,7 +133,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "Sends bulk SMS messages to multiple users from a CSV or Excel file.",
+        "description": "Sends bulk SMS messages to multiple users based on our [CSV template](https://httpsms.com/templates/httpsms-bulk.csv) or our [Excel template](https://httpsms.com/templates/httpsms-bulk.xlsx).",
         "consumes": ["multipart/form-data"],
         "produces": ["application/json"],
         "tags": ["BulkSMS"],
@@ -141,7 +141,7 @@
         "parameters": [
           {
             "type": "file",
-            "description": "The Excel or CSV file formatted according to the templates",
+            "description": "The Excel or CSV file containing the messages to be sent.",
             "name": "document",
             "in": "formData",
             "required": true
@@ -604,47 +604,6 @@
         "produces": ["application/json"],
         "tags": ["3CXIntegration"],
         "summary": "Sends a 3CX SMS message",
-        "responses": {
-          "204": {
-            "description": "No Content",
-            "schema": {
-              "$ref": "#/definitions/responses.NoContent"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/responses.BadRequest"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/responses.Unauthorized"
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "schema": {
-              "$ref": "#/definitions/responses.UnprocessableEntity"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/responses.InternalServerError"
-            }
-          }
-        }
-      }
-    },
-    "/lemonsqueezy/event": {
-      "post": {
-        "description": "Publish a lemonsqueezy event to the registered listeners",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["Lemonsqueezy"],
-        "summary": "Consume a lemonsqueezy event",
         "responses": {
           "204": {
             "description": "No Content",
@@ -1287,14 +1246,14 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "Add a new SMS message to be sent by the android phone",
+        "description": "Add a new SMS message to be sent by your Android phone",
         "consumes": ["application/json"],
         "produces": ["application/json"],
         "tags": ["Messages"],
-        "summary": "Send a new SMS message",
+        "summary": "Send an SMS message",
         "parameters": [
           {
-            "description": "PostSend message request payload",
+            "description": "Send message request payload",
             "name": "payload",
             "in": "body",
             "required": true,
@@ -2186,6 +2145,98 @@
         }
       }
     },
+    "/users/subscription/invoices": {
+      "get": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Subscription invoices are generated throughout the lifecycle of a subscription, typically there is one at the time of purchase and then one for each renewal.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["Users"],
+        "summary": "Get the last 10 subscription invoices.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/responses.UserInvoicesResponse"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/responses.BadRequest"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/responses.Unauthorized"
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "schema": {
+              "$ref": "#/definitions/responses.UnprocessableEntity"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/responses.InternalServerError"
+            }
+          }
+        }
+      }
+    },
+    "/users/subscription/invoices/{subscriptionInvoiceID}": {
+      "post": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Generates a new invoice for the given subscription with given parameters.",
+        "consumes": ["application/json"],
+        "produces": ["application/pdf"],
+        "tags": ["Users"],
+        "summary": "Generate a subscription invoice",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "file"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/responses.BadRequest"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/responses.Unauthorized"
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "schema": {
+              "$ref": "#/definitions/responses.UnprocessableEntity"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/responses.InternalServerError"
+            }
+          }
+        }
+      }
+    },
     "/users/{userID}/api-keys": {
       "delete": {
         "security": [
@@ -2686,28 +2737,16 @@
     "entities.Message": {
       "type": "object",
       "required": [
-        "can_be_polled",
         "contact",
         "content",
         "created_at",
-        "delivered_at",
         "encrypted",
-        "expired_at",
-        "failed_at",
-        "failure_reason",
         "id",
-        "last_attempted_at",
         "max_send_attempts",
         "order_timestamp",
         "owner",
-        "received_at",
-        "request_id",
         "request_received_at",
-        "scheduled_at",
-        "scheduled_send_time",
         "send_attempt_count",
-        "send_time",
-        "sent_at",
         "sim",
         "status",
         "type",
@@ -2715,10 +2754,6 @@
         "user_id"
       ],
       "properties": {
-        "can_be_polled": {
-          "type": "boolean",
-          "example": false
-        },
         "contact": {
           "type": "string",
           "example": "+18005550100"
@@ -2898,12 +2933,10 @@
       "type": "object",
       "required": [
         "created_at",
-        "fcm_token",
         "id",
         "max_send_attempts",
         "message_expiration_seconds",
         "messages_per_minute",
-        "missed_call_auto_reply",
         "phone_number",
         "sim",
         "updated_at",
@@ -3021,7 +3054,6 @@
     "entities.User": {
       "type": "object",
       "required": [
-        "active_phone_id",
         "api_key",
         "created_at",
         "email",
@@ -3030,11 +3062,7 @@
         "notification_message_status_enabled",
         "notification_newsletter_enabled",
         "notification_webhook_enabled",
-        "subscription_ends_at",
-        "subscription_id",
         "subscription_name",
-        "subscription_renews_at",
-        "subscription_status",
         "timezone",
         "updated_at"
       ],
@@ -3078,10 +3106,6 @@
         "subscription_ends_at": {
           "type": "string",
           "example": "2022-06-05T14:26:02.302718+03:00"
-        },
-        "subscription_id": {
-          "type": "string",
-          "example": "8f9c71b8-b84e-4417-8408-a62274f65a08"
         },
         "subscription_name": {
           "type": "string",
@@ -3332,9 +3356,9 @@
           "example": "153554b5-ae44-44a0-8f4f-7bbac5657ad4"
         },
         "send_at": {
-          "description": "SendAt is an optional parameter used to schedule a message to be sent in the future. The time is considered to be in your profile's local timezone.",
+          "description": "SendAt is an optional parameter used to schedule a message to be sent in the future. The time is considered to be in your profile's local timezone and you can queue messages for up to 20 days (480 hours) in the future.",
           "type": "string",
-          "example": "2022-06-05T14:26:09.527976+03:00"
+          "example": "2025-12-19T16:39:57-08:00"
         },
         "to": {
           "type": "string",
@@ -3877,6 +3901,23 @@
         }
       }
     },
+    "responses.UserInvoicesResponse": {
+      "type": "object",
+      "required": ["data", "message", "status"],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/responses.subscriptionInvoicesAPIResponse"
+        },
+        "message": {
+          "type": "string",
+          "example": "Request handled successfully"
+        },
+        "status": {
+          "type": "string",
+          "example": "success"
+        }
+      }
+    },
     "responses.UserResponse": {
       "type": "object",
       "required": ["data", "message", "status"],
@@ -3928,6 +3969,148 @@
         "status": {
           "type": "string",
           "example": "success"
+        }
+      }
+    },
+    "responses.subscriptionInvoicesAPIResponse": {
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attributes", "id", "type"],
+            "properties": {
+              "attributes": {
+                "type": "object",
+                "required": [
+                  "billing_reason",
+                  "card_brand",
+                  "card_last_four",
+                  "created_at",
+                  "currency",
+                  "currency_rate",
+                  "discount_total",
+                  "discount_total_formatted",
+                  "discount_total_usd",
+                  "refunded",
+                  "refunded_amount",
+                  "refunded_amount_formatted",
+                  "refunded_amount_usd",
+                  "refunded_at",
+                  "status",
+                  "status_formatted",
+                  "subtotal",
+                  "subtotal_formatted",
+                  "subtotal_usd",
+                  "tax",
+                  "tax_formatted",
+                  "tax_inclusive",
+                  "tax_usd",
+                  "total",
+                  "total_formatted",
+                  "total_usd",
+                  "updated_at",
+                  "user_email",
+                  "user_name"
+                ],
+                "properties": {
+                  "billing_reason": {
+                    "type": "string"
+                  },
+                  "card_brand": {
+                    "type": "string"
+                  },
+                  "card_last_four": {
+                    "type": "string"
+                  },
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  },
+                  "currency_rate": {
+                    "type": "string"
+                  },
+                  "discount_total": {
+                    "type": "integer"
+                  },
+                  "discount_total_formatted": {
+                    "type": "string"
+                  },
+                  "discount_total_usd": {
+                    "type": "integer"
+                  },
+                  "refunded": {
+                    "type": "boolean"
+                  },
+                  "refunded_amount": {
+                    "type": "integer"
+                  },
+                  "refunded_amount_formatted": {
+                    "type": "string"
+                  },
+                  "refunded_amount_usd": {
+                    "type": "integer"
+                  },
+                  "refunded_at": {},
+                  "status": {
+                    "type": "string"
+                  },
+                  "status_formatted": {
+                    "type": "string"
+                  },
+                  "subtotal": {
+                    "type": "integer"
+                  },
+                  "subtotal_formatted": {
+                    "type": "string"
+                  },
+                  "subtotal_usd": {
+                    "type": "integer"
+                  },
+                  "tax": {
+                    "type": "integer"
+                  },
+                  "tax_formatted": {
+                    "type": "string"
+                  },
+                  "tax_inclusive": {
+                    "type": "boolean"
+                  },
+                  "tax_usd": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "total_formatted": {
+                    "type": "string"
+                  },
+                  "total_usd": {
+                    "type": "integer"
+                  },
+                  "updated_at": {
+                    "type": "string"
+                  },
+                  "user_email": {
+                    "type": "string"
+                  },
+                  "user_name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     }
