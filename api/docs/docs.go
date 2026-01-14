@@ -3342,6 +3342,7 @@ const docTemplate = `{
                 "notification_message_status_enabled",
                 "notification_newsletter_enabled",
                 "notification_webhook_enabled",
+                "subscription_id",
                 "subscription_name",
                 "timezone",
                 "updated_at"
@@ -3386,6 +3387,10 @@ const docTemplate = `{
                 "subscription_ends_at": {
                     "type": "string",
                     "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "subscription_id": {
+                    "type": "string",
+                    "example": "8f9c71b8-b84e-4417-8408-a62274f65a08"
                 },
                 "subscription_name": {
                     "type": "string",
