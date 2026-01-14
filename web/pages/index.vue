@@ -682,7 +682,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
               tick-size="4"
               tick
             >
-              <template v-slot:thumb-label>
+              <template #thumb-label>
                 {{ pricingLabels[pricing] }}
               </template>
             </v-slider>
@@ -951,7 +951,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 Can I install the app on my Iphone?
-                <template v-slot:actions>
+                <template #actions>
                   <v-icon v-if="faqPanel === 0">{{ mdiMinus }}</v-icon>
                   <v-icon v-else>{{ mdiPlus }}</v-icon>
                 </template>
@@ -967,7 +967,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 What's the minimum supported Android version?
-                <template v-slot:actions>
+                <template #actions>
                   <v-icon v-if="faqPanel === 1">{{ mdiMinus }}</v-icon>
                   <v-icon v-else>{{ mdiPlus }}</v-icon>
                 </template>
@@ -983,7 +983,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 Can I send unlimited number of messages per month?
-                <template v-slot:actions>
+                <template #actions>
                   <v-icon v-if="faqPanel === 2">{{ mdiMinus }}</v-icon>
                   <v-icon v-else>{{ mdiPlus }}</v-icon>
                 </template>
@@ -1001,7 +1001,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
             <v-expansion-panel>
               <v-expansion-panel-header class="text-h6">
                 Can I change the sender of the SMS message
-                <template v-slot:actions>
+                <template #actions>
                   <v-icon v-if="faqPanel === 3">{{ mdiMinus }}</v-icon>
                   <v-icon v-else>{{ mdiPlus }}</v-icon>
                 </template>

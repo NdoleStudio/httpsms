@@ -435,11 +435,11 @@
             <v-row>
               <v-col cols="12">
                 <v-text-field
+                  v-model="invoiceFormName"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('name')"
                   :error-messages="errorMessages.get('name')"
-                  v-model="invoiceFormName"
                   label="Name"
                   placeholder="e.g Acme Corporation"
                   persistent-placeholder
@@ -448,11 +448,11 @@
               </v-col>
               <v-col cols="12">
                 <v-text-field
+                  v-model="invoiceFormAddress"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('address')"
                   :error-messages="errorMessages.get('address')"
-                  v-model="invoiceFormAddress"
                   label="Address"
                   placeholder="e.g 221B Baker Street"
                   persistent-placeholder
@@ -463,11 +463,11 @@
             <v-row>
               <v-col cols="6">
                 <v-text-field
+                  v-model="invoiceFormCity"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('city')"
                   :error-messages="errorMessages.get('city')"
-                  v-model="invoiceFormCity"
                   label="City"
                   placeholder="e.g Los Angeles"
                   persistent-placeholder
@@ -477,11 +477,11 @@
               <v-col cols="6">
                 <v-text-field
                   v-if="invoiceStateOptions.length === 0"
+                  v-model="invoiceFormState"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('state')"
                   :error-messages="errorMessages.get('state')"
-                  v-model="invoiceFormState"
                   label="State"
                   placeholder="e.g CA"
                   persistent-placeholder
@@ -489,11 +489,11 @@
                 ></v-text-field>
                 <v-autocomplete
                   v-else
+                  v-model="invoiceFormState"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('state')"
                   :error-messages="errorMessages.get('state')"
-                  v-model="invoiceFormState"
                   :items="invoiceStateOptions"
                   label="State"
                   outlined
@@ -505,11 +505,11 @@
             <v-row>
               <v-col cols="6">
                 <v-text-field
+                  v-model="invoiceFormZipCode"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('zip_code')"
                   :error-messages="errorMessages.get('zip_code')"
-                  v-model="invoiceFormZipCode"
                   label="Zip Code"
                   placeholder="e.g 46001"
                   persistent-placeholder
@@ -518,11 +518,11 @@
               </v-col>
               <v-col cols="6">
                 <v-autocomplete
+                  v-model="invoiceFormCountry"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('country')"
                   :error-messages="errorMessages.get('country')"
-                  v-model="invoiceFormCountry"
                   :items="countries"
                   label="Country"
                   placeholder="e.g United States"
@@ -534,12 +534,12 @@
             <v-row>
               <v-col cols="12">
                 <v-textarea
+                  v-model="invoiceFormNotes"
                   dense
                   :disabled="loading"
                   :error="errorMessages.has('notes')"
                   :error-messages="errorMessages.get('notes')"
                   rows="3"
-                  v-model="invoiceFormNotes"
                   label="Notes (optional)"
                   placeholder="e.g Thanks for doing business with us!"
                   persistent-placeholder
@@ -586,11 +586,9 @@ import {
 } from '@mdi/js'
 import {
   RequestsUserPaymentInvoice,
-  ResponsesUnprocessableEntity,
   ResponsesUserSubscriptionPaymentsResponse,
 } from '~/models/api'
-import { ErrorMessages, getErrorMessages } from '~/plugins/errors'
-import { AxiosError } from 'axios'
+import { ErrorMessages } from '~/plugins/errors'
 
 type PaymentPlan = {
   name: string
@@ -1115,7 +1113,7 @@ export default Vue.extend({
       this.loading = true
       this.$store
         .dispatch('generateSubscriptionPaymentInvoice', {
-          subscriptionInvoiceId: this.selectedPayment?.id!,
+          subscriptionInvoiceId: this.selectedPayment?.id || '',
           request: {
             name: this.invoiceFormName,
             address: this.invoiceFormAddress,
@@ -1133,7 +1131,6 @@ export default Vue.extend({
           this.subscriptionInvoiceDialog = false
         })
         .catch((error: ErrorMessages) => {
-          console.log(error)
           this.errorMessages = error
         })
         .finally(() => {
