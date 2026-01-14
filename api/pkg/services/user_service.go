@@ -112,6 +112,7 @@ func (service *UserService) GenerateReceipt(ctx context.Context, params *UserInv
 		"country":  params.Country,
 		"zip_code": params.ZipCode,
 		"notes":    params.Notes,
+		"locale":   "en",
 	}
 
 	invoice, _, err := service.lemonsqueezyClient.SubscriptionInvoices.Generate(ctx, params.SubscriptionInvoiceID, payload)
