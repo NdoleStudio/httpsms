@@ -226,7 +226,7 @@
                 </v-hover>
               </v-col>
             </v-row>
-            <h5 class="text-h4 mb-3 mt-4">Overview</h5>
+            <h5 class="text-h4 mb-3 mt-8">Overview</h5>
             <p class="text--secondary">
               This is the summary of the sent messages and received messages in
               <code
@@ -289,7 +289,7 @@
               </v-col>
             </v-row>
             <template v-if="$store.getters.getUser?.subscription_id != null">
-              <h5 class="text-h4 mb-3 mt-12">Subscription Payments</h5>
+              <h5 class="text-h4 mb-3 mt-8">Subscription Payments</h5>
               <p class="text--secondary">
                 This is a list of your last 10 subscription payments made using
                 our payment provider
@@ -368,7 +368,7 @@
                 </template>
               </v-simple-table>
             </template>
-            <h5 class="text-h4 mb-3 mt-12">Usage History</h5>
+            <h5 class="text-h4 mb-3 mt-8">Usage History</h5>
             <p class="text--secondary">
               Summary of all the sent and received messages in the past 12
               months
