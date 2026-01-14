@@ -65,7 +65,7 @@ func (h *BillingHandler) UsageHistory(c *fiber.Ctx) error {
 
 	var request requests.BillingUsageHistory
 	if err := c.QueryParser(&request); err != nil {
-		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
 	}

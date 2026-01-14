@@ -16,6 +16,7 @@ import {
   RequestsDiscordStore,
   RequestsDiscordUpdate,
   RequestsUserNotificationUpdate,
+  RequestsUserPaymentInvoice,
   RequestsWebhookStore,
   RequestsWebhookUpdate,
   ResponsesDiscordResponse,
@@ -25,10 +26,9 @@ import {
   ResponsesOkString,
   ResponsesPhoneAPIKeyResponse,
   ResponsesPhoneAPIKeysResponse,
-  ResponsesSubscriptionInvoicesAPIResponse,
   ResponsesUnprocessableEntity,
-  ResponsesUserInvoicesResponse,
   ResponsesUserResponse,
+  ResponsesUserSubscriptionPaymentsResponse,
   ResponsesWebhookResponse,
   ResponsesWebhooksResponse,
 } from '~/models/api'
@@ -536,10 +536,10 @@ export const actions = {
   },
 
   indexSubscriptionPayments(context: ActionContext<State, State>) {
-    return new Promise<ResponsesSubscriptionInvoicesAPIResponse>(
+    return new Promise<ResponsesUserSubscriptionPaymentsResponse>(
       (resolve, reject) => {
         axios
-          .get<ResponsesUserInvoicesResponse>(
+          .get<ResponsesUserSubscriptionPaymentsResponse>(
             `/v1/users/subscription/payments`,
             {
               params: {
@@ -547,9 +547,13 @@ export const actions = {
               },
             },
           )
-          .then((response: AxiosResponse<ResponsesUserInvoicesResponse>) => {
-            resolve(response.data.data)
-          })
+          .then(
+            (
+              response: AxiosResponse<ResponsesUserSubscriptionPaymentsResponse>,
+            ) => {
+              resolve(response.data)
+            },
+          )
           .catch(async (error: AxiosError) => {
             await Promise.all([
               context.dispatch('addNotification', {
@@ -563,6 +567,75 @@ export const actions = {
           })
       },
     )
+  },
+
+  generateSubscriptionPaymentInvoice(
+    context: ActionContext<State, State>,
+    payload: {
+      subscriptionInvoiceId: string
+      request: RequestsUserPaymentInvoice
+    },
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      axios
+        .post(
+          `/v1/users/subscription/invoices/${payload.subscriptionInvoiceId}`,
+          payload.request,
+          {
+            responseType: 'blob',
+          },
+        )
+        .then(async (response: AxiosResponse) => {
+          // Create a Blob from the response data
+          const pdfBlob = new Blob([response.data], {
+            type: response.headers['content-type'],
+          })
+
+          // Create a temporary URL for the Blob
+          const url = window.URL.createObjectURL(pdfBlob)
+
+          // Create a temporary <a> element to trigger the download
+          const tempLink = document.createElement('a')
+          tempLink.href = url
+          tempLink.setAttribute(
+            'download',
+            response.headers['content-disposition']
+              ?.split('filename=')[1]
+              .replaceAll('"', '') || 'Invoice.pdf',
+          ) // Set the desired filename for the downloaded file
+
+          // Append the <a> element to the body and click it to trigger the download
+          document.body.appendChild(tempLink)
+          tempLink.click()
+
+          // Clean up the temporary elements and URL
+          document.body.removeChild(tempLink)
+          window.URL.revokeObjectURL(url)
+
+          await context.dispatch('addNotification', {
+            message:
+              response.data.message ??
+              'Your invoice has been generated successfully',
+            type: 'success',
+          })
+          resolve()
+        })
+        .catch(async (error: AxiosError) => {
+          const text = await (error.response as any).data.text()
+          if (error.response) {
+            error.response.data = JSON.parse(text)
+          }
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while generating your invoice',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
   },
 
   async handleAxiosError(

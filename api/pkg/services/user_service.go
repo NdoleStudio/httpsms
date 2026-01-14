@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	"firebase.google.com/go/auth"
-	"github.com/NdoleStudio/httpsms/pkg/events"
-
 	"github.com/NdoleStudio/httpsms/pkg/emails"
+	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/lemonsqueezy-go"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -31,6 +31,7 @@ type UserService struct {
 	dispatcher         *EventDispatcher
 	authClient         *auth.Client
 	lemonsqueezyClient *lemonsqueezy.Client
+	httpClient         *http.Client
 }
 
 // NewUserService creates a new UserService
@@ -43,6 +44,7 @@ func NewUserService(
 	lemonsqueezyClient *lemonsqueezy.Client,
 	dispatcher *EventDispatcher,
 	authClient *auth.Client,
+	httpClient *http.Client,
 ) (s *UserService) {
 	return &UserService{
 		logger:             logger.WithService(fmt.Sprintf("%T", s)),
@@ -53,6 +55,7 @@ func NewUserService(
 		dispatcher:         dispatcher,
 		authClient:         authClient,
 		lemonsqueezyClient: lemonsqueezyClient,
+		httpClient:         httpClient,
 	}
 }
 
@@ -83,13 +86,48 @@ func (service *UserService) GetSubscriptionPayments(ctx context.Context, userID 
 	return invoicesResponse.Data, nil
 }
 
+// UserInvoiceGenerateParams are parameters for generating a subscription payment invoice
+type UserInvoiceGenerateParams struct {
+	UserID                entities.UserID
+	SubscriptionInvoiceID string
+	Name                  string
+	Address               string
+	City                  string
+	State                 string
+	Country               string
+	ZipCode               string
+	Notes                 string
+}
+
 // GenerateReceipt generates a receipt for a subscription payment.
-func (service *UserService) GenerateReceipt(ctx context.Context, userID entities.UserID) (reader io.Reader, err error) {
+func (service *UserService) GenerateReceipt(ctx context.Context, params *UserInvoiceGenerateParams) (io.Reader, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger.Info(fmt.Sprintf("generating receipt for user [%s]", userID))
-	return nil, nil
+	payload := map[string]string{
+		"name":     params.Name,
+		"address":  params.Address,
+		"city":     params.City,
+		"state":    params.State,
+		"country":  params.Country,
+		"zip_code": params.ZipCode,
+		"notes":    params.Notes,
+	}
+
+	invoice, _, err := service.lemonsqueezyClient.SubscriptionInvoices.Generate(ctx, params.SubscriptionInvoiceID, payload)
+	if err != nil {
+		msg := fmt.Sprintf("could not generate subscription payment invoice user with ID [%s] and subscription invoice ID [%s]", params.UserID, params.SubscriptionInvoiceID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	response, err := service.httpClient.Get(invoice.Meta.Urls.DownloadInvoice)
+	if err != nil {
+		msg := fmt.Sprintf("could not download subscription payment invoice for user with ID [%s] and subscription invoice ID [%s]", params.UserID, params.SubscriptionInvoiceID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("generated subscription payment invoice for user with ID [%s] and subscription invoice ID [%s]", params.UserID, params.SubscriptionInvoiceID))
+	return response.Body, nil
 }
 
 // Get fetches or creates an entities.User

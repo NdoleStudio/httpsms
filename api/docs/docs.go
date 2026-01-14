@@ -2380,7 +2380,18 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Generate a subscription invoice",
+                "summary": "Generate a subscription payment invoice",
+                "parameters": [
+                    {
+                        "description": "Generate subscription payment invoice parameters",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.UserPaymentInvoice"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3795,6 +3806,48 @@ const docTemplate = `{
                 "webhook_enabled": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "requests.UserPaymentInvoice": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "country",
+                "name",
+                "notes",
+                "state",
+                "zip_code"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "221B Baker Street, London"
+                },
+                "city": {
+                    "type": "string",
+                    "example": "Los Angeles"
+                },
+                "country": {
+                    "type": "string",
+                    "example": "US"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Acme Corp"
+                },
+                "notes": {
+                    "type": "string",
+                    "example": "Thank you for your business!"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "CA"
+                },
+                "zip_code": {
+                    "type": "string",
+                    "example": "9800"
                 }
             }
         },

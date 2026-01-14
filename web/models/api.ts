@@ -427,6 +427,23 @@ export interface RequestsUserNotificationUpdate {
   webhook_enabled: boolean
 }
 
+export interface RequestsUserPaymentInvoice {
+  /** @example "221B Baker Street, London" */
+  address: string
+  /** @example "Los Angeles" */
+  city: string
+  /** @example "US" */
+  country: string
+  /** @example "Acme Corp" */
+  name: string
+  /** @example "Thank you for your business!" */
+  notes: string
+  /** @example "CA" */
+  state: string
+  /** @example "9800" */
+  zip_code: string
+}
+
 export interface RequestsUserUpdate {
   /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
   active_phone_id: string
@@ -609,14 +626,6 @@ export interface ResponsesUnprocessableEntity {
   status: string
 }
 
-export interface ResponsesUserInvoicesResponse {
-  data: ResponsesSubscriptionInvoicesAPIResponse
-  /** @example "Request handled successfully" */
-  message: string
-  /** @example "success" */
-  status: string
-}
-
 export interface ResponsesUserResponse {
   data: EntitiesUser
   /** @example "Request handled successfully" */
@@ -625,23 +634,7 @@ export interface ResponsesUserResponse {
   status: string
 }
 
-export interface ResponsesWebhookResponse {
-  data: EntitiesWebhook
-  /** @example "Request handled successfully" */
-  message: string
-  /** @example "success" */
-  status: string
-}
-
-export interface ResponsesWebhooksResponse {
-  data: EntitiesWebhook[]
-  /** @example "Request handled successfully" */
-  message: string
-  /** @example "success" */
-  status: string
-}
-
-export interface ResponsesSubscriptionInvoicesAPIResponse {
+export interface ResponsesUserSubscriptionPaymentsResponse {
   data: {
     attributes: {
       billing_reason: string
@@ -671,10 +664,28 @@ export interface ResponsesSubscriptionInvoicesAPIResponse {
       total_formatted: string
       total_usd: number
       updated_at: string
-      user_email: string
-      user_name: string
     }
     id: string
     type: string
   }[]
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesWebhookResponse {
+  data: EntitiesWebhook
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesWebhooksResponse {
+  data: EntitiesWebhook[]
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
 }

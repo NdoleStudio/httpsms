@@ -46,7 +46,7 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.H
 	router.Put("/v1/users/:userID/notifications", h.computeRoute(middlewares, h.UpdateNotifications)...)
 	router.Get("/v1/users/subscription-update-url", h.computeRoute(middlewares, h.subscriptionUpdateURL)...)
 	router.Delete("/v1/users/subscription", h.computeRoute(middlewares, h.cancelSubscription)...)
-	router.Get("/v1/users/subscription/invoices", h.computeRoute(middlewares, h.subscriptionPayments)...)
+	router.Get("/v1/users/subscription/payments", h.computeRoute(middlewares, h.subscriptionPayments)...)
 	router.Post("/v1/users/subscription/invoices/:subscriptionInvoiceID", h.computeRoute(middlewares, h.subscriptionInvoice)...)
 }
 
@@ -161,10 +161,8 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/{userID}/notifications [put]
 func (h *UserHandler) UpdateNotifications(c *fiber.Ctx) error {
-	ctx, span := h.tracer.StartFromFiberCtx(c)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
-
-	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.UserNotificationUpdate
 	if err := c.BodyParser(&request); err != nil {
@@ -303,12 +301,13 @@ func (h *UserHandler) subscriptionPayments(c *fiber.Ctx) error {
 }
 
 // subscriptionInvoice generates an invoice for a given subscription invoice ID
-// @Summary      Generate a subscription invoice
+// @Summary      Generate a subscription payment invoice
 // @Description  Generates a new invoice PDF file for the given subscription payment with given parameters.
 // @Security	 ApiKeyAuth
 // @Tags         Users
 // @Accept       json
 // @Produce  	 application/pdf
+// @Param        payload   	body requests.UserPaymentInvoice  true  "Generate subscription payment invoice parameters"
 // @Success      200 		{file} 		file
 // @Failure      400		{object}	responses.BadRequest
 // @Failure 	 401	    {object}	responses.Unauthorized
@@ -319,17 +318,29 @@ func (h *UserHandler) subscriptionInvoice(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
-	invoiceID := c.Params("subscriptionInvoiceID")
+	var request requests.UserPaymentInvoice
+	if err := c.BodyParser(&request); err != nil {
+		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.Body(), request)
+		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		return h.responseBadRequest(c, err)
+	}
 
-	data, err := h.service.GenerateReceipt(ctx, h.userIDFomContext(c))
+	request.SubscriptionInvoiceID = c.Params("subscriptionInvoiceID")
+	if errors := h.validator.ValidatePaymentInvoice(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while validating subscription payment invoice request [%s]", spew.Sdump(errors), c.Body())
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while generating payment invoice")
+	}
+
+	data, err := h.service.GenerateReceipt(ctx, request.UserInvoiceGenerateParams(h.userIDFomContext(c)))
 	if err != nil {
-		msg := fmt.Sprintf("cannot generate receipt for invoice ID [%s] and user [%s]", invoiceID, h.userFromContext(c))
+		msg := fmt.Sprintf("cannot generate receipt for invoice ID [%s] and user [%s]", request.SubscriptionInvoiceID, h.userFromContext(c))
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
 
 	c.Set(fiber.HeaderContentType, "application/pdf")
-	c.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"%s.pdf\"", invoiceID))
+	c.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"httpsms.com - %s.pdf\"", request.SubscriptionInvoiceID))
 
 	return c.SendStream(data)
 }

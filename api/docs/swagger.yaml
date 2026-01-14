@@ -742,6 +742,38 @@ definitions:
       - newsletter_enabled
       - webhook_enabled
     type: object
+  requests.UserPaymentInvoice:
+    properties:
+      address:
+        example: 221B Baker Street, London
+        type: string
+      city:
+        example: Los Angeles
+        type: string
+      country:
+        example: US
+        type: string
+      name:
+        example: Acme Corp
+        type: string
+      notes:
+        example: Thank you for your business!
+        type: string
+      state:
+        example: CA
+        type: string
+      zip_code:
+        example: "9800"
+        type: string
+    required:
+      - address
+      - city
+      - country
+      - name
+      - notes
+      - state
+      - zip_code
+    type: object
   requests.UserUpdate:
     properties:
       active_phone_id:
@@ -2930,6 +2962,13 @@ paths:
       description:
         Generates a new invoice PDF file for the given subscription payment
         with given parameters.
+      parameters:
+        - description: Generate subscription payment invoice parameters
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.UserPaymentInvoice"
       produces:
         - application/pdf
       responses:
@@ -2955,7 +2994,7 @@ paths:
             $ref: "#/definitions/responses.InternalServerError"
       security:
         - ApiKeyAuth: []
-      summary: Generate a subscription invoice
+      summary: Generate a subscription payment invoice
       tags:
         - Users
   /users/subscription/payments:

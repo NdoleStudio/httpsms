@@ -300,16 +300,19 @@
                 >.
               </p>
               <v-progress-circular
-                v-if="invoices == null && loadingSubscriptionInvoices"
+                v-if="payments == null && loadingSubscriptionPayments"
                 :size="20"
                 :width="2"
                 color="primary"
                 indeterminate
               ></v-progress-circular>
-              <v-simple-table v-if="invoices">
+              <v-simple-table v-if="payments">
                 <template #default>
                   <thead>
                     <tr class="text-uppercase">
+                      <th v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
+                        ID
+                      </th>
                       <th class="text-left">Timestamp</th>
                       <th class="text-left">Status</th>
                       <th v-if="$vuetify.breakpoint.lgAndUp" class="text-left">
@@ -320,7 +323,10 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="payment in invoices.data" :key="payment.id">
+                    <tr v-for="payment in payments.data" :key="payment.id">
+                      <td v-if="$vuetify.breakpoint.lgAndUp">
+                        {{ payment.id }}
+                      </td>
                       <td>
                         {{ payment.attributes.created_at | timestamp }}
                       </td>
@@ -348,7 +354,11 @@
                         {{ payment.attributes.total_formatted }}
                       </td>
                       <td class="text-right">
-                        <v-btn color="primary" small>
+                        <v-btn
+                          color="primary"
+                          small
+                          @click="showInvoiceDialog(payment)"
+                        >
                           <v-icon left>{{ mdiInvoice }}</v-icon>
                           Invoice
                         </v-btn>
@@ -407,6 +417,150 @@
         </v-row>
       </v-container>
     </div>
+    <v-dialog
+      v-model="subscriptionInvoiceDialog"
+      persistent
+      overlay-opacity="0.9"
+      max-width="600px"
+    >
+      <v-card>
+        <v-card-title class="text-h4"> Generate Invoice </v-card-title>
+        <v-card-subtitle class="mt-n1">
+          Create an invoice for your
+          <b>{{ selectedPayment?.attributes.total_formatted }}</b> payment on
+          {{ selectedPayment?.attributes.created_at | timestamp }}
+        </v-card-subtitle>
+        <v-card-text>
+          <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('name')"
+                  :error-messages="errorMessages.get('name')"
+                  v-model="invoiceFormName"
+                  label="Name"
+                  placeholder="e.g Acme Corporation"
+                  persistent-placeholder
+                  outlined
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('address')"
+                  :error-messages="errorMessages.get('address')"
+                  v-model="invoiceFormAddress"
+                  label="Address"
+                  placeholder="e.g 221B Baker Street"
+                  persistent-placeholder
+                  outlined
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('city')"
+                  :error-messages="errorMessages.get('city')"
+                  v-model="invoiceFormCity"
+                  label="City"
+                  placeholder="e.g Los Angeles"
+                  persistent-placeholder
+                  outlined
+                ></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-if="invoiceStateOptions.length === 0"
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('state')"
+                  :error-messages="errorMessages.get('state')"
+                  v-model="invoiceFormState"
+                  label="State"
+                  placeholder="e.g CA"
+                  persistent-placeholder
+                  outlined
+                ></v-text-field>
+                <v-autocomplete
+                  v-else
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('state')"
+                  :error-messages="errorMessages.get('state')"
+                  v-model="invoiceFormState"
+                  :items="invoiceStateOptions"
+                  label="State"
+                  outlined
+                  placeholder="e.g CA"
+                  persistent-placeholder
+                ></v-autocomplete>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('zip_code')"
+                  :error-messages="errorMessages.get('zip_code')"
+                  v-model="invoiceFormZipCode"
+                  label="Zip Code"
+                  placeholder="e.g 46001"
+                  persistent-placeholder
+                  outlined
+                ></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-autocomplete
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('country')"
+                  :error-messages="errorMessages.get('country')"
+                  v-model="invoiceFormCountry"
+                  :items="countries"
+                  label="Country"
+                  placeholder="e.g United States"
+                  outlined
+                  persistent-placeholder
+                ></v-autocomplete>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="12">
+                <v-textarea
+                  dense
+                  :disabled="loading"
+                  :error="errorMessages.has('notes')"
+                  :error-messages="errorMessages.get('notes')"
+                  rows="3"
+                  v-model="invoiceFormNotes"
+                  label="Notes (optional)"
+                  placeholder="e.g Thanks for doing business with us!"
+                  persistent-placeholder
+                  outlined
+                ></v-textarea>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+        <v-card-actions class="mt-n8 pb-4">
+          <v-btn :loading="loading" color="primary" @click="generateInvoice">
+            <v-icon left>{{ mdiDownloadOutline }}</v-icon>
+            Download Invoice
+          </v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="error" text @click="subscriptionInvoiceDialog = false">
+            Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -417,6 +571,7 @@ import {
   mdiAccountCircle,
   mdiShieldCheck,
   mdiDelete,
+  mdiDownloadOutline,
   mdiCog,
   mdiContentSave,
   mdiCheck,
@@ -430,15 +585,26 @@ import {
   mdiSquareEditOutline,
 } from '@mdi/js'
 import {
-  EntitiesPhoneAPIKey,
-  ResponsesSubscriptionInvoicesAPIResponse,
+  RequestsUserPaymentInvoice,
+  ResponsesUnprocessableEntity,
+  ResponsesUserSubscriptionPaymentsResponse,
 } from '~/models/api'
+import { ErrorMessages, getErrorMessages } from '~/plugins/errors'
+import { AxiosError } from 'axios'
 
 type PaymentPlan = {
   name: string
   id: string
   price: number
   messagesPerMonth: number
+}
+
+type subscriptionPayment = {
+  attributes: {
+    created_at: string
+    total_formatted: string
+  }
+  id: string
 }
 
 export default Vue.extend({
@@ -449,6 +615,7 @@ export default Vue.extend({
       mdiEye,
       mdiEyeOff,
       mdiArrowLeft,
+      mdiDownloadOutline,
       mdiAccountCircle,
       mdiCheck,
       mdiAlert,
@@ -462,9 +629,267 @@ export default Vue.extend({
       mdiCreditCard,
       mdiSquareEditOutline,
       loading: true,
-      loadingSubscriptionInvoices: false,
+      loadingSubscriptionPayments: false,
       dialog: false,
-      invoices: null as ResponsesSubscriptionInvoicesAPIResponse | null,
+      payments: null as ResponsesUserSubscriptionPaymentsResponse | null,
+      selectedPayment: null as subscriptionPayment | null,
+      errorMessages: new ErrorMessages(),
+      invoiceFormName: '',
+      invoiceFormAddress: '',
+      invoiceFormCity: '',
+      invoiceFormState: '',
+      invoiceFormZipCode: '',
+      invoiceFormCountry: '',
+      invoiceFormNotes: '',
+      subscriptionInvoiceDialog: false,
+      countries: [
+        { text: 'Afghanistan', value: 'AF' },
+        { text: 'Åland Islands', value: 'AX' },
+        { text: 'Albania', value: 'AL' },
+        { text: 'Algeria', value: 'DZ' },
+        { text: 'American Samoa', value: 'AS' },
+        { text: 'Andorra', value: 'AD' },
+        { text: 'Angola', value: 'AO' },
+        { text: 'Anguilla', value: 'AI' },
+        { text: 'Antarctica', value: 'AQ' },
+        { text: 'Antigua and Barbuda', value: 'AG' },
+        { text: 'Argentina', value: 'AR' },
+        { text: 'Armenia', value: 'AM' },
+        { text: 'Aruba', value: 'AW' },
+        { text: 'Australia', value: 'AU' },
+        { text: 'Austria', value: 'AT' },
+        { text: 'Azerbaijan', value: 'AZ' },
+        { text: 'Bahamas', value: 'BS' },
+        { text: 'Bahrain', value: 'BH' },
+        { text: 'Bangladesh', value: 'BD' },
+        { text: 'Barbados', value: 'BB' },
+        { text: 'Belarus', value: 'BY' },
+        { text: 'Belgium', value: 'BE' },
+        { text: 'Belize', value: 'BZ' },
+        { text: 'Benin', value: 'BJ' },
+        { text: 'Bermuda', value: 'BM' },
+        { text: 'Bhutan', value: 'BT' },
+        { text: 'Bolivia', value: 'BO' },
+        { text: 'Bonaire', value: 'BQ' },
+        { text: 'Bosnia and Herzegovina', value: 'BA' },
+        { text: 'Botswana', value: 'BW' },
+        { text: 'Bouvet Island', value: 'BV' },
+        { text: 'Brazil', value: 'BR' },
+        { text: 'British Indian Ocean', value: 'IO' },
+        { text: 'Brunei Darussalam', value: 'BN' },
+        { text: 'Bulgaria', value: 'BG' },
+        { text: 'Burkina Faso', value: 'BF' },
+        { text: 'Burundi', value: 'BI' },
+        { text: 'Cabo Verde', value: 'CV' },
+        { text: 'Cambodia', value: 'KH' },
+        { text: 'Cameroon', value: 'CM' },
+        { text: 'Canada', value: 'CA' },
+        { text: 'Cayman Islands', value: 'KY' },
+        { text: 'Central African Republic', value: 'CF' },
+        { text: 'Chad', value: 'TD' },
+        { text: 'Chile', value: 'CL' },
+        { text: 'China', value: 'CN' },
+        { text: 'Christmas Island', value: 'CX' },
+        { text: 'Cocos (Keeling) Islands', value: 'CC' },
+        { text: 'Colombia', value: 'CO' },
+        { text: 'Comoros', value: 'KM' },
+        { text: 'Congo', value: 'CG' },
+        { text: 'Congo', value: 'CD' },
+        { text: 'Cook Islands', value: 'CK' },
+        { text: 'Costa Rica', value: 'CR' },
+        { text: "Côte d'Ivoire", value: 'CI' },
+        { text: 'Cuba', value: 'CU' },
+        { text: 'Curaçao', value: 'CW' },
+        { text: 'Cyprus', value: 'CY' },
+        { text: 'Czechia', value: 'CZ' },
+        { text: 'Denmark', value: 'DK' },
+        { text: 'Djibouti', value: 'DJ' },
+        { text: 'Dominica', value: 'DM' },
+        { text: 'Dominican Republic', value: 'DO' },
+        { text: 'Ecuador', value: 'EC' },
+        { text: 'Egypt', value: 'EG' },
+        { text: 'El Salvador', value: 'SV' },
+        { text: 'Equatorial Guinea', value: 'GQ' },
+        { text: 'Eritrea', value: 'ER' },
+        { text: 'Estonia', value: 'EE' },
+        { text: 'Eswatini', value: 'SZ' },
+        { text: 'Ethiopia', value: 'ET' },
+        { text: 'Falkland Islands', value: 'FK' },
+        { text: 'Faroe Islands', value: 'FO' },
+        { text: 'Fiji', value: 'FJ' },
+        { text: 'Finland', value: 'FI' },
+        { text: 'France', value: 'FR' },
+        { text: 'French Guiana', value: 'GF' },
+        { text: 'French Polynesia', value: 'PF' },
+        { text: 'French Southern Territories', value: 'TF' },
+        { text: 'Gabon', value: 'GA' },
+        { text: 'Gambia', value: 'GM' },
+        { text: 'Georgia', value: 'GE' },
+        { text: 'Germany', value: 'DE' },
+        { text: 'Ghana', value: 'GH' },
+        { text: 'Gibraltar', value: 'GI' },
+        { text: 'Greece', value: 'GR' },
+        { text: 'Greenland', value: 'GL' },
+        { text: 'Grenada', value: 'GD' },
+        { text: 'Guadeloupe', value: 'GP' },
+        { text: 'Guam', value: 'GU' },
+        { text: 'Guatemala', value: 'GT' },
+        { text: 'Guernsey', value: 'GG' },
+        { text: 'Guinea', value: 'GN' },
+        { text: 'Guinea-Bissau', value: 'GW' },
+        { text: 'Guyana', value: 'GY' },
+        { text: 'Haiti', value: 'HT' },
+        { text: 'Heard Island and McDonald Islands', value: 'HM' },
+        { text: 'Holy See', value: 'VA' },
+        { text: 'Honduras', value: 'HN' },
+        { text: 'Hong Kong', value: 'HK' },
+        { text: 'Hungary', value: 'HU' },
+        { text: 'Iceland', value: 'IS' },
+        { text: 'India', value: 'IN' },
+        { text: 'Indonesia', value: 'ID' },
+        { text: 'Iran', value: 'IR' },
+        { text: 'Iraq', value: 'IQ' },
+        { text: 'Ireland', value: 'IE' },
+        { text: 'Isle of Man', value: 'IM' },
+        { text: 'Israel', value: 'IL' },
+        { text: 'Italy', value: 'IT' },
+        { text: 'Jamaica', value: 'JM' },
+        { text: 'Japan', value: 'JP' },
+        { text: 'Jersey', value: 'JE' },
+        { text: 'Jordan', value: 'JO' },
+        { text: 'Kazakhstan', value: 'KZ' },
+        { text: 'Kenya', value: 'KE' },
+        { text: 'Kiribati', value: 'KI' },
+        { text: 'North Korea', value: 'KP' },
+        { text: 'South Korea', value: 'KR' },
+        { text: 'Kuwait', value: 'KW' },
+        { text: 'Kyrgyzstan', value: 'KG' },
+        { text: 'Lao People’s Democratic Republic', value: 'LA' },
+        { text: 'Latvia', value: 'LV' },
+        { text: 'Lebanon', value: 'LB' },
+        { text: 'Lesotho', value: 'LS' },
+        { text: 'Liberia', value: 'LR' },
+        { text: 'Libya', value: 'LY' },
+        { text: 'Liechtenstein', value: 'LI' },
+        { text: 'Lithuania', value: 'LT' },
+        { text: 'Luxembourg', value: 'LU' },
+        { text: 'Macao', value: 'MO' },
+        { text: 'Madagascar', value: 'MG' },
+        { text: 'Malawi', value: 'MW' },
+        { text: 'Malaysia', value: 'MY' },
+        { text: 'Maldives', value: 'MV' },
+        { text: 'Mali', value: 'ML' },
+        { text: 'Malta', value: 'MT' },
+        { text: 'Marshall Islands', value: 'MH' },
+        { text: 'Martinique', value: 'MQ' },
+        { text: 'Mauritania', value: 'MR' },
+        { text: 'Mauritius', value: 'MU' },
+        { text: 'Mayotte', value: 'YT' },
+        { text: 'Mexico', value: 'MX' },
+        { text: 'Micronesia', value: 'FM' },
+        { text: 'Moldova', value: 'MD' },
+        { text: 'Monaco', value: 'MC' },
+        { text: 'Mongolia', value: 'MN' },
+        { text: 'Montenegro', value: 'ME' },
+        { text: 'Montserrat', value: 'MS' },
+        { text: 'Morocco', value: 'MA' },
+        { text: 'Mozambique', value: 'MZ' },
+        { text: 'Myanmar', value: 'MM' },
+        { text: 'Namibia', value: 'NA' },
+        { text: 'Nauru', value: 'NR' },
+        { text: 'Nepal', value: 'NP' },
+        { text: 'Netherlands', value: 'NL' },
+        { text: 'New Caledonia', value: 'NC' },
+        { text: 'New Zealand', value: 'NZ' },
+        { text: 'Nicaragua', value: 'NI' },
+        { text: 'Niger', value: 'NE' },
+        { text: 'Nigeria', value: 'NG' },
+        { text: 'Niue', value: 'NU' },
+        { text: 'Norfolk Island', value: 'NF' },
+        { text: 'North Macedonia', value: 'MK' },
+        { text: 'Northern Mariana Islands', value: 'MP' },
+        { text: 'Norway', value: 'NO' },
+        { text: 'Oman', value: 'OM' },
+        { text: 'Pakistan', value: 'PK' },
+        { text: 'Palau', value: 'PW' },
+        { text: 'Panama', value: 'PA' },
+        { text: 'Papua New Guinea', value: 'PG' },
+        { text: 'Paraguay', value: 'PY' },
+        { text: 'Peru', value: 'PE' },
+        { text: 'Philippines', value: 'PH' },
+        { text: 'Pitcairn', value: 'PN' },
+        { text: 'Poland', value: 'PL' },
+        { text: 'Portugal', value: 'PT' },
+        { text: 'Puerto Rico', value: 'PR' },
+        { text: 'Qatar', value: 'QA' },
+        { text: 'Réunion', value: 'RE' },
+        { text: 'Romania', value: 'RO' },
+        { text: 'Russian Federation', value: 'RU' },
+        { text: 'Rwanda', value: 'RW' },
+        { text: 'Saint Barthélemy', value: 'BL' },
+        { text: 'Saint Helena, Ascension and Tristan da Cunha', value: 'SH' },
+        { text: 'Saint Kitts and Nevis', value: 'KN' },
+        { text: 'Saint Lucia', value: 'LC' },
+        { text: 'Saint Martin (French part)', value: 'MF' },
+        { text: 'Saint Pierre and Miquelon', value: 'PM' },
+        { text: 'Saint Vincent and the Grenadines', value: 'VC' },
+        { text: 'Samoa', value: 'WS' },
+        { text: 'San Marino', value: 'SM' },
+        { text: 'Sao Tome and Principe', value: 'ST' },
+        { text: 'Saudi Arabia', value: 'SA' },
+        { text: 'Senegal', value: 'SN' },
+        { text: 'Serbia', value: 'RS' },
+        { text: 'Seychelles', value: 'SC' },
+        { text: 'Sierra Leone', value: 'SL' },
+        { text: 'Singapore', value: 'SG' },
+        { text: 'Slovakia', value: 'SK' },
+        { text: 'Slovenia', value: 'SI' },
+        { text: 'Solomon Islands', value: 'SB' },
+        { text: 'Somalia', value: 'SO' },
+        { text: 'South Africa', value: 'ZA' },
+        { text: 'South Georgia and the South Sandwich Islands', value: 'GS' },
+        { text: 'South Sudan', value: 'SS' },
+        { text: 'Spain', value: 'ES' },
+        { text: 'Sri Lanka', value: 'LK' },
+        { text: 'Sudan', value: 'SD' },
+        { text: 'Suriname', value: 'SR' },
+        { text: 'Svalbard and Jan Mayen', value: 'SJ' },
+        { text: 'Sweden', value: 'SE' },
+        { text: 'Switzerland', value: 'CH' },
+        { text: 'Syrian Arab Republic', value: 'SY' },
+        { text: 'Taiwan, Province of China', value: 'TW' },
+        { text: 'Tajikistan', value: 'TJ' },
+        { text: 'Tanzania, United Republic of', value: 'TZ' },
+        { text: 'Thailand', value: 'TH' },
+        { text: 'Timor-Leste', value: 'TL' },
+        { text: 'Togo', value: 'TG' },
+        { text: 'Tokelau', value: 'TK' },
+        { text: 'Tonga', value: 'TO' },
+        { text: 'Trinidad and Tobago', value: 'TT' },
+        { text: 'Tunisia', value: 'TN' },
+        { text: 'Turkey', value: 'TR' },
+        { text: 'Turkmenistan', value: 'TM' },
+        { text: 'Turks and Caicos Islands', value: 'TC' },
+        { text: 'Tuvalu', value: 'TV' },
+        { text: 'Uganda', value: 'UG' },
+        { text: 'Ukraine', value: 'UA' },
+        { text: 'United Arab Emirates', value: 'AE' },
+        { text: 'United Kingdom', value: 'GB' },
+        { text: 'United States', value: 'US' },
+        { text: 'United States Minor Outlying Islands', value: 'UM' },
+        { text: 'Uruguay', value: 'UY' },
+        { text: 'Uzbekistan', value: 'UZ' },
+        { text: 'Vanuatu', value: 'VU' },
+        { text: 'Venezuela', value: 'VE' },
+        { text: 'Viet Nam', value: 'VN' },
+        { text: 'Virgin Islands (British)', value: 'VG' },
+        { text: 'Virgin Islands (U.S.)', value: 'VI' },
+        { text: 'Wallis and Futuna', value: 'WF' },
+        { text: 'Western Sahara', value: 'EH' },
+        { text: 'Yemen', value: 'YE' },
+        { text: 'Zambia', value: 'ZM' },
+        { text: 'Zimbabwe', value: 'ZW' },
+      ],
       plans: [
         {
           name: 'Free',
@@ -541,6 +966,81 @@ export default Vue.extend({
     }
   },
   computed: {
+    invoiceStateOptions() {
+      if (this.invoiceFormCountry === 'US') {
+        return [
+          { text: 'Alabama', value: 'AL' },
+          { text: 'Alaska', value: 'AK' },
+          { text: 'Arizona', value: 'AZ' },
+          { text: 'Arkansas', value: 'AR' },
+          { text: 'California', value: 'CA' },
+          { text: 'Colorado', value: 'CO' },
+          { text: 'Connecticut', value: 'CT' },
+          { text: 'Delaware', value: 'DE' },
+          { text: 'Florida', value: 'FL' },
+          { text: 'Georgia', value: 'GA' },
+          { text: 'Hawaii', value: 'HI' },
+          { text: 'Idaho', value: 'ID' },
+          { text: 'Illinois', value: 'IL' },
+          { text: 'Indiana', value: 'IN' },
+          { text: 'Iowa', value: 'IA' },
+          { text: 'Kansas', value: 'KS' },
+          { text: 'Kentucky', value: 'KY' },
+          { text: 'Louisiana', value: 'LA' },
+          { text: 'Maine', value: 'ME' },
+          { text: 'Maryland', value: 'MD' },
+          { text: 'Massachusetts', value: 'MA' },
+          { text: 'Michigan', value: 'MI' },
+          { text: 'Minnesota', value: 'MN' },
+          { text: 'Mississippi', value: 'MS' },
+          { text: 'Missouri', value: 'MO' },
+          { text: 'Montana', value: 'MT' },
+          { text: 'Nebraska', value: 'NE' },
+          { text: 'Nevada', value: 'NV' },
+          { text: 'New Hampshire', value: 'NH' },
+          { text: 'New Jersey', value: 'NJ' },
+          { text: 'New Mexico', value: 'NM' },
+          { text: 'New York', value: 'NY' },
+          { text: 'North Carolina', value: 'NC' },
+          { text: 'North Dakota', value: 'ND' },
+          { text: 'Ohio', value: 'OH' },
+          { text: 'Oklahoma', value: 'OK' },
+          { text: 'Oregon', value: 'OR' },
+          { text: 'Pennsylvania', value: 'PA' },
+          { text: 'Rhode Island', value: 'RI' },
+          { text: 'South Carolina', value: 'SC' },
+          { text: 'South Dakota', value: 'SD' },
+          { text: 'Tennessee', value: 'TN' },
+          { text: 'Texas', value: 'TX' },
+          { text: 'Utah', value: 'UT' },
+          { text: 'Vermont', value: 'VT' },
+          { text: 'Virginia', value: 'VA' },
+          { text: 'Washington', value: 'WA' },
+          { text: 'West Virginia', value: 'WV' },
+          { text: 'Wisconsin', value: 'WI' },
+          { text: 'Wyoming', value: 'WY' },
+          { text: 'District of Columbia', value: 'DC' },
+        ]
+      }
+      if (this.invoiceFormCountry === 'CA') {
+        return [
+          { text: 'Alberta', value: 'AB' },
+          { text: 'British Columbia', value: 'BC' },
+          { text: 'Manitoba', value: 'MB' },
+          { text: 'New Brunswick', value: 'NB' },
+          { text: 'Newfoundland and Labrador', value: 'NL' },
+          { text: 'Nova Scotia', value: 'NS' },
+          { text: 'Ontario', value: 'ON' },
+          { text: 'Prince Edward Island', value: 'PE' },
+          { text: 'Quebec', value: 'QC' },
+          { text: 'Saskatchewan', value: 'SK' },
+          { text: 'Northwest Territories', value: 'NT' },
+          { text: 'Nunavut', value: 'NU' },
+          { text: 'Yukon', value: 'YT' },
+        ]
+      }
+      return []
+    },
     checkoutURL() {
       const url = new URL(this.$config.checkoutURL)
       const user = this.$store.getters.getAuthUser
@@ -599,15 +1099,45 @@ export default Vue.extend({
     },
 
     loadSubscriptionInvoices() {
-      this.loadingSubscriptionInvoices = true
+      this.loadingSubscriptionPayments = true
       this.$store
         .dispatch('indexSubscriptionPayments')
-        .then((invoices: ResponsesSubscriptionInvoicesAPIResponse) => {
-          console.log(invoices)
-          this.invoices = invoices
+        .then((response: ResponsesUserSubscriptionPaymentsResponse) => {
+          this.payments = response
         })
         .finally(() => {
-          this.loadingSubscriptionInvoices = false
+          this.loadingSubscriptionPayments = false
+        })
+    },
+
+    generateInvoice() {
+      this.errorMessages = new ErrorMessages()
+      this.loading = true
+      this.$store
+        .dispatch('generateSubscriptionPaymentInvoice', {
+          subscriptionInvoiceId: this.selectedPayment?.id!,
+          request: {
+            name: this.invoiceFormName,
+            address: this.invoiceFormAddress,
+            city: this.invoiceFormCity,
+            state: this.invoiceFormState,
+            zip_code: this.invoiceFormZipCode,
+            country: this.invoiceFormCountry,
+            notes: this.invoiceFormNotes,
+          },
+        } as {
+          subscriptionInvoiceId: string
+          request: RequestsUserPaymentInvoice
+        })
+        .then(() => {
+          this.subscriptionInvoiceDialog = false
+        })
+        .catch((error: ErrorMessages) => {
+          console.log(error)
+          this.errorMessages = error
+        })
+        .finally(() => {
+          this.loading = false
         })
     },
 
@@ -636,6 +1166,11 @@ export default Vue.extend({
         .catch(() => {
           this.loading = false
         })
+    },
+
+    showInvoiceDialog(payment: subscriptionPayment) {
+      this.selectedPayment = payment
+      this.subscriptionInvoiceDialog = true
     },
   },
 })

@@ -648,6 +648,7 @@ func (container *Container) UserHandlerValidator() (validator *validators.UserHa
 	return validators.NewUserHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
+		container.UserService(),
 	)
 }
 
@@ -934,6 +935,7 @@ func (container *Container) UserService() (service *services.UserService) {
 		container.LemonsqueezyClient(),
 		container.EventDispatcher(),
 		container.FirebaseAuthClient(),
+		container.HTTPClient("lemonsqueezy"),
 	)
 }
 
