@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/gofiber/fiber/v2"
@@ -22,8 +23,8 @@ func HTTPRequestLogger(tracer telemetry.Tracer, logger telemetry.Logger) fiber.H
 
 		statusCode := c.Response().StatusCode()
 		span.AddEvent(fmt.Sprintf("finished handling request with traceID: [%s], statusCode: [%d]", span.SpanContext().TraceID().String(), statusCode))
-		if statusCode >= 300 && len(c.Request().Body()) > 0 && statusCode != 401 {
-			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("http.status [%d], body [%s]", statusCode, string(c.Request().Body()))))
+		if statusCode >= 300 && len(c.Request().Body()) > 0 && !slices.Contains([]int{401, 402}, statusCode) {
+			ctxLogger.WithString("client.version", c.Get(clientVersionHeader)).Warn(stacktrace.NewError(fmt.Sprintf("http.status [%d], body [%s]", statusCode, string(c.Request().Body()))))
 		}
 
 		return response
