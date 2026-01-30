@@ -154,12 +154,16 @@ func (repository *gormUserRepository) LoadAuthContext(ctx context.Context, apiKe
 	defer span.End()
 
 	if authUser, found := repository.cache.Get(apiKey); found {
+		if authUser.IsNoop() {
+			return authUser, repository.tracer.WrapErrorSpan(span, stacktrace.NewError(fmt.Sprintf("user with api key [%s] does not exist", apiKey)))
+		}
 		return authUser, nil
 	}
 
 	user := new(entities.User)
 	err := repository.db.WithContext(ctx).Where("api_key = ?", apiKey).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
+		repository.cache.SetWithTTL(apiKey, entities.AuthContext{}, 1, 2*time.Hour)
 		msg := fmt.Sprintf("user with api key [%s] does not exist", apiKey)
 		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
 	}

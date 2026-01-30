@@ -22,7 +22,7 @@ func HTTPRequestLogger(tracer telemetry.Tracer, logger telemetry.Logger) fiber.H
 
 		statusCode := c.Response().StatusCode()
 		span.AddEvent(fmt.Sprintf("finished handling request with traceID: [%s], statusCode: [%d]", span.SpanContext().TraceID().String(), statusCode))
-		if statusCode >= 300 && len(c.Request().Body()) > 0 {
+		if statusCode >= 300 && len(c.Request().Body()) > 0 && statusCode != 401 {
 			ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("http.status [%d], body [%s]", statusCode, string(c.Request().Body()))))
 		}
 
