@@ -31,7 +31,6 @@ func PhoneAPIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, repositor
 		}
 
 		c.Locals(ContextKeyAuthUserID, authUser)
-		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
 		return c.Next()
 	}
 }

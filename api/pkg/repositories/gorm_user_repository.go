@@ -154,7 +154,6 @@ func (repository *gormUserRepository) LoadAuthContext(ctx context.Context, apiKe
 	defer span.End()
 
 	if authUser, found := repository.cache.Get(apiKey); found {
-		ctxLogger.Info(fmt.Sprintf("cache hit for user with ID [%s]", authUser.ID))
 		return authUser, nil
 	}
 

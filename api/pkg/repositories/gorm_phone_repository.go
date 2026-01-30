@@ -123,7 +123,6 @@ func (repository *gormPhoneRepository) Load(ctx context.Context, userID entities
 	defer span.End()
 
 	if phone, found := repository.cache.Get(repository.getCacheKey(userID, phoneNumber)); found {
-		ctxLogger.Info(fmt.Sprintf("cache hit for [%T] with ID [%s]", phone, userID))
 		return phone, nil
 	}
 

@@ -18,11 +18,6 @@ func HTTPRequestLogger(tracer telemetry.Tracer, logger telemetry.Logger) fiber.H
 		_, span, ctxLogger := tracer.StartFromFiberCtxWithLogger(c, logger)
 		defer span.End()
 
-		ctxLogger.WithString("http.method", c.Method()).
-			WithString("http.path", c.Path()).
-			WithString("client.version", c.Get(clientVersionHeader)).
-			Trace(fmt.Sprintf("%s %s", c.Method(), c.OriginalURL()))
-
 		response := c.Next()
 
 		statusCode := c.Response().StatusCode()

@@ -98,7 +98,6 @@ func (repository *gormPhoneAPIKeyRepository) LoadAuthContext(ctx context.Context
 	defer span.End()
 
 	if authContext, found := repository.cache.Get(apiKey); found {
-		ctxLogger.Info(fmt.Sprintf("cache hit for user with ID [%s] and phone API Key ID [%s]", authContext.ID, *authContext.PhoneAPIKeyID))
 		return authContext, nil
 	}
 

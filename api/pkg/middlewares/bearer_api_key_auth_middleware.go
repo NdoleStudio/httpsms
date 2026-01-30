@@ -15,10 +15,8 @@ func BearerAPIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepo
 	logger = logger.WithService("middlewares.APIKeyAuth")
 
 	return func(c *fiber.Ctx) error {
-		ctx, span := tracer.StartFromFiberCtx(c, "middlewares.APIKeyAuth")
+		ctx, span, _ := tracer.StartFromFiberCtxWithLogger(c, logger, "middlewares.APIKeyAuth")
 		defer span.End()
-
-		ctxLogger := tracer.CtxLogger(logger, span)
 
 		apiKey := strings.TrimSpace(strings.Replace(c.Get(authHeaderBearer), bearerScheme, "", 1))
 		if len(apiKey) == 0 {
@@ -33,9 +31,6 @@ func BearerAPIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepo
 		}
 
 		c.Locals(ContextKeyAuthUserID, authUser)
-
-		ctxLogger.Info(fmt.Sprintf("[%T] set successfully for user with ID [%s]", authUser, authUser.ID))
-
 		return c.Next()
 	}
 }
