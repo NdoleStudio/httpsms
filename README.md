@@ -227,8 +227,10 @@ docker compose up --build
 
 ### 6. Create the System User
 
-- The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database.
-  Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file
+- The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database. Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file. You can create a system user with this SQL command `INSERT INTO users (id, api_key, email ) VALUES ('your-system-user-id', 'your-system-api-key', 'system@domain.com');`
+
+> [!TIP]
+> Restart your API docker container after setting the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file
 
 ### 7. Build the Android App.
 
