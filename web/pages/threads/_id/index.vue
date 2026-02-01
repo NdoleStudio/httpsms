@@ -427,6 +427,11 @@ export default Vue.extend({
         this.loadMessages(false)
       }
     })
+    this.webhookChannel.bind('message.phone.received', () => {
+      if (!this.loadingMessages) {
+        this.loadMessages(false)
+      }
+    })
   },
 
   beforeDestroy() {

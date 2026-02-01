@@ -50,9 +50,6 @@ export default class DefaultLayout extends Vue {
       channel.bind('phone.updated', () => {
         this.canPoll = true
       })
-      channel.bind('message.phone.received', () => {
-        this.canPoll = true
-      })
 
       this.startPoller()
     }, 10_000) // delay so that the auth user is present
@@ -78,7 +75,6 @@ export default class DefaultLayout extends Vue {
         promises.push(
           this.$store.dispatch('loadPhones', true),
           this.$store.dispatch('loadThreads'),
-          this.$store.dispatch('loadMessages'),
           this.$store.dispatch('getHeartbeat'),
         )
       }
