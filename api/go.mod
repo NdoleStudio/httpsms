@@ -31,7 +31,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/jszwec/csvutil v1.10.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/matcornic/hermes v1.3.0
 	github.com/nyaruka/phonenumbers v1.6.7
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
