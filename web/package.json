@@ -68,7 +68,7 @@
     "axios": "^0.30.2",
     "babel-core": "7.0.0-bridge.0",
     "babel-jest": "^30.2.0",
-    "eslint": "^8.57.1",
+    "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-nuxt": "^4.0.0",
     "eslint-plugin-vue": "^9.33.0",
