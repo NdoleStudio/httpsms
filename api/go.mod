@@ -7,7 +7,7 @@ toolchain go1.24.3
 require (
 	cloud.google.com/go/cloudtasks v1.13.7
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.31.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.13
 	github.com/NdoleStudio/lemonsqueezy-go v1.3.1
