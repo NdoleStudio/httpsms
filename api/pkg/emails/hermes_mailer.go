@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/matcornic/hermes"
+	"github.com/go-hermes/hermes/v2"
 )
 
 // HermesGeneratorConfig contains details for the generator

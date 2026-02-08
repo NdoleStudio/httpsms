@@ -1,9 +1,13 @@
 package emails
 
-import "github.com/matcornic/hermes"
+import "github.com/go-hermes/hermes/v2"
 
 // hermesTheme is the theme by default
 type hermesTheme struct{}
+
+func (dt *hermesTheme) Styles() hermes.StylesDefinition {
+	return hermes.Default{}.Styles()
+}
 
 func newHermesTheme() hermes.Theme {
 	return &hermesTheme{}

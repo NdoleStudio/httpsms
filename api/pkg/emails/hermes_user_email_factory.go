@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/matcornic/hermes"
+	"github.com/go-hermes/hermes/v2"
 	"github.com/palantir/stacktrace"
 )
 

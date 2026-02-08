@@ -7,7 +7,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/matcornic/hermes"
+	"github.com/go-hermes/hermes/v2"
 	"github.com/palantir/stacktrace"
 )
 
@@ -33,11 +33,11 @@ func (factory *hermesNotificationEmailFactory) DiscordSendFailed(user *entities.
 				fmt.Sprintf("We ran into an error while fowarding an incoming SMS to your discord server at %s", user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"Discord Channel ID", payload.DiscordChannelID},
-				{"Event Name", payload.EventType},
-				{"Phone Number", factory.formatPhoneNumber(payload.Owner)},
-				{"HTTP Response Code", factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
-				{"Error Message / HTTP Response", payload.ErrorMessage},
+				{Key: "Discord Channel ID", Value: payload.DiscordChannelID},
+				{Key: "Event Name", Value: payload.EventType},
+				{Key: "Phone Number", Value: factory.formatPhoneNumber(payload.Owner)},
+				{Key: "HTTP Response Code", Value: factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
+				{Key: "Error Message / HTTP Response", Value: payload.ErrorMessage},
 			},
 			Actions: []hermes.Action{
 				{
@@ -83,13 +83,13 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 				fmt.Sprintf("We ran into an error while fowarding a webhook event from httpSMS to your webserver at %s", user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"Server URL", payload.WebhookURL},
-				{"Event Name", payload.EventType},
-				{"Event ID", payload.EventID},
-				{"Phone Number", factory.formatPhoneNumber(payload.Owner)},
-				{"HTTP Response Code", factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
-				{"Error Message / HTTP Response", payload.ErrorMessage},
-				{"Event Payload", payload.EventPayload},
+				{Key: "Server URL", Value: payload.WebhookURL},
+				{Key: "Event Name", Value: payload.EventType},
+				{Key: "Event ID", Value: payload.EventID},
+				{Key: "Phone Number", Value: factory.formatPhoneNumber(payload.Owner)},
+				{Key: "HTTP Response Code", Value: factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
+				{Key: "Error Message / HTTP Response", Value: payload.ErrorMessage},
+				{Key: "Event Payload", Value: payload.EventPayload},
 			},
 			Actions: []hermes.Action{
 				{
@@ -135,11 +135,11 @@ func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.Use
 				fmt.Sprintf("The SMS message which you sent to %s has expired at %s and you will need to resend this message.", factory.formatPhoneNumber(payload.Contact), user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"ID", payload.MessageID.String()},
-				{"From", factory.formatPhoneNumber(payload.Owner)},
-				{"To", factory.formatPhoneNumber(payload.Contact)},
-				{"Message", payload.Content},
-				{"Encrypted", factory.formatBool(payload.Encrypted)},
+				{Key: "ID", Value: payload.MessageID.String()},
+				{Key: "From", Value: factory.formatPhoneNumber(payload.Owner)},
+				{Key: "To", Value: factory.formatPhoneNumber(payload.Contact)},
+				{Key: "Message", Value: payload.Content},
+				{Key: "Encrypted", Value: factory.formatBool(payload.Encrypted)},
 			},
 			Actions: []hermes.Action{
 				{
@@ -185,12 +185,12 @@ func (factory *hermesNotificationEmailFactory) MessageFailed(user *entities.User
 				fmt.Sprintf("The SMS message which you sent to %s has failed at %s and you will need to resend this message.", factory.formatPhoneNumber(payload.Contact), user.UserTimeString(time.Now())),
 			},
 			Dictionary: []hermes.Entry{
-				{"ID", payload.ID.String()},
-				{"From", factory.formatPhoneNumber(payload.Owner)},
-				{"To", factory.formatPhoneNumber(payload.Contact)},
-				{"Message", payload.Content},
-				{"Encrypted", factory.formatBool(payload.Encrypted)},
-				{"Failure Reason", payload.ErrorMessage},
+				{Key: "ID", Value: payload.ID.String()},
+				{Key: "From", Value: factory.formatPhoneNumber(payload.Owner)},
+				{Key: "To", Value: factory.formatPhoneNumber(payload.Contact)},
+				{Key: "Message", Value: payload.Content},
+				{Key: "Encrypted", Value: factory.formatBool(payload.Encrypted)},
+				{Key: "Failure Reason", Value: payload.ErrorMessage},
 			},
 			Actions: []hermes.Action{
 				{
