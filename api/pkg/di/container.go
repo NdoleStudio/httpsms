@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	plunk "github.com/NdoleStudio/plunk-go"
 	"github.com/pusher/pusher-http-go/v5"
+	"gorm.io/driver/sqlite"
 
 	"github.com/NdoleStudio/httpsms/docs"
 
@@ -228,6 +230,16 @@ func (container *Container) GormLogger() gormLogger.Interface {
 	)
 }
 
+func (container *Container) connect(dsn string, config *gorm.Config) (db *gorm.DB, err error) {
+	if strings.HasPrefix(dsn, "postgres://") {
+		return gorm.Open(postgres.Open(dsn), config)
+	}
+	return gorm.Open(sqlite.New(sqlite.Config{
+		DriverName: "libsql",
+		DSN:        dsn,
+	}), config)
+}
+
 // DedicatedDB creates an instance of gorm.DB if it has not been created already
 func (container *Container) DedicatedDB() (db *gorm.DB) {
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
@@ -242,7 +254,7 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		config = &gorm.Config{Logger: container.GormLogger()}
 	}
 
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL_DEDICATED")), config)
+	db, err := container.connect(os.Getenv("DATABASE_URL_DEDICATED"), config)
 	if err != nil {
 		container.logger.Fatal(err)
 	}
