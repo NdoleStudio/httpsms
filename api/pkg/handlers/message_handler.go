@@ -483,7 +483,7 @@ func (h *MessageHandler) Get(c *fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseNoContent(c, "message fetched successfully")
+	return h.responseOK(c, "message fetched successfully", message)
 }
 
 // PostCallMissed registers a missed phone call
