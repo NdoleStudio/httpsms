@@ -54,6 +54,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fibe
 	router.Post("/v1/messages/bulk-send", h.computeRoute(middlewares, h.BulkSend)...)
 	router.Get("/v1/messages", h.computeRoute(middlewares, h.Index)...)
 	router.Get("/v1/messages/search", h.computeRoute(middlewares, h.Search)...)
+	router.Get("/v1/messages/:messageID", h.computeRoute(middlewares, h.Get)...)
 	router.Delete("/v1/messages/:messageID", h.computeRoute(middlewares, h.Delete)...)
 }
 
@@ -441,6 +442,48 @@ func (h *MessageHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return h.responseNoContent(c, "message deleted successfully")
+}
+
+// Get a message
+// @Summary      Get a message from the database.
+// @Description  Get a message from the database by the message ID.
+// @Security	 ApiKeyAuth
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param 		 messageID 	path		string 							true 	"ID of the message" 			default(32343a19-da5e-4b1b-a767-3298a73703ca)
+// @Success      204  		{object} 	responses.MessageResponse
+// @Failure      400  		{object}  	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure 	 404		{object}	responses.NotFound
+// @Failure      422  		{object} 	responses.UnprocessableEntity
+// @Failure      500  		{object}  	responses.InternalServerError
+// @Router       /messages/{messageID} [get]
+func (h *MessageHandler) Get(c *fiber.Ctx) error {
+	ctx, span := h.tracer.StartFromFiberCtx(c)
+	defer span.End()
+
+	ctxLogger := h.tracer.CtxLogger(h.logger, span)
+
+	messageID := c.Params("messageID")
+	if errors := h.validator.ValidateUUID(messageID, "messageID"); len(errors) != 0 {
+		msg := fmt.Sprintf("validation errors [%s], while deleting a message with ID [%s]", spew.Sdump(errors), messageID)
+		ctxLogger.Warn(stacktrace.NewError(msg))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
+	}
+
+	message, err := h.service.GetMessage(ctx, h.userIDFomContext(c), uuid.MustParse(messageID))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message with ID [%s]", messageID))
+	}
+
+	if err != nil {
+		msg := fmt.Sprintf("cannot find message with id [%s]", messageID)
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseNoContent(c, "message fetched successfully")
 }
 
 // PostCallMissed registers a missed phone call
