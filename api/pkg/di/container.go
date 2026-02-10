@@ -1449,8 +1449,8 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 // RegisterMessageRoutes registers routes for the /messages prefix
 func (container *Container) RegisterMessageRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageHandler{}))
-	container.MessageHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 	container.MessageHandler().RegisterPhoneAPIKeyRoutes(container.App(), container.PhoneAPIKeyMiddleware(), container.AuthenticatedMiddleware())
+	container.MessageHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterBulkMessageRoutes registers routes for the /bulk-messages prefix
