@@ -1,8 +1,10 @@
 package repositories
 
 import (
+	"strings"
 	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/palantir/stacktrace"
 )
 
@@ -21,3 +23,21 @@ const (
 
 	dbOperationDuration = 5 * time.Second
 )
+
+// isRetryableError checks if the error is a retryable connection error
+func isRetryableError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "bad connection") ||
+		strings.Contains(msg, "stream is closed") ||
+		strings.Contains(msg, "driver: bad connection")
+}
+
+// executeWithRetry executes a GORM query with retry logic for transient connection errors
+func executeWithRetry(fn func() error) (err error) {
+	return retry.Do(
+		fn,
+		retry.Attempts(3),
+		retry.Delay(100*time.Millisecond),
+		retry.RetryIf(isRetryableError),
+	)
+}

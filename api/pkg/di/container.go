@@ -266,7 +266,7 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(0)
-	sqlDB.SetConnMaxLifetime(-1)
+	sqlDB.SetConnMaxLifetime(10 * time.Second)
 
 	if err = db.Use(tracing.NewPlugin()); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
