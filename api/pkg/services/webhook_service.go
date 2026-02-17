@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -212,7 +212,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 	defer span.End()
 
 	attempts := 0
-	err := retry.Do(func() error {
+	err := retry.New(retry.Attempts(2)).Do(func() error {
 		attempts++
 
 		requestCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -252,7 +252,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 
 		ctxLogger.Info(fmt.Sprintf("sent webhook to url [%s] for event [%s] with ID [%s] and response code [%d]", webhook.URL, event.Type(), event.ID(), response.StatusCode))
 		return nil
-	}, retry.Attempts(2))
+	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot handle [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))

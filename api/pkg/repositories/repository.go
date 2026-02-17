@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v5"
 	"github.com/palantir/stacktrace"
 )
 
@@ -34,11 +34,10 @@ func isRetryableError(err error) bool {
 
 // executeWithRetry executes a GORM query with retry logic for transient connection errors
 func executeWithRetry(fn func() error) (err error) {
-	return retry.Do(
-		fn,
+	return retry.New(
 		retry.LastErrorOnly(true),
 		retry.Attempts(3),
 		retry.Delay(100*time.Millisecond),
 		retry.RetryIf(isRetryableError),
-	)
+	).Do(fn)
 }

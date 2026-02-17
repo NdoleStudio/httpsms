@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v5"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
@@ -39,10 +39,10 @@ func NewGooglePushQueue(
 
 // Enqueue a task to the queue
 func (queue *googlePushQueue) Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) (queueID string, err error) {
-	err = retry.Do(func() error {
+	err = retry.New(retry.Attempts(3)).Do(func() error {
 		queueID, err = queue.enqueueImpl(ctx, task, timeout)
 		return err
-	}, retry.Attempts(3))
+	})
 	return queueID, err
 }
 
