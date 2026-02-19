@@ -333,8 +333,12 @@ func (container *Container) DB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
 	}
 
-	container.logger.Debug(fmt.Sprintf("Running migrations for %T", db))
+	if os.Getenv("DATABASE_MIGRATION_SKIP") != "" {
+		container.logger.Debug(fmt.Sprintf("skipping migrations for [%T]", db))
+		return container.db
+	}
 
+	container.logger.Debug(fmt.Sprintf("Running migrations for %T", db))
 	// This prevents a bug in the Gorm AutoMigrate where it tries to delete this no existent constraints
 	db.Exec(`
 ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS uni_users_api_key CHECK (api_key IS NOT NULL);
