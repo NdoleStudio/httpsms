@@ -11,6 +11,8 @@ import java.net.URI
 import java.net.URL
 import java.util.logging.Level
 import java.util.logging.Logger.getLogger
+import java.io.File
+import java.io.FileOutputStream
 
 
 class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
@@ -156,6 +158,51 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
+    fun downloadAttachment(context: Context, urlString: String, messageId: String, attachmentIndex: Int): File? {
+        val request = Request.Builder().url(urlString).build()
+
+        try {
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Timber.e("Failed to download attachment: ${response.code}")
+                response.close()
+                return null
+            }
+
+            val maxSizeBytes = 1.5 * 1024 * 1024 // most (modern?) carriers have a 2MB limit, so targetting 1.5MB should be safe
+            val contentLength = response.body?.contentLength() ?: -1L
+            if (contentLength > maxSizeBytes) {
+                Timber.e("Attachment is too large ($contentLength bytes).")
+                response.close()
+                return null
+            }
+
+            val mmsDir = File(context.cacheDir, "mms_attachments")
+            if (!mmsDir.exists()) {
+                mmsDir.mkdirs()
+            }
+
+            val tempFile = File(mmsDir, "mms_${messageId}_$attachmentIndex")
+            val inputStream = response.body?.byteStream()
+            val outputStream = FileOutputStream(tempFile)
+            inputStream?.copyTo(outputStream)
+            
+            outputStream.close()
+            inputStream?.close()
+            response.close()
+
+            if (tempFile.length() > maxSizeBytes) {
+                tempFile.delete()
+                Timber.e("Downloaded file exceeded 1.5MB limit.")
+                return null
+            }
+
+            return tempFile
+        } catch (e: Exception) {
+            Timber.e(e, "Exception while downloading attachment")
+            return null
+        }
+    }
 
     private fun sendEvent(messageId: String, event: String, timestamp: String, reason: String? = null): Boolean {
         var reasonString = "null"
