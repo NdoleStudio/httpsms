@@ -95,8 +95,13 @@
               <v-list-item-title>
                 {{ thread.contact | phoneNumber }}
               </v-list-item-title>
-              <v-list-item-subtitle>
-                {{ thread.last_message_content }}
+              <v-list-item-subtitle class="text--secondary">
+                <span v-if="thread.last_message_content">
+                  {{ thread.last_message_content }}
+                </span>
+                <span v-else>
+                  <v-icon small>{{ mdiPaperclip }}</v-icon> Multimedia Message
+                </span>
               </v-list-item-subtitle>
             </v-list-item-content>
             <v-list-item-action>
@@ -150,6 +155,7 @@ import {
   mdiCheck,
   mdiAlert,
   mdiAccount,
+  mdiPaperclip,
 } from '@mdi/js'
 
 @Component
@@ -160,6 +166,7 @@ export default class MessageThread extends Vue {
   mdiAlert = mdiAlert
   mdiCheck = mdiCheck
   mdiCheckAll = mdiCheckAll
+  mdiPaperclip = mdiPaperclip
 
   get threads(): Array<MessageThread> {
     return this.$store.getters.getThreads
