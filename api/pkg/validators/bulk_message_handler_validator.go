@@ -143,11 +143,17 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 			}
 		}
 
+		var attachmentURLs string
+		if len(row) > 4 && strings.TrimSpace(row[4]) != "" {
+			attachmentURLs = strings.TrimSpace(row[4])
+		}
+
 		messages = append(messages, &requests.BulkMessage{
 			FromPhoneNumber: strings.TrimSpace(row[0]),
 			ToPhoneNumber:   strings.TrimSpace(row[1]),
 			Content:         row[2],
 			SendTime:        sendAt,
+			AttachmentURLs:  attachmentURLs,
 		})
 	}
 
