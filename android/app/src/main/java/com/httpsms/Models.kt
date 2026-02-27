@@ -29,6 +29,7 @@ data class Phone (
     val userID: String,
 )
 
+// mms attachment
 data class Attachment (
     @Json(name = "content_type")
     val contentType: String,

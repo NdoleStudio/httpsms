@@ -158,6 +158,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
+    // Downloads the attachment URL content locally
     fun downloadAttachment(context: Context, urlString: String, messageId: String, attachmentIndex: Int): File? {
         val request = Request.Builder().url(urlString).build()
 
