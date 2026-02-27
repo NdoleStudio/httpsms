@@ -17,6 +17,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/dustin/go-humanize"
 	"github.com/jszwec/csvutil"
 	"github.com/nyaruka/phonenumbers"
@@ -30,6 +31,7 @@ type BulkMessageHandlerValidator struct {
 	userService  *services.UserService
 	logger       telemetry.Logger
 	tracer       telemetry.Tracer
+	cache        cache.Cache
 }
 
 // NewBulkMessageHandlerValidator creates a new handlers.BulkMessageHandlerValidator validator
@@ -38,12 +40,14 @@ func NewBulkMessageHandlerValidator(
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
 	userService *services.UserService,
+	appCache cache.Cache,
 ) (v *BulkMessageHandlerValidator) {
 	return &BulkMessageHandlerValidator{
 		logger:       logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:       tracer,
 		userService:  userService,
 		phoneService: phoneService,
+		cache:        appCache,
 	}
 }
 
@@ -79,7 +83,7 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 		messages[index] = message.Sanitize()
 	}
 
-	result = v.validateMessages(messages)
+	result = v.validateMessages(ctx, messages)
 	if len(result) != 0 {
 		return messages, result
 	}
@@ -215,7 +219,7 @@ func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user 
 	return messages, url.Values{}
 }
 
-func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.BulkMessage) url.Values {
+func (v *BulkMessageHandlerValidator) validateMessages(ctx context.Context, messages []*requests.BulkMessage) url.Values {
 	result := url.Values{}
 	for index, message := range messages {
 
@@ -238,7 +242,7 @@ func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.Bulk
 				} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] must use http or https.", index+2, cleanURL))
 				} else {
-					if err := validateAttachmentURL(cleanURL); err != nil {
+					if err := validateAttachmentURL(ctx, v.cache, cleanURL); err != nil {
 						result.Add("attachments", fmt.Sprintf("Row [%d]: The attachment URL [%s] failed validation: %s", index+2, cleanURL, err.Error()))
 					}
 				}

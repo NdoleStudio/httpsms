@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/nyaruka/phonenumbers"
@@ -163,31 +165,53 @@ func (validator *validator) ValidateUUID(ID string, name string) url.Values {
 	return v.ValidateStruct()
 }
 
-func validateAttachmentURL(attachmentURL string) error {
+func validateAttachmentURL(ctx context.Context, c cache.Cache, attachmentURL string) error {
+	cacheKey := "mms-url-validation:" + attachmentURL
+
+	if cachedVal, err := c.Get(ctx, cacheKey); err == nil {
+		if cachedVal == "valid" {
+			return nil
+		}
+		return fmt.Errorf(cachedVal)
+	}
+
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
 	req, err := http.NewRequest(http.MethodHead, attachmentURL, nil)
 	if err != nil {
-		return fmt.Errorf("invalid url format")
+		errMsg := fmt.Sprintf("invalid url format")
+		saveToCache(ctx, c, cacheKey, errMsg)
+		return fmt.Errorf(errMsg)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("could not reach the url")
+		errMsg := fmt.Sprintf("could not reach the url")
+		saveToCache(ctx, c, cacheKey, errMsg)
+		return fmt.Errorf(errMsg)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return fmt.Errorf("url returned an error status code: %d", resp.StatusCode)
+		errMsg := fmt.Sprintf("url returned an error status code: %d", resp.StatusCode)
+		saveToCache(ctx, c, cacheKey, errMsg)
+		return fmt.Errorf(errMsg)
 	}
 
 	const maxSizeBytes = 1.5 * 1024 * 1024
 
 	if resp.ContentLength > int64(maxSizeBytes) {
-		return fmt.Errorf("file size (%.2f MB) exceeds the 1.5 MB carrier limit", float64(resp.ContentLength)/(1024*1024))
+		errMsg := fmt.Sprintf("file size (%.2f MB) exceeds the 1.5 MB carrier limit", float64(resp.ContentLength)/(1024*1024))
+		saveToCache(ctx, c, cacheKey, errMsg)
+		return fmt.Errorf(errMsg)
 	}
 
+	saveToCache(ctx, c, cacheKey, "valid")
 	return nil
+}
+
+func saveToCache(ctx context.Context, c cache.Cache, key string, value string) {
+	_ = c.Set(ctx, key, value, 24*time.Hour)
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/palantir/stacktrace"
@@ -25,6 +26,7 @@ type MessageHandlerValidator struct {
 	tracer         telemetry.Tracer
 	phoneService   *services.PhoneService
 	tokenValidator *TurnstileTokenValidator
+	cache          cache.Cache
 }
 
 // NewMessageHandlerValidator creates a new handlers.MessageHandler validator
@@ -33,12 +35,14 @@ func NewMessageHandlerValidator(
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
 	tokenValidator *TurnstileTokenValidator,
+	appCache cache.Cache,
 ) (v *MessageHandlerValidator) {
 	return &MessageHandlerValidator{
 		logger:         logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:         tracer,
 		phoneService:   phoneService,
 		tokenValidator: tokenValidator,
+		cache:          appCache,
 	}
 }
 
@@ -124,7 +128,7 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 			} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 				result.Add("attachments", fmt.Sprintf("attachment at index %d must use http or https scheme", i))
 			} else {
-				if err := validateAttachmentURL(attachment.URL); err != nil {
+				if err := validateAttachmentURL(ctx, validator.cache, attachment.URL); err != nil {
 					result.Add("attachments", fmt.Sprintf("attachment at index %d failed validation: %s", i, err.Error()))
 				}
 			}
@@ -199,7 +203,7 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 			} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 				result.Add("attachments", fmt.Sprintf("attachment at index %d must use http or https scheme", i))
 			} else {
-				if err := validateAttachmentURL(attachment.URL); err != nil {
+				if err := validateAttachmentURL(ctx, validator.cache, attachment.URL); err != nil {
 					result.Add("attachments", fmt.Sprintf("attachment at index %d failed validation: %s", i, err.Error()))
 				}
 			}
