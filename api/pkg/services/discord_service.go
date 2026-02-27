@@ -169,6 +169,12 @@ func (service *DiscordService) createSlashCommand(ctx context.Context, serverID 
 				Type:        3,
 				Required:    true,
 			},
+			{
+				Name:        "attachment_urls",
+				Description: "Comma-separated list of media URLs to attach",
+				Type:        3,
+				Required:    false,
+			},
 		},
 	})
 	if err != nil {
