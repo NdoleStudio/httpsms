@@ -29,6 +29,13 @@ data class Phone (
     val userID: String,
 )
 
+data class Attachment (
+    @Json(name = "content_type")
+    val contentType: String,
+    
+    val url: String
+)
+
 data class Message (
     val contact: String,
     val content: String,
@@ -69,4 +76,6 @@ data class Message (
 
     @Json(name = "updated_at")
     val updatedAt: String
+
+    val attachments: List<Attachment>? = null
 )
