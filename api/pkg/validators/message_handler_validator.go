@@ -114,11 +114,10 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 		if strings.TrimSpace(attachment.ContentType) == "" {
 			result.Add("attachments", fmt.Sprintf("attachment at index %d is missing content_type", i))
 		}
-		
+
 		if strings.TrimSpace(attachment.URL) == "" {
 			result.Add("attachments", fmt.Sprintf("attachment at index %d is missing url", i))
 		} else {
-			// Basic URL validation
 			parsedURL, err := url.ParseRequestURI(attachment.URL)
 			if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
 				result.Add("attachments", fmt.Sprintf("attachment at index %d has an invalid url format", i))
@@ -176,6 +175,27 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 	result := v.ValidateStruct()
 	if len(result) != 0 {
 		return result
+	}
+
+	if len(request.Attachments) > 10 {
+		result.Add("attachments", "you cannot attach more than 10 files to a single message")
+	}
+
+	for i, attachment := range request.Attachments {
+		if strings.TrimSpace(attachment.ContentType) == "" {
+			result.Add("attachments", fmt.Sprintf("attachment at index %d is missing content_type", i))
+		}
+
+		if strings.TrimSpace(attachment.URL) == "" {
+			result.Add("attachments", fmt.Sprintf("attachment at index %d is missing url", i))
+		} else {
+			parsedURL, err := url.ParseRequestURI(attachment.URL)
+			if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+				result.Add("attachments", fmt.Sprintf("attachment at index %d has an invalid url format", i))
+			} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+				result.Add("attachments", fmt.Sprintf("attachment at index %d must use http or https scheme", i))
+			}
+		}
 	}
 
 	_, err := validator.phoneService.Load(ctx, userID, request.From)
