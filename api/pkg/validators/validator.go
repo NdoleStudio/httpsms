@@ -2,9 +2,11 @@ package validators
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
@@ -159,4 +161,33 @@ func (validator *validator) ValidateUUID(ID string, name string) url.Values {
 	})
 
 	return v.ValidateStruct()
+}
+
+func validateAttachmentURL(attachmentURL string) error {
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodHead, attachmentURL, nil)
+	if err != nil {
+		return fmt.Errorf("invalid url format")
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("could not reach the url")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return fmt.Errorf("url returned an error status code: %d", resp.StatusCode)
+	}
+
+	const maxSizeBytes = 1.5 * 1024 * 1024
+
+	if resp.ContentLength > int64(maxSizeBytes) {
+		return fmt.Errorf("file size (%.2f MB) exceeds the 1.5 MB carrier limit", float64(resp.ContentLength)/(1024*1024))
+	}
+
+	return nil
 }

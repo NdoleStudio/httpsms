@@ -221,7 +221,7 @@ func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.Bulk
 
 		if message.AttachmentURLs != "" {
 			urls := strings.Split(message.AttachmentURLs, ",")
-			
+
 			if len(urls) > 10 {
 				result.Add("document", fmt.Sprintf("Row [%d]: You cannot attach more than 10 files per message.", index+2))
 			}
@@ -237,6 +237,10 @@ func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.Bulk
 					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] has an invalid url format.", index+2, cleanURL))
 				} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] must use http or https.", index+2, cleanURL))
+				} else {
+					if err := validateAttachmentURL(cleanURL); err != nil {
+						result.Add("attachments", fmt.Sprintf("Row [%d]: The attachment URL [%s] failed validation: %s", index+2, cleanURL, err.Error()))
+					}
 				}
 			}
 		}

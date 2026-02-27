@@ -77,19 +77,8 @@ class SmsManagerService {
         }
     }
 
-    fun sendMultimediaMessage(
-        context: Context, 
-        pduUri: android.net.Uri, 
-        sim: String, 
-        sentIntent: PendingIntent
-    ) {
+    fun sendMultimediaMessage(context: Context, pduUri: android.net.Uri, sim: String, sentIntent: PendingIntent) {
         val smsManager = getSmsManager(context, sim)
-        smsManager.sendMultimediaMessage(
-            context, 
-            pduUri, 
-            null,
-            null,
-            sentIntent
-        )
+        smsManager.sendMultimediaMessage(context, pduUri, null, null, sentIntent)
     }
 }

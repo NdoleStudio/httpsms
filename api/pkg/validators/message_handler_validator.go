@@ -123,6 +123,10 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 				result.Add("attachments", fmt.Sprintf("attachment at index %d has an invalid url format", i))
 			} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 				result.Add("attachments", fmt.Sprintf("attachment at index %d must use http or https scheme", i))
+			} else {
+				if err := validateAttachmentURL(attachment.URL); err != nil {
+					result.Add("attachments", fmt.Sprintf("attachment at index %d failed validation: %s", i, err.Error()))
+				}
 			}
 		}
 	}
