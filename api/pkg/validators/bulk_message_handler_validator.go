@@ -218,6 +218,29 @@ func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user 
 func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.BulkMessage) url.Values {
 	result := url.Values{}
 	for index, message := range messages {
+
+		if message.AttachmentURLs != "" {
+			urls := strings.Split(message.AttachmentURLs, ",")
+			
+			if len(urls) > 10 {
+				result.Add("document", fmt.Sprintf("Row [%d]: You cannot attach more than 10 files per message.", index+2))
+			}
+
+			for _, u := range urls {
+				cleanURL := strings.TrimSpace(u)
+				if cleanURL == "" {
+					continue
+				}
+
+				parsedURL, err := url.ParseRequestURI(cleanURL)
+				if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] has an invalid url format.", index+2, cleanURL))
+				} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] must use http or https.", index+2, cleanURL))
+				}
+			}
+		}
+
 		if _, err := phonenumbers.Parse(message.FromPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
 			result.Add("document", fmt.Sprintf("Row [%d]: The FromPhoneNumber [%s] is not a valid E.164 phone number", index+2, message.FromPhoneNumber))
 		}
