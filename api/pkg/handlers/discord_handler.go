@@ -375,6 +375,19 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c *fiber.Ctx, payload map[
 		},
 	}
 
+	if len(request.Attachments) > 0 {
+		var urls []string
+		for _, att := range request.Attachments {
+			urls = append(urls, att.URL)
+		}
+		
+		fields := messageEmbed["fields"].([]fiber.Map)
+		messageEmbed["fields"] = append(fields, fiber.Map{
+			"name":  "Attachments:",
+			"value": strings.Join(urls, "\n"),
+		})
+	}
+
 	if errors := h.messageValidator.ValidateMessageSend(ctx, discord.UserID, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
 		ctxLogger.Warn(stacktrace.NewError(msg))
