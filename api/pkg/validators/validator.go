@@ -213,5 +213,5 @@ func validateAttachmentURL(ctx context.Context, c cache.Cache, attachmentURL str
 }
 
 func saveToCache(ctx context.Context, c cache.Cache, key string, value string) {
-	_ = c.Set(ctx, key, value, 24*time.Hour)
+	_ = c.Set(ctx, key, value, 15*time.Minute)
 }
