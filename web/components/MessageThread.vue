@@ -96,11 +96,8 @@
                 {{ thread.contact | phoneNumber }}
               </v-list-item-title>
               <v-list-item-subtitle class="text--secondary">
-                <span v-if="thread.last_message_content">
+                <span>
                   {{ thread.last_message_content }}
-                </span>
-                <span v-else>
-                  <v-icon small>{{ mdiPaperclip }}</v-icon> Multimedia Message
                 </span>
               </v-list-item-subtitle>
             </v-list-item-content>
