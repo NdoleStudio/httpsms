@@ -76,7 +76,7 @@ data class Message (
     val type: String,
 
     @Json(name = "updated_at")
-    val updatedAt: String
+    val updatedAt: String,
 
     val attachments: List<Attachment>? = null
 )

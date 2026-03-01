@@ -14,6 +14,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import timber.log.Timber
+import java.io.File
 
 internal class SentReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
