@@ -303,19 +303,7 @@ func (h *DiscordHandler) createRequest(payload map[string]any) requests.MessageS
 				continue
 			}
 
-			// Same as with bulk CSV attachments, can't easily ask for the MIME type so
-			// just inferring based on the file extension
-			contentType := "application/octet-stream"
-			lowerURL := strings.ToLower(cleanURL)
-			if strings.HasSuffix(lowerURL, ".jpg") || strings.HasSuffix(lowerURL, ".jpeg") {
-				contentType = "image/jpeg"
-			} else if strings.HasSuffix(lowerURL, ".png") {
-				contentType = "image/png"
-			} else if strings.HasSuffix(lowerURL, ".gif") {
-				contentType = "image/gif"
-			} else if strings.HasSuffix(lowerURL, ".mp4") {
-				contentType = "video/mp4"
-			}
+			contentType := entities.GetAttachmentContentType(cleanURL)
 
 			attachments = append(attachments, entities.MessageAttachment{
 				ContentType: contentType,

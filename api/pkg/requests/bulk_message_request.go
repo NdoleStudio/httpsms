@@ -43,18 +43,7 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 				continue
 			}
 
-			// Since there's no easy way to set a type in the CSV, defaulting to octet-stream and then just checking the file extension in the URL
-			contentType := "application/octet-stream"
-			lowerURL := strings.ToLower(cleanURL)
-			if strings.HasSuffix(lowerURL, ".jpg") || strings.HasSuffix(lowerURL, ".jpeg") {
-				contentType = "image/jpeg"
-			} else if strings.HasSuffix(lowerURL, ".png") {
-				contentType = "image/png"
-			} else if strings.HasSuffix(lowerURL, ".gif") {
-				contentType = "image/gif"
-			} else if strings.HasSuffix(lowerURL, ".mp4") {
-				contentType = "video/mp4"
-			}
+			contentType := entities.GetAttachmentContentType(cleanURL)
 
 			attachments = append(attachments, entities.MessageAttachment{
 				ContentType: contentType,

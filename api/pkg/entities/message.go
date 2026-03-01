@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -232,4 +233,20 @@ func (message *Message) updateOrderTimestamp(timestamp time.Time) {
 	if timestamp.UnixNano() > message.OrderTimestamp.UnixNano() {
 		message.OrderTimestamp = timestamp
 	}
+}
+
+func GetAttachmentContentType(url string) string {
+	// Since there's no easy way to set a type in the CSV, defaulting to octet-stream and then just checking the file extension in the URL
+	contentType := "application/octet-stream"
+	lowerURL := strings.ToLower(url)
+	if strings.HasSuffix(lowerURL, ".jpg") || strings.HasSuffix(lowerURL, ".jpeg") {
+		contentType = "image/jpeg"
+	} else if strings.HasSuffix(lowerURL, ".png") {
+		contentType = "image/png"
+	} else if strings.HasSuffix(lowerURL, ".gif") {
+		contentType = "image/gif"
+	} else if strings.HasSuffix(lowerURL, ".mp4") {
+		contentType = "video/mp4"
+	}
+	return contentType
 }
