@@ -13,6 +13,9 @@ import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 
 
 class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
@@ -158,6 +161,28 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
+    fun InputStream.copyToWithLimit(
+        out: OutputStream, 
+        limit: Long, 
+        bufferSize: Int = DEFAULT_BUFFER_SIZE
+    ): Long {
+        var bytesCopied: Long = 0
+        val buffer = ByteArray(bufferSize)
+        var bytes = read(buffer)
+        
+        while (bytes >= 0) {
+            bytesCopied += bytes
+            
+            if (bytesCopied > limit) {
+                throw IOException("Download aborted: File exceeded maximum allowed size of $limit bytes.")
+            }
+            
+            out.write(buffer, 0, bytes)
+            bytes = read(buffer)
+        }
+        return bytesCopied
+    }
+
     // Downloads the attachment URL content locally
     fun downloadAttachment(context: Context, urlString: String, messageId: String, attachmentIndex: Int): File? {
         val request = Request.Builder().url(urlString).build()
@@ -186,17 +211,12 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             val tempFile = File(mmsDir, "mms_${messageId}_$attachmentIndex")
             val inputStream = response.body?.byteStream()
             val outputStream = FileOutputStream(tempFile)
-            inputStream?.copyTo(outputStream)
+        
+            inputStream?.copyToWithLimit(outputStream, maxSizeBytes.toLong())
             
             outputStream.close()
             inputStream?.close()
             response.close()
-
-            if (tempFile.length() > maxSizeBytes) {
-                tempFile.delete()
-                Timber.e("Downloaded file exceeded 1.5MB limit.")
-                return null
-            }
 
             return tempFile
         } catch (e: Exception) {
