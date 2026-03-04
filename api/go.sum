@@ -343,8 +343,8 @@ github.com/tiendc/go-deepcopy v1.7.2 h1:Ut2yYR7W9tWjTQitganoIue4UGxZwCcJy3orjrrI
 github.com/tiendc/go-deepcopy v1.7.2/go.mod h1:4bKjNC2r7boYOkD2IOuZpYjmlDdzjbpTRyCx+goBCJQ=
 github.com/tursodatabase/libsql-client-go v0.0.0-20251219100830-236aa1ff8acc h1:lzi/5fg2EfinRlh3v//YyIhnc4tY7BTqazQGwb1ar+0=
 github.com/tursodatabase/libsql-client-go v0.0.0-20251219100830-236aa1ff8acc/go.mod h1:08inkKyguB6CGGssc/JzhmQWwBgFQBgjlYFjxjRh7nU=
-github.com/uptrace/uptrace-go v1.39.0 h1:MszuE3eX/z86xzYywN2JBtYcmsS4ofdo1VMDhRvkWrI=
-github.com/uptrace/uptrace-go v1.39.0/go.mod h1:FquipEqgTMXPbhdhenjbiLHG1R5WYdxVH6zgwHeMzzA=
+github.com/uptrace/uptrace-go v1.40.0 h1:fMva36FZ/eujU60hq+ke9HdYGkXP5jJXUTNeEuWDI+I=
+github.com/uptrace/uptrace-go v1.40.0/go.mod h1:HJhggr8UMkJ+keR8B9o4KsF7kxT8lKH7Ra8X2DRwqdc=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.69.0 h1:fNLLESD2SooWeh2cidsuFtOcrEi4uB4m1mPrkJMZyVI=
@@ -385,6 +385,8 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 h1:7iP2uCb
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0/go.mod h1:c7hN3ddxs/z6q9xwvfLPk+UHlWRQyaeR1LdgfL/66l0=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.65.0 h1:n8qdwrebNEHF/zHpueuZ4OacdJ8CdSaP7xef9WRZXTQ=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.65.0/go.mod h1:Z1pjGxUL3nJ/IbDDfL6rBD0Xbz7ZOViRqrIUg4l1CYE=
+go.opentelemetry.io/contrib/processors/minsev v0.13.0 h1:pADh6ro5deXRfNmry136khTZYWVXn9NKZR5nZuEXtXw=
+go.opentelemetry.io/contrib/processors/minsev v0.13.0/go.mod h1:MC0s+ldbPprTztVZQ/pecYqPSxwfjQkdnCeC3u6uGQU=
 go.opentelemetry.io/contrib/propagators/b3 v1.19.0 h1:ulz44cpm6V5oAeg5Aw9HyqGFMS6XM7untlMEhD7YzzA=
 go.opentelemetry.io/contrib/propagators/b3 v1.19.0/go.mod h1:OzCmE2IVS+asTI+odXQstRGVfXQ4bXv9nMBRK0nNyqQ=
 go.opentelemetry.io/otel v1.40.0 h1:oA5YeOcpRTXq6NN7frwmwFR0Cn3RhTVZvXsP4duvCms=
@@ -547,8 +549,8 @@ google.golang.org/appengine v1.6.8 h1:IhEN5q69dyKagZPYMSdIjS2HqprW324FRQZJcGqPAs
 google.golang.org/appengine v1.6.8/go.mod h1:1jJ3jBArFh5pcgW8gCtRJnepW8FzD1V44FJffLiz/Ds=
 google.golang.org/genproto v0.0.0-20260217200457-a2cb2272a1e9 h1:MzLVemxGdOBt2uziz9LnuYRQQFw1FDV0s0af4GVYE1A=
 google.golang.org/genproto v0.0.0-20260217200457-a2cb2272a1e9/go.mod h1:9mSgs6f8tLwHSr6EzFWG+naa04gb1Zpt4IumYKsRDs0=
-google.golang.org/genproto/googleapis/api v0.0.0-20260217200457-a2cb2272a1e9 h1:yt1EUx2U7D7a0Myzkt7z+RR5hnl6mCdzcUfYHx7LEls=
-google.golang.org/genproto/googleapis/api v0.0.0-20260217200457-a2cb2272a1e9/go.mod h1:S3ojYC5GRm/7ewOSg8Rh+iqeqxS3BLlLKFhVlbYwHuU=
+google.golang.org/genproto/googleapis/api v0.0.0-20260217215200-42d3e9bedb6d h1:EocjzKLywydp5uZ5tJ79iP6Q0UjDnyiHkGRWxuPBP8s=
+google.golang.org/genproto/googleapis/api v0.0.0-20260217215200-42d3e9bedb6d/go.mod h1:48U2I+QQUYhsFrg2SY6r+nJzeOtjey7j//WBESw+qyQ=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d h1:t/LOSXPJ9R0B6fnZNyALBRfZBH0Uy0gT+uR+SJ6syqQ=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d/go.mod h1:4Hqkh8ycfw05ld/3BWL7rJOSfebL2Q+DVDeRgYgxUU8=
 google.golang.org/grpc v1.79.1 h1:zGhSi45ODB9/p3VAawt9a+O/MULLl9dpizzNNpq7flY=
