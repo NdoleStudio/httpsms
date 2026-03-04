@@ -44,7 +44,7 @@ require (
 	github.com/thedevsaddam/govalidator v1.9.10
 	github.com/tursodatabase/libsql-client-go v0.0.0-20251219100830-236aa1ff8acc
 	github.com/uptrace/uptrace-go v1.40.0
-	github.com/xuri/excelize/v2 v2.10.0
+	github.com/xuri/excelize/v2 v2.10.1
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/metric v1.40.0
 	go.opentelemetry.io/otel/sdk v1.40.0
