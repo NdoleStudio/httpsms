@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -81,17 +82,23 @@ func (s SIM) String() string {
 	return string(s)
 }
 
+type MessageAttachment struct {
+	ContentType string `json:"content_type" example:"image/jpeg"`
+	URL         string `json:"url" example:"https://example.com/image.jpg"`
+}
+
 // Message represents a message sent between 2 phone numbers
 type Message struct {
-	ID        uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	RequestID *string       `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
-	Owner     string        `json:"owner" example:"+18005550199"`
-	UserID    UserID        `json:"user_id" gorm:"index:idx_messages__user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
-	Contact   string        `json:"contact" example:"+18005550100"`
-	Content   string        `json:"content" example:"This is a sample text message"`
-	Encrypted bool          `json:"encrypted" example:"false" gorm:"default:false"`
-	Type      MessageType   `json:"type" example:"mobile-terminated"`
-	Status    MessageStatus `json:"status" example:"pending"`
+	ID          uuid.UUID           `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	RequestID   *string             `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
+	Owner       string              `json:"owner" example:"+18005550199"`
+	UserID      UserID              `json:"user_id" gorm:"index:idx_messages__user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	Contact     string              `json:"contact" example:"+18005550100"`
+	Content     string              `json:"content" example:"This is a sample text message"`
+	Attachments []MessageAttachment `json:"attachments,omitempty" gorm:"type:json;serializer:json"`
+	Encrypted   bool                `json:"encrypted" example:"false" gorm:"default:false"`
+	Type        MessageType         `json:"type" example:"mobile-terminated"`
+	Status      MessageStatus       `json:"status" example:"pending"`
 	// SIM is the SIM card to use to send the message
 	// * SMS1: use the SIM card in slot 1
 	// * SMS2: use the SIM card in slot 2
@@ -226,4 +233,20 @@ func (message *Message) updateOrderTimestamp(timestamp time.Time) {
 	if timestamp.UnixNano() > message.OrderTimestamp.UnixNano() {
 		message.OrderTimestamp = timestamp
 	}
+}
+
+func GetAttachmentContentType(url string) string {
+	// Since there's no easy way to set a type in the CSV, defaulting to octet-stream and then just checking the file extension in the URL
+	contentType := "application/octet-stream"
+	lowerURL := strings.ToLower(url)
+	if strings.HasSuffix(lowerURL, ".jpg") || strings.HasSuffix(lowerURL, ".jpeg") {
+		contentType = "image/jpeg"
+	} else if strings.HasSuffix(lowerURL, ".png") {
+		contentType = "image/png"
+	} else if strings.HasSuffix(lowerURL, ".gif") {
+		contentType = "image/gif"
+	} else if strings.HasSuffix(lowerURL, ".mp4") {
+		contentType = "video/mp4"
+	}
+	return contentType
 }
