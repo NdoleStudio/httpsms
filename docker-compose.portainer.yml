@@ -1,0 +1,130 @@
+version: "3.8"
+
+# httpSMS - Portainer + Traefik deployment
+#
+# Before deploying:
+#   1. Replace all occurrences of "tudominio.com" with your actual domain
+#   2. Replace DB passwords with strong passwords
+#   3. Set FIREBASE_CREDENTIALS with the full JSON from your Firebase project
+#   4. Set PUSHER_* variables if you want real-time updates in the web UI (optional)
+#   5. Set SMTP_* variables for email notifications (optional)
+#   6. Make sure the Traefik network name matches your setup (default: traefik_proxy)
+#
+# After first deploy:
+#   - Create the system user in the DB (see README for SQL)
+#   - Update EVENTS_QUEUE_USER_API_KEY and EVENTS_QUEUE_USER_ID
+#   - Restart the api service
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: httpsms
+      POSTGRES_PASSWORD: CAMBIA_ESTE_PASSWORD
+      POSTGRES_USER: httpsms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U httpsms -d httpsms"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - internal
+
+  api:
+    image: ghcr.io/kairodigital-shop/httpsms-api:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      ENV: production
+      GCP_PROJECT_ID: httpsms-docker
+      USE_HTTP_LOGGER: "true"
+      APP_PORT: "8000"
+      APP_NAME: httpSMS
+      APP_URL: https://sms.tudominio.com
+      SWAGGER_HOST: api-sms.tudominio.com
+
+      DATABASE_URL: postgresql://httpsms:CAMBIA_ESTE_PASSWORD@postgres:5432/httpsms
+      DATABASE_URL_DEDICATED: postgresql://httpsms:CAMBIA_ESTE_PASSWORD@postgres:5432/httpsms
+      REDIS_URL: redis://@redis:6379
+
+      # Event queue - uses built-in emulator (no Google Cloud Tasks needed)
+      EVENTS_QUEUE_TYPE: emulator
+      EVENTS_QUEUE_NAME: events-local
+      EVENTS_QUEUE_ENDPOINT: http://api:8000/v1/events
+      # Fill these after creating the system user in the DB
+      EVENTS_QUEUE_USER_API_KEY: ""
+      EVENTS_QUEUE_USER_ID: ""
+
+      # Firebase - required (free tier is enough)
+      # Paste the full content of your firebase-credentials.json here (single line)
+      FIREBASE_CREDENTIALS: ""
+
+      # Pusher - optional, enables real-time updates in the web UI
+      # Sign up at https://pusher.com (free tier available)
+      # Alternative: self-host with Soketi (https://soketi.app)
+      PUSHER_APP_ID: ""
+      PUSHER_KEY: ""
+      PUSHER_SECRET: ""
+      PUSHER_CLUSTER: ""
+
+      # SMTP - optional, for email notifications
+      SMTP_FROM_NAME: httpSMS
+      SMTP_FROM_EMAIL: noreply@tudominio.com
+      SMTP_HOST: ""
+      SMTP_PORT: "587"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.httpsms-api.rule=Host(`api-sms.tudominio.com`)"
+      - "traefik.http.routers.httpsms-api.entrypoints=websecure"
+      - "traefik.http.routers.httpsms-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.httpsms-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=traefik_proxy"
+    networks:
+      - internal
+      - traefik_proxy
+
+  web:
+    image: ghcr.io/kairodigital-shop/httpsms-web:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.httpsms-web.rule=Host(`sms.tudominio.com`)"
+      - "traefik.http.routers.httpsms-web.entrypoints=websecure"
+      - "traefik.http.routers.httpsms-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.httpsms-web.loadbalancer.server.port=3000"
+      - "traefik.docker.network=traefik_proxy"
+    networks:
+      - internal
+      - traefik_proxy
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  internal:
+    driver: bridge
+  traefik_proxy:
+    external: true
