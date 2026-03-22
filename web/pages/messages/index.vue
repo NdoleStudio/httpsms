@@ -16,6 +16,7 @@
           <v-col cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
             <v-form @submit.prevent="sendMessage">
               <v-text-field
+                persistent-placeholder
                 v-model="formPhoneNumber"
                 :disabled="sending"
                 :error="errors.has('to')"
@@ -25,6 +26,7 @@
                 label="Phone Number"
               ></v-text-field>
               <v-textarea
+                persistent-placeholder
                 v-model="formContent"
                 :error="errors.has('content')"
                 :error-messages="errors.get('content')"
@@ -34,14 +36,18 @@
                 label="Content"
               ></v-textarea>
               <v-textarea
+                persistent-placeholder
+                persistent-hint
                 v-model="formAttachments"
                 :error="errors.has('attachments')"
                 :error-messages="errors.get('attachments')"
                 :disabled="sending"
                 outlined
                 rows="2"
+                class="mb-8"
+                hint="Your message will be sent as an MMS when the comma separated list of attachment URL's are present"
                 placeholder="https://example.com/image.jpg, https://example.com/video.mp4"
-                label="Attachment URLs (comma separated, optional)"
+                label="Attachment URLs (optional)"
               ></v-textarea>
               <v-btn
                 type="submit"
