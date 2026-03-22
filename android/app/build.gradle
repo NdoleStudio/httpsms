@@ -2,27 +2,22 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.gms.google-services'
-    id "io.sentry.android.gradle" version "4.3.1"
+    id "io.sentry.android.gradle" version "6.2.0"
 }
 
-def getGitHash = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'rev-parse', '--short', 'HEAD'
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
+def gitHash = providers.exec {
+    commandLine 'git', 'rev-parse', '--short', 'HEAD'
+}.standardOutput.asText.map { it.trim() }.getOrElse("unknown")
 
 android {
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.httpsms"
         minSdk 28
         targetSdk 35
         versionCode 1
-        versionName "${getGitHash()}"
+        versionName gitHash
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
