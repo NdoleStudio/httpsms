@@ -1,4 +1,4 @@
-FROM golang as builder
+FROM golang AS builder
 
 ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT
