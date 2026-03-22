@@ -173,11 +173,8 @@
                     >
                   </v-card-text>
                 </v-card>
-                <v-card
-                  v-if="message.attachments?.length"
-                  shaped
-                  >
-                 <v-card-title>Message Attachments</v-card-title>
+                <v-card v-if="message.attachments?.length" shaped>
+                  <v-card-title>Message Attachments</v-card-title>
                   <v-card-text>
                     <v-row>
                       <v-col
@@ -195,8 +192,12 @@
                           class="bg-grey-lighten-2 rounded"
                           cover
                         >
-                          <template v-slot:placeholder>
-                            <v-row class="fill-height ma-0" align="center" justify="center">
+                          <template #placeholder>
+                            <v-row
+                              class="fill-height ma-0"
+                              align="center"
+                              justify="center"
+                            >
                               <v-progress-circular
                                 indeterminate
                                 color="grey-lighten-1"
@@ -204,10 +205,18 @@
                             </v-row>
                           </template>
                         </v-img>
-                        
-                        <div v-else class="text-center pa-4 bg-grey-lighten-4 rounded">
-                          <v-icon icon="mdi-file-document-outline" size="large"></v-icon>
-                          <div class="text-caption mt-2">Unsupported file type</div>
+
+                        <div
+                          v-else
+                          class="text-center pa-4 bg-grey-lighten-4 rounded"
+                        >
+                          <v-icon
+                            icon="mdi-file-document-outline"
+                            size="large"
+                          ></v-icon>
+                          <div class="text-caption mt-2">
+                            Unsupported file type
+                          </div>
                         </div>
                       </v-col>
                     </v-row>

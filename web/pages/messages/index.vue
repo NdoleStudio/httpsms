@@ -106,7 +106,8 @@ export default {
 
           let contentType = 'application/octet-stream'
           const lowerUrl = cleanUrl.toLowerCase()
-          if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) contentType = 'image/jpeg'
+          if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg'))
+            contentType = 'image/jpeg'
           else if (lowerUrl.endsWith('.png')) contentType = 'image/png'
           else if (lowerUrl.endsWith('.gif')) contentType = 'image/gif'
           else if (lowerUrl.endsWith('.mp4')) contentType = 'video/mp4'
@@ -120,7 +121,7 @@ export default {
           to: this.formPhoneNumber,
           from: this.$store.getters.getOwner,
           content: this.formContent,
-          attachments: attachments,
+          attachments,
           sim: this.simSelected.code,
         })
         .then(() => {

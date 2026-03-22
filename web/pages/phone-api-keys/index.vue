@@ -24,9 +24,9 @@
           <v-col cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <div class="d-flex mt-3 mb-4">
               <v-progress-circular
+                v-if="loading"
                 :size="24"
                 :width="2"
-                v-if="loading"
                 color="primary"
                 class="mt-2 mr-2"
                 indeterminate

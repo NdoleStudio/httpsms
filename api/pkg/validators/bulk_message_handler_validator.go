@@ -12,12 +12,12 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
+	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/dustin/go-humanize"
 	"github.com/jszwec/csvutil"
 	"github.com/nyaruka/phonenumbers"
@@ -123,6 +123,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 		result.Add("document", fmt.Sprintf("Cannot parse the uploaded excel file with name [%s].", header.Filename))
 		return nil, result
 	}
+	defer excel.Close()
 
 	rows, err := excel.GetRows(excel.GetSheetName(0))
 	if err != nil {
@@ -212,14 +213,14 @@ func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user 
 	var messages []*requests.BulkMessage
 	if err := csvutil.Unmarshal(content, &messages); err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", content, messages, header.Filename, user.ID)))
-		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
+		result.Add("document", fmt.Sprintf("Cannot read the contents of the uploaded file [%s].", header.Filename))
 		return nil, result
 	}
 
 	return messages, url.Values{}
 }
 
-func (v *BulkMessageHandlerValidator) validateMessages(ctx context.Context, messages []*requests.BulkMessage) url.Values {
+func (v *BulkMessageHandlerValidator) validateMessages(_ context.Context, messages []*requests.BulkMessage) url.Values {
 	result := url.Values{}
 	for index, message := range messages {
 
@@ -250,7 +251,6 @@ func (v *BulkMessageHandlerValidator) validateMessages(ctx context.Context, mess
 					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] must use http or https.", index+2, cleanURL))
 				}
 			}
-		}
 		}
 
 		if _, err := phonenumbers.Parse(message.FromPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
