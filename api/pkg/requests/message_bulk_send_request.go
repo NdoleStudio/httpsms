@@ -16,6 +16,7 @@ type MessageBulkSend struct {
 	From    string   `json:"from" example:"+18005550199"`
 	To      []string `json:"to" example:"+18005550100,+18005550100"`
 	Content string   `json:"content" example:"This is a sample text message"`
+	Attachments []entities.MessageAttachment `json:"attachments" validate:"optional"`
 
 	// Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
 	Encrypted bool `json:"encrypted" example:"false"`
@@ -52,6 +53,7 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 			Contact:           to,
 			SendAt:            &sendAt,
 			Content:           input.Content,
+			Attachments:       input.Attachments,
 		})
 	}
 

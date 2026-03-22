@@ -430,6 +430,7 @@ type MessageSendParams struct {
 	Contact           string
 	Encrypted         bool
 	Content           string
+	Attachments       []entities.MessageAttachment
 	Source            string
 	SendAt            *time.Time
 	RequestID         *string
@@ -456,6 +457,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
+		Attachments:       params.Attachments,
 		ScheduledSendTime: params.SendAt,
 		SIM:               sim,
 	}
@@ -968,6 +970,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 		Contact:           payload.Contact,
 		UserID:            payload.UserID,
 		Content:           payload.Content,
+		Attachments:       payload.Attachments,
 		RequestID:         payload.RequestID,
 		SIM:               payload.SIM,
 		Encrypted:         payload.Encrypted,

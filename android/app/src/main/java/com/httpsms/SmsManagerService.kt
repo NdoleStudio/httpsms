@@ -76,4 +76,10 @@ class SmsManagerService {
             context.getSystemService(SmsManager::class.java).createForSubscriptionId(subscriptionId)
         }
     }
+
+    // Wrapper for the smsManager's sendMultimediaMessage
+    fun sendMultimediaMessage(context: Context, pduUri: android.net.Uri, sim: String, sentIntent: PendingIntent) {
+        val smsManager = getSmsManager(context, sim)
+        smsManager.sendMultimediaMessage(context, pduUri, null, null, sentIntent)
+    }
 }

@@ -9,6 +9,13 @@ import com.google.firebase.messaging.RemoteMessage
 import com.httpsms.SentReceiver.FailedMessageWorker
 import timber.log.Timber
 
+import com.google.android.mms.pdu_alt.CharacterSets
+import com.google.android.mms.pdu_alt.EncodedStringValue
+import com.google.android.mms.pdu_alt.PduBody
+import com.google.android.mms.pdu_alt.PduComposer
+import com.google.android.mms.pdu_alt.PduPart
+import com.google.android.mms.pdu_alt.SendReq
+
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     // [START receive_message]
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -158,11 +165,133 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
 
             Receiver.register(applicationContext)
+
+            if (message.attachments != null && message.attachments.isNotEmpty()) {
+                return handleMmsMessage(message)
+            }
+
             val parts = getMessageParts(applicationContext, message)
             if (parts.size == 1) {
                 return handleSingleMessage(message, parts.first())
             }
             return handleMultipartMessage(message, parts)
+        }
+
+        private fun handleMmsMessage(message: Message): Result {
+            Timber.d("Processing MMS for message ID [${message.id}]")
+            val apiService = HttpSmsApiService.create(applicationContext)
+
+            val downloadedFiles = mutableListOf<java.io.File>()
+
+            try {
+                for ((index, attachment) in message.attachments!!.withIndex()) {
+                    val file = apiService.downloadAttachment(applicationContext, attachment.url, message.id, index)
+                    if (file == null) {
+                        handleFailed(applicationContext, message.id, "Failed to download attachment or file size exceeded 1.5MB.")
+                        return Result.failure()
+                    }
+                    downloadedFiles.add(file)
+                }
+
+                val sendReq = SendReq()
+
+                val encodedContact = EncodedStringValue(message.contact)
+                sendReq.to = arrayOf(encodedContact)
+
+                val pduBody = PduBody()
+
+                if (message.content.isNotEmpty()) {
+                    val textPart = PduPart()
+                    textPart.setCharset(CharacterSets.UTF_8)
+                    textPart.contentType = "text/plain".toByteArray()
+                    textPart.name = "text".toByteArray()
+                    textPart.contentId = "text".toByteArray()
+                    textPart.contentLocation = "text".toByteArray()
+                    
+                    var messageBody = message.content
+                    val encryptionKey = Settings.getEncryptionKey(applicationContext)
+                    if (message.encrypted && !encryptionKey.isNullOrEmpty()) {
+                        messageBody = Encrypter.decrypt(encryptionKey, messageBody)
+                    }
+                    textPart.data = messageBody.toByteArray(Charsets.UTF_8)
+                    
+                    pduBody.addPart(textPart)
+                }
+
+                for ((index, file) in downloadedFiles.withIndex()) {
+                    val attachment = message.attachments[index]
+                    val fileBytes = file.readBytes()
+
+                    val mediaPart = PduPart()
+                    mediaPart.contentType = attachment.contentType.toByteArray()
+                    
+                    val fileName = "attachment_$index".toByteArray()
+                    mediaPart.name = fileName
+                    mediaPart.contentId = fileName
+                    mediaPart.contentLocation = fileName
+                    mediaPart.data = fileBytes
+                    
+                    pduBody.addPart(mediaPart)
+                }
+
+                sendReq.body = pduBody
+
+                val pduComposer = PduComposer(applicationContext, sendReq)
+                val pduBytes = pduComposer.make()
+
+                if (pduBytes == null) {
+                    Timber.e("PduComposer failed to generate PDU byte array")
+                    handleFailed(applicationContext, message.id, "Failed to compose MMS PDU.")
+                    return Result.failure()
+                }
+
+                val mmsDir = java.io.File(applicationContext.cacheDir, "mms_attachments")
+                if (!mmsDir.exists()) {
+                    mmsDir.mkdirs()
+                }
+                
+                val pduFile = java.io.File(mmsDir, "pdu_${message.id}.dat")
+                java.io.FileOutputStream(pduFile).use { it.write(pduBytes) }
+
+                val pduUri = androidx.core.content.FileProvider.getUriForFile(
+                    applicationContext,
+                    "${BuildConfig.APPLICATION_ID}.fileprovider",
+                    pduFile
+                )
+
+                val sentIntent = createPendingIntent(message.id, SmsManagerService.sentAction())
+                SmsManagerService().sendMultimediaMessage(applicationContext, pduUri, message.sim, sentIntent)
+
+                Timber.d("Successfully dispatched MMS for message ID [${message.id}]")
+                return Result.success()
+
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to send MMS for message ID [${message.id}]")
+                handleFailed(applicationContext, message.id, e.message ?: "Internal error while building or sending MMS.")
+                return Result.failure()
+            } finally {
+                // Clean up any downloaded temporary files
+                downloadedFiles.forEach { file ->
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                }
+
+                // Also clean up the MMS PDU file to avoid cache buildup in cases where
+                // sendMultimediaMessage fails before the sent broadcast is delivered.
+                try {
+                    val pduFile = java.io.File(applicationContext.cacheDir, "pdu_${message.id}.dat")
+                    if (pduFile.exists()) {
+                        val deleted = pduFile.delete()
+                        if (!deleted) {
+                            Timber.w("Failed to delete MMS PDU file for message ID [${message.id}] at [${pduFile.absolutePath}]")
+                        }
+                    }
+                } catch (cleanupException: Exception) {
+                    // Best-effort cleanup; log but do not change the original result.
+                    Timber.w(cleanupException, "Error while cleaning up MMS PDU file for message ID [${message.id}]")
+                }
+            }
         }
 
         private fun handleMultipartMessage(message:Message, parts: ArrayList<String>): Result {
