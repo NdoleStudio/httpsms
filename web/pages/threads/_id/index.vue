@@ -174,9 +174,9 @@
                   </v-card-text>
                 </v-card>
                 <v-card
-                 v-if="message.attachments"
-                 shaped
-                 >
+                  v-if="message.attachments?.length"
+                  shaped
+                  >
                  <v-card-title>Message Attachments</v-card-title>
                   <v-card-text>
                     <v-row>

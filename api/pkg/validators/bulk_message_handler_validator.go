@@ -226,7 +226,14 @@ func (v *BulkMessageHandlerValidator) validateMessages(ctx context.Context, mess
 		if message.AttachmentURLs != "" {
 			urls := strings.Split(message.AttachmentURLs, ",")
 
-			if len(urls) > 10 {
+			validAttachmentCount := 0
+			for _, u := range urls {
+				if strings.TrimSpace(u) != "" {
+					validAttachmentCount++
+				}
+			}
+
+			if validAttachmentCount > 10 {
 				result.Add("document", fmt.Sprintf("Row [%d]: You cannot attach more than 10 files per message.", index+2))
 			}
 
