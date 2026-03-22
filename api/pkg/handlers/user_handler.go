@@ -307,12 +307,13 @@ func (h *UserHandler) subscriptionPayments(c *fiber.Ctx) error {
 // @Tags         Users
 // @Accept       json
 // @Produce  	 application/pdf
-// @Param        payload   	body requests.UserPaymentInvoice  true  "Generate subscription payment invoice parameters"
-// @Success      200 		{file} 		file
-// @Failure      400		{object}	responses.BadRequest
-// @Failure 	 401	    {object}	responses.Unauthorized
-// @Failure      422		{object}	responses.UnprocessableEntity
-// @Failure      500		{object}	responses.InternalServerError
+// @Param        payload   				body 		requests.UserPaymentInvoice  	true "Generate subscription payment invoice parameters"
+// @Param 		 subscriptionInvoiceID 	path		string 							true "ID of the subscription invoice to generate the PDF for"
+// @Success      200 					{file} 		file
+// @Failure      400					{object}	responses.BadRequest
+// @Failure 	 401	    			{object}	responses.Unauthorized
+// @Failure      422					{object}	responses.UnprocessableEntity
+// @Failure      500					{object}	responses.InternalServerError
 // @Router       /users/subscription/invoices/{subscriptionInvoiceID} [post]
 func (h *UserHandler) subscriptionInvoice(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
