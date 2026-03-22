@@ -28,7 +28,6 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.httpsms.services.StickyNotificationService
 import com.httpsms.worker.HeartbeatWorker
-import okhttp3.internal.format
 import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
@@ -79,7 +78,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setVersion() {
         val appVersionView = findViewById<TextView>(R.id.mainAppVersion)
-        appVersionView.text = format(getString(R.string.app_version), BuildConfig.VERSION_NAME)
+        appVersionView.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
     }
 
     private fun setCardContent(context: Context) {
