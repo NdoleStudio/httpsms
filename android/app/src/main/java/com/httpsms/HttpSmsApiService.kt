@@ -188,37 +188,40 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         val request = Request.Builder().url(urlString).build()
 
         try {
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                Timber.e("Failed to download attachment: ${response.code}")
-                response.close()
-                return null
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Timber.e("Failed to download attachment: ${response.code}")
+                    return null
+                }
+
+                val body = response.body
+                if (body == null) {
+                    Timber.e("Failed to download attachment: response body is null")
+                    return null
+                }
+
+                val maxSizeBytes = 1.5 * 1024 * 1024 // most (modern?) carriers have a 2MB limit, so targetting 1.5MB should be safe
+                val contentLength = body.contentLength()
+                if (contentLength > maxSizeBytes) {
+                    Timber.e("Attachment is too large ($contentLength bytes).")
+                    return null
+                }
+
+                val mmsDir = File(context.cacheDir, "mms_attachments")
+                if (!mmsDir.exists()) {
+                    mmsDir.mkdirs()
+                }
+
+                val tempFile = File(mmsDir, "mms_${messageId}_$attachmentIndex")
+                val inputStream = body.byteStream()
+                FileOutputStream(tempFile).use { outputStream ->
+                    inputStream.use { input ->
+                        input.copyToWithLimit(outputStream, maxSizeBytes.toLong())
+                    }
+                }
+
+                return tempFile
             }
-
-            val maxSizeBytes = 1.5 * 1024 * 1024 // most (modern?) carriers have a 2MB limit, so targetting 1.5MB should be safe
-            val contentLength = response.body?.contentLength() ?: -1L
-            if (contentLength > maxSizeBytes) {
-                Timber.e("Attachment is too large ($contentLength bytes).")
-                response.close()
-                return null
-            }
-
-            val mmsDir = File(context.cacheDir, "mms_attachments")
-            if (!mmsDir.exists()) {
-                mmsDir.mkdirs()
-            }
-
-            val tempFile = File(mmsDir, "mms_${messageId}_$attachmentIndex")
-            val inputStream = response.body?.byteStream()
-            val outputStream = FileOutputStream(tempFile)
-        
-            inputStream?.copyToWithLimit(outputStream, maxSizeBytes.toLong())
-            
-            outputStream.close()
-            inputStream?.close()
-            response.close()
-
-            return tempFile
         } catch (e: Exception) {
             Timber.e(e, "Exception while downloading attachment")
             return null
