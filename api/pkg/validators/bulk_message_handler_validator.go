@@ -241,12 +241,9 @@ func (v *BulkMessageHandlerValidator) validateMessages(ctx context.Context, mess
 					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] has an invalid url format.", index+2, cleanURL))
 				} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] must use http or https.", index+2, cleanURL))
-				} else {
-					if err := validateAttachmentURL(ctx, v.cache, cleanURL); err != nil {
-						result.Add("attachments", fmt.Sprintf("Row [%d]: The attachment URL [%s] failed validation: %s", index+2, cleanURL, err.Error()))
-					}
 				}
 			}
+		}
 		}
 
 		if _, err := phonenumbers.Parse(message.FromPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
