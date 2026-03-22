@@ -270,10 +270,26 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 handleFailed(applicationContext, message.id, e.message ?: "Internal error while building or sending MMS.")
                 return Result.failure()
             } finally {
+                // Clean up any downloaded temporary files
                 downloadedFiles.forEach { file ->
                     if (file.exists()) {
                         file.delete()
                     }
+                }
+
+                // Also clean up the MMS PDU file to avoid cache buildup in cases where
+                // sendMultimediaMessage fails before the sent broadcast is delivered.
+                try {
+                    val pduFile = java.io.File(applicationContext.cacheDir, "pdu_${message.id}.dat")
+                    if (pduFile.exists()) {
+                        val deleted = pduFile.delete()
+                        if (!deleted) {
+                            Timber.w("Failed to delete MMS PDU file for message ID [${message.id}] at [${pduFile.absolutePath}]")
+                        }
+                    }
+                } catch (cleanupException: Exception) {
+                    // Best-effort cleanup; log but do not change the original result.
+                    Timber.w(cleanupException, "Error while cleaning up MMS PDU file for message ID [${message.id}]")
                 }
             }
         }
