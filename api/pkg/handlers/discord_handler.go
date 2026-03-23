@@ -8,11 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -292,30 +290,10 @@ func (h *DiscordHandler) createRequest(payload map[string]any) requests.MessageS
 		}
 		return ""
 	}
-	var attachments []entities.MessageAttachment
-	attachmentURLsStr := getOption("attachment_urls")
-
-	if attachmentURLsStr != "" {
-		urls := strings.Split(attachmentURLsStr, ",")
-		for _, u := range urls {
-			cleanURL := strings.TrimSpace(u)
-			if cleanURL == "" {
-				continue
-			}
-
-			contentType := entities.GetAttachmentContentType(cleanURL)
-
-			attachments = append(attachments, entities.MessageAttachment{
-				ContentType: contentType,
-				URL:         cleanURL,
-			})
-		}
-	}
 	return requests.MessageSend{
-		From:        getOption("from"),
-		To:          getOption("to"),
-		Content:     getOption("message"),
-		Attachments: attachments,
+		From:    getOption("from"),
+		To:      getOption("to"),
+		Content: getOption("message"),
 	}
 }
 
@@ -361,19 +339,6 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c *fiber.Ctx, payload map[
 				"value": request.Content,
 			},
 		},
-	}
-
-	if len(request.Attachments) > 0 {
-		var urls []string
-		for _, att := range request.Attachments {
-			urls = append(urls, att.URL)
-		}
-		
-		fields := messageEmbed["fields"].([]fiber.Map)
-		messageEmbed["fields"] = append(fields, fiber.Map{
-			"name":  "Attachments:",
-			"value": strings.Join(urls, "\n"),
-		})
 	}
 
 	if errors := h.messageValidator.ValidateMessageSend(ctx, discord.UserID, request.Sanitize()); len(errors) != 0 {

@@ -15,6 +15,8 @@ import com.google.android.mms.pdu_alt.PduBody
 import com.google.android.mms.pdu_alt.PduComposer
 import com.google.android.mms.pdu_alt.PduPart
 import com.google.android.mms.pdu_alt.SendReq
+import okhttp3.MediaType
+import java.io.File
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     // [START receive_message]
@@ -177,20 +179,35 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return handleMultipartMessage(message, parts)
         }
 
+        fun extractFileName(url: String, prefix: String, mimeType: String? = null): String {
+            val fileName = url.substringAfterLast("/")
+                .substringBefore("?")
+                .takeIf { it.isNotBlank() && it.contains(".") }
+                ?: run {
+                    val extension = mimeType?.let { mime ->
+                        val ext = mime.substringAfterLast("/")
+                        if (ext.isNotBlank()) ".$ext" else ".bin"
+                    } ?: ""
+                    "attachment$extension"
+                }
+
+            return "${prefix}_$fileName"
+        }
+
         private fun handleMmsMessage(message: Message): Result {
             Timber.d("Processing MMS for message ID [${message.id}]")
             val apiService = HttpSmsApiService.create(applicationContext)
 
-            val downloadedFiles = mutableListOf<java.io.File>()
+            val downloadedFiles = mutableListOf<Pair<File, MediaType>>()
 
             try {
                 for ((index, attachment) in message.attachments!!.withIndex()) {
-                    val file = apiService.downloadAttachment(applicationContext, attachment.url, message.id, index)
-                    if (file == null) {
+                    val file = apiService.downloadAttachment(applicationContext, attachment, message.id, index)
+                    if (file.first == null || file.second == null) {
                         handleFailed(applicationContext, message.id, "Failed to download attachment or file size exceeded 1.5MB.")
                         return Result.failure()
                     }
-                    downloadedFiles.add(file)
+                    downloadedFiles.add(Pair(file.first!!, file.second!!))
                 }
 
                 val sendReq = SendReq()
@@ -207,30 +224,32 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     textPart.name = "text".toByteArray()
                     textPart.contentId = "text".toByteArray()
                     textPart.contentLocation = "text".toByteArray()
-                    
+
                     var messageBody = message.content
                     val encryptionKey = Settings.getEncryptionKey(applicationContext)
                     if (message.encrypted && !encryptionKey.isNullOrEmpty()) {
                         messageBody = Encrypter.decrypt(encryptionKey, messageBody)
                     }
                     textPart.data = messageBody.toByteArray(Charsets.UTF_8)
-                    
+
                     pduBody.addPart(textPart)
                 }
 
                 for ((index, file) in downloadedFiles.withIndex()) {
-                    val attachment = message.attachments[index]
-                    val fileBytes = file.readBytes()
+                    val fileBytes = file.first.readBytes()
 
                     val mediaPart = PduPart()
-                    mediaPart.contentType = attachment.contentType.toByteArray()
-                    
-                    val fileName = "attachment_$index".toByteArray()
-                    mediaPart.name = fileName
-                    mediaPart.contentId = fileName
-                    mediaPart.contentLocation = fileName
+                    mediaPart.contentType = file.second.toString().toByteArray()
+
+
+                    val fileName = extractFileName(message.attachments[index], index.toString(), file.second.toString())
+                    mediaPart.name = fileName.toByteArray()
+                    mediaPart.contentId = fileName.toByteArray()
+                    mediaPart.contentLocation = fileName.toByteArray()
                     mediaPart.data = fileBytes
-                    
+
+                    Timber.d("Adding MMS attachment with name [$fileName] and size [${fileBytes.size}] and type [${file.second}]")
+
                     pduBody.addPart(mediaPart)
                 }
 
@@ -249,7 +268,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 if (!mmsDir.exists()) {
                     mmsDir.mkdirs()
                 }
-                
+
                 val pduFile = java.io.File(mmsDir, "pdu_${message.id}.dat")
                 java.io.FileOutputStream(pduFile).use { it.write(pduBytes) }
 
@@ -272,15 +291,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             } finally {
                 // Clean up any downloaded temporary files
                 downloadedFiles.forEach { file ->
-                    if (file.exists()) {
-                        file.delete()
+                    if (file.first.exists()) {
+                        file.first.delete()
                     }
                 }
 
                 // Also clean up the MMS PDU file to avoid cache buildup in cases where
                 // sendMultimediaMessage fails before the sent broadcast is delivered.
                 try {
-                    val pduFile = java.io.File(applicationContext.cacheDir, "pdu_${message.id}.dat")
+                    // The PDU file is stored under the "mms_attachments" cache subdirectory;
+                    // delete it from the same location to ensure cleanup is effective.
+                    val pduDir = File(applicationContext.cacheDir, "mms_attachments")
+                    val pduFile = File(pduDir, "pdu_${message.id}.dat")
                     if (pduFile.exists()) {
                         val deleted = pduFile.delete()
                         if (!deleted) {

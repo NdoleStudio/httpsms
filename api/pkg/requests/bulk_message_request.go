@@ -26,31 +26,20 @@ func (input *BulkMessage) Sanitize() *BulkMessage {
 	input.ToPhoneNumber = input.sanitizeAddress(input.ToPhoneNumber)
 	input.Content = strings.TrimSpace(input.Content)
 	input.FromPhoneNumber = input.sanitizeAddress(input.FromPhoneNumber)
-	input.AttachmentURLs = strings.TrimSpace(input.AttachmentURLs)
+
+	var attachments []string
+	for _, attachment := range strings.Split(input.AttachmentURLs, ",") {
+		if strings.TrimSpace(attachment) != "" {
+			attachments = append(attachments, strings.TrimSpace(attachment))
+		}
+	}
+	input.AttachmentURLs = strings.Join(attachments, ",")
 	return input
 }
 
 // ToMessageSendParams converts BulkMessage to services.MessageSendParams
 func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID uuid.UUID, source string) services.MessageSendParams {
 	from, _ := phonenumbers.Parse(input.FromPhoneNumber, phonenumbers.UNKNOWN_REGION)
-
-	var attachments []entities.MessageAttachment
-	if input.AttachmentURLs != "" {
-		urls := strings.Split(input.AttachmentURLs, ",")
-		for _, u := range urls {
-			cleanURL := strings.TrimSpace(u)
-			if cleanURL == "" {
-				continue
-			}
-
-			contentType := entities.GetAttachmentContentType(cleanURL)
-
-			attachments = append(attachments, entities.MessageAttachment{
-				ContentType: contentType,
-				URL:         cleanURL,
-			})
-		}
-	}
 
 	return services.MessageSendParams{
 		Source:            source,
@@ -61,6 +50,6 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 		RequestReceivedAt: time.Now().UTC(),
 		Contact:           input.sanitizeAddress(input.ToPhoneNumber),
 		Content:           input.Content,
-		Attachments:       attachments,
+		Attachments:       input.removeEmptyStrings(strings.Split(input.AttachmentURLs, ",")),
 	}
 }

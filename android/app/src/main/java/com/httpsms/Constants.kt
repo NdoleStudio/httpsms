@@ -18,5 +18,7 @@ class Constants {
         const val SIM2 = "SIM2"
 
         const val TIMESTAMP_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ"
+
+        const val MAX_MMS_ATTACHMENT_SIZE: Long = (3L * 1024 * 1024) / 2
     }
 }

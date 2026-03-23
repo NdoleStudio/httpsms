@@ -108,6 +108,18 @@ func (input *request) removeStringDuplicates(values []string) []string {
 	return result
 }
 
+func (input *request) removeEmptyStrings(values []string) []string {
+	var result []string
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			result = append(result, value)
+		}
+	}
+
+	return result
+}
+
 func (input *request) sanitizeMessageID(value string) string {
 	id := strings.Builder{}
 	for _, char := range value {
