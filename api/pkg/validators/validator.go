@@ -23,6 +23,7 @@ const (
 	multiplePhoneNumberRule        = "multiplePhoneNumber"
 	contactPhoneNumberRule         = "contactPhoneNumber"
 	multipleContactPhoneNumberRule = "multipleContactPhoneNumber"
+	multipleAttachmentURLRule      = "multipleAttachmentURL"
 	multipleInRule                 = "multipleIn"
 	webhookEventsRule              = "webhookEvents"
 )
@@ -90,6 +91,21 @@ func init() {
 		return nil
 	})
 
+	govalidator.AddCustomRule(multipleAttachmentURLRule, func(field string, rule string, message string, value interface{}) error {
+		attachments, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("The %s field must be an array of valid attachment URL's", field)
+		}
+
+		for index, attachment := range attachments {
+			u, err := url.ParseRequestURI(attachment)
+			if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+				return fmt.Errorf("The attachment %d with URL [%s] must be a valid URL e.g https://placehold.co/600x400", index, attachment)
+			}
+		}
+		return nil
+	})
+
 	govalidator.AddCustomRule(multipleInRule, func(field string, rule string, message string, value interface{}) error {
 		values, ok := value.([]string)
 		if !ok {
@@ -108,7 +124,7 @@ func init() {
 
 		for index, item := range values {
 			if !contains(item) {
-				return fmt.Errorf("the %s field in contains an invalid value [%s] at index [%d] ", field, item, index)
+				return fmt.Errorf("the %s field in contains an invalid value [%s] at index [%d]", field, item, index)
 			}
 		}
 

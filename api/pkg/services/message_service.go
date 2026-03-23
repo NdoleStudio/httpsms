@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/nyaruka/phonenumbers"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
@@ -430,7 +429,7 @@ type MessageSendParams struct {
 	Contact           string
 	Encrypted         bool
 	Content           string
-	Attachments       []entities.MessageAttachment
+	Attachments       []string
 	Source            string
 	SendAt            *time.Time
 	RequestID         *string

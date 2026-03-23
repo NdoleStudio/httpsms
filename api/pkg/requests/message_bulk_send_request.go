@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -16,10 +17,12 @@ type MessageBulkSend struct {
 	From    string   `json:"from" example:"+18005550199"`
 	To      []string `json:"to" example:"+18005550100,+18005550100"`
 	Content string   `json:"content" example:"This is a sample text message"`
-	Attachments []entities.MessageAttachment `json:"attachments" validate:"optional"`
+
+	// Attachments are optional. When you provide a list of attachments, the message will be sent out as an MMS
+	Attachments []string `json:"attachments" validate:"optional"`
 
 	// Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
-	Encrypted bool `json:"encrypted" example:"false"`
+	Encrypted bool `json:"encrypted" example:"false" validate:"optional"`
 
 	// RequestID is an optional parameter used to track a request from the client's perspective
 	RequestID string `json:"request_id" example:"153554b5-ae44-44a0-8f4f-7bbac5657ad4" validate:"optional"`
@@ -31,6 +34,15 @@ func (input *MessageBulkSend) Sanitize() MessageBulkSend {
 	for _, address := range input.To {
 		to = append(to, input.sanitizeAddress(address))
 	}
+
+	var attachments []string
+	for _, attachment := range input.Attachments {
+		if strings.TrimSpace(attachment) != "" {
+			attachments = append(attachments, strings.TrimSpace(attachment))
+		}
+	}
+
+	input.Attachments = attachments
 	input.To = to
 	input.From = input.sanitizeAddress(input.From)
 	return *input

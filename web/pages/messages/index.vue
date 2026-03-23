@@ -94,7 +94,7 @@ export default {
   },
   head() {
     return {
-      title: 'New Message - Http SMS',
+      title: 'New Message - httpSMS',
     }
   },
 
@@ -103,31 +103,16 @@ export default {
       this.errors = new Map()
       this.sending = true
 
-      const attachments = []
-      if (this.formAttachments.trim() !== '') {
-        const urls = this.formAttachments.split(',')
-        for (const u of urls) {
-          const cleanUrl = u.trim()
-          if (!cleanUrl) continue
-
-          let contentType = 'application/octet-stream'
-          const lowerUrl = cleanUrl.toLowerCase()
-          if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg'))
-            contentType = 'image/jpeg'
-          else if (lowerUrl.endsWith('.png')) contentType = 'image/png'
-          else if (lowerUrl.endsWith('.gif')) contentType = 'image/gif'
-          else if (lowerUrl.endsWith('.mp4')) contentType = 'video/mp4'
-
-          attachments.push({ content_type: contentType, url: cleanUrl })
-        }
-      }
-
       axios
         .post('/v1/messages/send', {
           to: this.formPhoneNumber,
           from: this.$store.getters.getOwner,
           content: this.formContent,
-          attachments,
+          attachments: this.formAttachments
+            .trim()
+            .split(',')
+            .filter((x) => x.trim() !== '')
+            .map((x) => x.trim()),
           sim: this.simSelected.code,
         })
         .then(() => {

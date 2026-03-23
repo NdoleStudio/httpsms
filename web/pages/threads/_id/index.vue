@@ -173,53 +173,20 @@
                     >
                   </v-card-text>
                 </v-card>
-                <v-card v-if="message.attachments?.length" shaped>
-                  <v-card-title>Message Attachments</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col
-                        v-for="(attachment, index) in message.attachments"
-                        :key="index"
-                        cols="12"
-                        sm="6"
-                        md="4"
-                      >
-                        <v-img
-                          v-if="attachment.content_type?.startsWith('image/')"
-                          :src="attachment.url"
-                          :alt="`Attachment ${index + 1}`"
-                          aspect-ratio="1"
-                          class="bg-grey-lighten-2 rounded"
-                          cover
-                        >
-                          <template #placeholder>
-                            <v-row
-                              class="fill-height ma-0"
-                              align="center"
-                              justify="center"
-                            >
-                              <v-progress-circular
-                                indeterminate
-                                color="grey-lighten-1"
-                              ></v-progress-circular>
-                            </v-row>
-                          </template>
-                        </v-img>
-
-                        <div
-                          v-else
-                          class="text-center pa-4 bg-grey-lighten-4 rounded"
-                        >
-                          <v-icon
-                            icon="mdi-file-document-outline"
-                            size="large"
-                          ></v-icon>
-                          <div class="text-caption mt-2">
-                            Unsupported file type
-                          </div>
-                        </div>
-                      </v-col>
-                    </v-row>
+                <v-card rounded v-if="message.attachments?.length">
+                  <v-card-text class="pb-2">
+                    <a
+                      v-for="(attachment, index) in message.attachments"
+                      target="_blank"
+                      :href="attachment"
+                      class="text-decoration-none hover:text-decoration-underline body-2 mb-2 d-flex w-full"
+                      :key="index"
+                    >
+                      <v-icon x-small class="text--secondary mt-1">{{
+                        mdiPaperclip
+                      }}</v-icon>
+                      {{ attachment }}
+                    </a>
                   </v-card-text>
                 </v-card>
                 <div class="d-flex">
@@ -383,6 +350,7 @@ import {
   mdiCheckAll,
   mdiDelete,
   mdiCallMissed,
+  mdiPaperclip,
   mdiCheck,
   mdiAlert,
   mdiPackageUp,
@@ -411,6 +379,7 @@ export default Vue.extend({
       mdiArrowLeft,
       mdiCheckAll,
       mdiCallMissed,
+      mdiPaperclip,
       mdiCheck,
       mdiAlert,
       mdiDelete,
@@ -675,6 +644,10 @@ export default Vue.extend({
   .messages-body {
     max-width: 1785px;
   }
+}
+
+.hover\:text-decoration-underline:hover {
+  text-decoration: underline !important;
 }
 
 .no-scrollbar,
