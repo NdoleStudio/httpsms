@@ -186,7 +186,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 ?: run {
                     val extension = mimeType?.let { mime ->
                         val ext = mime.substringAfterLast("/")
-                        if (ext.isNotBlank()) ".$ext" else ""
+                        if (ext.isNotBlank()) ".$ext" else ".bin"
                     } ?: ""
                     "attachment$extension"
                 }
