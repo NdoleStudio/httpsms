@@ -45,7 +45,7 @@
                 outlined
                 rows="2"
                 class="mb-8"
-                hint="Your message will be sent as an MMS when the comma separated list of attachment URL's are present"
+                hint="The message will be sent as an MMS when a comma separated list of attachment URLs are present"
                 placeholder="https://example.com/image.jpg, https://example.com/video.mp4"
                 label="Attachment URLs (optional)"
               ></v-textarea>
