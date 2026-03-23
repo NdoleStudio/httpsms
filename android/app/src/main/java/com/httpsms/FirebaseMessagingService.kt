@@ -299,7 +299,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 // Also clean up the MMS PDU file to avoid cache buildup in cases where
                 // sendMultimediaMessage fails before the sent broadcast is delivered.
                 try {
-                    val pduFile = File(applicationContext.cacheDir, "pdu_${message.id}.dat")
+                    // The PDU file is stored under the "mms_attachments" cache subdirectory;
+                    // delete it from the same location to ensure cleanup is effective.
+                    val pduDir = File(applicationContext.cacheDir, "mms_attachments")
+                    val pduFile = File(pduDir, "pdu_${message.id}.dat")
                     if (pduFile.exists()) {
                         val deleted = pduFile.delete()
                         if (!deleted) {
