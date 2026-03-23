@@ -19,6 +19,6 @@ class Constants {
 
         const val TIMESTAMP_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ"
 
-        const val MAX_MMS_ATTACHMENT_SIZE = 1.5 * 1024 * 1024;
+        const val MAX_MMS_ATTACHMENT_SIZE: Long = (3L * 1024 * 1024) / 2
     }
 }

@@ -50,6 +50,6 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 		RequestReceivedAt: time.Now().UTC(),
 		Contact:           input.sanitizeAddress(input.ToPhoneNumber),
 		Content:           input.Content,
-		Attachments:       strings.Split(input.AttachmentURLs, ","),
+		Attachments:       input.removeEmptyStrings(strings.Split(input.AttachmentURLs, ",")),
 	}
 }

@@ -173,14 +173,15 @@
                     >
                   </v-card-text>
                 </v-card>
-                <v-card rounded v-if="message.attachments?.length">
+                <v-card v-if="message.attachments?.length">
                   <v-card-text class="pb-2">
                     <a
                       v-for="(attachment, index) in message.attachments"
+                      :key="index"
                       target="_blank"
+                      rel="noopener noreferrer"
                       :href="attachment"
                       class="text-decoration-none hover:text-decoration-underline body-2 mb-2 d-flex w-full"
-                      :key="index"
                     >
                       <v-icon x-small class="text--secondary mt-1">{{
                         mdiPaperclip

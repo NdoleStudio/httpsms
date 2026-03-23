@@ -94,7 +94,7 @@ func init() {
 	govalidator.AddCustomRule(multipleAttachmentURLRule, func(field string, rule string, message string, value interface{}) error {
 		attachments, ok := value.([]string)
 		if !ok {
-			return fmt.Errorf("The %s field must be an array of valid attachment URL's", field)
+			return fmt.Errorf("The %s field must be an array of valid attachment URLs", field)
 		}
 
 		for index, attachment := range attachments {

@@ -185,7 +185,6 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return bytesCopied
     }
 
-    // Downloads the attachment URL content locally
     fun downloadAttachment(context: Context, urlString: String, messageId: String, attachmentIndex: Int): Pair<File?, MediaType?> {
         val request = Request.Builder().url(urlString).build()
 
@@ -216,7 +215,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
                     }
                 }
 
-                return Pair(tempFile, response.body.contentType())
+                return Pair(tempFile, body.contentType())
             }
         } catch (e: Exception) {
             Timber.e(e, "Exception while downloading attachment")
@@ -253,7 +252,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         }
 
         if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
+            Timber.e("error response [${response.body.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             response.close()
             return false
         }
