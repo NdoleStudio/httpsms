@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm/clause"
 
@@ -223,7 +224,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 }
 
 // GetOutstanding fetches messages that still to be sent to the phone
-func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID, phoneNumbers []string) (*entities.Message, error) {
+func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID, phoneNumbers []string, timestamp time.Time) (*entities.Message, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -239,8 +240,7 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, use
 				query = query.Where("owner IN ?", phoneNumbers)
 			}
 
-			return query.Where(repository.db.Where("status = ?", entities.MessageStatusScheduled).Or("status = ?", entities.MessageStatusPending).Or("status = ?", entities.MessageStatusExpired)).
-				Update("status", entities.MessageStatusSending).Error
+			return query.Where(repository.db.Where("status = ?", entities.MessageStatusScheduled).Or("status = ?", entities.MessageStatusPending).Or("status = ?", entities.MessageStatusExpired)).Where(repository.db.Where("scheduled_send_time IS NULL").Or("scheduled_send_time <= ?", timestamp)).Update("status", entities.MessageStatusSending).Error
 		},
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {

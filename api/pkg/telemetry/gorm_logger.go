@@ -46,7 +46,7 @@ func (gorm *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (s
 	msg := fmt.Sprintf("[ROWS:%d][%s]", rows, sql)
 
 	if err != nil {
-		l.Error(stacktrace.Propagate(err, msg))
+		l.Error(stacktrace.Propagate(err, "%s", msg))
 		return
 	}
 

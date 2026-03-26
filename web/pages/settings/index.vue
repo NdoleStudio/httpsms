@@ -171,6 +171,126 @@
                 </v-card>
               </v-dialog>
             </div>
+
+            <h5 id="send-schedule-settings" class="text-h4 mb-3 mt-12">
+              Send Schedule
+            </h5>
+            <p class="text--secondary">
+              Define when outgoing SMS messages are allowed to be sent. When a
+              message is created outside your default availability, the API will
+              defer it to the next allowed time slot.
+            </p>
+            <div class="send-schedule-section mb-12">
+              <div v-if="loadingSendSchedules">
+                <v-progress-circular
+                  :size="60"
+                  :width="2"
+                  color="primary"
+                  class="mb-4"
+                  indeterminate
+                ></v-progress-circular>
+              </div>
+
+              <v-row v-else class="mb-2">
+                <v-col
+                  v-for="schedule in sendSchedules"
+                  :key="schedule.id"
+                  cols="12"
+                  md="6"
+                >
+                  <v-card outlined class="h-100">
+                    <v-card-title class="d-flex align-center">
+                      <span class="text-h6">{{ schedule.name }}</span>
+                      <v-spacer></v-spacer>
+                      <v-chip
+                        v-if="schedule.is_default"
+                        small
+                        color="primary"
+                        text-color="white"
+                      >
+                        Default
+                      </v-chip>
+                      <v-chip
+                        small
+                        class="ml-2"
+                        :color="schedule.is_active ? 'success' : 'grey'"
+                        text-color="white"
+                      >
+                        {{ schedule.is_active ? 'Active' : 'Inactive' }}
+                      </v-chip>
+                    </v-card-title>
+                    <v-card-subtitle>{{ schedule.timezone }}</v-card-subtitle>
+                    <v-card-text>
+                      <div v-for="line in scheduleSummary(schedule)" :key="line">
+                        {{ line }}
+                      </div>
+                    </v-card-text>
+                    <v-card-actions>
+                      <v-btn small color="primary" @click="editSendSchedule(schedule)">
+                        <v-icon left>{{ mdiCalendarClock }}</v-icon>
+                        Edit
+                      </v-btn>
+                      <v-btn
+                        v-if="!schedule.is_default"
+                        small
+                        text
+                        @click="makeDefaultSendSchedule(schedule.id)"
+                      >
+                        Make default
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+              </v-row>
+
+              <div class="send-schedule-actions mt-4">
+                <v-btn color="primary" @click="createSendScheduleDialog">
+                  <v-icon left>{{ mdiPlus }}</v-icon>
+                  Add Schedule
+                </v-btn>
+              </div>
+            </div>
+            <v-dialog v-model="showSendScheduleDialog" :fullscreen="$vuetify.breakpoint.smAndDown" max-width="900">
+              <v-card>
+                <v-card-title>{{ activeSendSchedule.id ? 'Edit Schedule' : 'Add Schedule' }}</v-card-title>
+                <v-card-text>
+                  <v-row>
+                    <v-col cols="12" md="6">
+                      <v-text-field v-model="activeSendSchedule.name" outlined dense label="Schedule name"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-autocomplete v-model="activeSendSchedule.timezone" dense outlined :items="timezones" label="Timezone"></v-autocomplete>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-switch v-model="activeSendSchedule.is_active" inset label="Active"></v-switch>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-switch v-model="activeSendSchedule.is_default" inset label="Default"></v-switch>
+                    </v-col>
+                  </v-row>
+                  <div v-for="day in weekDays" :key="day.value" class="mb-4 pa-3 rounded schedule-day">
+                    <div class="d-flex align-center mb-2">
+                      <div class="font-weight-medium">{{ day.label }}</div>
+                      <v-spacer></v-spacer>
+                      <v-btn small text color="primary" @click="addWindow(day.value)">Add window</v-btn>
+                    </div>
+                    <div v-if="windowsForDay(day.value).length === 0" class="text--secondary">Unavailable</div>
+                    <v-row v-for="(window, index) in windowsForDay(day.value)" :key="`${day.value}-${index}`">
+                      <v-col cols="5" sm="4"><v-text-field v-model="window.start_time" dense outlined type="time" label="Start"></v-text-field></v-col>
+                      <v-col cols="5" sm="4"><v-text-field v-model="window.end_time" dense outlined type="time" label="End"></v-text-field></v-col>
+                      <v-col cols="2" sm="4" class="d-flex align-center"><v-btn icon color="error" @click="removeWindow(day.value, index)"><v-icon>{{ mdiDelete }}</v-icon></v-btn></v-col>
+                    </v-row>
+                  </div>
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn color="primary" :loading="savingSendSchedule" @click="saveSendSchedule">Save</v-btn>
+                  <v-btn v-if="activeSendSchedule.id" text color="error" :loading="savingSendSchedule" @click="deleteSendSchedule(activeSendSchedule.id)">Delete</v-btn>
+                  <v-spacer></v-spacer>
+                  <v-btn text @click="showSendScheduleDialog = false">Close</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+
             <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
@@ -817,8 +937,10 @@ import Vue from 'vue'
 import {
   mdiArrowLeft,
   mdiAccountCircle,
-  mdiShieldCheck,
+  mdiCalendarClock,
+  mdiPlus,
   mdiDelete,
+  mdiShieldCheck,
   mdiContentSave,
   mdiConnection,
   mdiEye,
@@ -829,6 +951,7 @@ import {
   mdiQrcode,
 } from '@mdi/js'
 import QRCode from 'qrcode'
+import axios from '~/plugins/axios'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
 
@@ -843,8 +966,10 @@ export default Vue.extend({
       mdiRefresh,
       mdiArrowLeft,
       mdiAccountCircle,
-      mdiShieldCheck,
+      mdiCalendarClock,
+      mdiPlus,
       mdiDelete,
+      mdiShieldCheck,
       mdiQrcode,
       mdiLinkVariant,
       mdiContentSave,
@@ -889,6 +1014,27 @@ export default Vue.extend({
       updatingPhone: false,
       updatingDiscord: false,
       loadingDiscordIntegrations: false,
+      loadingSendSchedules: false,
+      savingSendSchedule: false,
+      showSendScheduleDialog: false,
+      sendSchedules: [],
+      activeSendSchedule: {
+        id: null,
+        name: "Business Hours",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        is_default: false,
+        is_active: true,
+        windows: [],
+      },
+      weekDays: [
+        { value: 1, label: "Monday" },
+        { value: 2, label: "Tuesday" },
+        { value: 3, label: "Wednesday" },
+        { value: 4, label: "Thursday" },
+        { value: 5, label: "Friday" },
+        { value: 6, label: "Saturday" },
+        { value: 0, label: "Sunday" },
+      ],
       events: [
         'message.phone.received',
         'message.phone.sent',
@@ -943,6 +1089,7 @@ export default Vue.extend({
       this.$store.dispatch('loadUser'),
       this.$store.dispatch('loadPhones'),
     ])
+    this.loadSendSchedules()
     this.loadWebhooks()
     this.loadDiscordIntegrations()
     this.updateEmailNotifications()
@@ -1020,25 +1167,25 @@ export default Vue.extend({
       this.resetErrors()
     },
 
-    onWebhookCreate() {
-      this.activeWebhook = {
-        id: null,
-        url: '',
-        signing_key: '',
-        phone_numbers: this.$store.getters.getPhones.map(
-          (phone) => phone.phone_number,
-        ),
-        events: [
-          'message.phone.received',
-          'message.phone.sent',
-          'message.phone.delivered',
-          'message.send.failed',
-          'message.send.expired',
-        ],
-      }
-      this.showWebhookEdit = true
-      this.resetErrors()
-    },
+ onWebhookCreate() {
+   this.activeWebhook = {
+     id: null,
+     url: '',
+     signing_key: '',
+     phone_numbers: this.$store.getters.getPhones.map(
+       (phone) => phone.phone_number,
+     ),
+     events: [
+       'message.phone.received',
+       'message.phone.sent',
+       'message.phone.delivered',
+       'message.send.failed',
+       'message.send.expired',
+     ],
+   }
+   this.showWebhookEdit = true
+   this.resetErrors()
+ },
 
     onDiscordCreate() {
       this.activeDiscord = {
@@ -1254,6 +1401,140 @@ export default Vue.extend({
         })
     },
 
+
+    scheduleSummary(schedule) {
+      const byDay = this.weekDays.map((day) => {
+        const windows = (schedule.windows || []).filter((x) => x.day_of_week === day.value)
+        if (windows.length === 0) return `${day.label}: Unavailable`
+        return `${day.label}: ${windows.map((w) => `${this.minuteToClock(w.start_minute)}-${this.minuteToClock(w.end_minute)}`).join(', ')}`
+      })
+      return byDay
+    },
+    minuteToClock(value) {
+      const hours = String(Math.floor(value / 60)).padStart(2, '0')
+      const minutes = String(value % 60).padStart(2, '0')
+      return `${hours}:${minutes}`
+    },
+    windowsForDay(dayOfWeek) {
+      return this.activeSendSchedule.windows.filter((x) => x.day_of_week === dayOfWeek)
+    },
+    addWindow(dayOfWeek) {
+      this.activeSendSchedule.windows.push({ day_of_week: dayOfWeek, start_time: '09:00', end_time: '17:00' })
+    },
+    removeWindow(dayOfWeek, index) {
+      const matches = this.activeSendSchedule.windows.filter((x) => x.day_of_week === dayOfWeek)
+      const target = matches[index]
+      this.activeSendSchedule.windows = this.activeSendSchedule.windows.filter((x) => x !== target)
+    },
+    createSendScheduleDialog() {
+      this.activeSendSchedule = { id: null, name: 'Business Hours', timezone: this.$store.getters.getUser?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, is_default: this.sendSchedules.length === 0, is_active: true, windows: [{ day_of_week: 1, start_time: '09:00', end_time: '17:00' }, { day_of_week: 2, start_time: '09:00', end_time: '17:00' }, { day_of_week: 3, start_time: '09:00', end_time: '17:00' }, { day_of_week: 4, start_time: '09:00', end_time: '17:00' }, { day_of_week: 5, start_time: '09:00', end_time: '17:00' }] }
+      this.showSendScheduleDialog = true
+      this.resetErrors()
+    },
+    editSendSchedule(schedule) {
+      this.activeSendSchedule = { id: schedule.id, name: schedule.name, timezone: schedule.timezone, is_default: schedule.is_default, is_active: schedule.is_active, windows: (schedule.windows || []).map((x) => ({ day_of_week: x.day_of_week, start_time: this.minuteToClock(x.start_minute), end_time: this.minuteToClock(x.end_minute) })) }
+      this.showSendScheduleDialog = true
+      this.resetErrors()
+    },
+    async loadSendSchedules() {
+      this.loadingSendSchedules = true
+      try {
+        const response = await axios.get('/v1/send-schedules')
+        this.sendSchedules = response.data?.data || response.data || []
+      } catch (error) {
+        console.error('Failed to load send schedules', error)
+        this.$store.dispatch('addNotification', {
+          type: 'error',
+          message: 'Failed to load send schedules',
+        })
+      } finally {
+        this.loadingSendSchedules = false
+      }
+    },
+    async saveSendSchedule() {
+      this.resetErrors()
+      this.savingSendSchedule = true
+
+      try {
+        const payload = {
+          name: this.activeSendSchedule.name,
+          timezone: this.activeSendSchedule.timezone,
+          is_default: this.activeSendSchedule.is_default,
+          is_active: this.activeSendSchedule.is_active,
+          windows: this.activeSendSchedule.windows,
+        }
+
+        let response
+        if (this.activeSendSchedule.id) {
+          response = await axios.put(
+            `/v1/send-schedules/${this.activeSendSchedule.id}`,
+            payload,
+          )
+        } else {
+          response = await axios.post('/v1/send-schedules', payload)
+        }
+
+        const savedSchedule = response.data?.data || response.data
+
+        if (payload.is_default && savedSchedule?.id) {
+          await axios.post(`/v1/send-schedules/${savedSchedule.id}/default`)
+        }
+
+        this.$store.dispatch('addNotification', {
+          type: 'success',
+          message: 'Send schedule saved successfully',
+        })
+
+        this.showSendScheduleDialog = false
+        await this.loadSendSchedules()
+      } catch (error) {
+        console.error('Failed to save send schedule', error)
+        this.$store.dispatch('addNotification', {
+          type: 'error',
+          message:
+            error?.response?.data?.message || 'Failed to save send schedule',
+        })
+      } finally {
+        this.savingSendSchedule = false
+      }
+    },
+    async makeDefaultSendSchedule(scheduleId) {
+      try {
+        await axios.post(`/v1/send-schedules/${scheduleId}/default`)
+        this.$store.dispatch('addNotification', {
+          type: 'success',
+          message: 'Default send schedule updated successfully',
+        })
+        await this.loadSendSchedules()
+      } catch (error) {
+        console.error('Failed to update default send schedule', error)
+        this.$store.dispatch('addNotification', {
+          type: 'error',
+          message: 'Failed to update default send schedule',
+        })
+      }
+    },
+    async deleteSendSchedule(scheduleId) {
+      this.savingSendSchedule = true
+      try {
+        await axios.delete(`/v1/send-schedules/${scheduleId}`)
+        this.$store.dispatch('addNotification', {
+          type: 'success',
+          message: 'Send schedule deleted successfully',
+        })
+        this.showSendScheduleDialog = false
+        await this.loadSendSchedules()
+      } catch (error) {
+        console.error('Failed to delete send schedule', error)
+        this.$store.dispatch('addNotification', {
+          type: 'error',
+          message: 'Failed to delete send schedule',
+        })
+      } finally {
+        this.savingSendSchedule = false
+      }
+    },
+
     deleteUserAccount() {
       this.deletingAccount = true
       this.$store
@@ -1290,3 +1571,19 @@ export default Vue.extend({
   },
 })
 </script>
+
+
+<style scoped>
+.schedule-day {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.send-schedule-section {
+  width: 100%;
+}
+
+.send-schedule-actions {
+  display: flex;
+  align-items: center;
+}
+</style>

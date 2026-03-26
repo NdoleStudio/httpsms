@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/google/uuid"
@@ -28,7 +29,7 @@ type MessageRepository interface {
 	Search(ctx context.Context, userID entities.UserID, owners []string, types []entities.MessageType, statuses []entities.MessageStatus, params IndexParams) ([]*entities.Message, error)
 
 	// GetOutstanding fetches an entities.Message which is outstanding
-	GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID, phoneNumbers []string) (*entities.Message, error)
+	GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID, phoneNumbers []string, timestamp time.Time) (*entities.Message, error)
 
 	// Delete an entities.Message by ID
 	Delete(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error

@@ -1,3 +1,26 @@
+
+export interface EntitiesSendScheduleWindow {
+  id: string
+  schedule_id: string
+  day_of_week: number
+  start_minute: number
+  end_minute: number
+  created_at: string
+  updated_at: string
+}
+
+export interface EntitiesSendSchedule {
+  id: string
+  user_id: string
+  name: string
+  timezone: string
+  is_default: boolean
+  is_active: boolean
+  windows: EntitiesSendScheduleWindow[]
+  created_at: string
+  updated_at: string
+}
+
 /* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck

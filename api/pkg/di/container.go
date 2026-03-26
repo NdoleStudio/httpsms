@@ -127,6 +127,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterHeartbeatListeners()
 
 	container.RegisterUserRoutes()
+	container.RegisterSendScheduleRoutes()
 	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
@@ -370,19 +371,27 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 	}
 
 	if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Webhook{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Webhook{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Discord{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Discord{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Webhook{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Integration3CX{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Integration3CX{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Discord{}))
 	}
 
 	if err = db.AutoMigrate(&entities.PhoneAPIKey{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneAPIKey{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.PhoneAPIKey{}))
+	}
+
+	if err = db.AutoMigrate(&entities.SendSchedule{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.SendSchedule{})))
+	}
+
+	if err = db.AutoMigrate(&entities.SendScheduleWindow{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.SendScheduleWindow{})))
 	}
 
 	return container.db
@@ -393,8 +402,7 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 	container.logger.Debug(fmt.Sprintf("creating %T", app))
 	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
 	if err != nil {
-		msg := "cannot initialize firebase application"
-		container.logger.Fatal(stacktrace.Propagate(err, msg))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase application"))
 	}
 	return app
 }
@@ -411,7 +419,7 @@ func (container *Container) Cache() cache.Cache {
 	container.logger.Debug("creating cache.Cache")
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot parse redis url [%s]", os.Getenv("REDIS_URL"))))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot parse redis url [%s]", os.Getenv("REDIS_URL")))
 	}
 	opt.TLSConfig = &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -437,8 +445,7 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	authClient, err := container.FirebaseApp().Auth(context.Background())
 	if err != nil {
-		msg := "cannot initialize firebase auth client"
-		container.logger.Fatal(stacktrace.Propagate(err, msg))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase auth client"))
 	}
 	return authClient
 }
@@ -505,8 +512,7 @@ func (container *Container) FirebaseMessagingClient() (client *messaging.Client)
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	messagingClient, err := container.FirebaseApp().Messaging(context.Background())
 	if err != nil {
-		msg := "cannot initialize firebase messaging client"
-		container.logger.Fatal(stacktrace.Propagate(err, msg))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase messaging client"))
 	}
 	return messagingClient
 }
@@ -1016,6 +1022,30 @@ func (container *Container) EmailNotificationService() (service *services.EmailN
 	)
 }
 
+// SendScheduleRepository creates a new instance of repositories.SendScheduleRepository
+func (container *Container) SendScheduleRepository() repositories.SendScheduleRepository {
+	container.logger.Debug("creating repositories.SendScheduleRepository")
+	return repositories.NewGormSendScheduleRepository(container.Logger(), container.Tracer(), container.DB())
+}
+
+// SendScheduleService creates a new instance of services.SendScheduleService
+func (container *Container) SendScheduleService() *services.SendScheduleService {
+	container.logger.Debug("creating services.SendScheduleService")
+	return services.NewSendScheduleService(container.Logger(), container.Tracer(), container.SendScheduleRepository())
+}
+
+// SendScheduleHandlerValidator creates a new instance of validators.SendScheduleHandlerValidator
+func (container *Container) SendScheduleHandlerValidator() *validators.SendScheduleHandlerValidator {
+	container.logger.Debug("creating validators.SendScheduleHandlerValidator")
+	return validators.NewSendScheduleHandlerValidator(container.Logger(), container.Tracer())
+}
+
+// SendScheduleHandler creates a new instance of handlers.SendScheduleHandler
+func (container *Container) SendScheduleHandler() *handlers.SendScheduleHandler {
+	container.logger.Debug("creating handlers.SendScheduleHandler")
+	return handlers.NewSendScheduleHandler(container.Logger(), container.Tracer(), container.SendScheduleHandlerValidator(), container.SendScheduleService())
+}
+
 // MessageHandler creates a new instance of handlers.MessageHandler
 func (container *Container) MessageHandler() (handler *handlers.MessageHandler) {
 	container.logger.Debug(fmt.Sprintf("creating %T", handler))
@@ -1424,6 +1454,7 @@ func (container *Container) MessageService() (service *services.MessageService) 
 		container.MessageRepository(),
 		container.EventDispatcher(),
 		container.PhoneService(),
+		container.SendScheduleService(),
 	)
 }
 
@@ -1500,6 +1531,12 @@ func (container *Container) RegisterPhoneRoutes() {
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
 	container.UserHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+}
+
+// RegisterSendScheduleRoutes registers routes for the /send-schedules prefix
+func (container *Container) RegisterSendScheduleRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.SendScheduleHandler{}))
+	container.SendScheduleHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterEventRoutes registers routes for the /events prefix

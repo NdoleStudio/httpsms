@@ -23,11 +23,12 @@ import (
 // MessageService is handles message requests
 type MessageService struct {
 	service
-	logger          telemetry.Logger
-	tracer          telemetry.Tracer
-	eventDispatcher *EventDispatcher
-	phoneService    *PhoneService
-	repository      repositories.MessageRepository
+	logger              telemetry.Logger
+	tracer              telemetry.Tracer
+	eventDispatcher     *EventDispatcher
+	phoneService        *PhoneService
+	sendScheduleService *SendScheduleService
+	repository          repositories.MessageRepository
 }
 
 // NewMessageService creates a new MessageService
@@ -37,13 +38,15 @@ func NewMessageService(
 	repository repositories.MessageRepository,
 	eventDispatcher *EventDispatcher,
 	phoneService *PhoneService,
+	sendScheduleService *SendScheduleService,
 ) (s *MessageService) {
 	return &MessageService{
-		logger:          logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:          tracer,
-		repository:      repository,
-		phoneService:    phoneService,
-		eventDispatcher: eventDispatcher,
+		logger:              logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:              tracer,
+		repository:          repository,
+		phoneService:        phoneService,
+		sendScheduleService: sendScheduleService,
+		eventDispatcher:     eventDispatcher,
 	}
 }
 
@@ -63,10 +66,16 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID, params.PhoneNumbers)
+	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID, params.PhoneNumbers, params.Timestamp)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch outstanding messages with params [%s]", spew.Sdump(params))
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	schedule, scheduleErr := service.sendScheduleService.repository.Default(ctx, params.UserID)
+	if scheduleErr == nil && !service.sendScheduleService.IsAllowedAt(schedule, params.Timestamp) {
+		msg := fmt.Sprintf("message [%s] is outside the active send schedule", params.MessageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, msg))
 	}
 
 	event, err := service.createMessagePhoneSendingEvent(params.Source, events.MessagePhoneSendingPayload{
@@ -445,6 +454,11 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	sendAttempts, sim := service.phoneSettings(ctx, params.UserID, phonenumbers.Format(params.Owner, phonenumbers.E164))
+	resolvedSendAt, err := service.sendScheduleService.ResolveScheduledSendTime(ctx, params.UserID, params.SendAt)
+	if err != nil {
+		msg := fmt.Sprintf("cannot resolve send schedule for user [%s]", params.UserID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
 
 	eventPayload := events.MessageAPISentPayload{
 		MessageID:         uuid.New(),
@@ -456,7 +470,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		Contact:           params.Contact,
 		RequestReceivedAt: params.RequestReceivedAt,
 		Content:           params.Content,
-		ScheduledSendTime: params.SendAt,
+		ScheduledSendTime: resolvedSendAt,
 		SIM:               sim,
 	}
 
@@ -473,7 +487,7 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	timeout := service.getSendDelay(ctxLogger, eventPayload, params.SendAt)
+	timeout := service.getSendDelay(ctxLogger, eventPayload, resolvedSendAt)
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, timeout); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
