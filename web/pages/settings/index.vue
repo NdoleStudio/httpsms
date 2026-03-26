@@ -1442,7 +1442,6 @@ export default Vue.extend({
         const response = await axios.get('/v1/send-schedules')
         this.sendSchedules = response.data?.data || response.data || []
       } catch (error) {
-        console.error('Failed to load send schedules', error)
         this.$store.dispatch('addNotification', {
           type: 'error',
           message: 'Failed to load send schedules',
@@ -1488,7 +1487,6 @@ export default Vue.extend({
         this.showSendScheduleDialog = false
         await this.loadSendSchedules()
       } catch (error) {
-        console.error('Failed to save send schedule', error)
         this.$store.dispatch('addNotification', {
           type: 'error',
           message:
@@ -1507,7 +1505,6 @@ export default Vue.extend({
         })
         await this.loadSendSchedules()
       } catch (error) {
-        console.error('Failed to update default send schedule', error)
         this.$store.dispatch('addNotification', {
           type: 'error',
           message: 'Failed to update default send schedule',
@@ -1525,7 +1522,6 @@ export default Vue.extend({
         this.showSendScheduleDialog = false
         await this.loadSendSchedules()
       } catch (error) {
-        console.error('Failed to delete send schedule', error)
         this.$store.dispatch('addNotification', {
           type: 'error',
           message: 'Failed to delete send schedule',
