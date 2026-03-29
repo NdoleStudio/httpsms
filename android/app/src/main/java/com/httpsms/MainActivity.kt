@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         scheduleHeartbeatWorker(this)
         setVersion()
         setHeartbeatListener(this)
+        setSmsPermissionListener()
         setBatteryOptimizationListener()
     }
 
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         redirectToLogin()
         refreshToken(this)
         setCardContent(this)
+        setSmsPermissionListener()
         setBatteryOptimizationListener()
     }
 
@@ -113,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                     Settings.setIncomingCallEventsEnabled(context, Constants.SIM2, false)
                 }
             }
+            setSmsPermissionListener()
         }
 
         var permissions = arrayOf(
@@ -282,8 +286,9 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("BatteryLife")
     private fun setBatteryOptimizationListener() {
         val pm = getSystemService(POWER_SERVICE) as PowerManager
+        val button = findViewById<MaterialButton>(R.id.batteryOptimizationButtonButton)
         if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-            val button = findViewById<MaterialButton>(R.id.batteryOptimizationButtonButton)
+            button.visibility = View.VISIBLE
             button.setOnClickListener {
                 val intent = Intent()
                 intent.action = ProviderSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
@@ -291,8 +296,43 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         } else {
-            val layout = findViewById<LinearLayout>(R.id.batteryOptimizationLinearLayout)
+            button.visibility = View.GONE
+        }
+        updatePermissionLayoutVisibility()
+    }
+
+    private fun setSmsPermissionListener() {
+        val smsPermissions = arrayOf(
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
+        val allGranted = smsPermissions.all {
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+        }
+
+        val button = findViewById<MaterialButton>(R.id.smsPermissionButton)
+        if (!allGranted) {
+            button.visibility = View.VISIBLE
+            button.setOnClickListener {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://httpsms.com/blog/grant-send-and-read-sms-permissions-on-android"))
+                startActivity(intent)
+            }
+        } else {
+            button.visibility = View.GONE
+        }
+        updatePermissionLayoutVisibility()
+    }
+
+    private fun updatePermissionLayoutVisibility() {
+        val smsButton = findViewById<MaterialButton>(R.id.smsPermissionButton)
+        val batteryButton = findViewById<MaterialButton>(R.id.batteryOptimizationButtonButton)
+        val layout = findViewById<LinearLayout>(R.id.batteryOptimizationLinearLayout)
+
+        if (smsButton.visibility == View.GONE && batteryButton.visibility == View.GONE) {
             layout.visibility = View.GONE
+        } else {
+            layout.visibility = View.VISIBLE
         }
     }
 

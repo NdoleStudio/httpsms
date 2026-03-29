@@ -3,9 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
     <ImageView
@@ -20,22 +19,14 @@
         app:srcCompat="@drawable/logo_cropped"
         tools:ignore="ImageContrastCheck" />
 
-    <TextView
-        android:id="@+id/mainAppVersion"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/app_version"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
-
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/mainPhoneCard"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:elevation="16dp"
         android:layout_marginTop="24dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imageView">
@@ -45,8 +36,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
-            <!-- Title, secondary and supporting text -->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -66,7 +55,6 @@
                     android:textSize="28sp" />
             </LinearLayout>
 
-
             <TextView
                 android:id="@+id/cardRefreshTime"
                 android:layout_width="wrap_content"
@@ -82,10 +70,12 @@
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/mainPhoneCardSIM2"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:elevation="16dp"
         android:layout_marginTop="24dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/mainPhoneCard">
@@ -95,8 +85,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
-            <!-- Title, secondary and supporting text -->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -117,7 +105,6 @@
 
             </LinearLayout>
 
-
             <TextView
                 android:id="@+id/cardRefreshTimeSIM2"
                 android:layout_width="wrap_content"
@@ -133,14 +120,33 @@
 
     <LinearLayout
         android:id="@+id/batteryOptimizationLinearLayout"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:layout_weight="50"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/mainPhoneCardSIM2">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/smsPermissionButton"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#4CAF50"
+            android:padding="10dp"
+            android:text="@string/enable_sms_permission"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:visibility="gone"
+            app:icon="@drawable/open_in_new_24"
+            app:iconGravity="textEnd"
+            app:iconPadding="8dp"
+            app:iconTint="@color/white"
+            tools:ignore="TextContrastCheck" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/batteryOptimizationButtonButton"
@@ -160,10 +166,11 @@
 
     <LinearLayout
         android:id="@+id/linearLayout"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:layout_weight="50"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -190,10 +197,18 @@
             android:layout_marginTop="4dp"
             android:indeterminate="true"
             android:visibility="invisible"
-            app:indicatorColor="@color/pink_500"
-            app:layout_constraintTop_toBottomOf="@+id/mainHeartbeatButton"
-            tools:layout_editor_absoluteX="16dp" />
+            app:indicatorColor="@color/pink_500" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/mainAppVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/app_version"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/mainSettingsButton"

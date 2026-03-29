@@ -4,8 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp">
+    android:fitsSystemWindows="true"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
 
     <ImageView
         android:id="@+id/imageView"
@@ -22,7 +23,7 @@
 
     <TextView
         android:id="@+id/textView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:autoLink="web"
@@ -32,14 +33,13 @@
         android:textSize="20sp"
         app:layout_constraintBottom_toTopOf="@+id/loginApiKeyTextInputLayout"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imageView" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/loginApiKeyTextInputLayout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="@string/text_area_api_key"
         app:errorEnabled="true"
@@ -47,8 +47,9 @@
         app:endIconDrawable="@android:drawable/ic_menu_camera"
         app:endIconContentDescription="cameraButton"
         app:layout_constraintBottom_toTopOf="@+id/loginPhoneNumberLayoutSIM1"
-        app:layout_constraintTop_toBottomOf="@+id/textView"
-        tools:layout_editor_absoluteX="16dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/loginApiKeyTextInput"
@@ -63,17 +64,15 @@
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/loginPhoneNumberLayoutSIM1"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="-40dp"
-        android:layout_marginBottom="224dp"
+        android:layout_marginTop="16dp"
         android:hint="@string/login_phone_number_sim1"
         app:errorEnabled="true"
         app:placeholderText="@string/login_phone_number_hint"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout"
-        app:layout_constraintVertical_bias="0.137"
-        tools:layout_editor_absoluteX="16dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/loginPhoneNumberInputSIM1"
@@ -88,14 +87,15 @@
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/loginPhoneNumberLayoutSIM2"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM1"
-        android:layout_marginBottom="224dp"
+        android:layout_marginTop="16dp"
         android:hint="@string/login_phone_number_sim2"
         app:errorEnabled="true"
         app:placeholderText="@string/login_phone_number_hint"
-        app:layout_constraintVertical_bias="0.137">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM1">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/loginPhoneNumberInputSIM2"
@@ -110,9 +110,12 @@
     <LinearLayout
         android:id="@+id/loginServerUrlLayoutContainer"
         android:orientation="vertical"
-        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM2">
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/loginServerUrlLayout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -120,9 +123,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/server_url"
             app:errorEnabled="true"
-            app:placeholderText="@string/login_server_url_hint"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintVertical_bias="0.137">
+            app:placeholderText="@string/login_server_url_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/loginServerUrlInput"
@@ -137,9 +138,11 @@
 
     <LinearLayout
         android:id="@+id/linearLayout"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:orientation="vertical"
+        android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/loginServerUrlLayoutContainer">
@@ -166,9 +169,7 @@
             android:layout_marginTop="4dp"
             android:indeterminate="true"
             android:visibility="invisible"
-            app:indicatorColor="@color/pink_500"
-            app:layout_constraintTop_toBottomOf="@+id/loginButton"
-            tools:layout_editor_absoluteX="16dp" />
+            app:indicatorColor="@color/pink_500" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
