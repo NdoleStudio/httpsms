@@ -7,7 +7,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.apache.commons.text.StringEscapeUtils
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -75,17 +74,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
-    fun receive(sim: String, from: String, to: String, content: String, encrypted: Boolean, timestamp: String): Boolean {
-        val body = """
-            {
-              "content": "${StringEscapeUtils.escapeJson(content)}",
-              "sim": "$sim",
-              "from": "$from",
-              "timestamp": "$timestamp",
-              "encrypted": $encrypted,
-              "to": "$to"
-            }
-        """.trimIndent()
+    fun receive(requestPayload: ReceivedMessageRequest): Boolean {
+        val body = com.beust.klaxon.Klaxon().toJsonString(requestPayload)
 
         val request: Request = Request.Builder()
             .url(resolveURL("/v1/messages/receive"))
@@ -94,16 +84,21 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
-        val response = client.newCall(request).execute()
+        val response = try {
+            client.newCall(request).execute()
+        } catch (e: Exception) {
+            Timber.e(e, "Exception while sending received message request")
+            return false
+        }
+
         if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message")
             response.close()
             return response.code in 400..499
         }
 
-        val message = ResponseMessage.fromJson(response.body!!.string())
         response.close()
-        Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
+        Timber.i("received message stored successfully")
         return true
     }
 
@@ -211,14 +206,14 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
                 val inputStream = body.byteStream()
                 FileOutputStream(tempFile).use { outputStream ->
                     inputStream.use { input ->
-                        input.copyToWithLimit(outputStream, MAX_MMS_ATTACHMENT_SIZE.toLong())
+                        input.copyToWithLimit(outputStream, MAX_MMS_ATTACHMENT_SIZE)
                     }
                 }
 
                 return Pair(tempFile, body.contentType())
             }
         } catch (e: Exception) {
-            Timber.e(e, "Exception while downloading attachment")
+            Timber.e(e, "Exception while download attachment")
             return Pair(null, null)
         }
     }

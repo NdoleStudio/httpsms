@@ -48,10 +48,10 @@
         <activity android:name=".SettingsActivity" android:screenOrientation="portrait"
             tools:ignore="LockedOrientationActivity" />
         <activity
-        android:name="com.journeyapps.barcodescanner.CaptureActivity"
-        android:screenOrientation="fullSensor"
-        tools:replace="screenOrientation"
-        tools:ignore="DiscouragedApi" />
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation"
+            tools:ignore="DiscouragedApi" />
 
         <service
             android:name=".services.StickyNotificationService"
@@ -73,6 +73,10 @@
             android:exported="true">
             <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.WAP_PUSH_RECEIVED" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
             </intent-filter>
         </receiver>
 
