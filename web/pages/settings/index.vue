@@ -949,7 +949,11 @@ export default Vue.extend({
       return this.$store.getters.getUser.subscription_renews_at != null
     },
     timezones() {
-      return Intl.supportedValuesOf('timeZone')
+      try {
+        return Intl.supportedValuesOf('timeZone')
+      } catch {
+        return []
+      }
     },
     phoneNumbers() {
       return this.$store.getters.getPhones.map((phone) => {
