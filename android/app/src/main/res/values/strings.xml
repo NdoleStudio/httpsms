@@ -17,6 +17,7 @@
     <string name="default_server_url">https://api.httpsms.com</string>
     <string name="app_version">httpsms.com - %s</string>
     <string name="disable_battery_optimization">Disable Battery Optimization</string>
+    <string name="enable_sms_permission">Enable SMS Permission</string>
     <string name="main_app_settings">App Settings</string>
     <string name="settings_sim1">SIM1</string>
     <string name="settings_sim_2">SIM2</string>

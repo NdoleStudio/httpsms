@@ -1,6 +1,7 @@
 export interface Message {
   contact: string
   content: string
+  attachments: Array<string> | null
   created_at: string
   failure_reason: string
   id: string

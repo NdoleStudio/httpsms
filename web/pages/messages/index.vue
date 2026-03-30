@@ -16,6 +16,7 @@
           <v-col cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
             <v-form @submit.prevent="sendMessage">
               <v-text-field
+                persistent-placeholder
                 v-model="formPhoneNumber"
                 :disabled="sending"
                 :error="errors.has('to')"
@@ -25,6 +26,7 @@
                 label="Phone Number"
               ></v-text-field>
               <v-textarea
+                persistent-placeholder
                 v-model="formContent"
                 :error="errors.has('content')"
                 :error-messages="errors.get('content')"
@@ -32,6 +34,20 @@
                 outlined
                 placeholder="Enter your message here"
                 label="Content"
+              ></v-textarea>
+              <v-textarea
+                persistent-placeholder
+                persistent-hint
+                v-model="formAttachments"
+                :error="errors.has('attachments')"
+                :error-messages="errors.get('attachments')"
+                :disabled="sending"
+                outlined
+                rows="2"
+                class="mb-8"
+                hint="The message will be sent as an MMS when a comma separated list of attachment URLs are present"
+                placeholder="https://example.com/image.jpg, https://example.com/video.mp4"
+                label="Attachment URLs (optional)"
               ></v-textarea>
               <v-btn
                 type="submit"
@@ -72,12 +88,13 @@ export default {
       sending: false,
       formPhoneNumber: '',
       formContent: '',
+      formAttachments: '',
       errors: new Map(),
     }
   },
   head() {
     return {
-      title: 'New Message - Http SMS',
+      title: 'New Message - httpSMS',
     }
   },
 
@@ -85,11 +102,17 @@ export default {
     sendMessage() {
       this.errors = new Map()
       this.sending = true
+
       axios
         .post('/v1/messages/send', {
           to: this.formPhoneNumber,
           from: this.$store.getters.getOwner,
           content: this.formContent,
+          attachments: this.formAttachments
+            .trim()
+            .split(',')
+            .filter((x) => x.trim() !== '')
+            .map((x) => x.trim()),
           sim: this.simSelected.code,
         })
         .then(() => {
@@ -112,6 +135,9 @@ export default {
                 x.replace('to field', 'phone number field'),
               ),
             )
+          }
+          if (response.data.data.attachments) {
+            errors.set('attachments', response.data.data.attachments)
           }
           if (response.data.data.from) {
             this.$store.dispatch('addNotification', {

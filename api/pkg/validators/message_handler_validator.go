@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/palantir/stacktrace"
@@ -25,6 +26,7 @@ type MessageHandlerValidator struct {
 	tracer         telemetry.Tracer
 	phoneService   *services.PhoneService
 	tokenValidator *TurnstileTokenValidator
+	cache          cache.Cache
 }
 
 // NewMessageHandlerValidator creates a new handlers.MessageHandler validator
@@ -33,12 +35,14 @@ func NewMessageHandlerValidator(
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
 	tokenValidator *TurnstileTokenValidator,
+	appCache cache.Cache,
 ) (v *MessageHandlerValidator) {
 	return &MessageHandlerValidator{
 		logger:         logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:         tracer,
 		phoneService:   phoneService,
 		tokenValidator: tokenValidator,
+		cache:          appCache,
 	}
 }
 
@@ -93,6 +97,10 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 				"required",
 				phoneNumberRule,
 			},
+			"attachments": []string{
+				"max:10",
+				multipleAttachmentURLRule,
+			},
 			"content": []string{
 				"required",
 				"min:1",
@@ -142,6 +150,10 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 			"from": []string{
 				"required",
 				phoneNumberRule,
+			},
+			"attachments": []string{
+				"max:10",
+				multipleAttachmentURLRule,
 			},
 			"content": []string{
 				"required",

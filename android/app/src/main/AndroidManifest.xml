@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -30,7 +31,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.HttpSMS"
-        tools:targetApi="31">
+        tools:targetApi="36">
         <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait"
@@ -47,10 +48,10 @@
         <activity android:name=".SettingsActivity" android:screenOrientation="portrait"
             tools:ignore="LockedOrientationActivity" />
         <activity
-        android:name="com.journeyapps.barcodescanner.CaptureActivity"
-        android:screenOrientation="fullSensor"
-        tools:replace="screenOrientation"
-        tools:ignore="DiscouragedApi" />
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation"
+            tools:ignore="DiscouragedApi" />
 
         <service
             android:name=".services.StickyNotificationService"
@@ -73,6 +74,10 @@
             <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
             </intent-filter>
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.WAP_PUSH_RECEIVED" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
         </receiver>
 
         <receiver android:enabled="true" android:exported="true" android:name=".receivers.PhoneStateReceiver" android:permission="android.permission.READ_PHONE_STATE">
@@ -89,6 +94,17 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
+
+        <!-- Need this to share the attachment images with native mms service -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

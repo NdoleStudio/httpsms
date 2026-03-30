@@ -36,7 +36,7 @@ func isRetryableError(err error) bool {
 func executeWithRetry(fn func() error) (err error) {
 	return retry.New(
 		retry.LastErrorOnly(true),
-		retry.Attempts(3),
+		retry.Attempts(5),
 		retry.Delay(100*time.Millisecond),
 		retry.RetryIf(isRetryableError),
 	).Do(fn)

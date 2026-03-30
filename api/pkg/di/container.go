@@ -232,13 +232,13 @@ func (container *Container) GormLogger() gormLogger.Interface {
 }
 
 func (container *Container) connect(dsn string, config *gorm.Config) (db *gorm.DB, err error) {
-	if strings.HasPrefix(dsn, "postgres://") {
-		return gorm.Open(postgres.Open(dsn), config)
+	if strings.HasPrefix(dsn, "libsql://") {
+		return gorm.Open(sqlite.New(sqlite.Config{
+			DriverName: "libsql",
+			DSN:        dsn,
+		}), config)
 	}
-	return gorm.Open(sqlite.New(sqlite.Config{
-		DriverName: "libsql",
-		DSN:        dsn,
-	}), config)
+	return gorm.Open(postgres.Open(dsn), config)
 }
 
 // DedicatedDB creates an instance of gorm.DB if it has not been created already
@@ -340,11 +340,15 @@ func (container *Container) DB() (db *gorm.DB) {
 	}
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for %T", db))
+
 	// This prevents a bug in the Gorm AutoMigrate where it tries to delete this no existent constraints
-	db.Exec(`
+	// This is only applicable to PROD on cockroachDB
+	if os.Getenv("DATABASE_MIGRATION_CONSTRAINT_FIX") == "1" {
+		db.Exec(`
 ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS uni_users_api_key CHECK (api_key IS NOT NULL);
 ALTER TABLE phone_api_keys ADD CONSTRAINT IF NOT EXISTS uni_phone_api_keys_api_key CHECK (api_key IS NOT NULL);
 ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (server_id IS NOT NULL);`)
+	}
 
 	if err = db.AutoMigrate(&entities.Message{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Message{})))
@@ -535,6 +539,7 @@ func (container *Container) MessageHandlerValidator() (validator *validators.Mes
 		container.Tracer(),
 		container.PhoneService(),
 		container.TurnstileTokenValidator(),
+		container.Cache(),
 	)
 }
 
@@ -557,6 +562,7 @@ func (container *Container) BulkMessageHandlerValidator() (validator *validators
 		container.Tracer(),
 		container.PhoneService(),
 		container.UserService(),
+		container.Cache(),
 	)
 }
 

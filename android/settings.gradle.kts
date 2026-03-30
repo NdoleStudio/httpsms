@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "httpSMS"
-include ':app'
+include(":app")

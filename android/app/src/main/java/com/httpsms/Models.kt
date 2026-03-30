@@ -68,5 +68,24 @@ data class Message (
     val type: String,
 
     @Json(name = "updated_at")
-    val updatedAt: String
+    val updatedAt: String,
+
+    val attachments: List<String>? = null
+)
+
+data class ReceivedAttachment(
+    val name: String,
+    @Json(name = "content_type")
+    val contentType: String,
+    val content: String
+)
+
+data class ReceivedMessageRequest(
+    val sim: String,
+    val from: String,
+    val to: String,
+    val content: String,
+    val encrypted: Boolean,
+    val timestamp: String,
+    val attachments: List<ReceivedAttachment>? = null
 )

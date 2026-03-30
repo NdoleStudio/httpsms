@@ -173,6 +173,23 @@
                     >
                   </v-card-text>
                 </v-card>
+                <v-card v-if="message.attachments?.length">
+                  <v-card-text class="pb-2">
+                    <a
+                      v-for="(attachment, index) in message.attachments"
+                      :key="index"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      :href="attachment"
+                      class="text-decoration-none hover:text-decoration-underline body-2 mb-2 d-flex w-full"
+                    >
+                      <v-icon x-small class="text--secondary mt-1">{{
+                        mdiPaperclip
+                      }}</v-icon>
+                      {{ attachment }}
+                    </a>
+                  </v-card-text>
+                </v-card>
                 <div class="d-flex">
                   <p class="ml-2 text--secondary caption mr-2">
                     {{ new Date(message.order_timestamp).toLocaleString() }}
@@ -334,6 +351,7 @@ import {
   mdiCheckAll,
   mdiDelete,
   mdiCallMissed,
+  mdiPaperclip,
   mdiCheck,
   mdiAlert,
   mdiPackageUp,
@@ -362,6 +380,7 @@ export default Vue.extend({
       mdiArrowLeft,
       mdiCheckAll,
       mdiCallMissed,
+      mdiPaperclip,
       mdiCheck,
       mdiAlert,
       mdiDelete,
@@ -626,6 +645,10 @@ export default Vue.extend({
   .messages-body {
     max-width: 1785px;
   }
+}
+
+.hover\:text-decoration-underline:hover {
+  text-decoration: underline !important;
 }
 
 .no-scrollbar,

@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-playwright",
+        "--base-url",
+        "http://localhost:3000"
+      ],
+      "env": {
+        "BROWSER": "chromium"
+      }
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@upstash/context7-mcp@latest"]
+    }
+  }
+}

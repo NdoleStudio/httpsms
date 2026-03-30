@@ -1,12 +1,18 @@
 package com.httpsms
 
 import android.content.Context
+import com.httpsms.Constants.Companion.MAX_MMS_ATTACHMENT_SIZE
+import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.apache.commons.text.StringEscapeUtils
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URI
 import java.net.URL
 import java.util.logging.Level
@@ -68,17 +74,8 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return sendEvent(messageId, "FAILED", timestamp, reason)
     }
 
-    fun receive(sim: String, from: String, to: String, content: String, encrypted: Boolean, timestamp: String): Boolean {
-        val body = """
-            {
-              "content": "${StringEscapeUtils.escapeJson(content)}",
-              "sim": "$sim",
-              "from": "$from",
-              "timestamp": "$timestamp",
-              "encrypted": $encrypted,
-              "to": "$to"
-            }
-        """.trimIndent()
+    fun receive(requestPayload: ReceivedMessageRequest): Boolean {
+        val body = com.beust.klaxon.Klaxon().toJsonString(requestPayload)
 
         val request: Request = Request.Builder()
             .url(resolveURL("/v1/messages/receive"))
@@ -87,16 +84,21 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
             .header(clientVersionHeader, BuildConfig.VERSION_NAME)
             .build()
 
-        val response = client.newCall(request).execute()
+        val response = try {
+            client.newCall(request).execute()
+        } catch (e: Exception) {
+            Timber.e(e, "Exception while sending received message request")
+            return false
+        }
+
         if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message [${body}]")
+            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while receiving message")
             response.close()
             return response.code in 400..499
         }
 
-        val message = ResponseMessage.fromJson(response.body!!.string())
         response.close()
-        Timber.i("received message stored successfully for message with ID [${message?.data?.id}]" )
+        Timber.i("received message stored successfully")
         return true
     }
 
@@ -156,6 +158,65 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         return true
     }
 
+    fun InputStream.copyToWithLimit(
+        out: OutputStream,
+        limit: Long,
+        bufferSize: Int = DEFAULT_BUFFER_SIZE
+    ): Long {
+        var bytesCopied: Long = 0
+        val buffer = ByteArray(bufferSize)
+        var bytes = read(buffer)
+
+        while (bytes >= 0) {
+            bytesCopied += bytes
+
+            if (bytesCopied > limit) {
+                throw IOException("Download aborted: File exceeded maximum allowed size of $limit bytes.")
+            }
+
+            out.write(buffer, 0, bytes)
+            bytes = read(buffer)
+        }
+        return bytesCopied
+    }
+
+    fun downloadAttachment(context: Context, urlString: String, messageId: String, attachmentIndex: Int): Pair<File?, MediaType?> {
+        val request = Request.Builder().url(urlString).build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Timber.e("Failed to download attachment: ${response.code}")
+                    return Pair(null, null)
+                }
+
+                val body = response.body
+                val contentLength = body.contentLength()
+                if (contentLength > MAX_MMS_ATTACHMENT_SIZE) {
+                    Timber.e("Attachment is too large ($contentLength bytes).")
+                    return Pair(null, null)
+                }
+
+                val mmsDir = File(context.cacheDir, "mms_attachments")
+                if (!mmsDir.exists()) {
+                    mmsDir.mkdirs()
+                }
+
+                val tempFile = File(mmsDir, "mms_${messageId}_$attachmentIndex")
+                val inputStream = body.byteStream()
+                FileOutputStream(tempFile).use { outputStream ->
+                    inputStream.use { input ->
+                        input.copyToWithLimit(outputStream, MAX_MMS_ATTACHMENT_SIZE)
+                    }
+                }
+
+                return Pair(tempFile, body.contentType())
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Exception while download attachment")
+            return Pair(null, null)
+        }
+    }
 
     private fun sendEvent(messageId: String, event: String, timestamp: String, reason: String? = null): Boolean {
         var reasonString = "null"
@@ -186,7 +247,7 @@ class HttpSmsApiService(private val apiKey: String, private val baseURL: URI) {
         }
 
         if (!response.isSuccessful) {
-            Timber.e("error response [${response.body?.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
+            Timber.e("error response [${response.body.string()}] with code [${response.code}] while sending [${event}] event [${body}] for message with ID [${messageId}]")
             response.close()
             return false
         }

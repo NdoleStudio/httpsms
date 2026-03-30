@@ -12,6 +12,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
+	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
@@ -30,6 +31,7 @@ type BulkMessageHandlerValidator struct {
 	userService  *services.UserService
 	logger       telemetry.Logger
 	tracer       telemetry.Tracer
+	cache        cache.Cache
 }
 
 // NewBulkMessageHandlerValidator creates a new handlers.BulkMessageHandlerValidator validator
@@ -38,12 +40,14 @@ func NewBulkMessageHandlerValidator(
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
 	userService *services.UserService,
+	appCache cache.Cache,
 ) (v *BulkMessageHandlerValidator) {
 	return &BulkMessageHandlerValidator{
 		logger:       logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:       tracer,
 		userService:  userService,
 		phoneService: phoneService,
+		cache:        appCache,
 	}
 }
 
@@ -79,7 +83,7 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 		messages[index] = message.Sanitize()
 	}
 
-	result = v.validateMessages(messages)
+	result = v.validateMessages(ctx, messages)
 	if len(result) != 0 {
 		return messages, result
 	}
@@ -119,6 +123,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 		result.Add("document", fmt.Sprintf("Cannot parse the uploaded excel file with name [%s].", header.Filename))
 		return nil, result
 	}
+	defer excel.Close()
 
 	rows, err := excel.GetRows(excel.GetSheetName(0))
 	if err != nil {
@@ -143,11 +148,17 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 			}
 		}
 
+		var attachmentURLs string
+		if len(row) > 4 && strings.TrimSpace(row[4]) != "" {
+			attachmentURLs = strings.TrimSpace(row[4])
+		}
+
 		messages = append(messages, &requests.BulkMessage{
 			FromPhoneNumber: strings.TrimSpace(row[0]),
 			ToPhoneNumber:   strings.TrimSpace(row[1]),
 			Content:         row[2],
 			SendTime:        sendAt,
+			AttachmentURLs:  attachmentURLs,
 		})
 	}
 
@@ -202,16 +213,46 @@ func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user 
 	var messages []*requests.BulkMessage
 	if err := csvutil.Unmarshal(content, &messages); err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", content, messages, header.Filename, user.ID)))
-		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
+		result.Add("document", fmt.Sprintf("Cannot read the contents of the uploaded file [%s].", header.Filename))
 		return nil, result
 	}
 
 	return messages, url.Values{}
 }
 
-func (v *BulkMessageHandlerValidator) validateMessages(messages []*requests.BulkMessage) url.Values {
+func (v *BulkMessageHandlerValidator) validateMessages(_ context.Context, messages []*requests.BulkMessage) url.Values {
 	result := url.Values{}
 	for index, message := range messages {
+
+		if message.AttachmentURLs != "" {
+			urls := strings.Split(message.AttachmentURLs, ",")
+
+			validAttachmentCount := 0
+			for _, u := range urls {
+				if strings.TrimSpace(u) != "" {
+					validAttachmentCount++
+				}
+			}
+
+			if validAttachmentCount > 10 {
+				result.Add("document", fmt.Sprintf("Row [%d]: You cannot attach more than 10 files per message.", index+2))
+			}
+
+			for _, u := range urls {
+				cleanURL := strings.TrimSpace(u)
+				if cleanURL == "" {
+					continue
+				}
+
+				parsedURL, err := url.ParseRequestURI(cleanURL)
+				if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] has an invalid url format.", index+2, cleanURL))
+				} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+					result.Add("document", fmt.Sprintf("Row [%d]: The attachment URL [%s] must use http or https.", index+2, cleanURL))
+				}
+			}
+		}
+
 		if _, err := phonenumbers.Parse(message.FromPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
 			result.Add("document", fmt.Sprintf("Row [%d]: The FromPhoneNumber [%s] is not a valid E.164 phone number", index+2, message.FromPhoneNumber))
 		}

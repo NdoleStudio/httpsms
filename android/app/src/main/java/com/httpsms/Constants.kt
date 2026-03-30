@@ -10,6 +10,7 @@ class Constants {
         const val KEY_MESSAGE_TIMESTAMP = "KEY_MESSAGE_TIMESTAMP"
         const val KEY_MESSAGE_REASON = "KEY_MESSAGE_REASON"
         const val KEY_MESSAGE_ENCRYPTED = "KEY_MESSAGE_ENCRYPTED"
+        const val KEY_MESSAGE_ATTACHMENTS = "KEY_MESSAGE_ATTACHMENTS"
 
 
         const val KEY_HEARTBEAT_ID = "KEY_HEARTBEAT_ID"
@@ -18,5 +19,7 @@ class Constants {
         const val SIM2 = "SIM2"
 
         const val TIMESTAMP_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'000000'ZZZZZ"
+
+        const val MAX_MMS_ATTACHMENT_SIZE: Long = (3L * 1024 * 1024) / 2
     }
 }

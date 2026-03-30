@@ -855,6 +855,7 @@ import {
 } from '@mdi/js'
 import QRCode from 'qrcode'
 import axios from '~/plugins/axios'
+import { toCanvas } from 'qrcode'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
 
@@ -984,7 +985,7 @@ export default Vue.extend({
     generateQrCode(text) {
       const canvas = this.$refs.qrCodeCanvas
       if (canvas) {
-        QRCode.toCanvas(canvas, text, { errorCorrectionLevel: 'H' }, (err) => {
+        toCanvas(canvas, text, { errorCorrectionLevel: 'H' }, (err) => {
           if (err) {
             this.$store.dispatch('addNotification', {
               message: 'Failed to generate API key QR code',

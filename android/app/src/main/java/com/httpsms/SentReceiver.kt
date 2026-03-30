@@ -14,9 +14,12 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import timber.log.Timber
+import java.io.File
 
 internal class SentReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val messageId = intent.getStringExtra(Constants.KEY_MESSAGE_ID)
+        cleanupPduFile(context, messageId)
         when (resultCode) {
             Activity.RESULT_OK -> handleMessageSent(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID))
             SmsManager.RESULT_ERROR_GENERIC_FAILURE -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "GENERIC_FAILURE")
@@ -24,6 +27,26 @@ internal class SentReceiver : BroadcastReceiver() {
             SmsManager.RESULT_ERROR_NULL_PDU -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NULL_PDU")
             SmsManager.RESULT_ERROR_RADIO_OFF -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "RADIO_OFF")
             else -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "UNKNOWN")
+        }
+    }
+
+    private fun cleanupPduFile(context: Context, messageId: String?) {
+                if (messageId == null) return
+               
+        try {
+            val baseMessageId = messageId.substringBefore(".")
+            val mmsDir = File(context.cacheDir, "mms_attachments")
+            val pduFile = File(mmsDir, "pdu_$baseMessageId.dat")
+
+            if (pduFile.exists()) {
+                if (pduFile.delete()) {
+                    Timber.d("Cleaned up PDU file for message ID [$baseMessageId]")
+                } else {
+                    Timber.w("Failed to delete PDU file for message ID [$baseMessageId]")
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error cleaning up PDU file for message ID [$messageId]")
         }
     }
 
