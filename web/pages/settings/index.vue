@@ -853,7 +853,6 @@ import {
   mdiSquareEditOutline,
   mdiQrcode,
 } from '@mdi/js'
-import QRCode from 'qrcode'
 import axios from '~/plugins/axios'
 import { toCanvas } from 'qrcode'
 import { ErrorMessages } from '~/plugins/errors'
