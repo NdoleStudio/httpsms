@@ -24,6 +24,7 @@ type PhoneNotificationService struct {
 	tracer                      telemetry.Tracer
 	phoneNotificationRepository repositories.PhoneNotificationRepository
 	phoneRepository             repositories.PhoneRepository
+	sendScheduleRepository      repositories.SendScheduleRepository
 	messagingClient             *messaging.Client
 	eventDispatcher             *EventDispatcher
 }
@@ -35,6 +36,7 @@ func NewNotificationService(
 	messagingClient *messaging.Client,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
+	sendScheduleRepository repositories.SendScheduleRepository,
 	dispatcher *EventDispatcher,
 ) (s *PhoneNotificationService) {
 	return &PhoneNotificationService{
@@ -43,6 +45,7 @@ func NewNotificationService(
 		messagingClient:             messagingClient,
 		phoneNotificationRepository: phoneNotificationRepository,
 		phoneRepository:             phoneRepository,
+		sendScheduleRepository:      sendScheduleRepository,
 		eventDispatcher:             dispatcher,
 	}
 }
@@ -178,7 +181,19 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		UpdatedAt:   time.Now().UTC(),
 	}
 
-	if err = service.phoneNotificationRepository.Schedule(ctx, phone.MessagesPerMinute, notification); err != nil {
+	var schedule *entities.SendSchedule
+	if phone.ScheduleID != nil {
+		schedule, err = service.sendScheduleRepository.Load(ctx, params.UserID, *phone.ScheduleID)
+		if err != nil && stacktrace.GetCode(err) != repositories.ErrCodeNotFound {
+			msg := fmt.Sprintf("cannot load send schedule [%s] for phone [%s]", *phone.ScheduleID, phone.ID)
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+			schedule = nil
+		}
+	}
+
+	if err = service.phoneNotificationRepository.Schedule(ctx, phone.MessagesPerMinute, schedule, notification); err != nil {
 		msg := fmt.Sprintf("cannot schedule notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

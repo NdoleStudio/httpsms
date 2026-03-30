@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/nyaruka/phonenumbers"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -28,6 +30,8 @@ type PhoneUpsert struct {
 
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
+
+	ScheduleID *string `json:"schedule_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -69,6 +73,13 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 		maxSendAttempts = &input.MaxSendAttempts
 	}
 
+	var scheduleID *uuid.UUID
+	if input.ScheduleID != nil && strings.TrimSpace(*input.ScheduleID) != "" {
+		if parsed, err := uuid.Parse(strings.TrimSpace(*input.ScheduleID)); err == nil {
+			scheduleID = &parsed
+		}
+	}
+
 	return &services.PhoneUpsertParams{
 		Source:                    source,
 		PhoneNumber:               phone,
@@ -79,5 +90,6 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 		FcmToken:                  fcmToken,
 		UserID:                    user.ID,
 		SIM:                       entities.SIM(input.SIM),
+		ScheduleID:                scheduleID,
 	}
 }

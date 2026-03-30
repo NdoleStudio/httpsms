@@ -127,6 +127,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterHeartbeatListeners()
 
 	container.RegisterUserRoutes()
+	container.RegisterSendScheduleRoutes()
 	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
@@ -741,6 +742,46 @@ func (container *Container) PhoneRepository() (repository repositories.PhoneRepo
 		container.Tracer(),
 		container.DB(),
 		container.PhoneRistrettoCache(),
+	)
+}
+
+// SendScheduleRepository creates a new instance of repositories.SendScheduleRepository
+func (container *Container) SendScheduleRepository() repositories.SendScheduleRepository {
+	container.logger.Debug("creating GORM repositories.SendScheduleRepository")
+	return repositories.NewGormSendScheduleRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// SendScheduleService creates a new instance of services.SendScheduleService
+func (container *Container) SendScheduleService() *services.SendScheduleService {
+	container.logger.Debug("creating services.SendScheduleService")
+	return services.NewSendScheduleService(
+		container.Logger(),
+		container.Tracer(),
+		container.SendScheduleRepository(),
+	)
+}
+
+// SendScheduleHandlerValidator creates a new instance of validators.SendScheduleHandlerValidator
+func (container *Container) SendScheduleHandlerValidator() *validators.SendScheduleHandlerValidator {
+	container.logger.Debug("creating validators.SendScheduleHandlerValidator")
+	return validators.NewSendScheduleHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// SendScheduleHandler creates a new instance of handlers.SendScheduleHandler
+func (container *Container) SendScheduleHandler() *handlers.SendScheduleHandler {
+	container.logger.Debug("creating handlers.SendScheduleHandler")
+	return handlers.NewSendScheduleHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.SendScheduleHandlerValidator(),
+		container.SendScheduleService(),
 	)
 }
 
@@ -1447,6 +1488,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 		container.FirebaseMessagingClient(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
+		container.SendScheduleRepository(),
 		container.EventDispatcher(),
 	)
 }
@@ -1500,6 +1542,12 @@ func (container *Container) RegisterPhoneRoutes() {
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
 	container.UserHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+}
+
+// RegisterSendScheduleRoutes registers routes for the /send-schedules prefix
+func (container *Container) RegisterSendScheduleRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.SendScheduleHandler{}))
+	container.SendScheduleHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterEventRoutes registers routes for the /events prefix

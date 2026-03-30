@@ -66,11 +66,12 @@ func (repository *gormPhoneNotificationRepository) UpdateStatus(ctx context.Cont
 }
 
 // Schedule a notification to be sent in the future
-func (repository *gormPhoneNotificationRepository) Schedule(ctx context.Context, messagesPerMinute uint, notification *entities.PhoneNotification) error {
+func (repository *gormPhoneNotificationRepository) Schedule(ctx context.Context, messagesPerMinute uint, schedule *entities.SendSchedule, notification *entities.PhoneNotification) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	if messagesPerMinute == 0 {
+		notification.ScheduledAt = repository.resolveScheduledAt(time.Now().UTC(), schedule)
 		return repository.insert(ctx, notification)
 	}
 
@@ -86,12 +87,10 @@ func (repository *gormPhoneNotificationRepository) Schedule(ctx context.Context,
 			return stacktrace.Propagate(err, msg)
 		}
 
-		notification.ScheduledAt = time.Now().UTC()
+		notification.ScheduledAt = repository.resolveScheduledAt(time.Now().UTC(), schedule)
 		if err == nil {
-			notification.ScheduledAt = repository.maxTime(
-				time.Now().UTC(),
-				lastNotification.ScheduledAt.Add(time.Duration(60/messagesPerMinute)*time.Second),
-			)
+			rateLimitedAt := lastNotification.ScheduledAt.Add(time.Duration(60/messagesPerMinute) * time.Second)
+			notification.ScheduledAt = repository.resolveScheduledAt(repository.maxTime(notification.ScheduledAt, rateLimitedAt), schedule)
 		}
 
 		if err = tx.WithContext(ctx).Create(notification).Error; err != nil {
@@ -106,6 +105,56 @@ func (repository *gormPhoneNotificationRepository) Schedule(ctx context.Context,
 	}
 
 	return nil
+}
+
+func (repository *gormPhoneNotificationRepository) resolveScheduledAt(current time.Time, schedule *entities.SendSchedule) time.Time {
+	if schedule == nil || !schedule.IsActive || len(schedule.Windows) == 0 {
+		return current.UTC()
+	}
+
+	location, err := time.LoadLocation(schedule.Timezone)
+	if err != nil {
+		return current.UTC()
+	}
+
+	base := current.In(location)
+	var best time.Time
+	for dayOffset := 0; dayOffset <= 7; dayOffset++ {
+		day := base.AddDate(0, 0, dayOffset)
+		weekday := int(day.Weekday())
+		for _, window := range schedule.Windows {
+			if window.DayOfWeek != weekday {
+				continue
+			}
+
+			start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, location).Add(time.Duration(window.StartMinute) * time.Minute)
+			end := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, location).Add(time.Duration(window.EndMinute) * time.Minute)
+
+			var candidate time.Time
+			switch {
+			case dayOffset == 0 && base.Before(start):
+				candidate = start
+			case dayOffset == 0 && (base.Equal(start) || (base.After(start) && base.Before(end))):
+				candidate = base
+			case dayOffset > 0:
+				candidate = start
+			default:
+				continue
+			}
+
+			if best.IsZero() || candidate.Before(best) {
+				best = candidate
+			}
+		}
+		if !best.IsZero() {
+			break
+		}
+	}
+
+	if best.IsZero() {
+		return current.UTC()
+	}
+	return best.UTC()
 }
 
 func (repository *gormPhoneNotificationRepository) maxTime(a, b time.Time) time.Time {

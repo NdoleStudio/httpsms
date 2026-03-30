@@ -171,6 +171,18 @@
                 </v-card>
               </v-dialog>
             </div>
+
+            <h5 class="text-h4 mb-3 mt-12">Send Schedules</h5>
+            <p class="text--secondary">
+              Manage availability schedules on a dedicated page and attach one
+              schedule to each phone. Outgoing messages will respect both the
+              selected schedule and the configured send rate.
+            </p>
+            <v-btn color="primary" to="/settings/send-schedules">
+              <v-icon left>{{ mdiCalendarClock }}</v-icon>
+              Manage Send Schedules
+            </v-btn>
+
             <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
@@ -549,6 +561,18 @@
                   label="Max Send Attempts"
                 >
                 </v-text-field>
+                <v-autocomplete
+                  v-model="activePhone.schedule_id"
+                  outlined
+                  dense
+                  clearable
+                  label="Send Schedule"
+                  :items="sendSchedules"
+                  item-text="name"
+                  item-value="id"
+                  hint="Optional: attach one availability schedule to this phone"
+                  persistent-hint
+                ></v-autocomplete>
                 <v-textarea
                   v-model="activePhone.missed_call_auto_reply"
                   outlined
@@ -817,6 +841,7 @@ import Vue from 'vue'
 import {
   mdiArrowLeft,
   mdiAccountCircle,
+  mdiCalendarClock,
   mdiShieldCheck,
   mdiDelete,
   mdiContentSave,
@@ -829,6 +854,7 @@ import {
   mdiQrcode,
 } from '@mdi/js'
 import QRCode from 'qrcode'
+import axios from '~/plugins/axios'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
 
@@ -843,6 +869,7 @@ export default Vue.extend({
       mdiRefresh,
       mdiArrowLeft,
       mdiAccountCircle,
+      mdiCalendarClock,
       mdiShieldCheck,
       mdiDelete,
       mdiQrcode,
@@ -889,6 +916,7 @@ export default Vue.extend({
       updatingPhone: false,
       updatingDiscord: false,
       loadingDiscordIntegrations: false,
+      sendSchedules: [],
       events: [
         'message.phone.received',
         'message.phone.sent',
@@ -945,6 +973,7 @@ export default Vue.extend({
     ])
     this.loadWebhooks()
     this.loadDiscordIntegrations()
+    this.loadSendSchedules()
     this.updateEmailNotifications()
     if (this.$route.hash) {
       await this.$vuetify.goTo(this.$route.hash)
@@ -1228,6 +1257,15 @@ export default Vue.extend({
         .finally(() => {
           this.updatingWebhook = false
         })
+    },
+
+    async loadSendSchedules() {
+      try {
+        const response = await axios.get('/v1/send-schedules')
+        this.sendSchedules = response.data?.data || []
+      } catch (error) {
+        this.sendSchedules = []
+      }
     },
 
     loadWebhooks() {

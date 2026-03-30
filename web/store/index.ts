@@ -377,6 +377,7 @@ export const actions = {
         missed_call_auto_reply: phone.missed_call_auto_reply,
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
+        schedule_id: (phone as any).schedule_id || null,
       })
       .catch((error: AxiosError) => {
         context.dispatch('handleAxiosError', error)
