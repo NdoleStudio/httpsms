@@ -54,8 +54,8 @@ github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/Masterminds/sprig/v3 v3.3.0 h1:mQh0Yrg1XPo6vjYXgtf5OtijNAKJRNcTdOOGZe3tPhs=
 github.com/Masterminds/sprig/v3 v3.3.0/go.mod h1:Zy1iXRYNqNLUolqCpL4uhk6SHUMAOSCzdgBfDb35Lz0=
-github.com/NdoleStudio/go-otelroundtripper v0.0.13 h1:fDgdxcNJov4LTrMhXqJnF/E3jO4HJVczj90wkxh5PSc=
-github.com/NdoleStudio/go-otelroundtripper v0.0.13/go.mod h1:UIUQ22ErFoBUyLuPDrVNRRKmBHBTfzQO9GF1ztqDvqo=
+github.com/NdoleStudio/go-otelroundtripper v0.0.14 h1:t/VoW2772wTDQnjdECxxWbtZtbnpJyuRSKxRC/hHfTg=
+github.com/NdoleStudio/go-otelroundtripper v0.0.14/go.mod h1:ObQjHo1D/daXeESbFIi0UXJN0yJu4zQ7mMeSKvm4a1I=
 github.com/NdoleStudio/lemonsqueezy-go v1.3.1 h1:lMUVgdAx2onbOUJIVPR05xAANYuCMXBRaGWpAdA4LiM=
 github.com/NdoleStudio/lemonsqueezy-go v1.3.1/go.mod h1:xKRsRX1jSI6mLrVXyWh2sF/1isxTioZrSjWy6HpA3xQ=
 github.com/NdoleStudio/plunk-go v0.0.2 h1:afPW7MHK4Z3rsybpJBnmTmxKCLKF1M7sPI+BNGPf35A=
@@ -399,8 +399,8 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.40.0 h1:QKdN8ly8zEMrByybbQg
 go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.40.0/go.mod h1:bTdK1nhqF76qiPoCCdyFIV+N/sRHYXYCTQc+3VCi3MI=
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.40.0 h1:wVZXIWjQSeSmMoxF74LzAnpVQOAFDo3pPji9Y4SOFKc=
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.40.0/go.mod h1:khvBS2IggMFNwZK/6lEeHg/W57h/IX6J4URh57fuI40=
-go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.39.0 h1:5gn2urDL/FBnK8OkCfD1j3/ER79rUuTYmCvlXBKeYL8=
-go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.39.0/go.mod h1:0fBG6ZJxhqByfFZDwSwpZGzJU671HkwpWaNe2t4VUPI=
+go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.40.0 h1:ZrPRak/kS4xI3AVXy8F7pipuDXmDsrO8Lg+yQjBLjw0=
+go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.40.0/go.mod h1:3y6kQCWztq6hyW8Z9YxQDDm0Je9AJoFar2G0yDcmhRk=
 go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.40.0 h1:MzfofMZN8ulNqobCmCAVbqVL5syHw+eB2qPRkCMA/fQ=
 go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.40.0/go.mod h1:E73G9UFtKRXrxhBsHtG00TB5WxX57lpsQzogDkqBTz8=
 go.opentelemetry.io/otel/log v0.16.0 h1:DeuBPqCi6pQwtCK0pO4fvMB5eBq6sNxEnuTs88pjsN4=
