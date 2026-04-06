@@ -19,7 +19,7 @@ type MessageSend struct {
 	Content string `json:"content" example:"This is a sample text message"`
 
 	// Attachments are optional. When you provide a list of attachments, the message will be sent out as an MMS
-	Attachments []string `json:"attachments" validate:"optional"`
+	Attachments []string `json:"attachments" validate:"optional" example:"https://example.com/image.jpg,https://example.com/video.mp4"`
 
 	// Encrypted is an optional parameter used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
 	Encrypted bool `json:"encrypted" example:"false" validate:"optional"`

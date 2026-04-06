@@ -90,7 +90,7 @@ type Message struct {
 	UserID      UserID         `json:"user_id" gorm:"index:idx_messages__user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Contact     string         `json:"contact" example:"+18005550100"`
 	Content     string         `json:"content" example:"This is a sample text message"`
-	Attachments pq.StringArray `json:"attachments" gorm:"type:text[]" swaggertype:"array,string"`
+	Attachments pq.StringArray `json:"attachments" gorm:"type:text[]" swaggertype:"array,string" example:"https://example.com/image.jpg,https://example.com/video.mp4"`
 	Encrypted   bool           `json:"encrypted" example:"false" gorm:"default:false"`
 	Type        MessageType    `json:"type" example:"mobile-terminated"`
 	Status      MessageStatus  `json:"status" example:"pending"`
