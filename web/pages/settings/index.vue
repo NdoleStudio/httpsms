@@ -50,6 +50,7 @@
                 @change="updateTimezone"
               ></v-autocomplete>
             </div>
+
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p class="text--secondary">
               Use your API Key in the <code>x-api-key</code> HTTP Header when
@@ -256,6 +257,7 @@
                 >Documentation</v-btn
               >
             </div>
+
             <h5 id="discord-settings" class="text-h4 mb-3 mt-12">
               Discord Integration
             </h5>
@@ -322,6 +324,7 @@
               ></v-img>
               Add Discord
             </v-btn>
+
             <h5 id="phones" class="text-h4 mb-3 mt-12">Phones</h5>
             <p class="text--secondary">
               List of mobile phones which are registered for sending and
@@ -382,6 +385,7 @@
                 </tbody>
               </template>
             </v-simple-table>
+
             <h5 id="email-notifications" class="text-h4 mb-3 mt-12">
               Email Notifications
             </h5>
@@ -427,7 +431,11 @@
               <v-icon left>{{ mdiContentSave }}</v-icon>
               Save Notification Settings
             </v-btn>
-            <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-12">
+
+            <h5
+              id="email-notifications"
+              class="text-h4 error--text mb-3 mt-12"
+            >
               Delete Account
             </h5>
             <p v-if="hasActiveSubscription" class="text--secondary">
@@ -497,6 +505,7 @@
         </v-row>
       </v-container>
     </div>
+
     <v-dialog v-model="showPhoneEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>Edit Phone</v-card-title>
@@ -605,7 +614,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showWebhookEdit" overlay-opacity="0.9" max-width="600px">
+
+    <v-dialog
+      v-model="showWebhookEdit"
+      overlay-opacity="0.9"
+      max-width="600px"
+    >
       <v-card>
         <v-card-title>
           <span v-if="!activeWebhook.id">Add a new&nbsp;</span>
@@ -720,7 +734,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showDiscordEdit" overlay-opacity="0.9" max-width="700px">
+
+    <v-dialog
+      v-model="showDiscordEdit"
+      overlay-opacity="0.9"
+      max-width="700px"
+    >
       <v-card>
         <v-card-title>
           <span v-if="!activeDiscord.id">Add a new&nbsp;</span>
@@ -853,7 +872,7 @@ import {
   mdiSquareEditOutline,
   mdiQrcode,
 } from '@mdi/js'
-import axios from '~/plugins/axios'
+import { EntitiesSendSchedule } from '~/models/api'
 import { toCanvas } from 'qrcode'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
@@ -1263,13 +1282,15 @@ export default Vue.extend({
         })
     },
 
-    async loadSendSchedules() {
-      try {
-        const response = await axios.get('/v1/send-schedules')
-        this.sendSchedules = response.data?.data || []
-      } catch (error) {
-        this.sendSchedules = []
-      }
+    loadSendSchedules() {
+      this.$store
+        .dispatch('getSendSchedules')
+        .then((sendSchedules) => {
+          this.sendSchedules = sendSchedules
+        })
+        .catch(() => {
+          this.sendSchedules = []
+        })
     },
 
     loadWebhooks() {

@@ -21,21 +21,30 @@ type SendScheduleHandler struct {
 	service   *services.SendScheduleService
 }
 
-func NewSendScheduleHandler(logger telemetry.Logger, tracer telemetry.Tracer, validator *validators.SendScheduleHandlerValidator, service *services.SendScheduleService) *SendScheduleHandler {
-	return &SendScheduleHandler{logger: logger.WithService(fmt.Sprintf("%T", &SendScheduleHandler{})), tracer: tracer, validator: validator, service: service}
+func NewSendScheduleHandler(
+	logger telemetry.Logger,
+	tracer telemetry.Tracer,
+	validator *validators.SendScheduleHandlerValidator,
+	service *services.SendScheduleService,
+) *SendScheduleHandler {
+	return &SendScheduleHandler{
+		logger:    logger.WithService(fmt.Sprintf("%T", &SendScheduleHandler{})),
+		tracer:    tracer,
+		validator: validator,
+		service:   service,
+	}
 }
 
 func (h *SendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	router.Get("/v1/send-schedules", h.computeRoute(middlewares, h.Index)...)
 	router.Post("/v1/send-schedules", h.computeRoute(middlewares, h.Store)...)
-	router.Get("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Show)...)
 	router.Put("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Update)...)
 	router.Delete("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Delete)...)
 }
 
 // Index godoc
 // @Summary List send schedules
-// @Description Lists the send schedules owned by the authenticated user.
+// @Description List all send schedules owned by the authenticated user.
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Produce json
@@ -46,47 +55,19 @@ func (h *SendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ..
 func (h *SendScheduleHandler) Index(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
+
 	schedules, err := h.service.Index(ctx, h.userIDFomContext(c))
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, "cannot list send schedules"))
 		return h.responseInternalServerError(c)
 	}
-	return h.responseOK(c, "send schedules fetched successfully", schedules)
-}
 
-// Show godoc
-// @Summary Show send schedule
-// @Description Loads a single send schedule owned by the authenticated user.
-// @Security ApiKeyAuth
-// @Tags Send Schedules
-// @Produce json
-// @Param scheduleID path string true "Schedule ID"
-// @Success 200 {object} responses.SendScheduleResponse
-// @Failure 401 {object} responses.Unauthorized
-// @Failure 404 {object} responses.NotFound
-// @Failure 500 {object} responses.InternalServerError
-// @Router /send-schedules/{scheduleID} [get]
-func (h *SendScheduleHandler) Show(c *fiber.Ctx) error {
-	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
-	defer span.End()
-	scheduleID, err := uuid.Parse(c.Params("scheduleID"))
-	if err != nil {
-		return h.responseBadRequest(c, err)
-	}
-	schedule, err := h.service.Load(ctx, h.userIDFomContext(c), scheduleID)
-	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot load send schedule"))
-		if stacktrace.GetCode(err) == 404 {
-			return h.responseNotFound(c, err.Error())
-		}
-		return h.responseInternalServerError(c)
-	}
-	return h.responseOK(c, "send schedule fetched successfully", schedule)
+	return h.responseOK(c, "send schedules fetched successfully", schedules)
 }
 
 // Store godoc
 // @Summary Create send schedule
-// @Description Creates a send schedule for the authenticated user.
+// @Description Create a new send schedule for the authenticated user.
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Accept json
@@ -101,26 +82,34 @@ func (h *SendScheduleHandler) Show(c *fiber.Ctx) error {
 func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
+
 	var request requests.SendScheduleStore
 	if err := c.BodyParser(&request); err != nil {
 		return h.responseBadRequest(c, err)
 	}
+
 	request = request.Sanitize()
 	if errors := h.validator.ValidateStore(ctx, request); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("validation errors [%s], while storing send schedule [%+#v]", spew.Sdump(errors), request)))
+		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf(
+			"validation errors [%s], while storing send schedule [%+#v]",
+			spew.Sdump(errors),
+			request,
+		)))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while saving send schedule")
 	}
+
 	schedule, err := h.service.Store(ctx, request.ToParams(h.userFromContext(c)))
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, "cannot create send schedule"))
 		return h.responseInternalServerError(c)
 	}
+
 	return h.responseCreated(c, "send schedule created successfully", schedule)
 }
 
 // Update godoc
 // @Summary Update send schedule
-// @Description Updates a send schedule owned by the authenticated user.
+// @Description Update a send schedule owned by the authenticated user.
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Accept json
@@ -137,19 +126,28 @@ func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
+
 	scheduleID, err := uuid.Parse(c.Params("scheduleID"))
 	if err != nil {
 		return h.responseBadRequest(c, err)
 	}
+
 	var request requests.SendScheduleStore
 	if err = c.BodyParser(&request); err != nil {
 		return h.responseBadRequest(c, err)
 	}
+
 	request = request.Sanitize()
 	if errors := h.validator.ValidateStore(ctx, request); len(errors) != 0 {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating send schedule")
 	}
-	schedule, err := h.service.Update(ctx, h.userIDFomContext(c), scheduleID, request.ToParams(h.userFromContext(c)))
+
+	schedule, err := h.service.Update(
+		ctx,
+		h.userIDFomContext(c),
+		scheduleID,
+		request.ToParams(h.userFromContext(c)),
+	)
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, "cannot update send schedule"))
 		if stacktrace.GetCode(err) == 404 {
@@ -157,12 +155,13 @@ func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 		}
 		return h.responseInternalServerError(c)
 	}
+
 	return h.responseOK(c, "send schedule updated successfully", schedule)
 }
 
 // Delete godoc
 // @Summary Delete send schedule
-// @Description Deletes a send schedule owned by the authenticated user.
+// @Description Delete a send schedule owned by the authenticated user.
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Produce json
@@ -170,18 +169,25 @@ func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 // @Success 204 {object} responses.NoContent
 // @Failure 400 {object} responses.BadRequest
 // @Failure 401 {object} responses.Unauthorized
+// @Failure 404 {object} responses.NotFound
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules/{scheduleID} [delete]
 func (h *SendScheduleHandler) Delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
+
 	scheduleID, err := uuid.Parse(c.Params("scheduleID"))
 	if err != nil {
 		return h.responseBadRequest(c, err)
 	}
+
 	if err = h.service.Delete(ctx, h.userIDFomContext(c), scheduleID); err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete send schedule"))
+		if stacktrace.GetCode(err) == 404 {
+			return h.responseNotFound(c, err.Error())
+		}
 		return h.responseInternalServerError(c)
 	}
+
 	return h.responseNoContent(c, "send schedule deleted successfully")
 }
