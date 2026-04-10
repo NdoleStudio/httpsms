@@ -882,7 +882,7 @@ export default Vue.extend({
   middleware: ['auth'],
   data() {
     return {
-      mdiEye,1
+      mdiEye,
       mdiEyeOff,
       mdiRefresh,
       mdiArrowLeft,
