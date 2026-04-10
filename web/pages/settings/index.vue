@@ -872,7 +872,6 @@ import {
   mdiSquareEditOutline,
   mdiQrcode,
 } from '@mdi/js'
-import { EntitiesSendSchedule } from '~/models/api'
 import { toCanvas } from 'qrcode'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
@@ -883,7 +882,7 @@ export default Vue.extend({
   middleware: ['auth'],
   data() {
     return {
-      mdiEye,
+      mdiEye,1
       mdiEyeOff,
       mdiRefresh,
       mdiArrowLeft,
