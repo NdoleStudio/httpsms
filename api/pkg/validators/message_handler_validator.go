@@ -48,8 +48,9 @@ func NewMessageHandlerValidator(
 }
 
 const (
-	maxAttachmentCount = 10
-	maxAttachmentSize  = (3 * 1024 * 1024) / 2 // 1.5 MB
+	maxAttachmentCount    = 10
+	maxAttachmentSize     = (3 * 1024 * 1024) / 2 // 1.5 MB per attachment
+	maxTotalAttachmentSize = 3 * 1024 * 1024       // 3 MB total
 )
 
 // ValidateMessageReceive validates the requests.MessageReceive request
@@ -64,11 +65,12 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 			"from": []string{
 				"required",
 			},
-			"content": []string{
-				"required",
-				"min:1",
-				"max:2048",
-			},
+			"content": func() []string {
+				if len(request.Attachments) > 0 {
+					return []string{"max:2048"}
+				}
+				return []string{"required", "min:1", "max:2048"}
+			}(),
 			"sim": []string{
 				"required",
 				"in:" + strings.Join([]string{
@@ -102,6 +104,7 @@ func (validator MessageHandlerValidator) validateAttachments(attachments []reque
 		return errors
 	}
 
+	totalSize := 0
 	for i, attachment := range attachments {
 		if !allowedTypes[attachment.ContentType] {
 			errors.Add("attachments", fmt.Sprintf("attachment [%d] has unsupported content type [%s]", i, attachment.ContentType))
@@ -117,6 +120,12 @@ func (validator MessageHandlerValidator) validateAttachments(attachments []reque
 		if len(decoded) > maxAttachmentSize {
 			errors.Add("attachments", fmt.Sprintf("attachment [%d] size [%d] exceeds maximum of [%d] bytes", i, len(decoded), maxAttachmentSize))
 		}
+
+		totalSize += len(decoded)
+	}
+
+	if totalSize > maxTotalAttachmentSize {
+		errors.Add("attachments", fmt.Sprintf("total attachment size [%d] exceeds maximum of [%d] bytes", totalSize, maxTotalAttachmentSize))
 	}
 
 	return errors

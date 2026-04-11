@@ -81,10 +81,16 @@ func ContentTypeFromExtension(ext string) string {
 // Returns "attachment-{index}" if the sanitized name is empty.
 func SanitizeFilename(name string, index int) string {
 	name = strings.TrimSuffix(name, filepath.Ext(name))
-	name = strings.ReplaceAll(name, "/", "")
-	name = strings.ReplaceAll(name, "\\", "")
-	name = strings.ReplaceAll(name, "..", "")
-	name = strings.TrimSpace(name)
+
+	var builder strings.Builder
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			builder.WriteRune(r)
+		} else if r == ' ' {
+			builder.WriteRune('-')
+		}
+	}
+	name = strings.Trim(builder.String(), "-")
 
 	if name == "" {
 		return fmt.Sprintf("attachment-%d", index)

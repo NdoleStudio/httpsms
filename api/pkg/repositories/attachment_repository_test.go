@@ -43,10 +43,14 @@ func TestSanitizeFilename(t *testing.T) {
 		{"photo.jpg", 0, "photo"},
 		{"../../etc/passwd", 0, "etcpasswd"},
 		{"hello/world\\test", 0, "helloworldtest"},
-		{"normal_file", 0, "normal_file"},
+		{"normal_file", 0, "normalfile"},
 		{"", 0, "attachment-0"},
 		{"   ", 0, "attachment-0"},
 		{"...", 1, "attachment-1"},
+		{"My Photo", 0, "my-photo"},
+		{"file name with spaces.png", 0, "file-name-with-spaces"},
+		{"UPPER_CASE", 0, "uppercase"},
+		{"special!@#chars", 0, "specialchars"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
