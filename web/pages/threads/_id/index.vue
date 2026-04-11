@@ -186,7 +186,7 @@
                       <v-icon x-small class="text--secondary mt-1">{{
                         mdiPaperclip
                       }}</v-icon>
-                      {{ attachment }}
+                      {{ formatAttachmentName(attachment) }}
                     </a>
                   </v-card-text>
                 </v-card>
@@ -460,6 +460,14 @@ export default Vue.extend({
   },
 
   methods: {
+    formatAttachmentName(url: string): string {
+      const parts = url.split('/')
+      if (parts.length >= 2) {
+        return '/' + parts.slice(-2).join('/')
+      }
+      return url
+    },
+
     isPending(message: Message): boolean {
       return ['sending', 'pending', 'scheduled'].includes(message.status)
     },

@@ -331,7 +331,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
-	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched succesfully", event.ID()))
+	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched successfully", event.ID()))
 
 	return service.storeReceivedMessage(ctx, eventPayload)
 }
