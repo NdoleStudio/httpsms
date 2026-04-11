@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -16,14 +15,14 @@ type AttachmentHandler struct {
 	handler
 	logger  telemetry.Logger
 	tracer  telemetry.Tracer
-	storage repositories.AttachmentStorage
+	storage repositories.AttachmentRepository
 }
 
 // NewAttachmentHandler creates a new AttachmentHandler
 func NewAttachmentHandler(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	storage repositories.AttachmentStorage,
+	storage repositories.AttachmentRepository,
 ) (h *AttachmentHandler) {
 	return &AttachmentHandler{
 		logger:  logger.WithService(fmt.Sprintf("%T", h)),
@@ -49,7 +48,7 @@ func (h *AttachmentHandler) RegisterRoutes(router fiber.Router) {
 // @Success      200  {file}  binary
 // @Failure      404  {object}  responses.NotFoundResponse
 // @Failure      500  {object}  responses.InternalServerError
-// @Router       /attachments/{userID}/{messageID}/{attachmentIndex}/{filename} [get]
+// @Router       /v1/attachments/{userID}/{messageID}/{attachmentIndex}/{filename} [get]
 func (h *AttachmentHandler) GetAttachment(c *fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
@@ -69,7 +68,7 @@ func (h *AttachmentHandler) GetAttachment(c *fiber.Ctx) error {
 	if err != nil {
 		msg := fmt.Sprintf("cannot download attachment from path [%s]", path)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
-		if errors.Is(err, repositories.ErrAttachmentNotFound) {
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			return h.responseNotFound(c, "attachment not found")
 		}
 		return h.responseInternalServerError(c)

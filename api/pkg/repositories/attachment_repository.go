@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-// AttachmentStorage is the interface for storing and retrieving message attachments
-type AttachmentStorage interface {
-	// Upload stores attachment data at the given path
-	Upload(ctx context.Context, path string, data []byte) error
+// AttachmentRepository is the interface for storing and retrieving message attachments
+type AttachmentRepository interface {
+	// Upload stores attachment data at the given path with the specified content type
+	Upload(ctx context.Context, path string, data []byte, contentType string) error
 	// Download retrieves attachment data from the given path
 	Download(ctx context.Context, path string) ([]byte, error)
 	// Delete removes an attachment at the given path
@@ -76,9 +76,6 @@ func ContentTypeFromExtension(ext string) string {
 	}
 	return "application/octet-stream"
 }
-
-// ErrAttachmentNotFound is returned when an attachment is not found in storage
-var ErrAttachmentNotFound = fmt.Errorf("attachment not found")
 
 // SanitizeFilename removes path separators and traversal sequences from a filename.
 // Returns "attachment-{index}" if the sanitized name is empty.

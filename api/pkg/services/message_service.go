@@ -36,8 +36,8 @@ type MessageService struct {
 	eventDispatcher   *EventDispatcher
 	phoneService      *PhoneService
 	repository        repositories.MessageRepository
-	attachmentStorage repositories.AttachmentStorage
-	apiBaseURL        string
+	attachmentRepository repositories.AttachmentRepository
+	apiBaseURL           string
 }
 
 // NewMessageService creates a new MessageService
@@ -47,17 +47,17 @@ func NewMessageService(
 	repository repositories.MessageRepository,
 	eventDispatcher *EventDispatcher,
 	phoneService *PhoneService,
-	attachmentStorage repositories.AttachmentStorage,
+	attachmentRepository repositories.AttachmentRepository,
 	apiBaseURL string,
 ) (s *MessageService) {
 	return &MessageService{
-		logger:            logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:            tracer,
-		repository:        repository,
-		phoneService:      phoneService,
-		eventDispatcher:   eventDispatcher,
-		attachmentStorage: attachmentStorage,
-		apiBaseURL:        apiBaseURL,
+		logger:               logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:               tracer,
+		repository:           repository,
+		phoneService:         phoneService,
+		eventDispatcher:      eventDispatcher,
+		attachmentRepository: attachmentRepository,
+		apiBaseURL:           apiBaseURL,
 	}
 }
 
@@ -612,10 +612,8 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 }
 
 func (service *MessageService) uploadAttachments(ctx context.Context, userID entities.UserID, messageID uuid.UUID, attachments []ServiceAttachment) ([]string, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	g, gCtx := errgroup.WithContext(ctx)
 	urls := make([]string, len(attachments))
@@ -636,7 +634,7 @@ func (service *MessageService) uploadAttachments(ctx context.Context, userID ent
 			path := fmt.Sprintf("attachments/%s/%s/%d/%s", userID, messageID, i, filename)
 			paths[i] = path
 
-			if err = service.attachmentStorage.Upload(gCtx, path, decoded); err != nil {
+			if err = service.attachmentRepository.Upload(gCtx, path, decoded, attachment.ContentType); err != nil {
 				return stacktrace.Propagate(err, fmt.Sprintf("cannot upload attachment [%d] to path [%s]", i, path))
 			}
 
@@ -649,7 +647,7 @@ func (service *MessageService) uploadAttachments(ctx context.Context, userID ent
 	if err := g.Wait(); err != nil {
 		for _, path := range paths {
 			if path != "" {
-				_ = service.attachmentStorage.Delete(ctx, path)
+				_ = service.attachmentRepository.Delete(ctx, path)
 			}
 		}
 		return nil, stacktrace.Propagate(err, "cannot upload attachments")

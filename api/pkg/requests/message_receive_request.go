@@ -34,7 +34,7 @@ type MessageReceive struct {
 	// Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
 	Timestamp time.Time `json:"timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
 	// Attachments is the list of MMS attachments received with the message
-	Attachments []MessageAttachment `json:"attachments"`
+	Attachments []MessageAttachment `json:"attachments" validate:"optional"`
 }
 
 // Sanitize sets defaults to MessageReceive

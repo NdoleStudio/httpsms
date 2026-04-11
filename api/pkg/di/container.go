@@ -88,7 +88,7 @@ type Container struct {
 	app               *fiber.App
 	eventDispatcher   *services.EventDispatcher
 	logger            telemetry.Logger
-	attachmentStorage repositories.AttachmentStorage
+	attachmentRepository repositories.AttachmentRepository
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -1433,39 +1433,39 @@ func (container *Container) MessageService() (service *services.MessageService) 
 		container.MessageRepository(),
 		container.EventDispatcher(),
 		container.PhoneService(),
-		container.AttachmentStorage(),
+		container.AttachmentRepository(),
 		container.APIBaseURL(),
 	)
 }
 
-// AttachmentStorage creates a cached AttachmentStorage based on configuration
-func (container *Container) AttachmentStorage() repositories.AttachmentStorage {
-	if container.attachmentStorage != nil {
-		return container.attachmentStorage
+// AttachmentRepository creates a cached AttachmentRepository based on configuration
+func (container *Container) AttachmentRepository() repositories.AttachmentRepository {
+	if container.attachmentRepository != nil {
+		return container.attachmentRepository
 	}
 
 	bucket := os.Getenv("GCS_BUCKET_NAME")
 	if bucket != "" {
-		container.logger.Debug("creating GCSAttachmentStorage")
+		container.logger.Debug("creating GoogleCloudStorageAttachmentRepository")
 		client, err := storage.NewClient(context.Background())
 		if err != nil {
 			container.logger.Fatal(stacktrace.Propagate(err, "cannot create GCS client"))
 		}
-		container.attachmentStorage = repositories.NewGCSAttachmentStorage(
+		container.attachmentRepository = repositories.NewGoogleCloudStorageAttachmentRepository(
 			container.Logger(),
 			container.Tracer(),
 			client,
 			bucket,
 		)
 	} else {
-		container.logger.Debug("creating MemoryAttachmentStorage (GCS_BUCKET_NAME not set)")
-		container.attachmentStorage = repositories.NewMemoryAttachmentStorage(
+		container.logger.Debug("creating MemoryAttachmentRepository (GCS_BUCKET_NAME not set)")
+		container.attachmentRepository = repositories.NewMemoryAttachmentRepository(
 			container.Logger(),
 			container.Tracer(),
 		)
 	}
 
-	return container.attachmentStorage
+	return container.attachmentRepository
 }
 
 // APIBaseURL returns the API base URL derived from EVENTS_QUEUE_ENDPOINT
@@ -1480,7 +1480,7 @@ func (container *Container) AttachmentHandler() (handler *handlers.AttachmentHan
 	return handlers.NewAttachmentHandler(
 		container.Logger(),
 		container.Tracer(),
-		container.AttachmentStorage(),
+		container.AttachmentRepository(),
 	)
 }
 
