@@ -19,6 +19,13 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 )
 
+// ServiceAttachment represents attachment data passed to the service layer
+type ServiceAttachment struct {
+	Name        string
+	ContentType string
+	Content     string // base64-encoded
+}
+
 // MessageService is handles message requests
 type MessageService struct {
 	service
@@ -289,14 +296,15 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 
 // MessageReceiveParams parameters registering a message event
 type MessageReceiveParams struct {
-	Contact   string
-	UserID    entities.UserID
-	Owner     phonenumbers.PhoneNumber
-	Content   string
-	SIM       entities.SIM
-	Timestamp time.Time
-	Encrypted bool
-	Source    string
+	Contact     string
+	UserID      entities.UserID
+	Owner       phonenumbers.PhoneNumber
+	Content     string
+	SIM         entities.SIM
+	Timestamp   time.Time
+	Encrypted   bool
+	Source      string
+	Attachments []ServiceAttachment
 }
 
 // ReceiveMessage handles message received by a mobile phone
