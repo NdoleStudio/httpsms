@@ -323,16 +323,12 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	messageID := uuid.New()
-	attachmentURLs := []string{}
 
-	if len(params.Attachments) > 0 {
-		ctxLogger.Info(fmt.Sprintf("uploading [%d] attachments for message [%s]", len(params.Attachments), messageID))
-		var err error
-		attachmentURLs, err = service.uploadAttachments(ctx, params.UserID, messageID, params.Attachments)
-		if err != nil {
-			msg := fmt.Sprintf("cannot upload attachments for message [%s]", messageID)
-			return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-		}
+	ctxLogger.Info(fmt.Sprintf("uploading [%d] attachments for user [%s] message [%s]", len(params.Attachments), params.UserID, messageID))
+	attachmentURLs, err := service.uploadAttachments(ctx, params.UserID, messageID, params.Attachments)
+	if err != nil {
+		msg := fmt.Sprintf("cannot upload attachments for user [%s] message [%s]", params.UserID, messageID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
 	eventPayload := events.MessagePhoneReceivedPayload{
@@ -612,6 +608,10 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 }
 
 func (service *MessageService) uploadAttachments(ctx context.Context, userID entities.UserID, messageID uuid.UUID, attachments []ServiceAttachment) ([]string, error) {
+	if len(attachments) == 0 {
+		return []string{}, nil
+	}
+
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
