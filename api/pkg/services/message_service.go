@@ -2,12 +2,14 @@ package services
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/nyaruka/phonenumbers"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -29,11 +31,13 @@ type ServiceAttachment struct {
 // MessageService is handles message requests
 type MessageService struct {
 	service
-	logger          telemetry.Logger
-	tracer          telemetry.Tracer
-	eventDispatcher *EventDispatcher
-	phoneService    *PhoneService
-	repository      repositories.MessageRepository
+	logger            telemetry.Logger
+	tracer            telemetry.Tracer
+	eventDispatcher   *EventDispatcher
+	phoneService      *PhoneService
+	repository        repositories.MessageRepository
+	attachmentStorage repositories.AttachmentStorage
+	apiBaseURL        string
 }
 
 // NewMessageService creates a new MessageService
@@ -43,13 +47,17 @@ func NewMessageService(
 	repository repositories.MessageRepository,
 	eventDispatcher *EventDispatcher,
 	phoneService *PhoneService,
+	attachmentStorage repositories.AttachmentStorage,
+	apiBaseURL string,
 ) (s *MessageService) {
 	return &MessageService{
-		logger:          logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:          tracer,
-		repository:      repository,
-		phoneService:    phoneService,
-		eventDispatcher: eventDispatcher,
+		logger:            logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:            tracer,
+		repository:        repository,
+		phoneService:      phoneService,
+		eventDispatcher:   eventDispatcher,
+		attachmentStorage: attachmentStorage,
+		apiBaseURL:        apiBaseURL,
 	}
 }
 
@@ -314,15 +322,29 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
+	messageID := uuid.New()
+	var attachmentURLs []string
+
+	if len(params.Attachments) > 0 {
+		ctxLogger.Info(fmt.Sprintf("uploading [%d] attachments for message [%s]", len(params.Attachments), messageID))
+		var err error
+		attachmentURLs, err = service.uploadAttachments(ctx, params.UserID, messageID, params.Attachments)
+		if err != nil {
+			msg := fmt.Sprintf("cannot upload attachments for message [%s]", messageID)
+			return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+	}
+
 	eventPayload := events.MessagePhoneReceivedPayload{
-		MessageID: uuid.New(),
-		UserID:    params.UserID,
-		Encrypted: params.Encrypted,
-		Owner:     phonenumbers.Format(&params.Owner, phonenumbers.E164),
-		Contact:   params.Contact,
-		Timestamp: params.Timestamp,
-		Content:   params.Content,
-		SIM:       params.SIM,
+		MessageID:   messageID,
+		UserID:      params.UserID,
+		Encrypted:   params.Encrypted,
+		Owner:       phonenumbers.Format(&params.Owner, phonenumbers.E164),
+		Contact:     params.Contact,
+		Timestamp:   params.Timestamp,
+		Content:     params.Content,
+		SIM:         params.SIM,
+		Attachments: attachmentURLs,
 	}
 
 	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.MessageID))
@@ -568,6 +590,7 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 		UserID:            params.UserID,
 		Contact:           params.Contact,
 		Content:           params.Content,
+		Attachments:       params.Attachments,
 		SIM:               params.SIM,
 		Encrypted:         params.Encrypted,
 		Type:              entities.MessageTypeMobileOriginated,
@@ -586,6 +609,53 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 
 	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", message.ID))
 	return message, nil
+}
+
+func (service *MessageService) uploadAttachments(ctx context.Context, userID entities.UserID, messageID uuid.UUID, attachments []ServiceAttachment) ([]string, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+
+	g, gCtx := errgroup.WithContext(ctx)
+	urls := make([]string, len(attachments))
+	paths := make([]string, len(attachments))
+
+	for i, attachment := range attachments {
+		i, attachment := i, attachment
+		g.Go(func() error {
+			decoded, err := base64.StdEncoding.DecodeString(attachment.Content)
+			if err != nil {
+				return stacktrace.Propagate(err, fmt.Sprintf("cannot decode base64 content for attachment [%d]", i))
+			}
+
+			sanitizedName := repositories.SanitizeFilename(attachment.Name, i)
+			ext := repositories.ExtensionFromContentType(attachment.ContentType)
+			filename := sanitizedName + ext
+
+			path := fmt.Sprintf("attachments/%s/%s/%d/%s", userID, messageID, i, filename)
+			paths[i] = path
+
+			if err = service.attachmentStorage.Upload(gCtx, path, decoded); err != nil {
+				return stacktrace.Propagate(err, fmt.Sprintf("cannot upload attachment [%d] to path [%s]", i, path))
+			}
+
+			urls[i] = fmt.Sprintf("%s/v1/attachments/%s/%s/%d/%s", service.apiBaseURL, userID, messageID, i, filename)
+			ctxLogger.Info(fmt.Sprintf("uploaded attachment [%d] to [%s]", i, path))
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		for _, path := range paths {
+			if path != "" {
+				_ = service.attachmentStorage.Delete(ctx, path)
+			}
+		}
+		return nil, stacktrace.Propagate(err, "cannot upload attachments")
+	}
+
+	return urls, nil
 }
 
 // HandleMessageParams are parameters for handling a message event
