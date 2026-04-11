@@ -2,6 +2,7 @@ package validators
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"strings"
@@ -46,6 +47,11 @@ func NewMessageHandlerValidator(
 	}
 }
 
+const (
+	maxAttachmentCount = 10
+	maxAttachmentSize  = (3 * 1024 * 1024) / 2 // 1.5 MB
+)
+
 // ValidateMessageReceive validates the requests.MessageReceive request
 func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Context, request requests.MessageReceive) url.Values {
 	v := govalidator.New(govalidator.Options{
@@ -73,7 +79,47 @@ func (validator MessageHandlerValidator) ValidateMessageReceive(_ context.Contex
 		},
 	})
 
-	return v.ValidateStruct()
+	errors := v.ValidateStruct()
+
+	if len(request.Attachments) > 0 {
+		attachmentErrors := validator.validateAttachments(request.Attachments)
+		for key, values := range attachmentErrors {
+			for _, value := range values {
+				errors.Add(key, value)
+			}
+		}
+	}
+
+	return errors
+}
+
+func (validator MessageHandlerValidator) validateAttachments(attachments []requests.MessageAttachment) url.Values {
+	errors := url.Values{}
+	allowedTypes := repositories.AllowedContentTypes()
+
+	if len(attachments) > maxAttachmentCount {
+		errors.Add("attachments", fmt.Sprintf("attachment count [%d] exceeds maximum of [%d]", len(attachments), maxAttachmentCount))
+		return errors
+	}
+
+	for i, attachment := range attachments {
+		if !allowedTypes[attachment.ContentType] {
+			errors.Add("attachments", fmt.Sprintf("attachment [%d] has unsupported content type [%s]", i, attachment.ContentType))
+			continue
+		}
+
+		decoded, err := base64.StdEncoding.DecodeString(attachment.Content)
+		if err != nil {
+			errors.Add("attachments", fmt.Sprintf("attachment [%d] has invalid base64 content", i))
+			continue
+		}
+
+		if len(decoded) > maxAttachmentSize {
+			errors.Add("attachments", fmt.Sprintf("attachment [%d] size [%d] exceeds maximum of [%d] bytes", i, len(decoded), maxAttachmentSize))
+		}
+	}
+
+	return errors
 }
 
 // ValidateMessageSend validates the requests.MessageSend request
