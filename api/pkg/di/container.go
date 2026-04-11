@@ -81,13 +81,13 @@ import (
 
 // Container is used to resolve services at runtime
 type Container struct {
-	projectID         string
-	db                *gorm.DB
-	dedicatedDB       *gorm.DB
-	version           string
-	app               *fiber.App
-	eventDispatcher   *services.EventDispatcher
-	logger            telemetry.Logger
+	projectID            string
+	db                   *gorm.DB
+	dedicatedDB          *gorm.DB
+	version              string
+	app                  *fiber.App
+	eventDispatcher      *services.EventDispatcher
+	logger               telemetry.Logger
 	attachmentRepository repositories.AttachmentRepository
 }
 
@@ -398,7 +398,7 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 // FirebaseApp creates a new instance of firebase.App
 func (container *Container) FirebaseApp() (app *firebase.App) {
 	container.logger.Debug(fmt.Sprintf("creating %T", app))
-	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
+	app, err := firebase.NewApp(context.Background(), nil, option.WithAuthCredentialsJSON(option.ServiceAccount, container.FirebaseCredentials()))
 	if err != nil {
 		msg := "cannot initialize firebase application"
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
@@ -1447,7 +1447,7 @@ func (container *Container) AttachmentRepository() repositories.AttachmentReposi
 	bucket := os.Getenv("GCS_BUCKET_NAME")
 	if bucket != "" {
 		container.logger.Debug("creating GoogleCloudStorageAttachmentRepository")
-		client, err := storage.NewClient(context.Background())
+		client, err := storage.NewClient(context.Background(), option.WithAuthCredentialsJSON(option.ServiceAccount, container.FirebaseCredentials()))
 		if err != nil {
 			container.logger.Fatal(stacktrace.Propagate(err, "cannot create GCS client"))
 		}

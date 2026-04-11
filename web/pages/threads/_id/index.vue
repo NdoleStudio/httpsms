@@ -162,6 +162,7 @@
                   :color="isMT(message) ? 'primary' : 'default'"
                 >
                   <v-card-text
+                    v-if="message.content"
                     class="text--primary text-break"
                     style="white-space: pre-line"
                   >
