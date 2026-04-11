@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
 )
 
 // MemoryAttachmentStorage stores attachments in memory
@@ -44,7 +43,7 @@ func (s *MemoryAttachmentStorage) Download(ctx context.Context, path string) ([]
 
 	value, ok := s.data.Load(path)
 	if !ok {
-		return nil, stacktrace.NewError(fmt.Sprintf("attachment not found at path [%s]", path))
+		return nil, ErrAttachmentNotFound
 	}
 	return value.([]byte), nil
 }

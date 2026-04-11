@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -68,7 +69,10 @@ func (h *AttachmentHandler) GetAttachment(c *fiber.Ctx) error {
 	if err != nil {
 		msg := fmt.Sprintf("cannot download attachment from path [%s]", path)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
-		return h.responseNotFound(c, "attachment not found")
+		if errors.Is(err, repositories.ErrAttachmentNotFound) {
+			return h.responseNotFound(c, "attachment not found")
+		}
+		return h.responseInternalServerError(c)
 	}
 
 	ext := filepath.Ext(filename)

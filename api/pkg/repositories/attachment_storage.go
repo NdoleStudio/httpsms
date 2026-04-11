@@ -34,6 +34,22 @@ var contentTypeExtensions = map[string]string{
 	"text/x-vcard":    ".vcf",
 }
 
+// extensionContentTypes is the reverse map from file extensions to canonical MIME types
+var extensionContentTypes = map[string]string{
+	".jpg":  "image/jpeg",
+	".png":  "image/png",
+	".gif":  "image/gif",
+	".webp": "image/webp",
+	".bmp":  "image/bmp",
+	".mp4":  "video/mp4",
+	".3gp":  "video/3gpp",
+	".mp3":  "audio/mpeg",
+	".ogg":  "audio/ogg",
+	".amr":  "audio/amr",
+	".pdf":  "application/pdf",
+	".vcf":  "text/vcard",
+}
+
 // AllowedContentTypes returns the set of allowed MIME types for attachments
 func AllowedContentTypes() map[string]bool {
 	allowed := make(map[string]bool, len(contentTypeExtensions))
@@ -55,13 +71,14 @@ func ExtensionFromContentType(contentType string) string {
 // ContentTypeFromExtension returns the MIME content type for a file extension.
 // Returns "application/octet-stream" if the extension is not recognized.
 func ContentTypeFromExtension(ext string) string {
-	for ct, e := range contentTypeExtensions {
-		if e == ext {
-			return ct
-		}
+	if ct, ok := extensionContentTypes[ext]; ok {
+		return ct
 	}
 	return "application/octet-stream"
 }
+
+// ErrAttachmentNotFound is returned when an attachment is not found in storage
+var ErrAttachmentNotFound = fmt.Errorf("attachment not found")
 
 // SanitizeFilename removes path separators and traversal sequences from a filename.
 // Returns "attachment-{index}" if the sanitized name is empty.

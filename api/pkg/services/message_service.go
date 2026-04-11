@@ -323,7 +323,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	messageID := uuid.New()
-	var attachmentURLs []string
+	attachmentURLs := []string{}
 
 	if len(params.Attachments) > 0 {
 		ctxLogger.Info(fmt.Sprintf("uploading [%d] attachments for message [%s]", len(params.Attachments), messageID))
