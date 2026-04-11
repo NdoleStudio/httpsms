@@ -48,8 +48,8 @@ func NewMessageHandlerValidator(
 }
 
 const (
-	maxAttachmentCount    = 10
-	maxAttachmentSize     = (3 * 1024 * 1024) / 2 // 1.5 MB per attachment
+	maxAttachmentCount     = 10
+	maxAttachmentSize      = (3 * 1024 * 1024) / 2 // 1.5 MB per attachment
 	maxTotalAttachmentSize = 3 * 1024 * 1024       // 3 MB total
 )
 

@@ -31,11 +31,11 @@ type ServiceAttachment struct {
 // MessageService is handles message requests
 type MessageService struct {
 	service
-	logger            telemetry.Logger
-	tracer            telemetry.Tracer
-	eventDispatcher   *EventDispatcher
-	phoneService      *PhoneService
-	repository        repositories.MessageRepository
+	logger               telemetry.Logger
+	tracer               telemetry.Tracer
+	eventDispatcher      *EventDispatcher
+	phoneService         *PhoneService
+	repository           repositories.MessageRepository
 	attachmentRepository repositories.AttachmentRepository
 	apiBaseURL           string
 }
