@@ -150,20 +150,18 @@ This covers common MMS content types. New mappings can be added as needed.
 
 **Route:** `GET /v1/attachments/:userID/:messageID/:attachmentIndex/:filename`
 
-- Registered with **both** `AuthenticatedMiddleware` (Firebase bearer) **and** `APIKeyMiddleware` — so both the end-user (via Firebase token) and webhook consumers (via API key) can download attachments
-- Authenticates that `:userID` matches the authenticated user's ID (from either auth method)
-- Returns 401 if mismatch
+- Registered **without authentication middleware** — publicly accessible, consistent with outgoing attachment URLs
+- The `{userID}/{messageID}/{attachmentIndex}` path components provide sufficient obscurity (UUIDs are unguessable)
 
 **Download flow:**
 
 1. Parse URL params (userID, messageID, attachmentIndex, filename)
-2. Verify authenticated user ID matches `:userID`
-3. Construct storage path: `attachments/{userID}/{messageID}/{attachmentIndex}/{filename}`
-4. Fetch bytes from `AttachmentStorage.Download(ctx, path)`
-5. Derive `Content-Type` from filename extension
-6. Set security headers: `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`
-7. Respond with binary data + correct `Content-Type` header
-8. Return 404 if attachment not found in storage
+2. Construct storage path: `attachments/{userID}/{messageID}/{attachmentIndex}/{filename}`
+3. Fetch bytes from `AttachmentStorage.Download(ctx, path)`
+4. Derive `Content-Type` from filename extension
+5. Set security headers: `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`
+6. Respond with binary data + correct `Content-Type` header
+7. Return 404 if attachment not found in storage
 
 ### 7. Webhook Event Changes
 
@@ -183,7 +181,7 @@ type MessagePhoneReceivedPayload struct {
 }
 ```
 
-Webhook subscribers will receive the array of download URLs. They can `GET` each URL with their **API key** (via `x-api-key` header) or **bearer token** to download the attachment.
+Webhook subscribers will receive the array of download URLs. They can `GET` each URL directly — no authentication required.
 
 ### 8. Files Changed / Created
 
@@ -219,5 +217,4 @@ Webhook subscribers will receive the array of download URLs. They can `GET` each
 - Storage upload failure → Best-effort delete of already-uploaded attachments, then return 500; message is NOT stored
 - Storage download failure → Return 404 or 500 depending on error type
 - Invalid base64 content → Return 400 Bad Request
-- UserID mismatch on download → Return 401 Unauthorized
 - All errors wrapped with `stacktrace.Propagate()` per project convention
