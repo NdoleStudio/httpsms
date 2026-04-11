@@ -25,6 +25,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
 
+	"cloud.google.com/go/storage"
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/NdoleStudio/httpsms/pkg/cache"
@@ -80,13 +81,14 @@ import (
 
 // Container is used to resolve services at runtime
 type Container struct {
-	projectID       string
-	db              *gorm.DB
-	dedicatedDB     *gorm.DB
-	version         string
-	app             *fiber.App
-	eventDispatcher *services.EventDispatcher
-	logger          telemetry.Logger
+	projectID         string
+	db                *gorm.DB
+	dedicatedDB       *gorm.DB
+	version           string
+	app               *fiber.App
+	eventDispatcher   *services.EventDispatcher
+	logger            telemetry.Logger
+	attachmentStorage repositories.AttachmentStorage
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -118,6 +120,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
+	container.RegisterAttachmentRoutes()
 	container.RegisterBulkMessageRoutes()
 
 	container.RegisterMessageThreadRoutes()
@@ -1430,7 +1433,61 @@ func (container *Container) MessageService() (service *services.MessageService) 
 		container.MessageRepository(),
 		container.EventDispatcher(),
 		container.PhoneService(),
+		container.AttachmentStorage(),
+		container.APIBaseURL(),
 	)
+}
+
+// AttachmentStorage creates a cached AttachmentStorage based on configuration
+func (container *Container) AttachmentStorage() repositories.AttachmentStorage {
+	if container.attachmentStorage != nil {
+		return container.attachmentStorage
+	}
+
+	bucket := os.Getenv("GCS_BUCKET_NAME")
+	if bucket != "" {
+		container.logger.Debug("creating GCSAttachmentStorage")
+		client, err := storage.NewClient(context.Background())
+		if err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot create GCS client"))
+		}
+		container.attachmentStorage = repositories.NewGCSAttachmentStorage(
+			container.Logger(),
+			container.Tracer(),
+			client,
+			bucket,
+		)
+	} else {
+		container.logger.Debug("creating MemoryAttachmentStorage (GCS_BUCKET_NAME not set)")
+		container.attachmentStorage = repositories.NewMemoryAttachmentStorage(
+			container.Logger(),
+			container.Tracer(),
+		)
+	}
+
+	return container.attachmentStorage
+}
+
+// APIBaseURL returns the API base URL derived from EVENTS_QUEUE_ENDPOINT
+func (container *Container) APIBaseURL() string {
+	endpoint := os.Getenv("EVENTS_QUEUE_ENDPOINT")
+	return strings.TrimSuffix(endpoint, "/v1/events")
+}
+
+// AttachmentHandler creates a new AttachmentHandler
+func (container *Container) AttachmentHandler() (handler *handlers.AttachmentHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+	return handlers.NewAttachmentHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.AttachmentStorage(),
+	)
+}
+
+// RegisterAttachmentRoutes registers routes for the /attachments prefix
+func (container *Container) RegisterAttachmentRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.AttachmentHandler{}))
+	container.AttachmentHandler().RegisterRoutes(container.App())
 }
 
 // PhoneAPIKeyService creates a new instance of services.PhoneAPIKeyService
