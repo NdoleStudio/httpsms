@@ -83,8 +83,8 @@ func SanitizeFilename(name string, index int) string {
 	name = strings.TrimSuffix(name, filepath.Ext(name))
 
 	var builder strings.Builder
-	for _, r := range strings.ToLower(name) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
 			builder.WriteRune(r)
 		} else if r == ' ' {
 			builder.WriteRune('-')
