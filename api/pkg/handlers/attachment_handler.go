@@ -36,17 +36,17 @@ func (h *AttachmentHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/v1/attachments/:userID/:messageID/:attachmentIndex/:filename", h.GetAttachment)
 }
 
-// GetAttachment downloads an attachment
+// GetAttachment Downloads an attachment
 // @Summary      Download a message attachment
 // @Description  Download an MMS attachment by its path components
 // @Tags         Attachments
-// @Produce      octet-stream
+// @Produce      application/octet-stream
 // @Param        userID           path  string  true  "User ID"
 // @Param        messageID        path  string  true  "Message ID"
 // @Param        attachmentIndex  path  string  true  "Attachment index"
 // @Param        filename         path  string  true  "Filename with extension"
 // @Success      200  {file}  binary
-// @Failure      404  {object}  responses.NotFoundResponse
+// @Failure      404  {object}  responses.NotFound
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /v1/attachments/{userID}/{messageID}/{attachmentIndex}/{filename} [get]
 func (h *AttachmentHandler) GetAttachment(c *fiber.Ctx) error {

@@ -102,6 +102,13 @@ definitions:
     type: object
   entities.Message:
     properties:
+      attachments:
+        example:
+          - https://example.com/image.jpg
+          - https://example.com/video.mp4
+        items:
+          type: string
+        type: array
       contact:
         example: "+18005550100"
         type: string
@@ -169,13 +176,14 @@ definitions:
         example: "2022-06-05T14:26:09.527976+03:00"
         type: string
       sim:
+        allOf:
+          - $ref: "#/definitions/entities.SIM"
         description: |-
           SIM is the SIM card to use to send the message
           * SMS1: use the SIM card in slot 1
           * SMS2: use the SIM card in slot 2
           * DEFAULT: used the default communication SIM card
         example: DEFAULT
-        type: string
       status:
         example: pending
         type: string
@@ -189,6 +197,7 @@ definitions:
         example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
         type: string
     required:
+      - attachments
       - contact
       - content
       - created_at
@@ -289,8 +298,7 @@ definitions:
         example: "+18005550199"
         type: string
       sim:
-        description: SIM card that received the message
-        type: string
+        $ref: "#/definitions/entities.SIM"
       updated_at:
         example: "2022-06-05T14:26:10.303278+03:00"
         type: string
@@ -356,6 +364,40 @@ definitions:
       - user_email
       - user_id
     type: object
+  entities.SIM:
+    enum:
+      - SIM1
+      - SIM2
+    type: string
+    x-enum-varnames:
+      - SIM1
+      - SIM2
+  entities.SubscriptionName:
+    enum:
+      - free
+      - pro-monthly
+      - pro-yearly
+      - ultra-monthly
+      - ultra-yearly
+      - pro-lifetime
+      - 20k-monthly
+      - 100k-monthly
+      - 50k-monthly
+      - 200k-monthly
+      - 20k-yearly
+    type: string
+    x-enum-varnames:
+      - SubscriptionNameFree
+      - SubscriptionNameProMonthly
+      - SubscriptionNameProYearly
+      - SubscriptionNameUltraMonthly
+      - SubscriptionNameUltraYearly
+      - SubscriptionNameProLifetime
+      - SubscriptionName20KMonthly
+      - SubscriptionName100KMonthly
+      - SubscriptionName50KMonthly
+      - SubscriptionName200KMonthly
+      - SubscriptionName20KYearly
   entities.User:
     properties:
       active_phone_id:
@@ -392,8 +434,9 @@ definitions:
         example: 8f9c71b8-b84e-4417-8408-a62274f65a08
         type: string
       subscription_name:
+        allOf:
+          - $ref: "#/definitions/entities.SubscriptionName"
         example: free
-        type: string
       subscription_renews_at:
         example: "2022-06-05T14:26:02.302718+03:00"
         type: string
@@ -501,8 +544,34 @@ definitions:
       - charging
       - phone_numbers
     type: object
+  requests.MessageAttachment:
+    properties:
+      content:
+        description: Content is the base64-encoded attachment data
+        example: base64data...
+        type: string
+      content_type:
+        description: ContentType is the MIME type of the attachment
+        example: image/jpeg
+        type: string
+      name:
+        description: Name is the original filename of the attachment
+        example: photo.jpg
+        type: string
+    required:
+      - content
+      - content_type
+      - name
+    type: object
   requests.MessageBulkSend:
     properties:
+      attachments:
+        description:
+          Attachments are optional. When you provide a list of attachments,
+          the message will be sent out as an MMS
+        items:
+          type: string
+        type: array
       content:
         example: This is a sample text message
         type: string
@@ -530,7 +599,6 @@ definitions:
         type: array
     required:
       - content
-      - encrypted
       - from
       - to
     type: object
@@ -580,6 +648,13 @@ definitions:
     type: object
   requests.MessageReceive:
     properties:
+      attachments:
+        description:
+          Attachments is the list of MMS attachments received with the
+          message
+        items:
+          $ref: "#/definitions/requests.MessageAttachment"
+        type: array
       content:
         example: This is a sample text message received on a phone
         type: string
@@ -593,9 +668,10 @@ definitions:
         example: "+18005550199"
         type: string
       sim:
+        allOf:
+          - $ref: "#/definitions/entities.SIM"
         description: SIM card that received the message
         example: SIM1
-        type: string
       timestamp:
         description:
           Timestamp is the time when the event was emitted, Please send
@@ -615,6 +691,16 @@ definitions:
     type: object
   requests.MessageSend:
     properties:
+      attachments:
+        description:
+          Attachments are optional. When you provide a list of attachments,
+          the message will be sent out as an MMS
+        example:
+          - https://example.com/image.jpg
+          - https://example.com/video.mp4
+        items:
+          type: string
+        type: array
       content:
         example: This is a sample text message
         type: string
@@ -2031,6 +2117,49 @@ paths:
       summary: Delete a message from the database.
       tags:
         - Messages
+    get:
+      consumes:
+        - application/json
+      description: Get a message from the database by the message ID.
+      parameters:
+        - default: 32343a19-da5e-4b1b-a767-3298a73703ca
+          description: ID of the message
+          in: path
+          name: messageID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: "#/definitions/responses.MessageResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Get a message from the database.
+      tags:
+        - Messages
   /messages/{messageID}/events:
     post:
       consumes:
@@ -2973,6 +3102,11 @@ paths:
           required: true
           schema:
             $ref: "#/definitions/requests.UserPaymentInvoice"
+        - description: ID of the subscription invoice to generate the PDF for
+          in: path
+          name: subscriptionInvoiceID
+          required: true
+          type: string
       produces:
         - application/pdf
       responses:
@@ -3037,6 +3171,48 @@ paths:
       summary: Get the last 10 subscription payments.
       tags:
         - Users
+  /v1/attachments/{userID}/{messageID}/{attachmentIndex}/{filename}:
+    get:
+      description: Download an MMS attachment by its path components
+      parameters:
+        - description: User ID
+          in: path
+          name: userID
+          required: true
+          type: string
+        - description: Message ID
+          in: path
+          name: messageID
+          required: true
+          type: string
+        - description: Attachment index
+          in: path
+          name: attachmentIndex
+          required: true
+          type: string
+        - description: Filename with extension
+          in: path
+          name: filename
+          required: true
+          type: string
+      produces:
+        - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      summary: Download a message attachment
+      tags:
+        - Attachments
   /webhooks:
     get:
       consumes:
