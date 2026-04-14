@@ -7,7 +7,7 @@
     <string name="sign_in_button">Login With API Key</string>
     <string name="text_area_api_key">API Key</string>
     <string name="img_http_sms_logo">HTTP Sms Logo</string>
-    <string name="get_your_api_key">Open\nhttpsms.com/settings\nto get your API key</string>
+    <string name="get_your_api_key">Get Your API Key at\nhttpsms.com/settings</string>
     <string name="main_log_out">Log Out</string>
     <string name="login_phone_number_hint">e.g +18005550199 (international format)</string>
     <string name="login_server_url_hint">e.g https://api.httpsms.com</string>

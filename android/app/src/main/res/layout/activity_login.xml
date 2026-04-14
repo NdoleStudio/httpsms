@@ -1,132 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp">
+    android:fillViewport="true">
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_marginTop="32dp"
-        android:contentDescription="@string/img_http_sms_logo"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/logo_cropped"
-        tools:ignore="ImageContrastCheck" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
-        android:autoLink="web"
-        android:lineHeight="28sp"
-        android:text="@string/get_your_api_key"
-        android:textAlignment="center"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toTopOf="@+id/loginApiKeyTextInputLayout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/loginApiKeyTextInputLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="@string/text_area_api_key"
-        app:errorEnabled="true"
-        app:endIconMode="custom"
-        app:endIconDrawable="@android:drawable/ic_menu_camera"
-        app:endIconContentDescription="cameraButton"
-        app:layout_constraintBottom_toTopOf="@+id/loginPhoneNumberLayoutSIM1"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView">
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="64dp"
+            android:contentDescription="@string/img_http_sms_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/logo_cropped"
+            tools:ignore="ImageContrastCheck" />
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/loginApiKeyTextInput"
-            android:layout_width="match_parent"
-            android:imeOptions="actionDone"
-            android:inputType="text"
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            tools:ignore="TextContrastCheck" />
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="24dp"
+            android:autoLink="web"
+            android:lineHeight="28sp"
+            android:text="@string/get_your_api_key"
+            android:textAlignment="center"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toTopOf="@+id/loginApiKeyTextInputLayout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/imageView"
+            app:layout_constraintVertical_bias="0"
+            app:layout_constraintVertical_chainStyle="packed" />
 
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/loginPhoneNumberLayoutSIM1"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="@string/login_phone_number_sim1"
-        app:errorEnabled="true"
-        app:placeholderText="@string/login_phone_number_hint"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/loginPhoneNumberInputSIM1"
-            android:layout_width="match_parent"
-            android:inputType="text"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionDone"
-            tools:ignore="TextContrastCheck" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/loginPhoneNumberLayoutSIM2"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="@string/login_phone_number_sim2"
-        app:errorEnabled="true"
-        app:placeholderText="@string/login_phone_number_hint"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM1">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/loginPhoneNumberInputSIM2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionDone"
-            android:inputType="text"
-            tools:ignore="TextContrastCheck" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <LinearLayout
-        android:id="@+id/loginServerUrlLayoutContainer"
-        android:orientation="vertical"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM2">
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/loginServerUrlLayout"
+            android:id="@+id/loginApiKeyTextInputLayout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="@string/server_url"
+            android:hint="@string/text_area_api_key"
             app:errorEnabled="true"
-            app:placeholderText="@string/login_server_url_hint">
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_menu_camera"
+            app:endIconContentDescription="cameraButton"
+            app:layout_constraintBottom_toTopOf="@+id/loginPhoneNumberLayoutSIM1"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/loginServerUrlInput"
+                android:id="@+id/loginApiKeyTextInput"
                 android:layout_width="match_parent"
                 android:imeOptions="actionDone"
                 android:inputType="text"
@@ -134,42 +68,121 @@
                 tools:ignore="TextContrastCheck" />
 
         </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/linearLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:orientation="vertical"
-        android:gravity="center"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginServerUrlLayoutContainer">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/loginButton"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="wrap_content"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/loginPhoneNumberLayoutSIM1"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:backgroundTint="#2196f3"
-            android:drawableTint="@color/white"
-            android:padding="10dp"
-            android:text="@string/sign_in_button"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:icon="@drawable/ic_login"
-            app:iconTint="@color/white"
-            tools:ignore="TextContrastCheck" />
+            android:layout_marginTop="8dp"
+            android:hint="@string/login_phone_number_sim1"
+            app:errorEnabled="true"
+            app:placeholderText="@string/login_phone_number_hint"
+            app:layout_constraintBottom_toTopOf="@+id/loginPhoneNumberLayoutSIM2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/loginApiKeyTextInputLayout">
 
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/loginProgressIndicator"
-            android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/loginPhoneNumberInputSIM1"
+                android:layout_width="match_parent"
+                android:inputType="text"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                tools:ignore="TextContrastCheck" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/loginPhoneNumberLayoutSIM2"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:indeterminate="true"
-            android:visibility="invisible"
-            app:indicatorColor="@color/pink_500" />
-    </LinearLayout>
+            android:layout_marginTop="8dp"
+            android:hint="@string/login_phone_number_sim2"
+            app:errorEnabled="true"
+            app:placeholderText="@string/login_phone_number_hint"
+            app:layout_constraintBottom_toTopOf="@+id/loginServerUrlLayoutContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM1">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/loginPhoneNumberInputSIM2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="text"
+                tools:ignore="TextContrastCheck" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:id="@+id/loginServerUrlLayoutContainer"
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/loginPhoneNumberLayoutSIM2">
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/loginServerUrlLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/server_url"
+                app:errorEnabled="true"
+                app:placeholderText="@string/login_server_url_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/loginServerUrlInput"
+                    android:layout_width="match_parent"
+                    android:imeOptions="actionDone"
+                    android:inputType="text"
+                    android:layout_height="wrap_content"
+                    tools:ignore="TextContrastCheck" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/loginServerUrlLayoutContainer">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/loginButton"
+                style="@style/Widget.MaterialComponents.Button.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#2196f3"
+                android:drawableTint="@color/white"
+                android:padding="10dp"
+                android:text="@string/sign_in_button"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:icon="@drawable/ic_login"
+                app:iconTint="@color/white"
+                tools:ignore="TextContrastCheck" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/loginProgressIndicator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:indeterminate="true"
+                android:visibility="invisible"
+                app:indicatorColor="@color/pink_500" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>
