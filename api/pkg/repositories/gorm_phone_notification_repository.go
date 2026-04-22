@@ -15,40 +15,57 @@ import (
 	"gorm.io/gorm"
 )
 
-// gormPhoneNotificationRepository is responsible for persisting entities.PhoneNotification
+// gormPhoneNotificationRepository persists entities.PhoneNotification records.
 type gormPhoneNotificationRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 	db     *gorm.DB
 }
 
-// NewGormPhoneNotificationRepository creates the GORM version of the PhoneNotificationRepository
+// NewGormPhoneNotificationRepository creates a GORM-backed PhoneNotificationRepository.
 func NewGormPhoneNotificationRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	db *gorm.DB,
 ) PhoneNotificationRepository {
 	return &gormPhoneNotificationRepository{
-		logger: logger.WithService(fmt.Sprintf("%T", &gormHeartbeatRepository{})),
+		logger: logger.WithService(fmt.Sprintf("%T", &gormPhoneNotificationRepository{})),
 		tracer: tracer,
 		db:     db,
 	}
 }
 
-func (repository *gormPhoneNotificationRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+// DeleteAllForUser deletes all phone notifications that belong to a user.
+func (repository *gormPhoneNotificationRepository) DeleteAllForUser(
+	ctx context.Context,
+	userID entities.UserID,
+) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.PhoneNotification{}).Error; err != nil {
-		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.PhoneNotification{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	if err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Delete(&entities.PhoneNotification{}).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(
+				err,
+				"cannot delete all [%T] for user with ID [%s]",
+				&entities.PhoneNotification{},
+				userID,
+			),
+		)
 	}
 
 	return nil
 }
 
-// UpdateStatus of an entities.PhoneNotification
-func (repository *gormPhoneNotificationRepository) UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error {
+// UpdateStatus updates the status of a phone notification.
+func (repository *gormPhoneNotificationRepository) UpdateStatus(
+	ctx context.Context,
+	notificationID uuid.UUID,
+	status entities.PhoneNotificationStatus,
+) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -58,120 +75,131 @@ func (repository *gormPhoneNotificationRepository) UpdateStatus(ctx context.Cont
 		Update("status", status).
 		Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot update notification [%s] with status [%s]", notificationID, status)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(
+				err,
+				"cannot update notification [%s] with status [%s]",
+				notificationID,
+				status,
+			),
+		)
 	}
 
 	return nil
 }
 
-// Schedule a notification to be sent in the future
-func (repository *gormPhoneNotificationRepository) Schedule(ctx context.Context, messagesPerMinute uint, schedule *entities.SendSchedule, notification *entities.PhoneNotification) error {
+// Schedule stores a phone notification and calculates its final scheduled time.
+// The final time is determined by combining:
+// 1. the next allowed time from the message send schedule
+// 2. the phone send-rate limit derived from the latest scheduled notification
+func (repository *gormPhoneNotificationRepository) Schedule(
+	ctx context.Context,
+	messagesPerMinute uint,
+	schedule *entities.MessageSendSchedule,
+	notification *entities.PhoneNotification,
+) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	now := time.Now().UTC()
+
 	if messagesPerMinute == 0 {
-		notification.ScheduledAt = repository.resolveScheduledAt(time.Now().UTC(), schedule)
+		notification.ScheduledAt = repository.resolveScheduledAt(schedule, now)
 		return repository.insert(ctx, notification)
 	}
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
 		lastNotification := new(entities.PhoneNotification)
+
 		err := tx.WithContext(ctx).
 			Where("phone_id = ?", notification.PhoneID).
 			Order("scheduled_at desc").
 			First(lastNotification).
 			Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			msg := fmt.Sprintf("cannot fetch last notification with phone ID [%s]", notification.PhoneID)
-			return stacktrace.Propagate(err, msg)
+			return stacktrace.Propagate(
+				err,
+				"cannot fetch last notification with phone ID [%s]",
+				notification.PhoneID,
+			)
 		}
 
-		notification.ScheduledAt = repository.resolveScheduledAt(time.Now().UTC(), schedule)
+		notification.ScheduledAt = repository.resolveScheduledAt(schedule, now)
+
 		if err == nil {
-			rateLimitedAt := lastNotification.ScheduledAt.Add(time.Duration(60/messagesPerMinute) * time.Second)
-			notification.ScheduledAt = repository.resolveScheduledAt(repository.maxTime(notification.ScheduledAt, rateLimitedAt), schedule)
+			rateLimitedAt := lastNotification.ScheduledAt.Add(
+				time.Duration(60/messagesPerMinute) * time.Second,
+			)
+
+			nextCandidate := repository.maxTime(notification.ScheduledAt, rateLimitedAt)
+			notification.ScheduledAt = repository.resolveScheduledAt(schedule, nextCandidate)
 		}
 
 		if err = tx.WithContext(ctx).Create(notification).Error; err != nil {
-			msg := fmt.Sprintf("cannot create new notification with id [%s] and schedule [%s]", notification.ID, notification.ScheduledAt.String())
-			return stacktrace.Propagate(err, msg)
+			return stacktrace.Propagate(
+				err,
+				"cannot create new notification with id [%s] and schedule [%s]",
+				notification.ID,
+				notification.ScheduledAt.String(),
+			)
 		}
+
 		return nil
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot schedule phone notification with ID [%s]", notification.ID)
-		return stacktrace.Propagate(err, msg)
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(
+				err,
+				"cannot schedule phone notification with ID [%s]",
+				notification.ID,
+			),
+		)
 	}
 
 	return nil
 }
 
-func (repository *gormPhoneNotificationRepository) resolveScheduledAt(current time.Time, schedule *entities.SendSchedule) time.Time {
-	if schedule == nil || !schedule.IsActive || len(schedule.Windows) == 0 {
+// resolveScheduledAt returns the next time the notification is allowed to be sent.
+// If no schedule is attached, the provided time is returned unchanged in UTC.
+func (repository *gormPhoneNotificationRepository) resolveScheduledAt(
+	schedule *entities.MessageSendSchedule,
+	current time.Time,
+) time.Time {
+	if schedule == nil {
 		return current.UTC()
 	}
 
-	location, err := time.LoadLocation(schedule.Timezone)
-	if err != nil {
-		return current.UTC()
-	}
-
-	base := current.In(location)
-	var best time.Time
-	for dayOffset := 0; dayOffset <= 7; dayOffset++ {
-		day := base.AddDate(0, 0, dayOffset)
-		weekday := int(day.Weekday())
-		for _, window := range schedule.Windows {
-			if window.DayOfWeek != weekday {
-				continue
-			}
-
-			start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, location).Add(time.Duration(window.StartMinute) * time.Minute)
-			end := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, location).Add(time.Duration(window.EndMinute) * time.Minute)
-
-			var candidate time.Time
-			switch {
-			case dayOffset == 0 && base.Before(start):
-				candidate = start
-			case dayOffset == 0 && (base.Equal(start) || (base.After(start) && base.Before(end))):
-				candidate = base
-			case dayOffset > 0:
-				candidate = start
-			default:
-				continue
-			}
-
-			if best.IsZero() || candidate.Before(best) {
-				best = candidate
-			}
-		}
-		if !best.IsZero() {
-			break
-		}
-	}
-
-	if best.IsZero() {
-		return current.UTC()
-	}
-	return best.UTC()
+	return schedule.ResolveScheduledAt(current)
 }
 
+// maxTime returns the later of the two times.
 func (repository *gormPhoneNotificationRepository) maxTime(a, b time.Time) time.Time {
-	if a.Unix() > b.Unix() {
+	if a.After(b) {
 		return a
 	}
 	return b
 }
 
-func (repository *gormPhoneNotificationRepository) insert(ctx context.Context, notification *entities.PhoneNotification) error {
+// insert stores a single phone notification.
+func (repository *gormPhoneNotificationRepository) insert(
+	ctx context.Context,
+	notification *entities.PhoneNotification,
+) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := repository.db.WithContext(ctx).Create(notification).Error
-	if err != nil {
-		msg := fmt.Sprintf("cannot store notification with id [%s]", notification.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	if err := repository.db.WithContext(ctx).Create(notification).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(
+				err,
+				"cannot store notification with id [%s]",
+				notification.ID,
+			),
+		)
 	}
+
 	return nil
 }

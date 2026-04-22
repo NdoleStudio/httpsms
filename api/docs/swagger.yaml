@@ -102,6 +102,10 @@ definitions:
     type: object
   entities.Message:
     properties:
+      attachments:
+        items:
+          type: string
+        type: array
       contact:
         example: "+18005550100"
         type: string
@@ -189,6 +193,7 @@ definitions:
         example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
         type: string
     required:
+    - attachments
     - contact
     - content
     - created_at
@@ -204,6 +209,59 @@ definitions:
     - type
     - updated_at
     - user_id
+    type: object
+  entities.MessageSendSchedule:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: Business Hours
+        type: string
+      timezone:
+        example: Europe/Tallinn
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+      windows:
+        items:
+          $ref: '#/definitions/entities.MessageSendScheduleWindow'
+        type: array
+    required:
+    - created_at
+    - id
+    - is_active
+    - name
+    - timezone
+    - updated_at
+    - user_id
+    - windows
+    type: object
+  entities.MessageSendScheduleWindow:
+    properties:
+      day_of_week:
+        example: 1
+        type: integer
+      end_minute:
+        example: 1020
+        type: integer
+      start_minute:
+        example: 540
+        type: integer
+    required:
+    - day_of_week
+    - end_minute
+    - start_minute
     type: object
   entities.MessageThread:
     properties:
@@ -365,59 +423,6 @@ definitions:
     x-enum-varnames:
     - SIM1
     - SIM2
-  entities.SendSchedule:
-    properties:
-      created_at:
-        example: "2022-06-05T14:26:02.302718+03:00"
-        type: string
-      id:
-        example: 32343a19-da5e-4b1b-a767-3298a73703cb
-        type: string
-      is_active:
-        example: true
-        type: boolean
-      name:
-        example: Business Hours
-        type: string
-      timezone:
-        example: Europe/Tallinn
-        type: string
-      updated_at:
-        example: "2022-06-05T14:26:10.303278+03:00"
-        type: string
-      user_id:
-        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
-        type: string
-      windows:
-        items:
-          $ref: '#/definitions/entities.SendScheduleWindow'
-        type: array
-    required:
-    - created_at
-    - id
-    - is_active
-    - name
-    - timezone
-    - updated_at
-    - user_id
-    - windows
-    type: object
-  entities.SendScheduleWindow:
-    properties:
-      day_of_week:
-        example: 1
-        type: integer
-      end_minute:
-        example: 1020
-        type: integer
-      start_minute:
-        example: 540
-        type: integer
-    required:
-    - day_of_week
-    - end_minute
-    - start_minute
-    type: object
   entities.SubscriptionName:
     enum:
     - free
@@ -592,6 +597,12 @@ definitions:
     type: object
   requests.MessageBulkSend:
     properties:
+      attachments:
+        description: Attachments are optional. When you provide a list of attachments,
+          the message will be sent out as an MMS
+        items:
+          type: string
+        type: array
       content:
         example: This is a sample text message
         type: string
@@ -617,7 +628,6 @@ definitions:
         type: array
     required:
     - content
-    - encrypted
     - from
     - to
     type: object
@@ -700,6 +710,12 @@ definitions:
     type: object
   requests.MessageSend:
     properties:
+      attachments:
+        description: Attachments are optional. When you provide a list of attachments,
+          the message will be sent out as an MMS
+        items:
+          type: string
+        type: array
       content:
         example: This is a sample text message
         type: string
@@ -1228,24 +1244,7 @@ definitions:
   responses.SendScheduleResponse:
     properties:
       data:
-        $ref: '#/definitions/entities.SendSchedule'
-      message:
-        example: Request handled successfully
-        type: string
-      status:
-        example: success
-        type: string
-    required:
-    - data
-    - message
-    - status
-    type: object
-  responses.SendSchedulesResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/entities.SendSchedule'
-        type: array
+        $ref: '#/definitions/entities.MessageSendSchedule'
       message:
         example: Request handled successfully
         type: string
@@ -2883,14 +2882,16 @@ paths:
       - Phones
   /send-schedules:
     get:
-      description: Lists the send schedules owned by the authenticated user.
+      description: List all send schedules owned by the authenticated user.
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/responses.SendSchedulesResponse'
+            items:
+              $ref: '#/definitions/entities.MessageSendSchedule'
+            type: array
         "401":
           description: Unauthorized
           schema:
@@ -2907,7 +2908,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a send schedule for the authenticated user.
+      description: Create a new send schedule for the authenticated user.
       parameters:
       - description: Payload of new send schedule.
         in: body
@@ -2945,7 +2946,7 @@ paths:
       - Send Schedules
   /send-schedules/{scheduleID}:
     delete:
-      description: Deletes a send schedule owned by the authenticated user.
+      description: Delete a send schedule owned by the authenticated user.
       parameters:
       - description: Schedule ID
         in: path
@@ -2957,40 +2958,10 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            $ref: '#/definitions/responses.NoContent'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/responses.BadRequest'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/responses.Unauthorized'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/responses.InternalServerError'
-      security:
-      - ApiKeyAuth: []
-      summary: Delete send schedule
-      tags:
-      - Send Schedules
-    get:
-      description: Loads a single send schedule owned by the authenticated user.
-      parameters:
-      - description: Schedule ID
-        in: path
-        name: scheduleID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/responses.SendScheduleResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3005,13 +2976,13 @@ paths:
             $ref: '#/definitions/responses.InternalServerError'
       security:
       - ApiKeyAuth: []
-      summary: Show send schedule
+      summary: Delete send schedule
       tags:
       - Send Schedules
     put:
       consumes:
       - application/json
-      description: Updates a send schedule owned by the authenticated user.
+      description: Update a send schedule owned by the authenticated user.
       parameters:
       - description: Schedule ID
         in: path
@@ -3314,6 +3285,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/requests.UserPaymentInvoice'
+      - description: ID of the subscription invoice to generate the PDF for
+        in: path
+        name: subscriptionInvoiceID
+        required: true
+        type: string
       produces:
       - application/pdf
       responses:

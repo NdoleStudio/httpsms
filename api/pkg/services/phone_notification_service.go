@@ -195,7 +195,7 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		UpdatedAt:   time.Now().UTC(),
 	}
 
-	var schedule *entities.SendSchedule
+	var schedule *entities.MessageSendSchedule
 	if phone.ScheduleID != nil {
 		schedule, err = service.sendScheduleRepository.Load(ctx, params.UserID, *phone.ScheduleID)
 		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {

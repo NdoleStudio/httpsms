@@ -2186,7 +2186,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Lists the send schedules owned by the authenticated user.",
+                "description": "List all send schedules owned by the authenticated user.",
                 "produces": [
                     "application/json"
                 ],
@@ -2198,7 +2198,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/responses.SendSchedulesResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.MessageSendSchedule"
+                            }
                         }
                     },
                     "401": {
@@ -2221,7 +2224,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Creates a send schedule for the authenticated user.",
+                "description": "Create a new send schedule for the authenticated user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2278,63 +2281,13 @@ const docTemplate = `{
             }
         },
         "/send-schedules/{scheduleID}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Loads a single send schedule owned by the authenticated user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Send Schedules"
-                ],
-                "summary": "Show send schedule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Schedule ID",
-                        "name": "scheduleID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/responses.SendScheduleResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NotFound"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            },
             "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates a send schedule owned by the authenticated user.",
+                "description": "Update a send schedule owned by the authenticated user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2408,7 +2361,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Deletes a send schedule owned by the authenticated user.",
+                "description": "Delete a send schedule owned by the authenticated user.",
                 "produces": [
                     "application/json"
                 ],
@@ -2427,10 +2380,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NoContent"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2442,6 +2392,12 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
                         }
                     },
                     "500": {
@@ -2729,6 +2685,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/requests.UserPaymentInvoice"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID of the subscription invoice to generate the PDF for",
+                        "name": "subscriptionInvoiceID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3353,6 +3316,7 @@ const docTemplate = `{
         "entities.Message": {
             "type": "object",
             "required": [
+                "attachments",
                 "contact",
                 "content",
                 "created_at",
@@ -3370,6 +3334,12 @@ const docTemplate = `{
                 "user_id"
             ],
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "contact": {
                     "type": "string",
                     "example": "+18005550100"
@@ -3479,6 +3449,77 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
+                }
+            }
+        },
+        "entities.MessageSendSchedule": {
+            "type": "object",
+            "required": [
+                "created_at",
+                "id",
+                "is_active",
+                "name",
+                "timezone",
+                "updated_at",
+                "user_id",
+                "windows"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Business Hours"
+                },
+                "timezone": {
+                    "type": "string",
+                    "example": "Europe/Tallinn"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:10.303278+03:00"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
+                },
+                "windows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.MessageSendScheduleWindow"
+                    }
+                }
+            }
+        },
+        "entities.MessageSendScheduleWindow": {
+            "type": "object",
+            "required": [
+                "day_of_week",
+                "end_minute",
+                "start_minute"
+            ],
+            "properties": {
+                "day_of_week": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "end_minute": {
+                    "type": "integer",
+                    "example": 1020
+                },
+                "start_minute": {
+                    "type": "integer",
+                    "example": 540
                 }
             }
         },
@@ -3688,77 +3729,6 @@ const docTemplate = `{
                 "SIM1",
                 "SIM2"
             ]
-        },
-        "entities.SendSchedule": {
-            "type": "object",
-            "required": [
-                "created_at",
-                "id",
-                "is_active",
-                "name",
-                "timezone",
-                "updated_at",
-                "user_id",
-                "windows"
-            ],
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2022-06-05T14:26:02.302718+03:00"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
-                },
-                "is_active": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Business Hours"
-                },
-                "timezone": {
-                    "type": "string",
-                    "example": "Europe/Tallinn"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2022-06-05T14:26:10.303278+03:00"
-                },
-                "user_id": {
-                    "type": "string",
-                    "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
-                },
-                "windows": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entities.SendScheduleWindow"
-                    }
-                }
-            }
-        },
-        "entities.SendScheduleWindow": {
-            "type": "object",
-            "required": [
-                "day_of_week",
-                "end_minute",
-                "start_minute"
-            ],
-            "properties": {
-                "day_of_week": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "end_minute": {
-                    "type": "integer",
-                    "example": 1020
-                },
-                "start_minute": {
-                    "type": "integer",
-                    "example": 540
-                }
-            }
         },
         "entities.SubscriptionName": {
             "type": "string",
@@ -3994,11 +3964,17 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "content",
-                "encrypted",
                 "from",
                 "to"
             ],
             "properties": {
+                "attachments": {
+                    "description": "Attachments are optional. When you provide a list of attachments, the message will be sent out as an MMS",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "content": {
                     "type": "string",
                     "example": "This is a sample text message"
@@ -4132,6 +4108,13 @@ const docTemplate = `{
                 "to"
             ],
             "properties": {
+                "attachments": {
+                    "description": "Attachments are optional. When you provide a list of attachments, the message will be sent out as an MMS",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "content": {
                     "type": "string",
                     "example": "This is a sample text message"
@@ -4852,31 +4835,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/entities.SendSchedule"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Request handled successfully"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "responses.SendSchedulesResponse": {
-            "type": "object",
-            "required": [
-                "data",
-                "message",
-                "status"
-            ],
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entities.SendSchedule"
-                    }
+                    "$ref": "#/definitions/entities.MessageSendSchedule"
                 },
                 "message": {
                     "type": "string",

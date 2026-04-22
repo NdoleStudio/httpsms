@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
@@ -13,12 +14,14 @@ import (
 
 const maxWindowsPerDay = 6
 
+// SendScheduleHandlerValidator validates send schedule HTTP requests.
 type SendScheduleHandlerValidator struct {
 	validator
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 }
 
+// NewSendScheduleHandlerValidator creates a new SendScheduleHandlerValidator.
 func NewSendScheduleHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
@@ -29,6 +32,7 @@ func NewSendScheduleHandlerValidator(
 	}
 }
 
+// ValidateStore validates a send schedule create or update request.
 func (validator *SendScheduleHandlerValidator) ValidateStore(
 	_ context.Context,
 	request requests.SendScheduleStore,
@@ -44,8 +48,10 @@ func (validator *SendScheduleHandlerValidator) ValidateStore(
 	result := v.ValidateStruct()
 	validator.validateWindows(result, request.Windows)
 
-	if _, err := time.LoadLocation(request.Timezone); err != nil {
-		result.Add("timezone", "timezone must be a valid IANA timezone")
+	if request.Timezone != "" {
+		if _, err := time.LoadLocation(request.Timezone); err != nil {
+			result.Add("timezone", "timezone must be a valid IANA timezone")
+		}
 	}
 
 	return result
@@ -63,6 +69,8 @@ func (validator *SendScheduleHandlerValidator) validateWindows(
 		validator.validateEndMinute(result, index, item)
 		validator.validateWindowRange(result, index, item)
 	}
+
+	validator.validateOverlappingWindows(result, windows)
 }
 
 func (validator *SendScheduleHandlerValidator) validateDayOfWeek(
@@ -112,5 +120,41 @@ func (validator *SendScheduleHandlerValidator) validateWindowRange(
 ) {
 	if item.EndMinute <= item.StartMinute {
 		result.Add("windows", fmt.Sprintf("windows[%d].end_minute must be greater than start_minute", index))
+	}
+}
+
+func (validator *SendScheduleHandlerValidator) validateOverlappingWindows(
+	result url.Values,
+	windows []requests.SendScheduleWindow,
+) {
+	grouped := make(map[int][]requests.SendScheduleWindow)
+
+	for _, item := range windows {
+		if item.DayOfWeek < 0 || item.DayOfWeek > 6 {
+			continue
+		}
+		if item.EndMinute <= item.StartMinute {
+			continue
+		}
+		grouped[item.DayOfWeek] = append(grouped[item.DayOfWeek], item)
+	}
+
+	for dayOfWeek, dayWindows := range grouped {
+		sort.Slice(dayWindows, func(i, j int) bool {
+			return dayWindows[i].StartMinute < dayWindows[j].StartMinute
+		})
+
+		for i := 1; i < len(dayWindows); i++ {
+			previous := dayWindows[i-1]
+			current := dayWindows[i]
+
+			if current.StartMinute < previous.EndMinute {
+				result.Add(
+					"windows",
+					fmt.Sprintf("day_of_week %d contains overlapping windows", dayOfWeek),
+				)
+				break
+			}
+		}
 	}
 }

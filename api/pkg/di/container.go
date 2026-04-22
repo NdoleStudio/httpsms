@@ -128,6 +128,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 
 	container.RegisterUserRoutes()
 	container.RegisterSendScheduleRoutes()
+	container.RegisterSendScheduleListeners()
 	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
@@ -362,8 +363,8 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
 	}
 
-	if err = db.AutoMigrate(&entities.SendSchedule{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.SendSchedule{})))
+	if err = db.AutoMigrate(&entities.MessageSendSchedule{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageSendSchedule{})))
 	}
 
 	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
@@ -1132,6 +1133,20 @@ func (container *Container) RegisterMessageListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.MessageService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterSendScheduleListeners registers event listeners for listeners.SendScheduleListener
+func (container *Container) RegisterSendScheduleListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.SendScheduleListener{}))
+	_, routes := listeners.NewSendScheduleListener(
+		container.Logger(),
+		container.Tracer(),
+		container.SendScheduleService(),
 	)
 
 	for event, handler := range routes {

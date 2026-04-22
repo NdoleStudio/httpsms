@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -13,6 +14,7 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
+// SendScheduleHandler handles HTTP requests for message send schedules.
 type SendScheduleHandler struct {
 	handler
 	logger    telemetry.Logger
@@ -21,6 +23,7 @@ type SendScheduleHandler struct {
 	service   *services.SendScheduleService
 }
 
+// NewSendScheduleHandler creates a new SendScheduleHandler.
 func NewSendScheduleHandler(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
@@ -35,6 +38,7 @@ func NewSendScheduleHandler(
 	}
 }
 
+// RegisterRoutes registers send schedule routes.
 func (h *SendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	router.Get("/v1/send-schedules", h.computeRoute(middlewares, h.Index)...)
 	router.Post("/v1/send-schedules", h.computeRoute(middlewares, h.Store)...)
@@ -42,13 +46,14 @@ func (h *SendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ..
 	router.Delete("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Delete)...)
 }
 
-// Index godoc
+// Index lists all send schedules for the authenticated user.
+//
 // @Summary List send schedules
 // @Description List all send schedules owned by the authenticated user.
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Produce json
-// @Success 200 {object} responses.SendSchedulesResponse
+// @Success 200 {array} entities.MessageSendSchedule
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [get]
@@ -65,7 +70,8 @@ func (h *SendScheduleHandler) Index(c *fiber.Ctx) error {
 	return h.responseOK(c, "send schedules fetched successfully", schedules)
 }
 
-// Store godoc
+// Store creates a new send schedule for the authenticated user.
+//
 // @Summary Create send schedule
 // @Description Create a new send schedule for the authenticated user.
 // @Security ApiKeyAuth
@@ -90,11 +96,11 @@ func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 
 	request = request.Sanitize()
 	if errors := h.validator.ValidateStore(ctx, request); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf(
+		ctxLogger.Warn(stacktrace.NewError(
 			"validation errors [%s], while storing send schedule [%+#v]",
 			spew.Sdump(errors),
 			request,
-		)))
+		))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while saving send schedule")
 	}
 
@@ -107,7 +113,8 @@ func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 	return h.responseCreated(c, "send schedule created successfully", schedule)
 }
 
-// Update godoc
+// Update updates a send schedule owned by the authenticated user.
+//
 // @Summary Update send schedule
 // @Description Update a send schedule owned by the authenticated user.
 // @Security ApiKeyAuth
@@ -150,7 +157,7 @@ func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 	)
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, "cannot update send schedule"))
-		if stacktrace.GetCode(err) == 404 {
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			return h.responseNotFound(c, err.Error())
 		}
 		return h.responseInternalServerError(c)
@@ -159,14 +166,15 @@ func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 	return h.responseOK(c, "send schedule updated successfully", schedule)
 }
 
-// Delete godoc
+// Delete removes a send schedule owned by the authenticated user.
+//
 // @Summary Delete send schedule
 // @Description Delete a send schedule owned by the authenticated user.
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Produce json
 // @Param scheduleID path string true "Schedule ID"
-// @Success 204 {object} responses.NoContent
+// @Success 204
 // @Failure 400 {object} responses.BadRequest
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 404 {object} responses.NotFound
@@ -181,9 +189,17 @@ func (h *SendScheduleHandler) Delete(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
+	if _, err = h.service.Load(ctx, h.userIDFomContext(c), scheduleID); err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot load send schedule for deletion"))
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+			return h.responseNotFound(c, err.Error())
+		}
+		return h.responseInternalServerError(c)
+	}
+
 	if err = h.service.Delete(ctx, h.userIDFomContext(c), scheduleID); err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete send schedule"))
-		if stacktrace.GetCode(err) == 404 {
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			return h.responseNotFound(c, err.Error())
 		}
 		return h.responseInternalServerError(c)

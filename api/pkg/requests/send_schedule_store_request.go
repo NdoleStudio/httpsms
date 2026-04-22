@@ -40,9 +40,9 @@ func (input *SendScheduleStore) Sanitize() SendScheduleStore {
 }
 
 func (input *SendScheduleStore) ToParams(user entities.AuthContext) *services.SendScheduleUpsertParams {
-	windows := make([]entities.SendScheduleWindow, 0, len(input.Windows))
+	windows := make([]entities.MessageSendScheduleWindow, 0, len(input.Windows))
 	for _, item := range input.Windows {
-		windows = append(windows, entities.SendScheduleWindow{DayOfWeek: item.DayOfWeek, StartMinute: item.StartMinute, EndMinute: item.EndMinute})
+		windows = append(windows, entities.MessageSendScheduleWindow{DayOfWeek: item.DayOfWeek, StartMinute: item.StartMinute, EndMinute: item.EndMinute})
 	}
 	return &services.SendScheduleUpsertParams{UserID: user.ID, Name: input.Name, Timezone: input.Timezone, IsActive: input.IsActive, Windows: windows}
 }

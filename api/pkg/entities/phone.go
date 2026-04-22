@@ -8,14 +8,14 @@ import (
 
 // Phone represents an android phone which has installed the http sms app
 type Phone struct {
-	ID                uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	UserID            UserID        `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
-	FcmToken          *string       `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." validate:"optional"`
-	PhoneNumber       string        `json:"phone_number" example:"+18005550199"`
-	MessagesPerMinute uint          `json:"messages_per_minute" example:"1"`
-	SIM               SIM           `json:"sim" gorm:"default:SIM1"`
-	ScheduleID        *uuid.UUID    `json:"schedule_id" gorm:"type:uuid" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	Schedule          *SendSchedule `json:"-" gorm:"foreignKey:ScheduleID;constraint:OnDelete:SET NULL"`
+	ID                uuid.UUID            `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	UserID            UserID               `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	FcmToken          *string              `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." validate:"optional"`
+	PhoneNumber       string               `json:"phone_number" example:"+18005550199"`
+	MessagesPerMinute uint                 `json:"messages_per_minute" example:"1"`
+	SIM               SIM                  `json:"sim" gorm:"default:SIM1"`
+	ScheduleID        *uuid.UUID           `json:"schedule_id" gorm:"type:uuid" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	Schedule          *MessageSendSchedule `json:"-" gorm:"foreignKey:ScheduleID;constraint:OnDelete:SET NULL"`
 	// MaxSendAttempts determines how many times to retry sending an SMS message
 	MaxSendAttempts uint `json:"max_send_attempts" example:"2"`
 
