@@ -25,6 +25,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
 
+	"cloud.google.com/go/storage"
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/NdoleStudio/httpsms/pkg/cache"
@@ -80,13 +81,14 @@ import (
 
 // Container is used to resolve services at runtime
 type Container struct {
-	projectID       string
-	db              *gorm.DB
-	dedicatedDB     *gorm.DB
-	version         string
-	app             *fiber.App
-	eventDispatcher *services.EventDispatcher
-	logger          telemetry.Logger
+	projectID            string
+	db                   *gorm.DB
+	dedicatedDB          *gorm.DB
+	version              string
+	app                  *fiber.App
+	eventDispatcher      *services.EventDispatcher
+	logger               telemetry.Logger
+	attachmentRepository repositories.AttachmentRepository
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -118,6 +120,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 
 	container.RegisterMessageListeners()
 	container.RegisterMessageRoutes()
+	container.RegisterAttachmentRoutes()
 	container.RegisterBulkMessageRoutes()
 
 	container.RegisterMessageThreadRoutes()
@@ -401,7 +404,7 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 // FirebaseApp creates a new instance of firebase.App
 func (container *Container) FirebaseApp() (app *firebase.App) {
 	container.logger.Debug(fmt.Sprintf("creating %T", app))
-	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
+	app, err := firebase.NewApp(context.Background(), nil, option.WithAuthCredentialsJSON(option.ServiceAccount, container.FirebaseCredentials()))
 	if err != nil {
 		msg := "cannot initialize firebase application"
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
@@ -1490,7 +1493,61 @@ func (container *Container) MessageService() (service *services.MessageService) 
 		container.MessageRepository(),
 		container.EventDispatcher(),
 		container.PhoneService(),
+		container.AttachmentRepository(),
+		container.APIBaseURL(),
 	)
+}
+
+// AttachmentRepository creates a cached AttachmentRepository based on configuration
+func (container *Container) AttachmentRepository() repositories.AttachmentRepository {
+	if container.attachmentRepository != nil {
+		return container.attachmentRepository
+	}
+
+	bucket := os.Getenv("GCS_BUCKET_NAME")
+	if bucket != "" {
+		container.logger.Debug("creating GoogleCloudStorageAttachmentRepository")
+		client, err := storage.NewClient(context.Background(), option.WithAuthCredentialsJSON(option.ServiceAccount, container.FirebaseCredentials()))
+		if err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot create GCS client"))
+		}
+		container.attachmentRepository = repositories.NewGoogleCloudStorageAttachmentRepository(
+			container.Logger(),
+			container.Tracer(),
+			client,
+			bucket,
+		)
+	} else {
+		container.logger.Debug("creating MemoryAttachmentRepository (GCS_BUCKET_NAME not set)")
+		container.attachmentRepository = repositories.NewMemoryAttachmentRepository(
+			container.Logger(),
+			container.Tracer(),
+		)
+	}
+
+	return container.attachmentRepository
+}
+
+// APIBaseURL returns the API base URL derived from EVENTS_QUEUE_ENDPOINT
+func (container *Container) APIBaseURL() string {
+	endpoint := os.Getenv("EVENTS_QUEUE_ENDPOINT")
+	return strings.TrimSuffix(endpoint, "/v1/events")
+}
+
+// AttachmentHandler creates a new AttachmentHandler
+func (container *Container) AttachmentHandler() (handler *handlers.AttachmentHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", handler))
+	return handlers.NewAttachmentHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.AttachmentRepository(),
+	)
+}
+
+// RegisterAttachmentRoutes registers routes for the /attachments prefix
+func (container *Container) RegisterAttachmentRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.AttachmentHandler{}))
+	container.AttachmentHandler().RegisterRoutes(container.App())
 }
 
 // PhoneAPIKeyService creates a new instance of services.PhoneAPIKeyService

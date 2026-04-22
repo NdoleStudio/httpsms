@@ -2179,236 +2179,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/send-schedules": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "List all send schedules owned by the authenticated user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Send Schedules"
-                ],
-                "summary": "List send schedules",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.MessageSendSchedule"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Create a new send schedule for the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Send Schedules"
-                ],
-                "summary": "Create send schedule",
-                "parameters": [
-                    {
-                        "description": "Payload of new send schedule.",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/requests.SendScheduleStore"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/responses.SendScheduleResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/responses.UnprocessableEntity"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
-        "/send-schedules/{scheduleID}": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Update a send schedule owned by the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Send Schedules"
-                ],
-                "summary": "Update send schedule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Schedule ID",
-                        "name": "scheduleID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload of updated send schedule.",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/requests.SendScheduleStore"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/responses.SendScheduleResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NotFound"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/responses.UnprocessableEntity"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Delete a send schedule owned by the authenticated user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Send Schedules"
-                ],
-                "summary": "Delete send schedule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Schedule ID",
-                        "name": "scheduleID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.Unauthorized"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.NotFound"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/responses.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
         "/users/me": {
             "get": {
                 "security": [
@@ -2913,6 +2683,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/attachments/{userID}/{messageID}/{attachmentIndex}/{filename}": {
+            "get": {
+                "description": "Download an MMS attachment by its path components",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Attachments"
+                ],
+                "summary": "Download a message attachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Message ID",
+                        "name": "messageID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Attachment index",
+                        "name": "attachmentIndex",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filename with extension",
+                        "name": "filename",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/webhooks": {
             "get": {
                 "security": [
@@ -3338,7 +3170,11 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "https://example.com/image.jpg",
+                        "https://example.com/video.mp4"
+                    ]
                 },
                 "contact": {
                     "type": "string",
@@ -3452,77 +3288,6 @@ const docTemplate = `{
                 }
             }
         },
-        "entities.MessageSendSchedule": {
-            "type": "object",
-            "required": [
-                "created_at",
-                "id",
-                "is_active",
-                "name",
-                "timezone",
-                "updated_at",
-                "user_id",
-                "windows"
-            ],
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2022-06-05T14:26:02.302718+03:00"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
-                },
-                "is_active": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Business Hours"
-                },
-                "timezone": {
-                    "type": "string",
-                    "example": "Europe/Tallinn"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2022-06-05T14:26:10.303278+03:00"
-                },
-                "user_id": {
-                    "type": "string",
-                    "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
-                },
-                "windows": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entities.MessageSendScheduleWindow"
-                    }
-                }
-            }
-        },
-        "entities.MessageSendScheduleWindow": {
-            "type": "object",
-            "required": [
-                "day_of_week",
-                "end_minute",
-                "start_minute"
-            ],
-            "properties": {
-                "day_of_week": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "end_minute": {
-                    "type": "integer",
-                    "example": 1020
-                },
-                "start_minute": {
-                    "type": "integer",
-                    "example": 540
-                }
-            }
-        },
         "entities.MessageThread": {
             "type": "object",
             "required": [
@@ -3599,7 +3364,6 @@ const docTemplate = `{
                 "message_expiration_seconds",
                 "messages_per_minute",
                 "phone_number",
-                "schedule_id",
                 "sim",
                 "updated_at",
                 "user_id"
@@ -3637,10 +3401,6 @@ const docTemplate = `{
                 "phone_number": {
                     "type": "string",
                     "example": "+18005550199"
-                },
-                "schedule_id": {
-                    "type": "string",
-                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
                 },
                 "sim": {
                     "$ref": "#/definitions/entities.SIM"
@@ -3960,6 +3720,31 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.MessageAttachment": {
+            "type": "object",
+            "required": [
+                "content",
+                "content_type",
+                "name"
+            ],
+            "properties": {
+                "content": {
+                    "description": "Content is the base64-encoded attachment data",
+                    "type": "string",
+                    "example": "base64data..."
+                },
+                "content_type": {
+                    "description": "ContentType is the MIME type of the attachment",
+                    "type": "string",
+                    "example": "image/jpeg"
+                },
+                "name": {
+                    "description": "Name is the original filename of the attachment",
+                    "type": "string",
+                    "example": "photo.jpg"
+                }
+            }
+        },
         "requests.MessageBulkSend": {
             "type": "object",
             "required": [
@@ -4067,6 +3852,13 @@ const docTemplate = `{
                 "to"
             ],
             "properties": {
+                "attachments": {
+                    "description": "Attachments is the list of MMS attachments received with the message",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.MessageAttachment"
+                    }
+                },
                 "content": {
                     "type": "string",
                     "example": "This is a sample text message received on a phone"
@@ -4113,7 +3905,11 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "https://example.com/image.jpg",
+                        "https://example.com/video.mp4"
+                    ]
                 },
                 "content": {
                     "type": "string",
@@ -4200,7 +3996,6 @@ const docTemplate = `{
                 "messages_per_minute",
                 "missed_call_auto_reply",
                 "phone_number",
-                "schedule_id",
                 "sim"
             ],
             "properties": {
@@ -4230,59 +4025,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "+18005550199"
                 },
-                "schedule_id": {
-                    "type": "string",
-                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
-                },
                 "sim": {
                     "description": "SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot",
                     "type": "string",
                     "example": "SIM1"
-                }
-            }
-        },
-        "requests.SendScheduleStore": {
-            "type": "object",
-            "required": [
-                "is_active",
-                "name",
-                "timezone",
-                "windows"
-            ],
-            "properties": {
-                "is_active": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "timezone": {
-                    "type": "string"
-                },
-                "windows": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.SendScheduleWindow"
-                    }
-                }
-            }
-        },
-        "requests.SendScheduleWindow": {
-            "type": "object",
-            "required": [
-                "day_of_week",
-                "end_minute",
-                "start_minute"
-            ],
-            "properties": {
-                "day_of_week": {
-                    "type": "integer"
-                },
-                "end_minute": {
-                    "type": "integer"
-                },
-                "start_minute": {
-                    "type": "integer"
                 }
             }
         },
@@ -4815,27 +4561,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/entities.Phone"
                     }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Request handled successfully"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "responses.SendScheduleResponse": {
-            "type": "object",
-            "required": [
-                "data",
-                "message",
-                "status"
-            ],
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/entities.MessageSendSchedule"
                 },
                 "message": {
                     "type": "string",

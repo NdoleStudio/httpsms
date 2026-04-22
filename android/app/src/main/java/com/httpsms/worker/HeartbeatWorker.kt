@@ -29,11 +29,16 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) : Wor
             return Result.success()
         }
 
-        HttpSmsApiService.create(applicationContext).storeHeartbeat(phoneNumbers.toTypedArray(), Settings.isCharging(applicationContext))
-        Timber.d("finished sending heartbeats to server")
+        try{
+            HttpSmsApiService.create(applicationContext).storeHeartbeat(phoneNumbers.toTypedArray(), Settings.isCharging(applicationContext))
+            Timber.d("finished sending heartbeats to server")
 
-        Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
-        Timber.d("Set the heartbeat timestamp")
+            Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
+            Timber.d("Set the heartbeat timestamp")
+        } catch (exception: Exception) {
+            Timber.e(exception, "Failed to send [${phoneNumbers.joinToString()}] heartbeats to server")
+            return Result.failure()
+        }
 
         return Result.success()
     }

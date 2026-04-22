@@ -37,11 +37,12 @@ Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
 - [Self Host Setup - Docker](#self-host-setup---docker)
   - [1. Setup Firebase](#1-setup-firebase)
   - [2. Setup SMTP Email service](#2-setup-smtp-email-service)
-  - [3. Download the code](#3-download-the-code)
-  - [4. Setup the environment variables](#4-setup-the-environment-variables)
-  - [5. Build and Run](#5-build-and-run)
-  - [6. Create the System User](#6-create-the-system-user)
-  - [7. Build the Android App.](#7-build-the-android-app)
+  - [3. Setup Cloudflare Turnstile](#3-setup-cloudflare-turnstile)
+  - [4. Download the code](#4-download-the-code)
+  - [5. Setup the environment variables](#5-setup-the-environment-variables)
+  - [6. Build and Run](#6-build-and-run)
+  - [7. Create the System User](#7-create-the-system-user)
+  - [8. Build the Android App.](#8-build-the-android-app)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -164,7 +165,15 @@ const firebaseConfig = {
 The httpSMS application uses [SMTP](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) to send emails to users e.g. when your Android phone has been offline for a long period of time.
 You can use a service like [mailtrap](https://mailtrap.io/) to create an SMTP server for development purposes.
 
-### 3. Download the code
+### 3. Setup Cloudflare Turnstile
+
+The message search route (`/v1/messages/search`) is protected by a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/get-started/) captcha to prevent abuse. You need to set up a Turnstile widget for the search messages feature to work.
+
+1. Go to the [Cloudflare dashboard](https://dash.cloudflare.com/) and navigate to **Turnstile**.
+2. Add a new site and configure it for your self-hosted domain (e.g., `localhost` for local development).
+3. Note down the **Site Key** and **Secret Key** — you will need them for the frontend and backend environment variables respectively.
+
+### 4. Download the code
 
 Clone the httpSMS GitHub repository
 
@@ -172,7 +181,7 @@ Clone the httpSMS GitHub repository
 git clone https://github.com/NdoleStudio/httpsms.git
 ```
 
-### 4. Setup the environment variables
+### 5. Setup the environment variables
 
 - Copy the `.env.docker` file in the `web` directory into `.env`
 
@@ -190,6 +199,9 @@ FIREBASE_STORAGE_BUCKET=
 FIREBASE_MESSAGING_SENDER_ID=
 FIREBASE_APP_ID=
 FIREBASE_MEASUREMENT_ID=
+
+# Cloudflare Turnstile site key from step 3
+CLOUDFLARE_TURNSTILE_SITE_KEY=
 ```
 
 - Copy the `.env.docker` file in the `api` directory into `.env`
@@ -198,7 +210,7 @@ FIREBASE_MEASUREMENT_ID=
 cp api/.env.docker api/.env
 ```
 
-- Update the environment variables in the `.env` file in the `api` directory with your firebase service account credentials and SMTP server details.
+- Update the environment variables in the `.env` file in the `api` directory with your firebase service account credentials, SMTP server details, and Cloudflare Turnstile secret key.
 
 ```dotenv
 # SMTP email server settings
@@ -212,11 +224,14 @@ FIREBASE_CREDENTIALS=
 
 # This is the `projectId` from your firebase web config
 GCP_PROJECT_ID=
+
+# Cloudflare Turnstile secret key from step 3
+CLOUDFLARE_TURNSTILE_SECRET_KEY=
 ```
 
 - Don't bother about the `EVENTS_QUEUE_USER_API_KEY` and `EVENTS_QUEUE_USER_ID` settings. We will set that up later.
 
-### 5. Build and Run
+### 6. Build and Run
 
 - Build and run the API, the web UI, database and cache using the `docker-compose.yml` file. It takes a while for build and download all the docker images.
   When it's finished, you'll be able to access the web UI at http://localhost:3000 and the API at http://localhost:8000
@@ -225,7 +240,7 @@ GCP_PROJECT_ID=
 docker compose up --build
 ```
 
-### 6. Create the System User
+### 7. Create the System User
 
 - The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database. Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file.
 
@@ -236,7 +251,7 @@ docker compose up --build
 > [!IMPORTANT]
 > Restart your API docker container after modifying `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file so that the httpSMS API can pick up the changes.
 
-### 7. Build the Android App.
+### 8. Build the Android App.
 
 - Before building the Android app in [Android Studio](https://developer.android.com/studio), you need to replace the `google-services.json` file in the `android/app` directory with the file which you got from step 1. You need to do this for the firebase FCM messages to work properly.
 
