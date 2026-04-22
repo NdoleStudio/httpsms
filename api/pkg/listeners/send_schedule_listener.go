@@ -25,7 +25,7 @@ func NewSendScheduleListener(
 	service *services.SendScheduleService,
 ) (l *SendScheduleListener, routes map[string]events.EventListener) {
 	l = &SendScheduleListener{
-		logger:  logger.WithService(fmt.Sprintf("%T", l)),
+		logger:  logger.WithService(fmt.Sprintf("%T", &SendScheduleListener{})),
 		tracer:  tracer,
 		service: service,
 	}
