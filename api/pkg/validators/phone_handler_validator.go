@@ -88,6 +88,15 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 	})
 
 	result := v.ValidateStruct()
+	if request.ScheduleID != nil && strings.TrimSpace(*request.ScheduleID) != "" {
+		if uuidErrors := validator.ValidateUUID(strings.TrimSpace(*request.ScheduleID), "schedule_id"); len(uuidErrors) > 0 {
+			for key, values := range uuidErrors {
+				for _, value := range values {
+					result.Add(key, value)
+				}
+			}
+		}
+	}
 	if len(result) > 0 {
 		return result
 	}

@@ -130,6 +130,8 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterHeartbeatListeners()
 
 	container.RegisterUserRoutes()
+	container.RegisterSendScheduleRoutes()
+	container.RegisterSendScheduleListeners()
 	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
@@ -362,6 +364,10 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
+	}
+
+	if err = db.AutoMigrate(&entities.MessageSendSchedule{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageSendSchedule{})))
 	}
 
 	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
@@ -753,6 +759,46 @@ func (container *Container) PhoneRepository() (repository repositories.PhoneRepo
 	)
 }
 
+// SendScheduleRepository creates a new instance of repositories.SendScheduleRepository
+func (container *Container) SendScheduleRepository() repositories.SendScheduleRepository {
+	container.logger.Debug("creating GORM repositories.SendScheduleRepository")
+	return repositories.NewGormSendScheduleRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// SendScheduleService creates a new instance of services.SendScheduleService
+func (container *Container) SendScheduleService() *services.SendScheduleService {
+	container.logger.Debug("creating services.SendScheduleService")
+	return services.NewSendScheduleService(
+		container.Logger(),
+		container.Tracer(),
+		container.SendScheduleRepository(),
+	)
+}
+
+// SendScheduleHandlerValidator creates a new instance of validators.SendScheduleHandlerValidator
+func (container *Container) SendScheduleHandlerValidator() *validators.SendScheduleHandlerValidator {
+	container.logger.Debug("creating validators.SendScheduleHandlerValidator")
+	return validators.NewSendScheduleHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// SendScheduleHandler creates a new instance of handlers.SendScheduleHandler
+func (container *Container) SendScheduleHandler() *handlers.SendScheduleHandler {
+	container.logger.Debug("creating handlers.SendScheduleHandler")
+	return handlers.NewSendScheduleHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.SendScheduleHandlerValidator(),
+		container.SendScheduleService(),
+	)
+}
+
 // BillingUsageRepository creates a new instance of repositories.BillingUsageRepository
 func (container *Container) BillingUsageRepository() (repository repositories.BillingUsageRepository) {
 	container.logger.Debug("creating GORM repositories.BillingUsageRepository")
@@ -1090,6 +1136,20 @@ func (container *Container) RegisterMessageListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.MessageService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterSendScheduleListeners registers event listeners for listeners.SendScheduleListener
+func (container *Container) RegisterSendScheduleListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.SendScheduleListener{}))
+	_, routes := listeners.NewSendScheduleListener(
+		container.Logger(),
+		container.Tracer(),
+		container.SendScheduleService(),
 	)
 
 	for event, handler := range routes {
@@ -1510,6 +1570,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 		container.FirebaseMessagingClient(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
+		container.SendScheduleRepository(),
 		container.EventDispatcher(),
 	)
 }
@@ -1563,6 +1624,12 @@ func (container *Container) RegisterPhoneRoutes() {
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
 	container.UserHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+}
+
+// RegisterSendScheduleRoutes registers routes for the /send-schedules prefix
+func (container *Container) RegisterSendScheduleRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.SendScheduleHandler{}))
+	container.SendScheduleHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterEventRoutes registers routes for the /events prefix

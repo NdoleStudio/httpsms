@@ -11,7 +11,7 @@ import (
 // PhoneNotificationRepository loads and persists an entities.PhoneNotification
 type PhoneNotificationRepository interface {
 	// Schedule a new entities.PhoneNotification
-	Schedule(ctx context.Context, messagesPerMinute uint, notification *entities.PhoneNotification) error
+	Schedule(ctx context.Context, messagesPerMinute uint, schedule *entities.MessageSendSchedule, notification *entities.PhoneNotification) error
 
 	// UpdateStatus of a notification
 	UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error

@@ -11,10 +11,12 @@ import {
   EntitiesMessage,
   EntitiesPhone,
   EntitiesPhoneAPIKey,
+  EntitiesSendSchedule,
   EntitiesUser,
   EntitiesWebhook,
   RequestsDiscordStore,
   RequestsDiscordUpdate,
+  RequestsSendScheduleStore,
   RequestsUserNotificationUpdate,
   RequestsUserPaymentInvoice,
   RequestsWebhookStore,
@@ -26,6 +28,8 @@ import {
   ResponsesOkString,
   ResponsesPhoneAPIKeyResponse,
   ResponsesPhoneAPIKeysResponse,
+  ResponsesSendScheduleResponse,
+  ResponsesSendSchedulesResponse,
   ResponsesUnprocessableEntity,
   ResponsesUserResponse,
   ResponsesUserSubscriptionPaymentsResponse,
@@ -366,8 +370,8 @@ export const actions = {
     context: ActionContext<State, State>,
     phone: EntitiesPhone,
   ) {
-    await axios
-      .put(`/v1/phones`, {
+    try {
+      const response = await axios.put(`/v1/phones`, {
         fcm_token: phone.fcm_token,
         sim: phone.sim,
         phone_number: phone.phone_number,
@@ -377,18 +381,18 @@ export const actions = {
         missed_call_auto_reply: phone.missed_call_auto_reply,
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
-      })
-      .catch((error: AxiosError) => {
-        context.dispatch('handleAxiosError', error)
-      })
-      .then((response: any) => {
-        context.dispatch('addNotification', {
-          message: response.data.message,
-          type: 'success',
-        })
+        schedule_id: phone.schedule_id ?? null,
       })
 
-    await context.dispatch('loadPhones', true)
+      context.dispatch('addNotification', {
+        message: response.data.message,
+        type: 'success',
+      })
+
+      await context.dispatch('loadPhones', true)
+    } catch (error) {
+      await context.dispatch('handleAxiosError', error as AxiosError)
+    }
   },
 
   sendBulkMessages(context: ActionContext<State, State>, document: File) {
@@ -1096,6 +1100,106 @@ export const actions = {
               message:
                 (error.response?.data as any)?.message ??
                 'Error while deleting discord integration',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  getSendSchedules(context: ActionContext<State, State>) {
+    return new Promise<Array<EntitiesSendSchedule>>((resolve, reject) => {
+      axios
+        .get<ResponsesSendSchedulesResponse>(`/v1/send-schedules`, {
+          params: {
+            limit: 100,
+          },
+        })
+        .then((response: AxiosResponse<ResponsesSendSchedulesResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while fetching send schedules',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  createSendSchedule(
+    context: ActionContext<State, State>,
+    payload: RequestsSendScheduleStore,
+  ) {
+    return new Promise<EntitiesSendSchedule>((resolve, reject) => {
+      axios
+        .post<ResponsesSendScheduleResponse>(`/v1/send-schedules`, payload)
+        .then((response: AxiosResponse<ResponsesSendScheduleResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while creating send schedule',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  updateSendSchedule(
+    context: ActionContext<State, State>,
+    payload: RequestsSendScheduleStore & { id: string },
+  ) {
+    return new Promise<EntitiesSendSchedule>((resolve, reject) => {
+      axios
+        .put<ResponsesSendScheduleResponse>(
+          `/v1/send-schedules/${payload.id}`,
+          payload,
+        )
+        .then((response: AxiosResponse<ResponsesSendScheduleResponse>) => {
+          resolve(response.data.data)
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while updating send schedule',
+              type: 'error',
+            }),
+          ])
+          reject(getErrorMessages(error))
+        })
+    })
+  },
+
+  deleteSendSchedule(
+    context: ActionContext<State, State>,
+    payload: string,
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      axios
+        .delete<ResponsesNoContent>(`/v1/send-schedules/${payload}`)
+        .then(() => {
+          resolve()
+        })
+        .catch(async (error: AxiosError) => {
+          await Promise.all([
+            context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while deleting send schedule',
               type: 'error',
             }),
           ])

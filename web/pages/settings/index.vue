@@ -50,6 +50,7 @@
                 @change="updateTimezone"
               ></v-autocomplete>
             </div>
+
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p class="text--secondary">
               Use your API Key in the <code>x-api-key</code> HTTP Header when
@@ -171,6 +172,18 @@
                 </v-card>
               </v-dialog>
             </div>
+
+            <h5 class="text-h4 mb-3 mt-12">Send Schedules</h5>
+            <p class="text--secondary">
+              Manage availability schedules on a dedicated page and attach one
+              schedule to each phone. Outgoing messages will respect both the
+              selected schedule and the configured send rate.
+            </p>
+            <v-btn color="primary" to="/settings/send-schedules">
+              <v-icon left>{{ mdiCalendarClock }}</v-icon>
+              Manage Send Schedules
+            </v-btn>
+
             <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
@@ -244,6 +257,7 @@
                 >Documentation</v-btn
               >
             </div>
+
             <h5 id="discord-settings" class="text-h4 mb-3 mt-12">
               Discord Integration
             </h5>
@@ -310,6 +324,7 @@
               ></v-img>
               Add Discord
             </v-btn>
+
             <h5 id="phones" class="text-h4 mb-3 mt-12">Phones</h5>
             <p class="text--secondary">
               List of mobile phones which are registered for sending and
@@ -370,6 +385,7 @@
                 </tbody>
               </template>
             </v-simple-table>
+
             <h5 id="email-notifications" class="text-h4 mb-3 mt-12">
               Email Notifications
             </h5>
@@ -415,7 +431,11 @@
               <v-icon left>{{ mdiContentSave }}</v-icon>
               Save Notification Settings
             </v-btn>
-            <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-12">
+
+            <h5
+              id="email-notifications"
+              class="text-h4 error--text mb-3 mt-12"
+            >
               Delete Account
             </h5>
             <p v-if="hasActiveSubscription" class="text--secondary">
@@ -485,6 +505,7 @@
         </v-row>
       </v-container>
     </div>
+
     <v-dialog v-model="showPhoneEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>Edit Phone</v-card-title>
@@ -549,6 +570,18 @@
                   label="Max Send Attempts"
                 >
                 </v-text-field>
+                <v-autocomplete
+                  v-model="activePhone.schedule_id"
+                  outlined
+                  dense
+                  clearable
+                  label="Send Schedule"
+                  :items="sendSchedules"
+                  item-text="name"
+                  item-value="id"
+                  hint="Optional: attach one availability schedule to this phone"
+                  persistent-hint
+                ></v-autocomplete>
                 <v-textarea
                   v-model="activePhone.missed_call_auto_reply"
                   outlined
@@ -581,7 +614,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showWebhookEdit" overlay-opacity="0.9" max-width="600px">
+
+    <v-dialog
+      v-model="showWebhookEdit"
+      overlay-opacity="0.9"
+      max-width="600px"
+    >
       <v-card>
         <v-card-title>
           <span v-if="!activeWebhook.id">Add a new&nbsp;</span>
@@ -696,7 +734,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showDiscordEdit" overlay-opacity="0.9" max-width="700px">
+
+    <v-dialog
+      v-model="showDiscordEdit"
+      overlay-opacity="0.9"
+      max-width="700px"
+    >
       <v-card>
         <v-card-title>
           <span v-if="!activeDiscord.id">Add a new&nbsp;</span>
@@ -817,6 +860,7 @@ import Vue from 'vue'
 import {
   mdiArrowLeft,
   mdiAccountCircle,
+  mdiCalendarClock,
   mdiShieldCheck,
   mdiDelete,
   mdiContentSave,
@@ -843,6 +887,7 @@ export default Vue.extend({
       mdiRefresh,
       mdiArrowLeft,
       mdiAccountCircle,
+      mdiCalendarClock,
       mdiShieldCheck,
       mdiDelete,
       mdiQrcode,
@@ -889,6 +934,7 @@ export default Vue.extend({
       updatingPhone: false,
       updatingDiscord: false,
       loadingDiscordIntegrations: false,
+      sendSchedules: [],
       events: [
         'message.phone.received',
         'message.phone.sent',
@@ -920,7 +966,11 @@ export default Vue.extend({
       return this.$store.getters.getUser.subscription_renews_at != null
     },
     timezones() {
-      return Intl.supportedValuesOf('timeZone')
+      try {
+        return Intl.supportedValuesOf('timeZone')
+      } catch {
+        return []
+      }
     },
     phoneNumbers() {
       return this.$store.getters.getPhones.map((phone) => {
@@ -945,6 +995,7 @@ export default Vue.extend({
     ])
     this.loadWebhooks()
     this.loadDiscordIntegrations()
+    this.loadSendSchedules()
     this.updateEmailNotifications()
     if (this.$route.hash) {
       await this.$vuetify.goTo(this.$route.hash)
@@ -1227,6 +1278,17 @@ export default Vue.extend({
         })
         .finally(() => {
           this.updatingWebhook = false
+        })
+    },
+
+    loadSendSchedules() {
+      this.$store
+        .dispatch('getSendSchedules')
+        .then((sendSchedules) => {
+          this.sendSchedules = sendSchedules
+        })
+        .catch(() => {
+          this.sendSchedules = []
         })
     },
 

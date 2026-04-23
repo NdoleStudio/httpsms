@@ -172,6 +172,8 @@ export interface EntitiesPhone {
   missed_call_auto_reply?: string
   /** @example "+18005550199" */
   phone_number: string
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  schedule_id?: string | null
   /** SIM card that received the message */
   sim: string
   /** @example "2022-06-05T14:26:10.303278+03:00" */
@@ -253,6 +255,62 @@ export interface EntitiesWebhook {
   url: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   user_id: string
+}
+
+export interface EntitiesSendScheduleWindow {
+  /** @example 1 */
+  day_of_week: number
+  /** @example 1020 */
+  end_minute: number
+  /** @example 540 */
+  start_minute: number
+}
+
+export interface EntitiesSendSchedule {
+  /** @example true */
+  is_active: boolean
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  id: string
+  /** @example "Business Hours" */
+  name: string
+  /** @example "Africa/Accra" */
+  timezone: string
+  /** @example "2022-06-05T14:26:10.303278+03:00" */
+  updated_at: string
+  /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
+  user_id: string
+  windows: EntitiesSendScheduleWindow[]
+}
+
+export interface RequestsSendScheduleWindow {
+  day_of_week: number
+  end_minute: number
+  start_minute: number
+}
+
+export interface RequestsSendScheduleStore {
+  is_active: boolean
+  name: string
+  timezone: string
+  windows: RequestsSendScheduleWindow[]
+}
+
+export interface ResponsesSendScheduleResponse {
+  data: EntitiesSendSchedule
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesSendSchedulesResponse {
+  data: EntitiesSendSchedule[]
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
 }
 
 export interface RequestsDiscordStore {

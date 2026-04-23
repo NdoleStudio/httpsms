@@ -91,6 +91,7 @@ type PhoneUpsertParams struct {
 	MessageExpirationDuration *time.Duration
 	MissedCallAutoReply       *string
 	SIM                       entities.SIM
+	ScheduleID                *uuid.UUID
 	Source                    string
 	UserID                    entities.UserID
 }
@@ -111,6 +112,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 			UserID:        params.UserID,
 			FcmToken:      params.FcmToken,
 			SIM:           params.SIM,
+			ScheduleID:    params.ScheduleID,
 		})
 	}
 
@@ -132,6 +134,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 		UserID:        params.UserID,
 		FcmToken:      params.FcmToken,
 		SIM:           params.SIM,
+		ScheduleID:    params.ScheduleID,
 	})
 }
 
@@ -207,6 +210,7 @@ type PhoneFCMTokenParams struct {
 	UserID        entities.UserID
 	FcmToken      *string
 	SIM           entities.SIM
+	ScheduleID    *uuid.UUID
 }
 
 // UpsertFCMToken the FCM token for an entities.Phone
@@ -251,6 +255,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTo
 		MaxSendAttempts:          2,
 		SIM:                      params.SIM,
 		MissedCallAutoReply:      nil,
+		ScheduleID:               params.ScheduleID,
 		PhoneNumber:              phonenumbers.Format(params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),
@@ -294,6 +299,7 @@ func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertPa
 	}
 
 	phone.SIM = params.SIM
+	phone.ScheduleID = params.ScheduleID
 
 	return phone
 }
