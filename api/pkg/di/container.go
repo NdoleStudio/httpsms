@@ -10,11 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/docs"
 	plunk "github.com/NdoleStudio/plunk-go"
 	"github.com/pusher/pusher-http-go/v5"
-	"gorm.io/driver/sqlite"
-
-	"github.com/NdoleStudio/httpsms/docs"
 
 	otelMetric "go.opentelemetry.io/otel/metric"
 
@@ -236,12 +234,6 @@ func (container *Container) GormLogger() gormLogger.Interface {
 }
 
 func (container *Container) connect(dsn string, config *gorm.Config) (db *gorm.DB, err error) {
-	if strings.HasPrefix(dsn, "libsql://") {
-		return gorm.Open(sqlite.New(sqlite.Config{
-			DriverName: "libsql",
-			DSN:        dsn,
-		}), config)
-	}
 	return gorm.Open(postgres.Open(dsn), config)
 }
 
