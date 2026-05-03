@@ -1,10 +1,15 @@
 # Scheduling Send Refactor Design
 
+## Related Documentation
+
+- [Scheduling SMS Messages](https://docs.httpsms.com/features/scheduling-sms-messages) — existing `SendAt`/`SendTime` scheduling feature
+- [Control SMS Send Rate](https://docs.httpsms.com/features/control-sms-send-rate) — existing `MessagesPerMinute` rate-limiting feature
+
 ## Problem Statement
 
 The current SMS scheduling logic has two issues:
 
-1. **No way to send at an exact time without scheduling interference.** When a user specifies a `SendTime`/`SendAt`, the system still applies rate-limiting and schedule window logic, which may shift the actual send time.
+1. **No way to send at an exact time without scheduling interference.** When a user specifies a `SendTime`/`SendAt` (see [Scheduling SMS Messages](https://docs.httpsms.com/features/scheduling-sms-messages)), the system still applies rate-limiting and schedule window logic, which may shift the actual send time.
 
 2. **Bulk message contention.** When bulk messages (API or CSV) are sent, all events arrive at the Cloud Tasks queue near-simultaneously, causing DB serialization conflicts in `PhoneNotificationRepository.Schedule()` (which uses `SELECT ... ORDER BY scheduled_at DESC` in a transaction). The current workaround is a hardcoded 1-second spacing hack.
 
@@ -12,8 +17,8 @@ The current SMS scheduling logic has two issues:
 
 ### Core Principle
 
-- **Explicit `SendTime`** = send at exactly that time, bypass all scheduling logic.
-- **No `SendTime`** = apply full scheduling logic (rate-limit + schedule windows), with rate-based Cloud Task dispatch delay to prevent DB contention.
+- **Explicit `SendTime`** = send at exactly that time, bypass all scheduling logic. See [Scheduling SMS Messages](https://docs.httpsms.com/features/scheduling-sms-messages) for how `SendAt` works.
+- **No `SendTime`** = apply full scheduling logic ([rate-limit](https://docs.httpsms.com/features/control-sms-send-rate) + schedule windows), with rate-based Cloud Task dispatch delay to prevent DB contention.
 
 ### Design
 
@@ -111,7 +116,73 @@ User sends request
 ### What Does NOT Change
 
 - The `MessageSendSchedule` entity and its `ResolveScheduledAt()` logic
-- The `SendScheduleService` CRUD operations
+- The `MessageSendScheduleService` CRUD operations
 - The phone notification entity schema (no new DB columns)
 - The Android app behavior
 - The web frontend (models auto-generated from Swagger)
+
+---
+
+## MessageSendSchedule (Send Windows) — New Feature
+
+This is the only scheduling mechanism that does **not** have a dedicated documentation page yet. Unlike [Scheduling SMS Messages](https://docs.httpsms.com/features/scheduling-sms-messages) (one-time `SendAt`) and [Control SMS Send Rate](https://docs.httpsms.com/features/control-sms-send-rate) (`MessagesPerMinute` throttling), MessageSendSchedule defines **recurring availability windows** that control when a phone is allowed to send outgoing SMS messages.
+
+### Concept
+
+A `MessageSendSchedule` is a named set of time windows (per day of week) that define when the phone can send. Messages arriving outside those windows are delayed until the next available window opens.
+
+### Entity
+
+```go
+type MessageSendSchedule struct {
+    ID        uuid.UUID
+    UserID    UserID
+    Name      string                      // e.g. "Business Hours"
+    Timezone  string                      // IANA timezone e.g. "Europe/Tallinn"
+    IsActive  bool
+    Windows   []MessageSendScheduleWindow // per-day availability slots
+    CreatedAt time.Time
+    UpdatedAt time.Time
+}
+
+type MessageSendScheduleWindow struct {
+    DayOfWeek   int // 0=Sunday, 6=Saturday
+    StartMinute int // minutes from midnight (e.g. 540 = 9:00)
+    EndMinute   int // minutes from midnight (e.g. 1020 = 17:00)
+}
+```
+
+### How It Works
+
+1. A user creates a schedule via `POST /v1/send-schedules` with a name, timezone, and one or more windows.
+2. The schedule is linked to a phone via a `ScheduleID` field on the phone entity.
+3. When a message is queued (without an explicit `SendAt`), the `PhoneNotificationRepository.Schedule()` method calls `MessageSendSchedule.ResolveScheduledAt(now)` to find the next allowed send time.
+4. If the current time falls within a window, the message sends immediately. If not, it's delayed to the start of the next available window.
+
+### API Endpoints
+
+| Method | Endpoint                          | Description                 |
+| ------ | --------------------------------- | --------------------------- |
+| GET    | `/v1/send-schedules`              | List all user schedules     |
+| POST   | `/v1/send-schedules`              | Create a new schedule       |
+| PUT    | `/v1/send-schedules/{scheduleID}` | Update an existing schedule |
+| DELETE | `/v1/send-schedules/{scheduleID}` | Delete a schedule           |
+
+### Validation Rules
+
+- `name`: required, 2–100 characters
+- `timezone`: required, valid IANA timezone
+- `windows[].day_of_week`: 0–6
+- `windows[].start_minute`: 0–1439
+- `windows[].end_minute`: 1–1440, must be greater than `start_minute`
+- Max 6 windows per day
+- No overlapping windows on the same day
+
+### Entitlement
+
+Free users are limited to 1 schedule. Paid users get unlimited schedules. Enforced via `EntitlementService.Check()` in the handler before creation.
+
+### Interaction with Other Scheduling Features
+
+- **[Scheduling SMS Messages](https://docs.httpsms.com/features/scheduling-sms-messages)** (`SendAt`): When provided, bypasses send windows entirely (exact send time).
+- **[Control SMS Send Rate](https://docs.httpsms.com/features/control-sms-send-rate)** (`MessagesPerMinute`): Applied independently — rate-limiting still applies within allowed windows. Both constraints compose: the message must be within a window AND respect the rate limit.

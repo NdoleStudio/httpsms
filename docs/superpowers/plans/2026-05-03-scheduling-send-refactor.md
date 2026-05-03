@@ -4,7 +4,12 @@
 
 **Goal:** Allow users to send SMS at an exact time (bypassing scheduling) when `SendAt` is specified, and replace the 1-second bulk hack with rate-based dispatch delays.
 
-**Architecture:** Add a transient `ExactSendTime` flag flowing through the event system. When true, bypass rate-limit and schedule window logic in notification scheduling. For bulk sends without explicit time, compute dispatch delay from `MessagesPerMinute` per-phone instead of hardcoded 1s.
+**Related docs:**
+
+- [Scheduling SMS Messages](https://docs.httpsms.com/features/scheduling-sms-messages) — the existing `SendAt`/`SendTime` feature
+- [Control SMS Send Rate](https://docs.httpsms.com/features/control-sms-send-rate) — the existing `MessagesPerMinute` rate-limiting feature
+
+**Architecture:** Add a transient `ExactSendTime` flag flowing through the event system. When true, bypass [rate-limit](https://docs.httpsms.com/features/control-sms-send-rate) and schedule window logic in notification scheduling. For bulk sends without explicit time, compute dispatch delay from `MessagesPerMinute` per-phone instead of hardcoded 1s.
 
 **Tech Stack:** Go, Fiber, GORM, CockroachDB, Google Cloud Tasks (CloudEvents)
 

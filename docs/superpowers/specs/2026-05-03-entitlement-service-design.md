@@ -2,7 +2,7 @@
 
 ## Problem
 
-The send schedule feature (and future features) need usage limits based on the user's subscription plan. Free users should be limited to 1 send schedule; paid users get unlimited. The system must be:
+The [MessageSendSchedule](./2026-05-03-scheduling-send-refactor-design.md#messagesendschedule-send-windows--new-feature) feature (and future features) need usage limits based on the user's subscription plan. Free users should be limited to 1 send schedule; paid users get unlimited. The system must be:
 
 - **Scalable**: Easy to add new entity limits without architectural changes
 - **Configurable**: Disabled by default for self-hosted deployments, enabled via env var for cloud
