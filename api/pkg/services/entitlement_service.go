@@ -9,6 +9,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	pluralize "github.com/gertd/go-pluralize"
 	"github.com/palantir/stacktrace"
 )
 
@@ -88,7 +89,7 @@ func (service *EntitlementService) Check(
 		return &EntitlementCheckResult{
 			Allowed: false,
 			Message: fmt.Sprintf(
-				"Upgrade to a paid plan to create more than %d %s. Visit https://httpsms.com/pricing for details.",
+				"Upgrade to a paid plan to create more than [%d] %s. Visit https://httpsms.com/pricing for details.",
 				limit,
 				formatEntityName(entityName, true),
 			),
@@ -112,25 +113,9 @@ func formatEntityName(name string, plural bool) string {
 	words = append(words, strings.ToLower(name[start:]))
 
 	if plural && len(words) > 0 {
-		last := words[len(words)-1]
-		switch {
-		case strings.HasSuffix(last, "s"), strings.HasSuffix(last, "x"), strings.HasSuffix(last, "z"),
-			strings.HasSuffix(last, "sh"), strings.HasSuffix(last, "ch"):
-			words[len(words)-1] = last + "es"
-		case strings.HasSuffix(last, "y") && len(last) > 1 && !isVowel(last[len(last)-2]):
-			words[len(words)-1] = last[:len(last)-1] + "ies"
-		default:
-			words[len(words)-1] = last + "s"
-		}
+		client := pluralize.NewClient()
+		words[len(words)-1] = client.Plural(words[len(words)-1])
 	}
 
 	return strings.Join(words, " ")
-}
-
-func isVowel(c byte) bool {
-	switch c {
-	case 'a', 'e', 'i', 'o', 'u':
-		return true
-	}
-	return false
 }
