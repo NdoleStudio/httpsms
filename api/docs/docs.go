@@ -2242,7 +2242,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requests.SendScheduleStore"
+                            "$ref": "#/definitions/requests.MessageSendScheduleStore"
                         }
                     }
                 ],
@@ -2250,7 +2250,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/responses.SendScheduleResponse"
+                            "$ref": "#/definitions/responses.MessageSendScheduleResponse"
                         }
                     },
                     "400": {
@@ -2263,6 +2263,12 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
                         }
                     },
                     "422": {
@@ -2312,7 +2318,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requests.SendScheduleStore"
+                            "$ref": "#/definitions/requests.MessageSendScheduleStore"
                         }
                     }
                 ],
@@ -2320,7 +2326,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/responses.SendScheduleResponse"
+                            "$ref": "#/definitions/responses.MessageSendScheduleResponse"
                         }
                     },
                     "400": {
@@ -4246,6 +4252,51 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.MessageSendScheduleStore": {
+            "type": "object",
+            "required": [
+                "is_active",
+                "name",
+                "timezone",
+                "windows"
+            ],
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "windows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.MessageSendScheduleWindow"
+                    }
+                }
+            }
+        },
+        "requests.MessageSendScheduleWindow": {
+            "type": "object",
+            "required": [
+                "day_of_week",
+                "end_minute",
+                "start_minute"
+            ],
+            "properties": {
+                "day_of_week": {
+                    "type": "integer"
+                },
+                "end_minute": {
+                    "type": "integer"
+                },
+                "start_minute": {
+                    "type": "integer"
+                }
+            }
+        },
         "requests.MessageThreadUpdate": {
             "type": "object",
             "required": [
@@ -4340,51 +4391,6 @@ const docTemplate = `{
                     "description": "SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot",
                     "type": "string",
                     "example": "SIM1"
-                }
-            }
-        },
-        "requests.SendScheduleStore": {
-            "type": "object",
-            "required": [
-                "is_active",
-                "name",
-                "timezone",
-                "windows"
-            ],
-            "properties": {
-                "is_active": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "timezone": {
-                    "type": "string"
-                },
-                "windows": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.SendScheduleWindow"
-                    }
-                }
-            }
-        },
-        "requests.SendScheduleWindow": {
-            "type": "object",
-            "required": [
-                "day_of_week",
-                "end_minute",
-                "start_minute"
-            ],
-            "properties": {
-                "day_of_week": {
-                    "type": "integer"
-                },
-                "end_minute": {
-                    "type": "integer"
-                },
-                "start_minute": {
-                    "type": "integer"
                 }
             }
         },
@@ -4735,6 +4741,27 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.MessageSendScheduleResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/entities.MessageSendSchedule"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "responses.MessageThreadsResponse": {
             "type": "object",
             "required": [
@@ -4917,27 +4944,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/entities.Phone"
                     }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Request handled successfully"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "responses.SendScheduleResponse": {
-            "type": "object",
-            "required": [
-                "data",
-                "message",
-                "status"
-            ],
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/entities.MessageSendSchedule"
                 },
                 "message": {
                     "type": "string",

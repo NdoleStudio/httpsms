@@ -13,29 +13,29 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
-// SendScheduleService manages message send schedules for a user.
-type SendScheduleService struct {
+// MessageSendScheduleService manages message send schedules for a user.
+type MessageSendScheduleService struct {
 	service
 	logger     telemetry.Logger
 	tracer     telemetry.Tracer
-	repository repositories.SendScheduleRepository
+	repository repositories.MessageSendScheduleRepository
 }
 
-// NewSendScheduleService creates a new SendScheduleService.
-func NewSendScheduleService(
+// NewMessageSendScheduleService creates a new MessageSendScheduleService.
+func NewMessageSendScheduleService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	repository repositories.SendScheduleRepository,
-) *SendScheduleService {
-	return &SendScheduleService{
-		logger:     logger.WithService(fmt.Sprintf("%T", &SendScheduleService{})),
+	repository repositories.MessageSendScheduleRepository,
+) *MessageSendScheduleService {
+	return &MessageSendScheduleService{
+		logger:     logger.WithService(fmt.Sprintf("%T", &MessageSendScheduleService{})),
 		tracer:     tracer,
 		repository: repository,
 	}
 }
 
-// SendScheduleUpsertParams contains the fields required to create or update a message send schedule.
-type SendScheduleUpsertParams struct {
+// MessageSendScheduleUpsertParams contains the fields required to create or update a message send schedule.
+type MessageSendScheduleUpsertParams struct {
 	UserID   entities.UserID
 	Name     string
 	Timezone string
@@ -44,7 +44,7 @@ type SendScheduleUpsertParams struct {
 }
 
 // Index returns all message send schedules for a user.
-func (service *SendScheduleService) Index(
+func (service *MessageSendScheduleService) Index(
 	ctx context.Context,
 	userID entities.UserID,
 ) ([]entities.MessageSendSchedule, error) {
@@ -52,7 +52,7 @@ func (service *SendScheduleService) Index(
 }
 
 // CountByUser returns the number of schedules owned by a user.
-func (service *SendScheduleService) CountByUser(
+func (service *MessageSendScheduleService) CountByUser(
 	ctx context.Context,
 	userID entities.UserID,
 ) (int, error) {
@@ -60,7 +60,7 @@ func (service *SendScheduleService) CountByUser(
 }
 
 // Load returns a single message send schedule for a user.
-func (service *SendScheduleService) Load(
+func (service *MessageSendScheduleService) Load(
 	ctx context.Context,
 	userID entities.UserID,
 	scheduleID uuid.UUID,
@@ -69,9 +69,9 @@ func (service *SendScheduleService) Load(
 }
 
 // Store creates a new message send schedule.
-func (service *SendScheduleService) Store(
+func (service *MessageSendScheduleService) Store(
 	ctx context.Context,
-	params *SendScheduleUpsertParams,
+	params *MessageSendScheduleUpsertParams,
 ) (*entities.MessageSendSchedule, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -101,11 +101,11 @@ func (service *SendScheduleService) Store(
 }
 
 // Update updates an existing message send schedule.
-func (service *SendScheduleService) Update(
+func (service *MessageSendScheduleService) Update(
 	ctx context.Context,
 	userID entities.UserID,
 	scheduleID uuid.UUID,
-	params *SendScheduleUpsertParams,
+	params *MessageSendScheduleUpsertParams,
 ) (*entities.MessageSendSchedule, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -135,7 +135,7 @@ func (service *SendScheduleService) Update(
 }
 
 // Delete removes a message send schedule for a user.
-func (service *SendScheduleService) Delete(
+func (service *MessageSendScheduleService) Delete(
 	ctx context.Context,
 	userID entities.UserID,
 	scheduleID uuid.UUID,
@@ -168,7 +168,7 @@ func sanitizeWindows(
 }
 
 // DeleteAllForUser removes all message send schedules owned by a user.
-func (service *SendScheduleService) DeleteAllForUser(
+func (service *MessageSendScheduleService) DeleteAllForUser(
 	ctx context.Context,
 	userID entities.UserID,
 ) error {

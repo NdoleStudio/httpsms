@@ -14,26 +14,26 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
-// SendScheduleHandler handles HTTP requests for message send schedules.
-type SendScheduleHandler struct {
+// MessageSendScheduleHandler handles HTTP requests for message send schedules.
+type MessageSendScheduleHandler struct {
 	handler
 	logger             telemetry.Logger
 	tracer             telemetry.Tracer
-	validator          *validators.SendScheduleHandlerValidator
-	service            *services.SendScheduleService
+	validator          *validators.MessageSendScheduleHandlerValidator
+	service            *services.MessageSendScheduleService
 	entitlementService *services.EntitlementService
 }
 
-// NewSendScheduleHandler creates a new SendScheduleHandler.
-func NewSendScheduleHandler(
+// NewMessageSendScheduleHandler creates a new MessageSendScheduleHandler.
+func NewMessageSendScheduleHandler(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	validator *validators.SendScheduleHandlerValidator,
-	service *services.SendScheduleService,
+	validator *validators.MessageSendScheduleHandlerValidator,
+	service *services.MessageSendScheduleService,
 	entitlementService *services.EntitlementService,
-) *SendScheduleHandler {
-	return &SendScheduleHandler{
-		logger:             logger.WithService(fmt.Sprintf("%T", &SendScheduleHandler{})),
+) *MessageSendScheduleHandler {
+	return &MessageSendScheduleHandler{
+		logger:             logger.WithService(fmt.Sprintf("%T", &MessageSendScheduleHandler{})),
 		tracer:             tracer,
 		validator:          validator,
 		service:            service,
@@ -42,7 +42,7 @@ func NewSendScheduleHandler(
 }
 
 // RegisterRoutes registers send schedule routes.
-func (h *SendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+func (h *MessageSendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	router.Get("/v1/send-schedules", h.computeRoute(middlewares, h.Index)...)
 	router.Post("/v1/send-schedules", h.computeRoute(middlewares, h.Store)...)
 	router.Put("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Update)...)
@@ -60,7 +60,7 @@ func (h *SendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ..
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [get]
-func (h *SendScheduleHandler) Index(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Index(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -81,15 +81,15 @@ func (h *SendScheduleHandler) Index(c *fiber.Ctx) error {
 // @Tags Send Schedules
 // @Accept json
 // @Produce json
-// @Param payload body requests.SendScheduleStore true "Payload of new send schedule."
-// @Success 201 {object} responses.SendScheduleResponse
+// @Param payload body requests.MessageSendScheduleStore true "Payload of new send schedule."
+// @Success 201 {object} responses.MessageSendScheduleResponse
 // @Failure 400 {object} responses.BadRequest
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 402 {object} responses.BadRequest
 // @Failure 422 {object} responses.UnprocessableEntity
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [post]
-func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Store(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -110,7 +110,7 @@ func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 		return h.responsePaymentRequired(c, result.Message)
 	}
 
-	var request requests.SendScheduleStore
+	var request requests.MessageSendScheduleStore
 	if err := c.BodyParser(&request); err != nil {
 		return h.responseBadRequest(c, err)
 	}
@@ -143,15 +143,15 @@ func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param scheduleID path string true "Schedule ID"
-// @Param payload body requests.SendScheduleStore true "Payload of updated send schedule."
-// @Success 200 {object} responses.SendScheduleResponse
+// @Param payload body requests.MessageSendScheduleStore true "Payload of updated send schedule."
+// @Success 200 {object} responses.MessageSendScheduleResponse
 // @Failure 400 {object} responses.BadRequest
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 404 {object} responses.NotFound
 // @Failure 422 {object} responses.UnprocessableEntity
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules/{scheduleID} [put]
-func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Update(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -160,7 +160,7 @@ func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	var request requests.SendScheduleStore
+	var request requests.MessageSendScheduleStore
 	if err = c.BodyParser(&request); err != nil {
 		return h.responseBadRequest(c, err)
 	}
@@ -201,7 +201,7 @@ func (h *SendScheduleHandler) Update(c *fiber.Ctx) error {
 // @Failure 404 {object} responses.NotFound
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules/{scheduleID} [delete]
-func (h *SendScheduleHandler) Delete(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Delete(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 

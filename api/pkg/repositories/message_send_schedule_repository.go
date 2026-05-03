@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// SendScheduleRepository loads and persists entities.MessageSendSchedule.
-type SendScheduleRepository interface {
+// MessageSendScheduleRepository loads and persists entities.MessageSendSchedule.
+type MessageSendScheduleRepository interface {
 	// Store persists a new message send schedule.
 	Store(ctx context.Context, schedule *entities.MessageSendSchedule) error
 

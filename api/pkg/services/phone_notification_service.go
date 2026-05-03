@@ -20,13 +20,13 @@ import (
 // PhoneNotificationService sends out notifications to mobile phones
 type PhoneNotificationService struct {
 	service
-	logger                      telemetry.Logger
-	tracer                      telemetry.Tracer
-	phoneNotificationRepository repositories.PhoneNotificationRepository
-	phoneRepository             repositories.PhoneRepository
-	sendScheduleRepository      repositories.SendScheduleRepository
-	messagingClient             *messaging.Client
-	eventDispatcher             *EventDispatcher
+	logger                        telemetry.Logger
+	tracer                        telemetry.Tracer
+	phoneNotificationRepository   repositories.PhoneNotificationRepository
+	phoneRepository               repositories.PhoneRepository
+	messageSendScheduleRepository repositories.MessageSendScheduleRepository
+	messagingClient               *messaging.Client
+	eventDispatcher               *EventDispatcher
 }
 
 // NewNotificationService creates a new PhoneNotificationService
@@ -36,17 +36,17 @@ func NewNotificationService(
 	messagingClient *messaging.Client,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
-	sendScheduleRepository repositories.SendScheduleRepository,
+	messageSendScheduleRepository repositories.MessageSendScheduleRepository,
 	dispatcher *EventDispatcher,
 ) (s *PhoneNotificationService) {
 	return &PhoneNotificationService{
-		logger:                      logger.WithService(fmt.Sprintf("%T", &PhoneNotificationService{})),
-		tracer:                      tracer,
-		messagingClient:             messagingClient,
-		phoneNotificationRepository: phoneNotificationRepository,
-		phoneRepository:             phoneRepository,
-		sendScheduleRepository:      sendScheduleRepository,
-		eventDispatcher:             dispatcher,
+		logger:                        logger.WithService(fmt.Sprintf("%T", &PhoneNotificationService{})),
+		tracer:                        tracer,
+		messagingClient:               messagingClient,
+		phoneNotificationRepository:   phoneNotificationRepository,
+		phoneRepository:               phoneRepository,
+		messageSendScheduleRepository: messageSendScheduleRepository,
+		eventDispatcher:               dispatcher,
 	}
 }
 
@@ -228,7 +228,7 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 
 	var schedule *entities.MessageSendSchedule
 	if phone.ScheduleID != nil {
-		schedule, err = service.sendScheduleRepository.Load(ctx, params.UserID, *phone.ScheduleID)
+		schedule, err = service.messageSendScheduleRepository.Load(ctx, params.UserID, *phone.ScheduleID)
 		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			schedule = nil
 			err = nil

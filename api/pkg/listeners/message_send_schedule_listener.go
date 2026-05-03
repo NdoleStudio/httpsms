@@ -11,21 +11,21 @@ import (
 	"github.com/palantir/stacktrace"
 )
 
-// SendScheduleListener handles cloud events related to message send schedules.
-type SendScheduleListener struct {
+// MessageSendScheduleListener handles cloud events related to message send schedules.
+type MessageSendScheduleListener struct {
 	logger  telemetry.Logger
 	tracer  telemetry.Tracer
-	service *services.SendScheduleService
+	service *services.MessageSendScheduleService
 }
 
-// NewSendScheduleListener creates a new instance of SendScheduleListener.
-func NewSendScheduleListener(
+// NewMessageSendScheduleListener creates a new instance of MessageSendScheduleListener.
+func NewMessageSendScheduleListener(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	service *services.SendScheduleService,
-) (l *SendScheduleListener, routes map[string]events.EventListener) {
-	l = &SendScheduleListener{
-		logger:  logger.WithService(fmt.Sprintf("%T", &SendScheduleListener{})),
+	service *services.MessageSendScheduleService,
+) (l *MessageSendScheduleListener, routes map[string]events.EventListener) {
+	l = &MessageSendScheduleListener{
+		logger:  logger.WithService(fmt.Sprintf("%T", &MessageSendScheduleListener{})),
 		tracer:  tracer,
 		service: service,
 	}
@@ -36,7 +36,7 @@ func NewSendScheduleListener(
 }
 
 // onUserAccountDeleted removes all message send schedules for a deleted user account.
-func (listener *SendScheduleListener) onUserAccountDeleted(
+func (listener *MessageSendScheduleListener) onUserAccountDeleted(
 	ctx context.Context,
 	event cloudevents.Event,
 ) error {

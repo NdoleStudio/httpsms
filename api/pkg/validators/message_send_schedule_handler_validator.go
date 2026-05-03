@@ -14,28 +14,28 @@ import (
 
 const maxWindowsPerDay = 6
 
-// SendScheduleHandlerValidator validates send schedule HTTP requests.
-type SendScheduleHandlerValidator struct {
+// MessageSendScheduleHandlerValidator validates send schedule HTTP requests.
+type MessageSendScheduleHandlerValidator struct {
 	validator
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 }
 
-// NewSendScheduleHandlerValidator creates a new SendScheduleHandlerValidator.
-func NewSendScheduleHandlerValidator(
+// NewMessageSendScheduleHandlerValidator creates a new MessageSendScheduleHandlerValidator.
+func NewMessageSendScheduleHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-) *SendScheduleHandlerValidator {
-	return &SendScheduleHandlerValidator{
-		logger: logger.WithService(fmt.Sprintf("%T", &SendScheduleHandlerValidator{})),
+) *MessageSendScheduleHandlerValidator {
+	return &MessageSendScheduleHandlerValidator{
+		logger: logger.WithService(fmt.Sprintf("%T", &MessageSendScheduleHandlerValidator{})),
 		tracer: tracer,
 	}
 }
 
 // ValidateStore validates a send schedule create or update request.
-func (validator *SendScheduleHandlerValidator) ValidateStore(
+func (validator *MessageSendScheduleHandlerValidator) ValidateStore(
 	_ context.Context,
-	request requests.SendScheduleStore,
+	request requests.MessageSendScheduleStore,
 ) url.Values {
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
@@ -57,9 +57,9 @@ func (validator *SendScheduleHandlerValidator) ValidateStore(
 	return result
 }
 
-func (validator *SendScheduleHandlerValidator) validateWindows(
+func (validator *MessageSendScheduleHandlerValidator) validateWindows(
 	result url.Values,
-	windows []requests.SendScheduleWindow,
+	windows []requests.MessageSendScheduleWindow,
 ) {
 	windowsPerDay := make(map[int]int)
 
@@ -73,10 +73,10 @@ func (validator *SendScheduleHandlerValidator) validateWindows(
 	validator.validateOverlappingWindows(result, windows)
 }
 
-func (validator *SendScheduleHandlerValidator) validateDayOfWeek(
+func (validator *MessageSendScheduleHandlerValidator) validateDayOfWeek(
 	result url.Values,
 	index int,
-	item requests.SendScheduleWindow,
+	item requests.MessageSendScheduleWindow,
 	windowsPerDay map[int]int,
 ) {
 	if item.DayOfWeek < 0 || item.DayOfWeek > 6 {
@@ -93,41 +93,41 @@ func (validator *SendScheduleHandlerValidator) validateDayOfWeek(
 	}
 }
 
-func (validator *SendScheduleHandlerValidator) validateStartMinute(
+func (validator *MessageSendScheduleHandlerValidator) validateStartMinute(
 	result url.Values,
 	index int,
-	item requests.SendScheduleWindow,
+	item requests.MessageSendScheduleWindow,
 ) {
 	if item.StartMinute < 0 || item.StartMinute > 1439 {
 		result.Add("windows", fmt.Sprintf("windows[%d].start_minute must be between 0 and 1439", index))
 	}
 }
 
-func (validator *SendScheduleHandlerValidator) validateEndMinute(
+func (validator *MessageSendScheduleHandlerValidator) validateEndMinute(
 	result url.Values,
 	index int,
-	item requests.SendScheduleWindow,
+	item requests.MessageSendScheduleWindow,
 ) {
 	if item.EndMinute < 1 || item.EndMinute > 1440 {
 		result.Add("windows", fmt.Sprintf("windows[%d].end_minute must be between 1 and 1440", index))
 	}
 }
 
-func (validator *SendScheduleHandlerValidator) validateWindowRange(
+func (validator *MessageSendScheduleHandlerValidator) validateWindowRange(
 	result url.Values,
 	index int,
-	item requests.SendScheduleWindow,
+	item requests.MessageSendScheduleWindow,
 ) {
 	if item.EndMinute <= item.StartMinute {
 		result.Add("windows", fmt.Sprintf("windows[%d].end_minute must be greater than start_minute", index))
 	}
 }
 
-func (validator *SendScheduleHandlerValidator) validateOverlappingWindows(
+func (validator *MessageSendScheduleHandlerValidator) validateOverlappingWindows(
 	result url.Values,
-	windows []requests.SendScheduleWindow,
+	windows []requests.MessageSendScheduleWindow,
 ) {
-	grouped := make(map[int][]requests.SendScheduleWindow)
+	grouped := make(map[int][]requests.MessageSendScheduleWindow)
 
 	for _, item := range windows {
 		if item.DayOfWeek < 0 || item.DayOfWeek > 6 {

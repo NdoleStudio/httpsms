@@ -12,28 +12,28 @@ import (
 	"gorm.io/gorm"
 )
 
-// gormSendScheduleRepository persists and loads entities.MessageSendSchedule using GORM.
-type gormSendScheduleRepository struct {
+// gormMessageSendScheduleRepository persists and loads entities.MessageSendSchedule using GORM.
+type gormMessageSendScheduleRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 	db     *gorm.DB
 }
 
-// NewGormSendScheduleRepository creates a new GORM-backed SendScheduleRepository.
-func NewGormSendScheduleRepository(
+// NewGormMessageSendScheduleRepository creates a new GORM-backed MessageSendScheduleRepository.
+func NewGormMessageSendScheduleRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	db *gorm.DB,
-) SendScheduleRepository {
-	return &gormSendScheduleRepository{
-		logger: logger.WithService(fmt.Sprintf("%T", &gormSendScheduleRepository{})),
+) MessageSendScheduleRepository {
+	return &gormMessageSendScheduleRepository{
+		logger: logger.WithService(fmt.Sprintf("%T", &gormMessageSendScheduleRepository{})),
 		tracer: tracer,
 		db:     db,
 	}
 }
 
 // Store saves a new message send schedule.
-func (r *gormSendScheduleRepository) Store(
+func (r *gormMessageSendScheduleRepository) Store(
 	ctx context.Context,
 	schedule *entities.MessageSendSchedule,
 ) error {
@@ -51,7 +51,7 @@ func (r *gormSendScheduleRepository) Store(
 }
 
 // Update persists changes to an existing message send schedule.
-func (r *gormSendScheduleRepository) Update(
+func (r *gormMessageSendScheduleRepository) Update(
 	ctx context.Context,
 	schedule *entities.MessageSendSchedule,
 ) error {
@@ -69,7 +69,7 @@ func (r *gormSendScheduleRepository) Update(
 }
 
 // Load fetches a message send schedule by user ID and schedule ID.
-func (r *gormSendScheduleRepository) Load(
+func (r *gormMessageSendScheduleRepository) Load(
 	ctx context.Context,
 	userID entities.UserID,
 	scheduleID uuid.UUID,
@@ -104,7 +104,7 @@ func (r *gormSendScheduleRepository) Load(
 }
 
 // Index lists all message send schedules owned by the given user.
-func (r *gormSendScheduleRepository) Index(
+func (r *gormMessageSendScheduleRepository) Index(
 	ctx context.Context,
 	userID entities.UserID,
 ) ([]entities.MessageSendSchedule, error) {
@@ -126,7 +126,7 @@ func (r *gormSendScheduleRepository) Index(
 }
 
 // Delete removes a message send schedule owned by the given user.
-func (r *gormSendScheduleRepository) Delete(
+func (r *gormMessageSendScheduleRepository) Delete(
 	ctx context.Context,
 	userID entities.UserID,
 	scheduleID uuid.UUID,
@@ -148,7 +148,7 @@ func (r *gormSendScheduleRepository) Delete(
 }
 
 // DeleteAllForUser removes all message send schedules owned by the given user.
-func (r *gormSendScheduleRepository) DeleteAllForUser(
+func (r *gormMessageSendScheduleRepository) DeleteAllForUser(
 	ctx context.Context,
 	userID entities.UserID,
 ) error {
@@ -168,7 +168,7 @@ func (r *gormSendScheduleRepository) DeleteAllForUser(
 }
 
 // CountByUser returns the number of schedules owned by a user.
-func (r *gormSendScheduleRepository) CountByUser(
+func (r *gormMessageSendScheduleRepository) CountByUser(
 	ctx context.Context,
 	userID entities.UserID,
 ) (int, error) {
