@@ -26,4 +26,7 @@ type SendScheduleRepository interface {
 
 	// DeleteAllForUser removes all message send schedules owned by a user.
 	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
+
+	// CountByUser returns the number of schedules owned by a user.
+	CountByUser(ctx context.Context, userID entities.UserID) (int, error)
 }

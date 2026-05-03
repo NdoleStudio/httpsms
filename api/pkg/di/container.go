@@ -788,6 +788,7 @@ func (container *Container) SendScheduleHandler() *handlers.SendScheduleHandler 
 		container.Tracer(),
 		container.SendScheduleHandlerValidator(),
 		container.SendScheduleService(),
+		container.EntitlementService(),
 	)
 }
 
@@ -798,6 +799,17 @@ func (container *Container) BillingUsageRepository() (repository repositories.Bi
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
+	)
+}
+
+// EntitlementService creates a new instance of services.EntitlementService
+func (container *Container) EntitlementService() *services.EntitlementService {
+	container.logger.Debug("creating services.EntitlementService")
+	return services.NewEntitlementService(
+		container.Logger(),
+		container.Tracer(),
+		os.Getenv("ENTITLEMENT_ENABLED") == "true",
+		container.UserRepository(),
 	)
 }
 

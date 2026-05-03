@@ -17,10 +17,11 @@ import (
 // SendScheduleHandler handles HTTP requests for message send schedules.
 type SendScheduleHandler struct {
 	handler
-	logger    telemetry.Logger
-	tracer    telemetry.Tracer
-	validator *validators.SendScheduleHandlerValidator
-	service   *services.SendScheduleService
+	logger             telemetry.Logger
+	tracer             telemetry.Tracer
+	validator          *validators.SendScheduleHandlerValidator
+	service            *services.SendScheduleService
+	entitlementService *services.EntitlementService
 }
 
 // NewSendScheduleHandler creates a new SendScheduleHandler.
@@ -29,12 +30,14 @@ func NewSendScheduleHandler(
 	tracer telemetry.Tracer,
 	validator *validators.SendScheduleHandlerValidator,
 	service *services.SendScheduleService,
+	entitlementService *services.EntitlementService,
 ) *SendScheduleHandler {
 	return &SendScheduleHandler{
-		logger:    logger.WithService(fmt.Sprintf("%T", &SendScheduleHandler{})),
-		tracer:    tracer,
-		validator: validator,
-		service:   service,
+		logger:             logger.WithService(fmt.Sprintf("%T", &SendScheduleHandler{})),
+		tracer:             tracer,
+		validator:          validator,
+		service:            service,
+		entitlementService: entitlementService,
 	}
 }
 
@@ -82,12 +85,30 @@ func (h *SendScheduleHandler) Index(c *fiber.Ctx) error {
 // @Success 201 {object} responses.SendScheduleResponse
 // @Failure 400 {object} responses.BadRequest
 // @Failure 401 {object} responses.Unauthorized
+// @Failure 402 {object} responses.BadRequest
 // @Failure 422 {object} responses.UnprocessableEntity
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [post]
 func (h *SendScheduleHandler) Store(c *fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
+
+	userID := h.userIDFomContext(c)
+
+	count, err := h.service.CountByUser(ctx, userID)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot count send schedules for entitlement check"))
+		return h.responseInternalServerError(c)
+	}
+
+	result, err := h.entitlementService.Check(ctx, userID, "MessageSendSchedule", count)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot check entitlement for send schedules"))
+		return h.responseInternalServerError(c)
+	}
+	if !result.Allowed {
+		return h.responsePaymentRequired(c, result.Message)
+	}
 
 	var request requests.SendScheduleStore
 	if err := c.BodyParser(&request); err != nil {

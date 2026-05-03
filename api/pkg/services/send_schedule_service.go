@@ -51,6 +51,14 @@ func (service *SendScheduleService) Index(
 	return service.repository.Index(ctx, userID)
 }
 
+// CountByUser returns the number of schedules owned by a user.
+func (service *SendScheduleService) CountByUser(
+	ctx context.Context,
+	userID entities.UserID,
+) (int, error) {
+	return service.repository.CountByUser(ctx, userID)
+}
+
 // Load returns a single message send schedule for a user.
 func (service *SendScheduleService) Load(
 	ctx context.Context,

@@ -166,3 +166,25 @@ func (r *gormSendScheduleRepository) DeleteAllForUser(
 
 	return nil
 }
+
+// CountByUser returns the number of schedules owned by a user.
+func (r *gormSendScheduleRepository) CountByUser(
+	ctx context.Context,
+	userID entities.UserID,
+) (int, error) {
+	ctx, span := r.tracer.Start(ctx)
+	defer span.End()
+
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&entities.MessageSendSchedule{}).
+		Where("user_id = ?", userID).
+		Count(&count).Error; err != nil {
+		return 0, r.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(err, "cannot count send schedules for user [%s]", userID),
+		)
+	}
+
+	return int(count), nil
+}
