@@ -53,14 +53,16 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 	}
 
 	sendParams := &services.PhoneNotificationScheduleParams{
-		UserID:    payload.UserID,
-		Owner:     payload.Owner,
-		Contact:   payload.Contact,
-		Content:   payload.Content,
-		SIM:       payload.SIM,
-		Encrypted: payload.Encrypted,
-		Source:    event.Source(),
-		MessageID: payload.MessageID,
+		UserID:            payload.UserID,
+		Owner:             payload.Owner,
+		Contact:           payload.Contact,
+		Content:           payload.Content,
+		SIM:               payload.SIM,
+		Encrypted:         payload.Encrypted,
+		Source:            event.Source(),
+		MessageID:         payload.MessageID,
+		ExactSendTime:     payload.ExactSendTime,
+		ScheduledSendTime: payload.ScheduledSendTime,
 	}
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {
