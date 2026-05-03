@@ -161,14 +161,16 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 
 // PhoneNotificationScheduleParams are parameters for sending a notification
 type PhoneNotificationScheduleParams struct {
-	UserID    entities.UserID
-	Owner     string
-	Source    string
-	Encrypted bool
-	Contact   string
-	Content   string
-	SIM       entities.SIM
-	MessageID uuid.UUID
+	UserID            entities.UserID
+	Owner             string
+	Source            string
+	Encrypted         bool
+	Contact           string
+	Content           string
+	SIM               entities.SIM
+	MessageID         uuid.UUID
+	ExactSendTime     bool
+	ScheduledSendTime *time.Time
 }
 
 // Schedule a notification to be sent to a phone
@@ -193,6 +195,35 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		ScheduledAt: time.Now().UTC(),
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
+	}
+
+	// Bypass rate-limit and schedule window logic for exact send time
+	if params.ExactSendTime && params.ScheduledSendTime != nil {
+		scheduledAt := *params.ScheduledSendTime
+		if scheduledAt.Before(time.Now().UTC()) {
+			scheduledAt = time.Now().UTC()
+		}
+		notification.ScheduledAt = scheduledAt
+		if err = service.phoneNotificationRepository.ScheduleExact(ctx, notification); err != nil {
+			msg := fmt.Sprintf("cannot schedule exact notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+
+		if err = service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
+			ctxLogger.Error(err)
+		}
+
+		if err = service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
+			return service.tracer.WrapErrorSpan(span, err)
+		}
+
+		ctxLogger.Info(fmt.Sprintf(
+			"message with id [%s] exact notification scheduled for [%s] with id [%s]",
+			params.MessageID,
+			notification.ScheduledAt,
+			notification.ID,
+		))
+		return nil
 	}
 
 	var schedule *entities.MessageSendSchedule
