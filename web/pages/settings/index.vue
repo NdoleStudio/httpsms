@@ -172,18 +172,6 @@
                 </v-card>
               </v-dialog>
             </div>
-
-            <h5 class="text-h4 mb-3 mt-12">Send Schedules</h5>
-            <p class="text--secondary">
-              Manage availability schedules on a dedicated page and attach one
-              schedule to each phone. Outgoing messages will respect both the
-              selected schedule and the configured send rate.
-            </p>
-            <v-btn color="primary" to="/settings/send-schedules">
-              <v-icon left>{{ mdiCalendarClock }}</v-icon>
-              Manage Send Schedules
-            </v-btn>
-
             <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
             <p class="text--secondary">
               Webhooks allow us to send events to your server for example when
@@ -386,6 +374,22 @@
               </template>
             </v-simple-table>
 
+            <h5 class="text-h4 mb-3 mt-12">Send Schedules</h5>
+            <p class="text--secondary">
+              Create availability schedules and attach them to each phone.
+              Outgoing messages sent outside the schedule window are queued and
+              delivered when the schedule opens according to your
+              <a
+                class="text-decoration-none"
+                href="https://docs.httpsms.com/features/control-sms-send-rate"
+                >configured send rate</a
+              >.
+            </p>
+            <v-btn color="primary" to="/settings/send-schedules">
+              <v-icon left>{{ mdiCalendarClock }}</v-icon>
+              Manage Send Schedules
+            </v-btn>
+
             <h5 id="email-notifications" class="text-h4 mb-3 mt-12">
               Email Notifications
             </h5>
@@ -432,10 +436,7 @@
               Save Notification Settings
             </v-btn>
 
-            <h5
-              id="email-notifications"
-              class="text-h4 error--text mb-3 mt-12"
-            >
+            <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-12">
               Delete Account
             </h5>
             <p v-if="hasActiveSubscription" class="text--secondary">
@@ -615,11 +616,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="showWebhookEdit"
-      overlay-opacity="0.9"
-      max-width="600px"
-    >
+    <v-dialog v-model="showWebhookEdit" overlay-opacity="0.9" max-width="600px">
       <v-card>
         <v-card-title>
           <span v-if="!activeWebhook.id">Add a new&nbsp;</span>
@@ -735,11 +732,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="showDiscordEdit"
-      overlay-opacity="0.9"
-      max-width="700px"
-    >
+    <v-dialog v-model="showDiscordEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>
           <span v-if="!activeDiscord.id">Add a new&nbsp;</span>
