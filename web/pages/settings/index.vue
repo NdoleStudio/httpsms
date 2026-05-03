@@ -904,14 +904,17 @@
     <v-dialog
       v-model="showScheduleEdit"
       overlay-opacity="0.9"
-      max-width="700px"
+      max-width="800px"
     >
       <v-card>
         <v-card-title>
           <span v-if="!activeSchedule.id">Create Message Send Schedule</span>
           <span v-else>Edit Message Send Schedule</span>
         </v-card-title>
-        <v-card-text class="mt-4">
+        <v-card-text
+          class="mt-4"
+          :class="{ 'px-2': $vuetify.breakpoint.mdAndDown }"
+        >
           <v-row>
             <v-col cols="12" md="6">
               <v-text-field
@@ -932,91 +935,105 @@
                 outlined
                 :items="timezones"
                 label="Timezone"
+                :class="{ 'mt-n6 mb-0': $vuetify.breakpoint.mdAndDown }"
                 :error="errorMessages.has('timezone')"
                 :error-messages="errorMessages.get('timezone')"
               />
             </v-col>
           </v-row>
-          <v-card outlined>
-            <v-card-text>
-              <table>
-                <tbody>
-                  <tr v-for="day in weekDays" :key="day.value">
-                    <td style="vertical-align: top" class="pt-2 pr-4">
-                      <v-switch
-                        :input-value="scheduleDayEnabled(day.value)"
-                        inset
+          <v-card
+            :outlined="!$vuetify.breakpoint.mdAndDown"
+            elevation="0"
+            class="px-0"
+          >
+            <v-card-text
+              :class="{
+                'px-2 mt-n8': $vuetify.breakpoint.mdAndDown,
+                'px-4': !$vuetify.breakpoint.mdAndDown,
+              }"
+            >
+              <div
+                v-for="day in weekDays"
+                :key="day.value"
+                :class="[
+                  $vuetify.breakpoint.smAndUp ? 'd-flex align-start' : '',
+                  'mb-4',
+                ]"
+              >
+                <div
+                  :class="[$vuetify.breakpoint.smAndUp ? 'pr-4' : '', 'pt-2']"
+                  :style="$vuetify.breakpoint.smAndUp ? 'min-width: 160px' : ''"
+                >
+                  <v-switch
+                    :input-value="scheduleDayEnabled(day.value)"
+                    inset
+                    dense
+                    :label="day.label"
+                    class="mt-0 pt-0 text--primary"
+                    @change="scheduleToggleDay(day.value, $event)"
+                  />
+                </div>
+                <div class="pt-2 flex-grow-1">
+                  <div
+                    v-for="(window, index) in scheduleWindowsForDay(day.value)"
+                    :key="`${day.value}-${index}`"
+                    class="d-flex align-center flex-wrap mb-2"
+                  >
+                    <div
+                      class="mr-2 mb-2"
+                      style="width: 110px; max-width: 100%"
+                    >
+                      <v-text-field
+                        v-model="window.start_time"
                         dense
-                        :label="day.label"
-                        class="mt-0 pt-0 text--primary"
-                        @change="scheduleToggleDay(day.value, $event)"
+                        outlined
+                        :error="scheduleWindowError(day.value)"
+                        type="time"
+                        label="Start"
+                        hide-details="auto"
                       />
-                    </td>
-                    <td class="pt-2">
-                      <div
-                        v-for="(window, index) in scheduleWindowsForDay(
-                          day.value,
-                        )"
-                        :key="`${day.value}-${index}`"
-                        class="d-flex align-center flex-wrap mb-2"
+                    </div>
+                    <div class="mb-2 mr-2">–</div>
+                    <div
+                      class="mr-2 mb-2"
+                      style="width: 110px; max-width: 100%"
+                    >
+                      <v-text-field
+                        v-model="window.end_time"
+                        dense
+                        outlined
+                        :error="scheduleWindowError(day.value)"
+                        type="time"
+                        label="End"
+                        hide-details="auto"
+                      />
+                    </div>
+                    <div class="mb-2">
+                      <v-btn
+                        v-if="index == 0"
+                        icon
+                        color="primary"
+                        @click="scheduleAddWindow(day.value)"
                       >
-                        <div
-                          class="mr-2 mb-2"
-                          style="width: 150px; max-width: 100%"
-                        >
-                          <v-text-field
-                            v-model="window.start_time"
-                            dense
-                            outlined
-                            :error="scheduleWindowError(day.value)"
-                            type="time"
-                            label="Start"
-                            hide-details="auto"
-                          />
-                        </div>
-                        <div class="mb-2 mr-2">–</div>
-                        <div
-                          class="mr-2 mb-2"
-                          style="width: 150px; max-width: 100%"
-                        >
-                          <v-text-field
-                            v-model="window.end_time"
-                            dense
-                            outlined
-                            :error="scheduleWindowError(day.value)"
-                            type="time"
-                            label="End"
-                            hide-details="auto"
-                          />
-                        </div>
-                        <div class="mb-2">
-                          <v-btn
-                            v-if="index == 0"
-                            icon
-                            color="primary"
-                            @click="scheduleAddWindow(day.value)"
-                          >
-                            <v-icon>{{ mdiPlus }}</v-icon>
-                          </v-btn>
-                          <v-btn
-                            icon
-                            color="error"
-                            @click="scheduleRemoveWindow(day.value, index)"
-                          >
-                            <v-icon>{{ mdiDelete }}</v-icon>
-                          </v-btn>
-                        </div>
-                      </div>
-                      <div
-                        v-if="scheduleWindowError(day.value)"
-                        class="w-full error--text mt-n2 mb-4"
+                        <v-icon>{{ mdiPlus }}</v-icon>
+                      </v-btn>
+                      <v-btn
+                        icon
+                        color="error"
+                        @click="scheduleRemoveWindow(day.value, index)"
                       >
-                        {{ scheduleWindowError(day.value) }}
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                        <v-icon>{{ mdiDelete }}</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
+                  <div
+                    v-if="scheduleWindowError(day.value)"
+                    class="w-full error--text mt-n2 mb-4"
+                  >
+                    {{ scheduleWindowError(day.value) }}
+                  </div>
+                </div>
+              </div>
             </v-card-text>
           </v-card>
         </v-card-text>
