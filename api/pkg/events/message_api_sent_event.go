@@ -20,6 +20,7 @@ type MessageAPISentPayload struct {
 	MaxSendAttempts   uint            `json:"max_send_attempts"`
 	Contact           string          `json:"contact"`
 	ScheduledSendTime *time.Time      `json:"scheduled_send_time"`
+	ExactSendTime     bool            `json:"exact_send_time"`
 	RequestReceivedAt time.Time       `json:"request_received_at"`
 	Content           string          `json:"content"`
 	Attachments       []string        `json:"attachments"`
