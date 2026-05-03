@@ -38,7 +38,7 @@ func (input *BulkMessage) Sanitize() *BulkMessage {
 }
 
 // ToMessageSendParams converts BulkMessage to services.MessageSendParams
-func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID uuid.UUID, source string) services.MessageSendParams {
+func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID uuid.UUID, source string, index int) services.MessageSendParams {
 	from, _ := phonenumbers.Parse(input.FromPhoneNumber, phonenumbers.UNKNOWN_REGION)
 
 	return services.MessageSendParams{
@@ -51,5 +51,6 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 		Contact:           input.sanitizeAddress(input.ToPhoneNumber),
 		Content:           input.Content,
 		Attachments:       input.removeEmptyStrings(strings.Split(input.AttachmentURLs, ",")),
+		Index:             index,
 	}
 }
