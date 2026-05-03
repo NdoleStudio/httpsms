@@ -38,6 +38,12 @@ type Unauthorized struct {
 	Data    string `json:"data" example:"Make sure your API key is set in the [X-API-Key] header in the request"`
 }
 
+// PaymentRequired is the response with status code is 402
+type PaymentRequired struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"You have reached the maximum number of allowed resources. Please upgrade your plan."`
+}
+
 // NoContent is the response when status code is 204
 type NoContent struct {
 	Status  string `json:"status" example:"success"`

@@ -56,7 +56,7 @@ func (h *MessageSendScheduleHandler) RegisterRoutes(router fiber.Router, middlew
 // @Security ApiKeyAuth
 // @Tags Send Schedules
 // @Produce json
-// @Success 200 {array} entities.MessageSendSchedule
+// @Success 200 {object} responses.MessageSendSchedulesResponse
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [get]
@@ -85,7 +85,7 @@ func (h *MessageSendScheduleHandler) Index(c *fiber.Ctx) error {
 // @Success 201 {object} responses.MessageSendScheduleResponse
 // @Failure 400 {object} responses.BadRequest
 // @Failure 401 {object} responses.Unauthorized
-// @Failure 402 {object} responses.BadRequest
+// @Failure 402 {object} responses.PaymentRequired
 // @Failure 422 {object} responses.UnprocessableEntity
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [post]

@@ -1117,6 +1117,7 @@ func (container *Container) PhoneHandler() (handler *handlers.PhoneHandler) {
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneService(),
+		container.MessageSendScheduleService(),
 		container.PhoneHandlerValidator(),
 	)
 }

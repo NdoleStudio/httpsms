@@ -31,7 +31,7 @@ type PhoneUpsert struct {
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
 
-	ScheduleID *string `json:"schedule_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	ScheduleID *string `json:"schedule_id,omitempty" example:"32343a19-da5e-4b1b-a767-3298a73703cb" validate:"optional"`
 }
 
 // Sanitize sets defaults to MessageOutstanding

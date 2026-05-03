@@ -27,9 +27,14 @@ type MessageSendSchedule struct {
 
 // ResolveScheduledAt returns the next allowed send time based on the schedule.
 // If the schedule is inactive, has no windows, or has an invalid timezone,
-// the current time is returned in UTC.
+// the current time is returned in UTC. An active schedule with no windows
+// is treated as inactive (messages are sent immediately).
 func (schedule *MessageSendSchedule) ResolveScheduledAt(current time.Time) time.Time {
-	if schedule == nil || !schedule.IsActive || len(schedule.Windows) == 0 {
+	if schedule == nil || !schedule.IsActive {
+		return current.UTC()
+	}
+
+	if len(schedule.Windows) == 0 {
 		return current.UTC()
 	}
 

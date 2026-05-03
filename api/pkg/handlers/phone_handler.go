@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/google/uuid"
 
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -16,10 +19,11 @@ import (
 // PhoneHandler handles phone http requests.
 type PhoneHandler struct {
 	handler
-	logger    telemetry.Logger
-	tracer    telemetry.Tracer
-	service   *services.PhoneService
-	validator *validators.PhoneHandlerValidator
+	logger          telemetry.Logger
+	tracer          telemetry.Tracer
+	service         *services.PhoneService
+	scheduleService *services.MessageSendScheduleService
+	validator       *validators.PhoneHandlerValidator
 }
 
 // NewPhoneHandler creates a new PhoneHandler
@@ -27,13 +31,15 @@ func NewPhoneHandler(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	service *services.PhoneService,
+	scheduleService *services.MessageSendScheduleService,
 	validator *validators.PhoneHandlerValidator,
 ) (h *PhoneHandler) {
 	return &PhoneHandler{
-		logger:    logger.WithService(fmt.Sprintf("%T", h)),
-		tracer:    tracer,
-		validator: validator,
-		service:   service,
+		logger:          logger.WithService(fmt.Sprintf("%T", h)),
+		tracer:          tracer,
+		validator:       validator,
+		service:         service,
+		scheduleService: scheduleService,
 	}
 }
 
@@ -125,6 +131,15 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
+	}
+
+	if request.ScheduleID != nil && strings.TrimSpace(*request.ScheduleID) != "" {
+		scheduleID, _ := uuid.Parse(strings.TrimSpace(*request.ScheduleID))
+		if _, err := h.scheduleService.Load(ctx, h.userFromContext(c).ID, scheduleID); err != nil {
+			validationErrors := url.Values{}
+			validationErrors.Add("schedule_id", "schedule_id does not belong to the authenticated user or does not exist")
+			return h.responseUnprocessableEntity(c, validationErrors, "validation errors while updating phones")
+		}
 	}
 
 	phone, err := h.service.Upsert(ctx, request.ToUpsertParams(h.userFromContext(c), c.OriginalURL()))
