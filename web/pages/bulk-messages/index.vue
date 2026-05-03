@@ -39,7 +39,15 @@
                 >Excel template</a
               >
               and upload it here to send your SMS messages to multiple
-              recipients at once.
+              recipients at once. You can also configure
+              <nuxt-link
+                class="text-decoration-none"
+                to="/settings/#send-schedules"
+                >send schedules</nuxt-link
+              >
+              on your phone to make sure messages are sent out at specific times
+              of the day e.g
+              <span class="text--secondary">Mon - Fri 9am - 5pm.</span>
             </p>
             <v-alert v-if="errorTitle" text prominent type="warning">
               <h6 class="subtitle-1 font-weight-bold">{{ errorTitle }}</h6>

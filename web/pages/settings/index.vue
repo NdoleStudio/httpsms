@@ -401,9 +401,13 @@
                 </thead>
                 <tbody>
                   <tr v-for="schedule in sendSchedules" :key="schedule.id">
-                    <td class="text-left">{{ schedule.name }}</td>
-                    <td>{{ schedule.timezone }}</td>
-                    <td>
+                    <td class="text-left pt-2" style="vertical-align: top">
+                      {{ schedule.name }}
+                    </td>
+                    <td class="pt-2" style="vertical-align: top">
+                      {{ schedule.timezone }}
+                    </td>
+                    <td class="py-2">
                       <div
                         v-for="line in scheduleSummary(schedule)"
                         :key="`${schedule.id}-${line}`"
@@ -413,7 +417,7 @@
                         <span class="text--secondary">{{ line[1] }}</span>
                       </div>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center pt-2" style="vertical-align: top">
                       <v-btn
                         :icon="$vuetify.breakpoint.mdAndDown"
                         color="info"
@@ -904,8 +908,8 @@
     >
       <v-card>
         <v-card-title>
-          <span v-if="!activeSchedule.id">Add Send Schedule</span>
-          <span v-else>Edit Send Schedule</span>
+          <span v-if="!activeSchedule.id">Create Message Send Schedule</span>
+          <span v-else>Edit Message Send Schedule</span>
         </v-card-title>
         <v-card-text class="mt-4">
           <v-row>
@@ -914,8 +918,9 @@
                 v-model="activeSchedule.name"
                 outlined
                 dense
-                label="Schedule name"
-                placeholder="Business Hours"
+                persistent-placeholder
+                label="Schedule Name"
+                placeholder="e.g Business Hours"
                 :error="errorMessages.has('name')"
                 :error-messages="errorMessages.get('name')"
               />
@@ -931,107 +936,91 @@
                 :error-messages="errorMessages.get('timezone')"
               />
             </v-col>
-            <v-col cols="12">
-              <v-switch
-                v-model="activeSchedule.is_active"
-                inset
-                label="Active"
-                class="mt-0"
-              />
-            </v-col>
           </v-row>
-
-          <v-alert
-            v-if="errorMessages.has('windows')"
-            dense
-            outlined
-            type="error"
-            class="mb-4"
-          >
-            <div v-for="message in errorMessages.get('windows')" :key="message">
-              {{ message }}
-            </div>
-          </v-alert>
-
-          <v-card
-            v-for="day in weekDays"
-            :key="day.value"
-            outlined
-            class="mb-4"
-          >
-            <v-card-text class="pb-2">
-              <div class="d-flex align-center flex-wrap mb-3">
-                <div class="font-weight-medium mr-4" style="min-width: 110px">
-                  {{ day.label }}
-                </div>
-                <v-switch
-                  :input-value="scheduleDayEnabled(day.value)"
-                  inset
-                  dense
-                  hide-details
-                  class="mt-0 pt-0"
-                  @change="scheduleToggleDay(day.value, $event)"
-                />
-                <v-spacer />
-                <v-btn
-                  small
-                  text
-                  color="primary"
-                  :disabled="!scheduleDayEnabled(day.value)"
-                  @click="scheduleAddWindow(day.value)"
-                >
-                  <v-icon left small>{{ mdiPlus }}</v-icon>
-                  Add window
-                </v-btn>
-              </div>
-
-              <div
-                v-if="scheduleWindowsForDay(day.value).length === 0"
-                class="text--secondary"
-              >
-                Unavailable
-              </div>
-
-              <div
-                v-for="(window, index) in scheduleWindowsForDay(day.value)"
-                :key="`${day.value}-${index}`"
-                class="d-flex align-center flex-wrap mb-2"
-              >
-                <div class="mr-2 mb-2" style="width: 170px; max-width: 100%">
-                  <v-text-field
-                    v-model="window.start_time"
-                    dense
-                    outlined
-                    type="time"
-                    label="Start"
-                    hide-details="auto"
-                  />
-                </div>
-                <div class="mb-2 mr-2" style="font-size: 18px">–</div>
-                <div class="mr-2 mb-2" style="width: 170px; max-width: 100%">
-                  <v-text-field
-                    v-model="window.end_time"
-                    dense
-                    outlined
-                    type="time"
-                    label="End"
-                    hide-details="auto"
-                  />
-                </div>
-                <div class="mb-2">
-                  <v-btn
-                    icon
-                    color="error"
-                    @click="scheduleRemoveWindow(day.value, index)"
-                  >
-                    <v-icon>{{ mdiDelete }}</v-icon>
-                  </v-btn>
-                </div>
-              </div>
+          <v-card outlined>
+            <v-card-text>
+              <table>
+                <tbody>
+                  <tr v-for="day in weekDays" :key="day.value">
+                    <td style="vertical-align: top" class="pt-2 pr-4">
+                      <v-switch
+                        :input-value="scheduleDayEnabled(day.value)"
+                        inset
+                        dense
+                        :label="day.label"
+                        class="mt-0 pt-0 text--primary"
+                        @change="scheduleToggleDay(day.value, $event)"
+                      />
+                    </td>
+                    <td class="pt-2">
+                      <div
+                        v-for="(window, index) in scheduleWindowsForDay(
+                          day.value,
+                        )"
+                        :key="`${day.value}-${index}`"
+                        class="d-flex align-center flex-wrap mb-2"
+                      >
+                        <div
+                          class="mr-2 mb-2"
+                          style="width: 150px; max-width: 100%"
+                        >
+                          <v-text-field
+                            v-model="window.start_time"
+                            dense
+                            outlined
+                            :error="scheduleWindowError(day.value)"
+                            type="time"
+                            label="Start"
+                            hide-details="auto"
+                          />
+                        </div>
+                        <div class="mb-2 mr-2">–</div>
+                        <div
+                          class="mr-2 mb-2"
+                          style="width: 150px; max-width: 100%"
+                        >
+                          <v-text-field
+                            v-model="window.end_time"
+                            dense
+                            outlined
+                            :error="scheduleWindowError(day.value)"
+                            type="time"
+                            label="End"
+                            hide-details="auto"
+                          />
+                        </div>
+                        <div class="mb-2">
+                          <v-btn
+                            v-if="index == 0"
+                            icon
+                            color="primary"
+                            @click="scheduleAddWindow(day.value)"
+                          >
+                            <v-icon>{{ mdiPlus }}</v-icon>
+                          </v-btn>
+                          <v-btn
+                            icon
+                            color="error"
+                            @click="scheduleRemoveWindow(day.value, index)"
+                          >
+                            <v-icon>{{ mdiDelete }}</v-icon>
+                          </v-btn>
+                        </div>
+                      </div>
+                      <div
+                        v-if="scheduleWindowError(day.value)"
+                        class="w-full error--text mt-n2 mb-4"
+                      >
+                        {{ scheduleWindowError(day.value) }}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </v-card-text>
           </v-card>
         </v-card-text>
-        <v-card-actions class="mt-n4 pb-4">
+        <v-card-actions class="pb-4">
           <loading-button
             v-if="!activeSchedule.id"
             :icon="mdiContentSave"
@@ -1042,7 +1031,6 @@
           </loading-button>
           <loading-button
             v-else
-            small
             color="info"
             :loading="savingSchedule"
             @click="saveSchedule"
@@ -1056,15 +1044,17 @@
           <v-btn
             v-if="activeSchedule.id"
             :disabled="savingSchedule"
-            small
             color="error"
             text
             @click="confirmDeleteSchedule"
           >
-            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small left>
               {{ mdiDelete }}
             </v-icon>
             Delete
+          </v-btn>
+          <v-btn v-else text color="error" @click="showScheduleEdit = false">
+            Close
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -1254,6 +1244,7 @@ export default Vue.extend({
     },
     timezones() {
       try {
+        // @ts-ignore
         return Intl.supportedValuesOf('timeZone')
       } catch {
         return []
@@ -1425,7 +1416,7 @@ export default Vue.extend({
           this.showDiscordEdit = false
           this.loadDiscordIntegrations()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1462,7 +1453,7 @@ export default Vue.extend({
           this.showDiscordEdit = false
           this.loadDiscordIntegrations()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1500,7 +1491,7 @@ export default Vue.extend({
           this.showWebhookEdit = false
           this.loadWebhooks()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1539,7 +1530,7 @@ export default Vue.extend({
           this.showWebhookEdit = false
           this.loadWebhooks()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1578,7 +1569,7 @@ export default Vue.extend({
       this.loadingSendSchedules = true
       this.$store
         .dispatch('getSendSchedules')
-        .then((sendSchedules) => {
+        .then((sendSchedules: EntitiesSendSchedule[]) => {
           this.sendSchedules = sendSchedules
         })
         .finally(() => {
@@ -1590,7 +1581,7 @@ export default Vue.extend({
       this.loadingWebhooks = true
       this.$store
         .dispatch('getWebhooks')
-        .then((webhooks) => {
+        .then((webhooks: EntitiesWebhook[]) => {
           this.webhooks = webhooks
         })
         .finally(() => {
@@ -1602,7 +1593,7 @@ export default Vue.extend({
       this.loadingDiscordIntegrations = true
       this.$store
         .dispatch('getDiscordIntegrations')
-        .then((discords) => {
+        .then((discords: EntitiesDiscord[]) => {
           this.discords = discords
         })
         .finally(() => {
@@ -1614,7 +1605,7 @@ export default Vue.extend({
       this.deletingAccount = true
       this.$store
         .dispatch('deleteUserAccount')
-        .then((message) => {
+        .then((message: string) => {
           this.$store.dispatch('addNotification', {
             message: message ?? 'Your account has been deleted successfully',
             type: 'success',
@@ -1657,6 +1648,10 @@ export default Vue.extend({
 
       const [hours, minutes] = value.split(':').map((x) => parseInt(x, 10))
       return hours * 60 + minutes
+    },
+
+    getWeekday(index: number): string {
+      return this.weekDays.find((x) => x.value == index)?.label ?? ''
     },
 
     scheduleSummary(schedule: EntitiesSendSchedule) {
@@ -1756,6 +1751,22 @@ export default Vue.extend({
         start_time: '09:00',
         end_time: '17:00',
       })
+    },
+
+    scheduleWindowError(index: number): string | null {
+      const messages = this.errorMessages.has('windows')
+        ? this.errorMessages.get('windows')
+        : []
+      if (messages.length == 0) {
+        return null
+      }
+
+      const message = messages.find((x: string) =>
+        x.includes(`Day of week ${index}`),
+      )
+      return message
+        ? message.replace(`Day of week ${index}`, this.getWeekday(index))
+        : null
     },
 
     scheduleRemoveWindow(dayOfWeek: number, index: number) {
