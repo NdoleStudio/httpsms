@@ -203,3 +203,38 @@ func (repository *gormPhoneNotificationRepository) insert(
 
 	return nil
 }
+
+// ScheduleExact stores a phone notification with an exact ScheduledAt time.
+// It performs a dedupe check — if a pending notification for the same message already exists, it's a no-op.
+func (repository *gormPhoneNotificationRepository) ScheduleExact(
+	ctx context.Context,
+	notification *entities.PhoneNotification,
+) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	// Dedupe: check if a pending notification for this message already exists
+	var count int64
+	if err := repository.db.WithContext(ctx).
+		Model(&entities.PhoneNotification{}).
+		Where("message_id = ? AND status = ?", notification.MessageID, entities.PhoneNotificationStatusPending).
+		Count(&count).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(err, "cannot check for existing notification for message [%s]", notification.MessageID),
+		)
+	}
+
+	if count > 0 {
+		return nil
+	}
+
+	if err := repository.db.WithContext(ctx).Create(notification).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(err, "cannot create exact-time notification with id [%s]", notification.ID),
+		)
+	}
+
+	return nil
+}

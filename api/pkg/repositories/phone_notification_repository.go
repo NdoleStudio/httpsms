@@ -13,6 +13,10 @@ type PhoneNotificationRepository interface {
 	// Schedule a new entities.PhoneNotification
 	Schedule(ctx context.Context, messagesPerMinute uint, schedule *entities.MessageSendSchedule, notification *entities.PhoneNotification) error
 
+	// ScheduleExact stores a phone notification with a fixed ScheduledAt time,
+	// bypassing rate-limit and schedule window logic.
+	ScheduleExact(ctx context.Context, notification *entities.PhoneNotification) error
+
 	// UpdateStatus of a notification
 	UpdateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) error
 
