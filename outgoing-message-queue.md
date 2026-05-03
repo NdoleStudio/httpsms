@@ -147,21 +147,19 @@ In this example, with a default rate of 10 messages/minute:
 
 ## Summary: Queue Decision Flow
 
-```
-Message received by httpSMS API
-    │
-    ├── Has explicit `send_at` time?
-    │       │
-    │       YES → Dispatch at exactly that time
-    │             (bypasses rate-limit AND schedule window)
-    │
-    └── No `send_at` time
-            │
-            ├── Calculate rate-based delay
-            │   (index × 60s ÷ messages_per_minute)
-            │
-            └── Apply send schedule window
-                (hold until window opens if outside active hours)
+```mermaid
+flowchart TD
+    A[Message received by httpSMS API] --> B{Has explicit send_at time?}
+    B -->|YES| C[Dispatch at exactly that time]
+    C --> D[Bypasses rate-limit AND schedule window]
+    B -->|NO| E[Calculate rate-based delay]
+    E --> F["delay = index × (60s ÷ messages_per_minute)"]
+    F --> G{Send schedule window enabled?}
+    G -->|YES| H{Within active window?}
+    G -->|NO| I[Dispatch with rate delay only]
+    H -->|YES| I
+    H -->|NO| J[Hold until window opens]
+    J --> I
 ```
 
 ## Key Points
