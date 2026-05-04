@@ -20,7 +20,6 @@ type MessageSendScheduleStore struct {
 	request
 	Name     string                      `json:"name"`
 	Timezone string                      `json:"timezone"`
-	IsActive bool                        `json:"is_active"`
 	Windows  []MessageSendScheduleWindow `json:"windows"`
 }
 
@@ -48,5 +47,5 @@ func (input *MessageSendScheduleStore) ToParams(user entities.AuthContext) *serv
 	for _, item := range input.Windows {
 		windows = append(windows, entities.MessageSendScheduleWindow{DayOfWeek: item.DayOfWeek, StartMinute: item.StartMinute, EndMinute: item.EndMinute})
 	}
-	return &services.MessageSendScheduleUpsertParams{UserID: user.ID, Name: input.Name, Timezone: input.Timezone, IsActive: input.IsActive, Windows: windows}
+	return &services.MessageSendScheduleUpsertParams{UserID: user.ID, Name: input.Name, Timezone: input.Timezone, Windows: windows}
 }

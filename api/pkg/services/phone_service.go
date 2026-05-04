@@ -91,7 +91,7 @@ type PhoneUpsertParams struct {
 	MessageExpirationDuration *time.Duration
 	MissedCallAutoReply       *string
 	SIM                       entities.SIM
-	ScheduleID                *uuid.UUID
+	MessageSendScheduleID     *uuid.UUID
 	Source                    string
 	UserID                    entities.UserID
 }
@@ -106,13 +106,13 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(params.PhoneNumber, phonenumbers.E164))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return service.createPhone(ctx, &PhoneFCMTokenParams{
-			Source:        params.Source,
-			PhoneNumber:   params.PhoneNumber,
-			PhoneAPIKeyID: nil,
-			UserID:        params.UserID,
-			FcmToken:      params.FcmToken,
-			SIM:           params.SIM,
-			ScheduleID:    params.ScheduleID,
+			Source:                params.Source,
+			PhoneNumber:           params.PhoneNumber,
+			PhoneAPIKeyID:         nil,
+			UserID:                params.UserID,
+			FcmToken:              params.FcmToken,
+			SIM:                   params.SIM,
+			MessageSendScheduleID: params.MessageSendScheduleID,
 		})
 	}
 
@@ -128,13 +128,13 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
 	return phone, service.dispatchPhoneUpdatedEvent(ctx, phone, &PhoneFCMTokenParams{
-		Source:        params.Source,
-		PhoneNumber:   params.PhoneNumber,
-		PhoneAPIKeyID: nil,
-		UserID:        params.UserID,
-		FcmToken:      params.FcmToken,
-		SIM:           params.SIM,
-		ScheduleID:    params.ScheduleID,
+		Source:                params.Source,
+		PhoneNumber:           params.PhoneNumber,
+		PhoneAPIKeyID:         nil,
+		UserID:                params.UserID,
+		FcmToken:              params.FcmToken,
+		SIM:                   params.SIM,
+		MessageSendScheduleID: params.MessageSendScheduleID,
 	})
 }
 
@@ -204,13 +204,13 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 
 // PhoneFCMTokenParams are parameters for upserting an entities.Phone
 type PhoneFCMTokenParams struct {
-	Source        string
-	PhoneNumber   *phonenumbers.PhoneNumber
-	PhoneAPIKeyID *uuid.UUID
-	UserID        entities.UserID
-	FcmToken      *string
-	SIM           entities.SIM
-	ScheduleID    *uuid.UUID
+	Source                string
+	PhoneNumber           *phonenumbers.PhoneNumber
+	PhoneAPIKeyID         *uuid.UUID
+	UserID                entities.UserID
+	FcmToken              *string
+	SIM                   entities.SIM
+	MessageSendScheduleID *uuid.UUID
 }
 
 // UpsertFCMToken the FCM token for an entities.Phone
@@ -255,7 +255,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTo
 		MaxSendAttempts:          2,
 		SIM:                      params.SIM,
 		MissedCallAutoReply:      nil,
-		ScheduleID:               params.ScheduleID,
+		MessageSendScheduleID:    params.MessageSendScheduleID,
 		PhoneNumber:              phonenumbers.Format(params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),
@@ -299,7 +299,7 @@ func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertPa
 	}
 
 	phone.SIM = params.SIM
-	phone.ScheduleID = params.ScheduleID
+	phone.MessageSendScheduleID = params.MessageSendScheduleID
 
 	return phone
 }

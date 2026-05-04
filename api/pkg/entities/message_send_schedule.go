@@ -19,7 +19,6 @@ type MessageSendSchedule struct {
 	UserID    UserID                      `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Name      string                      `json:"name" example:"Business Hours"`
 	Timezone  string                      `json:"timezone" example:"Europe/Tallinn"`
-	IsActive  bool                        `json:"is_active" gorm:"default:true" example:"true"`
 	Windows   []MessageSendScheduleWindow `json:"windows" gorm:"type:jsonb;serializer:json"`
 	CreatedAt time.Time                   `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
 	UpdatedAt time.Time                   `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
@@ -30,11 +29,7 @@ type MessageSendSchedule struct {
 // the current time is returned in UTC. An active schedule with no windows
 // is treated as inactive (messages are sent immediately).
 func (schedule *MessageSendSchedule) ResolveScheduledAt(current time.Time) time.Time {
-	if schedule == nil || !schedule.IsActive {
-		return current.UTC()
-	}
-
-	if len(schedule.Windows) == 0 {
+	if schedule == nil || len(schedule.Windows) == 0 {
 		return current.UTC()
 	}
 
@@ -55,27 +50,11 @@ func (schedule *MessageSendSchedule) ResolveScheduledAt(current time.Time) time.
 				continue
 			}
 
-			start := time.Date(
-				day.Year(),
-				day.Month(),
-				day.Day(),
-				0,
-				0,
-				0,
-				0,
-				location,
-			).Add(time.Duration(window.StartMinute) * time.Minute)
+			start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, location).
+				Add(time.Duration(window.StartMinute) * time.Minute)
 
-			end := time.Date(
-				day.Year(),
-				day.Month(),
-				day.Day(),
-				0,
-				0,
-				0,
-				0,
-				location,
-			).Add(time.Duration(window.EndMinute) * time.Minute)
+			end := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, location).
+				Add(time.Duration(window.EndMinute) * time.Minute)
 
 			var candidate time.Time
 

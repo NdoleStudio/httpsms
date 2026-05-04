@@ -58,7 +58,7 @@ func (service *EntitlementService) Check(
 	ctx context.Context,
 	userID entities.UserID,
 	entityName string,
-	currentCount int,
+	countFunc func() (int, error),
 ) (*EntitlementCheckResult, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
@@ -83,6 +83,14 @@ func (service *EntitlementService) Check(
 	limit, hasLimit := limits[user.SubscriptionName]
 	if !hasLimit || limit == 0 {
 		return &EntitlementCheckResult{Allowed: true}, nil
+	}
+
+	currentCount, err := countFunc()
+	if err != nil {
+		return nil, service.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(err, fmt.Sprintf("cannot count entities [%s] for user [%s]", entityName, userID)),
+		)
 	}
 
 	if currentCount >= limit {

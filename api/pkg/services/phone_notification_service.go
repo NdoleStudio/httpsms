@@ -15,6 +15,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // PhoneNotificationService sends out notifications to mobile phones
@@ -197,44 +198,19 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		UpdatedAt:   time.Now().UTC(),
 	}
 
-	// Bypass rate-limit and schedule window logic for exact send time
 	if params.ExactSendTime && params.ScheduledSendTime != nil {
-		scheduledAt := *params.ScheduledSendTime
-		if scheduledAt.Before(time.Now().UTC()) {
-			scheduledAt = time.Now().UTC()
-		}
-		notification.ScheduledAt = scheduledAt
-		if err = service.phoneNotificationRepository.ScheduleExact(ctx, notification); err != nil {
-			msg := fmt.Sprintf("cannot schedule exact notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
-			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-		}
-
-		if err = service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
-			ctxLogger.Error(err)
-		}
-
-		if err = service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
-			return service.tracer.WrapErrorSpan(span, err)
-		}
-
-		ctxLogger.Info(fmt.Sprintf(
-			"message with id [%s] exact notification scheduled for [%s] with id [%s]",
-			params.MessageID,
-			notification.ScheduledAt,
-			notification.ID,
-		))
-		return nil
+		return service.scheduleExact(ctx, span, ctxLogger, params, phone, notification)
 	}
 
 	var schedule *entities.MessageSendSchedule
-	if phone.ScheduleID != nil {
-		schedule, err = service.messageSendScheduleRepository.Load(ctx, params.UserID, *phone.ScheduleID)
+	if phone.MessageSendScheduleID != nil {
+		schedule, err = service.messageSendScheduleRepository.Load(ctx, params.UserID, *phone.MessageSendScheduleID)
 		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			schedule = nil
 			err = nil
 		}
 		if err != nil {
-			msg := fmt.Sprintf("cannot load send schedule [%s] for phone [%s]", *phone.ScheduleID, phone.ID)
+			msg := fmt.Sprintf("cannot load send schedule [%s] for phone [%s]", *phone.MessageSendScheduleID, phone.ID)
 			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 		}
 	}
@@ -254,6 +230,42 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 
 	ctxLogger.Info(fmt.Sprintf(
 		"message with id [%s] notification scheduled for [%s] with id [%s]",
+		params.MessageID,
+		notification.ScheduledAt,
+		notification.ID,
+	))
+	return nil
+}
+
+func (service *PhoneNotificationService) scheduleExact(
+	ctx context.Context,
+	span trace.Span,
+	ctxLogger telemetry.Logger,
+	params *PhoneNotificationScheduleParams,
+	phone *entities.Phone,
+	notification *entities.PhoneNotification,
+) error {
+	scheduledAt := *params.ScheduledSendTime
+	if scheduledAt.Before(time.Now().UTC()) {
+		scheduledAt = time.Now().UTC()
+	}
+	notification.ScheduledAt = scheduledAt
+
+	if err := service.phoneNotificationRepository.ScheduleExact(ctx, notification); err != nil {
+		msg := fmt.Sprintf("cannot schedule exact notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
+		ctxLogger.Error(err)
+	}
+
+	if err := service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
+		return service.tracer.WrapErrorSpan(span, err)
+	}
+
+	ctxLogger.Info(fmt.Sprintf(
+		"message with id [%s] exact notification scheduled for [%s] with id [%s]",
 		params.MessageID,
 		notification.ScheduledAt,
 		notification.ID,

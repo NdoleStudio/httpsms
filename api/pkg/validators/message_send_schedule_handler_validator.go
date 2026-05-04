@@ -50,7 +50,7 @@ func (validator *MessageSendScheduleHandlerValidator) ValidateStore(
 
 	if request.Timezone != "" {
 		if _, err := time.LoadLocation(request.Timezone); err != nil {
-			result.Add("timezone", "timezone must be a valid IANA timezone")
+			result.Add("timezone", "The timezone must be a valid IANA timezone e.g Europe/London.")
 		}
 	}
 
@@ -61,6 +61,11 @@ func (validator *MessageSendScheduleHandlerValidator) validateWindows(
 	result url.Values,
 	windows []requests.MessageSendScheduleWindow,
 ) {
+	if len(windows) == 0 {
+		result.Add("windows", "at least one active window is required")
+		return
+	}
+
 	windowsPerDay := make(map[int]int)
 
 	for index, item := range windows {

@@ -39,7 +39,6 @@ type MessageSendScheduleUpsertParams struct {
 	UserID   entities.UserID
 	Name     string
 	Timezone string
-	IsActive bool
 	Windows  []entities.MessageSendScheduleWindow
 }
 
@@ -81,7 +80,6 @@ func (service *MessageSendScheduleService) Store(
 		UserID:    params.UserID,
 		Name:      params.Name,
 		Timezone:  params.Timezone,
-		IsActive:  params.IsActive,
 		Windows:   sanitizeWindows(params.Windows),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -117,7 +115,6 @@ func (service *MessageSendScheduleService) Update(
 
 	schedule.Name = params.Name
 	schedule.Timezone = params.Timezone
-	schedule.IsActive = params.IsActive
 	schedule.Windows = sanitizeWindows(params.Windows)
 	schedule.UpdatedAt = time.Now().UTC()
 

@@ -16,7 +16,7 @@ func TestResolveScheduledAt_NilSchedule_ReturnsCurrentUTC(t *testing.T) {
 
 func TestResolveScheduledAt_InactiveSchedule_ReturnsCurrentUTC(t *testing.T) {
 	now := time.Now()
-	schedule := &MessageSendSchedule{IsActive: false}
+	schedule := &MessageSendSchedule{}
 	result := schedule.ResolveScheduledAt(now)
 	assert.Equal(t, now.UTC(), result)
 }
@@ -24,7 +24,6 @@ func TestResolveScheduledAt_InactiveSchedule_ReturnsCurrentUTC(t *testing.T) {
 func TestResolveScheduledAt_NoWindows_ReturnsCurrentUTC(t *testing.T) {
 	now := time.Now()
 	schedule := &MessageSendSchedule{
-		IsActive: true,
 		Timezone: "UTC",
 		Windows:  []MessageSendScheduleWindow{},
 	}
@@ -36,7 +35,6 @@ func TestResolveScheduledAt_WithinWindow_ReturnsCurrentUTC(t *testing.T) {
 	// Wednesday at 10:00 UTC, window is Wed 9:00-17:00 (540-1020 minutes)
 	now := time.Date(2025, 1, 1, 10, 0, 0, 0, time.UTC) // Wednesday
 	schedule := &MessageSendSchedule{
-		IsActive: true,
 		Timezone: "UTC",
 		Windows: []MessageSendScheduleWindow{
 			{DayOfWeek: int(now.Weekday()), StartMinute: 540, EndMinute: 1020},
@@ -50,7 +48,6 @@ func TestResolveScheduledAt_BeforeWindow_ReturnsWindowStart(t *testing.T) {
 	// Wednesday at 7:00 UTC, window is Wed 9:00-17:00
 	now := time.Date(2025, 1, 1, 7, 0, 0, 0, time.UTC) // Wednesday
 	schedule := &MessageSendSchedule{
-		IsActive: true,
 		Timezone: "UTC",
 		Windows: []MessageSendScheduleWindow{
 			{DayOfWeek: int(now.Weekday()), StartMinute: 540, EndMinute: 1020},

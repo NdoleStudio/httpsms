@@ -622,15 +622,17 @@
                 >
                 </v-text-field>
                 <v-autocomplete
-                  v-model="activePhone.schedule_id"
+                  v-model="activePhone.message_send_schedule_id"
                   outlined
+                  :readonly="sendSchedules.length === 0"
                   dense
                   clearable
                   label="Send Schedule"
                   :items="sendSchedules"
                   item-text="name"
                   item-value="id"
-                  hint="Optional: attach one availability schedule to this phone"
+                  :multiple="false"
+                  hint="Attach a send schedule to this phone"
                   persistent-hint
                 ></v-autocomplete>
                 <v-textarea

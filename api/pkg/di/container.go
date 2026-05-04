@@ -663,6 +663,7 @@ func (container *Container) PhoneHandlerValidator() (validator *validators.Phone
 	return validators.NewPhoneHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
+		container.MessageSendScheduleService(),
 	)
 }
 
@@ -1117,7 +1118,6 @@ func (container *Container) PhoneHandler() (handler *handlers.PhoneHandler) {
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneService(),
-		container.MessageSendScheduleService(),
 		container.PhoneHandlerValidator(),
 	)
 }

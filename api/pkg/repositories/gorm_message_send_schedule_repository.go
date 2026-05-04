@@ -41,10 +41,7 @@ func (r *gormMessageSendScheduleRepository) Store(
 	defer span.End()
 
 	if err := r.db.WithContext(ctx).Create(schedule).Error; err != nil {
-		return r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot store send schedule [%s]", schedule.ID),
-		)
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot store send schedule [%s]", schedule.ID))
 	}
 
 	return nil
@@ -59,10 +56,7 @@ func (r *gormMessageSendScheduleRepository) Update(
 	defer span.End()
 
 	if err := r.db.WithContext(ctx).Save(schedule).Error; err != nil {
-		return r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot update send schedule [%s]", schedule.ID),
-		)
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update send schedule [%s]", schedule.ID))
 	}
 
 	return nil
@@ -85,19 +79,11 @@ func (r *gormMessageSendScheduleRepository) Load(
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, r.tracer.WrapErrorSpan(
 			span,
-			stacktrace.PropagateWithCode(
-				err,
-				ErrCodeNotFound,
-				"send schedule [%s] not found",
-				scheduleID,
-			),
+			stacktrace.PropagateWithCode(err, ErrCodeNotFound, "send schedule [%s] not found for user with ID [%s]", scheduleID, userID),
 		)
 	}
 	if err != nil {
-		return nil, r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot load send schedule [%s]", scheduleID),
-		)
+		return nil, r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load send schedule [%s]", scheduleID))
 	}
 
 	return item, nil
@@ -112,14 +98,12 @@ func (r *gormMessageSendScheduleRepository) Index(
 	defer span.End()
 
 	items := make([]entities.MessageSendSchedule, 0)
-	if err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
-		Order("created_at ASC").
-		Find(&items).Error; err != nil {
-		return nil, r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot index send schedules for user [%s]", userID),
-		)
+		Order("created_at DESC").
+		Find(&items).Error
+	if err != nil {
+		return nil, r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot index send schedules for user [%s]", userID))
 	}
 
 	return items, nil
@@ -134,14 +118,12 @@ func (r *gormMessageSendScheduleRepository) Delete(
 	ctx, span := r.tracer.Start(ctx)
 	defer span.End()
 
-	if err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Where("id = ?", scheduleID).
-		Delete(&entities.MessageSendSchedule{}).Error; err != nil {
-		return r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot delete send schedule [%s]", scheduleID),
-		)
+		Delete(&entities.MessageSendSchedule{}).Error
+	if err != nil {
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete send schedule [%s]", scheduleID))
 	}
 
 	return nil
@@ -155,13 +137,11 @@ func (r *gormMessageSendScheduleRepository) DeleteAllForUser(
 	ctx, span := r.tracer.Start(ctx)
 	defer span.End()
 
-	if err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
-		Delete(&entities.MessageSendSchedule{}).Error; err != nil {
-		return r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot delete send schedules for user [%s]", userID),
-		)
+		Delete(&entities.MessageSendSchedule{}).Error
+	if err != nil {
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete send schedules for user [%s]", userID))
 	}
 
 	return nil
@@ -176,14 +156,12 @@ func (r *gormMessageSendScheduleRepository) CountByUser(
 	defer span.End()
 
 	var count int64
-	if err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Model(&entities.MessageSendSchedule{}).
 		Where("user_id = ?", userID).
-		Count(&count).Error; err != nil {
-		return 0, r.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagate(err, "cannot count send schedules for user [%s]", userID),
-		)
+		Count(&count).Error
+	if err != nil {
+		return 0, r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot count send schedules for user [%s]", userID))
 	}
 
 	return int(count), nil
