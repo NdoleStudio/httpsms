@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ type MessageSendScheduleService struct {
 	logger     telemetry.Logger
 	tracer     telemetry.Tracer
 	repository repositories.MessageSendScheduleRepository
+	dispatcher *EventDispatcher
 }
 
 // NewMessageSendScheduleService creates a new MessageSendScheduleService.
@@ -26,11 +28,13 @@ func NewMessageSendScheduleService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	repository repositories.MessageSendScheduleRepository,
+	dispatcher *EventDispatcher,
 ) *MessageSendScheduleService {
 	return &MessageSendScheduleService{
 		logger:     logger.WithService(fmt.Sprintf("%T", &MessageSendScheduleService{})),
 		tracer:     tracer,
 		repository: repository,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -137,7 +141,30 @@ func (service *MessageSendScheduleService) Delete(
 	userID entities.UserID,
 	scheduleID uuid.UUID,
 ) error {
-	return service.repository.Delete(ctx, userID, scheduleID)
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	if err := service.repository.Delete(ctx, userID, scheduleID); err != nil {
+		msg := fmt.Sprintf("cannot delete message send schedule with ID [%s] for user [%s]", scheduleID, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	event, err := service.createEvent(events.EventTypeMessageSendScheduleDeleted, fmt.Sprintf("%T", service), events.MessageSendScheduleDeletedPayload{
+		ScheduleID: scheduleID,
+		UserID:     userID,
+		Timestamp:  time.Now().UTC(),
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot create [%s] event for schedule [%s]", events.EventTypeMessageSendScheduleDeleted, scheduleID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
+		msg := fmt.Sprintf("cannot dispatch [%s] event for schedule [%s]", event.Type(), scheduleID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
 }
 
 // sanitizeWindows normalizes and sorts schedule windows by day and start minute.

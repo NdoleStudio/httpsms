@@ -133,6 +133,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
+	container.RegisterPhoneListeners()
 
 	container.RegisterEventRoutes()
 
@@ -769,6 +770,7 @@ func (container *Container) MessageSendScheduleService() *services.MessageSendSc
 		container.Logger(),
 		container.Tracer(),
 		container.MessageSendScheduleRepository(),
+		container.EventDispatcher(),
 	)
 }
 
@@ -1448,6 +1450,20 @@ func (container *Container) RegisterPhoneAPIKeyListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.PhoneAPIKeyService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterPhoneListeners registers event listeners for listeners.PhoneListener
+func (container *Container) RegisterPhoneListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.PhoneListener{}))
+	_, routes := listeners.NewPhoneListener(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneService(),
 	)
 
 	for event, handler := range routes {

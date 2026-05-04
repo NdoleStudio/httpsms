@@ -56,6 +56,20 @@ func (service *PhoneService) DeleteAllForUser(ctx context.Context, userID entiti
 	return nil
 }
 
+// NullifyScheduleID sets MessageSendScheduleID to NULL for all phones referencing the given schedule.
+func (service *PhoneService) NullifyScheduleID(ctx context.Context, userID entities.UserID, scheduleID uuid.UUID) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	if err := service.repository.NullifyScheduleID(ctx, userID, scheduleID); err != nil {
+		msg := fmt.Sprintf("cannot nullify schedule ID [%s] for user [%s]", scheduleID, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	service.tracer.CtxLogger(service.logger, span).Info(fmt.Sprintf("nullified schedule ID [%s] on phones for user [%s]", scheduleID, userID))
+	return nil
+}
+
 // Index fetches the heartbeats for a phone number
 func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthContext, params repositories.IndexParams) (*[]entities.Phone, error) {
 	ctx, span := service.tracer.Start(ctx)
