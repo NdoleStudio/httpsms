@@ -1991,16 +1991,13 @@
         ],
         "description": "List all send schedules owned by the authenticated user.",
         "produces": ["application/json"],
-        "tags": ["Send Schedules"],
+        "tags": ["SendSchedules"],
         "summary": "List send schedules",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/entities.MessageSendSchedule"
-              }
+              "$ref": "#/definitions/responses.MessageSendSchedulesResponse"
             }
           },
           "401": {
@@ -2026,7 +2023,7 @@
         "description": "Create a new send schedule for the authenticated user.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
-        "tags": ["Send Schedules"],
+        "tags": ["SendSchedules"],
         "summary": "Create send schedule",
         "parameters": [
           {
@@ -2061,7 +2058,7 @@
           "402": {
             "description": "Payment Required",
             "schema": {
-              "$ref": "#/definitions/responses.BadRequest"
+              "$ref": "#/definitions/responses.PaymentRequired"
             }
           },
           "422": {
@@ -2089,7 +2086,7 @@
         "description": "Update a send schedule owned by the authenticated user.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
-        "tags": ["Send Schedules"],
+        "tags": ["SendSchedules"],
         "summary": "Update send schedule",
         "parameters": [
           {
@@ -2156,7 +2153,7 @@
         ],
         "description": "Delete a send schedule owned by the authenticated user.",
         "produces": ["application/json"],
-        "tags": ["Send Schedules"],
+        "tags": ["SendSchedules"],
         "summary": "Delete send schedule",
         "parameters": [
           {
@@ -3234,7 +3231,6 @@
       "required": [
         "created_at",
         "id",
-        "is_active",
         "name",
         "timezone",
         "updated_at",
@@ -3249,10 +3245,6 @@
         "id": {
           "type": "string",
           "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
-        },
-        "is_active": {
-          "type": "boolean",
-          "example": true
         },
         "name": {
           "type": "string",
@@ -3370,9 +3362,9 @@
         "id",
         "max_send_attempts",
         "message_expiration_seconds",
+        "message_send_schedule_id",
         "messages_per_minute",
         "phone_number",
-        "schedule_id",
         "sim",
         "updated_at",
         "user_id"
@@ -3399,6 +3391,10 @@
           "description": "MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.",
           "type": "integer"
         },
+        "message_send_schedule_id": {
+          "type": "string",
+          "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+        },
         "messages_per_minute": {
           "type": "integer",
           "example": 1
@@ -3410,10 +3406,6 @@
         "phone_number": {
           "type": "string",
           "example": "+18005550199"
-        },
-        "schedule_id": {
-          "type": "string",
-          "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
         },
         "sim": {
           "$ref": "#/definitions/entities.SIM"
@@ -3899,11 +3891,8 @@
     },
     "requests.MessageSendScheduleStore": {
       "type": "object",
-      "required": ["is_active", "name", "timezone", "windows"],
+      "required": ["name", "timezone", "windows"],
       "properties": {
-        "is_active": {
-          "type": "boolean"
-        },
         "name": {
           "type": "string"
         },
@@ -3981,7 +3970,6 @@
         "messages_per_minute",
         "missed_call_auto_reply",
         "phone_number",
-        "schedule_id",
         "sim"
       ],
       "properties": {
@@ -3999,6 +3987,10 @@
           "type": "integer",
           "example": 12345
         },
+        "message_send_schedule_id": {
+          "type": "string",
+          "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+        },
         "messages_per_minute": {
           "type": "integer",
           "example": 1
@@ -4010,10 +4002,6 @@
         "phone_number": {
           "type": "string",
           "example": "+18005550199"
-        },
-        "schedule_id": {
-          "type": "string",
-          "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
         },
         "sim": {
           "description": "SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot",
@@ -4332,6 +4320,26 @@
         }
       }
     },
+    "responses.MessageSendSchedulesResponse": {
+      "type": "object",
+      "required": ["data", "message", "status"],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entities.MessageSendSchedule"
+          }
+        },
+        "message": {
+          "type": "string",
+          "example": "Request handled successfully"
+        },
+        "status": {
+          "type": "string",
+          "example": "success"
+        }
+      }
+    },
     "responses.MessageThreadsResponse": {
       "type": "object",
       "required": ["data", "message", "status"],
@@ -4414,6 +4422,20 @@
         "status": {
           "type": "string",
           "example": "success"
+        }
+      }
+    },
+    "responses.PaymentRequired": {
+      "type": "object",
+      "required": ["message", "status"],
+      "properties": {
+        "message": {
+          "type": "string",
+          "example": "You have reached the maximum number of allowed resources. Please upgrade your plan."
+        },
+        "status": {
+          "type": "string",
+          "example": "error"
         }
       }
     },

@@ -2191,17 +2191,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Send Schedules"
+                    "SendSchedules"
                 ],
                 "summary": "List send schedules",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.MessageSendSchedule"
-                            }
+                            "$ref": "#/definitions/responses.MessageSendSchedulesResponse"
                         }
                     },
                     "401": {
@@ -2232,7 +2229,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Send Schedules"
+                    "SendSchedules"
                 ],
                 "summary": "Create send schedule",
                 "parameters": [
@@ -2268,7 +2265,7 @@ const docTemplate = `{
                     "402": {
                         "description": "Payment Required",
                         "schema": {
-                            "$ref": "#/definitions/responses.BadRequest"
+                            "$ref": "#/definitions/responses.PaymentRequired"
                         }
                     },
                     "422": {
@@ -2301,7 +2298,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Send Schedules"
+                    "SendSchedules"
                 ],
                 "summary": "Update send schedule",
                 "parameters": [
@@ -2372,7 +2369,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Send Schedules"
+                    "SendSchedules"
                 ],
                 "summary": "Delete send schedule",
                 "parameters": [
@@ -3529,7 +3526,6 @@ const docTemplate = `{
             "required": [
                 "created_at",
                 "id",
-                "is_active",
                 "name",
                 "timezone",
                 "updated_at",
@@ -3544,10 +3540,6 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
-                },
-                "is_active": {
-                    "type": "boolean",
-                    "example": true
                 },
                 "name": {
                     "type": "string",
@@ -3669,9 +3661,9 @@ const docTemplate = `{
                 "id",
                 "max_send_attempts",
                 "message_expiration_seconds",
+                "message_send_schedule_id",
                 "messages_per_minute",
                 "phone_number",
-                "schedule_id",
                 "sim",
                 "updated_at",
                 "user_id"
@@ -3698,6 +3690,10 @@ const docTemplate = `{
                     "description": "MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.",
                     "type": "integer"
                 },
+                "message_send_schedule_id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
                 "messages_per_minute": {
                     "type": "integer",
                     "example": 1
@@ -3709,10 +3705,6 @@ const docTemplate = `{
                 "phone_number": {
                     "type": "string",
                     "example": "+18005550199"
-                },
-                "schedule_id": {
-                    "type": "string",
-                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
                 },
                 "sim": {
                     "$ref": "#/definitions/entities.SIM"
@@ -4255,15 +4247,11 @@ const docTemplate = `{
         "requests.MessageSendScheduleStore": {
             "type": "object",
             "required": [
-                "is_active",
                 "name",
                 "timezone",
                 "windows"
             ],
             "properties": {
-                "is_active": {
-                    "type": "boolean"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -4353,7 +4341,6 @@ const docTemplate = `{
                 "messages_per_minute",
                 "missed_call_auto_reply",
                 "phone_number",
-                "schedule_id",
                 "sim"
             ],
             "properties": {
@@ -4371,6 +4358,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 12345
                 },
+                "message_send_schedule_id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
                 "messages_per_minute": {
                     "type": "integer",
                     "example": 1
@@ -4382,10 +4373,6 @@ const docTemplate = `{
                 "phone_number": {
                     "type": "string",
                     "example": "+18005550199"
-                },
-                "schedule_id": {
-                    "type": "string",
-                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
                 },
                 "sim": {
                     "description": "SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot",
@@ -4762,6 +4749,30 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.MessageSendSchedulesResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.MessageSendSchedule"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "responses.MessageThreadsResponse": {
             "type": "object",
             "required": [
@@ -4862,6 +4873,23 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "success"
+                }
+            }
+        },
+        "responses.PaymentRequired": {
+            "type": "object",
+            "required": [
+                "message",
+                "status"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "You have reached the maximum number of allowed resources. Please upgrade your plan."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
                 }
             }
         },

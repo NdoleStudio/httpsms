@@ -222,9 +222,6 @@ definitions:
       id:
         example: 32343a19-da5e-4b1b-a767-3298a73703cb
         type: string
-      is_active:
-        example: true
-        type: boolean
       name:
         example: Business Hours
         type: string
@@ -244,7 +241,6 @@ definitions:
     required:
       - created_at
       - id
-      - is_active
       - name
       - timezone
       - updated_at
@@ -341,6 +337,9 @@ definitions:
           MessageExpirationSeconds is the duration in seconds after sending
           a message when it is considered to be expired.
         type: integer
+      message_send_schedule_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
       messages_per_minute:
         example: 1
         type: integer
@@ -349,9 +348,6 @@ definitions:
         type: string
       phone_number:
         example: "+18005550199"
-        type: string
-      schedule_id:
-        example: 32343a19-da5e-4b1b-a767-3298a73703cb
         type: string
       sim:
         $ref: "#/definitions/entities.SIM"
@@ -366,9 +362,9 @@ definitions:
       - id
       - max_send_attempts
       - message_expiration_seconds
+      - message_send_schedule_id
       - messages_per_minute
       - phone_number
-      - schedule_id
       - sim
       - updated_at
       - user_id
@@ -795,8 +791,6 @@ definitions:
     type: object
   requests.MessageSendScheduleStore:
     properties:
-      is_active:
-        type: boolean
       name:
         type: string
       timezone:
@@ -806,7 +800,6 @@ definitions:
           $ref: "#/definitions/requests.MessageSendScheduleWindow"
         type: array
     required:
-      - is_active
       - name
       - timezone
       - windows
@@ -876,6 +869,9 @@ definitions:
           a message when it is considered to be expired.
         example: 12345
         type: integer
+      message_send_schedule_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
       messages_per_minute:
         example: 1
         type: integer
@@ -884,9 +880,6 @@ definitions:
         type: string
       phone_number:
         example: "+18005550199"
-        type: string
-      schedule_id:
-        example: 32343a19-da5e-4b1b-a767-3298a73703cb
         type: string
       sim:
         description:
@@ -901,7 +894,6 @@ definitions:
       - messages_per_minute
       - missed_call_auto_reply
       - phone_number
-      - schedule_id
       - sim
     type: object
   requests.UserNotificationUpdate:
@@ -1168,6 +1160,23 @@ definitions:
       - message
       - status
     type: object
+  responses.MessageSendSchedulesResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.MessageSendSchedule"
+        type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
   responses.MessageThreadsResponse:
     properties:
       data:
@@ -1238,6 +1247,20 @@ definitions:
         type: string
     required:
       - data
+      - message
+      - status
+    type: object
+  responses.PaymentRequired:
+    properties:
+      message:
+        example:
+          You have reached the maximum number of allowed resources. Please
+          upgrade your plan.
+        type: string
+      status:
+        example: error
+        type: string
+    required:
       - message
       - status
     type: object
@@ -2958,9 +2981,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: "#/definitions/entities.MessageSendSchedule"
-            type: array
+            $ref: "#/definitions/responses.MessageSendSchedulesResponse"
         "401":
           description: Unauthorized
           schema:
@@ -2973,7 +2994,7 @@ paths:
         - ApiKeyAuth: []
       summary: List send schedules
       tags:
-        - Send Schedules
+        - SendSchedules
     post:
       consumes:
         - application/json
@@ -3003,7 +3024,7 @@ paths:
         "402":
           description: Payment Required
           schema:
-            $ref: "#/definitions/responses.BadRequest"
+            $ref: "#/definitions/responses.PaymentRequired"
         "422":
           description: Unprocessable Entity
           schema:
@@ -3016,7 +3037,7 @@ paths:
         - ApiKeyAuth: []
       summary: Create send schedule
       tags:
-        - Send Schedules
+        - SendSchedules
   /send-schedules/{scheduleID}:
     delete:
       description: Delete a send schedule owned by the authenticated user.
@@ -3051,7 +3072,7 @@ paths:
         - ApiKeyAuth: []
       summary: Delete send schedule
       tags:
-        - Send Schedules
+        - SendSchedules
     put:
       consumes:
         - application/json
@@ -3099,7 +3120,7 @@ paths:
         - ApiKeyAuth: []
       summary: Update send schedule
       tags:
-        - Send Schedules
+        - SendSchedules
   /users/{userID}/api-keys:
     delete:
       consumes:
