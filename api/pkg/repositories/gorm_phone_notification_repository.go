@@ -99,7 +99,7 @@ func (repository *gormPhoneNotificationRepository) Schedule(
 	schedule *entities.MessageSendSchedule,
 	notification *entities.PhoneNotification,
 ) error {
-	ctx, span := repository.tracer.Start(ctx)
+	ctx, span, _ := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
 
 	now := time.Now().UTC()
@@ -174,7 +174,7 @@ func (repository *gormPhoneNotificationRepository) resolveScheduledAt(
 	return schedule.ResolveScheduledAt(current)
 }
 
-// maxTime returns the later of the two times.
+// maxTime returns the greater of the two time.Time.
 func (repository *gormPhoneNotificationRepository) maxTime(a, b time.Time) time.Time {
 	if a.After(b) {
 		return a

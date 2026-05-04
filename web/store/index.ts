@@ -9,27 +9,27 @@ import { BillingUsage } from '~/models/billing'
 import {
   EntitiesDiscord,
   EntitiesMessage,
+  EntitiesMessageSendSchedule,
   EntitiesPhone,
   EntitiesPhoneAPIKey,
-  EntitiesSendSchedule,
   EntitiesUser,
   EntitiesWebhook,
   RequestsDiscordStore,
   RequestsDiscordUpdate,
-  RequestsSendScheduleStore,
+  RequestsMessageSendScheduleStore,
   RequestsUserNotificationUpdate,
   RequestsUserPaymentInvoice,
   RequestsWebhookStore,
   RequestsWebhookUpdate,
   ResponsesDiscordResponse,
   ResponsesDiscordsResponse,
+  ResponsesMessageSendScheduleResponse,
+  ResponsesMessageSendSchedulesResponse,
   ResponsesMessagesResponse,
   ResponsesNoContent,
   ResponsesOkString,
   ResponsesPhoneAPIKeyResponse,
   ResponsesPhoneAPIKeysResponse,
-  ResponsesSendScheduleResponse,
-  ResponsesSendSchedulesResponse,
   ResponsesUnprocessableEntity,
   ResponsesUserResponse,
   ResponsesUserSubscriptionPaymentsResponse,
@@ -381,7 +381,7 @@ export const actions = {
         missed_call_auto_reply: phone.missed_call_auto_reply,
         max_send_attempts: parseInt(phone.max_send_attempts.toString()),
         messages_per_minute: parseInt(phone.messages_per_minute.toString()),
-        schedule_id: phone.schedule_id ?? null,
+        message_send_schedule_id: phone.message_send_schedule_id ?? null,
       })
 
       context.dispatch('addNotification', {
@@ -1109,34 +1109,45 @@ export const actions = {
   },
 
   getSendSchedules(context: ActionContext<State, State>) {
-    return new Promise<Array<EntitiesSendSchedule>>((resolve, reject) => {
-      axios
-        .get<ResponsesSendSchedulesResponse>(`/v1/send-schedules`)
-        .then((response: AxiosResponse<ResponsesSendSchedulesResponse>) => {
-          resolve(response.data.data)
-        })
-        .catch(async (error: AxiosError) => {
-          await context.dispatch('addNotification', {
-            message:
-              (error.response?.data as any)?.message ??
-              'Error while fetching send schedules',
-            type: 'error',
+    return new Promise<Array<EntitiesMessageSendSchedule>>(
+      (resolve, reject) => {
+        axios
+          .get<ResponsesMessageSendSchedulesResponse>(`/v1/send-schedules`)
+          .then(
+            (
+              response: AxiosResponse<ResponsesMessageSendSchedulesResponse>,
+            ) => {
+              resolve(response.data.data)
+            },
+          )
+          .catch(async (error: AxiosError) => {
+            await context.dispatch('addNotification', {
+              message:
+                (error.response?.data as any)?.message ??
+                'Error while fetching send schedules',
+              type: 'error',
+            })
+            reject(getErrorMessages(error))
           })
-          reject(getErrorMessages(error))
-        })
-    })
+      },
+    )
   },
 
   createSendSchedule(
     context: ActionContext<State, State>,
-    payload: RequestsSendScheduleStore,
+    payload: RequestsMessageSendScheduleStore,
   ) {
-    return new Promise<EntitiesSendSchedule>((resolve, reject) => {
+    return new Promise<EntitiesMessageSendSchedule>((resolve, reject) => {
       axios
-        .post<ResponsesSendScheduleResponse>(`/v1/send-schedules`, payload)
-        .then((response: AxiosResponse<ResponsesSendScheduleResponse>) => {
-          resolve(response.data.data)
-        })
+        .post<ResponsesMessageSendScheduleResponse>(
+          `/v1/send-schedules`,
+          payload,
+        )
+        .then(
+          (response: AxiosResponse<ResponsesMessageSendScheduleResponse>) => {
+            resolve(response.data.data)
+          },
+        )
         .catch(async (error: AxiosError) => {
           await context.dispatch('addNotification', {
             message:
@@ -1151,17 +1162,19 @@ export const actions = {
 
   updateSendSchedule(
     context: ActionContext<State, State>,
-    payload: RequestsSendScheduleStore & { id: string },
+    payload: RequestsMessageSendScheduleStore & { id: string },
   ) {
-    return new Promise<EntitiesSendSchedule>((resolve, reject) => {
+    return new Promise<EntitiesMessageSendSchedule>((resolve, reject) => {
       axios
-        .put<ResponsesSendScheduleResponse>(
+        .put<ResponsesMessageSendScheduleResponse>(
           `/v1/send-schedules/${payload.id}`,
           payload,
         )
-        .then((response: AxiosResponse<ResponsesSendScheduleResponse>) => {
-          resolve(response.data.data)
-        })
+        .then(
+          (response: AxiosResponse<ResponsesMessageSendScheduleResponse>) => {
+            resolve(response.data.data)
+          },
+        )
         .catch(async (error: AxiosError) => {
           await context.dispatch('addNotification', {
             message:

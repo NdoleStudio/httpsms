@@ -205,14 +205,14 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 	var schedule *entities.MessageSendSchedule
 	if phone.MessageSendScheduleID != nil {
 		schedule, err = service.messageSendScheduleRepository.Load(ctx, params.UserID, *phone.MessageSendScheduleID)
-		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-			schedule = nil
-			err = nil
-		}
-		if err != nil {
+		if err != nil && stacktrace.GetCode(err) != repositories.ErrCodeNotFound {
 			msg := fmt.Sprintf("cannot load send schedule [%s] for phone [%s]", *phone.MessageSendScheduleID, phone.ID)
 			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 		}
+	}
+
+	if schedule != nil {
+		ctxLogger.Info(fmt.Sprintf("loaded [%T] with ID [%s] for phone [%s]", schedule, schedule.ID, phone.ID))
 	}
 
 	if err = service.phoneNotificationRepository.Schedule(ctx, phone.MessagesPerMinute, schedule, notification); err != nil {
@@ -229,10 +229,11 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 	}
 
 	ctxLogger.Info(fmt.Sprintf(
-		"message with id [%s] notification scheduled for [%s] with id [%s]",
+		"message with id [%s] notification scheduled for [%s] with id [%s] with phone schedule ID [%s]",
 		params.MessageID,
 		notification.ScheduledAt,
 		notification.ID,
+		phone.MessageSendScheduleID,
 	))
 	return nil
 }

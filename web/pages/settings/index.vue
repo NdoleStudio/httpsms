@@ -1126,8 +1126,8 @@ import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
 import {
   EntitiesDiscord,
+  EntitiesMessageSendSchedule,
   EntitiesPhone,
-  EntitiesSendSchedule,
   EntitiesWebhook,
 } from '~/models/api'
 
@@ -1204,7 +1204,7 @@ export default Vue.extend({
       updatingPhone: false,
       updatingDiscord: false,
       loadingDiscordIntegrations: false,
-      sendSchedules: [] as EntitiesSendSchedule[],
+      sendSchedules: [] as EntitiesMessageSendSchedule[],
       events: [
         'message.phone.received',
         'message.phone.sent',
@@ -1219,13 +1219,11 @@ export default Vue.extend({
         id: null,
         name: '',
         timezone: '',
-        is_active: true,
         windows: [],
       } as {
         id: string | null
         name: string
         timezone: string
-        is_active: boolean
         windows: Array<{
           day_of_week: number
           start_time: string
@@ -1588,7 +1586,7 @@ export default Vue.extend({
       this.loadingSendSchedules = true
       this.$store
         .dispatch('getSendSchedules')
-        .then((sendSchedules: EntitiesSendSchedule[]) => {
+        .then((sendSchedules: EntitiesMessageSendSchedule[]) => {
           this.sendSchedules = sendSchedules
         })
         .finally(() => {
@@ -1673,7 +1671,7 @@ export default Vue.extend({
       return this.weekDays.find((x) => x.value == index)?.label ?? ''
     },
 
-    scheduleSummary(schedule: EntitiesSendSchedule) {
+    scheduleSummary(schedule: EntitiesMessageSendSchedule) {
       return this.weekDays
         .map((day) => {
           const windows = (schedule.windows || []).filter(
@@ -1711,7 +1709,6 @@ export default Vue.extend({
         id: null,
         name: '',
         timezone: this.defaultTimezone(),
-        is_active: true,
         windows: [
           { day_of_week: 1, start_time: '09:00', end_time: '17:00' },
           { day_of_week: 2, start_time: '09:00', end_time: '17:00' },
@@ -1723,16 +1720,12 @@ export default Vue.extend({
       this.showScheduleEdit = true
     },
 
-    openEditSchedule(schedule: EntitiesSendSchedule) {
+    openEditSchedule(schedule: EntitiesMessageSendSchedule) {
       this.resetErrors()
       this.activeSchedule = {
         id: schedule.id,
         name: schedule.name,
         timezone: schedule.timezone,
-        is_active:
-          typeof schedule.is_active !== 'undefined'
-            ? schedule.is_active
-            : Boolean((schedule as any).active),
         windows: (schedule.windows || []).map((x) => ({
           day_of_week: x.day_of_week,
           start_time: this.minuteToClock(x.start_minute),
@@ -1806,7 +1799,6 @@ export default Vue.extend({
         const payload = {
           name: this.activeSchedule.name,
           timezone: this.activeSchedule.timezone,
-          is_active: this.activeSchedule.is_active,
           windows: (this.activeSchedule.windows || []).map((window) => ({
             day_of_week: window.day_of_week,
             start_minute: this.clockToMinute(window.start_time),
