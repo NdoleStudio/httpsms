@@ -14,7 +14,7 @@ type Phone struct {
 	PhoneNumber           string     `json:"phone_number" example:"+18005550199"`
 	MessagesPerMinute     uint       `json:"messages_per_minute" example:"1"`
 	SIM                   SIM        `json:"sim" gorm:"default:SIM1"`
-	MessageSendScheduleID *uuid.UUID `json:"message_send_schedule_id" gorm:"type:uuid" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	MessageSendScheduleID *uuid.UUID `json:"message_send_schedule_id" gorm:"type:uuid" example:"32343a19-da5e-4b1b-a767-3298a73703cb" validate:"optional"`
 
 	// MaxSendAttempts determines how many times to retry sending an SMS message
 	MaxSendAttempts uint `json:"max_send_attempts" example:"2"`

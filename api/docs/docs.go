@@ -3661,7 +3661,6 @@ const docTemplate = `{
                 "id",
                 "max_send_attempts",
                 "message_expiration_seconds",
-                "message_send_schedule_id",
                 "messages_per_minute",
                 "phone_number",
                 "sim",
