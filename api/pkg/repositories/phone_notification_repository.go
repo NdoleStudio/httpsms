@@ -22,4 +22,7 @@ type PhoneNotificationRepository interface {
 
 	// DeleteAllForUser deletes all entities.PhoneNotification for a user
 	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
+
+	// DeleteByMessageID deletes entities.PhoneNotification for a message and user
+	DeleteByMessageID(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error
 }
