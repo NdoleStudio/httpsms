@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 jobs:
-  test:
+  Test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎
@@ -73,9 +73,9 @@ jobs:
         working-directory: ./tests
         run: docker compose down -v
 
-  deploy:
+  Deploy:
     runs-on: ubuntu-latest
-    needs: test
+    needs: Test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Authenticate to Google Cloud
