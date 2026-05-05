@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: httpsms
+      POSTGRES_PASSWORD: dbpassword
+      POSTGRES_USER: dbusername
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbusername -d httpsms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  redis:
+    image: redis:latest
+    command: redis-server
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  wiremock:
+    image: wiremock/wiremock:3x
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings:ro
+    networks:
+      default:
+        aliases:
+          - wiremock.local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../api
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      wiremock:
+        condition: service_healthy
+    env_file:
+      - .env.test
+    environment:
+      FIREBASE_CREDENTIALS: "${FIREBASE_CREDENTIALS}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  seed:
+    image: postgres:alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: dbpassword
+    volumes:
+      - ./seed.sql:/seed.sql:ro
+    entrypoint:
+      [
+        "psql",
+        "-h",
+        "postgres",
+        "-U",
+        "dbusername",
+        "-d",
+        "httpsms",
+        "-f",
+        "/seed.sql",
+      ]
+    restart: "no"

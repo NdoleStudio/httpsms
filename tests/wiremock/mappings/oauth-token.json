@@ -1,0 +1,17 @@
+{
+  "request": {
+    "urlPathPattern": "/token",
+    "method": "POST"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "access_token": "fake-access-token",
+      "token_type": "Bearer",
+      "expires_in": 3600
+    }
+  }
+}

@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$GI
 
 FROM alpine:latest
 
-RUN addgroup -S http-sms && adduser -S http-sms -G http-sms
+RUN apk add --no-cache curl && addgroup -S http-sms && adduser -S http-sms -G http-sms
 
 USER http-sms
 WORKDIR /home/http-sms

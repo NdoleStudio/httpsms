@@ -26,7 +26,7 @@ type PhoneNotificationService struct {
 	phoneNotificationRepository   repositories.PhoneNotificationRepository
 	phoneRepository               repositories.PhoneRepository
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository
-	messagingClient               *messaging.Client
+	messagingClient               FCMClient
 	eventDispatcher               *EventDispatcher
 }
 
@@ -34,7 +34,7 @@ type PhoneNotificationService struct {
 func NewNotificationService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	messagingClient *messaging.Client,
+	messagingClient FCMClient,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository,
