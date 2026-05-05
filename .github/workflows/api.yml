@@ -96,16 +96,15 @@ jobs:
             --project=httpsms-86c51 \
             --sha=${{ github.sha }} \
             --format="value(metadata.build.id)")
-          echo "Build ID: $BUILD_ID"
-          echo "View build logs: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=httpsms-86c51"
+          echo -e "Cloud Build: \033[34mhttps://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=httpsms-86c51\033[0m"
           echo ""
-          echo "Polling build status..."
+          echo "Polling Cloud Build Status..."
           while true; do
             STATUS=$(gcloud builds describe "$BUILD_ID" --region=global --project=httpsms-86c51 --format="value(status)")
             echo "  Status: $STATUS"
             case "$STATUS" in
-              SUCCESS) echo "Build succeeded!"; exit 0 ;;
-              FAILURE|TIMEOUT|CANCELLED|EXPIRED|INTERNAL_ERROR) echo "Build failed with status: $STATUS"; exit 1 ;;
+              SUCCESS) echo -e "\033[32mBuild succeeded!\033[0m"; exit 0 ;;
+              FAILURE|TIMEOUT|CANCELLED|EXPIRED|INTERNAL_ERROR) echo -e "\033[31mBuild failed with status: $STATUS\033[0m"; exit 1 ;;
             esac
             sleep 30
           done
