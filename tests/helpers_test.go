@@ -78,7 +78,18 @@ func setupPhone(ctx context.Context, t *testing.T, messagesPerMinute uint) testP
 	fcmToken := "fcm-" + uuid.New().String()
 	client := newAPIClient()
 
-	_, resp, err := client.Phones.Upsert(ctx, &httpsms.PhoneUpsertParams{
+	// Create the phone API key first so that a few seconds pass (during phone upsert)
+	// before we use it, giving the cache time to clear.
+	apiKeyResp, resp, err := client.PhoneAPIKeys.Store(ctx, &httpsms.PhoneAPIKeyStoreParams{
+		Name: "test-key-" + uuid.New().String(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode, "phone api key store failed")
+
+	phoneAPIKeyValue := apiKeyResp.Data.APIKey
+	require.NotEmpty(t, phoneAPIKeyValue)
+
+	_, resp, err = client.Phones.Upsert(ctx, &httpsms.PhoneUpsertParams{
 		PhoneNumber:              phoneNumber,
 		FcmToken:                 fcmToken,
 		MessagesPerMinute:        messagesPerMinute,
@@ -88,15 +99,6 @@ func setupPhone(ctx context.Context, t *testing.T, messagesPerMinute uint) testP
 	})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode, "phone upsert failed")
-
-	apiKeyResp, resp, err := client.PhoneAPIKeys.Store(ctx, &httpsms.PhoneAPIKeyStoreParams{
-		Name: "test-key-" + uuid.New().String(),
-	})
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode, "phone api key store failed")
-
-	phoneAPIKeyValue := apiKeyResp.Data.APIKey
-	require.NotEmpty(t, phoneAPIKeyValue)
 
 	phoneClient := newPhoneClient(phoneAPIKeyValue)
 	_, resp, err = phoneClient.Phones.UpsertFCMToken(ctx, &httpsms.PhoneFCMTokenParams{
