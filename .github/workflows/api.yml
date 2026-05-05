@@ -98,3 +98,14 @@ jobs:
             --format="value(metadata.build.id)")
           echo "Build ID: $BUILD_ID"
           echo "View build logs: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=httpsms-86c51"
+          echo ""
+          echo "Polling build status..."
+          while true; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --region=global --project=httpsms-86c51 --format="value(status)")
+            echo "  Status: $STATUS"
+            case "$STATUS" in
+              SUCCESS) echo "Build succeeded!"; exit 0 ;;
+              FAILURE|TIMEOUT|CANCELLED|EXPIRED|INTERNAL_ERROR) echo "Build failed with status: $STATUS"; exit 1 ;;
+            esac
+            sleep 30
+          done
