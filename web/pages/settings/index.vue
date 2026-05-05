@@ -1668,7 +1668,7 @@ export default Vue.extend({
     },
 
     getWeekday(index: number): string {
-      return this.weekDays.find((x) => x.value == index)?.label ?? ''
+      return this.weekDays.find((x) => x.value === index)?.label ?? ''
     },
 
     scheduleSummary(schedule: EntitiesMessageSendSchedule) {
@@ -1769,7 +1769,7 @@ export default Vue.extend({
       const messages = this.errorMessages.has('windows')
         ? this.errorMessages.get('windows')
         : []
-      if (messages.length == 0) {
+      if (messages.length === 0) {
         return null
       }
 
