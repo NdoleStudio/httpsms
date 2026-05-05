@@ -619,6 +619,13 @@
                   dense
                   placeholder="How many retries when sending an SMS"
                   label="Max Send Attempts"
+                  min="1"
+                  max="5"
+                  :rules="[
+                    (v) =>
+                      (v >= 1 && v <= 5) ||
+                      'Max send attempts must be between 1 and 5',
+                  ]"
                 >
                 </v-text-field>
                 <v-autocomplete
