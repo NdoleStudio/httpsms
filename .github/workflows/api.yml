@@ -97,5 +97,4 @@ jobs:
             --sha=${{ github.sha }} \
             --format="value(metadata.build.id)")
           echo "Build ID: $BUILD_ID"
-          echo "Streaming build logs..."
-          gcloud builds log "$BUILD_ID" --region=global --project=httpsms-86c51 --stream
+          echo "View build logs: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=httpsms-86c51"
