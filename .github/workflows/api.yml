@@ -22,7 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: latest
+          go-version: stable
 
       - name: Generate Firebase credentials
         run: |
