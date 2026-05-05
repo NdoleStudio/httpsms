@@ -1,0 +1,99 @@
+name: api
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: latest
+
+      - name: Generate Firebase credentials
+        run: |
+          bash tests/generate-firebase-credentials.sh tests/firebase-credentials.json
+          echo "FIREBASE_CREDENTIALS=$(jq -c . tests/firebase-credentials.json)" >> $GITHUB_ENV
+
+      - name: Start Services
+        working-directory: ./tests
+        run: docker compose up -d --build
+
+      - name: Wait for services to be healthy
+        working-directory: ./tests
+        run: |
+          echo "Waiting for API to be healthy..."
+          for i in $(seq 1 40); do
+            if docker compose exec api curl -sf http://localhost:8000/health >/dev/null 2>&1; then
+              echo "API is healthy!"
+              break
+            fi
+            if [ $i -eq 40 ]; then
+              echo "API failed to become healthy"
+              docker compose logs api
+              exit 1
+            fi
+            echo "Attempt $i/40 - waiting 5s..."
+            sleep 5
+          done
+
+      - name: Seed Database
+        working-directory: ./tests
+        run: |
+          echo "Waiting for seed container to finish..."
+          docker compose wait seed || true
+          sleep 2
+
+      - name: Run Integration Tests
+        working-directory: ./tests
+        run: go test -v -timeout 300s ./...
+
+      - name: Collect Logs on Failure
+        if: failure()
+        working-directory: ./tests
+        run: |
+          docker compose logs --tail 200
+
+      - name: Stop Services
+        if: always()
+        working-directory: ./tests
+        run: docker compose down -v
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Trigger Cloud Build Deploy 🚀
+        run: |
+          BUILD_ID=$(gcloud builds triggers run api-httpsms-com \
+            --region=global \
+            --project=httpsms-86c51 \
+            --sha=${{ github.sha }} \
+            --format="value(metadata.build.id)")
+          echo "Build ID: $BUILD_ID"
+          echo "Streaming build logs..."
+          gcloud builds log "$BUILD_ID" --region=global --project=httpsms-86c51 --stream

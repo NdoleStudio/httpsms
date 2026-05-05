@@ -43,6 +43,7 @@ Quick Start Guide 👉 [https://docs.httpsms.com](https://docs.httpsms.com)
   - [6. Build and Run](#6-build-and-run)
   - [7. Create the System User](#7-create-the-system-user)
   - [8. Build the Android App.](#8-build-the-android-app)
+- [Integration Testing](#integration-testing)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -254,6 +255,26 @@ docker compose up --build
 ### 8. Build the Android App.
 
 - Before building the Android app in [Android Studio](https://developer.android.com/studio), you need to replace the `google-services.json` file in the `android/app` directory with the file which you got from step 1. You need to do this for the firebase FCM messages to work properly.
+
+## Integration Testing
+
+The project includes end-to-end integration tests that validate the complete SMS send/receive lifecycle. Tests run the full stack (API, PostgreSQL, Redis) in Docker alongside a phone emulator that simulates an Android device.
+
+📖 **Full documentation:** [`tests/README.md`](tests/README.md)
+
+**Quick run:**
+
+```bash
+cd tests
+bash generate-firebase-credentials.sh
+export FIREBASE_CREDENTIALS=$(jq -c . firebase-credentials.json)
+docker compose up -d --build --wait
+docker compose wait seed && sleep 2
+go test -v -timeout 120s ./...
+docker compose down -v
+```
+
+Integration tests also run automatically in CI on every push/PR to `main`.
 
 ## License
 

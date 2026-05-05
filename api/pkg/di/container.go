@@ -47,7 +47,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
-	"firebase.google.com/go/messaging"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -175,6 +174,11 @@ func (container *Container) App() (app *fiber.App) {
 	container.logger.Debug(fmt.Sprintf("creating %T", app))
 
 	app = fiber.New()
+
+	// Health check endpoint registered before middleware for reliable Docker health checks
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
 
 	if os.Getenv("USE_HTTP_LOGGER") == "true" {
 		app.Use(fiberLogger.New())
@@ -397,7 +401,8 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 // FirebaseApp creates a new instance of firebase.App
 func (container *Container) FirebaseApp() (app *firebase.App) {
 	container.logger.Debug(fmt.Sprintf("creating %T", app))
-	app, err := firebase.NewApp(context.Background(), nil, option.WithAuthCredentialsJSON(option.ServiceAccount, container.FirebaseCredentials()))
+
+	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
 	if err != nil {
 		msg := "cannot initialize firebase application"
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
@@ -419,8 +424,10 @@ func (container *Container) Cache() cache.Cache {
 	if err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot parse redis url [%s]", os.Getenv("REDIS_URL"))))
 	}
-	opt.TLSConfig = &tls.Config{
-		MinVersion: tls.VersionTLS12,
+	if strings.HasPrefix(os.Getenv("REDIS_URL"), "rediss://") {
+		opt.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
 	}
 
 	redisClient := redis.NewClient(opt)
@@ -506,15 +513,27 @@ func (container *Container) CloudTaskEventsQueue() (queue services.PushQueue) {
 	)
 }
 
-// FirebaseMessagingClient creates a new instance of messaging.Client
-func (container *Container) FirebaseMessagingClient() (client *messaging.Client) {
-	container.logger.Debug(fmt.Sprintf("creating %T", client))
+// FCMClient creates the appropriate FCM client based on configuration.
+// When FCM_ENDPOINT is set, it returns an EmulatorFCMClient that sends
+// notifications directly to the phone emulator via HTTP.
+// Otherwise, it returns a FirebaseFCMClient that uses the real Firebase SDK.
+func (container *Container) FCMClient() services.FCMClient {
+	if fcmEndpoint := os.Getenv("FCM_ENDPOINT"); fcmEndpoint != "" {
+		container.logger.Info(fmt.Sprintf("using emulator FCM client with endpoint: %s", fcmEndpoint))
+		return services.NewEmulatorFCMClient(
+			container.HTTPClient("emulator_fcm"),
+			fcmEndpoint,
+			container.Logger(),
+		)
+	}
+
+	container.logger.Debug("creating FirebaseFCMClient")
 	messagingClient, err := container.FirebaseApp().Messaging(context.Background())
 	if err != nil {
 		msg := "cannot initialize firebase messaging client"
 		container.logger.Fatal(stacktrace.Propagate(err, msg))
 	}
-	return messagingClient
+	return services.NewFirebaseFCMClient(messagingClient)
 }
 
 // FirebaseCredentials returns firebase credentials as bytes.
@@ -1588,7 +1607,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 	return services.NewNotificationService(
 		container.Logger(),
 		container.Tracer(),
-		container.FirebaseMessagingClient(),
+		container.FCMClient(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
 		container.MessageSendScheduleRepository(),

@@ -18,7 +18,7 @@ func main() {
 	}
 
 	container := di.NewContainer(os.Getenv("GCP_PROJECT_ID"), "")
-	client := container.FirebaseMessagingClient()
+	client := container.FCMClient()
 
 	result, err := client.Send(context.Background(), &messaging.Message{
 		Data: map[string]string{

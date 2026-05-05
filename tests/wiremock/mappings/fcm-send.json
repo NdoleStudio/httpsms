@@ -1,0 +1,15 @@
+{
+  "request": {
+    "urlPathPattern": "/v1/projects/.*/messages:send",
+    "method": "POST"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "name": "projects/httpsms-test/messages/fake-message-id"
+    }
+  }
+}
