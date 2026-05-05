@@ -101,7 +101,7 @@ jobs:
           echo "Polling Cloud Build Status..."
           while true; do
             STATUS=$(gcloud builds describe "$BUILD_ID" --region=global --project=httpsms-86c51 --format="value(status)")
-            echo "  Status: $STATUS"
+            echo -e "  \033[90m$(date -u '+%Y-%m-%d %H:%M:%S UTC')\033[0m status=\"$STATUS\""
             case "$STATUS" in
               SUCCESS) echo -e "\033[32mBuild succeeded!\033[0m"; exit 0 ;;
               FAILURE|TIMEOUT|CANCELLED|EXPIRED|INTERNAL_ERROR) echo -e "\033[31mBuild failed with status: $STATUS\033[0m"; exit 1 ;;
