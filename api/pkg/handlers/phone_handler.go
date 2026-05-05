@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
@@ -165,6 +166,9 @@ func (h *PhoneHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	err := h.service.Delete(ctx, c.OriginalURL(), h.userIDFomContext(c), request.PhoneIDUuid())
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find phone with ID [%s]", request.PhoneID))
+	}
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete phones with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
