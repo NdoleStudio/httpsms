@@ -15,17 +15,19 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // PhoneNotificationService sends out notifications to mobile phones
 type PhoneNotificationService struct {
 	service
-	logger                      telemetry.Logger
-	tracer                      telemetry.Tracer
-	phoneNotificationRepository repositories.PhoneNotificationRepository
-	phoneRepository             repositories.PhoneRepository
-	messagingClient             *messaging.Client
-	eventDispatcher             *EventDispatcher
+	logger                        telemetry.Logger
+	tracer                        telemetry.Tracer
+	phoneNotificationRepository   repositories.PhoneNotificationRepository
+	phoneRepository               repositories.PhoneRepository
+	messageSendScheduleRepository repositories.MessageSendScheduleRepository
+	messagingClient               *messaging.Client
+	eventDispatcher               *EventDispatcher
 }
 
 // NewNotificationService creates a new PhoneNotificationService
@@ -35,15 +37,17 @@ func NewNotificationService(
 	messagingClient *messaging.Client,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
+	messageSendScheduleRepository repositories.MessageSendScheduleRepository,
 	dispatcher *EventDispatcher,
 ) (s *PhoneNotificationService) {
 	return &PhoneNotificationService{
-		logger:                      logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:                      tracer,
-		messagingClient:             messagingClient,
-		phoneNotificationRepository: phoneNotificationRepository,
-		phoneRepository:             phoneRepository,
-		eventDispatcher:             dispatcher,
+		logger:                        logger.WithService(fmt.Sprintf("%T", &PhoneNotificationService{})),
+		tracer:                        tracer,
+		messagingClient:               messagingClient,
+		phoneNotificationRepository:   phoneNotificationRepository,
+		phoneRepository:               phoneRepository,
+		messageSendScheduleRepository: messageSendScheduleRepository,
+		eventDispatcher:               dispatcher,
 	}
 }
 
@@ -58,6 +62,20 @@ func (service *PhoneNotificationService) DeleteAllForUser(ctx context.Context, u
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.PhoneNotification] for user with ID [%s]", userID))
+	return nil
+}
+
+// DeleteByMessageID deletes all entities.PhoneNotification for a user and message ID.
+func (service *PhoneNotificationService) DeleteByMessageID(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.phoneNotificationRepository.DeleteByMessageID(ctx, userID, messageID); err != nil {
+		msg := fmt.Sprintf("could not delete [entities.PhoneNotification] for user [%s] and message with ID [%s]", userID, messageID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("deleted [entities.PhoneNotification] for user [%s] and message with ID [%s]", userID, messageID))
 	return nil
 }
 
@@ -92,7 +110,13 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 		return nil
 	}
 
-	ctxLogger.Info(fmt.Sprintf("successfully sent heartbeat FCM [%s] to phone with ID [%s] for user [%s] and monitor [%s]", result, payload.PhoneID, payload.UserID, payload.MonitorID))
+	ctxLogger.Info(fmt.Sprintf(
+		"successfully sent heartbeat FCM [%s] to phone with ID [%s] for user [%s] and monitor [%s]",
+		result,
+		payload.PhoneID,
+		payload.UserID,
+		payload.MonitorID,
+	))
 	return nil
 }
 
@@ -134,7 +158,15 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot send FCM to phone with ID [%s] for user with ID [%s] and message [%s]", phone.ID, phone.UserID, params.MessageID)))
+		ctxLogger.Warn(stacktrace.Propagate(
+			err,
+			fmt.Sprintf(
+				"cannot send FCM to phone with ID [%s] for user with ID [%s] and message [%s]",
+				phone.ID,
+				phone.UserID,
+				params.MessageID,
+			),
+		))
 		msg := fmt.Sprintf("cannot send notification for to your phone [%s]. Reinstall the httpSMS app on your Android phone.", phone.PhoneNumber)
 		return service.handleNotificationFailed(ctx, errors.New(msg), params)
 	}
@@ -144,14 +176,16 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 
 // PhoneNotificationScheduleParams are parameters for sending a notification
 type PhoneNotificationScheduleParams struct {
-	UserID    entities.UserID
-	Owner     string
-	Source    string
-	Encrypted bool
-	Contact   string
-	Content   string
-	SIM       entities.SIM
-	MessageID uuid.UUID
+	UserID            entities.UserID
+	Owner             string
+	Source            string
+	Encrypted         bool
+	Contact           string
+	Content           string
+	SIM               entities.SIM
+	MessageID         uuid.UUID
+	ExactSendTime     bool
+	ScheduledSendTime *time.Time
 }
 
 // Schedule a notification to be sent to a phone
@@ -178,7 +212,24 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		UpdatedAt:   time.Now().UTC(),
 	}
 
-	if err = service.phoneNotificationRepository.Schedule(ctx, phone.MessagesPerMinute, notification); err != nil {
+	if params.ExactSendTime && params.ScheduledSendTime != nil {
+		return service.scheduleExact(ctx, span, ctxLogger, params, phone, notification)
+	}
+
+	var schedule *entities.MessageSendSchedule
+	if phone.MessageSendScheduleID != nil {
+		schedule, err = service.messageSendScheduleRepository.Load(ctx, params.UserID, *phone.MessageSendScheduleID)
+		if err != nil && stacktrace.GetCode(err) != repositories.ErrCodeNotFound {
+			msg := fmt.Sprintf("cannot load send schedule [%s] for phone [%s]", *phone.MessageSendScheduleID, phone.ID)
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
+	}
+
+	if schedule != nil {
+		ctxLogger.Info(fmt.Sprintf("loaded [%T] with ID [%s] for phone [%s]", schedule, schedule.ID, phone.ID))
+	}
+
+	if err = service.phoneNotificationRepository.Schedule(ctx, phone.MessagesPerMinute, schedule, notification); err != nil {
 		msg := fmt.Sprintf("cannot schedule notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
@@ -191,11 +242,57 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 		return service.tracer.WrapErrorSpan(span, err)
 	}
 
-	ctxLogger.Info(fmt.Sprintf("message with id [%s] notification scheduled for [%s] with id [%s]", params.MessageID, notification.ScheduledAt, notification.ID))
+	ctxLogger.Info(fmt.Sprintf(
+		"message with id [%s] notification scheduled for [%s] with id [%s] with phone schedule ID [%s]",
+		params.MessageID,
+		notification.ScheduledAt,
+		notification.ID,
+		phone.MessageSendScheduleID,
+	))
 	return nil
 }
 
-func (service *PhoneNotificationService) dispatchMessageNotificationSend(ctx context.Context, source string, notification *entities.PhoneNotification) error {
+func (service *PhoneNotificationService) scheduleExact(
+	ctx context.Context,
+	span trace.Span,
+	ctxLogger telemetry.Logger,
+	params *PhoneNotificationScheduleParams,
+	phone *entities.Phone,
+	notification *entities.PhoneNotification,
+) error {
+	scheduledAt := *params.ScheduledSendTime
+	if scheduledAt.Before(time.Now().UTC()) {
+		scheduledAt = time.Now().UTC()
+	}
+	notification.ScheduledAt = scheduledAt
+
+	if err := service.phoneNotificationRepository.ScheduleExact(ctx, notification); err != nil {
+		msg := fmt.Sprintf("cannot schedule exact notification for message [%s] to phone [%s]", params.MessageID, phone.ID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
+		ctxLogger.Error(err)
+	}
+
+	if err := service.dispatchMessageNotificationSend(ctx, params.Source, notification); err != nil {
+		return service.tracer.WrapErrorSpan(span, err)
+	}
+
+	ctxLogger.Info(fmt.Sprintf(
+		"message with id [%s] exact notification scheduled for [%s] with id [%s]",
+		params.MessageID,
+		notification.ScheduledAt,
+		notification.ID,
+	))
+	return nil
+}
+
+func (service *PhoneNotificationService) dispatchMessageNotificationSend(
+	ctx context.Context,
+	source string,
+	notification *entities.PhoneNotification,
+) error {
 	event, err := service.createMessageNotificationSendEvent(source, &events.MessageNotificationSendPayload{
 		MessageID:      notification.MessageID,
 		UserID:         notification.UserID,
@@ -213,7 +310,11 @@ func (service *PhoneNotificationService) dispatchMessageNotificationSend(ctx con
 	return nil
 }
 
-func (service *PhoneNotificationService) dispatchMessageNotificationScheduled(ctx context.Context, params *PhoneNotificationScheduleParams, notification *entities.PhoneNotification) error {
+func (service *PhoneNotificationService) dispatchMessageNotificationScheduled(
+	ctx context.Context,
+	params *PhoneNotificationScheduleParams,
+	notification *entities.PhoneNotification,
+) error {
 	event, err := service.createMessageNotificationScheduledEvent(params.Source, &events.MessageNotificationScheduledPayload{
 		MessageID:      notification.MessageID,
 		Owner:          params.Owner,
@@ -258,7 +359,12 @@ func (service *PhoneNotificationService) handleNotificationFailed(ctx context.Co
 	return nil
 }
 
-func (service *PhoneNotificationService) handleNotificationSent(ctx context.Context, phone *entities.Phone, result string, params *PhoneNotificationSendParams) error {
+func (service *PhoneNotificationService) handleNotificationSent(
+	ctx context.Context,
+	phone *entities.Phone,
+	result string,
+	params *PhoneNotificationSendParams,
+) error {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -279,15 +385,26 @@ func (service *PhoneNotificationService) handleNotificationSent(ctx context.Cont
 	return nil
 }
 
-func (service *PhoneNotificationService) createMessageNotificationScheduledEvent(source string, payload *events.MessageNotificationScheduledPayload) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createMessageNotificationScheduledEvent(
+	source string,
+	payload *events.MessageNotificationScheduledPayload,
+) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessageNotificationScheduled, source, payload)
 }
 
-func (service *PhoneNotificationService) createMessageNotificationSendEvent(source string, payload *events.MessageNotificationSendPayload) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createMessageNotificationSendEvent(
+	source string,
+	payload *events.MessageNotificationSendPayload,
+) (cloudevents.Event, error) {
 	return service.createEvent(events.EventTypeMessageNotificationSend, source, payload)
 }
 
-func (service *PhoneNotificationService) createMessageNotificationSentEvent(source string, phone *entities.Phone, fcmMessageID string, params *PhoneNotificationSendParams) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createMessageNotificationSentEvent(
+	source string,
+	phone *entities.Phone,
+	fcmMessageID string,
+	params *PhoneNotificationSendParams,
+) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
@@ -314,7 +431,11 @@ func (service *PhoneNotificationService) createMessageNotificationSentEvent(sour
 	return event, nil
 }
 
-func (service *PhoneNotificationService) createMessageNotificationFailedEvent(source string, errorMessage string, params *PhoneNotificationSendParams) (cloudevents.Event, error) {
+func (service *PhoneNotificationService) createMessageNotificationFailedEvent(
+	source string,
+	errorMessage string,
+	params *PhoneNotificationSendParams,
+) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent()
 
 	event.SetSource(source)
@@ -339,7 +460,11 @@ func (service *PhoneNotificationService) createMessageNotificationFailedEvent(so
 	return event, nil
 }
 
-func (service *PhoneNotificationService) updateStatus(ctx context.Context, notificationID uuid.UUID, status entities.PhoneNotificationStatus) {
+func (service *PhoneNotificationService) updateStatus(
+	ctx context.Context,
+	notificationID uuid.UUID,
+	status entities.PhoneNotificationStatus,
+) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -347,9 +472,9 @@ func (service *PhoneNotificationService) updateStatus(ctx context.Context, notif
 
 	err := service.phoneNotificationRepository.UpdateStatus(ctx, notificationID, status)
 	if err != nil {
-		msg := fmt.Sprintf("cannot update status of notificaiton with id [%s] to [%s]", notificationID, status)
+		msg := fmt.Sprintf("cannot update status of notification with id [%s] to [%s]", notificationID, status)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("updated status of notificaiton with id [%s] to [%s]", notificationID, status))
+	ctxLogger.Info(fmt.Sprintf("updated status of notification with id [%s] to [%s]", notificationID, status))
 }

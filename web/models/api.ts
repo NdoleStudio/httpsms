@@ -1,3 +1,5 @@
+/* eslint-disable */
+/* tslint:disable */
 // @ts-nocheck
 /*
  * ---------------------------------------------------------------
@@ -7,6 +9,25 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+export enum EntitiesSubscriptionName {
+  SubscriptionNameFree = 'free',
+  SubscriptionNameProMonthly = 'pro-monthly',
+  SubscriptionNameProYearly = 'pro-yearly',
+  SubscriptionNameUltraMonthly = 'ultra-monthly',
+  SubscriptionNameUltraYearly = 'ultra-yearly',
+  SubscriptionNameProLifetime = 'pro-lifetime',
+  SubscriptionName20KMonthly = '20k-monthly',
+  SubscriptionName100KMonthly = '100k-monthly',
+  SubscriptionName50KMonthly = '50k-monthly',
+  SubscriptionName200KMonthly = '200k-monthly',
+  SubscriptionName20KYearly = '20k-yearly',
+}
+
+export enum EntitiesSIM {
+  SIM1 = 'SIM1',
+  SIM2 = 'SIM2',
+}
 
 export interface EntitiesBillingUsage {
   /** @example "2022-06-05T14:26:02.302718+03:00" */
@@ -62,6 +83,8 @@ export interface EntitiesHeartbeat {
 }
 
 export interface EntitiesMessage {
+  /** @example ["https://example.com/image.jpg","https://example.com/video.mp4"] */
+  attachments: string[]
   /** @example "+18005550100" */
   contact: string
   /** @example "This is a sample text message" */
@@ -114,7 +137,7 @@ export interface EntitiesMessage {
    * * DEFAULT: used the default communication SIM card
    * @example "DEFAULT"
    */
-  sim: string
+  sim: EntitiesSIM
   /** @example "pending" */
   status: string
   /** @example "mobile-terminated" */
@@ -123,6 +146,31 @@ export interface EntitiesMessage {
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   user_id: string
+}
+
+export interface EntitiesMessageSendSchedule {
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  id: string
+  /** @example "Business Hours" */
+  name: string
+  /** @example "Europe/Tallinn" */
+  timezone: string
+  /** @example "2022-06-05T14:26:10.303278+03:00" */
+  updated_at: string
+  /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
+  user_id: string
+  windows: EntitiesMessageSendScheduleWindow[]
+}
+
+export interface EntitiesMessageSendScheduleWindow {
+  /** @example 1 */
+  day_of_week: number
+  /** @example 1020 */
+  end_minute: number
+  /** @example 540 */
+  start_minute: number
 }
 
 export interface EntitiesMessageThread {
@@ -166,14 +214,15 @@ export interface EntitiesPhone {
   max_send_attempts: number
   /** MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired. */
   message_expiration_seconds: number
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  message_send_schedule_id?: string
   /** @example 1 */
   messages_per_minute: number
   /** @example "This phone cannot receive calls. Please send an SMS instead." */
   missed_call_auto_reply?: string
   /** @example "+18005550199" */
   phone_number: string
-  /** SIM card that received the message */
-  sim: string
+  sim: EntitiesSIM
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
@@ -225,7 +274,7 @@ export interface EntitiesUser {
   /** @example "8f9c71b8-b84e-4417-8408-a62274f65a08" */
   subscription_id: string
   /** @example "free" */
-  subscription_name: string
+  subscription_name: EntitiesSubscriptionName
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   subscription_renews_at?: string
   /** @example "on_trial" */
@@ -272,14 +321,34 @@ export interface RequestsHeartbeatStore {
   phone_numbers: string[]
 }
 
+export interface RequestsMessageAttachment {
+  /**
+   * Content is the base64-encoded attachment data
+   * @example "base64data..."
+   */
+  content: string
+  /**
+   * ContentType is the MIME type of the attachment
+   * @example "image/jpeg"
+   */
+  content_type: string
+  /**
+   * Name is the original filename of the attachment
+   * @example "photo.jpg"
+   */
+  name: string
+}
+
 export interface RequestsMessageBulkSend {
+  /** Attachments are optional. When you provide a list of attachments, the message will be sent out as an MMS */
+  attachments?: string[]
   /** @example "This is a sample text message" */
   content: string
   /**
    * Encrypted is used to determine if the content is end-to-end encrypted. Make sure to set the encryption key on the httpSMS mobile app
    * @example false
    */
-  encrypted: boolean
+  encrypted?: boolean
   /** @example "+18005550199" */
   from: string
   /**
@@ -321,6 +390,8 @@ export interface RequestsMessageEvent {
 }
 
 export interface RequestsMessageReceive {
+  /** Attachments is the list of MMS attachments received with the message */
+  attachments?: RequestsMessageAttachment[]
   /** @example "This is a sample text message received on a phone" */
   content: string
   /**
@@ -334,7 +405,7 @@ export interface RequestsMessageReceive {
    * SIM card that received the message
    * @example "SIM1"
    */
-  sim: string
+  sim: EntitiesSIM
   /**
    * Timestamp is the time when the event was emitted, Please send the timestamp in UTC with as much precision as possible
    * @example "2022-06-05T14:26:09.527976+03:00"
@@ -345,6 +416,11 @@ export interface RequestsMessageReceive {
 }
 
 export interface RequestsMessageSend {
+  /**
+   * Attachments are optional. When you provide a list of attachments, the message will be sent out as an MMS
+   * @example ["https://example.com/image.jpg","https://example.com/video.mp4"]
+   */
+  attachments?: string[]
   /** @example "This is a sample text message" */
   content: string
   /**
@@ -366,6 +442,18 @@ export interface RequestsMessageSend {
   send_at?: string
   /** @example "+18005550100" */
   to: string
+}
+
+export interface RequestsMessageSendScheduleStore {
+  name: string
+  timezone: string
+  windows: RequestsMessageSendScheduleWindow[]
+}
+
+export interface RequestsMessageSendScheduleWindow {
+  day_of_week: number
+  end_minute: number
+  start_minute: number
 }
 
 export interface RequestsMessageThreadUpdate {
@@ -403,6 +491,8 @@ export interface RequestsPhoneUpsert {
    * @example 12345
    */
   message_expiration_seconds: number
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  message_send_schedule_id?: string
   /** @example 1 */
   messages_per_minute: number
   /** @example "e.g. This phone cannot receive calls. Please send an SMS instead." */
@@ -539,6 +629,22 @@ export interface ResponsesMessageResponse {
   status: string
 }
 
+export interface ResponsesMessageSendScheduleResponse {
+  data: EntitiesMessageSendSchedule
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesMessageSendSchedulesResponse {
+  data: EntitiesMessageSendSchedule[]
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
 export interface ResponsesMessageThreadsResponse {
   data: EntitiesMessageThread[]
   /** @example "Request handled successfully" */
@@ -574,6 +680,13 @@ export interface ResponsesOkString {
   /** @example "Request handled successfully" */
   message: string
   /** @example "success" */
+  status: string
+}
+
+export interface ResponsesPaymentRequired {
+  /** @example "You have reached the maximum number of allowed resources. Please upgrade your plan." */
+  message: string
+  /** @example "error" */
   status: string
 }
 

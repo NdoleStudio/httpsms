@@ -7,7 +7,6 @@ import (
 
 	"github.com/NdoleStudio/httpsms/docs"
 	"github.com/NdoleStudio/httpsms/pkg/di"
-	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 // Version is injected at runtime

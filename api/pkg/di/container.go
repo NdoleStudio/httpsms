@@ -10,11 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/docs"
 	plunk "github.com/NdoleStudio/plunk-go"
 	"github.com/pusher/pusher-http-go/v5"
-	"gorm.io/driver/sqlite"
-
-	"github.com/NdoleStudio/httpsms/docs"
 
 	otelMetric "go.opentelemetry.io/otel/metric"
 
@@ -130,9 +128,12 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterHeartbeatListeners()
 
 	container.RegisterUserRoutes()
+	container.RegisterMessageSendScheduleRoutes()
+	container.RegisterMessageSendScheduleListeners()
 	container.RegisterUserListeners()
 
 	container.RegisterPhoneRoutes()
+	container.RegisterPhoneListeners()
 
 	container.RegisterEventRoutes()
 
@@ -234,12 +235,6 @@ func (container *Container) GormLogger() gormLogger.Interface {
 }
 
 func (container *Container) connect(dsn string, config *gorm.Config) (db *gorm.DB, err error) {
-	if strings.HasPrefix(dsn, "libsql://") {
-		return gorm.Open(sqlite.New(sqlite.Config{
-			DriverName: "libsql",
-			DSN:        dsn,
-		}), config)
-	}
 	return gorm.Open(postgres.Open(dsn), config)
 }
 
@@ -362,6 +357,10 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
+	}
+
+	if err = db.AutoMigrate(&entities.MessageSendSchedule{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageSendSchedule{})))
 	}
 
 	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
@@ -665,6 +664,7 @@ func (container *Container) PhoneHandlerValidator() (validator *validators.Phone
 	return validators.NewPhoneHandlerValidator(
 		container.Logger(),
 		container.Tracer(),
+		container.MessageSendScheduleService(),
 	)
 }
 
@@ -753,6 +753,48 @@ func (container *Container) PhoneRepository() (repository repositories.PhoneRepo
 	)
 }
 
+// MessageSendScheduleRepository creates a new instance of repositories.MessageSendScheduleRepository
+func (container *Container) MessageSendScheduleRepository() repositories.MessageSendScheduleRepository {
+	container.logger.Debug("creating GORM repositories.MessageSendScheduleRepository")
+	return repositories.NewGormMessageSendScheduleRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// MessageSendScheduleService creates a new instance of services.MessageSendScheduleService
+func (container *Container) MessageSendScheduleService() *services.MessageSendScheduleService {
+	container.logger.Debug("creating services.MessageSendScheduleService")
+	return services.NewMessageSendScheduleService(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageSendScheduleRepository(),
+		container.EventDispatcher(),
+	)
+}
+
+// MessageSendScheduleHandlerValidator creates a new instance of validators.MessageSendScheduleHandlerValidator
+func (container *Container) MessageSendScheduleHandlerValidator() *validators.MessageSendScheduleHandlerValidator {
+	container.logger.Debug("creating validators.MessageSendScheduleHandlerValidator")
+	return validators.NewMessageSendScheduleHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// MessageSendScheduleHandler creates a new instance of handlers.MessageSendScheduleHandler
+func (container *Container) MessageSendScheduleHandler() *handlers.MessageSendScheduleHandler {
+	container.logger.Debug("creating handlers.MessageSendScheduleHandler")
+	return handlers.NewMessageSendScheduleHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageSendScheduleHandlerValidator(),
+		container.MessageSendScheduleService(),
+		container.EntitlementService(),
+	)
+}
+
 // BillingUsageRepository creates a new instance of repositories.BillingUsageRepository
 func (container *Container) BillingUsageRepository() (repository repositories.BillingUsageRepository) {
 	container.logger.Debug("creating GORM repositories.BillingUsageRepository")
@@ -760,6 +802,17 @@ func (container *Container) BillingUsageRepository() (repository repositories.Bi
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
+	)
+}
+
+// EntitlementService creates a new instance of services.EntitlementService
+func (container *Container) EntitlementService() *services.EntitlementService {
+	container.logger.Debug("creating services.EntitlementService")
+	return services.NewEntitlementService(
+		container.Logger(),
+		container.Tracer(),
+		os.Getenv("ENTITLEMENT_ENABLED") == "true",
+		container.UserRepository(),
 	)
 }
 
@@ -1097,6 +1150,20 @@ func (container *Container) RegisterMessageListeners() {
 	}
 }
 
+// RegisterMessageSendScheduleListeners registers event listeners for listeners.MessageSendScheduleListener
+func (container *Container) RegisterMessageSendScheduleListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.MessageSendScheduleListener{}))
+	_, routes := listeners.NewMessageSendScheduleListener(
+		container.Logger(),
+		container.Tracer(),
+		container.MessageSendScheduleService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
 // LemonsqueezyService creates a new instance of services.LemonsqueezyService
 func (container *Container) LemonsqueezyService() (service *services.LemonsqueezyService) {
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
@@ -1390,6 +1457,20 @@ func (container *Container) RegisterPhoneAPIKeyListeners() {
 	}
 }
 
+// RegisterPhoneListeners registers event listeners for listeners.PhoneListener
+func (container *Container) RegisterPhoneListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.PhoneListener{}))
+	_, routes := listeners.NewPhoneListener(
+		container.Logger(),
+		container.Tracer(),
+		container.PhoneService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
 // RegisterWebsocketListeners registers event listeners for listeners.WebsocketListener
 func (container *Container) RegisterWebsocketListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.WebsocketListener{}))
@@ -1510,6 +1591,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 		container.FirebaseMessagingClient(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
+		container.MessageSendScheduleRepository(),
 		container.EventDispatcher(),
 	)
 }
@@ -1563,6 +1645,12 @@ func (container *Container) RegisterPhoneRoutes() {
 func (container *Container) RegisterUserRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.UserHandler{}))
 	container.UserHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+}
+
+// RegisterMessageSendScheduleRoutes registers routes for the /send-schedules prefix
+func (container *Container) RegisterMessageSendScheduleRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageSendScheduleHandler{}))
+	container.MessageSendScheduleHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterEventRoutes registers routes for the /events prefix

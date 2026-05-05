@@ -161,11 +161,6 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 		wg.Add(1)
 		go func(message services.MessageSendParams, index int) {
 			count.Add(1)
-			if message.SendAt == nil {
-				sentAt := time.Now().UTC().Add(time.Duration(index) * time.Second)
-				message.SendAt = &sentAt
-			}
-
 			response, err := h.service.SendMessage(ctx, message)
 			if err != nil {
 				count.Add(-1)

@@ -89,13 +89,22 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 	wg := sync.WaitGroup{}
 	count := atomic.Int64{}
 
-	for index, message := range messages {
+	// Compute per-phone index for rate-based dispatch delay
+	phoneIndexCounter := make(map[string]int)
+
+	for _, message := range messages {
 		wg.Add(1)
+		var perPhoneIndex int
+		if message.SendTime == nil {
+			perPhoneIndex = phoneIndexCounter[message.FromPhoneNumber]
+			phoneIndexCounter[message.FromPhoneNumber]++
+		}
+
 		go func(message *requests.BulkMessage, index int) {
 			count.Add(1)
 			_, err = h.messageService.SendMessage(
 				ctx,
-				message.ToMessageSendParams(h.userIDFomContext(c), requestID, c.OriginalURL()),
+				message.ToMessageSendParams(h.userIDFomContext(c), requestID, c.OriginalURL(), index),
 			)
 			if err != nil {
 				count.Add(-1)
@@ -103,7 +112,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 				ctxLogger.Error(stacktrace.Propagate(err, msg))
 			}
 			wg.Done()
-		}(message, index)
+		}(message, perPhoneIndex)
 	}
 
 	wg.Wait()

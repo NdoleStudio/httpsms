@@ -38,6 +38,7 @@ func NewNotificationListener(
 		events.EventTypeMessageNotificationSend: l.onMessageNotificationSend,
 		events.PhoneHeartbeatMissed:             l.onPhoneHeartbeatMissed,
 		events.UserAccountDeleted:               l.onUserAccountDeleted,
+		events.MessageAPIDeleted:                l.onMessageAPIDeleted,
 	}
 }
 
@@ -53,14 +54,16 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 	}
 
 	sendParams := &services.PhoneNotificationScheduleParams{
-		UserID:    payload.UserID,
-		Owner:     payload.Owner,
-		Contact:   payload.Contact,
-		Content:   payload.Content,
-		SIM:       payload.SIM,
-		Encrypted: payload.Encrypted,
-		Source:    event.Source(),
-		MessageID: payload.MessageID,
+		UserID:            payload.UserID,
+		Owner:             payload.Owner,
+		Contact:           payload.Contact,
+		Content:           payload.Content,
+		SIM:               payload.SIM,
+		Encrypted:         payload.Encrypted,
+		Source:            event.Source(),
+		MessageID:         payload.MessageID,
+		ExactSendTime:     payload.ExactSendTime,
+		ScheduledSendTime: payload.ScheduledSendTime,
 	}
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {
@@ -160,6 +163,25 @@ func (listener *PhoneNotificationListener) onUserAccountDeleted(ctx context.Cont
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
 		msg := fmt.Sprintf("cannot delete [entities.Phone] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return nil
+}
+
+// onMessageAPIDeleted handles the events.MessageAPIDeleted event
+func (listener *PhoneNotificationListener) onMessageAPIDeleted(ctx context.Context, event cloudevents.Event) error {
+	ctx, span := listener.tracer.Start(ctx)
+	defer span.End()
+
+	var payload events.MessageAPIDeletedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.service.DeleteByMessageID(ctx, payload.UserID, payload.MessageID); err != nil {
+		msg := fmt.Sprintf("cannot delete [entities.PhoneNotification] for user [%s] and message [%s] on [%s] event with ID [%s]", payload.UserID, payload.MessageID, event.Type(), event.ID())
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 

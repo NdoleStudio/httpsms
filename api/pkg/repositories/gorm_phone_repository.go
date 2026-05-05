@@ -50,6 +50,25 @@ func (repository *gormPhoneRepository) DeleteAllForUser(ctx context.Context, use
 	return nil
 }
 
+// NullifyScheduleID sets MessageSendScheduleID to NULL for all phones referencing the given schedule
+func (repository *gormPhoneRepository) NullifyScheduleID(ctx context.Context, userID entities.UserID, scheduleID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).
+		Model(&entities.Phone{}).
+		Where("user_id = ?", userID).
+		Where("message_send_schedule_id = ?", scheduleID).
+		Update("message_send_schedule_id", nil).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot nullify message_send_schedule_id [%s] for user [%s]", scheduleID, userID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	repository.cache.Clear()
+	return nil
+}
+
 // LoadByID loads a phone by ID
 func (repository *gormPhoneRepository) LoadByID(ctx context.Context, userID entities.UserID, phoneID uuid.UUID) (*entities.Phone, error) {
 	ctx, span := repository.tracer.Start(ctx)

@@ -36,9 +36,7 @@ func (repository *gormHeartbeatRepository) DeleteAllForUser(ctx context.Context,
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := executeWithRetry(func() error {
-		return repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Heartbeat{}).Error
-	})
+	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Heartbeat{}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Heartbeat{}, userID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -55,13 +53,11 @@ func (repository *gormHeartbeatRepository) Last(ctx context.Context, userID enti
 	defer cancel()
 
 	heartbeat := new(entities.Heartbeat)
-	err := executeWithRetry(func() error {
-		return repository.db.WithContext(ctx).
-			Where("user_id = ?", userID).
-			Where("owner = ?", owner).
-			Order("timestamp DESC").
-			First(&heartbeat).Error
-	})
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("owner = ?", owner).
+		Order("timestamp DESC").
+		First(&heartbeat).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("heartbeat with userID [%s] and owner [%s] does not exist", userID, owner)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -90,9 +86,7 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 	}
 
 	heartbeats := new([]entities.Heartbeat)
-	err := executeWithRetry(func() error {
-		return query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error
-	})
+	err := query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -109,7 +103,7 @@ func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat 
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
-	if err := executeWithRetry(func() error { return repository.db.WithContext(ctx).Create(heartbeat).Error }); err != nil {
+	if err := repository.db.WithContext(ctx).Create(heartbeat).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}

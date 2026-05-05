@@ -54,7 +54,6 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 
 	var result []services.MessageSendParams
 	for index, to := range input.To {
-		sendAt := time.Now().UTC().Add(time.Duration(index) * time.Second)
 		result = append(result, services.MessageSendParams{
 			Source:            source,
 			Owner:             from,
@@ -63,9 +62,9 @@ func (input *MessageBulkSend) ToMessageSendParams(userID entities.UserID, source
 			UserID:            userID,
 			RequestReceivedAt: time.Now().UTC(),
 			Contact:           to,
-			SendAt:            &sendAt,
 			Content:           input.Content,
 			Attachments:       input.Attachments,
+			Index:             index,
 		})
 	}
 

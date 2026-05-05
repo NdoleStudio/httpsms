@@ -148,7 +148,7 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 
 	dispatcher.meter.Record(
 		ctx,
-		float64(time.Since(start).Microseconds())/1000,
+		float64(time.Since(start).Milliseconds()),
 		metric.WithAttributes(
 			semconv.CloudeventsEventType(event.Type()),
 			semconv.CloudeventsEventSpecVersion(event.SpecVersion()),

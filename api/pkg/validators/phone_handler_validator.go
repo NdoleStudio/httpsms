@@ -7,27 +7,31 @@ import (
 	"strings"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
-
 	"github.com/NdoleStudio/httpsms/pkg/requests"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/google/uuid"
 	"github.com/thedevsaddam/govalidator"
 )
 
 // PhoneHandlerValidator validates models used in handlers.PhoneHandler
 type PhoneHandlerValidator struct {
 	validator
-	logger telemetry.Logger
-	tracer telemetry.Tracer
+	logger          telemetry.Logger
+	tracer          telemetry.Tracer
+	scheduleService *services.MessageSendScheduleService
 }
 
 // NewPhoneHandlerValidator creates a new handlers.PhoneHandler validator
 func NewPhoneHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
+	scheduleService *services.MessageSendScheduleService,
 ) (v *PhoneHandlerValidator) {
 	return &PhoneHandlerValidator{
-		logger: logger.WithService(fmt.Sprintf("%T", v)),
-		tracer: tracer,
+		logger:          logger.WithService(fmt.Sprintf("%T", v)),
+		tracer:          tracer,
+		scheduleService: scheduleService,
 	}
 }
 
@@ -56,7 +60,7 @@ func (validator *PhoneHandlerValidator) ValidateIndex(_ context.Context, request
 }
 
 // ValidateUpsert validates requests.PhoneUpsert
-func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, request requests.PhoneUpsert) url.Values {
+func (validator *PhoneHandlerValidator) ValidateUpsert(ctx context.Context, userID entities.UserID, request requests.PhoneUpsert) url.Values {
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
@@ -84,16 +88,26 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(_ context.Context, reques
 				"min:60",
 				"max:3600",
 			},
+			"message_send_schedule_id": []string{
+				"uuid",
+			},
 		},
 	})
 
 	result := v.ValidateStruct()
+	if request.MaxSendAttempts > 0 && request.MessageExpirationSeconds == 0 {
+		result.Add("message_expiration_seconds", "message_expiration_seconds cannot be 0 when max_send_attempts is greater than 0")
+	}
+
 	if len(result) > 0 {
 		return result
 	}
 
-	if request.MaxSendAttempts > 0 && request.MessageExpirationSeconds == 0 {
-		result.Add("message_expiration_seconds", "message_expiration_seconds cannot be 0 when max_send_attempts is greater than 0")
+	if strings.TrimSpace(request.MessageSendScheduleID) != "" {
+		scheduleID, _ := uuid.Parse(strings.TrimSpace(request.MessageSendScheduleID))
+		if _, err := validator.scheduleService.Load(ctx, userID, scheduleID); err != nil {
+			result.Add("message_send_schedule_id", "The message_send_schedule_id does not belong to the authenticated user or does not exist")
+		}
 	}
 
 	return result

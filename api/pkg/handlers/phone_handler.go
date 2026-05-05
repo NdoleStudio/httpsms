@@ -121,13 +121,13 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	if errors := h.validator.ValidateUpsert(ctx, request.Sanitize()); len(errors) != 0 {
+	if errors := h.validator.ValidateUpsert(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
 		ctxLogger.Warn(stacktrace.NewError(msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
-	phone, err := h.service.Upsert(ctx, request.ToUpsertParams(h.userFromContext(c), c.OriginalURL()))
+	phone, err := h.service.Upsert(ctx, request.ToUpsertParams(h.userFromContext(c), c.OriginalURL(), c.Body()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot update phones with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))

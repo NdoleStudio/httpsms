@@ -1,8 +1,11 @@
 package requests
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/nyaruka/phonenumbers"
 
@@ -28,6 +31,8 @@ type PhoneUpsert struct {
 
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
+
+	MessageSendScheduleID string `json:"message_send_schedule_id,omitempty" example:"32343a19-da5e-4b1b-a767-3298a73703cb" validate:"optional"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -41,32 +46,40 @@ func (input *PhoneUpsert) Sanitize() PhoneUpsert {
 	return *input
 }
 
-// ToUpsertParams converts PhoneUpsert to services.PhoneUpsertParams
-func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source string) *services.PhoneUpsertParams {
+// ToUpsertParams converts PhoneUpsert to services.PhoneUpsertParams.
+// The body parameter is the raw JSON request body used to detect which fields were explicitly sent.
+func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source string, body []byte) *services.PhoneUpsertParams {
 	phone, _ := phonenumbers.Parse(input.PhoneNumber, phonenumbers.UNKNOWN_REGION)
 
-	// ignore value if it's default
+	fields := make(map[string]json.RawMessage)
+	_ = json.Unmarshal(body, &fields)
+
 	var messagesPerMinute *uint
-	if input.MessagesPerMinute != 0 {
+	if _, exists := fields["messages_per_minute"]; exists {
 		messagesPerMinute = &input.MessagesPerMinute
 	}
 
-	// ignore default
 	var fcmToken *string
-	if input.FcmToken != "" {
+	if _, exists := fields["fcm_token"]; exists {
 		fcmToken = &input.FcmToken
 	}
 
-	// ignore default
 	var timeout *time.Duration
-	if input.MessageExpirationSeconds != 0 {
+	if _, exists := fields["message_expiration_seconds"]; exists {
 		duration := time.Duration(input.MessageExpirationSeconds) * time.Second
 		timeout = &duration
 	}
 
 	var maxSendAttempts *uint
-	if input.MaxSendAttempts != 0 {
+	if _, exists := fields["max_send_attempts"]; exists {
 		maxSendAttempts = &input.MaxSendAttempts
+	}
+
+	var scheduleID *uuid.UUID
+	if _, exists := fields["message_send_schedule_id"]; exists {
+		if parsed, err := uuid.Parse(strings.TrimSpace(input.MessageSendScheduleID)); err == nil {
+			scheduleID = &parsed
+		}
 	}
 
 	return &services.PhoneUpsertParams{
@@ -79,5 +92,6 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 		FcmToken:                  fcmToken,
 		UserID:                    user.ID,
 		SIM:                       entities.SIM(input.SIM),
+		MessageSendScheduleID:     scheduleID,
 	}
 }

@@ -214,6 +214,55 @@ definitions:
       - updated_at
       - user_id
     type: object
+  entities.MessageSendSchedule:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      name:
+        example: Business Hours
+        type: string
+      timezone:
+        example: Europe/Tallinn
+        type: string
+      updated_at:
+        example: "2022-06-05T14:26:10.303278+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+      windows:
+        items:
+          $ref: "#/definitions/entities.MessageSendScheduleWindow"
+        type: array
+    required:
+      - created_at
+      - id
+      - name
+      - timezone
+      - updated_at
+      - user_id
+      - windows
+    type: object
+  entities.MessageSendScheduleWindow:
+    properties:
+      day_of_week:
+        example: 1
+        type: integer
+      end_minute:
+        example: 1020
+        type: integer
+      start_minute:
+        example: 540
+        type: integer
+    required:
+      - day_of_week
+      - end_minute
+      - start_minute
+    type: object
   entities.MessageThread:
     properties:
       color:
@@ -288,6 +337,9 @@ definitions:
           MessageExpirationSeconds is the duration in seconds after sending
           a message when it is considered to be expired.
         type: integer
+      message_send_schedule_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
       messages_per_minute:
         example: 1
         type: integer
@@ -736,6 +788,34 @@ definitions:
       - from
       - to
     type: object
+  requests.MessageSendScheduleStore:
+    properties:
+      name:
+        type: string
+      timezone:
+        type: string
+      windows:
+        items:
+          $ref: "#/definitions/requests.MessageSendScheduleWindow"
+        type: array
+    required:
+      - name
+      - timezone
+      - windows
+    type: object
+  requests.MessageSendScheduleWindow:
+    properties:
+      day_of_week:
+        type: integer
+      end_minute:
+        type: integer
+      start_minute:
+        type: integer
+    required:
+      - day_of_week
+      - end_minute
+      - start_minute
+    type: object
   requests.MessageThreadUpdate:
     properties:
       is_archived:
@@ -788,6 +868,9 @@ definitions:
           a message when it is considered to be expired.
         example: 12345
         type: integer
+      message_send_schedule_id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
       messages_per_minute:
         example: 1
         type: integer
@@ -1061,6 +1144,38 @@ definitions:
       - message
       - status
     type: object
+  responses.MessageSendScheduleResponse:
+    properties:
+      data:
+        $ref: "#/definitions/entities.MessageSendSchedule"
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
+  responses.MessageSendSchedulesResponse:
+    properties:
+      data:
+        items:
+          $ref: "#/definitions/entities.MessageSendSchedule"
+        type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+      - data
+      - message
+      - status
+    type: object
   responses.MessageThreadsResponse:
     properties:
       data:
@@ -1131,6 +1246,20 @@ definitions:
         type: string
     required:
       - data
+      - message
+      - status
+    type: object
+  responses.PaymentRequired:
+    properties:
+      message:
+        example:
+          You have reached the maximum number of allowed resources. Please
+          upgrade your plan.
+        type: string
+      status:
+        example: error
+        type: string
+    required:
       - message
       - status
     type: object
@@ -2842,6 +2971,155 @@ paths:
       summary: Upserts the FCM token of a phone
       tags:
         - Phones
+  /send-schedules:
+    get:
+      description: List all send schedules owned by the authenticated user.
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageSendSchedulesResponse"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: List send schedules
+      tags:
+        - SendSchedules
+    post:
+      consumes:
+        - application/json
+      description: Create a new send schedule for the authenticated user.
+      parameters:
+        - description: Payload of new send schedule.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageSendScheduleStore"
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: "#/definitions/responses.MessageSendScheduleResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "402":
+          description: Payment Required
+          schema:
+            $ref: "#/definitions/responses.PaymentRequired"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Create send schedule
+      tags:
+        - SendSchedules
+  /send-schedules/{scheduleID}:
+    delete:
+      description: Delete a send schedule owned by the authenticated user.
+      parameters:
+        - description: Schedule ID
+          in: path
+          name: scheduleID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Delete send schedule
+      tags:
+        - SendSchedules
+    put:
+      consumes:
+        - application/json
+      description: Update a send schedule owned by the authenticated user.
+      parameters:
+        - description: Schedule ID
+          in: path
+          name: scheduleID
+          required: true
+          type: string
+        - description: Payload of updated send schedule.
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/requests.MessageSendScheduleStore"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/responses.MessageSendScheduleResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/responses.BadRequest"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/responses.Unauthorized"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/responses.NotFound"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/responses.UnprocessableEntity"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/responses.InternalServerError"
+      security:
+        - ApiKeyAuth: []
+      summary: Update send schedule
+      tags:
+        - SendSchedules
   /users/{userID}/api-keys:
     delete:
       consumes:

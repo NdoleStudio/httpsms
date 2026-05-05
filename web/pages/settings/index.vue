@@ -50,6 +50,7 @@
                 @change="updateTimezone"
               ></v-autocomplete>
             </div>
+
             <h5 class="text-h4 mb-3 mt-3">API Key</h5>
             <p class="text--secondary">
               Use your API Key in the <code>x-api-key</code> HTTP Header when
@@ -210,6 +211,7 @@
                       <v-chip
                         v-for="event in webhook.events"
                         :key="event"
+                        class="ma-1"
                         small
                         >{{ event }}</v-chip
                       >
@@ -244,6 +246,7 @@
                 >Documentation</v-btn
               >
             </div>
+
             <h5 id="discord-settings" class="text-h4 mb-3 mt-12">
               Discord Integration
             </h5>
@@ -310,6 +313,7 @@
               ></v-img>
               Add Discord
             </v-btn>
+
             <h5 id="phones" class="text-h4 mb-3 mt-12">Phones</h5>
             <p class="text--secondary">
               List of mobile phones which are registered for sending and
@@ -357,6 +361,7 @@
                       <v-btn
                         :icon="$vuetify.breakpoint.mdAndDown"
                         color="info"
+                        small
                         :disabled="updatingPhone"
                         @click.prevent="showEditPhone(phone.id)"
                       >
@@ -370,6 +375,71 @@
                 </tbody>
               </template>
             </v-simple-table>
+
+            <h5 id="send-schedules" class="text-h4 mb-3 mt-12">
+              Send Schedules
+            </h5>
+            <p class="text--secondary">
+              Create availability schedules and attach them to each phone.
+              Outgoing messages sent outside the schedule window are queued and
+              delivered when the schedule opens according to your
+              <a
+                class="text-decoration-none"
+                href="https://docs.httpsms.com/features/control-sms-send-rate"
+                >configured send rate</a
+              >.
+            </p>
+            <v-simple-table>
+              <template #default>
+                <thead>
+                  <tr class="text-uppercase subtitle-2">
+                    <th class="text-left">Name</th>
+                    <th class="text-left">Timezone</th>
+                    <th class="text-left">Schedule</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="schedule in sendSchedules" :key="schedule.id">
+                    <td class="text-left pt-2" style="vertical-align: top">
+                      {{ schedule.name }}
+                    </td>
+                    <td class="pt-2" style="vertical-align: top">
+                      {{ schedule.timezone }}
+                    </td>
+                    <td class="py-2">
+                      <div
+                        v-for="line in scheduleSummary(schedule)"
+                        :key="`${schedule.id}-${line}`"
+                        class="mb-1"
+                      >
+                        {{ line[0] }}:
+                        <span class="text--secondary">{{ line[1] }}</span>
+                      </div>
+                    </td>
+                    <td class="text-center pt-2" style="vertical-align: top">
+                      <v-btn
+                        :icon="$vuetify.breakpoint.mdAndDown"
+                        color="info"
+                        small
+                        :disabled="loadingSendSchedules"
+                        @click.prevent="openEditSchedule(schedule)"
+                      >
+                        <v-icon small>{{ mdiSquareEditOutline }}</v-icon>
+                        <span v-if="!$vuetify.breakpoint.mdAndDown">
+                          Edit
+                        </span>
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+            <v-btn color="primary" class="mt-4" @click="openCreateSchedule">
+              <v-icon left>{{ mdiCalendarClock }}</v-icon>
+              Create Send Schedule
+            </v-btn>
+
             <h5 id="email-notifications" class="text-h4 mb-3 mt-12">
               Email Notifications
             </h5>
@@ -415,6 +485,7 @@
               <v-icon left>{{ mdiContentSave }}</v-icon>
               Save Notification Settings
             </v-btn>
+
             <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-12">
               Delete Account
             </h5>
@@ -485,6 +556,7 @@
         </v-row>
       </v-container>
     </div>
+
     <v-dialog v-model="showPhoneEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>Edit Phone</v-card-title>
@@ -549,6 +621,20 @@
                   label="Max Send Attempts"
                 >
                 </v-text-field>
+                <v-autocomplete
+                  v-model="activePhone.message_send_schedule_id"
+                  outlined
+                  :readonly="sendSchedules.length === 0"
+                  dense
+                  clearable
+                  label="Send Schedule"
+                  :items="sendSchedules"
+                  item-text="name"
+                  item-value="id"
+                  :multiple="false"
+                  hint="Attach a send schedule to this phone"
+                  persistent-hint
+                ></v-autocomplete>
                 <v-textarea
                   v-model="activePhone.missed_call_auto_reply"
                   outlined
@@ -572,7 +658,12 @@
             Update
           </v-btn>
           <v-spacer></v-spacer>
-          <v-btn small color="error" text @click="deletePhone(activePhone.id)">
+          <v-btn
+            small
+            color="error"
+            text
+            @click="deletePhone(activePhone?.id ?? '')"
+          >
             <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
               {{ mdiDelete }}
             </v-icon>
@@ -581,6 +672,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
     <v-dialog v-model="showWebhookEdit" overlay-opacity="0.9" max-width="600px">
       <v-card>
         <v-card-title>
@@ -696,6 +788,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
     <v-dialog v-model="showDiscordEdit" overlay-opacity="0.9" max-width="700px">
       <v-card>
         <v-card-title>
@@ -809,14 +902,213 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog
+      v-model="showScheduleEdit"
+      overlay-opacity="0.9"
+      max-width="800px"
+    >
+      <v-card>
+        <v-card-title>
+          <span v-if="!activeSchedule.id">Create Message Send Schedule</span>
+          <span v-else>Edit Message Send Schedule</span>
+        </v-card-title>
+        <v-card-text
+          class="mt-4"
+          :class="{ 'px-2': $vuetify.breakpoint.mdAndDown }"
+        >
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="activeSchedule.name"
+                outlined
+                dense
+                persistent-placeholder
+                label="Schedule Name"
+                placeholder="e.g Business Hours"
+                :error="errorMessages.has('name')"
+                :error-messages="errorMessages.get('name')"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-autocomplete
+                v-model="activeSchedule.timezone"
+                dense
+                outlined
+                :items="timezones"
+                label="Timezone"
+                :class="{ 'mt-n6 mb-0': $vuetify.breakpoint.mdAndDown }"
+                :error="errorMessages.has('timezone')"
+                :error-messages="errorMessages.get('timezone')"
+              />
+            </v-col>
+          </v-row>
+          <v-card
+            :outlined="!$vuetify.breakpoint.mdAndDown"
+            elevation="0"
+            class="px-0"
+          >
+            <v-card-text
+              :class="{
+                'px-2 mt-n8': $vuetify.breakpoint.mdAndDown,
+                'px-4': !$vuetify.breakpoint.mdAndDown,
+              }"
+            >
+              <div
+                v-for="day in weekDays"
+                :key="day.value"
+                :class="[
+                  $vuetify.breakpoint.smAndUp ? 'd-flex align-start' : '',
+                  'mb-4',
+                ]"
+              >
+                <div
+                  :class="[$vuetify.breakpoint.smAndUp ? 'pr-4' : '', 'pt-2']"
+                  :style="$vuetify.breakpoint.smAndUp ? 'min-width: 160px' : ''"
+                >
+                  <v-switch
+                    :input-value="scheduleDayEnabled(day.value)"
+                    inset
+                    dense
+                    :label="day.label"
+                    class="mt-0 pt-0 text--primary"
+                    @change="scheduleToggleDay(day.value, $event)"
+                  />
+                </div>
+                <div class="pt-2 flex-grow-1">
+                  <div
+                    v-for="(window, index) in scheduleWindowsForDay(day.value)"
+                    :key="`${day.value}-${index}`"
+                    class="d-flex align-center flex-wrap mb-2"
+                  >
+                    <div
+                      class="mr-2 mb-2"
+                      style="width: 110px; max-width: 100%"
+                    >
+                      <v-text-field
+                        v-model="window.start_time"
+                        dense
+                        outlined
+                        :error="scheduleWindowError(day.value)"
+                        type="time"
+                        label="Start"
+                        hide-details="auto"
+                      />
+                    </div>
+                    <div class="mb-2 mr-2">–</div>
+                    <div
+                      class="mr-2 mb-2"
+                      style="width: 110px; max-width: 100%"
+                    >
+                      <v-text-field
+                        v-model="window.end_time"
+                        dense
+                        outlined
+                        :error="scheduleWindowError(day.value)"
+                        type="time"
+                        label="End"
+                        hide-details="auto"
+                      />
+                    </div>
+                    <div class="mb-2">
+                      <v-btn
+                        v-if="index == 0"
+                        icon
+                        color="primary"
+                        @click="scheduleAddWindow(day.value)"
+                      >
+                        <v-icon>{{ mdiPlus }}</v-icon>
+                      </v-btn>
+                      <v-btn
+                        icon
+                        color="error"
+                        @click="scheduleRemoveWindow(day.value, index)"
+                      >
+                        <v-icon>{{ mdiDelete }}</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
+                  <div
+                    v-if="scheduleWindowError(day.value)"
+                    class="w-full error--text mt-n2 mb-4"
+                  >
+                    {{ scheduleWindowError(day.value) }}
+                  </div>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-card-text>
+        <v-card-actions class="pb-4">
+          <loading-button
+            v-if="!activeSchedule.id"
+            :icon="mdiContentSave"
+            :loading="savingSchedule"
+            @click="saveSchedule"
+          >
+            Save Schedule
+          </loading-button>
+          <loading-button
+            v-else
+            color="info"
+            :loading="savingSchedule"
+            @click="saveSchedule"
+          >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small>
+              {{ mdiContentSave }}
+            </v-icon>
+            Update Schedule
+          </loading-button>
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="activeSchedule.id"
+            :disabled="savingSchedule"
+            color="error"
+            text
+            @click="confirmDeleteSchedule"
+          >
+            <v-icon v-if="$vuetify.breakpoint.lgAndUp" small left>
+              {{ mdiDelete }}
+            </v-icon>
+            Delete
+          </v-btn>
+          <v-btn v-else text color="error" @click="showScheduleEdit = false">
+            Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showScheduleDelete" max-width="500">
+      <v-card>
+        <v-card-title>Delete schedule</v-card-title>
+        <v-card-text>
+          Are you sure you want to delete <b>{{ activeSchedule.name }}</b
+          >? Phones attached to this schedule will no longer have schedule-based
+          restrictions.
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            color="error"
+            :loading="savingSchedule"
+            @click="deleteSchedule"
+          >
+            Delete
+          </v-btn>
+          <v-spacer />
+          <v-btn text @click="showScheduleDelete = false">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
-<script>
+<script lang="ts">
 import Vue from 'vue'
 import {
   mdiArrowLeft,
   mdiAccountCircle,
+  mdiCalendarClock,
   mdiShieldCheck,
   mdiDelete,
   mdiContentSave,
@@ -825,12 +1117,19 @@ import {
   mdiRefresh,
   mdiLinkVariant,
   mdiEyeOff,
+  mdiPlus,
   mdiSquareEditOutline,
   mdiQrcode,
 } from '@mdi/js'
 import { toCanvas } from 'qrcode'
 import { ErrorMessages } from '~/plugins/errors'
 import LoadingButton from '~/components/LoadingButton.vue'
+import {
+  EntitiesDiscord,
+  EntitiesMessageSendSchedule,
+  EntitiesPhone,
+  EntitiesWebhook,
+} from '~/models/api'
 
 export default Vue.extend({
   name: 'SettingsIndex',
@@ -843,8 +1142,10 @@ export default Vue.extend({
       mdiRefresh,
       mdiArrowLeft,
       mdiAccountCircle,
+      mdiCalendarClock,
       mdiShieldCheck,
       mdiDelete,
+      mdiPlus,
       mdiQrcode,
       mdiLinkVariant,
       mdiContentSave,
@@ -854,6 +1155,9 @@ export default Vue.extend({
       apiKeyShow: false,
       showPhoneEdit: false,
       showDiscordEdit: false,
+      showScheduleEdit: false,
+      showScheduleDelete: false,
+      savingSchedule: false,
       showRotateApiKey: false,
       rotatingApiKey: false,
       showQrCodeDialog: false,
@@ -863,15 +1167,25 @@ export default Vue.extend({
         id: null,
         url: '',
         signing_key: '',
-        phone_numbers: [],
+        phone_numbers: [] as string[],
         events: ['message.phone.received'],
+      } as {
+        id: string | null
+        url: string
+        signing_key: string
+        phone_numbers: string[]
+        events: string[]
       },
       activeDiscord: {
         id: null,
         name: '',
         server_id: '',
-        missed_call_auto_reply: '',
         incoming_channel_id: '',
+      } as {
+        id: string | null
+        name: string
+        server_id: string
+        incoming_channel_id: string
       },
       updatingEmailNotifications: false,
       notificationSettings: {
@@ -882,13 +1196,15 @@ export default Vue.extend({
       },
       updatingWebhook: false,
       loadingWebhooks: false,
-      discords: [],
-      webhooks: [],
+      loadingSendSchedules: false,
+      discords: [] as EntitiesDiscord[],
+      webhooks: [] as EntitiesWebhook[],
       showWebhookEdit: false,
-      activePhone: null,
+      activePhone: null as EntitiesPhone | null,
       updatingPhone: false,
       updatingDiscord: false,
       loadingDiscordIntegrations: false,
+      sendSchedules: [] as EntitiesMessageSendSchedule[],
       events: [
         'message.phone.received',
         'message.phone.sent',
@@ -898,6 +1214,30 @@ export default Vue.extend({
         'message.call.missed',
         'phone.heartbeat.offline',
         'phone.heartbeat.online',
+      ],
+      activeSchedule: {
+        id: null,
+        name: '',
+        timezone: '',
+        windows: [],
+      } as {
+        id: string | null
+        name: string
+        timezone: string
+        windows: Array<{
+          day_of_week: number
+          start_time: string
+          end_time: string
+        }>
+      },
+      weekDays: [
+        { value: 1, label: 'Monday' },
+        { value: 2, label: 'Tuesday' },
+        { value: 3, label: 'Wednesday' },
+        { value: 4, label: 'Thursday' },
+        { value: 5, label: 'Friday' },
+        { value: 6, label: 'Saturday' },
+        { value: 0, label: 'Sunday' },
       ],
     }
   },
@@ -920,10 +1260,15 @@ export default Vue.extend({
       return this.$store.getters.getUser.subscription_renews_at != null
     },
     timezones() {
-      return Intl.supportedValuesOf('timeZone')
+      try {
+        // @ts-ignore
+        return Intl.supportedValuesOf('timeZone')
+      } catch {
+        return []
+      }
     },
     phoneNumbers() {
-      return this.$store.getters.getPhones.map((phone) => {
+      return this.$store.getters.getPhones.map((phone: EntitiesPhone) => {
         return phone.phone_number
       })
     },
@@ -945,6 +1290,7 @@ export default Vue.extend({
     ])
     this.loadWebhooks()
     this.loadDiscordIntegrations()
+    this.loadSendSchedules()
     this.updateEmailNotifications()
     if (this.$route.hash) {
       await this.$vuetify.goTo(this.$route.hash)
@@ -952,7 +1298,7 @@ export default Vue.extend({
   },
 
   methods: {
-    generateQrCode(text) {
+    generateQrCode(text: string) {
       const canvas = this.$refs.qrCodeCanvas
       if (canvas) {
         toCanvas(canvas, text, { errorCorrectionLevel: 'H' }, (err) => {
@@ -977,8 +1323,10 @@ export default Vue.extend({
           this.$store.getters.getUser.notification_newsletter_enabled,
       }
     },
-    showEditPhone(phoneId) {
-      const phone = this.$store.getters.getPhones.find((x) => x.id === phoneId)
+    showEditPhone(phoneId: string) {
+      const phone = this.$store.getters.getPhones.find(
+        (x: EntitiesPhone) => x.id === phoneId,
+      )
       if (!phone) {
         return
       }
@@ -987,8 +1335,10 @@ export default Vue.extend({
       this.resetErrors()
     },
 
-    onWebhookEdit(webhookId) {
-      const webhook = this.webhooks.find((x) => x.id === webhookId)
+    onWebhookEdit(webhookId: string) {
+      const webhook = this.webhooks.find(
+        (x: EntitiesWebhook) => x.id === webhookId,
+      ) as EntitiesWebhook | undefined
       if (!webhook) {
         return
       }
@@ -996,7 +1346,8 @@ export default Vue.extend({
         id: webhook.id,
         url: webhook.url,
         phone_numbers: webhook.phone_numbers.filter(
-          (x) => this.phoneNumbers.find((y) => y === x) !== undefined,
+          (x: string) =>
+            this.phoneNumbers.find((y: string) => y === x) !== undefined,
         ),
         signing_key: webhook.signing_key,
         events: webhook.events,
@@ -1005,8 +1356,10 @@ export default Vue.extend({
       this.resetErrors()
     },
 
-    onDiscordEdit(discordId) {
-      const discord = this.discords.find((x) => x.id === discordId)
+    onDiscordEdit(discordId: string) {
+      const discord = this.discords.find(
+        (x: EntitiesDiscord) => x.id === discordId,
+      ) as EntitiesDiscord | undefined
       if (!discord) {
         return
       }
@@ -1026,7 +1379,7 @@ export default Vue.extend({
         url: '',
         signing_key: '',
         phone_numbers: this.$store.getters.getPhones.map(
-          (phone) => phone.phone_number,
+          (phone: EntitiesPhone) => phone.phone_number,
         ),
         events: [
           'message.phone.received',
@@ -1046,7 +1399,6 @@ export default Vue.extend({
         name: '',
         server_id: '',
         incoming_channel_id: '',
-        missed_call_auto_reply: '',
       }
       this.showDiscordEdit = true
       this.resetErrors()
@@ -1081,7 +1433,7 @@ export default Vue.extend({
           this.showDiscordEdit = false
           this.loadDiscordIntegrations()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1118,7 +1470,7 @@ export default Vue.extend({
           this.showDiscordEdit = false
           this.loadDiscordIntegrations()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1126,7 +1478,7 @@ export default Vue.extend({
         })
     },
 
-    deleteDiscord(discordId) {
+    deleteDiscord(discordId: string) {
       this.updatingDiscord = true
       this.$store
         .dispatch('deleteDiscordIntegration', discordId)
@@ -1156,7 +1508,7 @@ export default Vue.extend({
           this.showWebhookEdit = false
           this.loadWebhooks()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1164,7 +1516,7 @@ export default Vue.extend({
         })
     },
 
-    updateTimezone(timezone) {
+    updateTimezone(timezone: string) {
       this.resetErrors()
       this.$store
         .dispatch('updateTimezone', timezone)
@@ -1195,7 +1547,7 @@ export default Vue.extend({
           this.showWebhookEdit = false
           this.loadWebhooks()
         })
-        .catch((errors) => {
+        .catch((errors: ErrorMessages) => {
           this.errorMessages = errors
         })
         .finally(() => {
@@ -1213,7 +1565,7 @@ export default Vue.extend({
         })
     },
 
-    deleteWebhook(webhookId) {
+    deleteWebhook(webhookId: string) {
       this.updatingWebhook = true
       this.$store
         .dispatch('deleteWebhook', webhookId)
@@ -1230,11 +1582,23 @@ export default Vue.extend({
         })
     },
 
+    loadSendSchedules() {
+      this.loadingSendSchedules = true
+      this.$store
+        .dispatch('getSendSchedules')
+        .then((sendSchedules: EntitiesMessageSendSchedule[]) => {
+          this.sendSchedules = sendSchedules
+        })
+        .finally(() => {
+          this.loadingSendSchedules = false
+        })
+    },
+
     loadWebhooks() {
       this.loadingWebhooks = true
       this.$store
         .dispatch('getWebhooks')
-        .then((webhooks) => {
+        .then((webhooks: EntitiesWebhook[]) => {
           this.webhooks = webhooks
         })
         .finally(() => {
@@ -1246,7 +1610,7 @@ export default Vue.extend({
       this.loadingDiscordIntegrations = true
       this.$store
         .dispatch('getDiscordIntegrations')
-        .then((discords) => {
+        .then((discords: EntitiesDiscord[]) => {
           this.discords = discords
         })
         .finally(() => {
@@ -1258,7 +1622,7 @@ export default Vue.extend({
       this.deletingAccount = true
       this.$store
         .dispatch('deleteUserAccount')
-        .then((message) => {
+        .then((message: string) => {
           this.$store.dispatch('addNotification', {
             message: message ?? 'Your account has been deleted successfully',
             type: 'success',
@@ -1279,13 +1643,229 @@ export default Vue.extend({
         })
     },
 
-    deletePhone(phoneId) {
+    deletePhone(phoneId: string) {
       this.updatingPhone = true
       this.$store.dispatch('deletePhone', phoneId).finally(() => {
         this.updatingPhone = false
         this.showPhoneEdit = false
         this.activePhone = null
       })
+    },
+
+    minuteToClock(value: number) {
+      const hours = String(Math.floor(value / 60)).padStart(2, '0')
+      const minutes = String(value % 60).padStart(2, '0')
+      return `${hours}:${minutes}`
+    },
+
+    clockToMinute(value: string) {
+      if (!value || !value.includes(':')) {
+        return 0
+      }
+
+      const [hours, minutes] = value.split(':').map((x) => parseInt(x, 10))
+      return hours * 60 + minutes
+    },
+
+    getWeekday(index: number): string {
+      return this.weekDays.find((x) => x.value == index)?.label ?? ''
+    },
+
+    scheduleSummary(schedule: EntitiesMessageSendSchedule) {
+      return this.weekDays
+        .map((day) => {
+          const windows = (schedule.windows || []).filter(
+            (x) => x.day_of_week === day.value,
+          )
+
+          if (windows.length === 0) {
+            return []
+          }
+          return [
+            day.label,
+            windows
+              .map(
+                (w) =>
+                  `${this.minuteToClock(w.start_minute)} - ${this.minuteToClock(
+                    w.end_minute,
+                  )}`,
+              )
+              .join(', '),
+          ]
+        })
+        .filter((x: string[]) => x.length > 0)
+    },
+
+    defaultTimezone(): string {
+      return (
+        this.$store.getters.getUser?.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+      )
+    },
+
+    openCreateSchedule() {
+      this.resetErrors()
+      this.activeSchedule = {
+        id: null,
+        name: '',
+        timezone: this.defaultTimezone(),
+        windows: [
+          { day_of_week: 1, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 2, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 3, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 4, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 5, start_time: '09:00', end_time: '17:00' },
+        ],
+      }
+      this.showScheduleEdit = true
+    },
+
+    openEditSchedule(schedule: EntitiesMessageSendSchedule) {
+      this.resetErrors()
+      this.activeSchedule = {
+        id: schedule.id,
+        name: schedule.name,
+        timezone: schedule.timezone,
+        windows: (schedule.windows || []).map((x) => ({
+          day_of_week: x.day_of_week,
+          start_time: this.minuteToClock(x.start_minute),
+          end_time: this.minuteToClock(x.end_minute),
+        })),
+      }
+      this.showScheduleEdit = true
+    },
+
+    scheduleWindowsForDay(dayOfWeek: number) {
+      return this.activeSchedule.windows.filter(
+        (x) => x.day_of_week === dayOfWeek,
+      )
+    },
+
+    scheduleDayEnabled(dayOfWeek: number) {
+      return this.scheduleWindowsForDay(dayOfWeek).length > 0
+    },
+
+    scheduleToggleDay(dayOfWeek: number, enabled: boolean) {
+      if (enabled) {
+        if (!this.scheduleDayEnabled(dayOfWeek)) {
+          this.scheduleAddWindow(dayOfWeek)
+        }
+        return
+      }
+      this.activeSchedule.windows = this.activeSchedule.windows.filter(
+        (x) => x.day_of_week !== dayOfWeek,
+      )
+    },
+
+    scheduleAddWindow(dayOfWeek: number) {
+      this.activeSchedule.windows.push({
+        day_of_week: dayOfWeek,
+        start_time: '09:00',
+        end_time: '17:00',
+      })
+    },
+
+    scheduleWindowError(index: number): string | null {
+      const messages = this.errorMessages.has('windows')
+        ? this.errorMessages.get('windows')
+        : []
+      if (messages.length == 0) {
+        return null
+      }
+
+      const message = messages.find((x: string) =>
+        x.includes(`Day of week ${index}`),
+      )
+      return message
+        ? message.replace(`Day of week ${index}`, this.getWeekday(index))
+        : null
+    },
+
+    scheduleRemoveWindow(dayOfWeek: number, index: number) {
+      const matches = this.activeSchedule.windows.filter(
+        (x) => x.day_of_week === dayOfWeek,
+      )
+      const target = matches[index]
+      this.activeSchedule.windows = this.activeSchedule.windows.filter(
+        (x) => x !== target,
+      )
+    },
+
+    async saveSchedule() {
+      this.resetErrors()
+      this.savingSchedule = true
+
+      try {
+        const payload = {
+          name: this.activeSchedule.name,
+          timezone: this.activeSchedule.timezone,
+          windows: (this.activeSchedule.windows || []).map((window) => ({
+            day_of_week: window.day_of_week,
+            start_minute: this.clockToMinute(window.start_time),
+            end_minute: this.clockToMinute(window.end_time),
+          })),
+        }
+
+        if (this.activeSchedule.id) {
+          await this.$store.dispatch('updateSendSchedule', {
+            id: this.activeSchedule.id,
+            ...payload,
+          })
+        } else {
+          await this.$store.dispatch('createSendSchedule', payload)
+        }
+
+        this.$store.dispatch('addNotification', {
+          type: 'success',
+          message: 'Send schedule saved successfully',
+        })
+
+        this.showScheduleEdit = false
+        this.loadSendSchedules()
+      } catch (errors) {
+        if (errors instanceof ErrorMessages) {
+          this.errorMessages = errors
+        } else {
+          this.$store.dispatch('addNotification', {
+            type: 'error',
+            message: 'Failed to save send schedule',
+          })
+        }
+      } finally {
+        this.savingSchedule = false
+      }
+    },
+
+    confirmDeleteSchedule() {
+      this.showScheduleDelete = true
+    },
+
+    async deleteSchedule() {
+      if (!this.activeSchedule.id) {
+        return
+      }
+
+      this.savingSchedule = true
+
+      try {
+        await this.$store.dispatch('deleteSendSchedule', this.activeSchedule.id)
+
+        this.$store.dispatch('addNotification', {
+          type: 'success',
+          message: 'Send schedule deleted successfully',
+        })
+
+        this.showScheduleDelete = false
+        this.showScheduleEdit = false
+        this.loadSendSchedules()
+      } catch (error) {
+        this.$store.dispatch('addNotification', {
+          type: 'error',
+          message: 'Failed to delete send schedule',
+        })
+      } finally {
+        this.savingSchedule = false
+      }
     },
   },
 })

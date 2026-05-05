@@ -56,6 +56,20 @@ func (service *PhoneService) DeleteAllForUser(ctx context.Context, userID entiti
 	return nil
 }
 
+// NullifyScheduleID sets MessageSendScheduleID to NULL for all phones referencing the given schedule.
+func (service *PhoneService) NullifyScheduleID(ctx context.Context, userID entities.UserID, scheduleID uuid.UUID) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	if err := service.repository.NullifyScheduleID(ctx, userID, scheduleID); err != nil {
+		msg := fmt.Sprintf("cannot nullify schedule ID [%s] for user [%s]", scheduleID, userID)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	service.tracer.CtxLogger(service.logger, span).Info(fmt.Sprintf("nullified schedule ID [%s] on phones for user [%s]", scheduleID, userID))
+	return nil
+}
+
 // Index fetches the heartbeats for a phone number
 func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthContext, params repositories.IndexParams) (*[]entities.Phone, error) {
 	ctx, span := service.tracer.Start(ctx)
@@ -91,6 +105,7 @@ type PhoneUpsertParams struct {
 	MessageExpirationDuration *time.Duration
 	MissedCallAutoReply       *string
 	SIM                       entities.SIM
+	MessageSendScheduleID     *uuid.UUID
 	Source                    string
 	UserID                    entities.UserID
 }
@@ -105,12 +120,13 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(params.PhoneNumber, phonenumbers.E164))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return service.createPhone(ctx, &PhoneFCMTokenParams{
-			Source:        params.Source,
-			PhoneNumber:   params.PhoneNumber,
-			PhoneAPIKeyID: nil,
-			UserID:        params.UserID,
-			FcmToken:      params.FcmToken,
-			SIM:           params.SIM,
+			Source:                params.Source,
+			PhoneNumber:           params.PhoneNumber,
+			PhoneAPIKeyID:         nil,
+			UserID:                params.UserID,
+			FcmToken:              params.FcmToken,
+			SIM:                   params.SIM,
+			MessageSendScheduleID: params.MessageSendScheduleID,
 		})
 	}
 
@@ -126,12 +142,13 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
 	return phone, service.dispatchPhoneUpdatedEvent(ctx, phone, &PhoneFCMTokenParams{
-		Source:        params.Source,
-		PhoneNumber:   params.PhoneNumber,
-		PhoneAPIKeyID: nil,
-		UserID:        params.UserID,
-		FcmToken:      params.FcmToken,
-		SIM:           params.SIM,
+		Source:                params.Source,
+		PhoneNumber:           params.PhoneNumber,
+		PhoneAPIKeyID:         nil,
+		UserID:                params.UserID,
+		FcmToken:              params.FcmToken,
+		SIM:                   params.SIM,
+		MessageSendScheduleID: params.MessageSendScheduleID,
 	})
 }
 
@@ -201,12 +218,13 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 
 // PhoneFCMTokenParams are parameters for upserting an entities.Phone
 type PhoneFCMTokenParams struct {
-	Source        string
-	PhoneNumber   *phonenumbers.PhoneNumber
-	PhoneAPIKeyID *uuid.UUID
-	UserID        entities.UserID
-	FcmToken      *string
-	SIM           entities.SIM
+	Source                string
+	PhoneNumber           *phonenumbers.PhoneNumber
+	PhoneAPIKeyID         *uuid.UUID
+	UserID                entities.UserID
+	FcmToken              *string
+	SIM                   entities.SIM
+	MessageSendScheduleID *uuid.UUID
 }
 
 // UpsertFCMToken the FCM token for an entities.Phone
@@ -251,6 +269,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTo
 		MaxSendAttempts:          2,
 		SIM:                      params.SIM,
 		MissedCallAutoReply:      nil,
+		MessageSendScheduleID:    params.MessageSendScheduleID,
 		PhoneNumber:              phonenumbers.Format(params.PhoneNumber, phonenumbers.E164),
 		CreatedAt:                time.Now().UTC(),
 		UpdatedAt:                time.Now().UTC(),
@@ -294,6 +313,7 @@ func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertPa
 	}
 
 	phone.SIM = params.SIM
+	phone.MessageSendScheduleID = params.MessageSendScheduleID
 
 	return phone
 }

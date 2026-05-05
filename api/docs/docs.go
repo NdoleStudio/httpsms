@@ -2179,6 +2179,239 @@ const docTemplate = `{
                 }
             }
         },
+        "/send-schedules": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "List all send schedules owned by the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SendSchedules"
+                ],
+                "summary": "List send schedules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessageSendSchedulesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create a new send schedule for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SendSchedules"
+                ],
+                "summary": "Create send schedule",
+                "parameters": [
+                    {
+                        "description": "Payload of new send schedule.",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.MessageSendScheduleStore"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessageSendScheduleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PaymentRequired"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/send-schedules/{scheduleID}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Update a send schedule owned by the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SendSchedules"
+                ],
+                "summary": "Update send schedule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Schedule ID",
+                        "name": "scheduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload of updated send schedule.",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.MessageSendScheduleStore"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessageSendScheduleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a send schedule owned by the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SendSchedules"
+                ],
+                "summary": "Delete send schedule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Schedule ID",
+                        "name": "scheduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/users/me": {
             "get": {
                 "security": [
@@ -3288,6 +3521,72 @@ const docTemplate = `{
                 }
             }
         },
+        "entities.MessageSendSchedule": {
+            "type": "object",
+            "required": [
+                "created_at",
+                "id",
+                "name",
+                "timezone",
+                "updated_at",
+                "user_id",
+                "windows"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Business Hours"
+                },
+                "timezone": {
+                    "type": "string",
+                    "example": "Europe/Tallinn"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:10.303278+03:00"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
+                },
+                "windows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.MessageSendScheduleWindow"
+                    }
+                }
+            }
+        },
+        "entities.MessageSendScheduleWindow": {
+            "type": "object",
+            "required": [
+                "day_of_week",
+                "end_minute",
+                "start_minute"
+            ],
+            "properties": {
+                "day_of_week": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "end_minute": {
+                    "type": "integer",
+                    "example": 1020
+                },
+                "start_minute": {
+                    "type": "integer",
+                    "example": 540
+                }
+            }
+        },
         "entities.MessageThread": {
             "type": "object",
             "required": [
@@ -3389,6 +3688,10 @@ const docTemplate = `{
                 "message_expiration_seconds": {
                     "description": "MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.",
                     "type": "integer"
+                },
+                "message_send_schedule_id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
                 },
                 "messages_per_minute": {
                     "type": "integer",
@@ -3940,6 +4243,47 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.MessageSendScheduleStore": {
+            "type": "object",
+            "required": [
+                "name",
+                "timezone",
+                "windows"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "windows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.MessageSendScheduleWindow"
+                    }
+                }
+            }
+        },
+        "requests.MessageSendScheduleWindow": {
+            "type": "object",
+            "required": [
+                "day_of_week",
+                "end_minute",
+                "start_minute"
+            ],
+            "properties": {
+                "day_of_week": {
+                    "type": "integer"
+                },
+                "end_minute": {
+                    "type": "integer"
+                },
+                "start_minute": {
+                    "type": "integer"
+                }
+            }
+        },
         "requests.MessageThreadUpdate": {
             "type": "object",
             "required": [
@@ -4012,6 +4356,10 @@ const docTemplate = `{
                     "description": "MessageExpirationSeconds is the duration in seconds after sending a message when it is considered to be expired.",
                     "type": "integer",
                     "example": 12345
+                },
+                "message_send_schedule_id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
                 },
                 "messages_per_minute": {
                     "type": "integer",
@@ -4379,6 +4727,51 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.MessageSendScheduleResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/entities.MessageSendSchedule"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.MessageSendSchedulesResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.MessageSendSchedule"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "responses.MessageThreadsResponse": {
             "type": "object",
             "required": [
@@ -4479,6 +4872,23 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "success"
+                }
+            }
+        },
+        "responses.PaymentRequired": {
+            "type": "object",
+            "required": [
+                "message",
+                "status"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "You have reached the maximum number of allowed resources. Please upgrade your plan."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
                 }
             }
         },
