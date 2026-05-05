@@ -9,3 +9,4 @@ android/app/release/
 
 tests/firebase-credentials.json
 tests/emulator/emulator.exe
+SECURITY_AUDIT_REPORT.md
