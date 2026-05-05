@@ -1774,10 +1774,10 @@ export default Vue.extend({
       }
 
       const message = messages.find((x: string) =>
-        x.includes(`day_of_week ${index}`),
+        x.includes(`Day of week ${index}`),
       )
       return message
-        ? message.replace(`day_of_week ${index}`, this.getWeekday(index))
+        ? message.replace(`Day of week ${index}`, this.getWeekday(index))
         : null
     },
 
