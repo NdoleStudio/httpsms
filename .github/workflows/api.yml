@@ -13,7 +13,8 @@ permissions:
   id-token: write
 
 jobs:
-  Test:
+  test:
+    name: Integration Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎
@@ -73,9 +74,10 @@ jobs:
         working-directory: ./tests
         run: docker compose down -v
 
-  Deploy:
+  deploy:
+    name: Deploy 🚀
     runs-on: ubuntu-latest
-    needs: Test
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Authenticate to Google Cloud
@@ -87,7 +89,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Trigger Cloud Build Deploy 🚀
+      - name: Trigger Cloud Build Deploy
         run: |
           BUILD_ID=$(gcloud builds triggers run api-httpsms-com \
             --region=global \
