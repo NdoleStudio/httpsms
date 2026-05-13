@@ -87,6 +87,8 @@ type Container struct {
 	logger               telemetry.Logger
 	attachmentRepository repositories.AttachmentRepository
 	userRistrettoCache   *ristretto.Cache[string, entities.AuthContext]
+	phoneRistrettoCache  *ristretto.Cache[string, *entities.Phone]
+	inMemoryCache        cache.Cache
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -411,11 +413,15 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 	return app
 }
 
-// InMemoryCache creates a new instance of the in memory cache.Cache
+// InMemoryCache returns the shared in-memory cache.Cache, creating it on the first call.
 func (container *Container) InMemoryCache() cache.Cache {
+	if container.inMemoryCache != nil {
+		return container.inMemoryCache
+	}
 	container.logger.Debug("creating an in memory cache")
 	c := ttlCache.New(time.Hour, time.Hour*2)
-	return cache.NewMemoryCache(container.Tracer(), c)
+	container.inMemoryCache = cache.NewMemoryCache(container.Tracer(), c)
+	return container.inMemoryCache
 }
 
 // Cache creates a new instance of cache.Cache
@@ -1717,17 +1723,21 @@ func (container *Container) UserRepository() repositories.UserRepository {
 }
 
 // PhoneRistrettoCache creates an in-memory *ristretto.Cache[string, *entities.Phone]
-func (container *Container) PhoneRistrettoCache() (cache *ristretto.Cache[string, *entities.Phone]) {
-	container.logger.Debug(fmt.Sprintf("creating %T", cache))
+func (container *Container) PhoneRistrettoCache() *ristretto.Cache[string, *entities.Phone] {
+	if container.phoneRistrettoCache != nil {
+		return container.phoneRistrettoCache
+	}
+	container.logger.Debug(fmt.Sprintf("creating %T", container.phoneRistrettoCache))
 	ristrettoCache, err := ristretto.NewCache[string, *entities.Phone](&ristretto.Config[string, *entities.Phone]{
 		MaxCost:     5000,
 		NumCounters: 5000 * 10,
 		BufferItems: 64,
 	})
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create user ristretto cache"))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create phone ristretto cache"))
 	}
-	return ristrettoCache
+	container.phoneRistrettoCache = ristrettoCache
+	return container.phoneRistrettoCache
 }
 
 // UserRistrettoCache creates an in-memory *ristretto.Cache[string, entities.AuthContext]
