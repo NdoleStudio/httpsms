@@ -217,11 +217,15 @@ func TestSendSMS_RateLimit(t *testing.T) {
 func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
 	ctx := context.Background()
 
-	// 1) Confirm the current user API key works
-	url := apiBaseURL + "/v1/users/me"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	// Use a dedicated test user so we don't mutate the shared userAPIKey
+	rotateUserAPIKey := "rotate-test-api-key"
+	rotateUserID := "rotate-test-user-id"
+
+	// 1) Confirm the dedicated user's API key works and warm the cache
+	meURL := apiBaseURL + "/v1/users/me"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
 	require.NoError(t, err)
-	req.Header.Set("x-api-key", userAPIKey)
+	req.Header.Set("x-api-key", rotateUserAPIKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -231,7 +235,7 @@ func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "initial auth failed: %s", string(body))
 
-	// Parse user ID from the response
+	// Parse the current API key from the response
 	var meResp struct {
 		Data struct {
 			ID     string `json:"id"`
@@ -239,17 +243,16 @@ func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(body, &meResp))
-	userID := meResp.Data.ID
+	require.Equal(t, rotateUserID, meResp.Data.ID)
 	oldAPIKey := meResp.Data.APIKey
-	require.NotEmpty(t, userID)
 	require.NotEmpty(t, oldAPIKey)
-	t.Logf("user ID: %s, old API key prefix: %s...", userID, oldAPIKey[:10])
+	t.Logf("user ID: %s, old API key prefix: %s...", rotateUserID, oldAPIKey[:10])
 
 	// 2) Rotate the API key
-	rotateURL := fmt.Sprintf("%s/v1/users/%s/api-keys", apiBaseURL, userID)
+	rotateURL := fmt.Sprintf("%s/v1/users/%s/api-keys", apiBaseURL, rotateUserID)
 	req, err = http.NewRequestWithContext(ctx, http.MethodDelete, rotateURL, nil)
 	require.NoError(t, err)
-	req.Header.Set("x-api-key", userAPIKey)
+	req.Header.Set("x-api-key", rotateUserAPIKey)
 
 	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -272,7 +275,7 @@ func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
 	t.Logf("new API key prefix: %s...", newAPIKey[:10])
 
 	// 3) Old API key should immediately fail (401) — this is the bug regression check
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
 	require.NoError(t, err)
 	req.Header.Set("x-api-key", oldAPIKey)
 
@@ -282,7 +285,7 @@ func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "old API key should return 401 after rotation")
 
 	// 4) New API key should work
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
 	require.NoError(t, err)
 	req.Header.Set("x-api-key", newAPIKey)
 

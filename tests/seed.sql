@@ -13,6 +13,18 @@ VALUES (
     NOW()
 ) ON CONFLICT (id) DO NOTHING;
 
+-- Test user for API key rotation tests (isolated to avoid mutating the shared test user)
+INSERT INTO users (id, email, api_key, timezone, subscription_name, created_at, updated_at)
+VALUES (
+    'rotate-test-user-id',
+    'rotate-test@httpsms.com',
+    'rotate-test-api-key',
+    'UTC',
+    'pro-monthly',
+    NOW(),
+    NOW()
+) ON CONFLICT (id) DO NOTHING;
+
 -- System user (for event queue auth)
 INSERT INTO users (id, email, api_key, timezone, subscription_name, created_at, updated_at)
 VALUES (
