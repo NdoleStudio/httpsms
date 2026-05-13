@@ -413,7 +413,7 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 	return app
 }
 
-// InMemoryCache creates a new instance of the in memory cache.Cache
+// InMemoryCache returns the shared in-memory cache.Cache, creating it on the first call.
 func (container *Container) InMemoryCache() cache.Cache {
 	if container.inMemoryCache != nil {
 		return container.inMemoryCache
