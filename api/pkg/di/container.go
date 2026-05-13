@@ -87,7 +87,6 @@ type Container struct {
 	logger               telemetry.Logger
 	attachmentRepository repositories.AttachmentRepository
 	userRistrettoCache   *ristretto.Cache[string, entities.AuthContext]
-	phoneRistrettoCache  *ristretto.Cache[string, *entities.Phone]
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -1718,11 +1717,8 @@ func (container *Container) UserRepository() repositories.UserRepository {
 }
 
 // PhoneRistrettoCache creates an in-memory *ristretto.Cache[string, *entities.Phone]
-func (container *Container) PhoneRistrettoCache() *ristretto.Cache[string, *entities.Phone] {
-	if container.phoneRistrettoCache != nil {
-		return container.phoneRistrettoCache
-	}
-	container.logger.Debug(fmt.Sprintf("creating %T", container.phoneRistrettoCache))
+func (container *Container) PhoneRistrettoCache() (cache *ristretto.Cache[string, *entities.Phone]) {
+	container.logger.Debug(fmt.Sprintf("creating %T", cache))
 	ristrettoCache, err := ristretto.NewCache[string, *entities.Phone](&ristretto.Config[string, *entities.Phone]{
 		MaxCost:     5000,
 		NumCounters: 5000 * 10,
@@ -1731,7 +1727,6 @@ func (container *Container) PhoneRistrettoCache() *ristretto.Cache[string, *enti
 	if err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot create user ristretto cache"))
 	}
-	container.phoneRistrettoCache = ristrettoCache
 	return ristrettoCache
 }
 
