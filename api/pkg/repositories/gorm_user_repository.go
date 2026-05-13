@@ -84,6 +84,10 @@ func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID e
 	}
 
 	if err == nil && oldAPIKey != "" {
+		// Wait() flushes any pending buffered Set operations in ristretto
+		// before Del, preventing a race where a prior request's async Set
+		// re-adds the key after our Del removes it from the store.
+		repository.cache.Wait()
 		repository.cache.Del(oldAPIKey)
 	}
 
