@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -211,6 +212,90 @@ func TestSendSMS_RateLimit(t *testing.T) {
 	for _, req := range webhookReqs {
 		assertWebhookJWT(t, req.Request, signingKey)
 	}
+}
+
+func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
+	ctx := context.Background()
+
+	// Use a dedicated test user so we don't mutate the shared userAPIKey
+	rotateUserAPIKey := "rotate-test-api-key"
+	rotateUserID := "rotate-test-user-id"
+
+	// 1) Confirm the dedicated user's API key works and warm the cache
+	meURL := apiBaseURL + "/v1/users/me"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
+	require.NoError(t, err)
+	req.Header.Set("x-api-key", rotateUserAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "initial auth failed: %s", string(body))
+
+	// Parse the current API key from the response
+	var meResp struct {
+		Data struct {
+			ID     string `json:"id"`
+			APIKey string `json:"api_key"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(body, &meResp))
+	require.Equal(t, rotateUserID, meResp.Data.ID)
+	oldAPIKey := meResp.Data.APIKey
+	require.NotEmpty(t, oldAPIKey)
+	t.Logf("user ID: %s, old API key prefix: %s...", rotateUserID, oldAPIKey[:10])
+
+	// 2) Rotate the API key
+	rotateURL := fmt.Sprintf("%s/v1/users/%s/api-keys", apiBaseURL, rotateUserID)
+	req, err = http.NewRequestWithContext(ctx, http.MethodDelete, rotateURL, nil)
+	require.NoError(t, err)
+	req.Header.Set("x-api-key", rotateUserAPIKey)
+
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "rotate failed: %s", string(body))
+
+	// Parse new API key from rotate response
+	var rotateResp struct {
+		Data struct {
+			APIKey string `json:"api_key"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(body, &rotateResp))
+	newAPIKey := rotateResp.Data.APIKey
+	require.NotEmpty(t, newAPIKey)
+	require.NotEqual(t, oldAPIKey, newAPIKey, "API key should have changed after rotation")
+	t.Logf("new API key prefix: %s...", newAPIKey[:10])
+
+	// 3) Old API key should immediately fail (401) — this is the bug regression check
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
+	require.NoError(t, err)
+	req.Header.Set("x-api-key", oldAPIKey)
+
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "old API key should return 401 after rotation")
+
+	// 4) New API key should work
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
+	require.NoError(t, err)
+	req.Header.Set("x-api-key", newAPIKey)
+
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "new API key should work: %s", string(body))
 }
 
 func TestSendSMS_OutstandingFlow(t *testing.T) {

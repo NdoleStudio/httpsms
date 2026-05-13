@@ -65,8 +65,13 @@ func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID e
 	}
 
 	user := new(entities.User)
+	var oldAPIKey string
 	err = crdbgorm.ExecuteTx(ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
+			if err := tx.WithContext(ctx).Where("id = ?", userID).First(user).Error; err != nil {
+				return err
+			}
+			oldAPIKey = user.APIKey
 			return tx.WithContext(ctx).Model(user).
 				Clauses(clause.Returning{}).
 				Where("id = ?", userID).
@@ -76,6 +81,13 @@ func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID e
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with ID [%s] does not exist", userID)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+	}
+
+	if err == nil && oldAPIKey != "" {
+		// Flush pending ristretto Set operations before Del to avoid a
+		// buffered Set re-adding the entry after removal.
+		repository.cache.Wait()
+		repository.cache.Del(oldAPIKey)
 	}
 
 	return user, nil
