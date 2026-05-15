@@ -3,6 +3,7 @@ package di
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -82,6 +83,7 @@ type Container struct {
 	projectID            string
 	db                   *gorm.DB
 	dedicatedDB          *gorm.DB
+	tursoDB              *sql.DB
 	version              string
 	app                  *fiber.App
 	eventDispatcher      *services.EventDispatcher
@@ -293,6 +295,26 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 
 	container.dedicatedDB = db
 	return container.dedicatedDB
+}
+
+// TursoDB creates a *sql.DB connection to a Turso/libSQL database
+func (container *Container) TursoDB() *sql.DB {
+	if container.tursoDB != nil {
+		return container.tursoDB
+	}
+
+	container.logger.Debug("creating Turso *sql.DB connection")
+
+	db, err := repositories.NewTursoDB(
+		os.Getenv("TURSO_DATABASE_URL"),
+		os.Getenv("TURSO_AUTH_TOKEN"),
+	)
+	if err != nil {
+		container.logger.Fatal(err)
+	}
+
+	container.tursoDB = db
+	return container.tursoDB
 }
 
 // DBWithoutMigration creates an instance of gorm.DB if it has not been created already
@@ -889,6 +911,14 @@ func (container *Container) MessageThreadRepository() (repository repositories.M
 
 // HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository
 func (container *Container) HeartbeatMonitorRepository() (repository repositories.HeartbeatMonitorRepository) {
+	if os.Getenv("HEARTBEAT_DB_BACKEND") == "turso" {
+		container.logger.Debug("creating libSQL repositories.HeartbeatMonitorRepository")
+		return repositories.NewLibsqlHeartbeatMonitorRepository(
+			container.Logger(),
+			container.Tracer(),
+			container.TursoDB(),
+		)
+	}
 	container.logger.Debug("creating GORM repositories.HeartbeatMonitorRepository")
 	return repositories.NewGormHeartbeatMonitorRepository(
 		container.Logger(),
@@ -1708,6 +1738,14 @@ func (container *Container) RegisterSwaggerRoutes() {
 
 // HeartbeatRepository registers a new instance of repositories.HeartbeatRepository
 func (container *Container) HeartbeatRepository() repositories.HeartbeatRepository {
+	if os.Getenv("HEARTBEAT_DB_BACKEND") == "turso" {
+		container.logger.Debug("creating libSQL repositories.HeartbeatRepository")
+		return repositories.NewLibsqlHeartbeatRepository(
+			container.Logger(),
+			container.Tracer(),
+			container.TursoDB(),
+		)
+	}
 	container.logger.Debug("creating GORM repositories.HeartbeatRepository")
 	return repositories.NewGormHeartbeatRepository(
 		container.Logger(),
