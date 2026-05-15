@@ -317,6 +317,23 @@ func (container *Container) TursoDB() *sql.DB {
 	return container.tursoDB
 }
 
+// HedgingFailureCounter creates an OTel counter for hedging secondary write failures
+func (container *Container) HedgingFailureCounter() otelMetric.Int64Counter {
+	meter := otel.GetMeterProvider().Meter(
+		container.projectID,
+		otelMetric.WithInstrumentationVersion(otel.Version()),
+	)
+	counter, err := meter.Int64Counter(
+		"hedging.secondary.write.failures",
+		otelMetric.WithUnit("1"),
+		otelMetric.WithDescription("Number of failed secondary writes in hedging repositories"),
+	)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create hedging failure counter"))
+	}
+	return counter
+}
+
 // DBWithoutMigration creates an instance of gorm.DB if it has not been created already
 func (container *Container) DBWithoutMigration() (db *gorm.DB) {
 	if container.db != nil {
@@ -911,20 +928,31 @@ func (container *Container) MessageThreadRepository() (repository repositories.M
 
 // HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository
 func (container *Container) HeartbeatMonitorRepository() (repository repositories.HeartbeatMonitorRepository) {
-	if os.Getenv("HEARTBEAT_DB_BACKEND") == "turso" {
+	switch os.Getenv("HEARTBEAT_DB_BACKEND") {
+	case "turso":
 		container.logger.Debug("creating libSQL repositories.HeartbeatMonitorRepository")
 		return repositories.NewLibsqlHeartbeatMonitorRepository(
 			container.Logger(),
 			container.Tracer(),
 			container.TursoDB(),
 		)
+	case "hedging":
+		container.logger.Debug("creating hedging repositories.HeartbeatMonitorRepository")
+		return repositories.NewHedgingHeartbeatMonitorRepository(
+			container.Logger(),
+			container.Tracer(),
+			repositories.NewGormHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.DedicatedDB()),
+			repositories.NewLibsqlHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.TursoDB()),
+			container.HedgingFailureCounter(),
+		)
+	default:
+		container.logger.Debug("creating GORM repositories.HeartbeatMonitorRepository")
+		return repositories.NewGormHeartbeatMonitorRepository(
+			container.Logger(),
+			container.Tracer(),
+			container.DedicatedDB(),
+		)
 	}
-	container.logger.Debug("creating GORM repositories.HeartbeatMonitorRepository")
-	return repositories.NewGormHeartbeatMonitorRepository(
-		container.Logger(),
-		container.Tracer(),
-		container.DedicatedDB(),
-	)
 }
 
 // HeartbeatService creates a new instance of services.HeartbeatService
@@ -1738,20 +1766,31 @@ func (container *Container) RegisterSwaggerRoutes() {
 
 // HeartbeatRepository registers a new instance of repositories.HeartbeatRepository
 func (container *Container) HeartbeatRepository() repositories.HeartbeatRepository {
-	if os.Getenv("HEARTBEAT_DB_BACKEND") == "turso" {
+	switch os.Getenv("HEARTBEAT_DB_BACKEND") {
+	case "turso":
 		container.logger.Debug("creating libSQL repositories.HeartbeatRepository")
 		return repositories.NewLibsqlHeartbeatRepository(
 			container.Logger(),
 			container.Tracer(),
 			container.TursoDB(),
 		)
+	case "hedging":
+		container.logger.Debug("creating hedging repositories.HeartbeatRepository")
+		return repositories.NewHedgingHeartbeatRepository(
+			container.Logger(),
+			container.Tracer(),
+			repositories.NewGormHeartbeatRepository(container.Logger(), container.Tracer(), container.DedicatedDB()),
+			repositories.NewLibsqlHeartbeatRepository(container.Logger(), container.Tracer(), container.TursoDB()),
+			container.HedgingFailureCounter(),
+		)
+	default:
+		container.logger.Debug("creating GORM repositories.HeartbeatRepository")
+		return repositories.NewGormHeartbeatRepository(
+			container.Logger(),
+			container.Tracer(),
+			container.DedicatedDB(),
+		)
 	}
-	container.logger.Debug("creating GORM repositories.HeartbeatRepository")
-	return repositories.NewGormHeartbeatRepository(
-		container.Logger(),
-		container.Tracer(),
-		container.DedicatedDB(),
-	)
 }
 
 // UserRepository registers a new instance of repositories.UserRepository
