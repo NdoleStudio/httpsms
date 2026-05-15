@@ -56,6 +56,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/middlewares"
 	"google.golang.org/api/option"
 
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -182,6 +183,10 @@ func (container *Container) App() (app *fiber.App) {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	})
+
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestCompression,
+	}))
 
 	if os.Getenv("USE_HTTP_LOGGER") == "true" {
 		app.Use(fiberLogger.New())
