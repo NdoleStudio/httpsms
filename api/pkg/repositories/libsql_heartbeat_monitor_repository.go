@@ -165,6 +165,9 @@ func (repository *libsqlHeartbeatMonitorRepository) DeleteAllForUser(ctx context
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
 	_, err := repository.db.ExecContext(ctx, "DELETE FROM "+tableHeartbeatMonitors+" WHERE user_id = ?", string(userID))
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.HeartbeatMonitor{}, userID)

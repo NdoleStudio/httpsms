@@ -25,7 +25,7 @@ When `HEARTBEAT_DB_BACKEND` is not set or is any value other than `turso`, the e
 
 ### Approach
 
-Direct `database/sql` with the official Turso Go driver (`github.com/tursodatabase/go-libsql`). No ORM — raw SQL queries for a simple 2-table schema.
+Direct `database/sql` with the Turso Go remote driver (`github.com/tursodatabase/libsql-client-go`). No ORM — raw SQL queries for a simple 2-table schema. This is the pure-Go HTTP driver for remote Turso Cloud access (no CGo required).
 
 ### New Files
 
@@ -40,7 +40,7 @@ Direct `database/sql` with the official Turso Go driver (`github.com/tursodataba
 | File                      | Change                                                                                                                            |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `api/pkg/di/container.go` | Add `tursoDB *sql.DB` field, `TursoDB()` method, conditional wiring in `HeartbeatRepository()` and `HeartbeatMonitorRepository()` |
-| `api/go.mod`              | Add `github.com/tursodatabase/go-libsql` dependency                                                                               |
+| `api/go.mod`              | Add `github.com/tursodatabase/libsql-client-go` dependency                                                                        |
 
 ## Database Schema
 
