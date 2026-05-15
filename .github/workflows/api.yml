@@ -37,6 +37,21 @@ jobs:
       - name: Wait for services to be healthy
         working-directory: ./tests
         run: |
+          echo "Waiting for sqld to be healthy..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8090/health >/dev/null 2>&1; then
+              echo "sqld is healthy!"
+              break
+            fi
+            if [ $i -eq 20 ]; then
+              echo "sqld failed to become healthy"
+              docker compose logs sqld
+              exit 1
+            fi
+            echo "sqld attempt $i/20 - waiting 3s..."
+            sleep 3
+          done
+
           echo "Waiting for API to be healthy..."
           for i in $(seq 1 40); do
             if docker compose exec api curl -sf http://localhost:8000/health >/dev/null 2>&1; then
@@ -58,6 +73,13 @@ jobs:
           echo "Waiting for seed container to finish..."
           docker compose wait seed || true
           sleep 2
+
+      - name: Run Hedging Repository Integration Tests
+        working-directory: ./api
+        env:
+          TEST_DATABASE_URL: postgresql://dbusername:dbpassword@localhost:5435/httpsms
+          TEST_TURSO_DATABASE_URL: http://localhost:8090
+        run: go test -vet=off -v -timeout 120s -run TestHedging ./pkg/repositories/
 
       - name: Run Integration Tests
         working-directory: ./tests
