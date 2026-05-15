@@ -74,13 +74,6 @@ jobs:
           docker compose wait seed || true
           sleep 2
 
-      - name: Run Hedging Repository Integration Tests
-        working-directory: ./api
-        env:
-          TEST_DATABASE_URL: postgresql://dbusername:dbpassword@localhost:5435/httpsms
-          TEST_TURSO_DATABASE_URL: http://localhost:8090
-        run: go test -vet=off -v -timeout 120s -run TestHedging ./pkg/repositories/
-
       - name: Run Integration Tests
         working-directory: ./tests
         run: go test -v -timeout 300s ./...

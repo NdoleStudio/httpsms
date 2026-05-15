@@ -346,3 +346,47 @@ func TestSendSMS_OutstandingFlow(t *testing.T) {
 		assertWebhookJWT(t, req.Request, signingKey)
 	}
 }
+
+func TestHeartbeat_StoreAndIndex(t *testing.T) {
+	ctx := context.Background()
+	phone := setupPhone(ctx, t, 60)
+
+	// Store a heartbeat via phone API key
+	storePayload := map[string]interface{}{
+		"phone_numbers": []string{phone.PhoneNumber},
+		"charging":      true,
+	}
+	body, err := json.Marshal(storePayload)
+	require.NoError(t, err)
+
+	url := apiBaseURL + "/v1/heartbeats"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", phone.PhoneAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode, "store heartbeat failed: %s", string(respBody))
+
+	// Read heartbeats back via user API key
+	client := newAPIClient()
+	heartbeats, indexResp, err := client.Heartbeats.Index(ctx, &httpsms.HeartbeatIndexParams{
+		Owner: phone.PhoneNumber,
+		Limit: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, indexResp.HTTPResponse.StatusCode)
+
+	require.NotNil(t, heartbeats)
+	require.GreaterOrEqual(t, len(heartbeats.Data), 1, "expected at least 1 heartbeat")
+
+	hb := heartbeats.Data[0]
+	assert.Equal(t, phone.PhoneNumber, hb.Owner)
+	assert.True(t, hb.Charging)
+	assert.False(t, hb.Timestamp.IsZero(), "timestamp should not be zero")
+}
