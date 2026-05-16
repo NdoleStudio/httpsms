@@ -25,6 +25,11 @@ services:
       timeout: 5s
       retries: 10
 
+  sqld:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    ports:
+      - "8090:8080"
+
   wiremock:
     image: wiremock/wiremock:3x
     ports:
@@ -53,6 +58,8 @@ services:
         condition: service_healthy
       wiremock:
         condition: service_healthy
+      sqld:
+        condition: service_started
     env_file:
       - .env.test
     environment:
