@@ -385,7 +385,7 @@
               delivered when the schedule opens according to your
               <a
                 class="text-decoration-none"
-                href="https://docs.httpsms.com/features/control-sms-send-rate"
+                href="https://docs.httpsms.com/features/outgoing-message-queue#id-3.-send-schedule-window"
                 >configured send rate</a
               >.
             </p>
