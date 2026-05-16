@@ -185,8 +185,14 @@ func scanHeartbeatMonitorRow(row *sql.Row) (*entities.HeartbeatMonitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	monitor.ID, _ = uuid.Parse(id)
-	monitor.PhoneID, _ = uuid.Parse(phoneID)
+	monitor.ID, err = uuid.Parse(id)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat monitor ID [%s]", id))
+	}
+	monitor.PhoneID, err = uuid.Parse(phoneID)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat monitor phone ID [%s]", phoneID))
+	}
 	monitor.UserID = entities.UserID(userID)
 	monitor.PhoneOnline = phoneOnline != 0
 	return monitor, nil

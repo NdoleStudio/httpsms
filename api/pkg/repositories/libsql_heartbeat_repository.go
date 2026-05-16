@@ -33,8 +33,10 @@ func NewLibsqlHeartbeatRepository(
 }
 
 func (repository *libsqlHeartbeatRepository) Store(ctx context.Context, heartbeat *entities.Heartbeat) error {
-	ctx, span := repository.tracer.Start(ctx)
+	ctx, span, ctxLogger := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
+
+	ctxLogger.Trace("saving new heartbeat")
 
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
@@ -93,6 +95,10 @@ func (repository *libsqlHeartbeatRepository) Index(ctx context.Context, userID e
 		}
 		heartbeats = append(heartbeats, *heartbeat)
 	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		msg := fmt.Sprintf("error iterating heartbeat rows for owner [%s]", owner)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(rowsErr, msg))
+	}
 
 	return &heartbeats, nil
 }
@@ -147,7 +153,10 @@ func scanHeartbeat(rows *sql.Rows) (*entities.Heartbeat, error) {
 	if err != nil {
 		return nil, err
 	}
-	heartbeat.ID, _ = uuid.Parse(id)
+	heartbeat.ID, err = uuid.Parse(id)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat ID [%s]", id))
+	}
 	heartbeat.Charging = charging != 0
 	heartbeat.UserID = entities.UserID(userID)
 	return heartbeat, nil
@@ -162,7 +171,10 @@ func scanHeartbeatRow(row *sql.Row) (*entities.Heartbeat, error) {
 	if err != nil {
 		return nil, err
 	}
-	heartbeat.ID, _ = uuid.Parse(id)
+	heartbeat.ID, err = uuid.Parse(id)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat ID [%s]", id))
+	}
 	heartbeat.Charging = charging != 0
 	heartbeat.UserID = entities.UserID(userID)
 	return heartbeat, nil
