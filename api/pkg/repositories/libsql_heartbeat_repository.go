@@ -88,7 +88,7 @@ func (repository *libsqlHeartbeatRepository) Index(ctx context.Context, userID e
 
 	heartbeats := make([]entities.Heartbeat, 0)
 	for rows.Next() {
-		heartbeat, scanErr := scanHeartbeat(rows)
+		heartbeat, scanErr := repository.scanHeartbeat(rows)
 		if scanErr != nil {
 			msg := fmt.Sprintf("cannot scan heartbeat row for owner [%s]", owner)
 			return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(scanErr, msg))
@@ -115,7 +115,7 @@ func (repository *libsqlHeartbeatRepository) Last(ctx context.Context, userID en
 		string(userID), owner,
 	)
 
-	heartbeat, err := scanHeartbeatRow(row)
+	heartbeat, err := repository.scanHeartbeatRow(row)
 	if err == sql.ErrNoRows {
 		msg := fmt.Sprintf("heartbeat with userID [%s] and owner [%s] does not exist", userID, owner)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -144,7 +144,7 @@ func (repository *libsqlHeartbeatRepository) DeleteAllForUser(ctx context.Contex
 	return nil
 }
 
-func scanHeartbeat(rows *sql.Rows) (*entities.Heartbeat, error) {
+func (repository *libsqlHeartbeatRepository) scanHeartbeat(rows *sql.Rows) (*entities.Heartbeat, error) {
 	heartbeat := new(entities.Heartbeat)
 	var id string
 	var charging int
@@ -162,7 +162,7 @@ func scanHeartbeat(rows *sql.Rows) (*entities.Heartbeat, error) {
 	return heartbeat, nil
 }
 
-func scanHeartbeatRow(row *sql.Row) (*entities.Heartbeat, error) {
+func (repository *libsqlHeartbeatRepository) scanHeartbeatRow(row *sql.Row) (*entities.Heartbeat, error) {
 	heartbeat := new(entities.Heartbeat)
 	var id string
 	var charging int

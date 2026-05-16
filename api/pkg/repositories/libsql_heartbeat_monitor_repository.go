@@ -71,7 +71,7 @@ func (repository *libsqlHeartbeatMonitorRepository) Load(ctx context.Context, us
 		string(userID), phoneNumber,
 	)
 
-	monitor, err := scanHeartbeatMonitorRow(row)
+	monitor, err := repository.scanHeartbeatMonitorRow(row)
 	if err == sql.ErrNoRows {
 		msg := fmt.Sprintf("heartbeat monitor with userID [%s] and owner [%s] does not exist", userID, phoneNumber)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -177,7 +177,7 @@ func (repository *libsqlHeartbeatMonitorRepository) DeleteAllForUser(ctx context
 	return nil
 }
 
-func scanHeartbeatMonitorRow(row *sql.Row) (*entities.HeartbeatMonitor, error) {
+func (repository *libsqlHeartbeatMonitorRepository) scanHeartbeatMonitorRow(row *sql.Row) (*entities.HeartbeatMonitor, error) {
 	monitor := new(entities.HeartbeatMonitor)
 	var id, phoneID, userID string
 	var phoneOnline int
