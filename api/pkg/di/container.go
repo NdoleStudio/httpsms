@@ -305,10 +305,7 @@ func (container *Container) TursoDB() *sql.DB {
 
 	container.logger.Debug("creating Turso *sql.DB connection")
 
-	db, err := repositories.NewTursoDB(
-		os.Getenv("TURSO_DATABASE_URL"),
-		os.Getenv("TURSO_AUTH_TOKEN"),
-	)
+	db, err := repositories.NewTursoDB(os.Getenv("TURSO_DATABASE_DSN"))
 	if err != nil {
 		container.logger.Fatal(err)
 	}

@@ -13,11 +13,10 @@ Move heartbeat storage to a dedicated Turso database for cost efficiency and edg
 
 ## Configuration
 
-| Env Var                | Purpose                                                        | Example                                               |
-| ---------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
-| `HEARTBEAT_DB_BACKEND` | Selects backend (`turso` = libSQL, anything else = PostgreSQL) | `turso`                                               |
-| `TURSO_DATABASE_URL`   | Turso database URL                                             | `libsql://httpsms-ndolestudio.aws-us-east-1.turso.io` |
-| `TURSO_AUTH_TOKEN`     | Turso auth token                                               | `eyJ...`                                              |
+| Env Var                | Purpose                                                        | Example                                                                |
+| ---------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `HEARTBEAT_DB_BACKEND` | Selects backend (`turso` = libSQL, anything else = PostgreSQL) | `turso`                                                                |
+| `TURSO_DATABASE_DSN`   | Turso database DSN (URL with authToken query param)            | `libsql://httpsms-ndolestudio.aws-us-east-1.turso.io?authToken=eyJ...` |
 
 When `HEARTBEAT_DB_BACKEND` is not set or is any value other than `turso`, the existing GORM/PostgreSQL path is used unchanged.
 
@@ -132,7 +131,7 @@ func (container *Container) TursoDB() *sql.DB {
     if container.tursoDB != nil {
         return container.tursoDB
     }
-    db, err := repositories.NewTursoDB(os.Getenv("TURSO_DATABASE_URL"), os.Getenv("TURSO_AUTH_TOKEN"))
+    db, err := repositories.NewTursoDB(os.Getenv("TURSO_DATABASE_DSN"))
     if err != nil {
         container.logger.Fatal(err)
     }

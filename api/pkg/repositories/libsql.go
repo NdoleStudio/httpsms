@@ -15,15 +15,14 @@ const (
 )
 
 // NewTursoDB creates a new *sql.DB connection to a Turso database and auto-creates tables
-func NewTursoDB(url, authToken string) (*sql.DB, error) {
-	dsn := url + "?authToken=" + authToken
+func NewTursoDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("libsql", dsn)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot open turso database at [%s]", url))
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot open turso database with DSN [%s]", dsn))
 	}
 
 	if err = db.Ping(); err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot ping turso database at [%s]", url))
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot ping turso database with DSN [%s]", dsn))
 	}
 
 	if err = createTursoTables(db); err != nil {
