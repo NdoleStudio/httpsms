@@ -435,10 +435,18 @@
                 </tbody>
               </template>
             </v-simple-table>
-            <v-btn color="primary" class="mt-4" @click="openCreateSchedule">
-              <v-icon left>{{ mdiCalendarClock }}</v-icon>
-              Create Send Schedule
-            </v-btn>
+            <div class="d-flex mt-4">
+              <v-btn color="primary" @click="openCreateSchedule">
+                <v-icon left>{{ mdiCalendarClock }}</v-icon>
+                Create Send Schedule
+              </v-btn>
+              <v-btn
+                v-if="$vuetify.breakpoint.lgAndUp"
+                class="ml-4"
+                href="https://docs.httpsms.com/features/outgiong-message-queue"
+                >Documentation</v-btn
+              >
+            </div>
 
             <h5 id="email-notifications" class="text-h4 mb-3 mt-12">
               Email Notifications

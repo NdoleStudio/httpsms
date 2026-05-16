@@ -25,10 +25,19 @@ services:
       timeout: 5s
       retries: 10
 
-  sqld:
-    image: ghcr.io/tursodatabase/libsql-server:latest
+  mongodb:
+    image: mongo:7
     ports:
-      - "8090:8080"
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: httpsms
+      MONGO_INITDB_ROOT_PASSWORD: testpassword
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   wiremock:
     image: wiremock/wiremock:3x
@@ -58,8 +67,8 @@ services:
         condition: service_healthy
       wiremock:
         condition: service_healthy
-      sqld:
-        condition: service_started
+      mongodb:
+        condition: service_healthy
     env_file:
       - .env.test
     environment:
