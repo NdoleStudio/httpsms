@@ -37,18 +37,18 @@ jobs:
       - name: Wait for services to be healthy
         working-directory: ./tests
         run: |
-          echo "Waiting for sqld to be healthy..."
+          echo "Waiting for MongoDB to be healthy..."
           for i in $(seq 1 20); do
-            if curl -sf http://localhost:8090/health >/dev/null 2>&1; then
-              echo "sqld is healthy!"
+            if docker compose exec mongodb mongosh --eval "db.runCommand('ping').ok" --quiet >/dev/null 2>&1; then
+              echo "MongoDB is healthy!"
               break
             fi
             if [ $i -eq 20 ]; then
-              echo "sqld failed to become healthy"
-              docker compose logs sqld
+              echo "MongoDB failed to become healthy"
+              docker compose logs mongodb
               exit 1
             fi
-            echo "sqld attempt $i/20 - waiting 3s..."
+            echo "MongoDB attempt $i/20 - waiting 3s..."
             sleep 3
           done
 
