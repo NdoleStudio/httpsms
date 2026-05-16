@@ -33,10 +33,8 @@ func NewLibsqlHeartbeatRepository(
 }
 
 func (repository *libsqlHeartbeatRepository) Store(ctx context.Context, heartbeat *entities.Heartbeat) error {
-	ctx, span, ctxLogger := repository.tracer.StartWithLogger(ctx, repository.logger)
+	ctx, span, _ := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
-
-	ctxLogger.Trace("saving new heartbeat")
 
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
