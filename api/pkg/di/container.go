@@ -3,7 +3,6 @@ package di
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -74,6 +73,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/handlers"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
+	mongoDriver "go.mongodb.org/mongo-driver/v2/mongo"
 	"gorm.io/driver/postgres"
 	gormLogger "gorm.io/gorm/logger"
 )
@@ -83,7 +83,7 @@ type Container struct {
 	projectID            string
 	db                   *gorm.DB
 	dedicatedDB          *gorm.DB
-	tursoDB              *sql.DB
+	mongoDB              *mongoDriver.Database
 	version              string
 	app                  *fiber.App
 	eventDispatcher      *services.EventDispatcher
@@ -293,21 +293,21 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 	return container.dedicatedDB
 }
 
-// TursoDB creates a *sql.DB connection to a Turso/libSQL database
-func (container *Container) TursoDB() *sql.DB {
-	if container.tursoDB != nil {
-		return container.tursoDB
+// MongoDB creates a *mongo.Database connection to MongoDB Atlas
+func (container *Container) MongoDB() *mongoDriver.Database {
+	if container.mongoDB != nil {
+		return container.mongoDB
 	}
 
-	container.logger.Debug("creating Turso *sql.DB connection")
+	container.logger.Debug("creating MongoDB *mongo.Database connection")
 
-	db, err := repositories.NewTursoDB(os.Getenv("TURSO_DATABASE_DSN"))
+	db, err := repositories.NewMongoDB(os.Getenv("MONGODB_URI"))
 	if err != nil {
 		container.logger.Fatal(err)
 	}
 
-	container.tursoDB = db
-	return container.tursoDB
+	container.mongoDB = db
+	return container.mongoDB
 }
 
 // HedgingFailureCounter creates an OTel counter for hedging secondary write failures
@@ -922,12 +922,12 @@ func (container *Container) MessageThreadRepository() (repository repositories.M
 // HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository
 func (container *Container) HeartbeatMonitorRepository() (repository repositories.HeartbeatMonitorRepository) {
 	switch os.Getenv("HEARTBEAT_DB_BACKEND") {
-	case "turso":
-		container.logger.Debug("creating libSQL repositories.HeartbeatMonitorRepository")
-		return repositories.NewLibsqlHeartbeatMonitorRepository(
+	case "mongodb":
+		container.logger.Debug("creating MongoDB repositories.HeartbeatMonitorRepository")
+		return repositories.NewMongoHeartbeatMonitorRepository(
 			container.Logger(),
 			container.Tracer(),
-			container.TursoDB(),
+			container.MongoDB(),
 		)
 	case "hedging":
 		container.logger.Debug("creating hedging repositories.HeartbeatMonitorRepository")
@@ -935,7 +935,7 @@ func (container *Container) HeartbeatMonitorRepository() (repository repositorie
 			container.Logger(),
 			container.Tracer(),
 			repositories.NewGormHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.DedicatedDB()),
-			repositories.NewLibsqlHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.TursoDB()),
+			repositories.NewMongoHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.MongoDB()),
 			container.HedgingFailureCounter(),
 		)
 	default:
@@ -1760,12 +1760,12 @@ func (container *Container) RegisterSwaggerRoutes() {
 // HeartbeatRepository registers a new instance of repositories.HeartbeatRepository
 func (container *Container) HeartbeatRepository() repositories.HeartbeatRepository {
 	switch os.Getenv("HEARTBEAT_DB_BACKEND") {
-	case "turso":
-		container.logger.Debug("creating libSQL repositories.HeartbeatRepository")
-		return repositories.NewLibsqlHeartbeatRepository(
+	case "mongodb":
+		container.logger.Debug("creating MongoDB repositories.HeartbeatRepository")
+		return repositories.NewMongoHeartbeatRepository(
 			container.Logger(),
 			container.Tracer(),
-			container.TursoDB(),
+			container.MongoDB(),
 		)
 	case "hedging":
 		container.logger.Debug("creating hedging repositories.HeartbeatRepository")
@@ -1773,7 +1773,7 @@ func (container *Container) HeartbeatRepository() repositories.HeartbeatReposito
 			container.Logger(),
 			container.Tracer(),
 			repositories.NewGormHeartbeatRepository(container.Logger(), container.Tracer(), container.DedicatedDB()),
-			repositories.NewLibsqlHeartbeatRepository(container.Logger(), container.Tracer(), container.TursoDB()),
+			repositories.NewMongoHeartbeatRepository(container.Logger(), container.Tracer(), container.MongoDB()),
 			container.HedgingFailureCounter(),
 		)
 	default:
