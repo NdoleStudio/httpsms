@@ -56,8 +56,8 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 		return nil, stacktrace.Propagate(err, "cannot parse database name from MongoDB URI")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer pingCancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	registry := newMongoRegistry()
@@ -72,13 +72,16 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 		return nil, stacktrace.Propagate(err, "cannot connect to MongoDB Atlas")
 	}
 
-	if err = client.Ping(ctx, nil); err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot ping MongoDB with URI [%s]", uri))
+	if err = client.Ping(pingCtx, nil); err != nil {
+		return nil, stacktrace.Propagate(err, "cannot ping MongoDB Atlas")
 	}
 
 	db := client.Database(dbName)
 
-	if err = createMongoIndexes(ctx, db); err != nil {
+	indexCtx, indexCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer indexCancel()
+
+	if err = createMongoIndexes(indexCtx, db); err != nil {
 		return nil, stacktrace.Propagate(err, "cannot create MongoDB indexes")
 	}
 
