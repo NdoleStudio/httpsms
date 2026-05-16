@@ -271,17 +271,14 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		container.logger.Fatal(err)
 	}
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot get sql.DB from GORM"))
-	}
-
-	sqlDB.SetMaxOpenConns(1)
-	sqlDB.SetMaxIdleConns(0)
-	sqlDB.SetConnMaxLifetime(10 * time.Second)
-
 	if err = db.Use(tracing.NewPlugin()); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+	}
+
+	container.dedicatedDB = db
+	if os.Getenv("DATABASE_MIGRATION_SKIP") != "" {
+		container.logger.Debug(fmt.Sprintf("skipping migrations for [%T]", db))
+		return container.dedicatedDB
 	}
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for dedicated [%T]", db))
@@ -293,7 +290,6 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
 	}
 
-	container.dedicatedDB = db
 	return container.dedicatedDB
 }
 

@@ -351,27 +351,39 @@ func TestHeartbeat_StoreAndIndex(t *testing.T) {
 	ctx := context.Background()
 	phone := setupPhone(ctx, t, 60)
 
-	// Store a heartbeat via phone API key
+	// Store a heartbeat via phone API key (retry to allow async phone-API-key association)
 	storePayload := map[string]interface{}{
 		"phone_numbers": []string{phone.PhoneNumber},
 		"charging":      true,
 	}
-	body, err := json.Marshal(storePayload)
-	require.NoError(t, err)
 
 	url := apiBaseURL + "/v1/heartbeats"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", phone.PhoneAPIKey)
+	var respBody []byte
+	var statusCode int
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		body, err := json.Marshal(storePayload)
+		require.NoError(t, err)
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", phone.PhoneAPIKey)
 
-	respBody, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, resp.StatusCode, "store heartbeat failed: %s", string(respBody))
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		respBody, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		require.NoError(t, err)
+
+		statusCode = resp.StatusCode
+		if statusCode == http.StatusCreated {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	require.Equal(t, http.StatusCreated, statusCode, "store heartbeat failed: %s", string(respBody))
 
 	// Read heartbeats back via user API key
 	client := newAPIClient()
