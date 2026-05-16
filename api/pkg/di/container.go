@@ -3,7 +3,6 @@ package di
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -84,7 +83,6 @@ type Container struct {
 	projectID            string
 	db                   *gorm.DB
 	dedicatedDB          *gorm.DB
-	tursoDB              *sql.DB
 	mongoClient          *mongoDriver.Client
 	version              string
 	app                  *fiber.App
@@ -293,23 +291,6 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 	}
 
 	return container.dedicatedDB
-}
-
-// TursoDB creates a *sql.DB connection to a Turso/libSQL database
-func (container *Container) TursoDB() *sql.DB {
-	if container.tursoDB != nil {
-		return container.tursoDB
-	}
-
-	container.logger.Debug("creating Turso *sql.DB connection")
-
-	db, err := repositories.NewTursoDB(os.Getenv("TURSO_DATABASE_DSN"))
-	if err != nil {
-		container.logger.Fatal(err)
-	}
-
-	container.tursoDB = db
-	return container.tursoDB
 }
 
 // MongoDB creates a *mongo.Client connection to MongoDB Atlas
