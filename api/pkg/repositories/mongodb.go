@@ -3,8 +3,10 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -18,13 +20,42 @@ const (
 	collectionHeartbeatMonitors = "heartbeat_monitors"
 )
 
+// uuidEncodeValue encodes uuid.UUID as a BSON string
+func uuidEncodeValue(_ bson.EncodeContext, vw bson.ValueWriter, val reflect.Value) error {
+	u := val.Interface().(uuid.UUID)
+	return vw.WriteString(u.String())
+}
+
+// uuidDecodeValue decodes a BSON string into uuid.UUID
+func uuidDecodeValue(_ bson.DecodeContext, vr bson.ValueReader, val reflect.Value) error {
+	str, err := vr.ReadString()
+	if err != nil {
+		return err
+	}
+	parsed, err := uuid.Parse(str)
+	if err != nil {
+		return err
+	}
+	val.Set(reflect.ValueOf(parsed))
+	return nil
+}
+
+// newMongoRegistry creates a BSON registry that encodes uuid.UUID as strings
+func newMongoRegistry() *bson.Registry {
+	rb := bson.NewRegistry()
+	rb.RegisterTypeEncoder(reflect.TypeOf(uuid.UUID{}), bson.ValueEncoderFunc(uuidEncodeValue))
+	rb.RegisterTypeDecoder(reflect.TypeOf(uuid.UUID{}), bson.ValueDecoderFunc(uuidDecodeValue))
+	return rb
+}
+
 // NewMongoDB creates a new *mongo.Client connection to MongoDB Atlas and ensures indexes
 func NewMongoDB(uri string) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
+	registry := newMongoRegistry()
+	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI).SetRegistry(registry)
 
 	client, err := mongo.Connect(opts)
 	if err != nil {

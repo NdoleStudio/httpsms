@@ -3,9 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -35,15 +33,6 @@ func NewMongoHeartbeatRepository(
 	}
 }
 
-type heartbeatDocument struct {
-	ID        string    `bson:"_id"`
-	Owner     string    `bson:"owner"`
-	Version   string    `bson:"version"`
-	Charging  bool      `bson:"charging"`
-	UserID    string    `bson:"user_id"`
-	Timestamp time.Time `bson:"timestamp"`
-}
-
 func (repository *mongoHeartbeatRepository) Store(ctx context.Context, heartbeat *entities.Heartbeat) error {
 	ctx, span, _ := repository.tracer.StartWithLogger(ctx, repository.logger)
 	defer span.End()
@@ -51,16 +40,7 @@ func (repository *mongoHeartbeatRepository) Store(ctx context.Context, heartbeat
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
-	doc := heartbeatDocument{
-		ID:        heartbeat.ID.String(),
-		Owner:     heartbeat.Owner,
-		Version:   heartbeat.Version,
-		Charging:  heartbeat.Charging,
-		UserID:    string(heartbeat.UserID),
-		Timestamp: heartbeat.Timestamp.UTC(),
-	}
-
-	_, err := repository.collection.InsertOne(ctx, doc)
+	_, err := repository.collection.InsertOne(ctx, heartbeat)
 	if err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -97,20 +77,14 @@ func (repository *mongoHeartbeatRepository) Index(ctx context.Context, userID en
 	}
 	defer cursor.Close(ctx)
 
-	var docs []heartbeatDocument
-	if err = cursor.All(ctx, &docs); err != nil {
+	var heartbeats []entities.Heartbeat
+	if err = cursor.All(ctx, &heartbeats); err != nil {
 		msg := fmt.Sprintf("cannot decode heartbeats for owner [%s]", owner)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	heartbeats := make([]entities.Heartbeat, 0, len(docs))
-	for _, doc := range docs {
-		hb, convertErr := docToHeartbeat(doc)
-		if convertErr != nil {
-			msg := fmt.Sprintf("cannot convert heartbeat document for owner [%s]", owner)
-			return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(convertErr, msg))
-		}
-		heartbeats = append(heartbeats, *hb)
+	if heartbeats == nil {
+		heartbeats = make([]entities.Heartbeat, 0)
 	}
 
 	return &heartbeats, nil
@@ -130,8 +104,8 @@ func (repository *mongoHeartbeatRepository) Last(ctx context.Context, userID ent
 
 	opts := options.FindOne().SetSort(bson.D{{"timestamp", -1}})
 
-	var doc heartbeatDocument
-	err := repository.collection.FindOne(ctx, filter, opts).Decode(&doc)
+	var heartbeat entities.Heartbeat
+	err := repository.collection.FindOne(ctx, filter, opts).Decode(&heartbeat)
 	if err == mongo.ErrNoDocuments {
 		msg := fmt.Sprintf("heartbeat with userID [%s] and owner [%s] does not exist", userID, owner)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -141,12 +115,7 @@ func (repository *mongoHeartbeatRepository) Last(ctx context.Context, userID ent
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	heartbeat, err := docToHeartbeat(doc)
-	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot convert heartbeat document"))
-	}
-
-	return heartbeat, nil
+	return &heartbeat, nil
 }
 
 func (repository *mongoHeartbeatRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
@@ -163,19 +132,4 @@ func (repository *mongoHeartbeatRepository) DeleteAllForUser(ctx context.Context
 	}
 
 	return nil
-}
-
-func docToHeartbeat(doc heartbeatDocument) (*entities.Heartbeat, error) {
-	id, err := uuid.Parse(doc.ID)
-	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat ID [%s]", doc.ID))
-	}
-	return &entities.Heartbeat{
-		ID:        id,
-		Owner:     doc.Owner,
-		Version:   doc.Version,
-		Charging:  doc.Charging,
-		UserID:    entities.UserID(doc.UserID),
-		Timestamp: doc.Timestamp,
-	}, nil
 }

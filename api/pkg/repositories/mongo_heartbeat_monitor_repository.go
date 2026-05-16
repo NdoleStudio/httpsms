@@ -34,17 +34,6 @@ func NewMongoHeartbeatMonitorRepository(
 	}
 }
 
-type heartbeatMonitorDocument struct {
-	ID          string    `bson:"_id"`
-	PhoneID     string    `bson:"phone_id"`
-	UserID      string    `bson:"user_id"`
-	QueueID     string    `bson:"queue_id"`
-	Owner       string    `bson:"owner"`
-	PhoneOnline bool      `bson:"phone_online"`
-	CreatedAt   time.Time `bson:"created_at"`
-	UpdatedAt   time.Time `bson:"updated_at"`
-}
-
 func (repository *mongoHeartbeatMonitorRepository) Store(ctx context.Context, monitor *entities.HeartbeatMonitor) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -52,18 +41,7 @@ func (repository *mongoHeartbeatMonitorRepository) Store(ctx context.Context, mo
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
-	doc := heartbeatMonitorDocument{
-		ID:          monitor.ID.String(),
-		PhoneID:     monitor.PhoneID.String(),
-		UserID:      string(monitor.UserID),
-		QueueID:     monitor.QueueID,
-		Owner:       monitor.Owner,
-		PhoneOnline: monitor.PhoneOnline,
-		CreatedAt:   monitor.CreatedAt.UTC(),
-		UpdatedAt:   monitor.UpdatedAt.UTC(),
-	}
-
-	_, err := repository.collection.InsertOne(ctx, doc)
+	_, err := repository.collection.InsertOne(ctx, monitor)
 	if err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat monitor with ID [%s]", monitor.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
@@ -84,8 +62,8 @@ func (repository *mongoHeartbeatMonitorRepository) Load(ctx context.Context, use
 		{"owner", phoneNumber},
 	}
 
-	var doc heartbeatMonitorDocument
-	err := repository.collection.FindOne(ctx, filter).Decode(&doc)
+	var monitor entities.HeartbeatMonitor
+	err := repository.collection.FindOne(ctx, filter).Decode(&monitor)
 	if err == mongo.ErrNoDocuments {
 		msg := fmt.Sprintf("heartbeat monitor with userID [%s] and owner [%s] does not exist", userID, phoneNumber)
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
@@ -95,12 +73,7 @@ func (repository *mongoHeartbeatMonitorRepository) Load(ctx context.Context, use
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	monitor, err := docToHeartbeatMonitor(doc)
-	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot convert heartbeat monitor document"))
-	}
-
-	return monitor, nil
+	return &monitor, nil
 }
 
 func (repository *mongoHeartbeatMonitorRepository) Exists(ctx context.Context, userID entities.UserID, monitorID uuid.UUID) (bool, error) {
@@ -206,25 +179,4 @@ func (repository *mongoHeartbeatMonitorRepository) DeleteAllForUser(ctx context.
 	}
 
 	return nil
-}
-
-func docToHeartbeatMonitor(doc heartbeatMonitorDocument) (*entities.HeartbeatMonitor, error) {
-	id, err := uuid.Parse(doc.ID)
-	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat monitor ID [%s]", doc.ID))
-	}
-	phoneID, err := uuid.Parse(doc.PhoneID)
-	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse heartbeat monitor phone ID [%s]", doc.PhoneID))
-	}
-	return &entities.HeartbeatMonitor{
-		ID:          id,
-		PhoneID:     phoneID,
-		UserID:      entities.UserID(doc.UserID),
-		QueueID:     doc.QueueID,
-		Owner:       doc.Owner,
-		PhoneOnline: doc.PhoneOnline,
-		CreatedAt:   doc.CreatedAt,
-		UpdatedAt:   doc.UpdatedAt,
-	}, nil
 }
