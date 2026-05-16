@@ -26,11 +26,12 @@ func NewMongoHeartbeatMonitorRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	client *mongo.Client,
+	dbName string,
 ) HeartbeatMonitorRepository {
 	return &mongoHeartbeatMonitorRepository{
 		logger:     logger.WithService(fmt.Sprintf("%T", &mongoHeartbeatMonitorRepository{})),
 		tracer:     tracer,
-		collection: client.Database(mongoDBName).Collection(collectionHeartbeatMonitors),
+		collection: client.Database(dbName).Collection(collectionHeartbeatMonitors),
 	}
 }
 

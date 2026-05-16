@@ -84,6 +84,7 @@ type Container struct {
 	db                   *gorm.DB
 	dedicatedDB          *gorm.DB
 	mongoClient          *mongoDriver.Client
+	mongoDBName          string
 	version              string
 	app                  *fiber.App
 	eventDispatcher      *services.EventDispatcher
@@ -301,13 +302,22 @@ func (container *Container) MongoDB() *mongoDriver.Client {
 
 	container.logger.Debug("creating MongoDB *mongo.Client connection")
 
-	client, err := repositories.NewMongoDB(os.Getenv("MONGODB_URI"))
+	client, dbName, err := repositories.NewMongoDB(os.Getenv("MONGODB_URI"))
 	if err != nil {
 		container.logger.Fatal(err)
 	}
 
 	container.mongoClient = client
+	container.mongoDBName = dbName
 	return container.mongoClient
+}
+
+// MongoDBName returns the MongoDB database name derived from the connection URI appName
+func (container *Container) MongoDBName() string {
+	if container.mongoClient == nil {
+		container.MongoDB()
+	}
+	return container.mongoDBName
 }
 
 // HedgingFailureCounter creates an OTel counter for hedging secondary write failures
@@ -928,6 +938,7 @@ func (container *Container) HeartbeatMonitorRepository() (repository repositorie
 			container.Logger(),
 			container.Tracer(),
 			container.MongoDB(),
+			container.MongoDBName(),
 		)
 	case "hedging":
 		container.logger.Debug("creating hedging repositories.HeartbeatMonitorRepository")
@@ -935,7 +946,7 @@ func (container *Container) HeartbeatMonitorRepository() (repository repositorie
 			container.Logger(),
 			container.Tracer(),
 			repositories.NewGormHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.DedicatedDB()),
-			repositories.NewMongoHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.MongoDB()),
+			repositories.NewMongoHeartbeatMonitorRepository(container.Logger(), container.Tracer(), container.MongoDB(), container.MongoDBName()),
 			container.HedgingFailureCounter(),
 		)
 	default:
@@ -1766,6 +1777,7 @@ func (container *Container) HeartbeatRepository() repositories.HeartbeatReposito
 			container.Logger(),
 			container.Tracer(),
 			container.MongoDB(),
+			container.MongoDBName(),
 		)
 	case "hedging":
 		container.logger.Debug("creating hedging repositories.HeartbeatRepository")
@@ -1773,7 +1785,7 @@ func (container *Container) HeartbeatRepository() repositories.HeartbeatReposito
 			container.Logger(),
 			container.Tracer(),
 			repositories.NewGormHeartbeatRepository(container.Logger(), container.Tracer(), container.DedicatedDB()),
-			repositories.NewMongoHeartbeatRepository(container.Logger(), container.Tracer(), container.MongoDB()),
+			repositories.NewMongoHeartbeatRepository(container.Logger(), container.Tracer(), container.MongoDB(), container.MongoDBName()),
 			container.HedgingFailureCounter(),
 		)
 	default:

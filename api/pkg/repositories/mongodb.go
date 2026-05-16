@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"reflect"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 )
 
 const (
-	mongoDBName                 = "httpsms"
 	collectionHeartbeats        = "heartbeats"
 	collectionHeartbeatMonitors = "heartbeat_monitors"
 )
@@ -48,8 +48,14 @@ func newMongoRegistry() *bson.Registry {
 	return rb
 }
 
-// NewMongoDB creates a new *mongo.Client connection to MongoDB Atlas and ensures indexes
-func NewMongoDB(uri string) (*mongo.Client, error) {
+// NewMongoDB creates a new *mongo.Client connection to MongoDB Atlas and ensures indexes.
+// The database name is derived from the appName query parameter in the URI.
+func NewMongoDB(uri string) (*mongo.Client, string, error) {
+	dbName, err := parseMongoDBName(uri)
+	if err != nil {
+		return nil, "", stacktrace.Propagate(err, "cannot parse database name from MongoDB URI")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -59,22 +65,37 @@ func NewMongoDB(uri string) (*mongo.Client, error) {
 
 	client, err := mongo.Connect(opts)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot connect to MongoDB Atlas")
+		return nil, "", stacktrace.Propagate(err, "cannot connect to MongoDB Atlas")
 	}
 
 	if err = client.Ping(ctx, nil); err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot ping MongoDB with URI [%s]", uri))
+		return nil, "", stacktrace.Propagate(err, fmt.Sprintf("cannot ping MongoDB with URI [%s]", uri))
 	}
 
-	if err = createMongoIndexes(ctx, client); err != nil {
-		return nil, stacktrace.Propagate(err, "cannot create MongoDB indexes")
+	if err = createMongoIndexes(ctx, client, dbName); err != nil {
+		return nil, "", stacktrace.Propagate(err, "cannot create MongoDB indexes")
 	}
 
-	return client, nil
+	return client, dbName, nil
 }
 
-func createMongoIndexes(ctx context.Context, client *mongo.Client) error {
-	db := client.Database(mongoDBName)
+// parseMongoDBName extracts the appName query parameter from the MongoDB URI to use as the database name
+func parseMongoDBName(uri string) (string, error) {
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return "", stacktrace.Propagate(err, fmt.Sprintf("cannot parse MongoDB URI [%s]", uri))
+	}
+
+	appName := parsed.Query().Get("appName")
+	if appName == "" {
+		return "", stacktrace.NewError("MongoDB URI is missing the 'appName' query parameter which is used as the database name")
+	}
+
+	return appName, nil
+}
+
+func createMongoIndexes(ctx context.Context, client *mongo.Client, dbName string) error {
+	db := client.Database(dbName)
 
 	// Heartbeats indexes
 	heartbeatsCol := db.Collection(collectionHeartbeats)
