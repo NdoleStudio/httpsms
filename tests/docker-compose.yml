@@ -29,11 +29,6 @@ services:
     image: ghcr.io/tursodatabase/libsql-server:latest
     ports:
       - "8090:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
 
   wiremock:
     image: wiremock/wiremock:3x
@@ -64,7 +59,7 @@ services:
       wiremock:
         condition: service_healthy
       sqld:
-        condition: service_healthy
+        condition: service_started
     env_file:
       - .env.test
     environment:
