@@ -24,13 +24,12 @@ type mongoHeartbeatRepository struct {
 func NewMongoHeartbeatRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	client *mongo.Client,
-	dbName string,
+	db *mongo.Database,
 ) HeartbeatRepository {
 	return &mongoHeartbeatRepository{
 		logger:     logger.WithService(fmt.Sprintf("%T", &mongoHeartbeatRepository{})),
 		tracer:     tracer,
-		collection: client.Database(dbName).Collection(collectionHeartbeats),
+		collection: db.Collection(collectionHeartbeats),
 	}
 }
 

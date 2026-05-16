@@ -48,12 +48,12 @@ func newMongoRegistry() *bson.Registry {
 	return rb
 }
 
-// NewMongoDB creates a new *mongo.Client connection to MongoDB Atlas and ensures indexes.
+// NewMongoDB creates a new *mongo.Database connection to MongoDB Atlas and ensures indexes.
 // The database name is derived from the appName query parameter in the URI.
-func NewMongoDB(uri string) (*mongo.Client, string, error) {
+func NewMongoDB(uri string) (*mongo.Database, error) {
 	dbName, err := parseMongoDBName(uri)
 	if err != nil {
-		return nil, "", stacktrace.Propagate(err, "cannot parse database name from MongoDB URI")
+		return nil, stacktrace.Propagate(err, "cannot parse database name from MongoDB URI")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -65,18 +65,20 @@ func NewMongoDB(uri string) (*mongo.Client, string, error) {
 
 	client, err := mongo.Connect(opts)
 	if err != nil {
-		return nil, "", stacktrace.Propagate(err, "cannot connect to MongoDB Atlas")
+		return nil, stacktrace.Propagate(err, "cannot connect to MongoDB Atlas")
 	}
 
 	if err = client.Ping(ctx, nil); err != nil {
-		return nil, "", stacktrace.Propagate(err, fmt.Sprintf("cannot ping MongoDB with URI [%s]", uri))
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot ping MongoDB with URI [%s]", uri))
 	}
 
-	if err = createMongoIndexes(ctx, client, dbName); err != nil {
-		return nil, "", stacktrace.Propagate(err, "cannot create MongoDB indexes")
+	db := client.Database(dbName)
+
+	if err = createMongoIndexes(ctx, db); err != nil {
+		return nil, stacktrace.Propagate(err, "cannot create MongoDB indexes")
 	}
 
-	return client, dbName, nil
+	return db, nil
 }
 
 // parseMongoDBName extracts the appName query parameter from the MongoDB URI to use as the database name
@@ -94,9 +96,7 @@ func parseMongoDBName(uri string) (string, error) {
 	return appName, nil
 }
 
-func createMongoIndexes(ctx context.Context, client *mongo.Client, dbName string) error {
-	db := client.Database(dbName)
-
+func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 	// Heartbeats indexes
 	heartbeatsCol := db.Collection(collectionHeartbeats)
 	_, err := heartbeatsCol.Indexes().CreateMany(ctx, []mongo.IndexModel{
