@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/palantir/stacktrace"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-
-	"github.com/palantir/stacktrace"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo"
 )
 
 const (
@@ -61,7 +61,11 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	registry := newMongoRegistry()
-	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI).SetRegistry(registry)
+	opts := options.Client().
+		ApplyURI(uri).
+		SetServerAPIOptions(serverAPI).
+		SetRegistry(registry).
+		SetMonitor(otelmongo.NewMonitor())
 
 	client, err := mongo.Connect(opts)
 	if err != nil {
