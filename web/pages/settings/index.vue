@@ -443,7 +443,7 @@
               <v-btn
                 v-if="$vuetify.breakpoint.lgAndUp"
                 class="ml-4"
-                href="https://docs.httpsms.com/features/outgiong-message-queue"
+                href="https://docs.httpsms.com/features/outgoing-message-queue"
                 >Documentation</v-btn
               >
             </div>
