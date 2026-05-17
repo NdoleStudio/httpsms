@@ -31,6 +31,9 @@ type PhoneAPIKeyRepository interface {
 	// RemovePhone removes an entities.Phone to an entities.PhoneAPIKey
 	RemovePhone(ctx context.Context, phoneAPIKey *entities.PhoneAPIKey, phone *entities.Phone) error
 
+	// CountByUser returns the number of phone API keys owned by a user
+	CountByUser(ctx context.Context, userID entities.UserID) (int, error)
+
 	// DeleteAllForUser deletes all entities.PhoneAPIKey for a user
 	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 

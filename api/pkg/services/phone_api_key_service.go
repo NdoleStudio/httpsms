@@ -40,6 +40,14 @@ func NewPhoneAPIKeyService(
 	}
 }
 
+// CountByUser returns the number of phone API keys owned by a user.
+func (service *PhoneAPIKeyService) CountByUser(ctx context.Context, userID entities.UserID) (int, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	return service.repository.CountByUser(ctx, userID)
+}
+
 // Index fetches the entities.Webhook for an entities.UserID
 func (service *PhoneAPIKeyService) Index(ctx context.Context, userID entities.UserID, params repositories.IndexParams) ([]*entities.PhoneAPIKey, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)

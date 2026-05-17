@@ -19,6 +19,9 @@ var entityLimits = map[string]map[entities.SubscriptionName]int{
 	"MessageSendSchedule": {
 		entities.SubscriptionNameFree: 1,
 	},
+	"PhoneAPIKey": {
+		entities.SubscriptionNameFree: 1,
+	},
 }
 
 // EntitlementCheckResult holds the outcome of an entitlement check.
