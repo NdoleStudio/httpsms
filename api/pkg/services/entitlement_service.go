@@ -16,10 +16,10 @@ import (
 // entityLimits maps entity name → subscription plan → max count.
 // A limit of 0 means unlimited. If a plan is not listed, it defaults to unlimited (0).
 var entityLimits = map[string]map[entities.SubscriptionName]int{
-	"MessageSendSchedule": {
+	entities.EntityNameMessageSendSchedule: {
 		entities.SubscriptionNameFree: 1,
 	},
-	"PhoneAPIKey": {
+	entities.EntityNamePhoneAPIKey: {
 		entities.SubscriptionNameFree: 1,
 	},
 }
