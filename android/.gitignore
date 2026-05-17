@@ -12,4 +12,5 @@
 /captures
 .externalNativeBuild
 .cxx
+.kotlin/sessions/
 local.properties

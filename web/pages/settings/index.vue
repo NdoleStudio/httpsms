@@ -494,7 +494,26 @@
               Save Notification Settings
             </v-btn>
 
-            <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-12">
+            <h5 class="text-h4 mb-3 mt-12">Message Data Retention</h5>
+            <p class="text--secondary">
+              Your messages are permanently deleted once they exceed the max
+              retention period below, counted from when the message was sent or
+              received. You can always delete your messages manually on the
+              <router-link class="text-decoration-none" to="/search-messages"
+                >message search page.</router-link
+              >
+            </p>
+            <v-select
+              :items="['1 Year']"
+              value="1 Year"
+              label="Retention Period"
+              outlined
+              dense
+              class="mt-4"
+              style="max-width: 300px"
+            ></v-select>
+
+            <h5 id="email-notifications" class="text-h4 error--text mb-3 mt-10">
               Delete Account
             </h5>
             <p v-if="hasActiveSubscription" class="text--secondary">
