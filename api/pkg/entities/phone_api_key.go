@@ -7,6 +7,9 @@ import (
 	"github.com/lib/pq"
 )
 
+// EntityNamePhoneAPIKey is the entitlement entity name for phone API keys.
+const EntityNamePhoneAPIKey = "PhoneAPIKey"
+
 // PhoneAPIKey represents the API key for a phone
 type PhoneAPIKey struct {
 	ID           uuid.UUID      `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`

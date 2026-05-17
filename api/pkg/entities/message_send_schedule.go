@@ -6,6 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// EntityNameMessageSendSchedule is the entitlement entity name for message send schedules.
+const EntityNameMessageSendSchedule = "MessageSendSchedule"
+
 // MessageSendScheduleWindow represents a single availability window for a day of the week.
 type MessageSendScheduleWindow struct {
 	DayOfWeek   int `json:"day_of_week" example:"1"`

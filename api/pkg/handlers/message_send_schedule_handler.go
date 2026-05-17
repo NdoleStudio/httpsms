@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -97,7 +98,7 @@ func (h *MessageSendScheduleHandler) Store(c *fiber.Ctx) error {
 
 	userID := h.userIDFomContext(c)
 
-	result, err := h.entitlementService.Check(ctx, userID, "MessageSendSchedule", func() (int, error) {
+	result, err := h.entitlementService.Check(ctx, userID, entities.EntityNameMessageSendSchedule, func() (int, error) {
 		return h.service.CountByUser(ctx, userID)
 	})
 	if err != nil {
