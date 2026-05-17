@@ -905,7 +905,7 @@ func (container *Container) MessageThreadRepository() (repository repositories.M
 // HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository
 func (container *Container) HeartbeatMonitorRepository() (repository repositories.HeartbeatMonitorRepository) {
 	switch os.Getenv("HEARTBEAT_DB_BACKEND") {
-	case "mongodb", "hedging":
+	case "mongodb":
 		container.logger.Debug("creating MongoDB repositories.HeartbeatMonitorRepository")
 		return repositories.NewMongoHeartbeatMonitorRepository(
 			container.Logger(),
@@ -1734,7 +1734,7 @@ func (container *Container) RegisterSwaggerRoutes() {
 // HeartbeatRepository registers a new instance of repositories.HeartbeatRepository
 func (container *Container) HeartbeatRepository() repositories.HeartbeatRepository {
 	switch os.Getenv("HEARTBEAT_DB_BACKEND") {
-	case "mongodb", "hedging":
+	case "mongodb":
 		container.logger.Debug("creating MongoDB repositories.HeartbeatRepository")
 		return repositories.NewMongoHeartbeatRepository(
 			container.Logger(),
