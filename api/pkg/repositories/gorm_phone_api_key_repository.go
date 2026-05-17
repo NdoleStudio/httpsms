@@ -61,6 +61,23 @@ WHERE user_id = ? AND array_position(phone_ids, ?) IS NOT NULL;
 	return nil
 }
 
+// CountByUser returns the number of phone API keys owned by a user.
+func (repository *gormPhoneAPIKeyRepository) CountByUser(ctx context.Context, userID entities.UserID) (int, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	var count int64
+	err := repository.db.WithContext(ctx).
+		Model(&entities.PhoneAPIKey{}).
+		Where("user_id = ?", userID).
+		Count(&count).Error
+	if err != nil {
+		return 0, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot count phone API keys for user [%s]", userID))
+	}
+
+	return int(count), nil
+}
+
 // Load an entities.PhoneAPIKey based on the entities.UserID
 func (repository *gormPhoneAPIKeyRepository) Load(ctx context.Context, userID entities.UserID, phoneAPIKeyID uuid.UUID) (*entities.PhoneAPIKey, error) {
 	ctx, span := repository.tracer.Start(ctx)

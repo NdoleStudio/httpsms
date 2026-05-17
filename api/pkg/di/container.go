@@ -1264,6 +1264,7 @@ func (container *Container) PhoneAPIKeyHandler() (handler *handlers.PhoneAPIKeyH
 		container.Tracer(),
 		container.PhoneAPIKeyHandlerValidator(),
 		container.PhoneAPIKeyService(),
+		container.EntitlementService(),
 	)
 }
 
