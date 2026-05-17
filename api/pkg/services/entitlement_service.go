@@ -111,17 +111,34 @@ func (service *EntitlementService) Check(
 }
 
 // formatEntityName converts a PascalCase entity name to lowercase words and optionally pluralizes it.
-// e.g. "MessageSendSchedule" → "message send schedules" (plural) or "message send schedule" (singular)
+// Consecutive uppercase letters (acronyms like API) are kept together as a single word.
+// e.g. "MessageSendSchedule" → "message send schedules", "PhoneAPIKey" → "phone API keys"
 func formatEntityName(name string, plural bool) string {
 	var words []string
+	runes := []rune(name)
 	start := 0
-	for i := 1; i < len(name); i++ {
-		if unicode.IsUpper(rune(name[i])) {
-			words = append(words, strings.ToLower(name[start:i]))
-			start = i
+	for i := 1; i < len(runes); i++ {
+		if unicode.IsUpper(runes[i]) {
+			if !unicode.IsUpper(runes[i-1]) {
+				// transition from lowercase to uppercase: split before i
+				words = append(words, string(runes[start:i]))
+				start = i
+			} else if i+1 < len(runes) && unicode.IsLower(runes[i+1]) {
+				// transition from uppercase run to a new word (e.g., "API" followed by "Key")
+				words = append(words, string(runes[start:i]))
+				start = i
+			}
 		}
 	}
-	words = append(words, strings.ToLower(name[start:]))
+	words = append(words, string(runes[start:]))
+
+	for i, word := range words {
+		if word == strings.ToUpper(word) && len(word) > 1 {
+			// keep acronyms uppercase (e.g., "API")
+			continue
+		}
+		words[i] = strings.ToLower(word)
+	}
 
 	if plural && len(words) > 0 {
 		client := pluralize.NewClient()
