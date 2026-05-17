@@ -62,7 +62,7 @@ class SmsManagerService {
         }
 
         Timber.d("active subscription info size: [${localSubscriptionManager.activeSubscriptionInfoList!!.size}]")
-        val subscriptionId = if (sim == Constants.SIM1 && localSubscriptionManager.activeSubscriptionInfoList!!.size > 0) {
+        val subscriptionId = if (sim == Constants.SIM1 && localSubscriptionManager.activeSubscriptionInfoList!!.isNotEmpty()) {
             localSubscriptionManager.activeSubscriptionInfoList!![0].subscriptionId
         } else if (sim == Constants.SIM2 && localSubscriptionManager.activeSubscriptionInfoList!!.size > 1) {
             localSubscriptionManager.activeSubscriptionInfoList!![1].subscriptionId

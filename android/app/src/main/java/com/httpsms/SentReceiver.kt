@@ -26,13 +26,14 @@ internal class SentReceiver : BroadcastReceiver() {
             SmsManager.RESULT_ERROR_NO_SERVICE -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NO_SERVICE")
             SmsManager.RESULT_ERROR_NULL_PDU -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "NULL_PDU")
             SmsManager.RESULT_ERROR_RADIO_OFF -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "RADIO_OFF")
-            else -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "UNKNOWN")
+            SmsManager.RESULT_ERROR_LIMIT_EXCEEDED -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "LIMIT_EXCEEDED")
+            else -> handleMessageFailed(context, intent.getStringExtra(Constants.KEY_MESSAGE_ID), "UNKNOWN:${resultCode}")
         }
     }
 
     private fun cleanupPduFile(context: Context, messageId: String?) {
                 if (messageId == null) return
-               
+
         try {
             val baseMessageId = messageId.substringBefore(".")
             val mmsDir = File(context.cacheDir, "mms_attachments")
