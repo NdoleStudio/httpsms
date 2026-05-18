@@ -1,7 +1,7 @@
 services:
   cockroachdb:
     image: cockroachdb/cockroach:latest
-    command: start-single-node --insecure --store=type=mem,size=256MiB
+    command: start-single-node --insecure --store=type=mem,size=640MiB
     ports:
       - "26257:26257"
       - "8081:8080"
