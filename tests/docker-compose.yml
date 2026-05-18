@@ -6,7 +6,15 @@ services:
       - "26257:26257"
       - "8081:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health?ready=1"]
+      test:
+        [
+          "CMD",
+          "cockroach",
+          "sql",
+          "--insecure",
+          "--host=localhost",
+          "--execute=SELECT 1;",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
