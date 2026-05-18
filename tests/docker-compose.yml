@@ -1,18 +1,31 @@
 services:
-  postgres:
-    image: postgres:alpine
-    environment:
-      POSTGRES_DB: httpsms
-      POSTGRES_PASSWORD: dbpassword
-      POSTGRES_USER: dbusername
+  cockroachdb:
+    image: cockroachdb/cockroach:latest
+    command: start-single-node --insecure --store=type=mem,size=256MiB
     ports:
-      - "5435:5432"
+      - "26257:26257"
+      - "8081:8080"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbusername -d httpsms"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health?ready=1"]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 5s
+      start_period: 10s
+
+  cockroachdb-init:
+    image: cockroachdb/cockroach:latest
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+    entrypoint:
+      [
+        "cockroach",
+        "sql",
+        "--insecure",
+        "--host=cockroachdb",
+        "--execute=CREATE DATABASE IF NOT EXISTS httpsms;",
+      ]
+    restart: "no"
 
   redis:
     image: redis:latest
@@ -61,8 +74,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      postgres:
-        condition: service_healthy
+      cockroachdb-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       wiremock:
@@ -81,24 +94,19 @@ services:
       start_period: 30s
 
   seed:
-    image: postgres:alpine
+    image: cockroachdb/cockroach:latest
     depends_on:
       api:
         condition: service_healthy
-    environment:
-      PGPASSWORD: dbpassword
     volumes:
       - ./seed.sql:/seed.sql:ro
     entrypoint:
       [
-        "psql",
-        "-h",
-        "postgres",
-        "-U",
-        "dbusername",
-        "-d",
-        "httpsms",
-        "-f",
-        "/seed.sql",
+        "cockroach",
+        "sql",
+        "--insecure",
+        "--host=cockroachdb",
+        "--database=httpsms",
+        "--file=/seed.sql",
       ]
     restart: "no"
