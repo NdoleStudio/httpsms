@@ -12,3 +12,5 @@ tests/emulator/emulator.exe
 SECURITY_AUDIT_REPORT.md
 
 *.exe
+
+docs/

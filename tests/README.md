@@ -20,21 +20,21 @@ End-to-end integration tests for the httpSMS API. These tests validate the compl
                               └──────────────┘
                                      │
                               ┌──────┴───────┐
-                              │  PostgreSQL  │   │    Redis    │
-                              │  Port 5435   │   │  Port 6379  │
+                              │ CockroachDB  │   │    Redis    │
+                              │  Port 26257  │   │  Port 6379  │
                               └──────────────┘   └─────────────┘
 ```
 
 ### Components
 
-| Component       | Description                                             |
-| --------------- | ------------------------------------------------------- |
-| **API**         | The httpSMS Go API server running in Docker             |
-| **Emulator**    | A Fiber v3 Go service that simulates an Android phone   |
-| **PostgreSQL**  | Database for the API                                    |
-| **Redis**       | Cache and queue backend                                 |
-| **Seed**        | One-shot container that seeds test data into PostgreSQL |
-| **Test Runner** | Go test binary that runs on the host machine            |
+| Component       | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| **API**         | The httpSMS Go API server running in Docker              |
+| **Emulator**    | A Fiber v3 Go service that simulates an Android phone    |
+| **CockroachDB** | Database for the API (single-node, insecure mode)        |
+| **Redis**       | Cache and queue backend                                  |
+| **Seed**        | One-shot container that seeds test data into CockroachDB |
+| **Test Runner** | Go test binary that runs on the host machine             |
 
 ### How It Works
 
@@ -86,7 +86,7 @@ export FIREBASE_CREDENTIALS=$(jq -c . firebase-credentials.json)
 docker compose up -d --build --wait
 ```
 
-This starts PostgreSQL, Redis, the API, and the emulator. The `--wait` flag blocks until all health checks pass.
+This starts CockroachDB, Redis, the API, and the emulator. The `--wait` flag blocks until all health checks pass.
 
 ### 4. Wait for Seeding
 
@@ -95,7 +95,7 @@ docker compose wait seed
 sleep 2
 ```
 
-The seed container inserts test users, phones, and API keys into PostgreSQL after the API has run its GORM migrations.
+The seed container inserts test users, phones, and API keys into CockroachDB after the API has run its GORM migrations.
 
 ### 5. Run Tests
 
@@ -181,7 +181,7 @@ docker compose logs api
 Common issues:
 
 - `FIREBASE_CREDENTIALS` env var not set or malformed
-- PostgreSQL not ready (increase `start_period` in healthcheck)
+- CockroachDB not ready (increase `start_period` in healthcheck)
 
 ### Tests timeout waiting for `delivered` status
 
