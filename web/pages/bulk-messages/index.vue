@@ -99,34 +99,63 @@
         <v-row class="mt-8">
           <v-col cols="12">
             <h5 class="text-h5 mb-3">Bulk Message History</h5>
-            <v-data-table
-              :headers="historyHeaders"
-              :items="bulkOrders"
-              :loading="loadingHistory"
-              :items-per-page="10"
-              hide-default-footer
-              loading-text="Loading bulk message history..."
-              no-data-text="No bulk message orders found"
-              class="elevation-1"
-            >
-              <template #[`item.request_id`]="{ item }">
-                <span class="font-weight-medium">{{ item.request_id }}</span>
+            <p class="text--secondary">
+              Your 10 most recent bulk SMS uploads are listed below with a
+              breakdown of message delivery status. Click
+              <strong>View</strong> to see all individual messages in a batch.
+            </p>
+            <v-progress-linear
+              v-if="loadingHistory"
+              indeterminate
+              class="mb-4"
+            ></v-progress-linear>
+            <v-simple-table v-if="bulkOrders.length">
+              <template #default>
+                <thead>
+                  <tr class="text-uppercase subtitle-2">
+                    <th class="text-left">Name</th>
+                    <th class="text-center">Total</th>
+                    <th class="text-center">Scheduled</th>
+                    <th class="text-center">Pending</th>
+                    <th class="text-center">Sent</th>
+                    <th class="text-center">Delivered</th>
+                    <th class="text-center">Failed</th>
+                    <th class="text-center">Created At</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="order in bulkOrders" :key="order.request_id">
+                    <td class="text-left font-weight-medium">
+                      {{ order.request_id }}
+                    </td>
+                    <td class="text-center">{{ order.total }}</td>
+                    <td class="text-center">{{ order.scheduled_count }}</td>
+                    <td class="text-center">{{ order.pending_count }}</td>
+                    <td class="text-center">{{ order.sent_count }}</td>
+                    <td class="text-center">{{ order.delivered_count }}</td>
+                    <td class="text-center">{{ order.failed_count }}</td>
+                    <td class="text-center">
+                      {{ order.created_at | timestamp }}
+                    </td>
+                    <td class="text-center">
+                      <v-btn
+                        small
+                        color="primary"
+                        text
+                        :to="`/search-messages?query=${order.request_id}`"
+                      >
+                        <v-icon small left>{{ mdiEye }}</v-icon>
+                        View
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
               </template>
-              <template #[`item.created_at`]="{ item }">
-                {{ item.created_at | timestamp }}
-              </template>
-              <template #[`item.actions`]="{ item }">
-                <v-btn
-                  small
-                  color="primary"
-                  text
-                  :to="`/search-messages?query=${item.request_id}`"
-                >
-                  <v-icon small left>{{ mdiEye }}</v-icon>
-                  View
-                </v-btn>
-              </template>
-            </v-data-table>
+            </v-simple-table>
+            <p v-else-if="!loadingHistory" class="text--secondary">
+              No bulk message uploads found.
+            </p>
           </v-col>
         </v-row>
       </v-container>
@@ -183,17 +212,6 @@ export default Vue.extend({
       errorMessages: new ErrorMessages(),
       dialog: false,
       bulkOrders: [] as any[],
-      historyHeaders: [
-        { text: 'Name', value: 'request_id' },
-        { text: 'Total', value: 'total', sortable: false },
-        { text: 'Scheduled', value: 'scheduled_count', sortable: false },
-        { text: 'Pending', value: 'pending_count', sortable: false },
-        { text: 'Sent', value: 'sent_count', sortable: false },
-        { text: 'Delivered', value: 'delivered_count', sortable: false },
-        { text: 'Failed', value: 'failed_count', sortable: false },
-        { text: 'Created At', value: 'created_at' },
-        { text: 'Actions', value: 'actions', sortable: false },
-      ],
     }
   },
   head() {
