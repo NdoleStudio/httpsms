@@ -114,6 +114,7 @@
                 <thead>
                   <tr class="text-uppercase subtitle-2">
                     <th class="text-left">Name</th>
+                    <th class="text-center">Created At</th>
                     <th class="text-center">Total</th>
                     <th class="text-center">Pending</th>
                     <th class="text-center">Scheduled</th>
@@ -121,7 +122,6 @@
                     <th class="text-center">Delivered</th>
                     <th class="text-center">Failed</th>
                     <th class="text-center">Expired</th>
-                    <th class="text-center">Created At</th>
                     <th class="text-center">Action</th>
                   </tr>
                 </thead>
@@ -129,6 +129,9 @@
                   <tr v-for="order in bulkOrders" :key="order.request_id">
                     <td class="text-left font-weight-medium">
                       {{ order.request_id }}
+                    </td>
+                    <td class="text-center">
+                      {{ order.created_at | timestamp }}
                     </td>
                     <td class="text-center">{{ order.total }}</td>
                     <td class="text-center">{{ order.pending_count }}</td>
@@ -138,13 +141,9 @@
                     <td class="text-center">{{ order.failed_count }}</td>
                     <td class="text-center">{{ order.expired_count }}</td>
                     <td class="text-center">
-                      {{ order.created_at | timestamp }}
-                    </td>
-                    <td class="text-center">
                       <v-btn
                         small
                         color="primary"
-                        text
                         :to="`/search-messages?query=${order.request_id}`"
                       >
                         <v-icon small left>{{ mdiEye }}</v-icon>

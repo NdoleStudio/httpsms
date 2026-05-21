@@ -254,19 +254,11 @@ func (v *BulkMessageHandlerValidator) validateMessages(_ context.Context, messag
 			}
 		}
 
-		fromNumber := message.FromPhoneNumber
-		if !strings.HasPrefix(fromNumber, "+") {
-			fromNumber = "+" + fromNumber
-		}
-		if _, err := phonenumbers.Parse(fromNumber, phonenumbers.UNKNOWN_REGION); err != nil {
+		if _, err := phonenumbers.Parse(message.FromPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
 			result.Add("document", fmt.Sprintf("Row [%d]: The FromPhoneNumber [%s] is not a valid E.164 phone number", index+2, message.FromPhoneNumber))
 		}
 
-		toNumber := message.ToPhoneNumber
-		if !strings.HasPrefix(toNumber, "+") {
-			toNumber = "+" + toNumber
-		}
-		if _, err := phonenumbers.Parse(toNumber, phonenumbers.UNKNOWN_REGION); err != nil {
+		if _, err := phonenumbers.Parse(message.ToPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
 			result.Add("document", fmt.Sprintf("Row [%d]: The ToPhoneNumber [%s] is not a valid E.164 phone number", index+2, message.ToPhoneNumber))
 		}
 
