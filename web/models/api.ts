@@ -50,6 +50,25 @@ export interface EntitiesBillingUsage {
   user_id: string
 }
 
+export interface EntitiesBulkMessage {
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string
+  /** @example 25 */
+  delivered_count: number
+  /** @example 5 */
+  failed_count: number
+  /** @example 30 */
+  pending_count: number
+  /** @example "bulk-32343a19-da5e-4b1b-a767-3298a73703cb" */
+  request_id: string
+  /** @example 50 */
+  scheduled_count: number
+  /** @example 40 */
+  sent_count: number
+  /** @example 150 */
+  total: number
+}
+
 export interface EntitiesDiscord {
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string
@@ -576,6 +595,14 @@ export interface ResponsesBillingUsageResponse {
 
 export interface ResponsesBillingUsagesResponse {
   data: EntitiesBillingUsage[]
+  /** @example "Request handled successfully" */
+  message: string
+  /** @example "success" */
+  status: string
+}
+
+export interface ResponsesBulkMessagesResponse {
+  data: EntitiesBulkMessage[]
   /** @example "Request handled successfully" */
   message: string
   /** @example "success" */

@@ -40,7 +40,7 @@ definitions:
     - updated_at
     - user_id
     type: object
-  entities.BulkMessageOrder:
+  entities.BulkMessage:
     properties:
       created_at:
         example: "2022-06-05T14:26:02.302718+03:00"
@@ -1071,11 +1071,11 @@ definitions:
     - message
     - status
     type: object
-  responses.BulkMessageOrdersResponse:
+  responses.BulkMessagesResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/entities.BulkMessageOrder'
+          $ref: '#/definitions/entities.BulkMessage'
         type: array
       message:
         example: Request handled successfully
@@ -1658,7 +1658,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/responses.BulkMessageOrdersResponse'
+            $ref: '#/definitions/responses.BulkMessagesResponse'
         "401":
           description: Unauthorized
           schema:

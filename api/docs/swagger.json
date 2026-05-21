@@ -162,7 +162,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/responses.BulkMessageOrdersResponse"
+                            "$ref": "#/definitions/responses.BulkMessagesResponse"
                         }
                     },
                     "401": {
@@ -3340,7 +3340,7 @@
                 }
             }
         },
-        "entities.BulkMessageOrder": {
+        "entities.BulkMessage": {
             "type": "object",
             "required": [
                 "created_at",
@@ -4687,7 +4687,7 @@
                 }
             }
         },
-        "responses.BulkMessageOrdersResponse": {
+        "responses.BulkMessagesResponse": {
             "type": "object",
             "required": [
                 "data",
@@ -4698,7 +4698,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/entities.BulkMessageOrder"
+                        "$ref": "#/definitions/entities.BulkMessage"
                     }
                 },
                 "message": {

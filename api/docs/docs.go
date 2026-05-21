@@ -165,7 +165,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/responses.BulkMessageOrdersResponse"
+                            "$ref": "#/definitions/responses.BulkMessagesResponse"
                         }
                     },
                     "401": {
@@ -3343,7 +3343,7 @@ const docTemplate = `{
                 }
             }
         },
-        "entities.BulkMessageOrder": {
+        "entities.BulkMessage": {
             "type": "object",
             "required": [
                 "created_at",
@@ -4690,7 +4690,7 @@ const docTemplate = `{
                 }
             }
         },
-        "responses.BulkMessageOrdersResponse": {
+        "responses.BulkMessagesResponse": {
             "type": "object",
             "required": [
                 "data",
@@ -4701,7 +4701,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/entities.BulkMessageOrder"
+                        "$ref": "#/definitions/entities.BulkMessage"
                     }
                 },
                 "message": {
