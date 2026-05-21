@@ -125,10 +125,8 @@ func (service *MessageService) DeleteAllForUser(ctx context.Context, userID enti
 
 // GetBulkMessages fetches the last bulk message summaries for a user
 func (service *MessageService) GetBulkMessages(ctx context.Context, userID entities.UserID) ([]*entities.BulkMessage, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	orders, err := service.repository.GetBulkMessages(ctx, userID, 10)
 	if err != nil {
