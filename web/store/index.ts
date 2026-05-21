@@ -395,14 +395,18 @@ export const actions = {
     }
   },
 
-  fetchBulkMessageOrders() {
+  fetchBulkMessageOrders(context: ActionContext<State, State>) {
     return new Promise<any[]>((resolve, reject) => {
       axios
         .get<{ data: any[] }>(`/v1/bulk-messages`)
         .then((response) => {
           resolve(response.data.data ?? [])
         })
-        .catch((error: AxiosError) => {
+        .catch(async (error: AxiosError) => {
+          await context.dispatch('addNotification', {
+            message: 'Error while fetching bulk messages history',
+            type: 'error',
+          })
           reject(error)
         })
     })
