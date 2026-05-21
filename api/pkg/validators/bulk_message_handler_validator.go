@@ -138,14 +138,15 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 			continue
 		}
 
-		var sendAt *time.Time
+		var sendTimeRaw string
 		if len(row) > 3 && strings.TrimSpace(row[3]) != "" {
 			ctxLogger.Info(fmt.Sprintf("excel time = [%s]", row[3]))
-			sendAt, err = v.convertExcelTime(user, row[3])
+			sendAt, err := v.convertExcelTime(user, row[3])
 			if err != nil {
 				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] is not in the correct format e.g [2006-01-02T15:04:05] where 2006 is the year, 01 is January, 02 is the second day of the month and the time is 15:04:05", index+1, row[3]))
 				return nil, result
 			}
+			sendTimeRaw = sendAt.Format(time.RFC3339)
 		}
 
 		var attachmentURLs string
@@ -157,7 +158,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 			FromPhoneNumber: strings.TrimSpace(row[0]),
 			ToPhoneNumber:   strings.TrimSpace(row[1]),
 			Content:         row[2],
-			SendTime:        sendAt,
+			SendTimeRaw:     sendTimeRaw,
 			AttachmentURLs:  attachmentURLs,
 		})
 	}
@@ -253,11 +254,19 @@ func (v *BulkMessageHandlerValidator) validateMessages(_ context.Context, messag
 			}
 		}
 
-		if _, err := phonenumbers.Parse(message.FromPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
+		fromNumber := message.FromPhoneNumber
+		if !strings.HasPrefix(fromNumber, "+") {
+			fromNumber = "+" + fromNumber
+		}
+		if _, err := phonenumbers.Parse(fromNumber, phonenumbers.UNKNOWN_REGION); err != nil {
 			result.Add("document", fmt.Sprintf("Row [%d]: The FromPhoneNumber [%s] is not a valid E.164 phone number", index+2, message.FromPhoneNumber))
 		}
 
-		if _, err := phonenumbers.Parse(message.ToPhoneNumber, phonenumbers.UNKNOWN_REGION); err != nil {
+		toNumber := message.ToPhoneNumber
+		if !strings.HasPrefix(toNumber, "+") {
+			toNumber = "+" + toNumber
+		}
+		if _, err := phonenumbers.Parse(toNumber, phonenumbers.UNKNOWN_REGION); err != nil {
 			result.Add("document", fmt.Sprintf("Row [%d]: The ToPhoneNumber [%s] is not a valid E.164 phone number", index+2, message.ToPhoneNumber))
 		}
 
@@ -265,8 +274,13 @@ func (v *BulkMessageHandlerValidator) validateMessages(_ context.Context, messag
 			result.Add("document", fmt.Sprintf("Row [%d]: The message content must be less than 1024 characters.", index+2))
 		}
 
-		if message.SendTime != nil && message.SendTime.After(time.Now().Add(420*time.Hour)) {
-			result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] cannot be more than 20 days (420 hours) in the future.", index+2, message.SendTime.Format(time.RFC3339)))
+		if strings.TrimSpace(message.SendTimeRaw) != "" {
+			sendTime := message.GetSendTime()
+			if sendTime == nil {
+				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] is not a valid date format. Use RFC3339 (e.g. 2023-11-11T02:10:01Z) or YYYY-MM-DDTHH:MM:SS.", index+2, message.SendTimeRaw))
+			} else if sendTime.After(time.Now().Add(420 * time.Hour)) {
+				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] cannot be more than 20 days (420 hours) in the future.", index+2, sendTime.Format(time.RFC3339)))
+			}
 		}
 	}
 	return result

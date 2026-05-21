@@ -98,7 +98,7 @@
         </v-row>
         <v-row class="mt-8">
           <v-col cols="12">
-            <h5 class="text-h5 mb-3">Bulk Message History</h5>
+            <h4 class="text-h4 mb-3">Bulk Message History</h4>
             <p class="text--secondary">
               Your 10 most recent bulk SMS uploads are listed below with a
               breakdown of message delivery status. Click

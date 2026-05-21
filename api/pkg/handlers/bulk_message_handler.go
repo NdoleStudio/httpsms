@@ -121,7 +121,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 	for _, message := range messages {
 		wg.Add(1)
 		var perPhoneIndex int
-		if message.SendTime == nil {
+		if message.GetSendTime() == nil {
 			perPhoneIndex = phoneIndexCounter[message.FromPhoneNumber]
 			phoneIndexCounter[message.FromPhoneNumber]++
 		}

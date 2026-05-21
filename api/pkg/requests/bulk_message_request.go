@@ -14,11 +14,34 @@ import (
 // BulkMessage represents a single message in a bulk SMS request
 type BulkMessage struct {
 	request
-	FromPhoneNumber string     `csv:"FromPhoneNumber"`
-	ToPhoneNumber   string     `csv:"ToPhoneNumber"`
-	Content         string     `csv:"Content"`
-	SendTime        *time.Time `csv:"SendTime(optional)"`
-	AttachmentURLs  string     `csv:"AttachmentURLs(optional)" validate:"optional"` // Comma separated list of URLs
+	FromPhoneNumber string `csv:"FromPhoneNumber"`
+	ToPhoneNumber   string `csv:"ToPhoneNumber"`
+	Content         string `csv:"Content"`
+	SendTimeRaw     string `csv:"SendTime(optional)"`
+	AttachmentURLs  string `csv:"AttachmentURLs(optional)" validate:"optional"` // Comma separated list of URLs
+}
+
+// GetSendTime parses the raw SendTime string into a *time.Time
+func (input *BulkMessage) GetSendTime() *time.Time {
+	raw := strings.TrimSpace(input.SendTimeRaw)
+	if raw == "" {
+		return nil
+	}
+
+	formats := []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	}
+
+	for _, format := range formats {
+		if t, err := time.Parse(format, raw); err == nil {
+			utc := t.UTC()
+			return &utc
+		}
+	}
+	return nil
 }
 
 // Sanitize sets defaults to BulkMessage
@@ -46,7 +69,7 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 		Owner:             from,
 		RequestID:         input.sanitizeStringPointer(fmt.Sprintf("bulk-%s", requestID.String())),
 		UserID:            userID,
-		SendAt:            input.SendTime,
+		SendAt:            input.GetSendTime(),
 		RequestReceivedAt: time.Now().UTC(),
 		Contact:           input.sanitizeAddress(input.ToPhoneNumber),
 		Content:           input.Content,
