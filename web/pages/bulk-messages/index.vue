@@ -102,7 +102,7 @@
             <p class="text--secondary">
               Your 10 most recent bulk SMS uploads are shown below, including a
               delivery status breakdown for each batch. Click
-              <code>View</code> to see individual messages.
+              <code>View</code> to see individual messages on the search page
             </p>
             <v-progress-linear
               v-if="loadingHistory"
