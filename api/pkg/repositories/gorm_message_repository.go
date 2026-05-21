@@ -181,7 +181,7 @@ func (repository *gormMessageRepository) GetBulkMessages(ctx context.Context, us
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	var orders []*entities.BulkMessage
+	orders := make([]*entities.BulkMessage, 0)
 	err := repository.db.WithContext(ctx).Raw(`
 		SELECT
 			request_id,
