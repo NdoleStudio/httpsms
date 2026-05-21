@@ -189,6 +189,7 @@ func (repository *gormMessageRepository) GetBulkMessages(ctx context.Context, us
 			COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled_count,
 			COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
 			COUNT(*) FILTER (WHERE status = 'failed') as failed_count,
+			COUNT(*) FILTER (WHERE status = 'expired') as expired_count,
 			COUNT(*) FILTER (WHERE status = 'sent') as sent_count,
 			COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count,
 			MIN(created_at) as created_at

@@ -100,26 +100,27 @@
           <v-col cols="12">
             <h4 class="text-h4 mb-3">Bulk Message History</h4>
             <p class="text--secondary">
-              Your 10 most recent bulk SMS uploads are listed below with a
-              breakdown of message delivery status. Click
-              <strong>View</strong> to see all individual messages in a batch.
+              Your 10 most recent bulk SMS uploads are shown below, including a
+              delivery status breakdown for each batch. Click
+              <code>View</code> to see individual messages.
             </p>
             <v-progress-linear
               v-if="loadingHistory"
               indeterminate
               class="mb-4"
             ></v-progress-linear>
-            <v-simple-table v-if="bulkOrders.length">
+            <v-simple-table>
               <template #default>
                 <thead>
                   <tr class="text-uppercase subtitle-2">
                     <th class="text-left">Name</th>
                     <th class="text-center">Total</th>
-                    <th class="text-center">Scheduled</th>
                     <th class="text-center">Pending</th>
+                    <th class="text-center">Scheduled</th>
                     <th class="text-center">Sent</th>
                     <th class="text-center">Delivered</th>
                     <th class="text-center">Failed</th>
+                    <th class="text-center">Expired</th>
                     <th class="text-center">Created At</th>
                     <th class="text-center">Action</th>
                   </tr>
@@ -130,11 +131,12 @@
                       {{ order.request_id }}
                     </td>
                     <td class="text-center">{{ order.total }}</td>
-                    <td class="text-center">{{ order.scheduled_count }}</td>
                     <td class="text-center">{{ order.pending_count }}</td>
+                    <td class="text-center">{{ order.scheduled_count }}</td>
                     <td class="text-center">{{ order.sent_count }}</td>
                     <td class="text-center">{{ order.delivered_count }}</td>
                     <td class="text-center">{{ order.failed_count }}</td>
+                    <td class="text-center">{{ order.expired_count }}</td>
                     <td class="text-center">
                       {{ order.created_at | timestamp }}
                     </td>
@@ -153,9 +155,6 @@
                 </tbody>
               </template>
             </v-simple-table>
-            <p v-else-if="!loadingHistory" class="text--secondary">
-              No bulk message uploads found.
-            </p>
           </v-col>
         </v-row>
       </v-container>
