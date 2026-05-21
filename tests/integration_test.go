@@ -14,6 +14,7 @@ import (
 	httpsms "github.com/NdoleStudio/httpsms-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 )
 
 func TestSendSMS_Encrypted(t *testing.T) {
@@ -401,4 +402,156 @@ func TestHeartbeat_StoreAndIndex(t *testing.T) {
 	assert.Equal(t, phone.PhoneNumber, hb.Owner)
 	assert.True(t, hb.Charging)
 	assert.False(t, hb.Timestamp.IsZero(), "timestamp should not be zero")
+}
+
+func TestBulkSMS_CSV(t *testing.T) {
+	ctx := context.Background()
+	phone := setupPhone(ctx, t, 60)
+
+	// Build CSV content with 1 message
+	csvContent := fmt.Sprintf("FromPhoneNumber,ToPhoneNumber,Content,SendTime(optional)\n%s,%s,CSV bulk test message,\n",
+		phone.PhoneNumber, randomPhoneNumber())
+
+	// Upload CSV
+	statusCode, respBody := uploadBulkFile(ctx, t, "test.csv", []byte(csvContent))
+	require.Equal(t, http.StatusAccepted, statusCode, "upload failed: %s", string(respBody))
+	t.Logf("upload response: %s", string(respBody))
+
+	// Parse the response to verify message count
+	var uploadResp struct {
+		Message string `json:"message"`
+	}
+	require.NoError(t, json.Unmarshal(respBody, &uploadResp))
+	assert.Contains(t, uploadResp.Message, "1 out of 1")
+
+	// Wait a moment for messages to be persisted
+	time.Sleep(2 * time.Second)
+
+	// Search for the bulk message by owner to get message IDs
+	messages := searchMessages(ctx, t, "", phone.PhoneNumber)
+	require.GreaterOrEqual(t, len(messages), 1, "expected at least 1 message for phone %s", phone.PhoneNumber)
+
+	// Find the message with bulk- request_id prefix
+	var bulkMsg *httpsms.Message
+	for i := range messages {
+		if messages[i].RequestID != nil && strings.HasPrefix(*messages[i].RequestID, "bulk-") {
+			bulkMsg = &messages[i]
+			break
+		}
+	}
+	require.NotNil(t, bulkMsg, "no message with bulk- request_id found")
+	messageID := bulkMsg.ID.String()
+	requestID := *bulkMsg.RequestID
+	t.Logf("found bulk message: id=%s, request_id=%s", messageID, requestID)
+
+	// Wait for FCM push
+	waitForFCMPush(t, messageID, 30*time.Second)
+
+	// Fire SENT event
+	fireEvent(ctx, t, phone.PhoneAPIKey, messageID, "SENT")
+
+	// Poll until message reaches "sent" status
+	msg := pollMessageStatus(ctx, t, messageID, "sent", 15*time.Second)
+	assert.Equal(t, "sent", msg.Status)
+
+	// Verify bulk-messages history endpoint
+	entries := fetchBulkMessages(ctx, t)
+	entry := findBulkEntry(entries, requestID)
+	require.NotNil(t, entry, "bulk entry with request_id %s not found in history", requestID)
+
+	assert.Equal(t, 1, entry.Total)
+	assert.Equal(t, 1, entry.SentCount)
+	assert.Equal(t, 0, entry.PendingCount)
+	assert.Equal(t, 0, entry.FailedCount)
+	assert.Equal(t, 0, entry.ExpiredCount)
+	assert.Equal(t, 0, entry.DeliveredCount)
+	assert.Equal(t, 0, entry.ScheduledCount)
+}
+
+func TestBulkSMS_Excel(t *testing.T) {
+	ctx := context.Background()
+	phone := setupPhone(ctx, t, 60)
+
+	contact1 := randomPhoneNumber()
+	contact2 := randomPhoneNumber()
+
+	// Build Excel file with 2 messages
+	f := excelize.NewFile()
+	sheet := f.GetSheetName(0)
+	f.SetCellValue(sheet, "A1", "FromPhoneNumber")
+	f.SetCellValue(sheet, "B1", "ToPhoneNumber")
+	f.SetCellValue(sheet, "C1", "Content")
+	f.SetCellValue(sheet, "D1", "SendTime(optional)")
+
+	f.SetCellValue(sheet, "A2", phone.PhoneNumber)
+	f.SetCellValue(sheet, "B2", contact1)
+	f.SetCellValue(sheet, "C2", "Excel bulk test message 1")
+	f.SetCellValue(sheet, "D2", "")
+
+	f.SetCellValue(sheet, "A3", phone.PhoneNumber)
+	f.SetCellValue(sheet, "B3", contact2)
+	f.SetCellValue(sheet, "C3", "Excel bulk test message 2")
+	f.SetCellValue(sheet, "D3", "")
+
+	var excelBuf bytes.Buffer
+	require.NoError(t, f.Write(&excelBuf))
+
+	// Upload Excel
+	statusCode, respBody := uploadBulkFile(ctx, t, "test.xlsx", excelBuf.Bytes())
+	require.Equal(t, http.StatusAccepted, statusCode, "upload failed: %s", string(respBody))
+	t.Logf("upload response: %s", string(respBody))
+
+	var uploadResp struct {
+		Message string `json:"message"`
+	}
+	require.NoError(t, json.Unmarshal(respBody, &uploadResp))
+	assert.Contains(t, uploadResp.Message, "2 out of 2")
+
+	// Wait for messages to be persisted
+	time.Sleep(2 * time.Second)
+
+	// Search for bulk messages by owner
+	messages := searchMessages(ctx, t, "", phone.PhoneNumber)
+	require.GreaterOrEqual(t, len(messages), 2, "expected at least 2 messages for phone %s", phone.PhoneNumber)
+
+	// Find messages with bulk- request_id prefix
+	var bulkMessages []httpsms.Message
+	var requestID string
+	for i := range messages {
+		if messages[i].RequestID != nil && strings.HasPrefix(*messages[i].RequestID, "bulk-") {
+			bulkMessages = append(bulkMessages, messages[i])
+			requestID = *messages[i].RequestID
+		}
+	}
+	require.Len(t, bulkMessages, 2, "expected 2 messages with bulk- request_id")
+	require.NotEmpty(t, requestID)
+	t.Logf("found %d bulk messages with request_id=%s", len(bulkMessages), requestID)
+
+	// Wait for FCM pushes for both messages
+	msgID1 := bulkMessages[0].ID.String()
+	msgID2 := bulkMessages[1].ID.String()
+	waitForFCMPush(t, msgID1, 30*time.Second)
+	waitForFCMPush(t, msgID2, 30*time.Second)
+
+	// Fire SENT then DELIVERED on message 1, leave message 2 pending
+	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "SENT")
+	time.Sleep(200 * time.Millisecond)
+	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "DELIVERED")
+
+	// Poll until message 1 reaches "delivered"
+	msg1 := pollMessageStatus(ctx, t, msgID1, "delivered", 15*time.Second)
+	assert.Equal(t, "delivered", msg1.Status)
+
+	// Verify bulk-messages history endpoint
+	entries := fetchBulkMessages(ctx, t)
+	entry := findBulkEntry(entries, requestID)
+	require.NotNil(t, entry, "bulk entry with request_id %s not found in history", requestID)
+
+	assert.Equal(t, 2, entry.Total)
+	assert.Equal(t, 1, entry.DeliveredCount)
+	assert.Equal(t, 1, entry.PendingCount)
+	assert.Equal(t, 0, entry.SentCount)
+	assert.Equal(t, 0, entry.FailedCount)
+	assert.Equal(t, 0, entry.ExpiredCount)
+	assert.Equal(t, 0, entry.ScheduledCount)
 }
