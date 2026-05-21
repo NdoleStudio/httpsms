@@ -395,6 +395,19 @@ export const actions = {
     }
   },
 
+  fetchBulkMessageOrders() {
+    return new Promise<any[]>((resolve, reject) => {
+      axios
+        .get<{ data: any[] }>(`/v1/bulk-messages`)
+        .then((response) => {
+          resolve(response.data.data ?? [])
+        })
+        .catch((error: AxiosError) => {
+          reject(error)
+        })
+    })
+  },
+
   sendBulkMessages(context: ActionContext<State, State>, document: File) {
     return new Promise<ResponsesNoContent>((resolve, reject) => {
       const formData = new FormData()

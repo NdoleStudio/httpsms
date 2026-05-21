@@ -96,6 +96,39 @@
             </v-form>
           </v-col>
         </v-row>
+        <v-row class="mt-8">
+          <v-col cols="12">
+            <h5 class="text-h5 mb-3">Bulk Message History</h5>
+            <v-data-table
+              :headers="historyHeaders"
+              :items="bulkOrders"
+              :loading="loadingHistory"
+              :items-per-page="10"
+              hide-default-footer
+              loading-text="Loading bulk message history..."
+              no-data-text="No bulk message orders found"
+              class="elevation-1"
+            >
+              <template #[`item.request_id`]="{ item }">
+                <span class="font-weight-medium">{{ item.request_id }}</span>
+              </template>
+              <template #[`item.created_at`]="{ item }">
+                {{ item.created_at | timestamp }}
+              </template>
+              <template #[`item.actions`]="{ item }">
+                <v-btn
+                  small
+                  color="primary"
+                  text
+                  :to="`/search-messages?query=${item.request_id}`"
+                >
+                  <v-icon small left>{{ mdiEye }}</v-icon>
+                  View
+                </v-btn>
+              </template>
+            </v-data-table>
+          </v-col>
+        </v-row>
       </v-container>
     </div>
   </v-container>
@@ -145,9 +178,22 @@ export default Vue.extend({
       mdiSquareEditOutline,
       formFile: null,
       loading: true,
+      loadingHistory: true,
       errorTitle: '',
       errorMessages: new ErrorMessages(),
       dialog: false,
+      bulkOrders: [] as any[],
+      historyHeaders: [
+        { text: 'Name', value: 'request_id' },
+        { text: 'Total', value: 'total', sortable: false },
+        { text: 'Scheduled', value: 'scheduled_count', sortable: false },
+        { text: 'Pending', value: 'pending_count', sortable: false },
+        { text: 'Sent', value: 'sent_count', sortable: false },
+        { text: 'Delivered', value: 'delivered_count', sortable: false },
+        { text: 'Failed', value: 'failed_count', sortable: false },
+        { text: 'Created At', value: 'created_at' },
+        { text: 'Actions', value: 'actions', sortable: false },
+      ],
     }
   },
   head() {
@@ -159,8 +205,23 @@ export default Vue.extend({
   async mounted() {
     await this.$store.dispatch('loadUser')
     this.loading = false
+    this.fetchBulkOrders()
   },
   methods: {
+    fetchBulkOrders() {
+      this.loadingHistory = true
+      this.$store
+        .dispatch('fetchBulkMessageOrders')
+        .then((orders: any[]) => {
+          this.bulkOrders = orders
+        })
+        .catch(() => {
+          // silently fail - the table will show "no data"
+        })
+        .finally(() => {
+          this.loadingHistory = false
+        })
+    },
     sendBulkMessages() {
       this.loading = true
       this.errorMessages = new ErrorMessages()

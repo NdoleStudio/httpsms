@@ -45,7 +45,33 @@ func NewBulkMessageHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Get("/v1/bulk-messages", h.computeRoute(middlewares, h.Index)...)
 	router.Post("/v1/bulk-messages", h.computeRoute(middlewares, h.Store)...)
+}
+
+// Index fetches the bulk message order history.
+// @Summary      List bulk message orders
+// @Description  Fetches the last 10 bulk message order summaries for the authenticated user showing counts per status.
+// @Security	 ApiKeyAuth
+// @Tags         BulkSMS
+// @Accept       json
+// @Produce      json
+// @Success      200 		{object}	responses.BulkMessagesResponse
+// @Failure 	 401	    {object}	responses.Unauthorized
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /bulk-messages [get]
+func (h *BulkMessageHandler) Index(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	orders, err := h.messageService.GetBulkMessages(ctx, h.userIDFomContext(c))
+	if err != nil {
+		msg := fmt.Sprintf("cannot fetch bulk messages for user [%s]", h.userIDFomContext(c))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("fetched %d bulk %s", len(orders), h.pluralize("message", len(orders))), orders)
 }
 
 // Store sends bulk SMS messages from a CSV or Excel file.

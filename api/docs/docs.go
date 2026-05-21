@@ -144,6 +144,44 @@ const docTemplate = `{
             }
         },
         "/bulk-messages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Fetches the last 10 bulk message order summaries for the authenticated user showing counts per status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "BulkSMS"
+                ],
+                "summary": "List bulk message orders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BulkMessageOrdersResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1759,6 +1797,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/responses.Unauthorized"
                         }
                     },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PaymentRequired"
+                        }
+                    },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
@@ -3299,6 +3343,53 @@ const docTemplate = `{
                 }
             }
         },
+        "entities.BulkMessageOrder": {
+            "type": "object",
+            "required": [
+                "created_at",
+                "delivered_count",
+                "failed_count",
+                "pending_count",
+                "request_id",
+                "scheduled_count",
+                "sent_count",
+                "total"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "delivered_count": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "failed_count": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "pending_count": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "request_id": {
+                    "type": "string",
+                    "example": "bulk-32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
+                "scheduled_count": {
+                    "type": "integer",
+                    "example": 50
+                },
+                "sent_count": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 150
+                }
+            }
+        },
         "entities.Discord": {
             "type": "object",
             "required": [
@@ -4587,6 +4678,30 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/entities.BillingUsage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.BulkMessageOrdersResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.BulkMessageOrder"
                     }
                 },
                 "message": {
