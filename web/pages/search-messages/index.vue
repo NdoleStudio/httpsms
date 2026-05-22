@@ -95,8 +95,11 @@
                   class="py-5"
                   @click="fetchMessages(true)"
                 >
-                  <v-icon left>{{ mdiMagnify }}</v-icon>
-                  Search Messages
+                  <v-icon v-if="$vuetify.breakpoint.mdAndUp" left>{{
+                    mdiMagnify
+                  }}</v-icon>
+                  <span v-if="$vuetify.breakpoint.smAndDown">SEARCH</span>
+                  <span v-else>Search Messages</span>
                 </v-btn>
               </v-col>
             </v-row>
@@ -120,8 +123,11 @@
                   v-bind="attrs"
                   v-on="on"
                 >
-                  <v-icon left>{{ mdiDelete }}</v-icon>
-                  Delete messages
+                  <v-icon v-if="$vuetify.breakpoint.mdAndUp" left>{{
+                    mdiDelete
+                  }}</v-icon>
+                  <span v-if="$vuetify.breakpoint.smAndDown">DELETE</span>
+                  <span v-else>Delete messages</span>
                 </v-btn>
               </template>
               <v-card>
@@ -139,11 +145,51 @@
                     :loading="loading"
                     @click="deleteMessages"
                   >
-                    <v-icon left>{{ mdiDelete }}</v-icon>
                     Yes Delete Messages
                   </v-btn>
                   <v-spacer></v-spacer>
                   <v-btn text @click="showDeleteDialog = false"> Close </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+            <v-dialog
+              v-model="showResendDialog"
+              overlay-opacity="0.9"
+              max-width="550"
+            >
+              <template #activator="{ on, attrs }">
+                <v-btn
+                  :loading="loading"
+                  :disabled="loading || !canResendSelected"
+                  small
+                  class="ml-2 mt-2 d-none d-md-inline-flex"
+                  color="warning"
+                  v-bind="attrs"
+                  v-on="on"
+                >
+                  <v-icon left>{{ mdiRefresh }}</v-icon>
+                  RESEND
+                </v-btn>
+              </template>
+              <v-card>
+                <v-card-title class="text-h5 text-break">
+                  Are you sure you want to resend the
+                  {{ selectedMessages.length }} selected messages?
+                </v-card-title>
+                <v-card-text>
+                  The selected messages will be queued for sending again using
+                  the original sender, recipient, and content.
+                </v-card-text>
+                <v-card-actions class="pb-4">
+                  <v-btn
+                    color="warning"
+                    :loading="loading"
+                    @click="resendMessages"
+                  >
+                    Yes Resend Messages
+                  </v-btn>
+                  <v-spacer></v-spacer>
+                  <v-btn text @click="showResendDialog = false"> Close </v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -156,8 +202,11 @@
               class="mt-2"
               @click="exportMessages"
             >
-              <v-icon left>{{ mdiExport }}</v-icon>
-              Export to CSV
+              <v-icon v-if="$vuetify.breakpoint.mdAndUp" left>{{
+                mdiExport
+              }}</v-icon>
+              <span v-if="$vuetify.breakpoint.smAndDown">EXPORT</span>
+              <span v-else>Export to CSV</span>
             </v-btn>
           </v-col>
           <v-col cols="12">
@@ -280,6 +329,7 @@ import {
   mdiCallReceived,
   mdiCallMade,
   mdiExport,
+  mdiRefresh,
   mdiProgressCheck,
   mdiAlert,
 } from '@mdi/js'
@@ -317,6 +367,7 @@ export default Vue.extend({
       mdiMagnify,
       mdiArrowLeft,
       mdiExport,
+      mdiRefresh,
       mdiAlert,
       mdiCheck,
       mdiCheckAll,
@@ -328,6 +379,7 @@ export default Vue.extend({
       initialLoadComplete: false,
       errorTitle: '',
       showDeleteDialog: false,
+      showResendDialog: false,
       selectedMessages: [] as EntitiesMessage[],
       errorMessages: new ErrorMessages(),
       formOwners: [],
@@ -360,6 +412,16 @@ export default Vue.extend({
     }
   },
   computed: {
+    canResendSelected(): boolean {
+      return (
+        this.selectedMessages.length > 0 &&
+        this.selectedMessages.every(
+          (message: EntitiesMessage) =>
+            message.type === 'mobile-terminated' &&
+            (message.status === 'expired' || message.status === 'failed'),
+        )
+      )
+    },
     phoneNumberSelectItems() {
       return this.$store.getters.getPhones.map((phone: EntitiesPhone) => {
         return {
@@ -491,6 +553,38 @@ export default Vue.extend({
         .finally(() => {
           this.loading = false
           this.showDeleteDialog = false
+          this.fetchMessages()
+        })
+    },
+
+    resendMessages() {
+      this.loading = true
+      Promise.all(
+        this.selectedMessages.map((message) =>
+          this.$store.dispatch('sendMessage', {
+            from: message.owner,
+            to: message.contact,
+            content: message.content,
+            sim: message.sim,
+          }),
+        ),
+      )
+        .then(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'The selected messages have been queued for resending',
+            type: 'success',
+          })
+          this.selectedMessages = []
+        })
+        .catch(() => {
+          this.$store.dispatch('addNotification', {
+            message: 'Error while resending the selected messages',
+            type: 'error',
+          })
+        })
+        .finally(() => {
+          this.loading = false
+          this.showResendDialog = false
           this.fetchMessages()
         })
     },
