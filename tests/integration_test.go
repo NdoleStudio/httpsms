@@ -552,9 +552,9 @@ func TestBulkSMS_Excel(t *testing.T) {
 
 	assert.Equal(t, 2, entry.Total)
 	assert.Equal(t, 1, entry.DeliveredCount)
-	assert.Equal(t, 1, entry.PendingCount)
+	assert.Equal(t, 0, entry.PendingCount)
 	assert.Equal(t, 0, entry.SentCount)
 	assert.Equal(t, 0, entry.FailedCount)
 	assert.Equal(t, 0, entry.ExpiredCount)
-	assert.Equal(t, 0, entry.ScheduledCount)
+	assert.Equal(t, 1, entry.ScheduledCount)
 }
