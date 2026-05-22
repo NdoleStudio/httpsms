@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"testing"
@@ -313,5 +314,101 @@ func waitForFCMPush(t *testing.T, messageID string, timeout time.Duration) []wmJ
 	}
 
 	t.Fatalf("FCM push for message %s not found within %v", messageID, timeout)
+	return nil
+}
+
+type BulkMessageEntry struct {
+	RequestID      string `json:"request_id"`
+	Total          int    `json:"total"`
+	ScheduledCount int    `json:"scheduled_count"`
+	PendingCount   int    `json:"pending_count"`
+	FailedCount    int    `json:"failed_count"`
+	ExpiredCount   int    `json:"expired_count"`
+	SentCount      int    `json:"sent_count"`
+	DeliveredCount int    `json:"delivered_count"`
+	CreatedAt      string `json:"created_at"`
+}
+
+func uploadBulkFile(ctx context.Context, t *testing.T, filename string, fileBytes []byte) (int, []byte) {
+	t.Helper()
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	part, err := writer.CreateFormFile("document", filename)
+	require.NoError(t, err)
+
+	_, err = part.Write(fileBytes)
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	url := apiBaseURL + "/v1/bulk-messages"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, &buf)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("x-api-key", userAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp.StatusCode, body
+}
+
+func fetchBulkMessages(ctx context.Context, t *testing.T) []BulkMessageEntry {
+	t.Helper()
+
+	url := apiBaseURL + "/v1/bulk-messages"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	require.NoError(t, err)
+	req.Header.Set("x-api-key", userAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "fetch bulk messages failed: %s", string(body))
+
+	var result struct {
+		Data []BulkMessageEntry `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(body, &result))
+	return result.Data
+}
+
+func searchMessages(ctx context.Context, t *testing.T, contact string, owner string) []httpsms.Message {
+	t.Helper()
+
+	url := fmt.Sprintf("%s/v1/messages?contact=%s&owner=%s&limit=20&skip=0", apiBaseURL, contact, owner)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	require.NoError(t, err)
+	req.Header.Set("x-api-key", userAPIKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "search messages failed: %s", string(body))
+
+	var result struct {
+		Data []httpsms.Message `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(body, &result))
+	return result.Data
+}
+
+func findBulkEntry(entries []BulkMessageEntry, requestID string) *BulkMessageEntry {
+	for i := range entries {
+		if entries[i].RequestID == requestID {
+			return &entries[i]
+		}
+	}
 	return nil
 }

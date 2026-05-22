@@ -27,6 +27,9 @@ type MessageRepository interface {
 	// Search entities.Message for a user
 	Search(ctx context.Context, userID entities.UserID, owners []string, types []entities.MessageType, statuses []entities.MessageStatus, params IndexParams) ([]*entities.Message, error)
 
+	// GetBulkMessages fetches the last bulk message summaries for a user
+	GetBulkMessages(ctx context.Context, userID entities.UserID, limit int) ([]*entities.BulkMessage, error)
+
 	// GetOutstanding fetches an entities.Message which is outstanding
 	GetOutstanding(ctx context.Context, userID entities.UserID, messageID uuid.UUID, phoneNumbers []string) (*entities.Message, error)
 

@@ -325,6 +325,7 @@ export default Vue.extend({
       mdiCallMade,
       mdiProgressCheck,
       loading: true,
+      initialLoadComplete: false,
       errorTitle: '',
       showDeleteDialog: false,
       selectedMessages: [] as EntitiesMessage[],
@@ -388,6 +389,9 @@ export default Vue.extend({
   watch: {
     options: {
       handler() {
+        if (!this.initialLoadComplete) {
+          return
+        }
         this.fetchMessages()
       },
       deep: true,
@@ -396,7 +400,20 @@ export default Vue.extend({
   async mounted() {
     await this.$store.dispatch('loadUser')
     await this.$store.dispatch('loadPhones')
+
+    // Auto-fill search query from URL params
+    const queryParam = this.$route.query.query
+    if (queryParam && typeof queryParam === 'string') {
+      this.formQuery = queryParam
+    }
+
     this.loading = false
+    this.initialLoadComplete = true
+
+    // Auto-search if query param was provided
+    if (this.formQuery) {
+      this.fetchMessages(true)
+    }
   },
 
   methods: {

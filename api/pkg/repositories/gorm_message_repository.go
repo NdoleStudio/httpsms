@@ -176,6 +176,37 @@ func (repository *gormMessageRepository) Search(ctx context.Context, userID enti
 	return messages, nil
 }
 
+// GetBulkMessages fetches the last bulk message summaries for a user
+func (repository *gormMessageRepository) GetBulkMessages(ctx context.Context, userID entities.UserID, limit int) ([]*entities.BulkMessage, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	orders := make([]*entities.BulkMessage, 0)
+	err := repository.db.WithContext(ctx).Raw(`
+		SELECT
+			request_id,
+			COUNT(*) as total,
+			COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled_count,
+			COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+			COUNT(*) FILTER (WHERE status = 'failed') as failed_count,
+			COUNT(*) FILTER (WHERE status = 'expired') as expired_count,
+			COUNT(*) FILTER (WHERE status = 'sent') as sent_count,
+			COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count,
+			MIN(created_at) as created_at
+		FROM messages
+		WHERE user_id = ? AND request_id LIKE 'bulk-%'
+		GROUP BY request_id
+		ORDER BY MIN(created_at) DESC
+		LIMIT ?
+	`, userID, limit).Scan(&orders).Error
+	if err != nil {
+		msg := fmt.Sprintf("cannot fetch bulk message orders for user [%s]", userID)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	return orders, nil
+}
+
 // Store a new entities.Message
 func (repository *gormMessageRepository) Store(ctx context.Context, message *entities.Message) error {
 	ctx, span := repository.tracer.Start(ctx)

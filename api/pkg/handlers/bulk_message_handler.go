@@ -1,18 +1,18 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
-	"github.com/google/uuid"
-
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v2"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/palantir/stacktrace"
 )
 
@@ -45,7 +45,33 @@ func NewBulkMessageHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	router.Get("/v1/bulk-messages", h.computeRoute(middlewares, h.Index)...)
 	router.Post("/v1/bulk-messages", h.computeRoute(middlewares, h.Store)...)
+}
+
+// Index fetches the bulk message order history.
+// @Summary      List bulk message orders
+// @Description  Fetches the last 10 bulk message order summaries for the authenticated user showing counts per status.
+// @Security	 ApiKeyAuth
+// @Tags         BulkSMS
+// @Accept       json
+// @Produce      json
+// @Success      200 		{object}	responses.BulkMessagesResponse
+// @Failure 	 401	    {object}	responses.Unauthorized
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /bulk-messages [get]
+func (h *BulkMessageHandler) Index(c *fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	orders, err := h.messageService.GetBulkMessages(ctx, h.userIDFomContext(c))
+	if err != nil {
+		msg := fmt.Sprintf("cannot fetch bulk messages for user [%s]", h.userIDFomContext(c))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("fetched %d bulk %s", len(orders), h.pluralize("message", len(orders))), orders)
 }
 
 // Store sends bulk SMS messages from a CSV or Excel file.
@@ -73,7 +99,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	messages, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
+	messages, fileType, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
 	if len(validationErrors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending bulk sms from CSV file [%s] for [%s]", spew.Sdump(validationErrors), file.Filename, h.userIDFomContext(c))
 		ctxLogger.Warn(stacktrace.NewError(msg))
@@ -85,7 +111,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responsePaymentRequired(c, *msg)
 	}
 
-	requestID := uuid.New()
+	requestID := h.generateRequestID(fileType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 	wg := sync.WaitGroup{}
 	count := atomic.Int64{}
 
@@ -95,7 +121,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 	for _, message := range messages {
 		wg.Add(1)
 		var perPhoneIndex int
-		if message.SendTime == nil {
+		if message.GetSendTime() == nil {
 			perPhoneIndex = phoneIndexCounter[message.FromPhoneNumber]
 			phoneIndexCounter[message.FromPhoneNumber]++
 		}
@@ -117,4 +143,23 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 
 	wg.Wait()
 	return h.responseAccepted(c, fmt.Sprintf("Added %d out of %d messages to the queue", count.Load(), len(messages)))
+}
+
+func (h *BulkMessageHandler) generateRequestID(fileType string, alphabet string) string {
+	id, err := gonanoid.Generate(alphabet, 10)
+	if err != nil {
+		id = h.randomAlphaNum(10, alphabet)
+	}
+	return fmt.Sprintf("bulk-%s-%s", fileType, id)
+}
+
+func (h *BulkMessageHandler) randomAlphaNum(length int, alphabet string) string {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return alphabet[:length]
+	}
+	for i := range b {
+		b[i] = alphabet[int(b[i])%len(alphabet)]
+	}
+	return string(b)
 }

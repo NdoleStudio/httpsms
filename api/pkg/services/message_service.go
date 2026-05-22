@@ -123,6 +123,21 @@ func (service *MessageService) DeleteAllForUser(ctx context.Context, userID enti
 	return nil
 }
 
+// GetBulkMessages fetches the last bulk message summaries for a user
+func (service *MessageService) GetBulkMessages(ctx context.Context, userID entities.UserID) ([]*entities.BulkMessage, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	orders, err := service.repository.GetBulkMessages(ctx, userID, 10)
+	if err != nil {
+		msg := fmt.Sprintf("could not fetch bulk messages for user [%s]", userID)
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] bulk messages for user [%s]", len(orders), userID))
+	return orders, nil
+}
+
 // DeleteMessage deletes a message from the database
 func (service *MessageService) DeleteMessage(ctx context.Context, source string, message *entities.Message) error {
 	ctx, span := service.tracer.Start(ctx)

@@ -96,6 +96,62 @@
             </v-form>
           </v-col>
         </v-row>
+        <v-row class="mt-8">
+          <v-col cols="12">
+            <h4 class="text-h4 mb-3">Bulk Message History</h4>
+            <p class="text--secondary">
+              Your 10 most recent bulk SMS uploads are shown below, including a
+              delivery status breakdown for each batch. Click on a row to see
+              individual messages on the search page.
+            </p>
+            <v-progress-linear
+              v-if="loadingHistory"
+              indeterminate
+              class="mb-4"
+            ></v-progress-linear>
+            <v-simple-table v-else>
+              <template #default>
+                <thead>
+                  <tr class="text-uppercase subtitle-2">
+                    <th class="text-left">ID</th>
+                    <th class="text-center">Created At</th>
+                    <th class="text-center">Total</th>
+                    <th class="text-center">Pending</th>
+                    <th class="text-center">Scheduled</th>
+                    <th class="text-center">Sent</th>
+                    <th class="text-center">Delivered</th>
+                    <th class="text-center">Failed</th>
+                    <th class="text-center">Expired</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="order in bulkOrders"
+                    :key="order.request_id"
+                    class="clickable-row"
+                    @click="
+                      $router.push(`/search-messages?query=${order.request_id}`)
+                    "
+                  >
+                    <td class="text-left">
+                      {{ cleanName(order.request_id) }}
+                    </td>
+                    <td class="text-center">
+                      {{ order.created_at | timestamp }}
+                    </td>
+                    <td class="text-center">{{ order.total }}</td>
+                    <td class="text-center">{{ order.pending_count }}</td>
+                    <td class="text-center">{{ order.scheduled_count }}</td>
+                    <td class="text-center">{{ order.sent_count }}</td>
+                    <td class="text-center">{{ order.delivered_count }}</td>
+                    <td class="text-center">{{ order.failed_count }}</td>
+                    <td class="text-center">{{ order.expired_count }}</td>
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+          </v-col>
+        </v-row>
       </v-container>
     </div>
   </v-container>
@@ -145,9 +201,11 @@ export default Vue.extend({
       mdiSquareEditOutline,
       formFile: null,
       loading: true,
+      loadingHistory: true,
       errorTitle: '',
       errorMessages: new ErrorMessages(),
       dialog: false,
+      bulkOrders: [] as any[],
     }
   },
   head() {
@@ -159,8 +217,32 @@ export default Vue.extend({
   async mounted() {
     await this.$store.dispatch('loadUser')
     this.loading = false
+    this.fetchBulkOrders()
   },
   methods: {
+    cleanName(requestId: string): string {
+      if (requestId.startsWith('bulk-csv-')) {
+        return requestId.replace(/^bulk-csv-/, '') + '.csv'
+      }
+      if (requestId.startsWith('bulk-xls-')) {
+        return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
+      }
+      return requestId.replace(/^bulk-/, '')
+    },
+    fetchBulkOrders() {
+      this.loadingHistory = true
+      this.$store
+        .dispatch('fetchBulkMessageOrders')
+        .then((orders: any[]) => {
+          this.bulkOrders = orders
+        })
+        .catch(() => {
+          // silently fail - the table will show "no data"
+        })
+        .finally(() => {
+          this.loadingHistory = false
+        })
+    },
     sendBulkMessages() {
       this.loading = true
       this.errorMessages = new ErrorMessages()
@@ -186,3 +268,12 @@ export default Vue.extend({
   },
 })
 </script>
+
+<style scoped>
+.clickable-row {
+  cursor: pointer;
+}
+.clickable-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+</style>

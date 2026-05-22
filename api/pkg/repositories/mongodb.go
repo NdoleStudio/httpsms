@@ -107,11 +107,6 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 	// Heartbeats indexes
 	heartbeatsCol := db.Collection(collectionHeartbeats)
 
-	// TODO: Remove this block after deploying once — old indexes will have been dropped in production.
-	for _, name := range []string{"owner_1_timestamp_-1", "user_id_1"} {
-		_ = heartbeatsCol.Indexes().DropOne(ctx, name)
-	}
-
 	_, err := heartbeatsCol.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{"user_id", 1}, {"owner", 1}, {"timestamp", -1}}},
 	})
