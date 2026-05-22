@@ -381,10 +381,10 @@ func fetchBulkMessages(ctx context.Context, t *testing.T) []BulkMessageEntry {
 	return result.Data
 }
 
-func searchMessages(ctx context.Context, t *testing.T, query string, owner string) []httpsms.Message {
+func searchMessages(ctx context.Context, t *testing.T, contact string, owner string) []httpsms.Message {
 	t.Helper()
 
-	url := fmt.Sprintf("%s/v1/messages?query=%s&owners=%s&limit=10&skip=0", apiBaseURL, query, owner)
+	url := fmt.Sprintf("%s/v1/messages?contact=%s&owner=%s&limit=20&skip=0", apiBaseURL, contact, owner)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	require.NoError(t, err)
 	req.Header.Set("x-api-key", userAPIKey)

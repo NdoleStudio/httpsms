@@ -1,18 +1,18 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
-	"github.com/google/uuid"
-
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v2"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/palantir/stacktrace"
 )
 
@@ -99,7 +99,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	messages, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
+	messages, fileType, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
 	if len(validationErrors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending bulk sms from CSV file [%s] for [%s]", spew.Sdump(validationErrors), file.Filename, h.userIDFomContext(c))
 		ctxLogger.Warn(stacktrace.NewError(msg))
@@ -111,7 +111,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responsePaymentRequired(c, *msg)
 	}
 
-	requestID := uuid.New()
+	requestID := h.generateRequestID(fileType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 	wg := sync.WaitGroup{}
 	count := atomic.Int64{}
 
@@ -143,4 +143,23 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 
 	wg.Wait()
 	return h.responseAccepted(c, fmt.Sprintf("Added %d out of %d messages to the queue", count.Load(), len(messages)))
+}
+
+func (h *BulkMessageHandler) generateRequestID(fileType string, alphabet string) string {
+	id, err := gonanoid.Generate(alphabet, 10)
+	if err != nil {
+		id = h.randomAlphaNum(10, alphabet)
+	}
+	return fmt.Sprintf("bulk-%s-%s", fileType, id)
+}
+
+func (h *BulkMessageHandler) randomAlphaNum(length int, alphabet string) string {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return alphabet[:length]
+	}
+	for i := range b {
+		b[i] = alphabet[int(b[i])%len(alphabet)]
+	}
+	return string(b)
 }

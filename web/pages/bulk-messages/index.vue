@@ -101,19 +101,19 @@
             <h4 class="text-h4 mb-3">Bulk Message History</h4>
             <p class="text--secondary">
               Your 10 most recent bulk SMS uploads are shown below, including a
-              delivery status breakdown for each batch. Click
-              <code>View</code> to see individual messages on the search page
+              delivery status breakdown for each batch. Click on a row to see
+              individual messages on the search page.
             </p>
             <v-progress-linear
               v-if="loadingHistory"
               indeterminate
               class="mb-4"
             ></v-progress-linear>
-            <v-simple-table>
+            <v-simple-table v-else>
               <template #default>
                 <thead>
                   <tr class="text-uppercase subtitle-2">
-                    <th class="text-left">Name</th>
+                    <th class="text-left">ID</th>
                     <th class="text-center">Created At</th>
                     <th class="text-center">Total</th>
                     <th class="text-center">Pending</th>
@@ -122,13 +122,19 @@
                     <th class="text-center">Delivered</th>
                     <th class="text-center">Failed</th>
                     <th class="text-center">Expired</th>
-                    <th class="text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="order in bulkOrders" :key="order.request_id">
-                    <td class="text-left font-weight-medium">
-                      {{ order.request_id }}
+                  <tr
+                    v-for="order in bulkOrders"
+                    :key="order.request_id"
+                    class="clickable-row"
+                    @click="
+                      $router.push(`/search-messages?query=${order.request_id}`)
+                    "
+                  >
+                    <td class="text-left">
+                      {{ cleanName(order.request_id) }}
                     </td>
                     <td class="text-center">
                       {{ order.created_at | timestamp }}
@@ -140,16 +146,6 @@
                     <td class="text-center">{{ order.delivered_count }}</td>
                     <td class="text-center">{{ order.failed_count }}</td>
                     <td class="text-center">{{ order.expired_count }}</td>
-                    <td class="text-center">
-                      <v-btn
-                        small
-                        color="primary"
-                        :to="`/search-messages?query=${order.request_id}`"
-                      >
-                        <v-icon small left>{{ mdiEye }}</v-icon>
-                        View
-                      </v-btn>
-                    </td>
                   </tr>
                 </tbody>
               </template>
@@ -224,6 +220,15 @@ export default Vue.extend({
     this.fetchBulkOrders()
   },
   methods: {
+    cleanName(requestId: string): string {
+      if (requestId.startsWith('bulk-csv-')) {
+        return requestId.replace(/^bulk-csv-/, '') + '.csv'
+      }
+      if (requestId.startsWith('bulk-xls-')) {
+        return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
+      }
+      return requestId.replace(/^bulk-/, '')
+    },
     fetchBulkOrders() {
       this.loadingHistory = true
       this.$store
@@ -263,3 +268,12 @@ export default Vue.extend({
   },
 })
 </script>
+
+<style scoped>
+.clickable-row {
+  cursor: pointer;
+}
+.clickable-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+</style>

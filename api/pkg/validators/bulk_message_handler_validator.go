@@ -52,7 +52,7 @@ func NewBulkMessageHandlerValidator(
 }
 
 // ValidateStore validates the requests.BillingUsageHistory request
-func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
+func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, string, url.Values) {
 	ctx, span, ctxLogger := v.tracer.StartWithLogger(ctx, v.logger)
 	defer span.End()
 
@@ -61,22 +61,22 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 		result := url.Values{}
 		result.Add("document", "Cannot load your account. Please try again later or contact support.")
 		ctxLogger.Error(v.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s]", userID))))
-		return nil, result
+		return nil, "", result
 	}
 
-	messages, result := v.parseFile(ctxLogger, user, header)
+	messages, fileType, result := v.parseFile(ctxLogger, user, header)
 	if len(result) != 0 {
-		return messages, result
+		return messages, fileType, result
 	}
 
 	if len(messages) == 0 {
 		result.Add("document", "The uploaded file doesn't contain any valid records. Make sure you are using the official httpSMS template.")
-		return messages, result
+		return messages, fileType, result
 	}
 
 	if len(messages) > 1000 {
 		result.Add("document", "The uploaded file must contain less than 1000 records.")
-		return messages, result
+		return messages, fileType, result
 	}
 
 	for index, message := range messages {
@@ -85,30 +85,32 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 
 	result = v.validateMessages(ctx, messages)
 	if len(result) != 0 {
-		return messages, result
+		return messages, fileType, result
 	}
 
 	result = v.validateOwners(ctx, userID, messages)
 	if len(result) != 0 {
-		return messages, result
+		return messages, fileType, result
 	}
 
-	return messages, result
+	return messages, fileType, result
 }
 
-func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
+func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, string, url.Values) {
 	if header.Header.Get("Content-Type") == "text/csv" || strings.HasSuffix(header.Filename, ".csv") {
-		return v.parseCSV(ctxLogger, user, header)
+		messages, result := v.parseCSV(ctxLogger, user, header)
+		return messages, "csv", result
 	}
 	if header.Header.Get("Content-Type") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || strings.HasSuffix(header.Filename, ".xlsx") {
-		return v.parseXlsx(ctxLogger, user, header)
+		messages, result := v.parseXlsx(ctxLogger, user, header)
+		return messages, "xls", result
 	}
 
 	ctxLogger.Error(stacktrace.NewError(fmt.Sprintf("cannot parse file [%s] for user [%s] with content type [%s]", header.Filename, user.ID, header.Header.Get("Content-Type"))))
 
 	result := url.Values{}
 	result.Add("document", fmt.Sprintf("The file [%s] is not a valid CSV or Excel file.", header.Filename))
-	return nil, result
+	return nil, "", result
 }
 
 func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
@@ -158,7 +160,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 			FromPhoneNumber: strings.TrimSpace(row[0]),
 			ToPhoneNumber:   strings.TrimSpace(row[1]),
 			Content:         row[2],
-			SendTimeRaw:     sendTimeRaw,
+			SendTime:        sendTimeRaw,
 			AttachmentURLs:  attachmentURLs,
 		})
 	}
@@ -266,10 +268,10 @@ func (v *BulkMessageHandlerValidator) validateMessages(_ context.Context, messag
 			result.Add("document", fmt.Sprintf("Row [%d]: The message content must be less than 1024 characters.", index+2))
 		}
 
-		if strings.TrimSpace(message.SendTimeRaw) != "" {
+		if strings.TrimSpace(message.SendTime) != "" {
 			sendTime := message.GetSendTime()
 			if sendTime == nil {
-				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] is not a valid date format. Use RFC3339 (e.g. 2023-11-11T02:10:01Z) or YYYY-MM-DDTHH:MM:SS.", index+2, message.SendTimeRaw))
+				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] is not a valid date format. Use RFC3339 (e.g. 2023-11-11T02:10:01Z) or YYYY-MM-DDTHH:MM:SS.", index+2, message.SendTime))
 			} else if sendTime.After(time.Now().Add(420 * time.Hour)) {
 				result.Add("document", fmt.Sprintf("Row [%d]: The SendTime [%s] cannot be more than 20 days (420 hours) in the future.", index+2, sendTime.Format(time.RFC3339)))
 			}

@@ -1,29 +1,28 @@
 package requests
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/services"
-	"github.com/google/uuid"
 	"github.com/nyaruka/phonenumbers"
 )
 
 // BulkMessage represents a single message in a bulk SMS request
 type BulkMessage struct {
 	request
+	FileType        string `json:"type"`
 	FromPhoneNumber string `csv:"FromPhoneNumber"`
 	ToPhoneNumber   string `csv:"ToPhoneNumber"`
 	Content         string `csv:"Content"`
-	SendTimeRaw     string `csv:"SendTime(optional)"`
+	SendTime        string `csv:"SendTime(optional)"`
 	AttachmentURLs  string `csv:"AttachmentURLs(optional)" validate:"optional"` // Comma separated list of URLs
 }
 
 // GetSendTime parses the raw SendTime string into a *time.Time
 func (input *BulkMessage) GetSendTime() *time.Time {
-	raw := strings.TrimSpace(input.SendTimeRaw)
+	raw := strings.TrimSpace(input.SendTime)
 	if raw == "" {
 		return nil
 	}
@@ -61,13 +60,13 @@ func (input *BulkMessage) Sanitize() *BulkMessage {
 }
 
 // ToMessageSendParams converts BulkMessage to services.MessageSendParams
-func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID uuid.UUID, source string, index int) services.MessageSendParams {
+func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID string, source string, index int) services.MessageSendParams {
 	from, _ := phonenumbers.Parse(input.FromPhoneNumber, phonenumbers.UNKNOWN_REGION)
 
 	return services.MessageSendParams{
 		Source:            source,
 		Owner:             from,
-		RequestID:         input.sanitizeStringPointer(fmt.Sprintf("bulk-%s", requestID.String())),
+		RequestID:         input.sanitizeStringPointer(requestID),
 		UserID:            userID,
 		SendAt:            input.GetSendTime(),
 		RequestReceivedAt: time.Now().UTC(),

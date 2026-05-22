@@ -409,8 +409,9 @@ func TestBulkSMS_CSV(t *testing.T) {
 	phone := setupPhone(ctx, t, 60)
 
 	// Build CSV content with 1 message
+	contact := randomPhoneNumber()
 	csvContent := fmt.Sprintf("FromPhoneNumber,ToPhoneNumber,Content,SendTime(optional)\n%s,%s,CSV bulk test message,\n",
-		phone.PhoneNumber, randomPhoneNumber())
+		phone.PhoneNumber, contact)
 
 	// Upload CSV
 	statusCode, respBody := uploadBulkFile(ctx, t, "test.csv", []byte(csvContent))
@@ -428,7 +429,7 @@ func TestBulkSMS_CSV(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Search for the bulk message by owner to get message IDs
-	messages := searchMessages(ctx, t, "", phone.PhoneNumber)
+	messages := searchMessages(ctx, t, contact, phone.PhoneNumber)
 	require.GreaterOrEqual(t, len(messages), 1, "expected at least 1 message for phone %s", phone.PhoneNumber)
 
 	// Find the message with bulk- request_id prefix
@@ -510,8 +511,10 @@ func TestBulkSMS_Excel(t *testing.T) {
 	// Wait for messages to be persisted
 	time.Sleep(2 * time.Second)
 
-	// Search for bulk messages by owner
-	messages := searchMessages(ctx, t, "", phone.PhoneNumber)
+	// Search for bulk messages by owner and each contact
+	messages1 := searchMessages(ctx, t, contact1, phone.PhoneNumber)
+	messages2 := searchMessages(ctx, t, contact2, phone.PhoneNumber)
+	messages := append(messages1, messages2...)
 	require.GreaterOrEqual(t, len(messages), 2, "expected at least 2 messages for phone %s", phone.PhoneNumber)
 
 	// Find messages with bulk- request_id prefix
