@@ -4,14 +4,17 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 defaults:
   run:
     working-directory: ./web
 
 jobs:
-  ci:
-    name: Build & Deploy
+  validate:
+    name: Validate
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -37,8 +40,26 @@ jobs:
       - name: Run tests 🧪
         run: pnpm test
 
-      - name: Debug 🐛
-        run: echo GITHUB_SHA=${GITHUB_SHA}
+      - name: Build 🏗️
+        run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && pnpm run generate
+
+  deploy:
+    name: Deploy
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@master
+
+      - uses: pnpm/action-setup@v6
+        name: Install pnpm
+        with:
+          version: 10
+
+      - name: Install dependencies 📦
+        run: pnpm install
 
       - name: Build 🏗️
         run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && pnpm run generate
