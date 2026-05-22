@@ -163,12 +163,11 @@
                   :disabled="loading || !canResendSelected"
                   small
                   class="ml-2 mt-2 d-none d-md-inline-flex"
-                  color="warning"
                   v-bind="attrs"
                   v-on="on"
                 >
                   <v-icon left>{{ mdiRefresh }}</v-icon>
-                  RESEND
+                  Resend Messages
                 </v-btn>
               </template>
               <v-card>
@@ -182,7 +181,7 @@
                 </v-card-text>
                 <v-card-actions class="pb-4">
                   <v-btn
-                    color="warning"
+                    color="primary"
                     :loading="loading"
                     @click="resendMessages"
                   >
