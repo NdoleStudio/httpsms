@@ -566,6 +566,7 @@ export default Vue.extend({
             to: message.contact,
             content: message.content,
             sim: message.sim,
+            request_id: message.request_id,
           }),
         ),
       )

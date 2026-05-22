@@ -294,6 +294,7 @@ export type SendMessageRequest = {
   to: string
   content: string
   sim: SIM
+  request_id?: string
 }
 
 export const actions = {
