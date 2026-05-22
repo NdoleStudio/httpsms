@@ -334,6 +334,7 @@ import {
 } from '@mdi/js'
 import { AxiosError } from 'axios'
 import { DataOptions } from 'vuetify'
+import axios from '~/plugins/axios'
 import { ErrorMessages, getErrorMessages } from '~/plugins/errors'
 import capitalize from '~/plugins/capitalize'
 import {
@@ -558,9 +559,9 @@ export default Vue.extend({
 
     resendMessages() {
       this.loading = true
-      Promise.all(
+      Promise.allSettled(
         this.selectedMessages.map((message) =>
-          this.$store.dispatch('sendMessage', {
+          axios.post('/v1/messages/send', {
             from: message.owner,
             to: message.contact,
             content: message.content,
@@ -569,18 +570,28 @@ export default Vue.extend({
           }),
         ),
       )
-        .then(() => {
-          this.$store.dispatch('addNotification', {
-            message: 'The selected messages have been queued for resending',
-            type: 'success',
-          })
-          this.selectedMessages = []
-        })
-        .catch(() => {
-          this.$store.dispatch('addNotification', {
-            message: 'Error while resending the selected messages',
-            type: 'error',
-          })
+        .then((results) => {
+          const failed = results.filter((r) => r.status === 'rejected')
+          if (failed.length === 0) {
+            this.$store.dispatch('addNotification', {
+              message: 'The selected messages have been queued for resending',
+              type: 'success',
+            })
+            this.selectedMessages = []
+          } else if (failed.length === results.length) {
+            this.$store.dispatch('addNotification', {
+              message: 'Error while resending the selected messages',
+              type: 'error',
+            })
+          } else {
+            this.$store.dispatch('addNotification', {
+              message: `${results.length - failed.length} messages resent, ${
+                failed.length
+              } failed`,
+              type: 'warning',
+            })
+            this.selectedMessages = []
+          }
         })
         .finally(() => {
           this.loading = false
