@@ -99,7 +99,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	messages, fileType, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
+	messages, fileType, userLocation, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
 	if len(validationErrors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending bulk sms from CSV file [%s] for [%s]", spew.Sdump(validationErrors), file.Filename, h.userIDFomContext(c))
 		ctxLogger.Warn(stacktrace.NewError(msg))
@@ -121,7 +121,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 	for _, message := range messages {
 		wg.Add(1)
 		var perPhoneIndex int
-		if message.GetSendTime() == nil {
+		if message.GetSendTime(userLocation) == nil {
 			perPhoneIndex = phoneIndexCounter[message.FromPhoneNumber]
 			phoneIndexCounter[message.FromPhoneNumber]++
 		}
@@ -130,11 +130,11 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 			count.Add(1)
 			_, err = h.messageService.SendMessage(
 				ctx,
-				message.ToMessageSendParams(h.userIDFomContext(c), requestID, c.OriginalURL(), index),
+				message.ToMessageSendParams(h.userIDFomContext(c), requestID, c.OriginalURL(), index, userLocation),
 			)
 			if err != nil {
 				count.Add(-1)
-				msg := fmt.Sprintf("cannot send message with paylod [%s] at index [%d]", spew.Sdump(message), index)
+				msg := fmt.Sprintf("cannot send message with payload [%s] at index [%d]", spew.Sdump(message), index)
 				ctxLogger.Error(stacktrace.Propagate(err, msg))
 			}
 			wg.Done()

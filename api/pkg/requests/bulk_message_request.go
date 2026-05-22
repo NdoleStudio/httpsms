@@ -20,22 +20,33 @@ type BulkMessage struct {
 	AttachmentURLs  string `csv:"AttachmentURLs(optional)" validate:"optional"` // Comma separated list of URLs
 }
 
-// GetSendTime parses the raw SendTime string into a *time.Time
-func (input *BulkMessage) GetSendTime() *time.Time {
+// GetSendTime parses the raw SendTime string into a *time.Time.
+// For timezone-naive formats, the time is interpreted in the given location.
+// For RFC3339 (which includes an offset), the embedded offset is used.
+func (input *BulkMessage) GetSendTime(location *time.Location) *time.Time {
 	raw := strings.TrimSpace(input.SendTime)
 	if raw == "" {
 		return nil
 	}
 
-	formats := []string{
-		time.RFC3339,
-		"2006-01-02T15:04:05",
-		"2006-01-02 15:04:05",
-		"2006-01-02",
+	if location == nil {
+		location = time.UTC
 	}
 
-	for _, format := range formats {
-		if t, err := time.Parse(format, raw); err == nil {
+	// RFC3339 already contains timezone offset, parse without location
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		utc := t.UTC()
+		return &utc
+	}
+
+	// Naive formats: interpret in the user's location
+	naiveFormats := []string{
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+	}
+
+	for _, format := range naiveFormats {
+		if t, err := time.ParseInLocation(format, raw, location); err == nil {
 			utc := t.UTC()
 			return &utc
 		}
@@ -60,7 +71,7 @@ func (input *BulkMessage) Sanitize() *BulkMessage {
 }
 
 // ToMessageSendParams converts BulkMessage to services.MessageSendParams
-func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID string, source string, index int) services.MessageSendParams {
+func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID string, source string, index int, location *time.Location) services.MessageSendParams {
 	from, _ := phonenumbers.Parse(input.FromPhoneNumber, phonenumbers.UNKNOWN_REGION)
 
 	return services.MessageSendParams{
@@ -68,7 +79,7 @@ func (input *BulkMessage) ToMessageSendParams(userID entities.UserID, requestID 
 		Owner:             from,
 		RequestID:         input.sanitizeStringPointer(requestID),
 		UserID:            userID,
-		SendAt:            input.GetSendTime(),
+		SendAt:            input.GetSendTime(location),
 		RequestReceivedAt: time.Now().UTC(),
 		Contact:           input.sanitizeAddress(input.ToPhoneNumber),
 		Content:           input.Content,
