@@ -273,7 +273,8 @@ export default Vue.extend({
 .clickable-row {
   cursor: pointer;
 }
+
 .clickable-row:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgb(0 0 0 / 4%);
 }
 </style>
