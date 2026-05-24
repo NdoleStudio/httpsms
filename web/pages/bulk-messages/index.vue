@@ -221,12 +221,6 @@ export default Vue.extend({
   },
   methods: {
     cleanName(requestId: string): string {
-      if (requestId.startsWith('bulk-csv-')) {
-        return requestId.replace(/^bulk-csv-/, '') + '.csv'
-      }
-      if (requestId.startsWith('bulk-xls-')) {
-        return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
-      }
       return requestId.replace(/^bulk-/, '')
     },
     fetchBulkOrders() {
@@ -251,10 +245,9 @@ export default Vue.extend({
       this.$store
         .dispatch('sendBulkMessages', this.formFile)
         .then(() => {
-          setTimeout(() => {
-            this.loading = false
-            this.$router.push({ name: 'threads' })
-          }, 2000)
+          this.loading = false
+          this.formFile = null
+          this.fetchBulkOrders()
         })
         .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
           this.errorTitle = capitalize(

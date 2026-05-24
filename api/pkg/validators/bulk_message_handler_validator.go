@@ -52,7 +52,7 @@ func NewBulkMessageHandlerValidator(
 }
 
 // ValidateStore validates the requests.BillingUsageHistory request
-func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, string, *time.Location, url.Values) {
+func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID entities.UserID, header *multipart.FileHeader) ([]*requests.BulkMessage, *time.Location, url.Values) {
 	ctx, span, ctxLogger := v.tracer.StartWithLogger(ctx, v.logger)
 	defer span.End()
 
@@ -61,22 +61,22 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 		result := url.Values{}
 		result.Add("document", "Cannot load your account. Please try again later or contact support.")
 		ctxLogger.Error(v.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s]", userID))))
-		return nil, "", nil, result
+		return nil, nil, result
 	}
 
-	messages, fileType, result := v.parseFile(ctxLogger, user, header)
+	messages, result := v.parseFile(ctxLogger, user, header)
 	if len(result) != 0 {
-		return messages, fileType, user.Location(), result
+		return messages, user.Location(), result
 	}
 
 	if len(messages) == 0 {
 		result.Add("document", "The uploaded file doesn't contain any valid records. Make sure you are using the official httpSMS template.")
-		return messages, fileType, user.Location(), result
+		return messages, user.Location(), result
 	}
 
 	if len(messages) > 1000 {
 		result.Add("document", "The uploaded file must contain less than 1000 records.")
-		return messages, fileType, user.Location(), result
+		return messages, user.Location(), result
 	}
 
 	for index, message := range messages {
@@ -85,32 +85,30 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 
 	result = v.validateMessages(ctx, messages, user.Location())
 	if len(result) != 0 {
-		return messages, fileType, user.Location(), result
+		return messages, user.Location(), result
 	}
 
 	result = v.validateOwners(ctx, userID, messages)
 	if len(result) != 0 {
-		return messages, fileType, user.Location(), result
+		return messages, user.Location(), result
 	}
 
-	return messages, fileType, user.Location(), result
+	return messages, user.Location(), result
 }
 
-func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, string, url.Values) {
+func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
 	if header.Header.Get("Content-Type") == "text/csv" || strings.HasSuffix(header.Filename, ".csv") {
-		messages, result := v.parseCSV(ctxLogger, user, header)
-		return messages, "csv", result
+		return v.parseCSV(ctxLogger, user, header)
 	}
 	if header.Header.Get("Content-Type") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || strings.HasSuffix(header.Filename, ".xlsx") {
-		messages, result := v.parseXlsx(ctxLogger, user, header)
-		return messages, "xls", result
+		return v.parseXlsx(ctxLogger, user, header)
 	}
 
 	ctxLogger.Error(stacktrace.NewError(fmt.Sprintf("cannot parse file [%s] for user [%s] with content type [%s]", header.Filename, user.ID, header.Header.Get("Content-Type"))))
 
 	result := url.Values{}
 	result.Add("document", fmt.Sprintf("The file [%s] is not a valid CSV or Excel file.", header.Filename))
-	return nil, "", result
+	return nil, result
 }
 
 func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user *entities.User, header *multipart.FileHeader) ([]*requests.BulkMessage, url.Values) {
