@@ -221,6 +221,12 @@ export default Vue.extend({
   },
   methods: {
     cleanName(requestId: string): string {
+      if (requestId.startsWith('bulk-csv-')) {
+        return requestId.replace(/^bulk-csv-/, '') + '.csv'
+      }
+      if (requestId.startsWith('bulk-xls-')) {
+        return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
+      }
       return requestId.replace(/^bulk-/, '')
     },
     fetchBulkOrders() {

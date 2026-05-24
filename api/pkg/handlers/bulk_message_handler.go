@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -147,8 +149,27 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 
 func (h *BulkMessageHandler) generateRequestID(filename string) string {
 	timestamp := encodeBase62(time.Now().Unix())
-	truncated := truncateFilename(filename, 32)
-	return fmt.Sprintf("bulk-%s-%s", timestamp, truncated)
+	suffix := randomBase62(4)
+	truncated := truncateFilename(sanitizeFilename(filename), 32)
+	return fmt.Sprintf("bulk-%s%s-%s", timestamp, suffix, truncated)
+}
+
+var unsafeCharsRegex = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
+
+func sanitizeFilename(filename string) string {
+	return unsafeCharsRegex.ReplaceAllString(filename, "")
+}
+
+func randomBase62(length int) string {
+	const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return charset[:length]
+	}
+	for i := range b {
+		b[i] = charset[int(b[i])%len(charset)]
+	}
+	return string(b)
 }
 
 func encodeBase62(n int64) string {
