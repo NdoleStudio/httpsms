@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"crypto/rand"
 	"fmt"
+	"path/filepath"
+	"regexp"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -12,7 +14,6 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v2"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/palantir/stacktrace"
 )
 
@@ -99,7 +100,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responseBadRequest(c, err)
 	}
 
-	messages, fileType, userLocation, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
+	messages, userLocation, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
 	if len(validationErrors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending bulk sms from CSV file [%s] for [%s]", spew.Sdump(validationErrors), file.Filename, h.userIDFomContext(c))
 		ctxLogger.Warn(stacktrace.NewError(msg))
@@ -111,7 +112,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 		return h.responsePaymentRequired(c, *msg)
 	}
 
-	requestID := h.generateRequestID(fileType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	requestID := h.generateRequestID(file.Filename)
 	wg := sync.WaitGroup{}
 	count := atomic.Int64{}
 
@@ -145,21 +146,41 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 	return h.responseAccepted(c, fmt.Sprintf("Added %d out of %d messages to the queue", count.Load(), len(messages)))
 }
 
-func (h *BulkMessageHandler) generateRequestID(fileType string, alphabet string) string {
-	id, err := gonanoid.Generate(alphabet, 10)
-	if err != nil {
-		id = h.randomAlphaNum(10, alphabet)
-	}
-	return fmt.Sprintf("bulk-%s-%s", fileType, id)
+func (h *BulkMessageHandler) generateRequestID(filename string) string {
+	return fmt.Sprintf("bulk-%s-%s", encodeBase62(time.Now().Unix()), truncateFilename(sanitizeFilename(filename), 32))
 }
 
-func (h *BulkMessageHandler) randomAlphaNum(length int, alphabet string) string {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return alphabet[:length]
+func sanitizeFilename(filename string) string {
+	return regexp.MustCompile(`[^a-zA-Z0-9.\-_: ]`).ReplaceAllString(filename, "")
+}
+
+func encodeBase62(n int64) string {
+	const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	if n == 0 {
+		return "0"
 	}
-	for i := range b {
-		b[i] = alphabet[int(b[i])%len(alphabet)]
+	result := make([]byte, 0, 8)
+	for n > 0 {
+		result = append(result, charset[n%62])
+		n /= 62
 	}
-	return string(b)
+	// reverse
+	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+		result[i], result[j] = result[j], result[i]
+	}
+	return string(result)
+}
+
+func truncateFilename(filename string, maxLen int) string {
+	if len(filename) <= maxLen {
+		return filename
+	}
+	ext := filepath.Ext(filename)
+	name := filename[:len(filename)-len(ext)]
+	available := maxLen - len(ext)
+	if available <= 0 {
+		return filename[:maxLen]
+	}
+	half := available / 2
+	return name[:half] + name[len(name)-(available-half):] + ext
 }

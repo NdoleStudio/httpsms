@@ -251,10 +251,9 @@ export default Vue.extend({
       this.$store
         .dispatch('sendBulkMessages', this.formFile)
         .then(() => {
-          setTimeout(() => {
-            this.loading = false
-            this.$router.push({ name: 'threads' })
-          }, 2000)
+          this.loading = false
+          this.formFile = null
+          this.fetchBulkOrders()
         })
         .catch((error: AxiosError<ResponsesUnprocessableEntity>) => {
           this.errorTitle = capitalize(
