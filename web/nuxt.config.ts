@@ -23,6 +23,19 @@ export default defineNuxtConfig({
         },
       },
     },
+    optimizeDeps: {
+      include: [
+        "chartjs-adapter-moment",
+        "@mdi/js",
+        "date-fns",
+        "libphonenumber-js",
+        "firebase/compat/app",
+        "firebase/compat/auth",
+        "firebaseui",
+        "qrcode",
+        "pusher-js",
+      ],
+    },
   },
 
   vuetify: {
