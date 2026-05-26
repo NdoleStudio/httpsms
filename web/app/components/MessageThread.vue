@@ -1,0 +1,84 @@
+<script setup lang="ts">
+import { useDisplay } from "vuetify";
+import { mdiPlus } from "@mdi/js";
+import { formatPhoneNumber } from "~/utils/filters";
+import type { MessageThread } from "~~/shared/types/message-thread";
+
+const { mdAndDown } = useDisplay();
+const threadsStore = useThreadsStore();
+const phonesStore = usePhonesStore();
+
+function getInitials(contact: string): string {
+  const formatted = formatPhoneNumber(contact);
+  return formatted.substring(0, 2);
+}
+</script>
+
+<template>
+  <div>
+    <v-progress-linear
+      v-if="threadsStore.loadingThreads"
+      color="primary"
+      indeterminate
+    />
+    <div
+      v-if="!threadsStore.loadingThreads && threadsStore.archivedThreads"
+      class="bg-warning py-1 text-center text-uppercase text-subtitle-1"
+    >
+      Archived Messages
+    </div>
+    <v-sheet
+      v-if="
+        !threadsStore.loadingThreads &&
+        threadsStore.threads.length === 0 &&
+        !threadsStore.archivedThreads
+      "
+      class="text-center mt-8 mx-3"
+      :color="mdAndDown ? '#121212' : '#363636'"
+    >
+      <div v-if="mdAndDown">
+        <v-img
+          class="mx-auto mb-4"
+          max-width="80%"
+          src="/img/person-texting.svg"
+        />
+        <p v-if="phonesStore.owner" class="text-medium-emphasis">
+          Start sending messages
+        </p>
+      </div>
+      <v-btn
+        v-if="phonesStore.owner && phonesStore.phones.length !== 0"
+        color="primary"
+        :to="{ name: 'messages' }"
+      >
+        <v-icon :icon="mdiPlus" />
+        New Message
+      </v-btn>
+    </v-sheet>
+    <v-list
+      v-if="!threadsStore.loadingThreads && threadsStore.threads.length > 0"
+      class="pa-0"
+    >
+      <v-list-item
+        v-for="thread in threadsStore.threads"
+        :key="thread.id"
+        :to="{ name: 'threads-id', params: { id: thread.id } }"
+        :active="threadsStore.threadId === thread.id"
+      >
+        <template #prepend>
+          <v-avatar :color="thread.color" size="40">
+            <span class="text-white text-body-2">{{
+              getInitials(thread.contact)
+            }}</span>
+          </v-avatar>
+        </template>
+        <v-list-item-title>{{
+          formatPhoneNumber(thread.contact)
+        }}</v-list-item-title>
+        <v-list-item-subtitle class="text-truncate" style="max-width: 250px">
+          {{ thread.last_message_content }}
+        </v-list-item-subtitle>
+      </v-list-item>
+    </v-list>
+  </div>
+</template>
