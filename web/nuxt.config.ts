@@ -27,7 +27,7 @@ export default defineNuxtConfig({
 
   vuetify: {
     moduleOptions: {
-      styles: { configFile: "app/assets/styles/settings.scss" },
+      styles: { configFile: "assets/styles/settings.scss" },
     },
     vuetifyOptions: {
       theme: {
@@ -59,6 +59,7 @@ export default defineNuxtConfig({
     },
     auth: {
       enabled: true,
+      sessionCookie: false,
     },
   },
 
@@ -85,7 +86,8 @@ export default defineNuxtConfig({
 
   nitro: {
     prerender: {
-      routes: ["/"],
+      routes: [],
+      failOnError: false,
     },
   },
 
