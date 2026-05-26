@@ -113,7 +113,7 @@
               <template #default>
                 <thead>
                   <tr class="text-uppercase subtitle-2">
-                    <th class="text-left">ID</th>
+                    <th class="text-left">Name</th>
                     <th class="text-center">Created At</th>
                     <th class="text-center">Total</th>
                     <th class="text-center">Pending</th>
@@ -226,6 +226,11 @@ export default Vue.extend({
       }
       if (requestId.startsWith('bulk-xls-')) {
         return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
+      }
+      // New format: bulk-{base62_timestamp}-{filename}
+      const newFormatMatch = requestId.match(/^bulk-[0-9A-Za-z]+-(.+)$/)
+      if (newFormatMatch) {
+        return newFormatMatch[1]
       }
       return requestId.replace(/^bulk-/, '')
     },

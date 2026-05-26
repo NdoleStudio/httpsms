@@ -147,7 +147,7 @@ func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
 }
 
 func (h *BulkMessageHandler) generateRequestID(filename string) string {
-	return fmt.Sprintf("bulk-%s-%s", encodeBase62(time.Now().Unix()), truncateFilename(sanitizeFilename(filename), 32))
+	return fmt.Sprintf("bulk-%s-%s", encodeBase62(time.Now().UnixMilli()), truncateFilename(sanitizeFilename(filename), 32))
 }
 
 func sanitizeFilename(filename string) string {
