@@ -287,7 +287,7 @@ onMounted(async () => {
             </div>
 
             <!-- API Key -->
-            <h5 class="text-h4 mb-3 mt-3">API Key</h5>
+            <h5 class="text-headline-large mb-3 mt-3">API Key</h5>
             <p class="text-medium-emphasis">
               Use your API Key in the <code>x-api-key</code> HTTP Header when
               sending requests to
@@ -370,7 +370,7 @@ onMounted(async () => {
                   </VBtn>
                 </template>
                 <VCard>
-                  <VCardTitle class="text-h5 text-break"
+                  <VCardTitle class="text-headline-medium text-break"
                     >Are you sure you want to rotate your API Key?</VCardTitle
                   >
                   <VCardText>
@@ -397,7 +397,9 @@ onMounted(async () => {
             </div>
 
             <!-- Webhooks -->
-            <h5 id="webhook-settings" class="text-h4 mb-3 mt-12">Webhooks</h5>
+            <h5 id="webhook-settings" class="text-headline-large mb-3 mt-12">
+              Webhooks
+            </h5>
             <p class="text-medium-emphasis">
               Webhooks allow us to send events to your server for example when
               the android phone receives an SMS message we can forward the
@@ -414,7 +416,7 @@ onMounted(async () => {
             </div>
             <VTable v-else-if="webhooks.length" class="mb-4">
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th v-if="xlAndUp" class="text-left">ID</th>
                   <th class="text-left text-break">Callback URL</th>
                   <th v-if="lgAndUp" class="text-center">Events</th>
@@ -511,7 +513,7 @@ onMounted(async () => {
             </VDialog>
 
             <!-- Discord Integration -->
-            <h5 id="discord-settings" class="text-h4 mb-3 mt-12">
+            <h5 id="discord-settings" class="text-headline-large mb-3 mt-12">
               Discord Integration
             </h5>
             <p class="text-medium-emphasis">
@@ -530,7 +532,7 @@ onMounted(async () => {
             </div>
             <VTable v-else-if="discords.length" class="mb-4">
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th class="text-left">Name</th>
                   <th class="text-left">Server ID</th>
                   <th class="text-left">Channel ID</th>
@@ -559,7 +561,7 @@ onMounted(async () => {
             </VBtn>
 
             <!-- Send Schedules -->
-            <h5 id="send-schedules" class="text-h4 mb-3 mt-12">
+            <h5 id="send-schedules" class="text-headline-large mb-3 mt-12">
               Send Schedules
             </h5>
             <p class="text-medium-emphasis">
@@ -578,7 +580,7 @@ onMounted(async () => {
             </div>
             <VTable v-else-if="sendSchedules.length" class="mb-4">
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th class="text-left">Phone</th>
                   <th class="text-center">Days</th>
                   <th class="text-center">Start</th>

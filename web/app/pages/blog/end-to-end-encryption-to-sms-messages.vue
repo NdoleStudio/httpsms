@@ -1,7 +1,8 @@
 <script setup lang="ts">
 definePageMeta({ layout: "website" });
+
 useHead({
-  title: "How to Add End-to-End Encryption to SMS Messages - httpSMS",
+  title: "End-to-End Encryption to SMS Messages - httpSMS",
 });
 </script>
 
@@ -9,39 +10,113 @@ useHead({
   <VContainer>
     <VRow>
       <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-h3 mb-2">
-          How to Add End-to-End Encryption to SMS Messages
+        <h1 class="text-display-small mb-2">
+          End-to-End Encryption to SMS Messages
         </h1>
-        <BlogInfo date="September 15, 2023" read-time="5 min read" />
+        <BlogInfo date="January 21, 2024" read-time="10 min read" />
         <VDivider class="my-6" />
-        <p class="text-body-1 mb-4">
-          Privacy is fundamental. With httpSMS, you can add end-to-end
-          encryption to your SMS messages using military-grade AES-256
-          encryption. This ensures that only you and the intended recipient can
-          read the message content.
+
+        <p class="text-body-large mb-6">
+          We have added support for end-to-end encryption for SMS messages so
+          that no one can see the content of the messages you send using httpSMS
+          except you. You setup an encryption key which you use to encrypt your
+          messages before making an API request to httpSMS and you also use the
+          same key to decrypt the messages you receive from httpSMS via our
+          webhook events. We are using the AES 256 encryption algorithm to
+          encrypt and decrypt the messages.
         </p>
-        <h2 class="text-h5 mt-6 mb-3">How It Works</h2>
-        <p class="text-body-1 mb-4">
-          When you enable encryption in the httpSMS Android app, all messages
-          are encrypted before being sent. The encryption key is derived from a
-          passphrase that you set in the app settings. Both sender and receiver
-          must use the same passphrase.
+
+        <h2 class="text-headline-medium mb-4">Setup your encryption key</h2>
+        <p class="text-body-large mb-6">
+          Download and install the httpSMS Android app on your phone and set
+          your encryption key under the App Settings page of the app.
+          <a
+            href="https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk"
+            target="_blank"
+            rel="noopener"
+            >Download the Android app</a
+          >.
         </p>
-        <h2 class="text-h5 mt-6 mb-3">Setup Steps</h2>
-        <ol class="ml-6 mb-4">
-          <li class="mb-2">Open the httpSMS app on your Android phone</li>
-          <li class="mb-2">Go to Settings → Encryption</li>
-          <li class="mb-2">Enable encryption and set your passphrase</li>
-          <li class="mb-2">Share the passphrase securely with the recipient</li>
-          <li class="mb-2">
-            The recipient enables encryption with the same passphrase
-          </li>
-        </ol>
-        <p class="text-body-1 mb-4">
-          Messages are encrypted using AES-256 in CFB mode with a SHA-256
-          derived key. The encryption happens on-device before the message is
-          sent to the httpSMS API.
+
+        <h2 class="text-headline-medium mb-4">Encrypt your SMS message</h2>
+        <p class="text-body-large mb-4">
+          We are using AES-256 to encrypt your SMS messages. The encryption key
+          is hashed with SHA-256 before use and the initialization vector (IV)
+          is generated for each message. The IV is appended to the encrypted
+          payload before the final value is base64 encoded.
         </p>
+        <pre
+          class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+        ><code class="language-javascript text-body-medium">import HttpSms from "httpsms"
+
+const client = new HttpSms("" /* API Key from https://httpsms.com/settings */)
+
+const key = "Password123"
+
+const encryptedMessage = client.cipher.encrypt(key, "This is a sample text message")
+
+// The encrypted message looks like this
+// Qk3XGN5+Ax38Ig01m4AqaP6Y0b0wYpCXtx59sU23uVLWUU/c7axF7LozDg==</code></pre>
+
+        <h2 class="text-headline-medium mb-4">Send an encrypted message</h2>
+        <p class="text-body-large mb-4">
+          Once you have encrypted the content, send it to the API with
+          <code>encrypted: true</code>. This flag tells the Android app to
+          decrypt the message before sending it to the recipient.
+        </p>
+        <pre
+          class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+        ><code class="language-javascript text-body-medium">import HttpSms from "httpsms"
+
+client.messages.postSend({
+    content:   encryptedMessage,
+    from:      '+18005550199',
+    encrypted: true,
+    to:        '+18005550100',
+})
+.then((message) =&gt; {
+    console.log(message.id) // log the ID of the sent message
+})</code></pre>
+
+        <h2 class="text-headline-medium mb-4">
+          Receiving an encrypted message
+        </h2>
+        <p class="text-body-large mb-4">
+          When your Android phone receives an SMS message, the app encrypts the
+          message with the encryption key configured on the phone before
+          delivering it to your webhook endpoint.
+        </p>
+        <pre
+          class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+        ><code class="language-json text-body-medium">{
+  "event": "message.phone.received",
+  "data": {
+    "content": "bdmZ7n6JVf/ST+SoNlSaOGUL1DcL5705ETw8GAB4llYBgE9HOOL+Pu/h+w==",
+    "encrypted": true,
+    "from": "+18005550100",
+    "id": "msg_123",
+    "to": "+18005550199"
+  }
+}</code></pre>
+        <pre
+          class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+        ><code class="language-javascript text-body-medium">import HttpSms from "httpsms"
+
+const client = new HttpSms("" /* API Key from https://httpsms.com/settings */)
+
+const encryptedMessage = "bdmZ7n6JVf/ST+SoNlSaOGUL1DcL5705ETw8GAB4llYBgE9HOOL+Pu/h+w=="
+const encryptionkey = "Password123"
+const decryptedMessage = client.cipher.decrypt(encryptionkey, encryptedMessage)
+
+// This is a test text message</code></pre>
+
+        <p class="text-body-large mb-6">
+          Congratulations, you have successfully configured your Android phone
+          to send and receive SMS messages with end-to-end encryption. Don't
+          hesitate to contact us if you face any problems while following this
+          guide.
+        </p>
+
         <BlogAuthorBio />
       </VCol>
     </VRow>

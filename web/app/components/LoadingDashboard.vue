@@ -14,7 +14,7 @@ const { mdAndDown } = useDisplay();
           class="text-center mt-16"
           :class="{ 'px-6': mdAndDown, 'px-16': !mdAndDown }"
         >
-          <h2 class="text-h4 text-medium-emphasis mt-16 mb-4">
+          <h2 class="text-headline-large text-medium-emphasis mt-16 mb-4">
             <img
               class="mx-auto d-inline-block"
               src="/img/logo.svg"

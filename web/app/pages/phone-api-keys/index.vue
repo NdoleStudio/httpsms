@@ -108,7 +108,7 @@ onMounted(async () => {
       <VContainer class="mt-16">
         <VRow>
           <VCol cols="12" md="8" offset-md="2">
-            <h4 class="text-h4 mb-3">Phone API Keys</h4>
+            <h4 class="text-headline-large mb-3">Phone API Keys</h4>
             <p class="text-medium-emphasis">
               Create separate API keys for each phone. This allows you to manage
               multiple phones independently and securely.
@@ -116,7 +116,7 @@ onMounted(async () => {
             <VProgressLinear v-if="loading" indeterminate class="mb-4" />
             <VTable v-else-if="phoneApiKeys.length" class="mb-4">
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th class="text-left">Name</th>
                   <th class="text-left">API Key</th>
                   <th class="text-center">Created</th>

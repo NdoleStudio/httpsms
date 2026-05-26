@@ -43,7 +43,10 @@ function goToPricing() {
               :class="{ 'mt-5': mdAndUp }"
             >
               <v-avatar :image="'/img/logo.svg'" :size="33" class="mt-1" />
-              <h3 v-if="lgAndUp" class="text-h4 ml-1 text-on-surface">
+              <h3
+                v-if="lgAndUp"
+                class="text-headline-large ml-1 text-on-surface"
+              >
                 httpSMS
               </h3>
             </NuxtLink>
@@ -111,9 +114,9 @@ function goToPricing() {
           <v-col cols="12" md="3">
             <NuxtLink to="/" class="text-decoration-none d-flex">
               <v-avatar :image="'/img/logo.svg'" :size="33" class="mt-1" />
-              <h3 class="text-h4 ml-1 text-on-surface">httpSMS</h3>
+              <h3 class="text-headline-large ml-1 text-on-surface">httpSMS</h3>
             </NuxtLink>
-            <div class="text-subtitle-2 mb-4 text-medium-emphasis">
+            <div class="text-title-medium mb-4 text-medium-emphasis">
               Made With
               <v-icon color="#cf1112" :icon="mdiHeart" /> in Tallinn
               <v-img
@@ -152,7 +155,7 @@ function goToPricing() {
             </p>
           </v-col>
           <v-col cols="12" md="3">
-            <h2 class="text-h6 mb-2">Resources</h2>
+            <h2 class="text-headline-small mb-2">Resources</h2>
             <ul style="list-style: none" class="pa-0">
               <li class="mb-2">
                 <a
@@ -192,7 +195,7 @@ function goToPricing() {
             </ul>
           </v-col>
           <v-col cols="12" md="3">
-            <h2 class="text-h6 mb-2">Developers</h2>
+            <h2 class="text-headline-small mb-2">Developers</h2>
             <ul style="list-style: none" class="pa-0">
               <li class="mb-2">
                 <a
@@ -236,7 +239,7 @@ function goToPricing() {
             </ul>
           </v-col>
           <v-col cols="12" md="3">
-            <h2 class="text-h6 mb-2">Legal</h2>
+            <h2 class="text-headline-small mb-2">Legal</h2>
             <ul style="list-style: none" class="pa-0">
               <li class="mb-2">
                 <NuxtLink

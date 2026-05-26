@@ -30,7 +30,7 @@ onMounted(async () => {
           :src="'/img/person-texting.svg'"
         />
         <div class="text-center">
-          <h3 class="text-h5 mt-4">Select a Message</h3>
+          <h3 class="text-headline-medium mt-4">Select a Message</h3>
           <p class="text-medium-emphasis">
             Don't hesitate to
             <a

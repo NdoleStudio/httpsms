@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
                       target="_blank"
                       rel="noopener noreferrer"
                       :href="attachment"
-                      class="text-decoration-none text-body-2 mb-2 d-flex w-100"
+                      class="text-decoration-none text-body-medium mb-2 d-flex w-100"
                     >
                       <VIcon
                         size="x-small"
@@ -376,7 +376,7 @@ onBeforeUnmount(() => {
                   </VCardText>
                 </VCard>
                 <div class="d-flex">
-                  <p class="ml-2 text-medium-emphasis text-caption mr-2">
+                  <p class="ml-2 text-medium-emphasis text-body-small mr-2">
                     {{ new Date(message.order_timestamp).toLocaleString() }}
                   </p>
                   <VSpacer />

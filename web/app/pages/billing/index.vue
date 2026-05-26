@@ -58,7 +58,7 @@ onMounted(async () => {
       <VContainer class="mt-16">
         <VRow>
           <VCol cols="12" md="8" offset-md="2">
-            <h4 class="text-h4 mb-3">Usage</h4>
+            <h4 class="text-headline-large mb-3">Usage</h4>
             <p class="text-medium-emphasis">
               Your current billing period usage and limits.
             </p>
@@ -71,36 +71,40 @@ onMounted(async () => {
                   <VRow>
                     <VCol cols="6" md="3">
                       <div class="text-center">
-                        <p class="text-h4 text-primary">
+                        <p class="text-headline-large text-primary">
                           {{ usage.sent_messages ?? 0 }}
                         </p>
-                        <p class="text-medium-emphasis text-subtitle-2">
+                        <p class="text-medium-emphasis text-title-medium">
                           Messages Sent
                         </p>
                       </div>
                     </VCol>
                     <VCol cols="6" md="3">
                       <div class="text-center">
-                        <p class="text-h4 text-primary">
+                        <p class="text-headline-large text-primary">
                           {{ usage.received_messages ?? 0 }}
                         </p>
-                        <p class="text-medium-emphasis text-subtitle-2">
+                        <p class="text-medium-emphasis text-title-medium">
                           Messages Received
                         </p>
                       </div>
                     </VCol>
                     <VCol cols="6" md="3">
                       <div class="text-center">
-                        <p class="text-h4">{{ usage.total_messages ?? 0 }}</p>
-                        <p class="text-medium-emphasis text-subtitle-2">
+                        <p class="text-headline-large">
+                          {{ usage.total_messages ?? 0 }}
+                        </p>
+                        <p class="text-medium-emphasis text-title-medium">
                           Total Messages
                         </p>
                       </div>
                     </VCol>
                     <VCol cols="6" md="3">
                       <div class="text-center">
-                        <p class="text-h4">{{ usage.message_limit ?? 200 }}</p>
-                        <p class="text-medium-emphasis text-subtitle-2">
+                        <p class="text-headline-large">
+                          {{ usage.message_limit ?? 200 }}
+                        </p>
+                        <p class="text-medium-emphasis text-title-medium">
                           Monthly Limit
                         </p>
                       </div>
@@ -120,7 +124,7 @@ onMounted(async () => {
                 </VCardText>
               </VCard>
 
-              <h4 class="text-h4 mb-3 mt-8">Upgrade Plan</h4>
+              <h4 class="text-headline-large mb-3 mt-8">Upgrade Plan</h4>
               <p class="text-medium-emphasis mb-4">
                 Upgrade your plan to send and receive more SMS messages per
                 month.
@@ -132,8 +136,8 @@ onMounted(async () => {
                     <VCardTitle>Pro Plan</VCardTitle>
                     <VCardSubtitle>Up to 5,000 messages/month</VCardSubtitle>
                     <VCardText>
-                      <p class="text-h4 text-primary mb-2">
-                        $10<span class="text-body-1">/month</span>
+                      <p class="text-headline-large text-primary mb-2">
+                        $10<span class="text-body-large">/month</span>
                       </p>
                       <ul class="ml-4">
                         <li>5,000 SMS messages per month</li>
@@ -154,7 +158,7 @@ onMounted(async () => {
                     <VCardTitle>Enterprise Plan</VCardTitle>
                     <VCardSubtitle>Custom message limits</VCardSubtitle>
                     <VCardText>
-                      <p class="text-h4 mb-2">Custom</p>
+                      <p class="text-headline-large mb-2">Custom</p>
                       <ul class="ml-4">
                         <li>Up to 200,000+ SMS messages per month</li>
                         <li>Dedicated support</li>
