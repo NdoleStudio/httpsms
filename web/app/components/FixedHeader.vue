@@ -11,7 +11,7 @@ const { lgAndUp, mdAndDown } = useDisplay();
         <v-col class="w-full d-flex">
           <NuxtLink
             :to="{ name: 'index' }"
-            class="text-on-surface text-h4 text-decoration-none"
+            class="text-on-surface text-headline-large text-decoration-none"
             :class="{ 'mt-5': mdAndDown, 'mt-4': !mdAndDown }"
           >
             <v-avatar v-if="lgAndUp" :image="'/img/logo.svg'" :size="30" />

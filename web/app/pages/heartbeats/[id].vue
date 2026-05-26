@@ -52,7 +52,7 @@ onMounted(async () => {
       <VContainer class="mt-16">
         <VRow>
           <VCol cols="12" md="8" offset-md="2">
-            <h4 class="text-h4 mb-3">Phone Heartbeats</h4>
+            <h4 class="text-headline-large mb-3">Phone Heartbeats</h4>
             <p class="text-medium-emphasis">
               Monitor the connectivity status of your Android phones. Heartbeats
               are sent every 15 minutes when the phone is online.
@@ -60,7 +60,7 @@ onMounted(async () => {
             <VProgressLinear v-if="loading" indeterminate class="mb-4" />
             <VTable v-else-if="heartbeats.length">
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th class="text-left">Phone</th>
                   <th class="text-center">Status</th>
                   <th class="text-center">Last Heartbeat</th>

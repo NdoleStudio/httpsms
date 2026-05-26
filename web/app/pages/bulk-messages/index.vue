@@ -98,7 +98,7 @@ onMounted(async () => {
       <VContainer>
         <VRow>
           <VCol cols="12">
-            <h5 class="text-h4 mb-3 mt-3">Bulk Messages</h5>
+            <h5 class="text-headline-large mb-3 mt-3">Bulk Messages</h5>
             <p>
               Fill in our bulk SMS
               <a
@@ -126,8 +126,10 @@ onMounted(async () => {
               <span class="text-medium-emphasis">Mon - Fri 9am - 5pm.</span>
             </p>
             <VAlert v-if="errorTitle" variant="tonal" type="warning" prominent>
-              <h6 class="text-subtitle-1 font-weight-bold">{{ errorTitle }}</h6>
-              <ul class="text-body-2">
+              <h6 class="text-title-large font-weight-bold">
+                {{ errorTitle }}
+              </h6>
+              <ul class="text-body-medium">
                 <li
                   v-for="message in errorMessages.get('document')"
                   :key="message"
@@ -174,7 +176,7 @@ onMounted(async () => {
         </VRow>
         <VRow class="mt-8">
           <VCol cols="12">
-            <h4 class="text-h4 mb-3">Bulk Message History</h4>
+            <h4 class="text-headline-large mb-3">Bulk Message History</h4>
             <p class="text-medium-emphasis">
               Your 10 most recent bulk SMS uploads are shown below, including a
               delivery status breakdown for each batch. Click on a row to see
@@ -183,7 +185,7 @@ onMounted(async () => {
             <VProgressLinear v-if="loadingHistory" indeterminate class="mb-4" />
             <VTable v-else>
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th class="text-left">Name</th>
                   <th class="text-center">Created At</th>
                   <th class="text-center">Total</th>

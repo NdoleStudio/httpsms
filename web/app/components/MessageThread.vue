@@ -23,7 +23,7 @@ function getInitials(contact: string): string {
     />
     <div
       v-if="!threadsStore.loadingThreads && threadsStore.archivedThreads"
-      class="bg-warning py-1 text-center text-uppercase text-subtitle-1"
+      class="bg-warning py-1 text-center text-uppercase text-title-large"
     >
       Archived Messages
     </div>
@@ -67,7 +67,7 @@ function getInitials(contact: string): string {
       >
         <template #prepend>
           <v-avatar :color="thread.color" size="40">
-            <span class="text-white text-body-2">{{
+            <span class="text-white text-body-medium">{{
               getInitials(thread.contact)
             }}</span>
           </v-avatar>

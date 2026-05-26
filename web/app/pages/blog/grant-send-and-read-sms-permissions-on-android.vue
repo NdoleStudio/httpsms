@@ -1,43 +1,54 @@
 <script setup lang="ts">
 definePageMeta({ layout: "website" });
-useHead({ title: "Grant Send and Read SMS Permissions on Android - httpSMS" });
+
+useHead({
+  title: "Grant Send and Read SMS Permissions on Android - httpSMS",
+});
 </script>
 
 <template>
   <VContainer>
     <VRow>
       <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-h3 mb-2">
+        <h1 class="text-display-small mb-2">
           Grant Send and Read SMS Permissions on Android
         </h1>
-        <BlogInfo date="July 10, 2023" read-time="3 min read" />
+        <BlogInfo date="February 18, 2025" read-time="5 min read" />
         <VDivider class="my-6" />
-        <p class="text-body-1 mb-4">
-          The httpSMS Android app requires certain permissions to send and
-          receive SMS messages. This guide walks you through granting the
-          necessary permissions.
+
+        <p class="text-body-large mb-6">
+          In Android 15 (Vanilla Ice Cream), the android.permission.SEND_SMS and
+          android.permission.RECEIVE_SMS permissions are now hard restricted and
+          cannot be granted via the runtime permissions interface.
         </p>
-        <h2 class="text-h5 mt-6 mb-3">Required Permissions</h2>
-        <ul class="ml-6 mb-4">
-          <li class="mb-2">
-            <strong>SEND_SMS</strong> - Required to send SMS messages
-          </li>
-          <li class="mb-2">
-            <strong>READ_SMS</strong> - Required to read incoming messages
-          </li>
-          <li class="mb-2">
-            <strong>RECEIVE_SMS</strong> - Required to detect new messages
-          </li>
-        </ul>
-        <h2 class="text-h5 mt-6 mb-3">How to Grant Permissions</h2>
-        <ol class="ml-6 mb-4">
-          <li class="mb-2">Open the httpSMS app</li>
-          <li class="mb-2">When prompted, tap "Allow" for each permission</li>
-          <li class="mb-2">
-            If you denied earlier, go to Settings → Apps → httpSMS → Permissions
-          </li>
-          <li class="mb-2">Enable SMS permissions</li>
-        </ol>
+
+        <h2 class="text-headline-medium mb-4">Step 1: Open App Info</h2>
+        <p class="text-body-large mb-6">
+          Long press the icon of the android app which you want to grant the
+          permission and select 'App info'
+        </p>
+
+        <h2 class="text-headline-medium mb-4">
+          Step 2: Allow Restricted Permissions
+        </h2>
+        <p class="text-body-large mb-6">
+          On the App Info page, click on the menu button and select the 'Allow
+          restricted settings' option
+        </p>
+
+        <h2 class="text-headline-medium mb-4">Step 3: Allow SMS Permissions</h2>
+        <p class="text-body-large mb-6">
+          Once you have allowed the restricted settings from step 2 above, You
+          can navigate to Permissions ➡️ SMS and tap the Allow button to grant
+          SMS permissions to the android app.
+        </p>
+
+        <p class="text-body-large mb-6">
+          Congratulations, you have successfully configured SMS permissions on
+          your Android app. Don't hesitate to contact us if you face any
+          problems while following this guide.
+        </p>
+
         <BlogAuthorBio />
       </VCol>
     </VRow>

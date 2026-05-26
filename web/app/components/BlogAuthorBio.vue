@@ -6,7 +6,7 @@ import { mdiTwitter, mdiGithub } from "@mdi/js";
   <div class="d-flex mb-6 mt-8">
     <v-avatar image="/img/arnold.png" />
     <div class="ml-2">
-      <p class="text-subtitle-1 mb-n1">Acho Arnold</p>
+      <p class="text-title-large mb-n1">Acho Arnold</p>
       <a
         class="mb-n4 text-decoration-none text-on-surface"
         href="https://twitter.com/acho_arnold"

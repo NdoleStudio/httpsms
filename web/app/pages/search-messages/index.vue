@@ -74,7 +74,7 @@ onMounted(async () => {
           <VCol cols="12">
             <VTable>
               <thead>
-                <tr class="text-uppercase text-subtitle-2">
+                <tr class="text-uppercase text-title-medium">
                   <th class="text-left">Contact</th>
                   <th class="text-left">Content</th>
                   <th class="text-center">Type</th>

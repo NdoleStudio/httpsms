@@ -75,7 +75,7 @@ const planYearlyMonthlyPrice = computed(
           }"
         >
           <h1
-            class="text-h2 font-weight-bold pb-1 gradient-header"
+            class="text-display-medium font-weight-bold pb-1 gradient-header"
             :class="{
               'mt-16': lgAndUp,
               'mt-10': mdOnly,
@@ -84,7 +84,7 @@ const planYearlyMonthlyPrice = computed(
           >
             Convert your Android phone into an SMS gateway.
           </h1>
-          <h2 class="text-medium-emphasis text-h5 mt-8 mb-8">
+          <h2 class="text-medium-emphasis text-headline-medium mt-8 mb-8">
             <span class="gradient-underline">Save money</span> by using your
             phone to send and receive SMS messages via a simple programmable API
             with end-to-end encryption.
@@ -104,7 +104,7 @@ const planYearlyMonthlyPrice = computed(
               Live Demo
             </VBtn>
           </div>
-          <p class="text-body-2 mt-2">
+          <p class="text-body-medium mt-2">
             ✅Trusted by <b>23,273+</b> users who send/receive more than
             <b>500,000</b> messages per month.
           </p>
@@ -147,14 +147,14 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mb-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="2">
             <div>
-              <h3 class="text-h3 mb-1">
+              <h3 class="text-display-small mb-1">
                 Bulk SMS
                 <VChip class="ma-2" color="pink" label>
                   <VIcon start :icon="mdiLabel" />
                   No code
                 </VChip>
               </h3>
-              <h5 class="text-h6 font-weight-light">
+              <h5 class="text-headline-small font-weight-light">
                 Fill in our bulk SMS
                 <a
                   class="text-decoration-none"
@@ -195,14 +195,14 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mb-16 mt-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="1">
             <div>
-              <h3 class="text-h3 mb-1">
+              <h3 class="text-display-small mb-1">
                 Integrations
                 <VChip class="ma-2" color="pink" label>
                   <VIcon start :icon="mdiLabel" />
                   No code
                 </VChip>
               </h3>
-              <h5 class="text-h6 font-weight-light">
+              <h5 class="text-headline-small font-weight-light">
                 Connect your workflow with thousands of other apps with the
                 power of Zapier. For example you can setup an automation to send
                 personalized SMS messages each time someone makes an order from
@@ -227,8 +227,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mb-16 mt-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="2">
             <div>
-              <h3 class="text-h3 mb-1">Webhooks</h3>
-              <h5 class="text-h6 font-weight-light">
+              <h3 class="text-display-small mb-1">Webhooks</h3>
+              <h5 class="text-headline-small font-weight-light">
                 If you want to build advanced integrations, we support callback
                 URLs. The httpSMS platform can forward SMS messages received on
                 your Android phone to your server using a callback URL which you
@@ -254,8 +254,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mb-16 mt-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="1">
             <div>
-              <h3 class="text-h3 mb-1">Control Sending</h3>
-              <h5 class="text-h6 font-weight-light">
+              <h3 class="text-display-small mb-1">Control Sending</h3>
+              <h5 class="text-headline-small font-weight-light">
                 Send SMS messages without going over your mobile carrier
                 limitations. If you set a rate e.g 3 messages per minute, we
                 will queue up your messages and send them at a rate of 1 message
@@ -279,8 +279,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mb-16 mt-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="2">
             <div>
-              <h3 class="text-h3 mb-1">Monitoring</h3>
-              <h5 class="text-h6 font-weight-light">
+              <h3 class="text-display-small mb-1">Monitoring</h3>
+              <h5 class="text-headline-small font-weight-light">
                 If your android phone goes offline for some reason and it can't
                 send SMS messages, we will send you a notification immediately.
               </h5>
@@ -295,8 +295,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mt-16 mb-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="1">
             <div>
-              <h3 class="text-h3 mb-1">Open Source</h3>
-              <h5 class="text-h6 mb-3 font-weight-light">
+              <h3 class="text-display-small mb-1">Open Source</h3>
+              <h5 class="text-headline-small mb-3 font-weight-light">
                 httpSMS is transparent and fully open source. The source code is
                 available on GitHub. Feel free to fork it, verify it or submit a
                 pull request.
@@ -325,8 +325,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mt-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="2">
             <div>
-              <h3 class="text-h3 mb-1">Encryption 🔐</h3>
-              <h5 class="text-h6 mb-3 font-weight-light">
+              <h3 class="text-display-small mb-1">Encryption 🔐</h3>
+              <h5 class="text-headline-small mb-3 font-weight-light">
                 Take control of your privacy with our end-to-end encrypted SMS
                 feature. Safeguard your messages from prying eyes, ensuring
                 absolute confidentiality using the military grade
@@ -358,8 +358,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mt-16">
           <VCol cols="12" md="6" class="d-flex align-center">
             <div>
-              <h3 class="text-h3 mb-1">Multiple Phones</h3>
-              <h5 class="text-h6 mb-3 font-weight-light">
+              <h3 class="text-display-small mb-1">Multiple Phones</h3>
+              <h5 class="text-headline-small mb-3 font-weight-light">
                 Setup the httpSMS gateway Android app on multiple phones
                 independently and securely without sharing data under one
                 account by creating unique phone API keys.
@@ -386,8 +386,8 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mt-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="2">
             <div>
-              <h3 class="text-h3 mb-1">Schedule Text Messages</h3>
-              <h5 class="text-h6 mb-3 font-weight-light">
+              <h3 class="text-display-small mb-1">Schedule Text Messages</h3>
+              <h5 class="text-headline-small mb-3 font-weight-light">
                 Control when your SMS will reach your recipients, allowing you
                 to perfectly time promotions, critical alerts etc by scheduling
                 your messages in advance.
@@ -416,7 +416,7 @@ const planYearlyMonthlyPrice = computed(
     <VContainer class="pb-16">
       <VRow class="mt-16">
         <VCol>
-          <h2 class="text-h3 text-center">Get Started</h2>
+          <h2 class="text-display-small text-center">Get Started</h2>
         </VCol>
       </VRow>
       <VRow>
@@ -426,8 +426,8 @@ const planYearlyMonthlyPrice = computed(
               <VTimeline density="compact" class="mt-10 ml-n4">
                 <VTimelineItem dot-color="primary" :icon="mdiTallyMark1">
                   <VCard variant="elevated">
-                    <VCardTitle class="text-h5">Step 1</VCardTitle>
-                    <VCardText class="text-subtitle-1">
+                    <VCardTitle class="text-headline-medium">Step 1</VCardTitle>
+                    <VCardText class="text-title-large">
                       <NuxtLink
                         class="font-weight-bold text-decoration-none"
                         to="/login"
@@ -441,8 +441,8 @@ const planYearlyMonthlyPrice = computed(
                 </VTimelineItem>
                 <VTimelineItem dot-color="primary" :icon="mdiTallyMark2">
                   <VCard variant="elevated">
-                    <VCardTitle class="text-h5">Step 2</VCardTitle>
-                    <VCardText class="text-subtitle-1">
+                    <VCardTitle class="text-headline-medium">Step 2</VCardTitle>
+                    <VCardText class="text-title-large">
                       <a
                         download
                         class="font-weight-bold text-decoration-none"
@@ -456,8 +456,8 @@ const planYearlyMonthlyPrice = computed(
                 </VTimelineItem>
                 <VTimelineItem dot-color="primary" :icon="mdiTallyMark3">
                   <VCard variant="elevated">
-                    <VCardTitle class="text-h5">Step 3</VCardTitle>
-                    <VCardText class="text-subtitle-1">
+                    <VCardTitle class="text-headline-medium">Step 3</VCardTitle>
+                    <VCardText class="text-title-large">
                       Start sending and receiving SMS messages using our rich
                       HTTP API. You can find the documentation on
                       <a
@@ -677,19 +677,19 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           <VCol class="mt-16" md="6" offset-md="3">
             <h2
               id="pricing"
-              class="text-center text-h2 mb-4 text-decoration-underline text-primary"
+              class="text-center text-display-medium mb-4 text-decoration-underline text-primary"
             >
               Pricing
             </h2>
-            <h4 class="text-center text-h5 text-medium-emphasis">
+            <h4 class="text-center text-headline-medium text-medium-emphasis">
               Most of the httpSMS features are completely
               <span class="text-primary">free</span> but if you want a little
               extra, you can go pro
             </h4>
             <div class="d-flex justify-center mt-4 align-center">
-              <p class="text-h6 mr-3 mt-3">Monthly</p>
+              <p class="text-headline-small mr-3 mt-3">Monthly</p>
               <VSwitch v-model="yearlyPricing" hide-details />
-              <p class="text-h6 ml-3 mt-3">
+              <p class="text-headline-small ml-3 mt-3">
                 Yearly
                 <VChip color="primary" size="small">
                   <VIcon start :icon="mdiGift" size="small" />
@@ -721,17 +721,17 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           <VCol cols="12" lg="4">
             <VCard elevation="4" color="#121212">
               <VCardText>
-                <h1 class="text-center text-h3">Free</h1>
-                <p class="text-subtitle-1 text-center">
+                <h1 class="text-center text-display-small">Free</h1>
+                <p class="text-title-large text-center">
                   Try sending and receiving SMS on your hobby websites and
                   experiments.
                 </p>
                 <p class="text-center">
-                  <span class="text-h3">$0</span>
+                  <span class="text-display-small">$0</span>
                 </p>
                 <p class="text-center mt-n3">No credit card required</p>
                 <VBtn block to="/login" size="large">Get Started</VBtn>
-                <p class="mt-8 text-subtitle-1">
+                <p class="mt-8 text-title-large">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -740,7 +740,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Send or receive up to <b>200</b> SMS/month
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -749,7 +749,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Offline notifications for your phone
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -758,7 +758,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Forward received messages via webhook
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -774,16 +774,16 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           <VCol cols="12" lg="4">
             <VCard elevation="4" color="black">
               <VCardText>
-                <h1 class="text-center text-h3 text-primary">Pro</h1>
-                <p class="text-subtitle-1 text-center">
+                <h1 class="text-center text-display-small text-primary">Pro</h1>
+                <p class="text-title-large text-center">
                   Send and receive more SMS messages like a pro with advanced
                   features.
                 </p>
                 <p v-if="!yearlyPricing" class="text-center">
-                  <span class="text-h3">$10</span>/month
+                  <span class="text-display-small">$10</span>/month
                 </p>
                 <p v-else class="text-center">
-                  <span class="text-h3">$100</span>/year
+                  <span class="text-display-small">$100</span>/year
                 </p>
                 <p v-if="!yearlyPricing" class="text-center mt-n3">
                   or <b>$100</b> per year
@@ -794,7 +794,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <VBtn block color="primary" to="/login" size="large"
                   >Try For Free</VBtn
                 >
-                <p class="mt-8 text-subtitle-1">
+                <p class="mt-8 text-title-large">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -803,7 +803,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Send or receive up to <b>5,000</b> SMS/month
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -812,7 +812,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Offline notifications for your phone
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -821,7 +821,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Forward received messages via webhook
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -837,19 +837,19 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           <VCol cols="12" lg="4">
             <VCard color="#121212" variant="outlined">
               <VCardText>
-                <h1 class="text-center text-h3">
+                <h1 class="text-center text-display-small">
                   {{ pricingLabels[pricing] }} Plan
                 </h1>
-                <p class="text-subtitle-1 text-center">
+                <p class="text-title-large text-center">
                   Send and receive up to {{ planMessages }} SMS messages like a
                   power user.
                 </p>
                 <p v-if="!yearlyPricing" class="text-center">
-                  <span class="text-h3">${{ planMonthlyPrice }}</span
+                  <span class="text-display-small">${{ planMonthlyPrice }}</span
                   >/month
                 </p>
                 <p v-else class="text-center">
-                  <span class="text-h3">${{ planYearlyPrice }}</span
+                  <span class="text-display-small">${{ planYearlyPrice }}</span
                   >/year
                 </p>
                 <p v-if="!yearlyPricing" class="text-center mt-n3">
@@ -861,7 +861,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <VBtn block variant="tonal" to="/login" size="large"
                   >Try For Free</VBtn
                 >
-                <p class="mt-8 text-subtitle-1">
+                <p class="mt-8 text-title-large">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -871,7 +871,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   Send or receive up to
                   <b>{{ pricingLabels[pricing] }}</b> SMS/month
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -880,7 +880,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Offline notifications for your phone
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -889,7 +889,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Forward received messages via webhook
                 </p>
-                <p class="text-subtitle-1 mt-n4">
+                <p class="text-title-large mt-n4">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -929,7 +929,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
         <VCol md="8" offset-md="2" class="mb-16">
           <VExpansionPanels v-model="faqPanel">
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-h6">
+              <VExpansionPanelTitle class="text-headline-small">
                 Can I install the app on my iPhone?
                 <template #actions>
                   <VIcon :icon="faqPanel === 0 ? mdiMinus : mdiPlus" />
@@ -944,7 +944,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               </VExpansionPanelText>
             </VExpansionPanel>
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-h6">
+              <VExpansionPanelTitle class="text-headline-small">
                 What's the minimum supported Android version?
                 <template #actions>
                   <VIcon :icon="faqPanel === 1 ? mdiMinus : mdiPlus" />
@@ -959,7 +959,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               </VExpansionPanelText>
             </VExpansionPanel>
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-h6">
+              <VExpansionPanelTitle class="text-headline-small">
                 Can I send unlimited number of messages per month?
                 <template #actions>
                   <VIcon :icon="faqPanel === 2 ? mdiMinus : mdiPlus" />
@@ -976,7 +976,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               </VExpansionPanelText>
             </VExpansionPanel>
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-h6">
+              <VExpansionPanelTitle class="text-headline-small">
                 Can I change the sender of the SMS message?
                 <template #actions>
                   <VIcon :icon="faqPanel === 3 ? mdiMinus : mdiPlus" />
