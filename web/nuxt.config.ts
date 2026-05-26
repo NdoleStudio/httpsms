@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
 
-  ssr: true,
+  ssr: false,
 
   modules: ["vuetify-nuxt-module", "nuxt-vuefire", "@pinia/nuxt"],
 
@@ -91,13 +91,7 @@ export default defineNuxtConfig({
     },
   },
 
-  routeRules: {
-    "/messages": { ssr: false },
-    "/settings": { ssr: false },
-    "/threads/**": { ssr: false },
-    "/billing": { ssr: false },
-    "/bulk-messages": { ssr: false },
-  },
+  routeRules: {},
 
   app: {
     head: {
