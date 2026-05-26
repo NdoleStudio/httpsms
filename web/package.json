@@ -7,7 +7,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "lint": "echo 'No linter configured yet'",
+    "test": "echo 'No tests configured yet'"
   },
   "dependencies": {
     "@mdi/js": "^7.4.47",

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
 import {
-  getAuth,
   GoogleAuthProvider,
   GithubAuthProvider,
   EmailAuthProvider,
@@ -27,8 +28,9 @@ onMounted(async () => {
   const firebaseui = await import("firebaseui");
   await import("firebaseui/dist/firebaseui.css");
 
-  const auth = getAuth();
-  ui = new firebaseui.auth.AuthUI(auth);
+  // FirebaseUI requires the compat auth instance
+  const auth = firebase.auth();
+  ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
   ui.start("#firebaseui-auth-container", {
     callbacks: {
       signInSuccessWithAuthResult: (authResult: any) => {
