@@ -46,7 +46,7 @@ jobs:
         run: pnpm test
 
       - name: Build 🏗️
-        run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && pnpm run generate
+        run: pnpm run build
 
   deploy:
     name: Deploy
@@ -67,7 +67,7 @@ jobs:
         run: pnpm install
 
       - name: Build 🏗️
-        run: mv .env.production .env && echo GITHUB_SHA=${GITHUB_SHA} >> .env && pnpm run generate
+        run: pnpm run build
 
       - name: Cloudflare Deploy 🚀
         uses: cloudflare/pages-action@1
@@ -75,7 +75,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: httpsms
-          directory: web/dist
+          directory: web/.output/public
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Firebase Deploy 🚀
