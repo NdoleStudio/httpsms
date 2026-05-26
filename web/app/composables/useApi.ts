@@ -9,11 +9,11 @@ export function setApiKey(key: string | null) {
   apiKey = key;
 }
 
-export function useApi() {
+function createApiFetch() {
   const config = useRuntimeConfig();
   const baseURL = config.public.apiBaseUrl as string;
 
-  const apiFetch = $fetch.create({
+  return $fetch.create({
     baseURL,
     headers: {
       "X-Client-Version": "web",
@@ -28,6 +28,14 @@ export function useApi() {
       }
     },
   });
+}
 
-  return { apiFetch, setAuthHeader, setApiKey };
+export function useApi() {
+  return { apiFetch: createApiFetch(), setAuthHeader, setApiKey };
+}
+
+export function useApiComposable() {
+  return {
+    useApi: createApiFetch,
+  };
 }

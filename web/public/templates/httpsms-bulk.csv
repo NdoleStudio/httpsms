@@ -1,0 +1,3 @@
+FromPhoneNumber,ToPhoneNumber,Content,SendTime(optional)
+18005550199,18005550100,This is a sample text message1,
+18005550199,18005550100,This is a sample text message2,2023-11-11T02:10:01
