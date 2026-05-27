@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { mdiArrowLeft, mdiSend, mdiCircle } from "@mdi/js";
+import {
+  isValidPhoneNumber,
+  getCountryCallingCode,
+  type CountryCode,
+} from "libphonenumber-js";
 
 definePageMeta({
   middleware: ["auth"],
@@ -18,9 +23,26 @@ const { useApi } = useApiComposable();
 
 const sending = ref(false);
 const formPhoneNumber = ref("");
+const phoneCountry = ref("US");
 const formContent = ref("");
 const formAttachments = ref("");
 const errors = ref(new Map<string, string[]>());
+
+function getRecipientNumber(): string {
+  const phone = formPhoneNumber.value;
+  if (isValidPhoneNumber(phone)) {
+    return phone;
+  }
+  // Short code — strip the country dial code prefix
+  const dialCode = getCountryCallingCode(
+    phoneCountry.value.toUpperCase() as CountryCode,
+  );
+  const prefix = `+${dialCode}`;
+  if (phone.startsWith(prefix)) {
+    return phone.slice(prefix.length);
+  }
+  return phone;
+}
 
 async function sendMessage() {
   errors.value = new Map();
@@ -31,7 +53,7 @@ async function sendMessage() {
     await api("/v1/messages/send", {
       method: "POST",
       body: {
-        to: formPhoneNumber.value,
+        to: getRecipientNumber(),
         from: phonesStore.owner,
         content: formContent.value,
         attachments: formAttachments.value
@@ -95,15 +117,17 @@ async function sendMessage() {
         <VRow>
           <VCol cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
             <form @submit.prevent="sendMessage">
-              <VTextField
+              <v-phone-input
                 v-model="formPhoneNumber"
+                v-model:country="phoneCountry"
                 :disabled="sending"
                 :error="errors.has('to')"
                 :error-messages="errors.get('to')"
                 variant="outlined"
                 persistent-placeholder
-                placeholder="Recipient phone number e.g +18005550199"
+                placeholder="Recipient phone number e.g 18005550199"
                 label="Phone Number"
+                country-label="Country"
               />
               <VTextarea
                 v-model="formContent"
