@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   css: ["vuetify/styles"],
 
   build: {
-    transpile: ["vuetify", "chart.js", "vue-chartjs"],
+    transpile: ["vuetify", "chart.js", "vue-chartjs", "v-phone-input"],
   },
 
   vite: {
