@@ -27,15 +27,15 @@ func (gorm *gormLogger) LogMode(_ logger.LogLevel) logger.Interface {
 	return gorm
 }
 
-func (gorm *gormLogger) Info(ctx context.Context, s string, i ...interface{}) {
+func (gorm *gormLogger) Info(ctx context.Context, s string, i ...any) {
 	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Info(fmt.Sprintf(s, i...))
 }
 
-func (gorm *gormLogger) Warn(ctx context.Context, s string, i ...interface{}) {
+func (gorm *gormLogger) Warn(ctx context.Context, s string, i ...any) {
 	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Warn(fmt.Errorf(s, i...))
 }
 
-func (gorm *gormLogger) Error(ctx context.Context, s string, i ...interface{}) {
+func (gorm *gormLogger) Error(ctx context.Context, s string, i ...any) {
 	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Error(fmt.Errorf(s, i...))
 }
 

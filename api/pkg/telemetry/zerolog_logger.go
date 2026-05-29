@@ -5,7 +5,7 @@ import (
 
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -34,7 +34,7 @@ func NewZerologLogger(projectID string, fields map[string]string, driver *zerodr
 func (logger *zerologLogger) WithService(service string) Logger {
 	return NewZerologLogger(
 		logger.projectID,
-		logger.addField(string(semconv.ServiceNameKey), service),
+		logger.addField(string(semconv.ServiceNamespaceKey), service),
 		logger.zerolog,
 		logger.spanContext,
 	)
@@ -96,7 +96,9 @@ func (logger *zerologLogger) WithSpan(spanContext trace.SpanContext) Logger {
 
 func (logger *zerologLogger) decorateEvent(event *zerodriver.Event) *zerolog.Event {
 	if logger.spanContext != nil {
-		event.TraceContext(logger.spanContext.TraceID().String(), logger.spanContext.SpanID().String(), logger.spanContext.IsSampled(), logger.projectID)
+		event.Str("trace_id", logger.spanContext.TraceID().String())
+		event.Str("span_id", logger.spanContext.SpanID().String())
+		event.Bool("trace_sampled", logger.spanContext.IsSampled())
 	}
 	for key, value := range logger.fields {
 		event.Str(key, value)
