@@ -17,6 +17,11 @@
       "type": "stdio",
       "command": "npx",
       "args": ["@upstash/context7-mcp@latest"]
+    },
+    "axiom": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.axiom.co/mcp"]
     }
   }
 }
