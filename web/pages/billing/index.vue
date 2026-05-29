@@ -401,13 +401,9 @@
                     :key="billingUsage.id"
                   >
                     <td>
-                      {{
-                        billingUsage.start_timestamp | billingPeriodDate
-                      }}
+                      {{ billingUsage.start_timestamp | billingPeriodDate }}
                       –
-                      {{
-                        billingUsage.end_timestamp | billingPeriodDate
-                      }}
+                      {{ billingUsage.end_timestamp | billingPeriodDate }}
                     </td>
                     <td>
                       {{ billingUsage.sent_messages | decimal }}
