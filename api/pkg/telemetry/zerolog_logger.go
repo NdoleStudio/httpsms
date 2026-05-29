@@ -96,7 +96,9 @@ func (logger *zerologLogger) WithSpan(spanContext trace.SpanContext) Logger {
 
 func (logger *zerologLogger) decorateEvent(event *zerodriver.Event) *zerolog.Event {
 	if logger.spanContext != nil {
-		event.TraceContext(logger.spanContext.TraceID().String(), logger.spanContext.SpanID().String(), logger.spanContext.IsSampled(), logger.projectID)
+		event.Str("trace_id", logger.spanContext.TraceID().String())
+		event.Str("span_id", logger.spanContext.SpanID().String())
+		event.Bool("trace_sampled", logger.spanContext.IsSampled())
 	}
 	for key, value := range logger.fields {
 		event.Str(key, value)
