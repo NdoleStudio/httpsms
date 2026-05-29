@@ -1849,7 +1849,7 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 
 	traceHeaders := map[string]string{
 		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
-		"X-Axiom-Dataset": os.Getenv("AXIOM_TRACES_DATASET"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET_EVENTS"),
 	}
 
 	traceExporter, err := otlptracehttp.New(context.Background(),
@@ -1874,7 +1874,7 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 
 	metricHeaders := map[string]string{
 		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
-		"X-Axiom-Dataset": os.Getenv("AXIOM_METRICS_DATASET"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET_METRICS"),
 	}
 
 	metricExporter, err := otlpmetrichttp.New(context.Background(),
@@ -1974,7 +1974,7 @@ func axiomLogger(skipFrameCount int) *zerodriver.Logger {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 
 	axiomWriter, err := axiomzerolog.New(
-		axiomzerolog.SetDataset(os.Getenv("AXIOM_TRACES_DATASET")),
+		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET_EVENTS")),
 	)
 	if err != nil {
 		// Fall back to stderr JSON if Axiom is not configured
