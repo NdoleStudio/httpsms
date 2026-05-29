@@ -313,9 +313,9 @@ func (container *Container) DBWithoutMigration() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
 
-	config := &gorm.Config{TranslateError: true}
-	if isLocal() {
-		config.Logger = container.GormLogger()
+	config := &gorm.Config{
+		TranslateError: true,
+		Logger:         container.GormLogger(),
 	}
 
 	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), config)
@@ -338,9 +338,9 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
 
-	config := &gorm.Config{TranslateError: true}
-	if isLocal() {
-		config.Logger = container.GormLogger()
+	config := &gorm.Config{
+		TranslateError: true,
+		Logger:         container.GormLogger(),
 	}
 
 	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), config)
