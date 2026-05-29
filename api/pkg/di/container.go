@@ -1847,14 +1847,14 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 func (container *Container) initializeAxiomTraceProvider(version string, namespace string) func() {
 	container.logger.Debug("initializing axiom trace provider")
 
-	headers := map[string]string{
+	traceHeaders := map[string]string{
 		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
-		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_TRACES_DATASET"),
 	}
 
 	traceExporter, err := otlptracehttp.New(context.Background(),
 		otlptracehttp.WithEndpoint("us-east-1.aws.edge.axiom.co"),
-		otlptracehttp.WithHeaders(headers),
+		otlptracehttp.WithHeaders(traceHeaders),
 	)
 	if err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP trace exporter"))
@@ -1872,9 +1872,14 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 		propagation.Baggage{},
 	))
 
+	metricHeaders := map[string]string{
+		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_METRICS_DATASET"),
+	}
+
 	metricExporter, err := otlpmetrichttp.New(context.Background(),
 		otlpmetrichttp.WithEndpoint("us-east-1.aws.edge.axiom.co"),
-		otlpmetrichttp.WithHeaders(headers),
+		otlpmetrichttp.WithHeaders(metricHeaders),
 	)
 	if err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP metric exporter"))
@@ -1969,7 +1974,7 @@ func axiomLogger(skipFrameCount int) *zerodriver.Logger {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 
 	axiomWriter, err := axiomzerolog.New(
-		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET")),
+		axiomzerolog.SetDataset(os.Getenv("AXIOM_TRACES_DATASET")),
 	)
 	if err != nil {
 		// Fall back to stderr JSON if Axiom is not configured
