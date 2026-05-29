@@ -12,6 +12,7 @@ require (
 	github.com/NdoleStudio/lemonsqueezy-go v1.3.1
 	github.com/NdoleStudio/plunk-go v0.0.2
 	github.com/avast/retry-go/v5 v5.0.0
+	github.com/axiomhq/axiom-go v0.32.0
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
@@ -95,6 +96,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.12.0 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
+	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
@@ -121,8 +124,8 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
 	github.com/go-sql-driver/mysql v1.10.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
-	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.15 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect

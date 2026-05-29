@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
+	axiomzerolog "github.com/axiomhq/axiom-go/adapters/zerolog"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -1877,7 +1878,7 @@ func logDriver(skipFrameCount int) *zerodriver.Logger {
 	if isLocal() {
 		return consoleLogger(skipFrameCount)
 	}
-	return jsonLogger(skipFrameCount)
+	return axiomLogger(skipFrameCount)
 }
 
 func jsonLogger(skipFrameCount int) *zerodriver.Logger {
@@ -1903,6 +1904,25 @@ func jsonLogger(skipFrameCount int) *zerodriver.Logger {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 
 	zl := zerolog.New(os.Stderr).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+	return &zerodriver.Logger{Logger: &zl}
+}
+
+func axiomLogger(skipFrameCount int) *zerodriver.Logger {
+	logLevel := zerolog.DebugLevel
+	zerolog.SetGlobalLevel(logLevel)
+	zerolog.TimestampFieldName = "time"
+	zerolog.TimeFieldFormat = time.RFC3339Nano
+
+	axiomWriter, err := axiomzerolog.New(
+		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET")),
+	)
+	if err != nil {
+		// Fall back to stderr JSON if Axiom is not configured
+		zl := zerolog.New(os.Stderr).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+		return &zerodriver.Logger{Logger: &zl}
+	}
+
+	zl := zerolog.New(axiomWriter).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
 	return &zerodriver.Logger{Logger: &zl}
 }
 
