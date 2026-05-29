@@ -44,6 +44,9 @@ import (
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
@@ -1802,7 +1805,7 @@ func (container *Container) UserRistrettoCache() *ristretto.Cache[string, entiti
 
 // InitializeTraceProvider initializes the open telemetry trace provider
 func (container *Container) InitializeTraceProvider() func() {
-	return container.initializeUptraceProvider(container.version, container.projectID)
+	return container.initializeAxiomTraceProvider(container.version, container.projectID)
 }
 
 func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {
@@ -1837,6 +1840,58 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 		}
 		if err = traceExporter.Shutdown(context.Background()); err != nil {
 			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown cloud trace trace exporter"))
+		}
+	}
+}
+
+func (container *Container) initializeAxiomTraceProvider(version string, namespace string) func() {
+	container.logger.Debug("initializing axiom trace provider")
+
+	headers := map[string]string{
+		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET"),
+	}
+
+	traceExporter, err := otlptracehttp.New(context.Background(),
+		otlptracehttp.WithEndpoint("api.axiom.co"),
+		otlptracehttp.WithHeaders(headers),
+	)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP trace exporter"))
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(traceExporter),
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithResource(container.OtelResources(version, namespace)),
+	)
+	otel.SetTracerProvider(tp)
+
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
+	metricExporter, err := otlpmetrichttp.New(context.Background(),
+		otlpmetrichttp.WithEndpoint("api.axiom.co"),
+		otlpmetrichttp.WithHeaders(headers),
+	)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP metric exporter"))
+	}
+
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithResource(container.OtelResources(version, namespace)),
+	)
+	otel.SetMeterProvider(meterProvider)
+
+	return func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown axiom trace provider"))
+		}
+		if err := meterProvider.Shutdown(context.Background()); err != nil {
+			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown axiom meter provider"))
 		}
 	}
 }
