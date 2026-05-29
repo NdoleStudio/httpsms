@@ -843,7 +843,6 @@ func (container *Container) BillingUsageRepository() (repository repositories.Bi
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
-		container.UserRepository(),
 	)
 }
 

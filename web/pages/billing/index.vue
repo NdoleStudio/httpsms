@@ -233,7 +233,13 @@
                 v-if="$store.getters.getBillingUsage"
                 class="font-weight-bold"
                 >{{
-                  $store.getters.getBillingUsage.start_timestamp | billingPeriod
+                  $store.getters.getBillingUsage.start_timestamp
+                    | billingPeriodDate
+                }}
+                –
+                {{
+                  $store.getters.getBillingUsage.end_timestamp
+                    | billingPeriodDate
                 }}</code
               >.
             </p>

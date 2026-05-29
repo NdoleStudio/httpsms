@@ -45,22 +45,13 @@ Vue.filter('decimal', (value: string): string => {
 })
 
 Vue.filter('billingPeriod', (value: string): string => {
-  const startDate = new Date(value)
+  const date = new Date(value)
   const options: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-  }
-  const optionsWithYear: Intl.DateTimeFormatOptions = {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }
-  const start = startDate.toLocaleDateString('en-US', options)
-  const endDate = new Date(startDate)
-  endDate.setMonth(endDate.getMonth() + 1)
-  endDate.setDate(endDate.getDate() - 1)
-  const end = endDate.toLocaleDateString('en-US', optionsWithYear)
-  return `${start} – ${end}`
+  return date.toLocaleDateString('en-US', options)
 })
 
 Vue.filter('billingPeriodDate', (value: string): string => {

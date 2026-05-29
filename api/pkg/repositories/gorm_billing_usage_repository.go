@@ -16,10 +16,9 @@ import (
 
 // gormBillingUsageRepository is responsible for persisting entities.BillingUsage
 type gormBillingUsageRepository struct {
-	logger         telemetry.Logger
-	tracer         telemetry.Tracer
-	db             *gorm.DB
-	userRepository UserRepository
+	logger telemetry.Logger
+	tracer telemetry.Tracer
+	db     *gorm.DB
 }
 
 // NewGormBillingUsageRepository creates the GORM version of the BillingUsageRepository
@@ -27,13 +26,11 @@ func NewGormBillingUsageRepository(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	db *gorm.DB,
-	userRepository UserRepository,
 ) BillingUsageRepository {
 	return &gormBillingUsageRepository{
-		logger:         logger.WithService(fmt.Sprintf("%T", &gormBillingUsageRepository{})),
-		tracer:         tracer,
-		db:             db,
-		userRepository: userRepository,
+		logger: logger.WithService(fmt.Sprintf("%T", &gormBillingUsageRepository{})),
+		tracer: tracer,
+		db:     db,
 	}
 }
 
@@ -65,7 +62,7 @@ func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Co
 				UpdateColumn("sent_messages", gorm.Expr("sent_messages + ?", 1))
 
 			if result.Error == nil && result.RowsAffected == 0 {
-				usage, err := repository.createBillingUsageForUser(ctx, userID, timestamp, 1, 0)
+				usage, err := repository.createBillingUsageForUser(ctx, tx, userID, timestamp, 1, 0)
 				if err != nil {
 					return err
 				}
@@ -91,7 +88,7 @@ func (repository *gormBillingUsageRepository) RegisterReceivedMessage(ctx contex
 				UpdateColumn("received_messages", gorm.Expr("received_messages + ?", 1))
 
 			if result.Error == nil && result.RowsAffected == 0 {
-				usage, err := repository.createBillingUsageForUser(ctx, userID, timestamp, 0, 1)
+				usage, err := repository.createBillingUsageForUser(ctx, tx, userID, timestamp, 0, 1)
 				if err != nil {
 					return err
 				}
@@ -119,7 +116,7 @@ func (repository *gormBillingUsageRepository) GetCurrent(ctx context.Context, us
 				First(&usage)
 
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				newUsage, createErr := repository.createBillingUsageForUser(ctx, userID, timestamp, 0, 0)
+				newUsage, createErr := repository.createBillingUsageForUser(ctx, tx, userID, timestamp, 0, 0)
 				if createErr != nil {
 					return createErr
 				}
@@ -165,9 +162,10 @@ func (repository *gormBillingUsageRepository) GetHistory(ctx context.Context, us
 }
 
 // createBillingUsageForUser loads the user to determine anchor day and computes cycle boundaries.
-func (repository *gormBillingUsageRepository) createBillingUsageForUser(ctx context.Context, userID entities.UserID, timestamp time.Time, sent uint, received uint) (*entities.BillingUsage, error) {
-	user, err := repository.userRepository.Load(ctx, userID)
-	if err != nil {
+// It accepts a tx to ensure the user read is part of the same transaction snapshot.
+func (repository *gormBillingUsageRepository) createBillingUsageForUser(ctx context.Context, tx *gorm.DB, userID entities.UserID, timestamp time.Time, sent uint, received uint) (*entities.BillingUsage, error) {
+	user := new(entities.User)
+	if err := tx.WithContext(ctx).First(user, userID).Error; err != nil {
 		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s] to compute billing cycle", userID))
 	}
 
