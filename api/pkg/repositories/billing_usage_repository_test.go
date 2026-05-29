@@ -1,4 +1,4 @@
-package entities
+package repositories
 
 import (
 	"testing"
@@ -82,7 +82,7 @@ func TestComputeBillingCycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			start, end := ComputeBillingCycle(tt.now, tt.anchorDay)
+			start, end := computeBillingCycle(tt.now, tt.anchorDay)
 			assert.Equal(t, tt.wantStart, start)
 			assert.Equal(t, tt.wantEnd, end)
 		})
