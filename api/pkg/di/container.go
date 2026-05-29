@@ -51,7 +51,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
 	axiomzerolog "github.com/axiomhq/axiom-go/adapters/zerolog"
-	"github.com/axiomhq/axiom-go/axiom"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -1971,7 +1970,6 @@ func axiomLogger(skipFrameCount int) *zerodriver.Logger {
 
 	axiomWriter, err := axiomzerolog.New(
 		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET")),
-		axiomzerolog.SetClientOptions(axiom.SetEdge("us-east-1.aws.edge.axiom.co")),
 	)
 	if err != nil {
 		// Fall back to stderr JSON if Axiom is not configured
