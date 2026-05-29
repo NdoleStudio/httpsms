@@ -386,9 +386,6 @@
                       Received
                       <span v-if="$vuetify.breakpoint.lgAndUp">Messages</span>
                     </th>
-                    <th class="text-right">
-                      <span v-if="$vuetify.breakpoint.lgAndUp">Total</span> Cost
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -398,16 +395,19 @@
                     :key="billingUsage.id"
                   >
                     <td>
-                      {{ billingUsage.start_timestamp | billingPeriod }}
+                      {{
+                        billingUsage.start_timestamp | billingPeriodDate
+                      }}
+                      –
+                      {{
+                        billingUsage.end_timestamp | billingPeriodDate
+                      }}
                     </td>
                     <td>
                       {{ billingUsage.sent_messages | decimal }}
                     </td>
                     <td>
                       {{ billingUsage.received_messages }}
-                    </td>
-                    <td class="text-right font-weight-bold">
-                      {{ billingUsage.total_cost | money }}
                     </td>
                   </tr>
                 </tbody>
