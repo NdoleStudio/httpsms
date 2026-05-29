@@ -545,6 +545,10 @@ func TestBulkSMS_Excel(t *testing.T) {
 	msg1 := pollMessageStatus(ctx, t, msgID1, "delivered", 15*time.Second)
 	assert.Equal(t, "delivered", msg1.Status)
 
+	// Poll until message 2 reaches "scheduled" (FCM push sent but no SENT event fired)
+	msg2 := pollMessageStatus(ctx, t, msgID2, "scheduled", 15*time.Second)
+	assert.Equal(t, "scheduled", msg2.Status)
+
 	// Verify bulk-messages history endpoint
 	entries := fetchBulkMessages(ctx, t)
 	entry := findBulkEntry(entries, requestID)
