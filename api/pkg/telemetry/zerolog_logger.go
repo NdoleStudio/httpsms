@@ -5,7 +5,7 @@ import (
 
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -34,7 +34,7 @@ func NewZerologLogger(projectID string, fields map[string]string, driver *zerodr
 func (logger *zerologLogger) WithService(service string) Logger {
 	return NewZerologLogger(
 		logger.projectID,
-		logger.addField(string(semconv.ServiceNameKey), service),
+		logger.addField(string(semconv.ServiceNamespaceKey), service),
 		logger.zerolog,
 		logger.spanContext,
 	)

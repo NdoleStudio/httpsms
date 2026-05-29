@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -1922,8 +1923,8 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 
 func logger(skipFrameCount int) telemetry.Logger {
 	fields := map[string]string{
-		"pid":      strconv.Itoa(os.Getpid()),
-		"hostname": hostName(),
+		"hostname":                               hostName(),
+		string(semconv.DeploymentEnvironmentKey): os.Getenv("ENV"),
 	}
 
 	return telemetry.NewZerologLogger(
@@ -1968,18 +1969,12 @@ func jsonLogger(skipFrameCount int) *zerodriver.Logger {
 }
 
 func axiomLogger(skipFrameCount int) *zerodriver.Logger {
-	logLevel := zerolog.DebugLevel
-	zerolog.SetGlobalLevel(logLevel)
-	zerolog.TimestampFieldName = "time"
-	zerolog.TimeFieldFormat = time.RFC3339Nano
-
 	axiomWriter, err := axiomzerolog.New(
+		axiomzerolog.SetLevels([]zerolog.Level{zerolog.TraceLevel, zerolog.DebugLevel, zerolog.InfoLevel, zerolog.WarnLevel, zerolog.ErrorLevel, zerolog.PanicLevel, zerolog.FatalLevel, zerolog.NoLevel}),
 		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET_EVENTS")),
 	)
 	if err != nil {
-		// Fall back to stderr JSON if Axiom is not configured
-		zl := zerolog.New(os.Stderr).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
-		return &zerodriver.Logger{Logger: &zl}
+		log.Fatal(stacktrace.Propagate(err, "cannot create axiom zerolog writer"))
 	}
 
 	zl := zerolog.New(axiomWriter).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
