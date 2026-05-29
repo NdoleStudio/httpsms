@@ -36,8 +36,6 @@ import (
 
 	"github.com/NdoleStudio/go-otelroundtripper"
 
-	"github.com/jinzhu/now"
-
 	"github.com/uptrace/uptrace-go/uptrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/emails"
@@ -101,11 +99,6 @@ type Container struct {
 
 // NewLiteContainer creates a Container without any routes or listeners
 func NewLiteContainer() (container *Container) {
-	// Set location to UTC
-	now.DefaultConfig = &now.Config{
-		TimeLocation: time.UTC,
-	}
-
 	return &Container{
 		logger: logger(3).WithService(fmt.Sprintf("%T", container)),
 	}
@@ -113,11 +106,6 @@ func NewLiteContainer() (container *Container) {
 
 // NewContainer creates a new dependency injection container
 func NewContainer(projectID string, version string) (container *Container) {
-	// Set location to UTC
-	now.DefaultConfig = &now.Config{
-		TimeLocation: time.UTC,
-	}
-
 	container = &Container{
 		projectID: projectID,
 		version:   version,
@@ -200,14 +188,16 @@ func (container *Container) App() (app *fiber.App) {
 	}
 
 	app.Use(otelfiber.Middleware())
-	app.Use(cors.New(
-		cors.Config{
-			AllowOrigins:     getEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
-			AllowHeaders:     getEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
-			AllowMethods:     getEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
-			AllowCredentials: false,
-			ExposeHeaders:    getEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
-		}),
+	app.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     getEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
+				AllowHeaders:     getEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
+				AllowMethods:     getEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
+				AllowCredentials: false,
+				ExposeHeaders:    getEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
+			},
+		),
 	)
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
@@ -853,6 +843,7 @@ func (container *Container) BillingUsageRepository() (repository repositories.Bi
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
+		container.UserRepository(),
 	)
 }
 
@@ -1853,7 +1844,8 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET_EVENTS"),
 	}
 
-	traceExporter, err := otlptracehttp.New(context.Background(),
+	traceExporter, err := otlptracehttp.New(
+		context.Background(),
 		otlptracehttp.WithEndpoint("us-east-1.aws.edge.axiom.co"),
 		otlptracehttp.WithHeaders(traceHeaders),
 	)
@@ -1878,7 +1870,8 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET_METRICS"),
 	}
 
-	metricExporter, err := otlpmetrichttp.New(context.Background(),
+	metricExporter, err := otlpmetrichttp.New(
+		context.Background(),
 		otlpmetrichttp.WithEndpoint("us-east-1.aws.edge.axiom.co"),
 		otlpmetrichttp.WithHeaders(metricHeaders),
 	)
@@ -1993,7 +1986,8 @@ func consoleLogger(skipFrameCount int) *zerodriver.Logger {
 	l := zerolog.New(
 		zerolog.ConsoleWriter{
 			Out: os.Stderr,
-		}).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+		},
+	).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
 	return &zerodriver.Logger{
 		Logger: &l,
 	}
