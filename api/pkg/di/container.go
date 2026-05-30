@@ -1018,6 +1018,7 @@ func (container *Container) OtelResources(version string, namespace string) *res
 		semconv.ServiceNameKey.String(namespace),
 		semconv.ServiceVersionKey.String(version),
 		semconv.ServiceInstanceIDKey.String(hostName()),
+		semconv.HostNameKey.String(hostName()),
 		semconv.DeploymentEnvironmentKey.String(os.Getenv("ENV")),
 	)
 }

@@ -44,10 +44,8 @@ func (h *EventsHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber
 // Dispatch a cloud event
 // This is an internal API so no documentation provided
 func (h *EventsHandler) Dispatch(c *fiber.Ctx) error {
-	ctx, span := h.tracer.StartFromFiberCtx(c)
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
-
-	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request cloudevents.Event
 	if err := c.BodyParser(&request); err != nil {
