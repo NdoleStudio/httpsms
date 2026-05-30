@@ -1,11 +1,14 @@
 import { initializeApp, getApps } from "firebase/app";
+import type { FirebaseApp } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useAuthStore } from "../stores/auth";
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
+  const publicConfig = config.public as Record<string, string>;
 
   // Skip initialization if no API key is configured
-  if (!config.public.firebaseApiKey) {
+  if (!publicConfig.firebaseApiKey) {
     console.warn(
       "[firebase] No FIREBASE_API_KEY configured. Auth will not work.",
     );
@@ -13,27 +16,34 @@ export default defineNuxtPlugin(() => {
   }
 
   const firebaseConfig = {
-    apiKey: config.public.firebaseApiKey,
-    authDomain: config.public.firebaseAuthDomain,
-    projectId: config.public.firebaseProjectId,
-    storageBucket: config.public.firebaseStorageBucket,
-    messagingSenderId: config.public.firebaseMessagingSenderId,
-    appId: config.public.firebaseAppId,
-    measurementId: config.public.firebaseMeasurementId,
+    apiKey: publicConfig.firebaseApiKey,
+    authDomain: publicConfig.firebaseAuthDomain,
+    projectId: publicConfig.firebaseProjectId,
+    storageBucket: publicConfig.firebaseStorageBucket,
+    messagingSenderId: publicConfig.firebaseMessagingSenderId,
+    appId: publicConfig.firebaseAppId,
+    measurementId: publicConfig.firebaseMeasurementId,
   };
 
   // Initialize Firebase (only once)
-  const app =
+  const app: FirebaseApp =
     getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   const auth = getAuth(app);
 
   // Also initialize the compat SDK for FirebaseUI
   if (import.meta.client) {
-    import("firebase/compat/app").then((firebase) => {
-      if (!firebase.default.apps.length) {
-        firebase.default.initializeApp(firebaseConfig);
-      }
-    });
+    import("firebase/compat/app").then(
+      (firebase: {
+        default: {
+          apps: unknown[];
+          initializeApp: (config: typeof firebaseConfig) => void;
+        };
+      }) => {
+        if (!firebase.default.apps.length) {
+          firebase.default.initializeApp(firebaseConfig);
+        }
+      },
+    );
   }
 
   // Listen for auth state changes and update the auth store

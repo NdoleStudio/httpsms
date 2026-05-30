@@ -14,21 +14,24 @@ export const useAppStore = defineStore("app", () => {
   const polling = ref(false);
 
   const appData = computed<AppData>(() => {
-    let url = (config.public.appUrl as string) || "";
-    if (url.length > 0 && url[url.length - 1] === "/") {
+    const publicConfig = config.public as Record<string, string>;
+    let url = publicConfig.appUrl || "";
+    if (url.endsWith("/")) {
       url = url.substring(0, url.length - 1);
     }
     return {
       url,
-      env: config.public.appEnv as string,
-      appDownloadUrl: config.public.appDownloadUrl as string,
-      documentationUrl: config.public.appDocumentationUrl as string,
-      githubUrl: config.public.appGithubUrl as string,
-      name: config.public.appName as string,
+      env: publicConfig.appEnv,
+      appDownloadUrl: publicConfig.appDownloadUrl,
+      documentationUrl: publicConfig.appDocumentationUrl,
+      githubUrl: publicConfig.appGithubUrl,
+      name: publicConfig.appName,
     };
   });
 
-  const isLocal = computed(() => config.public.appEnv === "local");
+  const isLocal = computed(
+    () => (config.public as Record<string, string>).appEnv === "local",
+  );
 
   function setPolling(value: boolean) {
     polling.value = value;

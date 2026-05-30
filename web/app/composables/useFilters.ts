@@ -6,8 +6,8 @@ import {
   formatDecimal,
   formatBillingPeriod,
   humanizeTime,
-} from "~/utils/filters";
-import { capitalize } from "~/utils/capitalize";
+} from "../utils/filters";
+import { capitalize } from "../utils/capitalize";
 
 export function useFilters() {
   return {
