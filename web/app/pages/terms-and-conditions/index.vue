@@ -148,8 +148,16 @@ useHead({
         <p class="text-body-large mb-10">
           If you have any questions or suggestions about our Terms and
           Conditions, do not hesitate to contact us at
-          <a href="mailto:support@httpsms.com">support@httpsms.com</a>.
+          <a
+            class="text-decoration-none font-weight-bold"
+            href="mailto:support@httpsms.com"
+            >support@httpsms.com</a
+          >.
         </p>
+        <VDivider class="mx-16" />
+        <div class="text-center mt-8 mb-4">
+          <BackButton />
+        </div>
       </VCol>
     </VRow>
   </VContainer>
