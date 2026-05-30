@@ -3,89 +3,169 @@ definePageMeta({ layout: "website" });
 
 useHead({
   title:
-    "Send SMS When New Row is Added to Google Sheets Using Zapier - httpSMS",
+    "Send an SMS message when a new row is added to Google Sheets using Zapier - httpSMS",
+  meta: [
+    {
+      property: "og:title",
+      content:
+        "Send an SMS message when a new row is added to Google Sheets using Zapier",
+    },
+    {
+      property: "og:description",
+      content:
+        "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier. You don't need to write any code to make this happen and you can personalize the SMS messages which are sent out.",
+    },
+    {
+      name: "twitter:card",
+      content: "summary_large_image",
+    },
+    {
+      property: "og:url",
+      content:
+        "https://httpsms.com/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/",
+    },
+  ],
 });
 </script>
 
 <template>
-  <VContainer>
-    <VRow>
-      <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-display-small mb-2">
-          Send SMS When New Row is Added to Google Sheets Using Zapier
+  <VContainer class="pt-8">
+    <VRow class="mt-16">
+      <VCol cols="12" md="9">
+        <h1 class="text-h3 text-md-h2 mt-1">
+          Send an SMS message when a new row is added to Google Sheets using
+          Zapier
         </h1>
-        <BlogInfo date="October 29, 2023" read-time="5 min read" />
-        <VDivider class="my-6" />
+        <BlogInfo date="October 29, 2023" readTime="5 min read" />
 
-        <p class="text-body-large mb-6">
+        <p class="text-subtitle-1 mt-2">
           Automate sending personalized SMS messages each time a new row is
           added to your Google Sheets document using Zapier. You don't need to
           write any code to make this happen and you can personalize the SMS
           messages which are sent out.
         </p>
 
-        <h2 class="text-headline-medium mb-4">Prerequisites</h2>
-        <ul class="text-body-large pl-6 mb-6">
-          <li>Basic understanding of Google Sheets</li>
-          <li>Basic understanding of Zapier</li>
+        <h3 class="text-h4 mt-8 mb-2">Prerequisites</h3>
+        <ul>
+          <li>Basic understanding of Google Sheets.</li>
+          <li>Basic understanding of Zapier.</li>
           <li>
             An account on
-            <a href="https://httpsms.com" target="_blank" rel="noopener"
-              >httpsms.com</a
+            <NuxtLink class="text-decoration-none" to="/login"
+              >httpsms.com</NuxtLink
             >
           </li>
         </ul>
 
-        <h2 class="text-headline-medium mb-4">
-          Step 1: Create trigger on Zapier
-        </h2>
-        <p class="text-body-large mb-6">
-          In Zapier, create a new Zap and select Google Sheets as your trigger
-          app. Choose the <strong>New Spreadsheet Row</strong> event, then
-          select the Spreadsheet and the correct Worksheet you want to watch for
-          new rows.
+        <h3 class="text-h4 mt-8 mb-2">Step 1: Create trigger on Zapier</h3>
+        <p>
+          Create a new Zap on Zapier and select Google Sheets as the trigger.
+          The event name should be <b>"New Spreadsheet Row"</b> if you want to
+          send an SMS message every time a new row is added to your Google
+          Sheets document.
         </p>
+        <VImg
+          style="border-radius: 4px"
+          alt="zapier trigger"
+          src="/img/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/zapier-trigger.png"
+        />
+        <p class="mt-8">
+          On the Zap, select the <b>Spreadsheet</b> which you have on google
+          drive and make sure to select the correct <b>Worksheet</b>.
+        </p>
+        <VAlert type="info" variant="outlined">
+          In the sample spreadsheet below, we are mimicking an e-commerce store.
+          The first column contains the name of the customer, the second column
+          is the name of the product which was bought and the third column is
+          the phone number of the customer who made the purchase. You can use
+          your own custom spreadsheet with your own set of columns.
+        </VAlert>
+        <VImg
+          style="border-radius: 4px"
+          alt="google sheets"
+          src="/img/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/google-sheets.png"
+        />
 
-        <h2 class="text-headline-medium mb-4">
-          Step 2: Create an action on Zapier
-        </h2>
-        <p class="text-body-large mb-4">
-          Add a new action step and select
-          <strong>Webhooks by Zapier</strong> as the action app. Choose the
-          <strong>Custom Request</strong> event and configure it with the
-          following values:
+        <h3 class="text-h4 mt-8 mb-2">Step 2: Create an action on Zapier</h3>
+        <p>
+          An action is what happens after the trigger. In this case, we want to
+          send an SMS message to the customer who made the purchase. Select
+          <b>Webhooks By Zapier</b> as the action app and select
+          <b>Custom Request</b> as the action event.
         </p>
-        <ul class="text-body-large pl-6 mb-4">
-          <li>Method: Post</li>
-          <li>URL: https://api.httpsms.com/v1/messages/send</li>
-          <li>Data Pass-Through: false</li>
-        </ul>
+        <VImg
+          style="border-radius: 4px"
+          alt="zapier action event"
+          src="/img/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/zapier-action-event.png"
+        />
+        <p class="mt-8">
+          On the <b>Action</b> section in Zapier, set the Method to
+          <code>Post</code>. Set the URL to
+          <code>https://api.httpsms.com/v1/messages/send</code>. Set the
+          <code>Data Pass-Through</code> to <code>false</code>. In the Data
+          field, add the following JSON payload.
+        </p>
         <pre
-          v-pre
           class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
         ><code class="language-json text-body-medium">{
-  "content": "Hi {{1.Name}}, your order is ready for pickup.",
-  "from": "{{1.FromPhoneNumber}}",
-  "to": "{{1.ToPhoneNumber}}"
+  "content": "Hello [Name]\nThanks for ordering [Product] via our shopify store. Your order will be shipped today!",
+  "from": "+18005550199",
+  "to": "[ToPhoneNumber]"
 }</code></pre>
-        <pre
-          v-pre
-          class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
-        ><code class="language-json text-body-medium">{
-  "x-api-key": "YOUR_API_KEY",
-  "Content-Type": "application/json"
-}</code></pre>
+        <VAlert type="info" variant="outlined" class="mt-4">
+          In the JSON message above, we are mimicking an e-commerce store. The
+          <code>[Name]</code> variable contains the name of the customer on the
+          spreadsheet. <code>[Product]</code> contains the name of the product
+          which was bought and <code>[ToPhoneNumber]</code> contains the phone
+          number of the customer who made the purchase. You can use your own
+          custom message with your own set of variables according to your
+          spreadsheet. Change the <code>from</code> field to the phone number
+          which you registered on httpsms.com.
+        </VAlert>
+        <p class="mt-8">
+          On the headers section add a new header called
+          <code>x-api-key</code> and the value of this header should be your API
+          key on
+          <NuxtLink class="text-decoration-none" to="/settings"
+            >httpsms.com</NuxtLink
+          >
+          and you can copy your API key from the settings page
+          <NuxtLink class="text-decoration-none" to="/settings"
+            >https://httpsms.com/settings</NuxtLink
+          >.
+        </p>
+        <p>
+          Also add a new header called <code>Content-Type</code> and the value
+          of this header should be <code>application/json</code>
+        </p>
+        <p>
+          The final configuration of the action should look like the screenshot
+          below.
+        </p>
+        <VImg
+          style="border-radius: 4px"
+          alt="zapier action action"
+          src="/img/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/zapier-action-action.png"
+        />
 
-        <h2 class="text-headline-medium mb-4">Conclusion</h2>
-        <p class="text-body-large mb-6">
+        <h3 class="text-h4 mb-4 mt-16">Conclusion</h3>
+        <p>
           Publish your zap and you will automatically trigger httpsms to send an
           SMS to your customer when ever you add a new row in the google sheet.
-          Don't hesitate to contact us if you face any issues configuring your
-          zap to send SMS messages from your Google Sheets by following this
-          tutorial. Until the next time ✌️
+          Don't hesitate to
+          <a class="text-decoration-none" href="mailto:arnold@httpsms.com"
+            >contact us</a
+          >
+          if you face any issues configuring your zap to send SMS messages from
+          your Google Sheets by following this tutorial.
         </p>
+        <p>Until the next time✌️</p>
 
         <BlogAuthorBio />
+        <VDivider class="mx-16" />
+        <div class="text-center mt-8 mb-4">
+          <BackButton />
+        </div>
       </VCol>
     </VRow>
   </VContainer>

@@ -2,26 +2,58 @@
 definePageMeta({ layout: "website" });
 
 useHead({
-  title: "Send SMS from Android Phone with Python - httpSMS",
+  title: "Send an SMS from your Android phone with Python - httpSMS",
+  meta: [
+    {
+      property: "og:title",
+      content: "Send an SMS from your Android phone with Python",
+    },
+    {
+      property: "og:description",
+      content:
+        "Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.",
+    },
+    {
+      property: "og:image",
+      content:
+        "https://httpsms.com/img/blog/send-sms-from-android-phone-with-python/header.png",
+    },
+    {
+      name: "twitter:card",
+      content: "summary_large_image",
+    },
+    {
+      property: "og:url",
+      content:
+        "https://httpsms.com/blog/send-sms-from-android-phone-with-python/",
+    },
+  ],
 });
 </script>
 
 <template>
-  <VContainer>
-    <VRow>
-      <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-display-small mb-2">
-          Send SMS from Android Phone with Python
-        </h1>
-        <BlogInfo date="June 03, 2023" read-time="6 min read" />
-        <VDivider class="my-6" />
+  <VContainer class="pt-8">
+    <VRow class="mt-16">
+      <VCol cols="12" md="9">
+        <VImg
+          style="border-radius: 4px"
+          alt="blog post header image"
+          src="/img/blog/send-sms-from-android-phone-with-python/header.png"
+        />
 
-        <p class="text-body-large mb-6">
+        <h1 class="text-h3 text-md-h2 mt-1">
+          Send an SMS from your Android phone with Python
+        </h1>
+        <BlogInfo date="June 03, 2023" readTime="6 min read" />
+
+        <p class="text-subtitle-1 mt-2">
           In an era dominated by social media, instant messaging apps, and
           ever-evolving communication technologies, it's easy to overlook the
           humble yet remarkably resilient Short Message Service (SMS). Since its
           inception in the 1990s, SMS has stood the test of time, remaining one
           of the most widely used and reliable means of mobile communication.
+        </p>
+        <p>
           Whether you're a business owner looking to optimize your communication
           strategy, a developer seeking to integrate SMS functionality into your
           applications, or simply intrigued by the enduring charm of SMS, this
@@ -29,40 +61,70 @@ useHead({
           messages.
         </p>
 
-        <h2 class="text-headline-medium mb-4">Prerequisites</h2>
-        <ul class="text-body-large pl-6 mb-6">
-          <li>Basic understanding of Python</li>
-          <li>An Android phone</li>
-          <li>Python installed on your computer</li>
+        <h3 class="text-h4 mt-8 mb-2">Prerequisites</h3>
+        <ul>
+          <li>Basic understanding of Python.</li>
+          <li>An Android phone.</li>
+          <li>
+            <a class="text-decoration-none" href="https://www.python.org/"
+              >Python</a
+            >
+            installed on your computer.
+          </li>
         </ul>
 
-        <h2 class="text-headline-medium mb-4">Step 1: Get your API Key</h2>
-        <p class="text-body-large mb-6">
+        <h3 class="text-h4 mt-8 mb-2">Step 1: Get your API Key</h3>
+        <p>
           Create an account on
-          <a href="https://httpsms.com" target="_blank" rel="noopener"
-            >httpsms.com</a
+          <NuxtLink class="text-decoration-none" to="/">httpsms.com</NuxtLink>
+          and copy your API key from the settings page
+          <NuxtLink class="text-decoration-none" to="/settings"
+            >https://httpsms.com/settings</NuxtLink
           >
-          and copy your API key from the
-          <a href="https://httpsms.com/settings" target="_blank" rel="noopener"
-            >settings page</a
-          >.
         </p>
+        <VImg
+          style="border-radius: 4px"
+          alt="httpsms.com settings page"
+          src="/img/blog/forward-incoming-sms-from-phone-to-webhook/settings.png"
+        />
 
-        <h2 class="text-headline-medium mb-4">
+        <h3 class="text-h4 mb-4 mt-16">
           Step 2: Install the httpSMS android app
-        </h2>
-        <p class="text-body-large mb-6">
-          Download the Android app from
+        </h3>
+        <p>
           <a
+            class="text-decoration-none"
             href="https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk"
-            target="_blank"
-            rel="noopener"
-            >https://github.com/NdoleStudio/httpsms/releases/latest/download/HttpSms.apk</a
+            >⬇️ Download and install</a
           >
-          and sign in using your API KEY.
+          the httpSMS android app on your phone and sign in using your API KEY
+          which you copied above. This app listens for SMS messages received on
+          your android phone.
         </p>
+        <VAlert type="info" variant="outlined">
+          Make sure to enter your phone number in the international format e.g
+          +18005550199 when authenticating with the httpSMS Android app.
+        </VAlert>
+        <VImg
+          style="border-radius: 4px"
+          alt="httpsms android app"
+          height="800"
+          src="/img/blog/forward-incoming-sms-from-phone-to-webhook/android-app.png"
+        />
 
-        <h2 class="text-headline-medium mb-4">Step 3: Writing the code</h2>
+        <h3 class="text-h4 mt-12">Step 3: Writing the code</h3>
+        <p>
+          Now that you have setup your android phone correctly on httpSMS, you
+          can write the python code below in a new file named
+          <code>send_sms.py</code>. This code will send and SMS and after
+          running the script via your Android phone to the recipient phone
+          number specified in the <code>payload</code>.
+        </p>
+        <VAlert type="info" variant="outlined" class="mt-2 mb-4">
+          Make sure to use the correct <code>api_key</code> from step 1 and also
+          use the correct <code>to</code> and <code>from</code> phone numbers in
+          the <code>payload</code> variable.
+        </VAlert>
         <pre
           class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
         ><code class="language-python text-body-medium">import requests
@@ -87,22 +149,41 @@ payload = {
 response = requests.post(url, headers=headers, data=json.dumps(payload))
 
 print(json.dumps(response.json(), indent=4))</code></pre>
-        <p class="text-body-large mb-6">
-          Run the script with <code>python send_sms.py</code>.
+        <p>
+          Run the code above with the command
+          <code>python send_sms.py</code> and check the phone specified in the
+          <code>to</code> field of the <code>payload</code> to verify that the
+          message has been received successfully.
         </p>
+        <VImg
+          style="border-radius: 4px"
+          alt="sms sent"
+          height="800"
+          src="/img/blog/send-sms-from-android-phone-with-python/sms-sent.png"
+        />
 
-        <p class="text-body-large mb-6">
+        <h3 class="text-h4 mt-12">Conclusion</h3>
+        <p>
           Congratulations, you have successfully configured your android phone
           to send SMS messages via python. You can now reuse this code to send
-          SMS messages from your python applications. If you are also interested
-          in forwarding incoming SMS from your android phone to your server,
-          checkout our SMS forwarding guide
-          <NuxtLink to="/blog/forward-incoming-sms-from-phone-to-webhook"
-            >here</NuxtLink
-          >. Until the next time ✌️
+          SMS messages from your python applications.
         </p>
+        <p>
+          If you are also interested in forwarding incoming SMS from your
+          android phone to your server, checkout our
+          <NuxtLink
+            class="text-decoration-none"
+            to="/blog/forward-incoming-sms-from-phone-to-webhook"
+            >SMS forwarding guide.</NuxtLink
+          >
+        </p>
+        <p>Until the next time✌️</p>
 
         <BlogAuthorBio />
+        <VDivider class="mx-16" />
+        <div class="text-center mt-8 mb-4">
+          <BackButton />
+        </div>
       </VCol>
     </VRow>
   </VContainer>

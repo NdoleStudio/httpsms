@@ -4,7 +4,7 @@ definePageMeta({
 });
 
 useHead({
-  title: "Blog - httpSMS",
+  title: "Blog Posts - httpSMS",
 });
 
 type Article = {
@@ -20,9 +20,9 @@ type Article = {
 const articles: Article[] = [
   {
     slug: "grant-send-and-read-sms-permissions-on-android",
-    title: "Grant Send and Read SMS Permissions on Android",
+    title: "How to grant SMS permissions on Android 15+",
     description:
-      "In Android 15, the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions.",
+      "Take control of your privacy by encrypting your SMS messages end-to-end. Safeguard your messages from prying eyes, ensuring absolute confidentiality.",
     date: "February 18, 2025",
     readTime: "5 min read",
     author: "Acho Arnold",
@@ -30,9 +30,10 @@ const articles: Article[] = [
   },
   {
     slug: "end-to-end-encryption-to-sms-messages",
-    title: "End-to-End Encryption to SMS Messages",
+    title:
+      "Secure your conversations with end-to-end encryption for SMS messages",
     description:
-      "We have added support for end-to-end encryption for SMS messages so that no one can see the content of the messages you send using httpSMS except you.",
+      "Take control of your privacy by encrypting your SMS messages end-to-end. Safeguard your messages from prying eyes, ensuring absolute confidentiality.",
     date: "January 21, 2024",
     readTime: "10 min read",
     author: "Acho Arnold",
@@ -40,19 +41,19 @@ const articles: Article[] = [
   },
   {
     slug: "send-sms-when-new-row-is-added-to-google-sheets-using-zapier",
-    title: "Send SMS When New Row is Added to Google Sheets Using Zapier",
+    title: "Send an SMS when a new row is added to Google Sheets using Zapier",
     description:
-      "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier.",
-    date: "October 29, 2023",
-    readTime: "5 min read",
+      "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier without writing code.",
+    date: "November 29, 2023",
+    readTime: "7 min read",
     author: "Acho Arnold",
-    sortDate: "2023-10-29",
+    sortDate: "2023-11-29",
   },
   {
     slug: "how-to-send-sms-messages-from-excel",
-    title: "How to Send SMS Messages from Excel",
+    title: "How to send SMS messages to multiple phone numbers from Excel",
     description:
-      "Send personalized SMS messages to multiple phone numbers for less than $0.002 per SMS message.",
+      "Send multiple SMS messages to your customers from a an Excel file using your Android phone as the SMS gateway.",
     date: "October 29, 2023",
     readTime: "5 min read",
     author: "Acho Arnold",
@@ -60,9 +61,9 @@ const articles: Article[] = [
   },
   {
     slug: "send-bulk-sms-from-csv-file-with-no-code",
-    title: "Send Bulk SMS from CSV File with No Code",
+    title: "Send bulk SMS messages from a CSV file with no code",
     description:
-      "Send personalized SMS messages to your users in bulk using your Android phone without writing any code.",
+      "Send SMS messages to multiple recipients in your CSV file without writing a single piece of code.",
     date: "October 29, 2023",
     readTime: "7 min read",
     author: "Acho Arnold",
@@ -70,9 +71,9 @@ const articles: Article[] = [
   },
   {
     slug: "send-sms-from-android-phone-with-python",
-    title: "Send SMS from Android Phone with Python",
+    title: "Send an SMS from your Android phone with Python",
     description:
-      "Learn how to setup your Android phone to send SMS messages using Python and the httpSMS API.",
+      "This article will show you how to configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.",
     date: "June 03, 2023",
     readTime: "6 min read",
     author: "Acho Arnold",
@@ -80,9 +81,10 @@ const articles: Article[] = [
   },
   {
     slug: "forward-incoming-sms-from-phone-to-webhook",
-    title: "Forward Incoming SMS from Phone to Webhook",
+    title:
+      "Forward a text message (SMS) from an Android phone into your webhook",
     description:
-      "Program your android phone to forward messages received on your phone to your server and trigger powerful automations.",
+      "Program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like zapper and IFTTFT.",
     date: "April 08, 2023",
     readTime: "5 min read",
     author: "Acho Arnold",
@@ -101,8 +103,7 @@ const sortedArticles = computed(() =>
       <VCol cols="12" md="8" offset-md="2">
         <h1 class="text-display-small mb-4">Blog</h1>
         <p class="text-body-large mb-8">
-          Guides, tutorials, and product updates to help you get the most out of
-          httpSMS.
+          Learn more about httpSMS through our blog!
         </p>
 
         <div class="d-flex flex-column ga-4">
