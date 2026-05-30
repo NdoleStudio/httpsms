@@ -30,9 +30,6 @@ export default defineNuxtConfig({
         "date-fns",
         "firebase/app",
         "firebase/auth",
-        "firebase/compat/app",
-        "firebase/compat/auth",
-        "firebaseui",
         "libphonenumber-js",
         "pusher-js",
         "qrcode",
@@ -50,14 +47,6 @@ export default defineNuxtConfig({
       },
       icons: {
         defaultSet: "mdi-svg",
-      },
-      display: {
-        thresholds: {
-          md: 960,
-          lg: 1280,
-          xl: 1920,
-          xxl: 2560,
-        },
       },
     },
   },

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import firebase from "firebase/compat/app";
-import "firebase/compat/auth";
 import {
+  getAuth,
+  signInWithPopup,
   GoogleAuthProvider,
   GithubAuthProvider,
-  EmailAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
 } from "firebase/auth";
+import { mdiGoogle, mdiGithub, mdiEmail } from "@mdi/js";
 
 const props = withDefaults(
   defineProps<{
@@ -18,72 +20,182 @@ const router = useRouter();
 const authStore = useAuthStore();
 const notificationsStore = useNotificationsStore();
 const appStore = useAppStore();
-const authContainer = ref<HTMLElement | null>(null);
-const firebaseUIInitialized = ref(false);
-let ui: any = null;
 
-onMounted(async () => {
-  if (!import.meta.client) return;
+const loading = ref(false);
+const showEmailForm = ref(false);
+const isSignUp = ref(false);
+const email = ref("");
+const password = ref("");
+const emailError = ref("");
 
-  const firebaseui = await import("firebaseui");
-  await import("firebaseui/dist/firebaseui.css");
+async function signInWithGoogle() {
+  loading.value = true;
+  try {
+    const auth = getAuth();
+    const result = await signInWithPopup(auth, new GoogleAuthProvider());
+    onSuccess(result.user);
+  } catch (error: unknown) {
+    handleError(error);
+  } finally {
+    loading.value = false;
+  }
+}
 
-  // FirebaseUI requires the compat auth instance
-  const auth = firebase.auth();
-  ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
-  ui.start("#firebaseui-auth-container", {
-    callbacks: {
-      signInSuccessWithAuthResult: (authResult: any) => {
-        notificationsStore.addNotification({
-          message: "Login successful!",
-          type: "success",
-        });
-        authStore.onAuthStateChanged(authResult.user);
-        router.push({ path: props.to });
-        return false;
-      },
-      uiShown: () => {
-        firebaseUIInitialized.value = true;
-        if (authContainer.value) {
-          Array.from(
-            authContainer.value.getElementsByClassName(
-              "firebaseui-idp-text-long",
-            ),
-          ).forEach((item: Element) => {
-            item.textContent =
-              item.textContent?.replace("Sign in with", "Continue with") ||
-              null;
-          });
-        }
-      },
-    },
-    signInFlow: "popup",
-    signInSuccessUrl: window.location.href,
-    signInOptions: [
-      GoogleAuthProvider.PROVIDER_ID,
-      GithubAuthProvider.PROVIDER_ID,
-      EmailAuthProvider.PROVIDER_ID,
-    ],
-    tosUrl: appStore.appData.url + "/terms-and-conditions",
-    privacyPolicyUrl: appStore.appData.url + "/privacy-policy",
+async function signInWithGithub() {
+  loading.value = true;
+  try {
+    const auth = getAuth();
+    const result = await signInWithPopup(auth, new GithubAuthProvider());
+    onSuccess(result.user);
+  } catch (error: unknown) {
+    handleError(error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function submitEmail() {
+  emailError.value = "";
+  loading.value = true;
+  try {
+    const auth = getAuth();
+    let result;
+    if (isSignUp.value) {
+      result = await createUserWithEmailAndPassword(
+        auth,
+        email.value,
+        password.value,
+      );
+    } else {
+      result = await signInWithEmailAndPassword(
+        auth,
+        email.value,
+        password.value,
+      );
+    }
+    onSuccess(result.user);
+  } catch (error: unknown) {
+    handleError(error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function onSuccess(user: unknown) {
+  notificationsStore.addNotification({
+    message: "Login successful!",
+    type: "success",
   });
-});
+  authStore.onAuthStateChanged(user);
+  router.push({ path: props.to });
+}
 
-onBeforeUnmount(() => {
-  if (ui) ui.delete();
-});
+function handleError(error: unknown) {
+  const firebaseError = error as { code?: string; message?: string };
+  const code = firebaseError.code || "";
+  if (code === "auth/user-not-found" || code === "auth/invalid-credential") {
+    emailError.value = "Invalid email or password";
+  } else if (code === "auth/email-already-in-use") {
+    emailError.value = "An account with this email already exists";
+  } else if (code === "auth/weak-password") {
+    emailError.value = "Password must be at least 6 characters";
+  } else if (code === "auth/popup-closed-by-user") {
+    // User closed popup, no error to show
+  } else {
+    emailError.value = firebaseError.message || "An error occurred";
+  }
+}
 </script>
 
 <template>
-  <div>
-    <div id="firebaseui-auth-container" ref="authContainer" />
-    <v-progress-circular
-      v-if="!firebaseUIInitialized"
-      class="mx-auto d-block my-16"
-      :size="80"
-      :width="5"
-      color="primary"
-      indeterminate
-    />
+  <div class="text-center">
+    <v-btn
+      block
+      size="large"
+      variant="outlined"
+      class="mb-3"
+      :loading="loading"
+      @click="signInWithGoogle"
+    >
+      <v-icon :icon="mdiGoogle" class="mr-2" />
+      Continue with Google
+    </v-btn>
+
+    <v-btn
+      block
+      size="large"
+      variant="outlined"
+      class="mb-3"
+      :loading="loading"
+      @click="signInWithGithub"
+    >
+      <v-icon :icon="mdiGithub" class="mr-2" />
+      Continue with GitHub
+    </v-btn>
+
+    <v-btn
+      v-if="!showEmailForm"
+      block
+      size="large"
+      variant="outlined"
+      class="mb-3"
+      @click="showEmailForm = true"
+    >
+      <v-icon :icon="mdiEmail" class="mr-2" />
+      Continue with Email
+    </v-btn>
+
+    <v-form v-if="showEmailForm" class="mt-4" @submit.prevent="submitEmail">
+      <v-text-field
+        v-model="email"
+        label="Email"
+        type="email"
+        variant="outlined"
+        density="comfortable"
+        class="mb-2"
+        required
+      />
+      <v-text-field
+        v-model="password"
+        label="Password"
+        type="password"
+        variant="outlined"
+        density="comfortable"
+        class="mb-2"
+        required
+      />
+      <v-alert v-if="emailError" type="error" density="compact" class="mb-3">
+        {{ emailError }}
+      </v-alert>
+      <v-btn
+        block
+        size="large"
+        color="primary"
+        type="submit"
+        :loading="loading"
+      >
+        {{ isSignUp ? "Sign Up" : "Sign In" }}
+      </v-btn>
+      <v-btn
+        block
+        variant="text"
+        size="small"
+        class="mt-2"
+        @click="isSignUp = !isSignUp"
+      >
+        {{
+          isSignUp ? "Already have an account? Sign In" : "No account? Sign Up"
+        }}
+      </v-btn>
+    </v-form>
+
+    <p class="text-body-small text-medium-emphasis mt-4">
+      By continuing, you agree to the
+      <a :href="appStore.appData.url + '/terms-and-conditions'">
+        Terms & Conditions
+      </a>
+      and
+      <a :href="appStore.appData.url + '/privacy-policy'">Privacy Policy</a>
+    </p>
   </div>
 </template>

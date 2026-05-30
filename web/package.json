@@ -18,7 +18,6 @@
     "chartjs-adapter-moment": "^1.0.1",
     "date-fns": "^4.3.0",
     "firebase": "^12.13.0",
-    "firebaseui": "^6.1.0",
     "flag-icons": "^7.5.0",
     "libphonenumber-js": "^1.13.3",
     "moment": "^2.30.1",
