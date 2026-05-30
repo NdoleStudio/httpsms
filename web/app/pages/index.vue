@@ -105,7 +105,7 @@ const planYearlyMonthlyPrice = computed(
             </VBtn>
           </div>
           <p class="text-body-medium mt-2">
-            ✅Trusted by <b>23,273+</b> users who send/receive more than
+            ⚡Trusted by <b>23,273+</b> users who send/receive more than
             <b>500,000</b> messages per month.
           </p>
           <div class="mt-4" :class="{ 'text-center': mdAndDown }">
