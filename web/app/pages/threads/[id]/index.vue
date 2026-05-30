@@ -507,12 +507,12 @@ onBeforeUnmount(() => {
     max-width: 900px;
   }
 }
-@media (min-width: 1264px) {
+@media (min-width: 1280px) {
   .messages-body {
     max-width: 1185px;
   }
 }
-@media (min-width: 1904px) {
+@media (min-width: 1920px) {
   .messages-body {
     max-width: 1785px;
   }
