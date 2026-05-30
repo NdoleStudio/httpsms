@@ -1,3 +1,5 @@
+import type { $Fetch } from "ofetch";
+
 let authToken: string | null = null;
 let apiKey: string | null = null;
 
@@ -9,9 +11,9 @@ export function setApiKey(key: string | null) {
   apiKey = key;
 }
 
-function createApiFetch() {
+function createApiFetch(): $Fetch {
   const config = useRuntimeConfig();
-  const baseURL = config.public.apiBaseUrl as string;
+  const baseURL = (config.public as Record<string, string>).apiBaseUrl;
 
   return $fetch.create({
     baseURL,

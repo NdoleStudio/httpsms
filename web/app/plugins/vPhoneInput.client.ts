@@ -5,9 +5,10 @@ import {
   autocompletePhoneCountryInput,
   VPhoneCountryFlagSvg,
 } from "v-phone-input";
+import type { Plugin } from "vue";
 
 export default defineNuxtPlugin((nuxtApp) => {
-  const vPhoneInput = createVPhoneInput({
+  const vPhoneInput: Plugin = createVPhoneInput({
     ...autocompletePhoneCountryInput,
     countryDisplayComponent: VPhoneCountryFlagSvg,
     validate: null,
