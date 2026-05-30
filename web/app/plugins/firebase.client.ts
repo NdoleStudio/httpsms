@@ -3,7 +3,7 @@ import type { FirebaseApp } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useAuthStore } from "../stores/auth";
 
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin(async () => {
   const config = useRuntimeConfig();
   const publicConfig = config.public as Record<string, string>;
 
@@ -32,18 +32,15 @@ export default defineNuxtPlugin(() => {
 
   // Also initialize the compat SDK for FirebaseUI
   if (import.meta.client) {
-    import("firebase/compat/app").then(
-      (firebase: {
-        default: {
-          apps: unknown[];
-          initializeApp: (config: typeof firebaseConfig) => void;
-        };
-      }) => {
-        if (!firebase.default.apps.length) {
-          firebase.default.initializeApp(firebaseConfig);
-        }
-      },
-    );
+    const firebase = (await import("firebase/compat/app")) as {
+      default: {
+        apps: unknown[];
+        initializeApp: (config: typeof firebaseConfig) => void;
+      };
+    };
+    if (!firebase.default.apps.length) {
+      firebase.default.initializeApp(firebaseConfig);
+    }
   }
 
   // Listen for auth state changes and update the auth store
