@@ -28,12 +28,16 @@ useHead({
   <VContainer class="pt-8">
     <VRow class="mt-16">
       <VCol cols="12" md="9">
-        <h1 class="text-h3 text-md-h2 mt-1">
+        <h1
+          :class="
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+          "
+        >
           How to grant SMS permissions on Android 15+
         </h1>
         <BlogInfo date="February 18, 2025" read-time="5 min read" />
 
-        <p class="text-subtitle-1 mt-2">
+        <p class="text-body-large mt-2">
           In Android 15 (Vanilla Ice Cream), the
           <code>android.permission.SEND_SMS</code> and
           <code>android.permission.RECEIVE_SMS</code> permissions are now hard
@@ -52,7 +56,7 @@ useHead({
           the application before allowing these permissions.
         </VAlert>
 
-        <h3 class="text-h4 mt-8 mb-2">Step1: Open App Info</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Step1: Open App Info</h3>
         <p>
           Long press the icon of the android app which you want to grant the
           permission and select <b>"App info"</b>
@@ -64,7 +68,9 @@ useHead({
           src="/img/blog/grant-send-and-read-sms-permissions-on-android/app-info.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">Step 2: Allow Restricted Permissions</h3>
+        <h3 class="text-headline-large mb-4 mt-16">
+          Step 2: Allow Restricted Permissions
+        </h3>
         <p>
           On the App Info page, click on the menu button
           <VIcon :icon="mdiDotsVertical" /> and select the
@@ -77,7 +83,9 @@ useHead({
           src="/img/blog/grant-send-and-read-sms-permissions-on-android/allow-restricted-settings.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">Step 3: Allow SMS Permissions</h3>
+        <h3 class="text-headline-large mb-4 mt-16">
+          Step 3: Allow SMS Permissions
+        </h3>
         <p>
           Once you have allowed the restricted settings from step 2 above, You
           can navigate to <b>Permissions ➡️ SMS</b> and tap the Allow button to
@@ -90,7 +98,7 @@ useHead({
           src="/img/blog/grant-send-and-read-sms-permissions-on-android/allow.png"
         />
 
-        <h3 class="text-h4 mt-12">Conclusion</h3>
+        <h3 class="text-headline-large mt-12">Conclusion</h3>
         <p>
           Congratulations, you have successfully configured SMS permissions on
           your Android app. Don't hesitate to contact us if you face any

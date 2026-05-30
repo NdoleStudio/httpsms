@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
+
+const { mdAndUp } = useDisplay();
+
 definePageMeta({ layout: "website" });
 
 useHead({
@@ -32,20 +36,24 @@ useHead({
   <VContainer class="pt-8">
     <VRow class="mt-16">
       <VCol cols="12" md="9">
-        <h1 class="text-h3 text-md-h2 mt-1">
+        <h1
+          :class="
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+          "
+        >
           Send an SMS message when a new row is added to Google Sheets using
           Zapier
         </h1>
         <BlogInfo date="October 29, 2023" readTime="5 min read" />
 
-        <p class="text-subtitle-1 mt-2">
+        <p class="text-body-large mt-2">
           Automate sending personalized SMS messages each time a new row is
           added to your Google Sheets document using Zapier. You don't need to
           write any code to make this happen and you can personalize the SMS
           messages which are sent out.
         </p>
 
-        <h3 class="text-h4 mt-8 mb-2">Prerequisites</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Prerequisites</h3>
         <ul>
           <li>Basic understanding of Google Sheets.</li>
           <li>Basic understanding of Zapier.</li>
@@ -57,7 +65,9 @@ useHead({
           </li>
         </ul>
 
-        <h3 class="text-h4 mt-8 mb-2">Step 1: Create trigger on Zapier</h3>
+        <h3 class="text-headline-large mt-8 mb-2">
+          Step 1: Create trigger on Zapier
+        </h3>
         <p>
           Create a new Zap on Zapier and select Google Sheets as the trigger.
           The event name should be <b>"New Spreadsheet Row"</b> if you want to
@@ -86,7 +96,9 @@ useHead({
           src="/img/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/google-sheets.png"
         />
 
-        <h3 class="text-h4 mt-8 mb-2">Step 2: Create an action on Zapier</h3>
+        <h3 class="text-headline-large mt-8 mb-2">
+          Step 2: Create an action on Zapier
+        </h3>
         <p>
           An action is what happens after the trigger. In this case, we want to
           send an SMS message to the customer who made the purchase. Select
@@ -148,7 +160,7 @@ useHead({
           src="/img/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/zapier-action-action.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">Conclusion</h3>
+        <h3 class="text-headline-large mb-4 mt-16">Conclusion</h3>
         <p>
           Publish your zap and you will automatically trigger httpsms to send an
           SMS to your customer when ever you add a new row in the google sheet.

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
+
+const { mdAndUp } = useDisplay();
+
 import { mdiCommentTextMultipleOutline } from "@mdi/js";
 
 definePageMeta({ layout: "website" });
@@ -32,25 +36,29 @@ useHead({
   <VContainer class="pt-8">
     <VRow class="mt-16">
       <VCol cols="12" md="9">
-        <h1 class="text-h3 text-md-h2 mt-1">
+        <h1
+          :class="
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+          "
+        >
           How to send SMS messages to multiple phone numbers from Excel
         </h1>
         <BlogInfo date="October 29, 2023" readTime="5 min read" />
 
-        <p class="text-subtitle-1 mt-2">
+        <p class="text-body-large mt-2">
           Send personalized SMS messages to multiple phone numbers for less than
           <b>$0.002 </b> per SMS message. You can also configure every SMS
           message in your Excel spreadsheet so they are unique for each
           recipient phone number.
         </p>
 
-        <h3 class="text-h4 mt-8 mb-2">Prerequisites</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Prerequisites</h3>
         <ul>
           <li>Basic understanding of Microsoft Excel or Google Sheets.</li>
           <li>An Android phone.</li>
         </ul>
 
-        <h3 class="text-h4 mt-8 mb-2">Step 1: Get your API Key</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Step 1: Get your API Key</h3>
         <p>
           Create an account on
           <NuxtLink class="text-decoration-none" to="/">httpsms.com</NuxtLink>
@@ -65,7 +73,7 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/settings.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">
+        <h3 class="text-headline-large mb-4 mt-16">
           Step 2: Install the httpSMS android app
         </h3>
         <p>
@@ -89,7 +97,7 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/android-app.png"
         />
 
-        <h3 class="text-h4 mt-12">Step 3: Edit your Excel file</h3>
+        <h3 class="text-headline-large mt-12">Step 3: Edit your Excel file</h3>
         <p>
           Download the
           <a
@@ -116,7 +124,7 @@ useHead({
           src="/img/blog/send-bulk-sms-from-csv-file-with-no-code/httpms-spreedsheet.png"
         />
 
-        <h3 class="text-h4 mt-12">Step 3: Send the SMS Messages</h3>
+        <h3 class="text-headline-large mt-12">Step 3: Send the SMS Messages</h3>
         <p>
           Visit the
           <NuxtLink class="text-decoration-none" to="/bulk-messages">

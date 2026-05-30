@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
+
+const { mdAndUp } = useDisplay();
+
 definePageMeta({ layout: "website" });
 
 useHead({
@@ -43,13 +47,17 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/header.png"
         />
 
-        <h1 class="text-h3 text-md-h2 mt-1">
+        <h1
+          :class="
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+          "
+        >
           How to forward a text message (SMS) from an android phone into your
           webhook
         </h1>
         <BlogInfo date="April 08, 2023" readTime="5 min read" />
 
-        <p class="text-subtitle-1 mt-2">
+        <p class="text-body-large mt-2">
           You can now program your android phone to forward messages received on
           your phone to your server and trigger powerful automations with tools
           like Zapier and IFTTT. I created an open source application called
@@ -57,7 +65,7 @@ useHead({
           that helps you to set this up with ease
         </p>
 
-        <h3 class="text-h4 mt-2">Step 1: Get your API_KEY</h3>
+        <h3 class="text-headline-large mt-2">Step 1: Get your API_KEY</h3>
         <p>
           Create an account on the httpSMS web application and copy your API key
           from the settings page.
@@ -71,7 +79,9 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/settings.png"
         />
 
-        <h3 class="text-h4 mt-12">Step 2: Install the httpSMS android app</h3>
+        <h3 class="text-headline-large mt-12">
+          Step 2: Install the httpSMS android app
+        </h3>
         <p>
           <a
             class="text-decoration-none"
@@ -89,7 +99,7 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/android-app.png"
         />
 
-        <h3 class="text-h4 mt-12">Step 3: Set up a webhook</h3>
+        <h3 class="text-headline-large mt-12">Step 3: Set up a webhook</h3>
         <p>
           Once the application has been installed, it will be listening for SMS
           messages received on the android phone. You can configure the
@@ -106,7 +116,7 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/webhook.png"
         />
 
-        <h3 class="text-h4 mt-12">Conclusion</h3>
+        <h3 class="text-headline-large mt-12">Conclusion</h3>
         <p>
           Congratulations, you have successfully set up SMS forwarding from your
           Android phone to a webhook! This powerful automation tool can help you

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
+
+const { mdAndUp } = useDisplay();
+
 import { mdiLanguageGo, mdiLanguageJavascript } from "@mdi/js";
 import { ref } from "vue";
 
@@ -28,12 +32,16 @@ useHead({
   <VContainer class="pt-8">
     <VRow class="mt-16">
       <VCol cols="12" md="9">
-        <h1 class="text-h3 text-md-h2 mt-1">
+        <h1
+          :class="
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+          "
+        >
           Secure your conversations by encrypting your SMS messages end-to-end
         </h1>
         <BlogInfo date="January 21, 2024" readTime="10 min read" />
 
-        <p class="text-subtitle-1 mt-2">
+        <p class="text-body-large mt-2">
           We have added support for end-to-end encryption for SMS messages so
           that no one can see the content of the messages you send using httpSMS
           except you.
@@ -55,7 +63,7 @@ useHead({
           encryption algorithm to encrypt and decrypt the messages.
         </p>
 
-        <h3 class="text-h4 mt-8 mb-2">Setup your encryption key</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Setup your encryption key</h3>
         <p>
           <a
             class="text-decoration-none"
@@ -72,7 +80,7 @@ useHead({
           src="/img/blog/end-to-end-encryption-to-sms-messages/encryption-key-android.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">Encrypt your SMS message</h3>
+        <h3 class="text-headline-large mb-4 mt-16">Encrypt your SMS message</h3>
         <p>
           We use the AES-256 encryption algorithm to encrypt the SMS messages.
           This algorithm requires a an encryption key which is 256 bits to work
@@ -132,7 +140,7 @@ encryptedMessage := client.Cipher.Encrypt(key, "This is a test text message")
           </VTabsWindowItem>
         </VTabsWindow>
 
-        <h3 class="text-h4 mt-6">Send an encrypted message</h3>
+        <h3 class="text-headline-large mt-6">Send an encrypted message</h3>
         <p>
           After generating the encrypted message payload, you can send it
           directly using the httpSMS API. Make sure to set
@@ -193,7 +201,9 @@ client.Messages.Send(context.Background(), &amp;httpsms.MessageSendParams{
           src="/img/blog/end-to-end-encryption-to-sms-messages/send-sms-message.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">Receiving an encrypted message</h3>
+        <h3 class="text-headline-large mb-4 mt-16">
+          Receiving an encrypted message
+        </h3>
         <p>
           When your android phone receives a new message, it will be encrypted
           with the encryption Key on your Android phone before it is delivered
@@ -289,7 +299,7 @@ decryptedMessage := client.Cipher.Decrypt(encryptionkey, encryptedMessage)
           </VTabsWindowItem>
         </VTabsWindow>
 
-        <h3 class="text-h4 mt-12">Conclusion</h3>
+        <h3 class="text-headline-large mt-12">Conclusion</h3>
         <p>
           Congratulations, you have successfully configured your Android phone
           to send and receive SMS messages with end-to-end encryption. Don't

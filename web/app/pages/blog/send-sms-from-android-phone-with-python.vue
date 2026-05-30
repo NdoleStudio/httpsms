@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
+
+const { mdAndUp } = useDisplay();
+
 definePageMeta({ layout: "website" });
 
 useHead({
@@ -41,12 +45,16 @@ useHead({
           src="/img/blog/send-sms-from-android-phone-with-python/header.png"
         />
 
-        <h1 class="text-h3 text-md-h2 mt-1">
+        <h1
+          :class="
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+          "
+        >
           Send an SMS from your Android phone with Python
         </h1>
         <BlogInfo date="June 03, 2023" readTime="6 min read" />
 
-        <p class="text-subtitle-1 mt-2">
+        <p class="text-body-large mt-2">
           In an era dominated by social media, instant messaging apps, and
           ever-evolving communication technologies, it's easy to overlook the
           humble yet remarkably resilient Short Message Service (SMS). Since its
@@ -61,7 +69,7 @@ useHead({
           messages.
         </p>
 
-        <h3 class="text-h4 mt-8 mb-2">Prerequisites</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Prerequisites</h3>
         <ul>
           <li>Basic understanding of Python.</li>
           <li>An Android phone.</li>
@@ -73,7 +81,7 @@ useHead({
           </li>
         </ul>
 
-        <h3 class="text-h4 mt-8 mb-2">Step 1: Get your API Key</h3>
+        <h3 class="text-headline-large mt-8 mb-2">Step 1: Get your API Key</h3>
         <p>
           Create an account on
           <NuxtLink class="text-decoration-none" to="/">httpsms.com</NuxtLink>
@@ -88,7 +96,7 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/settings.png"
         />
 
-        <h3 class="text-h4 mb-4 mt-16">
+        <h3 class="text-headline-large mb-4 mt-16">
           Step 2: Install the httpSMS android app
         </h3>
         <p>
@@ -112,7 +120,7 @@ useHead({
           src="/img/blog/forward-incoming-sms-from-phone-to-webhook/android-app.png"
         />
 
-        <h3 class="text-h4 mt-12">Step 3: Writing the code</h3>
+        <h3 class="text-headline-large mt-12">Step 3: Writing the code</h3>
         <p>
           Now that you have setup your android phone correctly on httpSMS, you
           can write the python code below in a new file named
@@ -162,7 +170,7 @@ print(json.dumps(response.json(), indent=4))</code></pre>
           src="/img/blog/send-sms-from-android-phone-with-python/sms-sent.png"
         />
 
-        <h3 class="text-h4 mt-12">Conclusion</h3>
+        <h3 class="text-headline-large mt-12">Conclusion</h3>
         <p>
           Congratulations, you have successfully configured your android phone
           to send SMS messages via python. You can now reuse this code to send
