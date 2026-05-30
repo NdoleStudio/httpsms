@@ -18,7 +18,7 @@ useHead({
     {
       property: "og:description",
       content:
-        "Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.",
+        "Send personalized SMS messages to multiple phone numbers for less than $0.002 per SMS message using your Android phone as the SMS gateway.",
     },
     {
       name: "twitter:card",
@@ -124,7 +124,7 @@ useHead({
           src="/img/blog/send-bulk-sms-from-csv-file-with-no-code/httpms-spreedsheet.png"
         />
 
-        <h3 class="text-headline-large mt-12">Step 3: Send the SMS Messages</h3>
+        <h3 class="text-headline-large mt-12">Step 4: Send the SMS Messages</h3>
         <p>
           Visit the
           <NuxtLink class="text-decoration-none" to="/bulk-messages">

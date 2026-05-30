@@ -6,7 +6,9 @@ const { mdAndUp } = useDisplay();
 import { mdiLanguageGo, mdiLanguageJavascript } from "@mdi/js";
 import { ref } from "vue";
 
-const selectedTab = ref("javascript");
+const encryptTab = ref("javascript");
+const sendTab = ref("javascript");
+const receiveTab = ref("javascript");
 
 definePageMeta({ layout: "website" });
 
@@ -100,7 +102,7 @@ useHead({
           initialization vector and encoding the payload yourself.
         </p>
 
-        <VTabs v-model="selectedTab" show-arrows>
+        <VTabs v-model="encryptTab" show-arrows>
           <VTab value="javascript">
             <VIcon color="#efd81d" class="mr-1" :icon="mdiLanguageJavascript" />
             Javascript
@@ -110,7 +112,7 @@ useHead({
             Go
           </VTab>
         </VTabs>
-        <VTabsWindow v-model="selectedTab">
+        <VTabsWindow v-model="encryptTab">
           <VTabsWindowItem value="javascript">
             <pre
               class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
@@ -149,7 +151,7 @@ encryptedMessage := client.Cipher.Encrypt(key, "This is a test text message")
           the Android app before sending to your recipient.
         </p>
 
-        <VTabs v-model="selectedTab" show-arrows>
+        <VTabs v-model="sendTab" show-arrows>
           <VTab value="javascript">
             <VIcon color="#efd81d" class="mr-1" :icon="mdiLanguageJavascript" />
             Javascript
@@ -159,7 +161,7 @@ encryptedMessage := client.Cipher.Encrypt(key, "This is a test text message")
             Go
           </VTab>
         </VTabs>
-        <VTabsWindow v-model="selectedTab">
+        <VTabsWindow v-model="sendTab">
           <VTabsWindowItem value="javascript">
             <pre
               class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
@@ -216,7 +218,7 @@ client.Messages.Send(context.Background(), &amp;httpsms.MessageSendParams{
           >
         </p>
 
-        <VTabs v-model="selectedTab" show-arrows>
+        <VTabs v-model="receiveTab" show-arrows>
           <VTab value="javascript">
             <VIcon color="#efd81d" class="mr-1" :icon="mdiLanguageJavascript" />
             Javascript
@@ -226,7 +228,7 @@ client.Messages.Send(context.Background(), &amp;httpsms.MessageSendParams{
             Go
           </VTab>
         </VTabs>
-        <VTabsWindow v-model="selectedTab">
+        <VTabsWindow v-model="receiveTab">
           <VTabsWindowItem value="javascript">
             <pre
               class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"

@@ -22,7 +22,7 @@ const articles: Article[] = [
     slug: "grant-send-and-read-sms-permissions-on-android",
     title: "How to grant SMS permissions on Android 15+",
     description:
-      "Take control of your privacy by encrypting your SMS messages end-to-end. Safeguard your messages from prying eyes, ensuring absolute confidentiality.",
+      "In Android 15 (Vanilla Ice Cream), the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions step by step.",
     date: "February 18, 2025",
     readTime: "5 min read",
     author: "Acho Arnold",
@@ -84,7 +84,7 @@ const articles: Article[] = [
     title:
       "Forward a text message (SMS) from an Android phone into your webhook",
     description:
-      "Program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like zapper and IFTTFT.",
+      "Program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like Zapier and IFTTT.",
     date: "April 08, 2023",
     readTime: "5 min read",
     author: "Acho Arnold",

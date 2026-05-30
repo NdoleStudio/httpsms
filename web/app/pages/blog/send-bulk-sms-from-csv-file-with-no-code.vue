@@ -135,7 +135,7 @@ useHead({
           src="/img/blog/send-bulk-sms-from-csv-file-with-no-code/httpms-spreedsheet.png"
         />
 
-        <h3 class="text-headline-large mt-12">Step 3: Send the SMS Messages</h3>
+        <h3 class="text-headline-large mt-12">Step 4: Send the SMS Messages</h3>
         <p>
           Visit the
           <NuxtLink class="text-decoration-none" to="/bulk-messages">
