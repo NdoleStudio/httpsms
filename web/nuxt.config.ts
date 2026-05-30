@@ -16,13 +16,6 @@ export default defineNuxtConfig({
     define: {
       "process.env.DEBUG": false,
     },
-    css: {
-      preprocessorOptions: {
-        scss: {
-          api: "modern-compiler",
-        },
-      },
-    },
     optimizeDeps: {
       include: [
         "@mdi/js",
@@ -38,9 +31,6 @@ export default defineNuxtConfig({
   },
 
   vuetify: {
-    moduleOptions: {
-      styles: { configFile: "assets/styles/settings.scss" },
-    },
     vuetifyOptions: {
       theme: {
         defaultTheme: "dark",
