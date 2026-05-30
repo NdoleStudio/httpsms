@@ -25,9 +25,6 @@ importers:
       firebase:
         specifier: ^12.13.0
         version: 12.13.0
-      firebaseui:
-        specifier: ^6.1.0
-        version: 6.1.0(firebase@12.13.0)
       flag-icons:
         specifier: ^7.5.0
         version: 7.5.0
@@ -3793,12 +3790,6 @@ packages:
         integrity: sha512-4CXDYRBGqN+57wVJkuXBYmpAVUSg3L6JAQa/DFqm238G73E1wuyc/JhGQJzN7vUf/CMphYau2zXbfWzDR5aTEw==,
       }
 
-  dialog-polyfill@0.4.10:
-    resolution:
-      {
-        integrity: sha512-j5yGMkP8T00UFgyO+78OxiN5vC5dzRQF3BEio+LhNvDbyfxWBsi3sfPArDm54VloaJwy2hm3erEiDWqHRC8rzw==,
-      }
-
   diff@8.0.4:
     resolution:
       {
@@ -4123,14 +4114,6 @@ packages:
       {
         integrity: sha512-iutR8ejvAqk6qUClnsPz3U3VIjTWp243AX4cD3iifak5t56to1J29xUIQgSDDzaAqKvhshZerzSahwMQj2TlvA==,
       }
-
-  firebaseui@6.1.0:
-    resolution:
-      {
-        integrity: sha512-5WiVYVxPGMANuZKxg6KLyU1tyqIsbqf/59Zm4HrdFYwPtM5lxxB0THvgaIk4ix+hCgF0qmY89sKiktcifKzGIA==,
-      }
-    peerDependencies:
-      firebase: ^9.1.3 || ^10.0.0
 
   flag-icons@7.5.0:
     resolution:
@@ -4740,13 +4723,6 @@ packages:
       {
         integrity: sha512-pVKE4UdSQ7DvHzivsCIFx2BJn1mHG6KsyrFcaxFx6tONdneEuThrDx0Cj3AMg58KyN4pzYT+LHOotxDQDjNvkw==,
       }
-
-  material-design-lite@1.3.0:
-    resolution:
-      {
-        integrity: sha512-ao76b0bqSTKcEMt7Pui+J/S3eVF0b3GWfuKUwfe2lP5DKlLZOwBq37e0/bXEzxrw7/SuHAuYAdoCwY6mAYhrsg==,
-      }
-    engines: { node: ">=0.12.0" }
 
   mdn-data@2.0.28:
     resolution:
@@ -9119,8 +9095,6 @@ snapshots:
 
   devalue@5.8.1: {}
 
-  dialog-polyfill@0.4.10: {}
-
   diff@8.0.4: {}
 
   dijkstrajs@1.0.3: {}
@@ -9379,12 +9353,6 @@ snapshots:
       "@firebase/util": 1.15.1
     transitivePeerDependencies:
       - "@react-native-async-storage/async-storage"
-
-  firebaseui@6.1.0(firebase@12.13.0):
-    dependencies:
-      dialog-polyfill: 0.4.10
-      firebase: 12.13.0
-      material-design-lite: 1.3.0
 
   flag-icons@7.5.0: {}
 
@@ -9711,8 +9679,6 @@ snapshots:
       "@babel/parser": 7.29.7
       "@babel/types": 7.29.7
       source-map-js: 1.2.1
-
-  material-design-lite@1.3.0: {}
 
   mdn-data@2.0.28: {}
 
