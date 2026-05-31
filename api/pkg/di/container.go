@@ -997,7 +997,6 @@ func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
 		otelroundtripper.WithName(name),
 		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
 		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
-		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
 	)
 }
 
@@ -1007,7 +1006,6 @@ func (container *Container) HTTPRoundTripperWithoutRetry(name string) http.Round
 	return otelroundtripper.New(
 		otelroundtripper.WithName(name),
 		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
-		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
 	)
 }
 

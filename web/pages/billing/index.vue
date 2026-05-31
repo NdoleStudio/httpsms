@@ -232,16 +232,22 @@
               <code
                 v-if="$store.getters.getBillingUsage"
                 class="font-weight-bold"
-                >{{
-                  $store.getters.getBillingUsage.start_timestamp
-                    | billingPeriodDate
-                }}
-                –
-                {{
-                  $store.getters.getBillingUsage.end_timestamp
-                    | billingPeriodDate
-                }}</code
-              >.
+                v-html="
+                  $options.filters.billingPeriodDateOrdinal(
+                    $store.getters.getBillingUsage.start_timestamp,
+                  )
+                "
+              />
+              to
+              <code
+                v-if="$store.getters.getBillingUsage"
+                class="font-weight-bold"
+                v-html="
+                  $options.filters.billingPeriodDateOrdinal(
+                    $store.getters.getBillingUsage.end_timestamp,
+                  )
+                "
+              />.
             </p>
             <v-row v-if="$store.getters.getBillingUsage">
               <v-col cols="12" md="4">
@@ -377,13 +383,14 @@
             <h5 class="text-h4 mb-3 mt-8">Usage History</h5>
             <p class="text--secondary">
               Summary of all the sent and received messages in the past 12
-              months
+              billing periods
             </p>
             <v-simple-table>
               <template #default>
                 <thead>
                   <tr class="text-uppercase">
-                    <th class="text-left">Period</th>
+                    <th class="text-left">Start Date</th>
+                    <th class="text-left">End Date</th>
                     <th class="text-left">
                       Sent
                       <span v-if="$vuetify.breakpoint.lgAndUp">Messages</span>
@@ -400,11 +407,20 @@
                       .getBillingUsageHistory"
                     :key="billingUsage.id"
                   >
-                    <td>
-                      {{ billingUsage.start_timestamp | billingPeriodDate }}
-                      –
-                      {{ billingUsage.end_timestamp | billingPeriodDate }}
-                    </td>
+                    <td
+                      v-html="
+                        $options.filters.billingPeriodDateOrdinal(
+                          billingUsage.start_timestamp,
+                        )
+                      "
+                    ></td>
+                    <td
+                      v-html="
+                        $options.filters.billingPeriodDateOrdinal(
+                          billingUsage.end_timestamp,
+                        )
+                      "
+                    ></td>
                     <td>
                       {{ billingUsage.sent_messages | decimal }}
                     </td>
