@@ -4,7 +4,15 @@ export default defineNuxtConfig({
 
   ssr: false,
 
-  modules: ["vuetify-nuxt-module", "@pinia/nuxt"],
+  modules: ["vuetify-nuxt-module", "@pinia/nuxt", "@nuxtjs/google-fonts"],
+
+  googleFonts: {
+    families: {
+      Roboto: [100, 300, 400, 500, 700, 900],
+    },
+    display: "swap",
+    download: true,
+  },
 
   css: ["vuetify/styles"],
 
@@ -23,6 +31,7 @@ export default defineNuxtConfig({
         "date-fns",
         "firebase/app",
         "firebase/auth",
+        "highlight.js/lib/core",
         "libphonenumber-js",
         "pusher-js",
         "qrcode",
