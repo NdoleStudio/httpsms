@@ -31,7 +31,7 @@ function goBack() {
 
 <template>
   <v-btn
-    color="default"
+    variant="tonal"
     :size="smAndDown ? 'small' : 'default'"
     :block="block"
     @click="goBack"

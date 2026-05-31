@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const {mdAndUp} = useDisplay();
+
 definePageMeta({
   layout: "website",
 });
@@ -100,39 +102,96 @@ const sortedArticles = computed(() =>
 <template>
   <VContainer>
     <VRow>
-      <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-display-small mb-4">Blog</h1>
-        <p class="text-body-large mb-8">
-          Learn more about httpSMS through our blog!
-        </p>
-
-        <div class="d-flex flex-column ga-4">
-          <NuxtLink
+      <VCol cols="12" md="9">
+        <VRow>
+          <VCol cols="12">
+            <h1 class="text-display-large mb-2">Blog</h1>
+            <h2 class="text-medium-emphasis mt-2 mb-n4 text-title-large font-weight-light">
+              Learn more about httpSMS through our blog!
+            </h2>
+          </VCol>
+        </VRow>
+        <VRow>
+          <VCol
             v-for="article in sortedArticles"
             :key="article.slug"
-            :to="`/blog/${article.slug}`"
-            class="text-decoration-none"
+            cols="12"
+            xl="6"
           >
-            <VCard variant="outlined" class="pa-2">
-              <VCardTitle class="text-headline-small text-wrap">{{
-                article.title
-              }}</VCardTitle>
-              <VCardSubtitle class="pt-2">
-                <div class="d-flex flex-wrap ga-2 text-body-medium">
-                  <span>{{ article.date }}</span>
-                  <span aria-hidden="true">•</span>
-                  <span>{{ article.author }}</span>
-                  <span aria-hidden="true">•</span>
-                  <span>{{ article.readTime }}</span>
-                </div>
-              </VCardSubtitle>
-              <VCardText class="text-body-large">{{
-                article.description
-              }}</VCardText>
-            </VCard>
-          </NuxtLink>
-        </div>
+            <NuxtLink
+              :to="`/blog/${article.slug}`"
+              class="text-decoration-none"
+            >
+              <VHover v-slot="{ isHovering, props: hoverProps }">
+                <VCard
+                  v-bind="hoverProps"
+                  :elevation="isHovering ? 8 : 2"
+                  :color="isHovering ? 'blue-darken-4' : undefined"
+                  class="blog-card"
+                >
+                  <VCardTitle class="text-headline-large text-wrap title-clamp">{{
+                    article.title
+                  }}</VCardTitle>
+                  <VCardSubtitle>
+                    <span class="text-uppercase text-blue">{{
+                      article.date
+                    }}</span>
+                    •
+                    <span class="text-uppercase">{{ article.readTime }}</span>
+                  </VCardSubtitle>
+                  <VCardText class="mt-n2">
+                    <p class="text-title-medium description-clamp">
+                      {{ article.description }}
+                    </p>
+                  </VCardText>
+                </VCard>
+              </VHover>
+            </NuxtLink>
+          </VCol>
+        </VRow>
+      </VCol>
+      <VCol v-if="mdAndUp" md="3" class="pt-6">
+        <BlogSidebar />
       </VCol>
     </VRow>
   </VContainer>
 </template>
+
+<style scoped>
+.blog-card {
+  transition: all 0.3s ease;
+}
+
+.title-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 1280px) {
+  .title-clamp {
+    -webkit-line-clamp: 2;
+    height: calc(2.7rem * 2);
+  }
+}
+
+.description-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 1280px) {
+  .description-clamp {
+    -webkit-line-clamp: 3;
+    height: calc(1.5rem * 3);
+  }
+}
+
+@media (min-width: 2560px) {
+  .description-clamp {
+    -webkit-line-clamp: 2;
+    height: calc(1.5rem * 2);
+  }
+}
+</style>

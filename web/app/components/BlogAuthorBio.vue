@@ -5,7 +5,7 @@ import { mdiTwitter, mdiGithub } from "@mdi/js";
 <template>
   <div class="d-flex mb-6 mt-8">
     <v-avatar image="/img/arnold.png" />
-    <div class="ml-2">
+    <div class="ml-2 mt-n7">
       <p class="text-title-large mb-n1">Acho Arnold</p>
       <a
         class="mb-n4 text-decoration-none text-on-surface"

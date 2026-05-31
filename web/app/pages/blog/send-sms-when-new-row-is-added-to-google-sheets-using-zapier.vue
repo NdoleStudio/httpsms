@@ -83,7 +83,7 @@ useHead({
           On the Zap, select the <b>Spreadsheet</b> which you have on google
           drive and make sure to select the correct <b>Worksheet</b>.
         </p>
-        <VAlert type="info" variant="outlined">
+        <VAlert type="info" variant="tonal">
           In the sample spreadsheet below, we are mimicking an e-commerce store.
           The first column contains the name of the customer, the second column
           is the name of the product which was bought and the third column is
@@ -124,7 +124,7 @@ useHead({
   "from": "+18005550199",
   "to": "[ToPhoneNumber]"
 }</code></pre>
-        <VAlert type="info" variant="outlined" class="mt-4">
+        <VAlert type="info" variant="tonal" class="mt-4">
           In the JSON message above, we are mimicking an e-commerce store. The
           <code>[Name]</code> variable contains the name of the customer on the
           spreadsheet. <code>[Product]</code> contains the name of the product
@@ -178,6 +178,9 @@ useHead({
         <div class="text-center mt-8 mb-4">
           <BackButton />
         </div>
+      </VCol>
+      <VCol v-if="$vuetify.display.mdAndUp" md="3">
+        <BlogSidebar />
       </VCol>
     </VRow>
   </VContainer>

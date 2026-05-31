@@ -115,7 +115,7 @@ useHead({
         <VTabsWindow v-model="encryptTab">
           <VTabsWindowItem value="javascript">
             <pre
-              class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+              class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
             ><code class="language-javascript text-body-medium">import HttpSms from "httpsms"
 
 const client = new HttpSms("" /* API Key from https://httpsms.com/settings */);
@@ -129,7 +129,7 @@ const encryptedMessage = client.cipher.encrypt(key, "This is a sample text messa
           </VTabsWindowItem>
           <VTabsWindowItem value="go">
             <pre
-              class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+              class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
             ><code class="language-go text-body-medium">import "github.com/NdoleStudio/httpsms-go"
 
 client := htpsms.New(htpsms.WithAPIKey(""/* API Key from https://httpsms.com/settings */))
@@ -164,7 +164,7 @@ encryptedMessage := client.Cipher.Encrypt(key, "This is a test text message")
         <VTabsWindow v-model="sendTab">
           <VTabsWindowItem value="javascript">
             <pre
-              class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+              class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
             ><code class="language-javascript text-body-medium">import HttpSms from "httpsms"
 
 client.messages.postSend({
@@ -179,7 +179,7 @@ client.messages.postSend({
           </VTabsWindowItem>
           <VTabsWindowItem value="go">
             <pre
-              class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+              class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
             ><code class="language-go text-body-medium">import "github.com/NdoleStudio/httpsms-go"
 
 client.Messages.Send(context.Background(), &amp;httpsms.MessageSendParams{
@@ -231,7 +231,7 @@ client.Messages.Send(context.Background(), &amp;httpsms.MessageSendParams{
         <VTabsWindow v-model="receiveTab">
           <VTabsWindowItem value="javascript">
             <pre
-              class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+              class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
             ><code class="language-javascript text-body-medium">import HttpSms from "httpsms"
 
 const client = new HttpSms("" /* API Key from https://httpsms.com/settings */);
@@ -266,7 +266,7 @@ const decryptedMessage = client.cipher.decrypt(encryptionkey, encryptedMessage)
           </VTabsWindowItem>
           <VTabsWindowItem value="go">
             <pre
-              class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+              class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
             ><code class="language-go text-body-medium">import "github.com/NdoleStudio/httpsms-go"
 
 client := htpsms.New(htpsms.WithAPIKey(/* API Key from https://httpsms.com/settings */))
@@ -314,6 +314,9 @@ decryptedMessage := client.Cipher.Decrypt(encryptionkey, encryptedMessage)
         <div class="text-center mt-8 mb-4">
           <BackButton />
         </div>
+      </VCol>
+      <VCol v-if="$vuetify.display.mdAndUp" md="3">
+        <BlogSidebar />
       </VCol>
     </VRow>
   </VContainer>
