@@ -33,7 +33,7 @@ useHead({
 </script>
 
 <template>
-  <VContainer class="pt-8">
+  <VContainer v-highlight class="pt-8">
     <VRow class="mt-16">
       <VCol cols="12" md="9">
         <h1

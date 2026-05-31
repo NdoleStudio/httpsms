@@ -26,26 +26,29 @@ function goToPricing() {
   if (route.name === "index") {
     document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
   } else {
-    router.push("/#pricing");
+    router.push("/").then(() => {
+      setTimeout(() => {
+        document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    });
   }
 }
 </script>
 
 <template>
   <v-app>
-    <v-app-bar elevation="2" color="#121212" height="70">
+    <v-app-bar color="#121212" elevation="0">
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
             <NuxtLink
               to="/"
               class="text-decoration-none d-flex"
-              :class="{ 'mt-5': mdAndUp }"
             >
-              <v-avatar :image="'/img/logo.svg'" :size="33" class="mt-1" />
+              <v-avatar color="#121212" class="mt-8 pa-1" rounded="0" :image="'/img/logo.svg'" :size="38" />
               <h3
                 v-if="lgAndUp"
-                class="text-headline-large ml-1 text-on-surface"
+                class="text-headline-large mb-0 ml-1 text-white"
               >
                 httpSMS
               </h3>
@@ -84,6 +87,7 @@ function goToPricing() {
             <v-btn
               v-show="authStore.authUser === null"
               color="primary"
+              variant="flat"
               :class="{ 'mt-5': mdAndUp, 'mt-1': !mdAndUp }"
               :size="lgAndUp ? 'large' : 'default'"
               :to="{ name: 'login' }"
@@ -108,13 +112,13 @@ function goToPricing() {
       <Toast />
       <slot />
     </v-main>
-    <v-footer class="pt-4">
+    <v-footer>
       <v-container>
         <v-row>
           <v-col cols="12" md="3">
-            <NuxtLink to="/" class="text-decoration-none d-flex">
-              <v-avatar :image="'/img/logo.svg'" :size="33" class="mt-1" />
-              <h3 class="text-headline-large ml-1 text-on-surface">httpSMS</h3>
+            <NuxtLink to="/" class="text-decoration-none d-flex mt-n6">
+              <v-avatar color="#212121" class="mt-8 pa-1" rounded="0" :image="'/img/logo.svg'" :size="38" />
+              <h3 class="text-headline-large ml-1 mb-0 text-white">httpSMS</h3>
             </NuxtLink>
             <div class="text-title-medium mb-4 text-medium-emphasis">
               Made With
@@ -128,21 +132,21 @@ function goToPricing() {
             <p class="mt-n3">
               <v-btn
                 href="https://twitter.com/httpsmsHQ"
-                icon
                 color="#1DA1F2"
+                class="ml-n3"
+                variant="text"
                 :icon="mdiTwitter"
               />
               <v-btn
                 :href="appStore.appData.githubUrl"
-                icon
-                size="large"
                 color="#ffffff"
+                variant="text"
                 :icon="mdiGithub"
               />
               <v-btn
                 href="https://discord.gg/kGk8HVqeEZ"
                 icon
-                size="large"
+                variant="text"
                 color="#5865f2"
               >
                 <v-img
@@ -153,13 +157,24 @@ function goToPricing() {
                 />
               </v-btn>
             </p>
+            <a
+              href="https://www.saashub.com/httpsms?utm_source=badge&utm_campaign=badge&utm_content=httpsms&badge_variant=color&badge_kind=approved"
+              target="_blank"
+            >
+              <img
+                src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1"
+                alt="httpSMS badge"
+                style="max-width: 150px"
+              />
+            </a>
           </v-col>
           <v-col cols="12" md="3">
             <h2 class="text-headline-small mb-2">Resources</h2>
             <ul style="list-style: none" class="pa-0">
               <li class="mb-2">
                 <a
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
+                  style="cursor: pointer"
                   @click.stop="goToPricing"
                 >
                   Pricing
@@ -169,7 +184,7 @@ function goToPricing() {
               <li class="mb-2">
                 <a
                   href="https://httpsms.lemonsqueezy.com/affiliates"
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                 >
                   Affiliates
                   <v-icon color="warning" size="small" :icon="mdiShieldStar" />
@@ -178,7 +193,7 @@ function goToPricing() {
               <li class="mb-2">
                 <a
                   href="https://status.httpsms.com"
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                 >
                   Site status
                   <v-icon color="success" size="x-small" :icon="mdiCircle" />
@@ -186,7 +201,7 @@ function goToPricing() {
               </li>
               <li class="mb-2">
                 <NuxtLink
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                   to="/blog"
                 >
                   Blog <v-icon size="small" :icon="mdiPost" />
@@ -200,7 +215,7 @@ function goToPricing() {
               <li class="mb-2">
                 <a
                   :href="appStore.appData.documentationUrl"
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                 >
                   Documentation
                   <v-icon size="small" :icon="mdiBookOpenVariant" />
@@ -209,7 +224,7 @@ function goToPricing() {
               <li class="mb-2">
                 <a
                   :href="appStore.appData.githubUrl"
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                 >
                   Github <v-icon size="small" :icon="mdiGithub" />
                 </a>
@@ -217,7 +232,7 @@ function goToPricing() {
               <li class="mb-2">
                 <a
                   href="https://sandbox.httpsms.com"
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                 >
                   Sandbox
                   <v-icon size="small" color="pink" :icon="mdiCreation" />
@@ -226,7 +241,7 @@ function goToPricing() {
               <li class="mb-2">
                 <a
                   href="https://httpsms.featurebase.app"
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                 >
                   Request Feature
                   <v-icon
@@ -243,7 +258,7 @@ function goToPricing() {
             <ul style="list-style: none" class="pa-0">
               <li class="mb-2">
                 <NuxtLink
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                   to="/terms-and-conditions"
                 >
                   Terms & Conditions
@@ -252,7 +267,7 @@ function goToPricing() {
               </li>
               <li class="mb-2">
                 <NuxtLink
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                   to="/privacy-policy"
                 >
                   Privacy Policy
@@ -261,7 +276,7 @@ function goToPricing() {
               </li>
               <li class="mt-2">
                 <a
-                  class="text-on-surface text-decoration-none"
+                  class="text-white text-decoration-none footer-link"
                   href="mailto:support@httpsms.com"
                 >
                   Contact Support
@@ -275,3 +290,9 @@ function goToPricing() {
     </v-footer>
   </v-app>
 </template>
+
+<style scoped>
+.footer-link:hover {
+  text-decoration: underline !important;
+}
+</style>
