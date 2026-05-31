@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -119,12 +120,12 @@ func (dispatcher *EventDispatcher) Subscribe(eventType string, listener events.E
 
 // Publish an event to subscribers
 func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevents.Event) {
-	ctx, span := dispatcher.tracer.Start(ctx)
+	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
 	defer span.End()
 
-	start := time.Now()
+	dispatcher.addCloudEventAttributes(span, event)
 
-	ctxLogger := dispatcher.tracer.CtxLogger(dispatcher.logger, span)
+	start := time.Now()
 
 	subscribers, ok := dispatcher.listeners[event.Type()]
 	if !ok {
@@ -153,6 +154,15 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 			semconv.CloudeventsEventType(event.Type()),
 			semconv.CloudeventsEventSpecVersion(event.SpecVersion()),
 		),
+	)
+}
+
+func (dispatcher *EventDispatcher) addCloudEventAttributes(span trace.Span, event cloudevents.Event) {
+	span.SetAttributes(
+		semconv.CloudeventsEventType(event.Type()),
+		semconv.CloudeventsEventID(event.ID()),
+		semconv.CloudeventsEventSource(event.Source()),
+		semconv.CloudeventsEventSpecVersion(event.SpecVersion()),
 	)
 }
 

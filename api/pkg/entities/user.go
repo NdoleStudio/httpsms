@@ -127,3 +127,13 @@ func (user User) Location() *time.Location {
 	}
 	return location
 }
+
+// GetBillingAnchorDay returns the day-of-month that anchors this user's billing cycle.
+// For paid users with an active subscription, it uses the renewal date.
+// For free users or when SubscriptionRenewsAt is nil, it falls back to the account creation date.
+func (user User) GetBillingAnchorDay() int {
+	if user.SubscriptionRenewsAt != nil && !user.IsOnFreePlan() {
+		return user.SubscriptionRenewsAt.Day()
+	}
+	return user.CreatedAt.Day()
+}

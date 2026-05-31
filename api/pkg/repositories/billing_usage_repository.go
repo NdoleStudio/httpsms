@@ -21,6 +21,6 @@ type BillingUsageRepository interface {
 	// GetHistory returns past billing usage by entities.UserID
 	GetHistory(ctx context.Context, userID entities.UserID, params IndexParams) (*[]entities.BillingUsage, error)
 
-	// DeleteForUser deletes all billing usage for an entities.UserID
+	// DeleteAllForUser deletes all billing usage for an entities.UserID
 	DeleteAllForUser(ctx context.Context, userID entities.UserID) error
 }

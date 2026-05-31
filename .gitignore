@@ -15,3 +15,5 @@ SECURITY_AUDIT_REPORT.md
 
 docs/
 .output
+.agents/
+skills-lock.json

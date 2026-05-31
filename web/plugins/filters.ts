@@ -45,12 +45,41 @@ Vue.filter('decimal', (value: string): string => {
 })
 
 Vue.filter('billingPeriod', (value: string): string => {
-  const options = {
+  const date = new Date(value)
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
     year: 'numeric',
-    month: 'long',
   }
-  // @ts-ignore
-  return new Date(value).toLocaleDateString('en-US', options)
+  return date.toLocaleDateString('en-US', options)
+})
+
+Vue.filter('billingPeriodDate', (value: string): string => {
+  const date = new Date(value)
+  const options: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }
+  return date.toLocaleDateString('en-US', options)
+})
+
+Vue.filter('billingPeriodDateOrdinal', (value: string): string => {
+  const date = new Date(value)
+  const day = date.getDate()
+  const month = date.toLocaleDateString('en-US', { month: 'long' })
+  const year = date.getFullYear()
+
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? 'st'
+      : day % 10 === 2 && day !== 12
+      ? 'nd'
+      : day % 10 === 3 && day !== 13
+      ? 'rd'
+      : 'th'
+
+  return `${month} ${day}<sup>${suffix}</sup> ${year}`
 })
 
 Vue.filter('humanizeTime', (value: string): string => {
