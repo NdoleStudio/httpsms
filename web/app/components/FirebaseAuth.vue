@@ -111,22 +111,25 @@ function handleError(error: unknown) {
   <div class="text-center">
     <v-btn
       block
+      color="white"
       size="large"
-      variant="outlined"
       class="mb-3"
       :loading="loading"
+      :disabled="loading"
       @click="signInWithGoogle"
     >
-      <v-icon :icon="mdiGoogle" class="mr-2" />
+      <v-icon  color="red" :icon="mdiGoogle" class="mr-2" />
       Continue with Google
     </v-btn>
 
     <v-btn
       block
       size="large"
-      variant="outlined"
+      variant="flat"
+      color="black"
       class="mb-3"
       :loading="loading"
+      :disabled="loading"
       @click="signInWithGithub"
     >
       <v-icon :icon="mdiGithub" class="mr-2" />
@@ -137,12 +140,14 @@ function handleError(error: unknown) {
       v-if="!showEmailForm"
       block
       size="large"
-      variant="outlined"
+      variant="flat"
+      color="red"
       class="mb-3"
+      :disabled="loading"
       @click="showEmailForm = true"
     >
       <v-icon :icon="mdiEmail" class="mr-2" />
-      Continue with Email
+      Continue with email
     </v-btn>
 
     <v-form v-if="showEmailForm" class="mt-4" @submit.prevent="submitEmail">
@@ -190,12 +195,17 @@ function handleError(error: unknown) {
     </v-form>
 
     <p class="text-body-small text-medium-emphasis mt-4">
-      By continuing, you agree to the
-      <a :href="appStore.appData.url + '/terms-and-conditions'">
-        Terms & Conditions
+      By continuing, you are indicating that you accept our
+      <a
+        :href="appStore.appData.url + '/terms-and-conditions'"
+        class="text-decoration-none"
+      >
+        Terms of Service
       </a>
       and
-      <a :href="appStore.appData.url + '/privacy-policy'">Privacy Policy</a>
+      <a :href="appStore.appData.url + '/privacy-policy'" class="text-decoration-none">
+        Privacy Policy.</a
+      >
     </p>
   </div>
 </template>
