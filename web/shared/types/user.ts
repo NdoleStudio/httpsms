@@ -7,6 +7,8 @@ export interface User {
   subscription_id: string | null;
   subscription_name: string | null;
   subscription_status: string | null;
+  subscription_renews_at: string | null;
+  subscription_ends_at: string | null;
   notification_message_status_enabled: boolean;
   notification_webhooks_enabled: boolean;
 }

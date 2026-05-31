@@ -1,12 +1,27 @@
 <script setup lang="ts">
-import { mdiArrowLeft, mdiCreditCard } from "@mdi/js";
+import {
+  mdiArrowLeft,
+  mdiCreditCard,
+  mdiCallReceived,
+  mdiCallMade,
+  mdiCheck,
+  mdiAlert,
+  mdiInvoice,
+  mdiDownloadOutline,
+} from "@mdi/js";
+import type { BillingUsage } from "~~/shared/types/billing";
+import type {
+  RequestsUserPaymentInvoice,
+  ResponsesUserSubscriptionPaymentsResponse,
+} from "~~/shared/types/api";
+import { formatBillingPeriodDateOrdinal } from "~/utils/filters";
 
 definePageMeta({
   middleware: ["auth"],
 });
 
 useHead({
-  title: "Billing - httpSMS",
+  title: "Usage & Billing - httpSMS",
 });
 
 const config = useRuntimeConfig();
@@ -14,35 +29,161 @@ const { mdAndDown, lgAndUp } = useDisplay();
 const authStore = useAuthStore();
 const billingStore = useBillingStore();
 const notificationsStore = useNotificationsStore();
-const { useApi } = useApiComposable();
+const { formatDecimal, formatMoney, formatTimestamp } = useFilters();
 
 const loading = ref(true);
-const usage = ref<any>(null);
+const loadingSubscriptionPayments = ref(false);
+const dialog = ref(false);
+const subscriptionInvoiceDialog = ref(false);
+const payments = ref<ResponsesUserSubscriptionPaymentsResponse | null>(null);
+const selectedPayment = ref<any>(null);
+const invoiceFormName = ref("");
+const invoiceFormAddress = ref("");
+const invoiceFormCity = ref("");
+const invoiceFormState = ref("");
+const invoiceFormZipCode = ref("");
+const invoiceFormCountry = ref("");
+const invoiceFormNotes = ref("");
+const errorMessages = ref(new Map<string, string>());
 
-async function loadBillingUsage() {
+type PaymentPlan = {
+  name: string;
+  id: string;
+  price: number;
+  messagesPerMonth: number;
+};
+
+const plans: PaymentPlan[] = [
+  { name: "Free", id: "free", messagesPerMonth: 200, price: 0 },
+  { name: "PRO - Monthly", id: "pro-monthly", messagesPerMonth: 5000, price: 10 },
+  { name: "PRO - Yearly", id: "pro-yearly", messagesPerMonth: 5000, price: 100 },
+  { name: "Ultra - Monthly", id: "ultra-monthly", messagesPerMonth: 10000, price: 20 },
+  { name: "Ultra - Yearly", id: "ultra-yearly", messagesPerMonth: 10000, price: 200 },
+  { name: "20k - Monthly", id: "20k-monthly", messagesPerMonth: 20000, price: 35 },
+  { name: "20k - Yearly", id: "20k-yearly", messagesPerMonth: 20000, price: 350 },
+  { name: "50k - Monthly", id: "50k-monthly", messagesPerMonth: 50000, price: 89 },
+  { name: "100k - Monthly", id: "100k-monthly", messagesPerMonth: 100000, price: 175 },
+  { name: "200k - Monthly", id: "200k-monthly", messagesPerMonth: 200000, price: 350 },
+  { name: "PRO - Lifetime", id: "pro-lifetime", messagesPerMonth: 10000, price: 1000 },
+];
+
+const plan = computed<PaymentPlan>(() => {
+  return (
+    plans.find((x) => x.id === (authStore.user?.subscription_name || "free")) ??
+    plans[0]
+  )!;
+});
+
+const isOnFreePlan = computed(() => plan.value.id === "free");
+const isOnLifetimePlan = computed(() => plan.value.id === "pro-lifetime");
+const subscriptionIsCancelled = computed(
+  () => authStore.user?.subscription_status === "cancelled",
+);
+
+const totalMessages = computed(() => {
+  if (!billingStore.billingUsage) return 0;
+  return billingStore.billingUsage.sent_messages + billingStore.billingUsage.received_messages;
+});
+
+const checkoutURL = computed(() => {
+  const url = new URL(config.public.checkoutUrl as string);
+  const user = authStore.authUser;
+  if (user) {
+    url.searchParams.append("checkout[custom][user_id]", user.id);
+    url.searchParams.append("checkout[email]", user.email || "");
+    url.searchParams.append("checkout[name]", user.displayName || "");
+  }
+  return url.toString();
+});
+
+const enterpriseCheckoutURL = computed(() => {
+  const url = new URL(config.public.enterpriseCheckoutUrl as string);
+  const user = authStore.authUser;
+  if (user) {
+    url.searchParams.append("checkout[custom][user_id]", user.id);
+    url.searchParams.append("checkout[email]", user.email || "");
+    url.searchParams.append("checkout[name]", user.displayName || "");
+  }
+  return url.toString();
+});
+
+async function loadData() {
+  await Promise.all([
+    authStore.loadUser(),
+    billingStore.loadBillingUsage(),
+    billingStore.loadBillingUsageHistory(),
+  ]);
+  loading.value = false;
+  loadSubscriptionInvoices();
+}
+
+async function loadSubscriptionInvoices() {
+  if (!authStore.user?.subscription_id) return;
+  loadingSubscriptionPayments.value = true;
+  try {
+    payments.value = await billingStore.indexSubscriptionPayments();
+  } finally {
+    loadingSubscriptionPayments.value = false;
+  }
+}
+
+async function updateDetails() {
   loading.value = true;
   try {
-    const api = useApi();
-    const response = await api<{ data: any }>("/v1/billing/usage");
-    usage.value = response.data;
+    const link = await billingStore.getSubscriptionUpdateLink();
+    window.location.href = link;
   } catch {
-    // silently fail
+    loading.value = false;
+  }
+}
+
+async function cancelPlan() {
+  loading.value = true;
+  try {
+    await billingStore.cancelSubscription();
+    notificationsStore.addNotification({
+      message: "Subscription cancelled successfully",
+      type: "success",
+    });
+    navigateTo("/");
+  } catch {
+    loading.value = false;
+  }
+}
+
+async function generateInvoice() {
+  errorMessages.value = new Map();
+  loading.value = true;
+  try {
+    await billingStore.generateSubscriptionPaymentInvoice(
+      selectedPayment.value?.id || "",
+      {
+        name: invoiceFormName.value,
+        address: invoiceFormAddress.value,
+        city: invoiceFormCity.value,
+        state: invoiceFormState.value,
+        zip_code: invoiceFormZipCode.value,
+        country: invoiceFormCountry.value,
+        notes: invoiceFormNotes.value,
+      } as RequestsUserPaymentInvoice,
+    );
+    subscriptionInvoiceDialog.value = false;
+  } catch (error: any) {
+    if (error instanceof Map) {
+      errorMessages.value = error;
+    }
   } finally {
     loading.value = false;
   }
 }
 
-function getCheckoutUrl() {
-  window.open(config.public.checkoutUrl as string, "_blank");
-}
-
-function getEnterpriseCheckoutUrl() {
-  window.open(config.public.enterpriseCheckoutUrl as string, "_blank");
+function showInvoiceDialog(payment: any) {
+  selectedPayment.value = payment;
+  subscriptionInvoiceDialog.value = true;
 }
 
 onMounted(async () => {
-  await authStore.loadUser();
-  await loadBillingUsage();
+  await loadData();
 });
 </script>
 
@@ -53,134 +194,469 @@ onMounted(async () => {
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
-        <VToolbarTitle>Billing</VToolbarTitle>
+        <VToolbarTitle>Account Usage</VToolbarTitle>
+        <VProgressLinear
+          :active="loading"
+          :indeterminate="loading"
+          absolute
+          location="bottom"
+        />
       </VAppBar>
       <VContainer class="mt-16">
         <VRow>
-          <VCol cols="12" md="8" offset-md="2">
-            <h4 class="text-headline-large mb-3">Usage</h4>
-            <p class="text-medium-emphasis">
-              Your current billing period usage and limits.
-            </p>
+          <VCol cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
+            <!-- Current Plan -->
+            <h4 class="text-h4 mb-3 mt-3">Current Plan</h4>
+            <VRow v-if="authStore.user">
+              <VCol md="6" xl="4">
+                <VAlert type="info" variant="tonal" prominent>
+                  <div>
+                    <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
+                      <span v-if="isOnFreePlan">{{ plan.name }}</span>
+                      <span v-else-if="subscriptionIsCancelled">
+                        <span class="text-warning">{{ plan.name }}</span> → Free
+                      </span>
+                      <span v-else>{{ plan.name }}</span>
+                    </h1>
+                    <p
+                      v-if="!isOnFreePlan && !isOnLifetimePlan && !subscriptionIsCancelled"
+                      class="text-medium-emphasis"
+                    >
+                      Your next bill is for <b>${{ plan.price }}</b> on
+                      <b>{{
+                        new Date(authStore.user.subscription_renews_at!).toLocaleDateString()
+                      }}</b>
+                    </p>
+                    <p v-if="isOnLifetimePlan" class="text-medium-emphasis">
+                      You are on the life time plan which costs
+                      <b>${{ plan.price }}</b>
+                    </p>
+                    <p v-else-if="subscriptionIsCancelled" class="text-medium-emphasis">
+                      You will be downgraded to the <b>FREE</b> plan on
+                      <b>{{
+                        new Date(authStore.user.subscription_ends_at!).toLocaleDateString()
+                      }}</b>
+                    </p>
+                    <p v-else class="text-medium-emphasis">
+                      {{ totalMessages }}/{{ plan.messagesPerMonth }} messages
+                    </p>
+                  </div>
+                  <div class="d-flex mb-2 mt-2">
+                    <VBtn
+                      v-if="!subscriptionIsCancelled && !isOnFreePlan && !isOnLifetimePlan"
+                      color="primary"
+                      :loading="loading"
+                      @click="updateDetails"
+                    >
+                      Update Plan
+                    </VBtn>
+                    <VBtn
+                      v-else-if="!isOnLifetimePlan"
+                      color="primary"
+                      :href="checkoutURL"
+                    >
+                      Upgrade Plan
+                    </VBtn>
+                    <VSpacer />
+                    <VDialog
+                      v-if="!subscriptionIsCancelled && !isOnFreePlan && !isOnLifetimePlan"
+                      v-model="dialog"
+                      max-width="590"
+                    >
+                      <template #activator="{ props: activatorProps }">
+                        <VBtn v-bind="activatorProps" color="error" variant="text">
+                          Cancel Plan
+                        </VBtn>
+                      </template>
+                      <VCard>
+                        <VCardText class="pt-4">
+                          <h2 class="text-h5 mb-2">
+                            Are you sure you want to cancel your subscription?
+                          </h2>
+                          <p>
+                            You will be downgraded to the free plan at the end
+                            of the current billing period on
+                            <b>{{
+                              new Date(
+                                authStore.user.subscription_renews_at!,
+                              ).toLocaleDateString()
+                            }}</b>
+                          </p>
+                        </VCardText>
+                        <VCardActions>
+                          <VBtn color="primary" @click="dialog = false">
+                            Keep Subscription
+                          </VBtn>
+                          <VSpacer />
+                          <VBtn
+                            v-if="!isOnFreePlan"
+                            variant="text"
+                            :loading="loading"
+                            color="error"
+                            @click="cancelPlan"
+                          >
+                            Cancel Plan
+                          </VBtn>
+                        </VCardActions>
+                      </VCard>
+                    </VDialog>
+                  </div>
+                </VAlert>
+              </VCol>
+            </VRow>
 
-            <VProgressLinear v-if="loading" indeterminate class="mb-4" />
-
-            <template v-else-if="usage">
-              <VCard class="mb-6">
-                <VCardText>
-                  <VRow>
-                    <VCol cols="6" md="3">
-                      <div class="text-center">
-                        <p class="text-headline-large text-primary">
-                          {{ usage.sent_messages ?? 0 }}
-                        </p>
-                        <p class="text-medium-emphasis text-title-medium">
-                          Messages Sent
-                        </p>
-                      </div>
-                    </VCol>
-                    <VCol cols="6" md="3">
-                      <div class="text-center">
-                        <p class="text-headline-large text-primary">
-                          {{ usage.received_messages ?? 0 }}
-                        </p>
-                        <p class="text-medium-emphasis text-title-medium">
-                          Messages Received
-                        </p>
-                      </div>
-                    </VCol>
-                    <VCol cols="6" md="3">
-                      <div class="text-center">
-                        <p class="text-headline-large">
-                          {{ usage.total_messages ?? 0 }}
-                        </p>
-                        <p class="text-medium-emphasis text-title-medium">
-                          Total Messages
-                        </p>
-                      </div>
-                    </VCol>
-                    <VCol cols="6" md="3">
-                      <div class="text-center">
-                        <p class="text-headline-large">
-                          {{ usage.message_limit ?? 200 }}
-                        </p>
-                        <p class="text-medium-emphasis text-title-medium">
-                          Monthly Limit
-                        </p>
-                      </div>
-                    </VCol>
-                  </VRow>
-                  <VProgressLinear
-                    :model-value="
-                      ((usage.total_messages ?? 0) /
-                        (usage.message_limit ?? 200)) *
-                      100
-                    "
-                    color="primary"
-                    height="8"
-                    rounded
-                    class="mt-4"
-                  />
-                </VCardText>
-              </VCard>
-
-              <h4 class="text-headline-large mb-3 mt-8">Upgrade Plan</h4>
-              <p class="text-medium-emphasis mb-4">
-                Upgrade your plan to send and receive more SMS messages per
-                month.
-              </p>
-
+            <!-- Upgrade Plan (only for free users) -->
+            <template v-if="isOnFreePlan">
+              <h2 class="text-h4 mt-4 mb-2">Upgrade Plan</h2>
               <VRow>
-                <VCol cols="12" md="6">
-                  <VCard>
-                    <VCardTitle>Pro Plan</VCardTitle>
-                    <VCardSubtitle>Up to 5,000 messages/month</VCardSubtitle>
+                <VCol cols="12" md="6" xl="4">
+                  <VCard variant="outlined" :href="checkoutURL">
                     <VCardText>
-                      <p class="text-headline-large text-primary mb-2">
-                        $10<span class="text-body-large">/month</span>
-                      </p>
-                      <ul class="ml-4">
-                        <li>5,000 SMS messages per month</li>
-                        <li>Priority support</li>
-                        <li>Webhook integrations</li>
-                      </ul>
+                      <VRow align="center">
+                        <VCol class="flex-grow-1">
+                          <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
+                            Pro - Monthly
+                          </h1>
+                          <p class="text-medium-emphasis">5,000 messages monthly</p>
+                        </VCol>
+                        <VCol class="flex-shrink-1">
+                          <span class="text-h5">$10</span>/month
+                        </VCol>
+                      </VRow>
                     </VCardText>
-                    <VCardActions>
-                      <VBtn color="primary" block @click="getCheckoutUrl">
-                        <VIcon start :icon="mdiCreditCard" />
-                        Upgrade to Pro
-                      </VBtn>
-                    </VCardActions>
                   </VCard>
                 </VCol>
-                <VCol cols="12" md="6">
-                  <VCard>
-                    <VCardTitle>Enterprise Plan</VCardTitle>
-                    <VCardSubtitle>Custom message limits</VCardSubtitle>
+                <VCol cols="12" md="6" xl="4">
+                  <VCard variant="outlined" :href="checkoutURL">
                     <VCardText>
-                      <p class="text-headline-large mb-2">Custom</p>
-                      <ul class="ml-4">
-                        <li>Up to 200,000+ SMS messages per month</li>
-                        <li>Dedicated support</li>
-                        <li>Custom integrations</li>
-                      </ul>
+                      <VRow align="center">
+                        <VCol class="flex-grow-1">
+                          <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
+                            Pro - Yearly
+                            <VChip size="small" color="primary" class="mt-n1">
+                              2 months free
+                            </VChip>
+                          </h1>
+                          <p class="text-medium-emphasis">5,000 messages monthly</p>
+                        </VCol>
+                        <VCol class="flex-shrink-1">
+                          <span class="text-h5">$100</span>/year
+                        </VCol>
+                      </VRow>
                     </VCardText>
-                    <VCardActions>
-                      <VBtn
-                        color="secondary"
-                        block
-                        @click="getEnterpriseCheckoutUrl"
-                      >
-                        Contact Sales
-                      </VBtn>
-                    </VCardActions>
+                  </VCard>
+                </VCol>
+                <VCol cols="12" md="6" xl="4">
+                  <VCard variant="outlined" :href="enterpriseCheckoutURL">
+                    <VCardText>
+                      <VRow align="center">
+                        <VCol class="flex-grow-1">
+                          <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
+                            100k - Monthly
+                          </h1>
+                          <p class="text-medium-emphasis">100,000 messages monthly</p>
+                        </VCol>
+                        <VCol class="flex-shrink-1">
+                          <span class="text-h5">$175</span>/month
+                        </VCol>
+                      </VRow>
+                    </VCardText>
                   </VCard>
                 </VCol>
               </VRow>
             </template>
+
+            <!-- Overview -->
+            <h4 class="text-h4 mb-3 mt-8">Overview</h4>
+            <p class="text-medium-emphasis">
+              This is the summary of the sent messages and received messages in
+              <code
+                v-if="billingStore.billingUsage"
+                class="font-weight-bold"
+                v-html="formatBillingPeriodDateOrdinal(billingStore.billingUsage.start_timestamp)"
+              />
+              to
+              <code
+                v-if="billingStore.billingUsage"
+                class="font-weight-bold"
+                v-html="formatBillingPeriodDateOrdinal(billingStore.billingUsage.end_timestamp)"
+              />.
+            </p>
+            <VRow v-if="billingStore.billingUsage">
+              <VCol cols="12" md="4">
+                <VAlert
+                  type="info"
+                  variant="tonal"
+                  :icon="mdiCallMade"
+                  prominent
+                >
+                  <h2 class="text-h4 font-weight-bold mt-4">
+                    {{ formatDecimal(billingStore.billingUsage.sent_messages) }}
+                  </h2>
+                  <p class="text-medium-emphasis mt-n1">Messages Sent</p>
+                </VAlert>
+              </VCol>
+              <VCol cols="12" md="4">
+                <VAlert
+                  type="warning"
+                  variant="tonal"
+                  :icon="mdiCallReceived"
+                  prominent
+                >
+                  <h2 class="text-h4 font-weight-bold mt-4">
+                    {{ formatDecimal(billingStore.billingUsage.received_messages) }}
+                  </h2>
+                  <p class="text-medium-emphasis mt-n1">Messages Received</p>
+                </VAlert>
+              </VCol>
+              <VCol cols="12" md="4">
+                <VAlert
+                  type="success"
+                  variant="tonal"
+                  :icon="mdiCreditCard"
+                  prominent
+                >
+                  <h2 class="text-h4 font-weight-bold mt-4">
+                    {{ formatMoney(billingStore.billingUsage.total_cost) }}
+                  </h2>
+                  <p class="text-medium-emphasis mt-n1">Total Cost</p>
+                </VAlert>
+              </VCol>
+            </VRow>
+
+            <!-- Subscription Payments -->
+            <template v-if="authStore.user?.subscription_id != null">
+              <h4 class="text-h4 mb-3 mt-8">Subscription Payments</h4>
+              <p class="text-medium-emphasis">
+                This is a list of your last 10 subscription payments made using
+                our payment provider
+                <a class="text-decoration-none" href="https://www.lemonsqueezy.com">
+                  Lemon Squeezy</a>.
+              </p>
+              <VProgressCircular
+                v-if="payments == null && loadingSubscriptionPayments"
+                :size="20"
+                :width="2"
+                color="primary"
+                indeterminate
+              />
+              <VTable v-if="payments">
+                <thead>
+                  <tr class="text-uppercase">
+                    <th v-if="lgAndUp" class="text-left">ID</th>
+                    <th class="text-left">Timestamp</th>
+                    <th class="text-left">Status</th>
+                    <th v-if="lgAndUp" class="text-left">Tax</th>
+                    <th class="text-left">Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="payment in payments.data" :key="payment.id">
+                    <td v-if="lgAndUp">{{ payment.id }}</td>
+                    <td>{{ formatTimestamp(payment.attributes.created_at) }}</td>
+                    <td>
+                      <VChip
+                        v-if="payment.attributes.status === 'paid'"
+                        color="success"
+                      >
+                        <template #prepend>
+                          <VIcon size="small" :icon="mdiCheck" />
+                        </template>
+                        {{ payment.attributes.status_formatted }}
+                      </VChip>
+                      <VChip v-else color="error">
+                        <template #prepend>
+                          <VIcon size="small" :icon="mdiAlert" />
+                        </template>
+                        {{ payment.attributes.status_formatted }}
+                      </VChip>
+                    </td>
+                    <td v-if="lgAndUp">{{ payment.attributes.tax_formatted }}</td>
+                    <td class="font-weight-bold">
+                      {{ payment.attributes.total_formatted }}
+                    </td>
+                    <td class="text-right">
+                      <VBtn
+                        color="primary"
+                        size="small"
+                        @click="showInvoiceDialog(payment)"
+                      >
+                        <VIcon start :icon="mdiInvoice" />
+                        Invoice
+                      </VBtn>
+                    </td>
+                  </tr>
+                </tbody>
+              </VTable>
+            </template>
+
+            <!-- Usage History -->
+            <h4 class="text-h4 mb-3 mt-8">Usage History</h4>
+            <p class="text-medium-emphasis">
+              Summary of all the sent and received messages in the past 12
+              billing periods
+            </p>
+            <VTable>
+              <thead>
+                <tr class="text-uppercase">
+                  <th class="text-left">Start Date</th>
+                  <th class="text-left">End Date</th>
+                  <th class="text-left">
+                    Sent
+                    <span v-if="lgAndUp">Messages</span>
+                  </th>
+                  <th class="text-left">
+                    Received
+                    <span v-if="lgAndUp">Messages</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="billingUsage in billingStore.billingUsageHistory"
+                  :key="billingUsage.id"
+                >
+                  <td v-html="formatBillingPeriodDateOrdinal(billingUsage.start_timestamp)" />
+                  <td v-html="formatBillingPeriodDateOrdinal(billingUsage.end_timestamp)" />
+                  <td>{{ formatDecimal(billingUsage.sent_messages) }}</td>
+                  <td>{{ billingUsage.received_messages }}</td>
+                </tr>
+              </tbody>
+            </VTable>
           </VCol>
         </VRow>
       </VContainer>
     </div>
+
+    <!-- Invoice Dialog -->
+    <VDialog
+      v-model="subscriptionInvoiceDialog"
+      persistent
+      max-width="600"
+    >
+      <VCard>
+        <VCardTitle class="text-h4">Generate Invoice</VCardTitle>
+        <VCardSubtitle class="mt-n1">
+          Create an invoice for your
+          <b>{{ selectedPayment?.attributes.total_formatted }}</b> payment on
+          {{ formatTimestamp(selectedPayment?.attributes.created_at ?? "") }}
+        </VCardSubtitle>
+        <VCardText>
+          <VContainer>
+            <VRow>
+              <VCol cols="12">
+                <VTextField
+                  v-model="invoiceFormName"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('name')"
+                  :error-messages="errorMessages.get('name')"
+                  label="Name"
+                  placeholder="e.g Acme Corporation"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+              <VCol cols="12">
+                <VTextField
+                  v-model="invoiceFormAddress"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('address')"
+                  :error-messages="errorMessages.get('address')"
+                  label="Address"
+                  placeholder="e.g 221B Baker Street"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+            </VRow>
+            <VRow>
+              <VCol cols="6">
+                <VTextField
+                  v-model="invoiceFormCity"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('city')"
+                  :error-messages="errorMessages.get('city')"
+                  label="City"
+                  placeholder="e.g Los Angeles"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+              <VCol cols="6">
+                <VTextField
+                  v-model="invoiceFormState"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('state')"
+                  :error-messages="errorMessages.get('state')"
+                  label="State"
+                  placeholder="e.g CA"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+            </VRow>
+            <VRow>
+              <VCol cols="6">
+                <VTextField
+                  v-model="invoiceFormZipCode"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('zip_code')"
+                  :error-messages="errorMessages.get('zip_code')"
+                  label="Zip Code"
+                  placeholder="e.g 46001"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+              <VCol cols="6">
+                <VTextField
+                  v-model="invoiceFormCountry"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('country')"
+                  :error-messages="errorMessages.get('country')"
+                  label="Country"
+                  placeholder="e.g United States"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+            </VRow>
+            <VRow>
+              <VCol cols="12">
+                <VTextarea
+                  v-model="invoiceFormNotes"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('notes')"
+                  :error-messages="errorMessages.get('notes')"
+                  rows="3"
+                  label="Notes (optional)"
+                  placeholder="e.g Thanks for doing business with us!"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+              </VCol>
+            </VRow>
+          </VContainer>
+        </VCardText>
+        <VCardActions class="pb-4">
+          <VBtn :loading="loading" color="primary" @click="generateInvoice">
+            <VIcon start :icon="mdiDownloadOutline" />
+            Download Invoice
+          </VBtn>
+          <VSpacer />
+          <VBtn color="error" variant="text" @click="subscriptionInvoiceDialog = false">
+            Close
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </VContainer>
 </template>
