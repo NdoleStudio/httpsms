@@ -16,8 +16,8 @@
           <v-col cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
             <v-form @submit.prevent="sendMessage">
               <v-text-field
-                persistent-placeholder
                 v-model="formPhoneNumber"
+                persistent-placeholder
                 :disabled="sending"
                 :error="errors.has('to')"
                 :error-messages="errors.get('to')"
@@ -26,8 +26,8 @@
                 label="Phone Number"
               ></v-text-field>
               <v-textarea
-                persistent-placeholder
                 v-model="formContent"
+                persistent-placeholder
                 :error="errors.has('content')"
                 :error-messages="errors.get('content')"
                 :disabled="sending"
@@ -36,9 +36,9 @@
                 label="Content"
               ></v-textarea>
               <v-textarea
+                v-model="formAttachments"
                 persistent-placeholder
                 persistent-hint
-                v-model="formAttachments"
                 :error="errors.has('attachments')"
                 :error-messages="errors.get('attachments')"
                 :disabled="sending"
