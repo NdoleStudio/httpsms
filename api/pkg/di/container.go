@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -35,8 +36,6 @@ import (
 
 	"github.com/NdoleStudio/go-otelroundtripper"
 
-	"github.com/jinzhu/now"
-
 	"github.com/uptrace/uptrace-go/uptrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/emails"
@@ -44,9 +43,13 @@ import (
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
+	axiomzerolog "github.com/axiomhq/axiom-go/adapters/zerolog"
 	"github.com/hirosassa/zerodriver"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -96,11 +99,6 @@ type Container struct {
 
 // NewLiteContainer creates a Container without any routes or listeners
 func NewLiteContainer() (container *Container) {
-	// Set location to UTC
-	now.DefaultConfig = &now.Config{
-		TimeLocation: time.UTC,
-	}
-
 	return &Container{
 		logger: logger(3).WithService(fmt.Sprintf("%T", container)),
 	}
@@ -108,11 +106,6 @@ func NewLiteContainer() (container *Container) {
 
 // NewContainer creates a new dependency injection container
 func NewContainer(projectID string, version string) (container *Container) {
-	// Set location to UTC
-	now.DefaultConfig = &now.Config{
-		TimeLocation: time.UTC,
-	}
-
 	container = &Container{
 		projectID: projectID,
 		version:   version,
@@ -195,14 +188,16 @@ func (container *Container) App() (app *fiber.App) {
 	}
 
 	app.Use(otelfiber.Middleware())
-	app.Use(cors.New(
-		cors.Config{
-			AllowOrigins:     getEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
-			AllowHeaders:     getEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
-			AllowMethods:     getEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
-			AllowCredentials: false,
-			ExposeHeaders:    getEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
-		}),
+	app.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     getEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
+				AllowHeaders:     getEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
+				AllowMethods:     getEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
+				AllowCredentials: false,
+				ExposeHeaders:    getEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
+			},
+		),
 	)
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
@@ -318,9 +313,9 @@ func (container *Container) DBWithoutMigration() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
 
-	config := &gorm.Config{TranslateError: true}
-	if isLocal() {
-		config.Logger = container.GormLogger()
+	config := &gorm.Config{
+		TranslateError: true,
+		Logger:         container.GormLogger(),
 	}
 
 	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), config)
@@ -343,9 +338,9 @@ func (container *Container) DB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("creating %T", db))
 
-	config := &gorm.Config{TranslateError: true}
-	if isLocal() {
-		config.Logger = container.GormLogger()
+	config := &gorm.Config{
+		TranslateError: true,
+		Logger:         container.GormLogger(),
 	}
 
 	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), config)
@@ -1002,7 +997,6 @@ func (container *Container) HTTPRoundTripper(name string) http.RoundTripper {
 		otelroundtripper.WithName(name),
 		otelroundtripper.WithParent(container.RetryHTTPRoundTripper()),
 		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
-		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
 	)
 }
 
@@ -1012,7 +1006,6 @@ func (container *Container) HTTPRoundTripperWithoutRetry(name string) http.Round
 	return otelroundtripper.New(
 		otelroundtripper.WithName(name),
 		otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
-		otelroundtripper.WithAttributes(container.OtelResources(container.version, container.projectID).Attributes()...),
 	)
 }
 
@@ -1023,6 +1016,7 @@ func (container *Container) OtelResources(version string, namespace string) *res
 		semconv.ServiceNameKey.String(namespace),
 		semconv.ServiceVersionKey.String(version),
 		semconv.ServiceInstanceIDKey.String(hostName()),
+		semconv.HostNameKey.String(hostName()),
 		semconv.DeploymentEnvironmentKey.String(os.Getenv("ENV")),
 	)
 }
@@ -1801,7 +1795,7 @@ func (container *Container) UserRistrettoCache() *ristretto.Cache[string, entiti
 
 // InitializeTraceProvider initializes the open telemetry trace provider
 func (container *Container) InitializeTraceProvider() func() {
-	return container.initializeUptraceProvider(container.version, container.projectID)
+	return container.initializeAxiomTraceProvider(container.version, container.projectID)
 }
 
 func (container *Container) initializeGoogleTraceProvider(version string, namespace string) func() {
@@ -1840,6 +1834,65 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 	}
 }
 
+func (container *Container) initializeAxiomTraceProvider(version string, namespace string) func() {
+	container.logger.Debug("initializing axiom trace provider")
+
+	traceHeaders := map[string]string{
+		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET_EVENTS"),
+	}
+
+	traceExporter, err := otlptracehttp.New(
+		context.Background(),
+		otlptracehttp.WithEndpoint("us-east-1.aws.edge.axiom.co"),
+		otlptracehttp.WithHeaders(traceHeaders),
+	)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP trace exporter"))
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(traceExporter),
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithResource(container.OtelResources(version, namespace)),
+	)
+	otel.SetTracerProvider(tp)
+
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
+	metricHeaders := map[string]string{
+		"Authorization":   "Bearer " + os.Getenv("AXIOM_TOKEN"),
+		"X-Axiom-Dataset": os.Getenv("AXIOM_DATASET_METRICS"),
+	}
+
+	metricExporter, err := otlpmetrichttp.New(
+		context.Background(),
+		otlpmetrichttp.WithEndpoint("us-east-1.aws.edge.axiom.co"),
+		otlpmetrichttp.WithHeaders(metricHeaders),
+	)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP metric exporter"))
+	}
+
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithResource(container.OtelResources(version, namespace)),
+	)
+	otel.SetMeterProvider(meterProvider)
+
+	return func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown axiom trace provider"))
+		}
+		if err := meterProvider.Shutdown(context.Background()); err != nil {
+			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown axiom meter provider"))
+		}
+	}
+}
+
 func (container *Container) initializeUptraceProvider(version string, namespace string) (flush func()) {
 	container.logger.Debug("initializing uptrace provider")
 	// Configure OpenTelemetry with sensible defaults.
@@ -1861,8 +1914,8 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 
 func logger(skipFrameCount int) telemetry.Logger {
 	fields := map[string]string{
-		"pid":      strconv.Itoa(os.Getpid()),
-		"hostname": hostName(),
+		"hostname":                               hostName(),
+		string(semconv.DeploymentEnvironmentKey): os.Getenv("ENV"),
 	}
 
 	return telemetry.NewZerologLogger(
@@ -1877,7 +1930,7 @@ func logDriver(skipFrameCount int) *zerodriver.Logger {
 	if isLocal() {
 		return consoleLogger(skipFrameCount)
 	}
-	return jsonLogger(skipFrameCount)
+	return axiomLogger(skipFrameCount)
 }
 
 func jsonLogger(skipFrameCount int) *zerodriver.Logger {
@@ -1906,6 +1959,19 @@ func jsonLogger(skipFrameCount int) *zerodriver.Logger {
 	return &zerodriver.Logger{Logger: &zl}
 }
 
+func axiomLogger(skipFrameCount int) *zerodriver.Logger {
+	axiomWriter, err := axiomzerolog.New(
+		axiomzerolog.SetLevels([]zerolog.Level{zerolog.TraceLevel, zerolog.DebugLevel, zerolog.InfoLevel, zerolog.WarnLevel, zerolog.ErrorLevel, zerolog.PanicLevel, zerolog.FatalLevel, zerolog.NoLevel}),
+		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET_EVENTS")),
+	)
+	if err != nil {
+		log.Fatal(stacktrace.Propagate(err, "cannot create axiom zerolog writer"))
+	}
+
+	zl := zerolog.New(axiomWriter).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+	return &zerodriver.Logger{Logger: &zl}
+}
+
 func hostName() string {
 	h, err := os.Hostname()
 	if err != nil {
@@ -1918,7 +1984,8 @@ func consoleLogger(skipFrameCount int) *zerodriver.Logger {
 	l := zerolog.New(
 		zerolog.ConsoleWriter{
 			Out: os.Stderr,
-		}).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
+		},
+	).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
 	return &zerodriver.Logger{
 		Logger: &l,
 	}
