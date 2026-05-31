@@ -137,6 +137,9 @@ useHead({
           <BackButton />
         </div>
       </VCol>
+      <VCol v-if="$vuetify.display.mdAndUp" md="3">
+        <BlogSidebar />
+      </VCol>
     </VRow>
   </VContainer>
 </template>

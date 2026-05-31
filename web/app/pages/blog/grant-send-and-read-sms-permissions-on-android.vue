@@ -49,7 +49,7 @@ useHead({
           >.
         </p>
 
-        <VAlert type="warning" variant="outlined" class="my-4">
+        <VAlert type="warning" variant="tonal" class="my-4">
           Granting the <code>SEND_SMS</code> and
           <code>RECEIVE_SMS</code> permissions will allow an Android app to be
           able to read and send SMS messages on your phone. Make sure you trust
@@ -110,6 +110,9 @@ useHead({
         <div class="text-center mt-8 mb-4">
           <BackButton />
         </div>
+      </VCol>
+      <VCol v-if="$vuetify.display.mdAndUp" md="3">
+        <BlogSidebar />
       </VCol>
     </VRow>
   </VContainer>

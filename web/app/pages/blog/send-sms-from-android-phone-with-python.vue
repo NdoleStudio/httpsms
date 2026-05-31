@@ -134,7 +134,7 @@ useHead({
           the <code>payload</code> variable.
         </VAlert>
         <pre
-          class="pa-4 mb-6 rounded bg-surface-variant overflow-x-auto"
+          class="pa-4 mb-6 rounded bg-surface overflow-x-auto"
         ><code class="language-python text-body-medium">import requests
 import json
 
@@ -192,6 +192,9 @@ print(json.dumps(response.json(), indent=4))</code></pre>
         <div class="text-center mt-8 mb-4">
           <BackButton />
         </div>
+      </VCol>
+      <VCol v-if="$vuetify.display.mdAndUp" md="3">
+        <BlogSidebar />
       </VCol>
     </VRow>
   </VContainer>

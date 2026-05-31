@@ -12,7 +12,7 @@ useHead({
   <VContainer>
     <VRow>
       <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-display-small mb-6">Terms and Conditions</h1>
+        <h1 class="text-display-medium mb-2">Terms and Conditions</h1>
         <p class="text-body-large mb-4">
           By downloading or using the app and using the HTTP SMS service, these
           terms will automatically apply to you – you should make sure therefore

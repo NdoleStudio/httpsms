@@ -86,7 +86,7 @@ useHead({
           which you copied above. This app listens for SMS messages received on
           your android phone.
         </p>
-        <VAlert type="info" variant="outlined">
+        <VAlert type="info" variant="tonal">
           Make sure to enter your phone number in the international format e.g
           +18005550199 when authenticating with the httpSMS Android app.
         </VAlert>
@@ -113,7 +113,7 @@ useHead({
           <code>ToPhoneNumber</code> column. Also add the SMS which you want to
           send in the message in the <code>Content</code> column.
         </p>
-        <VAlert type="info" variant="outlined" class="mt-2 mb-4">
+        <VAlert type="info" variant="tonal" class="mt-2 mb-4">
           Make sure to use the correct <code>FromPhoneNumber</code> from step 2
           above in your Excel file
         </VAlert>
@@ -161,6 +161,9 @@ useHead({
         <div class="text-center mt-8 mb-4">
           <BackButton />
         </div>
+      </VCol>
+      <VCol v-if="$vuetify.display.mdAndUp" md="3">
+        <BlogSidebar />
       </VCol>
     </VRow>
   </VContainer>

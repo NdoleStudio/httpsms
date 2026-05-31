@@ -12,7 +12,7 @@ useHead({
   <VContainer>
     <VRow>
       <VCol cols="12" md="8" offset-md="2">
-        <h1 class="text-display-small mb-6">Privacy Policy</h1>
+        <h1 class="text-display-medium mb-2">Privacy Policy</h1>
         <p class="text-body-large mb-4">
           Ndole Studio built the httpSMS service as an open source project. This
           SERVICE is provided by Ndole Studio and is intended for use as is.
