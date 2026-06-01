@@ -54,8 +54,8 @@ github.com/Masterminds/semver/v3 v3.5.0 h1:kQceYJfbupGfZOKZQg0kou0DgAKhzDg2NZPAw
 github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/Masterminds/sprig/v3 v3.3.0 h1:mQh0Yrg1XPo6vjYXgtf5OtijNAKJRNcTdOOGZe3tPhs=
 github.com/Masterminds/sprig/v3 v3.3.0/go.mod h1:Zy1iXRYNqNLUolqCpL4uhk6SHUMAOSCzdgBfDb35Lz0=
-github.com/NdoleStudio/go-otelroundtripper v0.0.14 h1:t/VoW2772wTDQnjdECxxWbtZtbnpJyuRSKxRC/hHfTg=
-github.com/NdoleStudio/go-otelroundtripper v0.0.14/go.mod h1:ObQjHo1D/daXeESbFIi0UXJN0yJu4zQ7mMeSKvm4a1I=
+github.com/NdoleStudio/go-otelroundtripper v0.0.15 h1:lClvnSNRKfdPejUcMaFa3vv9nkIdONJOzO/WSNBVY2w=
+github.com/NdoleStudio/go-otelroundtripper v0.0.15/go.mod h1:YkRryIMC2i4a/6S86isXH+bht3Qp4RRB0rOnnnHBPjU=
 github.com/NdoleStudio/lemonsqueezy-go v1.3.1 h1:lMUVgdAx2onbOUJIVPR05xAANYuCMXBRaGWpAdA4LiM=
 github.com/NdoleStudio/lemonsqueezy-go v1.3.1/go.mod h1:xKRsRX1jSI6mLrVXyWh2sF/1isxTioZrSjWy6HpA3xQ=
 github.com/NdoleStudio/plunk-go v0.0.2 h1:afPW7MHK4Z3rsybpJBnmTmxKCLKF1M7sPI+BNGPf35A=
