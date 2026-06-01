@@ -178,8 +178,8 @@ importers:
         specifier: ^9.0.5
         version: 9.0.5(stylelint@15.11.0(typescript@4.9.5))
       stylelint-config-recommended-vue:
-        specifier: ^1.5.0
-        version: 1.5.0(postcss-html@1.8.1)(stylelint@15.11.0(typescript@4.9.5))
+        specifier: ^1.6.1
+        version: 1.6.1(postcss-html@1.8.1)(stylelint@15.11.0(typescript@4.9.5))
       stylelint-config-standard:
         specifier: ^34.0.0
         version: 34.0.0(stylelint@15.11.0(typescript@4.9.5))
@@ -2576,49 +2576,41 @@ packages:
     resolution: {integrity: sha512-34gw7PjDGB9JgePJEmhEqBhWvCiiWCuXsL9hYphDF7crW7UgI05gyBAi6MF58uGcMOiOqSJ2ybEeCvHcq0BCmQ==}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-arm64-musl@1.11.1':
     resolution: {integrity: sha512-RyMIx6Uf53hhOtJDIamSbTskA99sPHS96wxVE/bJtePJJtpdKGXO1wY90oRdXuYOGOTuqjT8ACccMc4K6QmT3w==}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@unrs/resolver-binding-linux-ppc64-gnu@1.11.1':
     resolution: {integrity: sha512-D8Vae74A4/a+mZH0FbOkFJL9DSK2R6TFPC9M+jCWYia/q2einCubX10pecpDiTmkJVUH+y8K3BZClycD8nCShA==}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-riscv64-gnu@1.11.1':
     resolution: {integrity: sha512-frxL4OrzOWVVsOc96+V3aqTIQl1O2TjgExV4EKgRY09AJ9leZpEg8Ak9phadbuX0BA4k8U5qtvMSQQGGmaJqcQ==}
     cpu: [riscv64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-riscv64-musl@1.11.1':
     resolution: {integrity: sha512-mJ5vuDaIZ+l/acv01sHoXfpnyrNKOk/3aDoEdLO/Xtn9HuZlDD6jKxHlkN8ZhWyLJsRBxfv9GYM2utQ1SChKew==}
     cpu: [riscv64]
     os: [linux]
-    libc: [musl]
 
   '@unrs/resolver-binding-linux-s390x-gnu@1.11.1':
     resolution: {integrity: sha512-kELo8ebBVtb9sA7rMe1Cph4QHreByhaZ2QEADd9NzIQsYNQpt9UkM9iqr2lhGr5afh885d/cB5QeTXSbZHTYPg==}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-x64-gnu@1.11.1':
     resolution: {integrity: sha512-C3ZAHugKgovV5YvAMsxhq0gtXuwESUKc5MhEtjBpLoHPLYM+iuwSj3lflFwK3DPm68660rZ7G8BMcwSro7hD5w==}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-x64-musl@1.11.1':
     resolution: {integrity: sha512-rV0YSoyhK2nZ4vEswT/QwqzqQXw5I6CjoaYMOX0TqBlWhojUf8P94mvI7nuJTeaCkkds3QE4+zS8Ko+GdXuZtA==}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@unrs/resolver-binding-wasm32-wasi@1.11.1':
     resolution: {integrity: sha512-5u4RkfxJm+Ng7IWgkzi3qrFOvLvQYnPBmjmZQ8+szTK/b31fQCnleNl1GgEt7nIsZRIf5PLhPwT0WM+q45x/UQ==}
@@ -7921,6 +7913,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.1:
+    resolution: {integrity: sha512-rkVq3IXh+4FDGch+KwzX3aV9W3kO54GyEgpvBzSyctDA6Xtd7RJQV1xmXbeQp5v7+VzLOfVqiutSE6GICgPFvg==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@0.19.0:
     resolution: {integrity: sha512-dW41u5VfLXu8SJh5bwRmyYUbAoSB3c9uQh6L8h/KtsFREPWpbX1lrljJo186Jc4nmci/sGUZ9a0a0J2zgfq2hw==}
     engines: {node: '>= 0.8.0'}
@@ -8289,8 +8286,8 @@ packages:
     peerDependencies:
       stylelint: '>= 11.x < 15'
 
-  stylelint-config-recommended-vue@1.5.0:
-    resolution: {integrity: sha512-65TAK/clUqkNtkZLcuytoxU0URQYlml+30Nhop7sRkCZ/mtWdXt7T+spPSB3KMKlb+82aEVJ4OrcstyDBdbosg==}
+  stylelint-config-recommended-vue@1.6.1:
+    resolution: {integrity: sha512-lLW7hTIMBiTfjenGuDq2kyHA6fBWd/+Df7MO4/AWOxiFeXP9clbpKgg27kHfwA3H7UNMGC7aeP3mNlZB5LMmEQ==}
     engines: {node: ^12 || >=14}
     peerDependencies:
       postcss-html: ^1.0.0
@@ -8301,6 +8298,12 @@ packages:
     engines: {node: ^14.13.1 || >=16.0.0}
     peerDependencies:
       stylelint: ^15.10.0
+
+  stylelint-config-recommended@18.0.0:
+    resolution: {integrity: sha512-mxgT2XY6YZ3HWWe3Di8umG6aBmWmHTblTgu/f10rqFXnyWxjKWwNdjSWkgkwCtxIKnqjSJzvFmPT5yabVIRxZg==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      stylelint: ^17.0.0
 
   stylelint-config-standard@34.0.0:
     resolution: {integrity: sha512-u0VSZnVyW9VSryBG2LSO+OQTjN7zF9XJaAJRX/4EwkmU0R2jYwmBSN10acqZisDitS0CLiEiGjX7+Hrq8TAhfQ==}
@@ -10462,7 +10465,7 @@ snapshots:
   '@commitlint/is-ignored@20.4.0':
     dependencies:
       '@commitlint/types': 20.5.0
-      semver: 7.7.3
+      semver: 7.8.1
 
   '@commitlint/lint@20.4.0':
     dependencies:
@@ -11726,7 +11729,7 @@ snapshots:
   '@npmcli/fs@1.1.1':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.7.3
+      semver: 7.8.1
 
   '@npmcli/move-file@1.1.2':
     dependencies:
@@ -11858,7 +11861,7 @@ snapshots:
       minimist: 1.2.8
       opener: 1.5.2
       pretty-bytes: 5.6.0
-      semver: 7.7.3
+      semver: 7.8.1
       serve-static: 1.16.2
       std-env: 3.7.0
       upath: 2.0.1
@@ -11875,7 +11878,7 @@ snapshots:
       glob: 7.2.3
       globby: 11.1.0
       scule: 0.2.1
-      semver: 7.7.3
+      semver: 7.8.1
       upath: 2.0.1
       vue-template-compiler: 2.7.16
 
@@ -11943,7 +11946,7 @@ snapshots:
       pathe: 1.1.2
       pkg-types: 1.1.2
       scule: 1.3.0
-      semver: 7.7.3
+      semver: 7.8.1
       ufo: 1.6.4
       unctx: 2.3.1
       unimport: 3.7.2(rollup@3.30.0)
@@ -11968,7 +11971,7 @@ snapshots:
       pathe: 1.1.2
       pkg-types: 1.1.2
       scule: 1.0.0
-      semver: 7.7.3
+      semver: 7.8.1
       ufo: 1.6.4
       unctx: 2.3.1
       unimport: 3.4.0(rollup@3.30.0)
@@ -12114,7 +12117,7 @@ snapshots:
       jiti: 1.21.6
       lodash: 4.17.21
       proper-lockfile: 4.1.2
-      semver: 7.7.3
+      semver: 7.8.1
       serialize-javascript: 6.0.2
       signal-exit: 4.1.0
       ua-parser-js: 1.0.38
@@ -12178,7 +12181,7 @@ snapshots:
       postcss-loader: 4.3.0(postcss@8.5.6)(webpack@4.47.0)
       postcss-preset-env: 9.5.15(postcss@8.5.6)
       postcss-url: 10.1.3(postcss@8.5.6)
-      semver: 7.7.3
+      semver: 7.8.1
       std-env: 3.7.0
       style-resources-loader: 1.5.0(webpack@4.47.0)
       terser-webpack-plugin: 4.2.3(webpack@4.47.0)
@@ -12697,7 +12700,7 @@ snapshots:
       graphemer: 1.4.0
       ignore: 5.3.1
       natural-compare: 1.4.0
-      semver: 7.7.3
+      semver: 7.8.1
       ts-api-utils: 1.0.3(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
@@ -12743,7 +12746,7 @@ snapshots:
       debug: 4.4.1
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.7.3
+      semver: 7.8.1
       ts-api-utils: 1.0.3(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
@@ -12759,7 +12762,7 @@ snapshots:
       '@typescript-eslint/types': 6.7.3
       '@typescript-eslint/typescript-estree': 6.7.3(typescript@4.9.5)
       eslint: 8.57.1
-      semver: 7.7.3
+      semver: 7.8.1
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -13745,7 +13748,7 @@ snapshots:
 
   builtins@5.0.1:
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.1
 
   bytes@3.0.0: {}
 
@@ -14336,7 +14339,7 @@ snapshots:
       postcss-modules-values: 4.0.0(postcss@8.5.6)
       postcss-value-parser: 4.2.0
       schema-utils: 3.3.0
-      semver: 7.7.3
+      semver: 7.8.1
       webpack: 4.47.0
 
   css-loader@5.2.7(webpack@5.104.1):
@@ -14350,7 +14353,7 @@ snapshots:
       postcss-modules-values: 4.0.0(postcss@8.5.6)
       postcss-value-parser: 4.2.0
       schema-utils: 3.3.0
-      semver: 7.7.3
+      semver: 7.8.1
       webpack: 5.104.1
 
   css-prefers-color-scheme@9.0.1(postcss@8.5.6):
@@ -14741,7 +14744,7 @@ snapshots:
       '@one-ini/wasm': 0.1.1
       commander: 10.0.1
       minimatch: 9.0.1
-      semver: 7.7.3
+      semver: 7.8.1
 
   ee-first@1.1.1: {}
 
@@ -15020,7 +15023,7 @@ snapshots:
       is-core-module: 2.13.0
       minimatch: 3.1.2
       resolve: 1.22.6
-      semver: 7.7.3
+      semver: 7.8.1
 
   eslint-plugin-node@11.1.0(eslint@8.57.1):
     dependencies:
@@ -15060,7 +15063,7 @@ snapshots:
       read-pkg-up: 7.0.1
       regexp-tree: 0.1.27
       safe-regex: 2.1.1
-      semver: 7.7.3
+      semver: 7.8.1
       strip-indent: 3.0.0
 
   eslint-plugin-vue@9.33.0(eslint@8.57.1):
@@ -15531,7 +15534,7 @@ snapshots:
       memfs: 3.5.3
       minimatch: 3.1.2
       schema-utils: 2.7.0
-      semver: 7.7.3
+      semver: 7.8.1
       tapable: 1.1.3
       typescript: 4.9.5
       webpack: 5.104.1
@@ -16401,7 +16404,7 @@ snapshots:
       '@babel/parser': 7.28.4
       '@istanbuljs/schema': 0.1.3
       istanbul-lib-coverage: 3.2.2
-      semver: 7.7.3
+      semver: 7.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -16753,7 +16756,7 @@ snapshots:
       jest-message-util: 30.2.0
       jest-util: 30.2.0
       pretty-format: 30.2.0
-      semver: 7.7.3
+      semver: 7.8.1
       synckit: 0.11.11
     transitivePeerDependencies:
       - supports-color
@@ -17248,7 +17251,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.1
 
   make-error@1.3.6: {}
 
@@ -17640,7 +17643,7 @@ snapshots:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.13.0
-      semver: 7.7.3
+      semver: 7.8.1
       validate-npm-package-license: 3.0.4
 
   normalize-path@2.1.1:
@@ -18269,7 +18272,7 @@ snapshots:
       loader-utils: 2.0.4
       postcss: 8.5.6
       schema-utils: 3.3.0
-      semver: 7.7.3
+      semver: 7.8.1
       webpack: 4.47.0
 
   postcss-logical@7.0.1(postcss@8.5.6):
@@ -19127,7 +19130,7 @@ snapshots:
       loader-utils: 2.0.4
       neo-async: 2.6.2
       schema-utils: 3.3.0
-      semver: 7.7.3
+      semver: 7.8.1
       webpack: 5.104.1
     optionalDependencies:
       sass: 1.32.13
@@ -19190,6 +19193,8 @@ snapshots:
   semver@7.7.2: {}
 
   semver@7.7.3: {}
+
+  semver@7.8.1: {}
 
   send@0.19.0:
     dependencies:
@@ -19590,15 +19595,19 @@ snapshots:
     dependencies:
       stylelint: 15.11.0(typescript@4.9.5)
 
-  stylelint-config-recommended-vue@1.5.0(postcss-html@1.8.1)(stylelint@15.11.0(typescript@4.9.5)):
+  stylelint-config-recommended-vue@1.6.1(postcss-html@1.8.1)(stylelint@15.11.0(typescript@4.9.5)):
     dependencies:
       postcss-html: 1.8.1
-      semver: 7.5.4
+      semver: 7.8.1
       stylelint: 15.11.0(typescript@4.9.5)
       stylelint-config-html: 1.1.0(postcss-html@1.8.1)(stylelint@15.11.0(typescript@4.9.5))
-      stylelint-config-recommended: 13.0.0(stylelint@15.11.0(typescript@4.9.5))
+      stylelint-config-recommended: 18.0.0(stylelint@15.11.0(typescript@4.9.5))
 
   stylelint-config-recommended@13.0.0(stylelint@15.11.0(typescript@4.9.5)):
+    dependencies:
+      stylelint: 15.11.0(typescript@4.9.5)
+
+  stylelint-config-recommended@18.0.0(stylelint@15.11.0(typescript@4.9.5)):
     dependencies:
       stylelint: 15.11.0(typescript@4.9.5)
 
@@ -19923,7 +19932,7 @@ snapshots:
       enhanced-resolve: 4.5.0
       loader-utils: 2.0.4
       micromatch: 4.0.8
-      semver: 7.7.3
+      semver: 7.8.1
       typescript: 4.9.5
       webpack: 5.104.1
 
@@ -20303,7 +20312,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.5.0
       lodash: 4.17.21
-      semver: 7.7.3
+      semver: 7.5.4
     transitivePeerDependencies:
       - supports-color
 
@@ -20316,7 +20325,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.6.0
       lodash: 4.17.21
-      semver: 7.7.3
+      semver: 7.7.2
     transitivePeerDependencies:
       - supports-color
 
