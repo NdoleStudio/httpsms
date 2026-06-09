@@ -367,7 +367,7 @@ func (service *WebhookService) handleWebhookSendFailed(ctx context.Context, even
 	}
 
 	if errors.Is(err, context.DeadlineExceeded) {
-		payload.ErrorMessage = "TIMOUT after 10 seconds"
+		payload.ErrorMessage = "TIMEOUT after 10 seconds"
 	}
 
 	if response != nil {
