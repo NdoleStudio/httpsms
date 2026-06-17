@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/NdoleStudio/httpsms/docs"
 	plunk "github.com/NdoleStudio/plunk-go"
 	"github.com/pusher/pusher-http-go/v5"
@@ -1015,8 +1016,7 @@ func (container *Container) OtelResources(version string, namespace string) *res
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(namespace),
 		semconv.ServiceVersionKey.String(version),
-		semconv.ServiceInstanceIDKey.String(hostName()),
-		semconv.HostNameKey.String(hostName()),
+		semconv.ServiceInstanceIDKey.String(instanceID()),
 		semconv.DeploymentEnvironmentKey.String(os.Getenv("ENV")),
 	)
 }
@@ -1914,7 +1914,7 @@ func (container *Container) initializeUptraceProvider(version string, namespace 
 
 func logger(skipFrameCount int) telemetry.Logger {
 	fields := map[string]string{
-		"hostname":                               hostName(),
+		string(semconv.ServiceInstanceIDKey):     instanceID(),
 		string(semconv.DeploymentEnvironmentKey): os.Getenv("ENV"),
 	}
 
@@ -1933,32 +1933,6 @@ func logDriver(skipFrameCount int) *zerodriver.Logger {
 	return axiomLogger(skipFrameCount)
 }
 
-func jsonLogger(skipFrameCount int) *zerodriver.Logger {
-	logLevel := zerolog.DebugLevel
-	zerolog.SetGlobalLevel(logLevel)
-
-	// See: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
-	logLevelSeverity := map[zerolog.Level]string{
-		zerolog.TraceLevel: "DEFAULT",
-		zerolog.DebugLevel: "DEBUG",
-		zerolog.InfoLevel:  "INFO",
-		zerolog.WarnLevel:  "WARNING",
-		zerolog.ErrorLevel: "ERROR",
-		zerolog.PanicLevel: "CRITICAL",
-		zerolog.FatalLevel: "CRITICAL",
-	}
-
-	zerolog.LevelFieldName = "severity"
-	zerolog.LevelFieldMarshalFunc = func(l zerolog.Level) string {
-		return logLevelSeverity[l]
-	}
-	zerolog.TimestampFieldName = "time"
-	zerolog.TimeFieldFormat = time.RFC3339Nano
-
-	zl := zerolog.New(os.Stderr).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()
-	return &zerodriver.Logger{Logger: &zl}
-}
-
 func axiomLogger(skipFrameCount int) *zerodriver.Logger {
 	axiomWriter, err := axiomzerolog.New(
 		axiomzerolog.SetLevels([]zerolog.Level{zerolog.TraceLevel, zerolog.DebugLevel, zerolog.InfoLevel, zerolog.WarnLevel, zerolog.ErrorLevel, zerolog.PanicLevel, zerolog.FatalLevel, zerolog.NoLevel}),
@@ -1972,12 +1946,23 @@ func axiomLogger(skipFrameCount int) *zerodriver.Logger {
 	return &zerodriver.Logger{Logger: &zl}
 }
 
-func hostName() string {
+func instanceID() string {
 	h, err := os.Hostname()
 	if err != nil {
 		h = strconv.Itoa(os.Getpid())
 	}
+	if metadata.OnGCE() {
+		return getGCEInstanceID(h)
+	}
 	return h
+}
+
+func getGCEInstanceID(hostname string) string {
+	instanceID, err := metadata.InstanceIDWithContext(context.Background())
+	if err != nil {
+		return hostname
+	}
+	return instanceID
 }
 
 func consoleLogger(skipFrameCount int) *zerodriver.Logger {
