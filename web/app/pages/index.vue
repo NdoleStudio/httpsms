@@ -67,8 +67,9 @@ const planYearlyMonthlyPrice = computed(
         <VCol
           cols="12"
           md="6"
+          class="pt-8 pb-16"
           :class="{
-            'text-center pt-16': mdAndDown,
+            'text-center': mdAndDown,
           }"
         >
           <h1
@@ -126,9 +127,9 @@ const planYearlyMonthlyPrice = computed(
             :class="{ 'ml-16': mdAndDown }"
           />
         </VCol>
-        <VCol v-if="mdAndUp" cols="12" md="6" class="py-16">
+        <VCol v-if="mdAndUp" cols="12" md="6" class="pt-16">
           <VImg
-            class="mx-auto mb-4"
+            class="mx-auto mt-8"
             max-height="700"
             max-width="98%"
             :src="'/img/writing-code-phone.svg'"
@@ -1092,6 +1093,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
 
 <style lang="scss">
 .gradient-header {
+  font-size: 4.5rem;
   color: #1ad37f;
   background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
   -webkit-background-clip: text;

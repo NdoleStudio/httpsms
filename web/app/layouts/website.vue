@@ -45,10 +45,10 @@ function goToPricing() {
               to="/"
               class="text-decoration-none d-flex"
             >
-              <v-avatar color="#121212" class="mt-8 pa-1" rounded="0" :image="'/img/logo.svg'" :size="38" />
+              <v-avatar color="#121212" class="mt-6 pa-1" rounded="0" :image="'/img/logo.svg'" :size="38" />
               <h3
                 v-if="lgAndUp"
-                class="text-headline-large mb-0 ml-1 text-white"
+                class="text-headline-large mb-0 ml-1 mt-6 text-white"
               >
                 httpSMS
               </h3>
