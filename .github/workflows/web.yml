@@ -25,7 +25,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node: [20]
+        node: [24]
 
     steps:
       - name: Checkout 🛎
@@ -34,7 +34,7 @@ jobs:
       - uses: pnpm/action-setup@v6
         name: Install pnpm
         with:
-          version: 10
+          version: 11
 
       - name: Install dependencies 📦
         run: pnpm install
@@ -46,7 +46,7 @@ jobs:
         run: pnpm test
 
       - name: Build 🏗️
-        run: pnpm run build
+        run: mv .env.production .env && echo "GITHUB_SHA=${GITHUB_SHA}" >> .env && pnpm run generate
 
   deploy:
     name: Deploy
@@ -61,13 +61,13 @@ jobs:
       - uses: pnpm/action-setup@v6
         name: Install pnpm
         with:
-          version: 10
+          version: 11
 
       - name: Install dependencies 📦
         run: pnpm install
 
       - name: Build 🏗️
-        run: pnpm run build
+        run: mv .env.production .env && echo "GITHUB_SHA=${GITHUB_SHA}" >> .env && pnpm run generate
 
       - name: Cloudflare Deploy 🚀
         uses: cloudflare/pages-action@1

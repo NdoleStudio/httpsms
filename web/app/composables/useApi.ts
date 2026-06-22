@@ -13,12 +13,13 @@ export function setApiKey(key: string | null) {
 
 function createApiFetch(): $Fetch {
   const config = useRuntimeConfig();
-  const baseURL = (config.public as Record<string, string>).apiBaseUrl;
+  const publicConfig = config.public as Record<string, string>;
+  const baseURL = publicConfig.apiBaseUrl;
 
   return $fetch.create({
     baseURL,
     headers: {
-      "X-Client-Version": "web",
+      "X-Client-Version": publicConfig.clientVersion || "dev",
     },
     onRequest({ options }) {
       const headers = (options.headers ||= {}) as Record<string, string>;

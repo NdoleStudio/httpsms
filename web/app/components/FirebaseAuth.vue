@@ -35,7 +35,7 @@ async function signInWithGoogle() {
     const result = await signInWithPopup(auth, new GoogleAuthProvider());
     onSuccess(result.user);
   } catch (error: unknown) {
-    handleError(error);
+    handleError(error, true);
   } finally {
     loading.value = false;
   }
@@ -48,7 +48,7 @@ async function signInWithGithub() {
     const result = await signInWithPopup(auth, new GithubAuthProvider());
     onSuccess(result.user);
   } catch (error: unknown) {
-    handleError(error);
+    handleError(error, true);
   } finally {
     loading.value = false;
   }
@@ -90,19 +90,30 @@ function onSuccess(user: unknown) {
   router.push({ path: props.to });
 }
 
-function handleError(error: unknown) {
+function handleError(error: unknown, isSocial = false) {
   const firebaseError = error as { code?: string; message?: string };
   const code = firebaseError.code || "";
+  let message = "";
   if (code === "auth/user-not-found" || code === "auth/invalid-credential") {
-    emailError.value = "Invalid email or password";
+    message = "Invalid email or password";
   } else if (code === "auth/email-already-in-use") {
-    emailError.value = "An account with this email already exists";
+    message = "An account with this email already exists";
   } else if (code === "auth/weak-password") {
-    emailError.value = "Password must be at least 6 characters";
-  } else if (code === "auth/popup-closed-by-user") {
-    // User closed popup, no error to show
+    message = "Password must be at least 6 characters";
+  } else if (
+    code === "auth/popup-closed-by-user" ||
+    code === "auth/cancelled-popup-request"
+  ) {
+    // User closed the popup, no error to show
+    return;
   } else {
-    emailError.value = firebaseError.message || "An error occurred";
+    message = firebaseError.message || "An error occurred";
+  }
+
+  if (isSocial) {
+    notificationsStore.addNotification({ message, type: "error" });
+  } else {
+    emailError.value = message;
   }
 }
 </script>
