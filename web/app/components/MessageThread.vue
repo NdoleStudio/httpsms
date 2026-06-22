@@ -97,8 +97,8 @@ function onInstallApp() {
         :href="appStore.appData.appDownloadUrl"
         @click="onInstallApp"
       >
-        <v-icon :icon="mdiDownload" />
-        Install App
+        <v-icon :icon="mdiDownload" start />
+        Download App
       </v-btn>
     </div>
     <v-list
