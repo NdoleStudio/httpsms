@@ -83,7 +83,7 @@ async function logout() {
   <v-sheet
     class="pa-4 d-flex"
     :elevation="lgAndUp ? 0 : 2"
-    :color="lgAndUp ? 'grey-darken-4' : 'black'"
+    color="black"
   >
     <div :class="{ 'px-2': mdAndDown }">
       <v-toolbar-title>
@@ -93,7 +93,7 @@ async function logout() {
             density="compact"
             :disabled="owners.length === 0"
             placeholder="Phone Numbers"
-            :class="{ 'mb-n6': !phonesStore.owner }"
+            :class="{ 'mb-n5': !phonesStore.owner }"
             :items="owners"
             :model-value="phonesStore.owner"
             @update:model-value="onOwnerChanged"

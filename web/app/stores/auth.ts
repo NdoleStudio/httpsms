@@ -14,27 +14,10 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const { apiFetch } = useApi();
 
-  let resolveReady: (() => void) | null = null;
-  const authReady = new Promise<void>((resolve) => {
-    resolveReady = resolve;
-  });
-
-  function markAuthReady() {
-    authStateChanged.value = true;
-    if (resolveReady) {
-      resolveReady();
-      resolveReady = null;
-    }
-  }
-
-  function waitForAuthReady(): Promise<void> {
-    return authReady;
-  }
-
   async function setAuthUserAction(newUser: AuthUser | null | undefined) {
     const userChanged = newUser?.id !== authUser.value?.id;
     authUser.value = newUser ?? null;
-    markAuthReady();
+    authStateChanged.value = true;
 
     if (userChanged && newUser !== null) {
       await Promise.all([loadUser(), loadPhones()]);
@@ -45,14 +28,14 @@ export const useAuthStore = defineStore("auth", () => {
     if (firebaseUser == null) {
       authUser.value = null;
       user.value = null;
-      markAuthReady();
+      authStateChanged.value = true;
       setApiKey("");
       return;
     }
     setAuthHeader(await firebaseUser.getIdToken());
     const { uid, email, displayName } = firebaseUser;
     authUser.value = { id: uid, email, displayName };
-    markAuthReady();
+    authStateChanged.value = true;
   }
 
   async function onIdTokenChanged(firebaseUser: any) {
@@ -124,7 +107,6 @@ export const useAuthStore = defineStore("auth", () => {
     authStateChanged,
     authUser,
     user,
-    waitForAuthReady,
     setAuthUserAction,
     onAuthStateChanged,
     onIdTokenChanged,

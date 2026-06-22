@@ -8,5 +8,6 @@ export interface MessageThread {
   is_archived: boolean;
   order_timestamp: string;
   owner: string;
+  status: string;
   updated_at: string;
 }

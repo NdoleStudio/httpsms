@@ -9,9 +9,7 @@ export default defineNuxtPlugin(() => {
 
   // Skip initialization if no API key is configured
   if (!publicConfig.firebaseApiKey) {
-    console.warn(
-      "[firebase] No FIREBASE_API_KEY configured. Auth will not work.",
-    );
+    console.warn("[firebase] No FIREBASE_API_KEY configured. Auth will not work.");
     // Resolve auth readiness so route middleware doesn't hang forever.
     useAuthStore().onAuthStateChanged(null);
     return;
@@ -27,9 +25,8 @@ export default defineNuxtPlugin(() => {
     measurementId: publicConfig.firebaseMeasurementId,
   };
 
-  // Initialize Firebase (only once)
-  const app: FirebaseApp =
-    getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  // Initialise Firebase (only once)
+  const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]!;
   const auth = getAuth(app);
 
   // Listen for auth state changes and update the auth store

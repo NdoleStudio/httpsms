@@ -110,6 +110,11 @@ function startPoller() {
       border-radius: 8px;
     }
   }
+  .hover\:text-decoration-underline {
+    &:hover {
+      text-decoration: underline;
+    }
+  }
   code.hljs {
     font-size: 16px;
   }

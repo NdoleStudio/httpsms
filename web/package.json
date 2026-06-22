@@ -24,6 +24,7 @@
     "libphonenumber-js": "^1.13.3",
     "moment": "^2.30.1",
     "nuxt": "^4.4.6",
+    "pinia": "^3.0.4",
     "pusher-js": "^8.5.0",
     "qrcode": "^1.5.4",
     "sass": "^1.100.0",
