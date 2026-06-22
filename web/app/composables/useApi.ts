@@ -22,13 +22,14 @@ function createApiFetch(): $Fetch {
       "X-Client-Version": publicConfig.clientVersion || "dev",
     },
     onRequest({ options }) {
-      const headers = (options.headers ||= {}) as Record<string, string>;
+      const headers = new Headers(options.headers);
       if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
+        headers.set("Authorization", `Bearer ${authToken}`);
       }
       if (apiKey) {
-        headers["x-api-key"] = apiKey;
+        headers.set("x-api-key", apiKey);
       }
+      options.headers = headers;
     },
   });
 }

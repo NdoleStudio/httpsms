@@ -12,6 +12,8 @@ export default defineNuxtPlugin(() => {
     console.warn(
       "[firebase] No FIREBASE_API_KEY configured. Auth will not work.",
     );
+    // Resolve auth readiness so route middleware doesn't hang forever.
+    useAuthStore().onAuthStateChanged(null);
     return;
   }
 
