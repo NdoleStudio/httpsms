@@ -45,7 +45,7 @@ function onInstallApp() {
     />
     <div
       v-if="!threadsStore.loadingThreads && threadsStore.archivedThreads"
-      class="bg-warning py-1 text-center text-uppercase text-title-large"
+      class="bg-warning py-1 text-center text-uppercase text-title-medium"
     >
       Archived Messages
     </div>
