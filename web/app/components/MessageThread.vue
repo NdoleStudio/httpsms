@@ -82,7 +82,7 @@ function onInstallApp() {
       class="px-4 text-center"
     >
       <p>
-        Install the mobile app on your android phone to start sending messages.
+        Install the mobile app on your Android phone to start sending messages.
         You can also
         <a
           href="https://discord.gg/kGk8HVqeEZ"
