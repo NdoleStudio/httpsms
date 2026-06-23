@@ -126,14 +126,14 @@ onMounted(async () => {
             <p>
               Fill in our bulk SMS
               <a
-                class="text-decoration-none"
+                class="text-decoration-none hover:text-decoration-underline"
                 download
                 href="/templates/httpsms-bulk.csv"
                 >CSV template</a
               >
               or our
               <a
-                class="text-decoration-none"
+                class="text-decoration-none hover:text-decoration-underline"
                 download
                 href="/templates/httpsms-bulk.xlsx"
                 >Excel template</a
@@ -141,7 +141,7 @@ onMounted(async () => {
               and upload it here to send your SMS messages to multiple
               recipients at once. You can also configure
               <NuxtLink
-                class="text-decoration-none"
+                class="text-decoration-none hover:text-decoration-underline"
                 to="/settings/#send-schedules"
                 >send schedules</NuxtLink
               >
