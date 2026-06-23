@@ -18,8 +18,8 @@ const router = useRouter();
 const { mdAndDown } = useDisplay();
 const notificationsStore = useNotificationsStore();
 const phonesStore = usePhonesStore();
-const messagesStore = useMessagesStore();
 const { useApi } = useApiComposable();
+const { formatPhoneNumber } = useFilters();
 
 const sending = ref(false);
 const formPhoneNumber = ref("");
@@ -56,6 +56,7 @@ async function sendMessage() {
         to: getRecipientNumber(),
         from: phonesStore.owner,
         content: formContent.value,
+        sim: "DEFAULT",
         attachments: formAttachments.value
           .trim()
           .split(",")
@@ -93,6 +94,10 @@ async function sendMessage() {
     sending.value = false;
   }
 }
+
+onMounted(async () => {
+  await phonesStore.loadPhones();
+});
 </script>
 
 <template>
@@ -104,16 +109,18 @@ async function sendMessage() {
         </VBtn>
         <VToolbarTitle>
           New Message
-          <VIcon
-            size="x-small"
-            class="mx-2"
-            color="primary"
-            :icon="mdiCircle"
-          />
-          {{ useFilters().phoneNumber(phonesStore.owner) }}
+          <template v-if="phonesStore.owner">
+            <VIcon
+                size="12"
+                class="mx-2"
+                color="primary"
+                :icon="mdiCircle"
+            />
+            {{ formatPhoneNumber(phonesStore.owner) }}
+          </template>
         </VToolbarTitle>
       </VAppBar>
-      <VContainer class="mt-16">
+      <VContainer>
         <VRow>
           <VCol cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
             <form @submit.prevent="sendMessage">
@@ -124,6 +131,8 @@ async function sendMessage() {
                 :error="errors.has('to')"
                 :error-messages="errors.get('to')"
                 variant="outlined"
+                color="primary"
+                density="compact"
                 persistent-placeholder
                 placeholder="Recipient phone number e.g 18005550199"
                 label="Phone Number"
@@ -135,6 +144,8 @@ async function sendMessage() {
                 :error-messages="errors.get('content')"
                 :disabled="sending"
                 variant="outlined"
+                density="compact"
+                color="primary"
                 persistent-placeholder
                 placeholder="Enter your message here"
                 label="Content"
@@ -145,7 +156,9 @@ async function sendMessage() {
                 :error-messages="errors.get('attachments')"
                 :disabled="sending"
                 variant="outlined"
+                density="compact"
                 rows="2"
+                color="primary"
                 class="mb-8"
                 persistent-placeholder
                 persistent-hint
@@ -153,15 +166,14 @@ async function sendMessage() {
                 placeholder="https://example.com/image.jpg, https://example.com/video.mp4"
                 label="Attachment URLs (optional)"
               />
-              <VBtn
-                type="submit"
-                color="primary"
+              <loading-button
                 :disabled="sending"
                 :block="mdAndDown"
+                :loading="sending"
+                :icon="mdiSend"
               >
-                <VIcon :icon="mdiSend" />
                 Send Message
-              </VBtn>
+              </loading-button>
             </form>
           </VCol>
         </VRow>

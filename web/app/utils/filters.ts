@@ -2,6 +2,9 @@ import { intervalToDuration, formatDuration } from "date-fns";
 import { parsePhoneNumber, isValidPhoneNumber } from "libphonenumber-js";
 
 export function formatPhoneNumber(value: string): string {
+  if (!value || typeof value !== "string") {
+    return value ?? "";
+  }
   if (!isValidPhoneNumber(value)) {
     return value;
   }
