@@ -235,6 +235,7 @@ onBeforeUnmount(() => {
           Phone API Keys
         </VToolbarTitle>
         <VProgressLinear
+            color="primary"
           :active="loading"
           :indeterminate="loading"
           absolute

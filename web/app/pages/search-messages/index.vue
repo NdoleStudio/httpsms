@@ -133,7 +133,7 @@ function getCaptcha(): Promise<string> {
     turnstile.ready(() => {
       turnstile.render("#cloudflare-turnstile", {
         sitekey: (config.public as Record<string, string>)
-          .cloudflareTurnstileSiteKey,
+          .cloudflareTurnstileSiteKey!,
         action: "search_messages",
         callback: (token) => resolve(token),
         "error-callback": (error: string) => reject(error),
@@ -343,6 +343,7 @@ onMounted(async () => {
         </VToolbarTitle>
         <VProgressLinear
           :active="loading"
+          color="primary"
           :indeterminate="loading"
           location="bottom"
           absolute
@@ -371,6 +372,7 @@ onMounted(async () => {
               <VCol cols="12" md="4">
                 <VSelect
                   v-model="formOwners"
+                  color="primary"
                   :error="errorMessages.has('owners')"
                   :error-messages="errorMessages.get('owners')"
                   :items="phoneNumberSelectItems"
@@ -383,6 +385,7 @@ onMounted(async () => {
               <VCol cols="12" md="4">
                 <VSelect
                   v-model="formTypes"
+                  color="primary"
                   :error="errorMessages.has('types')"
                   :error-messages="errorMessages.get('types')"
                   :items="messageTypeSelectItems"
@@ -395,6 +398,7 @@ onMounted(async () => {
               <VCol cols="12" md="4">
                 <VSelect
                   v-model="formStatuses"
+                  color="primary"
                   :error="errorMessages.has('statuses')"
                   :error-messages="errorMessages.get('statuses')"
                   :items="messageStatusSelectItems"
@@ -409,6 +413,7 @@ onMounted(async () => {
               <VCol cols="12" md="8">
                 <VTextField
                   v-model="formQuery"
+                  color="primary"
                   :error="errorMessages.has('query')"
                   :error-messages="errorMessages.get('query')"
                   label="Search Query"
@@ -436,15 +441,15 @@ onMounted(async () => {
           </VCardText>
         </VCard>
         <VRow>
-          <VCol cols="12" class="mt-16 mb-n2 d-flex">
-            <h2 class="text-headline-large">Search Results</h2>
+          <VCol cols="12" class="mt-16 mb-n2 d-flex align-baseline">
+            <h2 class="text-headline-large mb-0">Search Results</h2>
             <VDialog v-model="showDeleteDialog" opacity="0.9" max-width="550">
               <template #activator="{ props }">
                 <VBtn
                   :loading="loading"
                   :disabled="loading || selectedMessages.length < 1"
                   size="small"
-                  class="ml-2 mt-2"
+                  class="ml-2"
                   color="error"
                   v-bind="props"
                 >
@@ -454,21 +459,21 @@ onMounted(async () => {
                 </VBtn>
               </template>
               <VCard>
-                <VCardTitle class="text-headline-medium text-break">
-                  Are you sure you want to delete the
-                  {{ selectedMessages.length }} selected messages?
+                <VCardTitle>
+                  Delete <v-code>{{ selectedMessages.length }}</v-code> selected messages?
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="text-medium-emphasis">
                   The messages will be deleted permanently from the httpSMS
                   server and cannot be recovered.
                 </VCardText>
                 <VCardActions class="pb-4">
                   <VBtn
-                    color="primary"
+                    color="error"
                     :loading="loading"
+                    variant="flat"
                     @click="deleteMessages"
                   >
-                    Yes Delete Messages
+                    Delete Messages
                   </VBtn>
                   <VSpacer />
                   <VBtn color="warning" @click="showDeleteDialog = false">
@@ -492,20 +497,20 @@ onMounted(async () => {
               </template>
               <VCard>
                 <VCardTitle class="text-headline-medium text-break">
-                  Are you sure you want to resend the
-                  {{ selectedMessages.length }} selected messages?
+                 Resend <v-code>{{ selectedMessages.length }}</v-code> selected messages?
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="text-medium-emphasis">
                   The selected messages will be queued for sending again using
                   the original sender, recipient, and content.
                 </VCardText>
                 <VCardActions class="pb-4">
                   <VBtn
                     color="primary"
+                    variant="flat"
                     :loading="loading"
                     @click="resendMessages"
                   >
-                    Yes Resend Messages
+                    Resend Messages
                   </VBtn>
                   <VSpacer />
                   <VBtn color="warning" @click="showResendDialog = false">
@@ -534,6 +539,7 @@ onMounted(async () => {
               v-model:items-per-page="itemsPerPage"
               v-model:page="page"
               v-model:sort-by="sortBy"
+              color="primary"
               item-value="id"
               :headers="headers"
               :items="messages"

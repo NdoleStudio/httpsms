@@ -201,6 +201,7 @@ onMounted(async () => {
         </VBtn>
         <VToolbarTitle>Account Usage</VToolbarTitle>
         <VProgressLinear
+            color="primary"
           :active="loading"
           :indeterminate="loading"
           absolute
