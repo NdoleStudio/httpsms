@@ -1,0 +1,12 @@
+# Build output
+.nuxt
+.output
+dist
+node_modules
+
+# Generated files
+shared/types/api.ts
+pnpm-lock.yaml
+
+# Logs
+*.log

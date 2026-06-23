@@ -8,8 +8,19 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "echo 'No linter configured yet'",
+    "prepare": "cd .. && husky web/.husky",
+    "api:models": "npx swagger-typescript-api generate -p ../api/docs/swagger.json -o ./shared/types -n api.ts --no-client",
+    "lint:js": "eslint .",
+    "lint:style": "stylelint \"**/*.{css,scss,sass,vue}\"",
+    "lint:prettier": "prettier --check .",
+    "lint": "pnpm lint:js && pnpm lint:style && pnpm lint:prettier",
+    "lintfix": "prettier --write --list-different . && pnpm lint:js --fix && pnpm lint:style --fix",
     "test": "echo 'No tests configured yet'"
+  },
+  "lint-staged": {
+    "*.{js,ts,vue}": "eslint --cache",
+    "*.{css,scss,sass,vue}": "stylelint",
+    "*": "prettier --check --ignore-unknown"
   },
   "dependencies": {
     "@mdi/js": "^7.4.47",
@@ -36,7 +47,19 @@
     "vuetify": "^4.0.7"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "@nuxt/eslint": "^1.16.0",
     "@types/qrcode": "^1.5.6",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "postcss-html": "^1.8.1",
+    "stylelint": "^17.13.0",
+    "stylelint-config-recommended-vue": "^1.6.1",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^5.9.3",
     "vuetify-nuxt-module": "^0.19.5"
   }
 }
