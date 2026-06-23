@@ -1,57 +1,57 @@
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
-    type?: string;
-    block?: boolean;
-    large?: boolean;
-    xLarge?: boolean;
-    tile?: boolean;
-    text?: boolean;
-    small?: boolean;
-    color?: string;
-    icon?: string | null;
-    loading: boolean;
+    type?: string
+    block?: boolean
+    large?: boolean
+    xLarge?: boolean
+    tile?: boolean
+    text?: boolean
+    small?: boolean
+    color?: string
+    icon?: string | null
+    loading: boolean
   }>(),
   {
-    type: "submit",
+    type: 'submit',
     block: false,
     large: false,
     xLarge: false,
     tile: false,
     text: false,
     small: false,
-    color: "primary",
+    color: 'primary',
     icon: null,
   },
-);
+)
 
 const emit = defineEmits<{
-  click: [];
-  "update:loading": [value: boolean];
-}>();
+  click: []
+  'update:loading': [value: boolean]
+}>()
 
-const isClicked = ref(false);
+const isClicked = ref(false)
 
 watch(
   () => props.loading,
   (submitting) => {
     if (!submitting && isClicked.value) {
-      isClicked.value = false;
+      isClicked.value = false
     }
   },
-);
+)
 
 function onClick() {
-  isClicked.value = true;
-  emit("click");
+  isClicked.value = true
+  emit('click')
 }
 
 const size = computed(() => {
-  if (props.xLarge) return "x-large";
-  if (props.large) return "large";
-  if (props.small) return "small";
-  return "default";
-});
+  if (props.xLarge) return 'x-large'
+  if (props.large) return 'large'
+  if (props.small) return 'small'
+  return 'default'
+})
 </script>
 
 <template>

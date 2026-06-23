@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+const { mdAndUp } = useDisplay()
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
   title:
-    "Send an SMS message when a new row is added to Google Sheets using Zapier - httpSMS",
+    'Send an SMS message when a new row is added to Google Sheets using Zapier - httpSMS',
   meta: [
     {
-      property: "og:title",
+      property: 'og:title',
       content:
-        "Send an SMS message when a new row is added to Google Sheets using Zapier",
+        'Send an SMS message when a new row is added to Google Sheets using Zapier',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
         "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier. You don't need to write any code to make this happen and you can personalize the SMS messages which are sent out.",
     },
     {
-      name: "twitter:card",
-      content: "summary_large_image",
+      name: 'twitter:card',
+      content: 'summary_large_image',
     },
     {
-      property: "og:url",
+      property: 'og:url',
       content:
-        "https://httpsms.com/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/",
+        'https://httpsms.com/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -44,7 +44,7 @@ useHead({
           Send an SMS message when a new row is added to Google Sheets using
           Zapier
         </h1>
-        <BlogInfo date="October 29, 2023" readTime="5 min read" />
+        <BlogInfo date="October 29, 2023" read-time="5 min read" />
 
         <p class="text-body-large mt-2">
           Automate sending personalized SMS messages each time a new row is

@@ -1,32 +1,31 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
-import { mdiPlus, mdiDownload, mdiCheckAll, mdiCheck, mdiAlert } from "@mdi/js";
-import { formatPhoneNumber } from "~/utils/filters";
-import type { MessageThread } from "~~/shared/types/message-thread";
+import { useDisplay } from 'vuetify'
+import { mdiPlus, mdiDownload, mdiCheckAll, mdiCheck, mdiAlert } from '@mdi/js'
+import { formatPhoneNumber } from '~/utils/filters'
 
-const { mdAndDown } = useDisplay();
-const threadsStore = useThreadsStore();
-const phonesStore = usePhonesStore();
-const appStore = useAppStore();
-const notificationsStore = useNotificationsStore();
+const { mdAndDown } = useDisplay()
+const threadsStore = useThreadsStore()
+const phonesStore = usePhonesStore()
+const appStore = useAppStore()
+const notificationsStore = useNotificationsStore()
 
 function getInitials(contact: string): string {
-  const formatted = formatPhoneNumber(contact);
-  return formatted.substring(0, 2);
+  const formatted = formatPhoneNumber(contact)
+  return formatted.substring(0, 2)
 }
 
 function threadDate(date: string): string {
   return new Date(date).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 function onInstallApp() {
   notificationsStore.addNotification({
-    type: "info",
-    message: "Downloading the httpSMS Android App",
-  });
+    type: 'info',
+    message: 'Downloading the httpSMS Android App',
+  })
 }
 </script>
 

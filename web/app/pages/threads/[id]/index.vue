@@ -14,137 +14,137 @@ import {
   mdiAccount,
   mdiRefresh,
   mdiContentCopy,
-} from "@mdi/js";
-import Pusher from "pusher-js";
-import type { Channel } from "pusher-js";
-import { isValidPhoneNumber } from "libphonenumber-js";
-import type { Message } from "~/shared/types/message";
+} from '@mdi/js'
+import Pusher from 'pusher-js'
+import type { Channel } from 'pusher-js'
+import { isValidPhoneNumber } from 'libphonenumber-js'
+import type { Message } from '~/shared/types/message'
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Messages - httpSMS",
-});
+  title: 'Messages - httpSMS',
+})
 
-const route = useRoute();
-const router = useRouter();
-const config = useRuntimeConfig();
-const { lgAndUp, mdAndDown, mdAndUp } = useDisplay();
-const notificationsStore = useNotificationsStore();
-const authStore = useAuthStore();
-const phonesStore = usePhonesStore();
-const threadsStore = useThreadsStore();
-const messagesStore = useMessagesStore();
+const route = useRoute()
+const router = useRouter()
+const config = useRuntimeConfig()
+const { lgAndUp, mdAndDown } = useDisplay()
+const notificationsStore = useNotificationsStore()
+const authStore = useAuthStore()
+const phonesStore = usePhonesStore()
+const threadsStore = useThreadsStore()
+const messagesStore = useMessagesStore()
 
-const formMessage = ref("");
-const submitting = ref(false);
-const loadingMessages = ref(false);
-const hideMessages = ref(true);
-const messages = ref<Message[]>([]);
-const selectedMenuItem = ref(-1);
-const messageBody = ref<HTMLElement | null>(null);
+const formMessage = ref('')
+const submitting = ref(false)
+const loadingMessages = ref(false)
+const hideMessages = ref(true)
+const messages = ref<Message[]>([])
+const selectedMenuItem = ref(-1)
+const messageBody = ref<HTMLElement | null>(null)
 
-let webhookChannel: Channel | null = null;
+let webhookChannel: Channel | null = null
 
 const contactIsPhoneNumber = computed(() => {
-  const thread = threadsStore.currentThread;
-  if (!thread) return false;
-  return isValidPhoneNumber(thread.contact) || !isNaN(Number(thread.contact));
-});
+  const thread = threadsStore.currentThread
+  if (!thread) return false
+  return isValidPhoneNumber(thread.contact) || !isNaN(Number(thread.contact))
+})
 
 const messageVisibility = computed(() =>
-  hideMessages.value ? "hidden" : "visible",
-);
-const contact = computed(() => threadsStore.currentThread?.contact ?? "");
+  hideMessages.value ? 'hidden' : 'visible',
+)
+const contact = computed(() => threadsStore.currentThread?.contact ?? '')
 
 function isMT(message: Message): boolean {
-  return message.type === "mobile-terminated";
+  return message.type === 'mobile-terminated'
 }
 
 function isMo(message: Message): boolean {
-  return message.type === "mobile-originated";
+  return message.type === 'mobile-originated'
 }
 
 function isMissedCall(message: Message): boolean {
-  return message.type === "call/missed";
+  return message.type === 'call/missed'
 }
 
 function isPending(message: Message): boolean {
-  return ["sending", "pending", "scheduled"].includes(message.status);
+  return ['sending', 'pending', 'scheduled'].includes(message.status)
 }
 
 function statusColor(message: Message): string {
-  if (message.status === "sending") return "warning";
-  if (message.status === "scheduled") return "teal";
-  return "primary";
+  if (message.status === 'sending') return 'warning'
+  if (message.status === 'scheduled') return 'teal'
+  return 'primary'
 }
 
 function canResend(message: Message): boolean {
   return (
     isMT(message) &&
-    (message.status === "expired" || message.status === "failed")
-  );
+    (message.status === 'expired' || message.status === 'failed')
+  )
 }
 
 function formatAttachmentName(url: string): string {
-  const parts = url.split("/");
-  if (parts.length >= 2) return "/" + parts.slice(-2).join("/");
-  return url;
+  const parts = url.split('/')
+  if (parts.length >= 2) return '/' + parts.slice(-2).join('/')
+  return url
 }
 
 function scrollToElement() {
-  const el = messageBody.value;
+  const el = messageBody.value
   if (el) {
-    el.scrollTop = el.scrollHeight + 120;
+    el.scrollTop = el.scrollHeight + 120
   }
-  hideMessages.value = false;
+  hideMessages.value = false
 }
 
 function loadMessages(hide = true) {
-  loadingMessages.value = true;
-  const threadId = route.params.id as string;
+  loadingMessages.value = true
+  const threadId = route.params.id as string
   messagesStore
     .loadThreadMessages(threadId)
     .then((msgs: Message[]) => {
-      messages.value = [...msgs].reverse();
+      messages.value = [...msgs].reverse()
     })
     .finally(() => {
       setTimeout(() => {
-        loadingMessages.value = false;
-      }, 1100);
-    });
-  hideMessages.value = hide;
+        loadingMessages.value = false
+      }, 1100)
+    })
+  hideMessages.value = hide
   setTimeout(() => {
-    scrollToElement();
-  }, 950);
+    scrollToElement()
+  }, 950)
 }
 
 async function loadData() {
-  await authStore.loadUser();
-  await phonesStore.loadPhones();
-  await threadsStore.loadThreads();
+  await authStore.loadUser()
+  await phonesStore.loadPhones()
+  await threadsStore.loadThreads()
 
   if (!threadsStore.hasThreadId(route.params.id as string)) {
-    await router.push("/threads");
-    return;
+    await router.push('/threads')
+    return
   }
-  loadMessages();
+  loadMessages()
 }
 
 async function archiveThread() {
-  await threadsStore.updateThread(threadsStore.currentThread!.id, true);
+  await threadsStore.updateThread(threadsStore.currentThread!.id, true)
   setTimeout(() => {
-    selectedMenuItem.value = -1;
-  }, 1000);
+    selectedMenuItem.value = -1
+  }, 1000)
 }
 
 async function unArchiveThread() {
-  await threadsStore.updateThread(threadsStore.currentThread!.id, false);
+  await threadsStore.updateThread(threadsStore.currentThread!.id, false)
   setTimeout(() => {
-    selectedMenuItem.value = -1;
-  }, 1000);
+    selectedMenuItem.value = -1
+  }, 1000)
 }
 
 async function resendMessage(message: Message) {
@@ -152,73 +152,73 @@ async function resendMessage(message: Message) {
     from: message.owner,
     to: message.contact,
     content: message.content,
-  });
+  })
   setTimeout(() => {
-    selectedMenuItem.value = -1;
-  }, 1000);
-  loadMessages(false);
+    selectedMenuItem.value = -1
+  }, 1000)
+  loadMessages(false)
 }
 
 async function deleteMessage(message: Message) {
-  await messagesStore.deleteMessage(message.id);
+  await messagesStore.deleteMessage(message.id)
   setTimeout(() => {
-    selectedMenuItem.value = -1;
-  }, 1000);
-  loadMessages(false);
+    selectedMenuItem.value = -1
+  }, 1000)
+  loadMessages(false)
 }
 
 async function copyMessageId(message: Message) {
-  await navigator.clipboard.writeText(message.id);
+  await navigator.clipboard.writeText(message.id)
   notificationsStore.addNotification({
-    message: "Message ID copied to clipboard",
-    type: "success",
-  });
+    message: 'Message ID copied to clipboard',
+    type: 'success',
+  })
   setTimeout(() => {
-    selectedMenuItem.value = -1;
-  }, 1000);
+    selectedMenuItem.value = -1
+  }, 1000)
 }
 
 async function deleteThread(threadID: string) {
-  await threadsStore.deleteThread(threadID);
-  await router.push("/threads");
+  await threadsStore.deleteThread(threadID)
+  await router.push('/threads')
 }
 
 async function sendMessage(event: KeyboardEvent | Event) {
-  if (event instanceof KeyboardEvent && event.shiftKey) return;
-  if (!formMessage.value.trim()) return;
+  if (event instanceof KeyboardEvent && event.shiftKey) return
+  if (!formMessage.value.trim()) return
 
-  submitting.value = true;
+  submitting.value = true
   await messagesStore.sendMessage({
     from: phonesStore.owner,
     to: threadsStore.currentThread!.contact,
     content: formMessage.value,
-  });
-  loadMessages(false);
-  formMessage.value = "";
-  submitting.value = false;
+  })
+  loadMessages(false)
+  formMessage.value = ''
+  submitting.value = false
 }
 
 onMounted(async () => {
-  await loadData();
+  await loadData()
 
   const pusher = new Pusher(config.public.pusherKey as string, {
     cluster: config.public.pusherCluster as string,
-  });
-  webhookChannel = pusher.subscribe(authStore.user!.id);
-  webhookChannel.bind("message.phone.sent", () => {
-    if (!loadingMessages.value) loadMessages(false);
-  });
-  webhookChannel.bind("message.send.failed", () => {
-    if (!loadingMessages.value) loadMessages(false);
-  });
-  webhookChannel.bind("message.phone.received", () => {
-    if (!loadingMessages.value) loadMessages(false);
-  });
-});
+  })
+  webhookChannel = pusher.subscribe(authStore.user!.id)
+  webhookChannel.bind('message.phone.sent', () => {
+    if (!loadingMessages.value) loadMessages(false)
+  })
+  webhookChannel.bind('message.send.failed', () => {
+    if (!loadingMessages.value) loadMessages(false)
+  })
+  webhookChannel.bind('message.phone.received', () => {
+    if (!loadingMessages.value) loadMessages(false)
+  })
+})
 
 onBeforeUnmount(() => {
-  if (webhookChannel) webhookChannel.unsubscribe();
-});
+  if (webhookChannel) webhookChannel.unsubscribe()
+})
 </script>
 
 <template>

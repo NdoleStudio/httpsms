@@ -1,7 +1,7 @@
-import { useAuthStore } from "../stores/auth";
+import { useAuthStore } from '../stores/auth'
 
 export default defineNuxtRouteMiddleware(async (to: { path: string }) => {
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
 
   if (!authStore.authStateChanged) {
     await new Promise<void>((resolve) => {
@@ -9,16 +9,16 @@ export default defineNuxtRouteMiddleware(async (to: { path: string }) => {
         () => authStore.authStateChanged,
         (changed) => {
           if (changed) {
-            stop();
-            resolve();
+            stop()
+            resolve()
           }
         },
         { immediate: true },
-      );
-    });
+      )
+    })
   }
 
   if (authStore.authUser === null) {
-    return navigateTo({ path: "/login", query: { to: to.path } });
+    return navigateTo({ path: '/login', query: { to: to.path } })
   }
-});
+})

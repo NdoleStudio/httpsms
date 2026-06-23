@@ -1,40 +1,41 @@
 <script setup lang="ts">
-import { mdiArrowLeft, mdiHeartPulse } from "@mdi/js";
+import { mdiArrowLeft, mdiHeartPulse } from '@mdi/js'
+import type { Heartbeat } from '~~/shared/types/heartbeat'
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Heartbeats - httpSMS",
-});
+  title: 'Heartbeats - httpSMS',
+})
 
-const route = useRoute();
-const { mdAndDown, lgAndUp } = useDisplay();
-const authStore = useAuthStore();
-const { useApi } = useApiComposable();
+const route = useRoute()
+const { mdAndDown, lgAndUp } = useDisplay()
+const authStore = useAuthStore()
+const { useApi } = useApiComposable()
 
-const loading = ref(true);
-const heartbeats = ref<any[]>([]);
-const phoneId = computed(() => route.params.id as string);
+const loading = ref(true)
+const heartbeats = ref<Heartbeat[]>([])
+const phoneId = computed(() => route.params.id as string)
 
 async function loadHeartbeats() {
-  loading.value = true;
+  loading.value = true
   try {
-    const api = useApi();
-    const response = await api<{ data: any[] }>(
+    const api = useApi()
+    const response = await api<{ data: Heartbeat[] }>(
       `/v1/heartbeats?owner=${phoneId.value}`,
-    );
-    heartbeats.value = response.data ?? [];
+    )
+    heartbeats.value = response.data ?? []
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 onMounted(async () => {
-  await authStore.loadUser();
-  await loadHeartbeats();
-});
+  await authStore.loadUser()
+  await loadHeartbeats()
+})
 </script>
 
 <template>
@@ -58,8 +59,8 @@ onMounted(async () => {
               are sent every 15 minutes when the phone is online.
             </p>
             <VProgressLinear
-              color="primary"
               v-if="loading"
+              color="primary"
               indeterminate
               class="mb-4"
             />
@@ -80,14 +81,14 @@ onMounted(async () => {
                       :color="heartbeat.is_online ? 'success' : 'error'"
                       size="small"
                     >
-                      {{ heartbeat.is_online ? "Online" : "Offline" }}
+                      {{ heartbeat.is_online ? 'Online' : 'Offline' }}
                     </VChip>
                   </td>
                   <td class="text-center">
                     {{ useFilters().timestamp(heartbeat.timestamp) }}
                   </td>
                   <td class="text-center">
-                    {{ heartbeat.charging ? "Yes" : "No" }}
+                    {{ heartbeat.charging ? 'Yes' : 'No' }}
                   </td>
                 </tr>
               </tbody>

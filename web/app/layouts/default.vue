@@ -1,66 +1,66 @@
 <script setup lang="ts">
-import Pusher from "pusher-js";
-import { useDisplay } from "vuetify";
-import { setAuthHeader } from "~/composables/useApi";
-import { getAuth } from "firebase/auth";
+import Pusher from 'pusher-js'
+import { useDisplay } from 'vuetify'
+import { setAuthHeader } from '~/composables/useApi'
+import { getAuth } from 'firebase/auth'
 
-const route = useRoute();
-const config = useRuntimeConfig();
-const { lgAndUp } = useDisplay();
-const authStore = useAuthStore();
-const phonesStore = usePhonesStore();
-const threadsStore = useThreadsStore();
-const appStore = useAppStore();
+const route = useRoute()
+const config = useRuntimeConfig()
+const { lgAndUp } = useDisplay()
+const authStore = useAuthStore()
+const phonesStore = usePhonesStore()
+const threadsStore = useThreadsStore()
+const appStore = useAppStore()
 
-let poller: ReturnType<typeof setInterval> | null = null;
-let canPoll = false;
+let poller: ReturnType<typeof setInterval> | null = null
+let canPoll = false
 
 const hasDrawer = computed(() => {
-  return ["threads", "threads-id"].includes((route.name as string) ?? "");
-});
+  return ['threads', 'threads-id'].includes((route.name as string) ?? '')
+})
 
 onMounted(() => {
   setTimeout(() => {
     const pusher = new Pusher(config.public.pusherKey as string, {
       cluster: config.public.pusherCluster as string,
-    });
+    })
 
     if (authStore.authUser) {
-      const channel = pusher.subscribe(authStore.authUser.id);
-      channel.bind("phone.updated", () => {
-        canPoll = true;
-      });
+      const channel = pusher.subscribe(authStore.authUser.id)
+      channel.bind('phone.updated', () => {
+        canPoll = true
+      })
     }
 
-    startPoller();
-  }, 10_000);
-});
+    startPoller()
+  }, 10_000)
+})
 
 onBeforeUnmount(() => {
-  if (poller) clearInterval(poller);
-});
+  if (poller) clearInterval(poller)
+})
 
 function startPoller() {
   poller = setInterval(async () => {
-    if (!canPoll || authStore.authUser == null) return;
+    if (!canPoll || authStore.authUser == null) return
 
-    appStore.setPolling(true);
+    appStore.setPolling(true)
 
     if (authStore.authUser && phonesStore.owner) {
-      const auth = getAuth();
-      const token = await auth.currentUser?.getIdToken();
-      if (token) setAuthHeader(token);
+      const auth = getAuth()
+      const token = await auth.currentUser?.getIdToken()
+      if (token) setAuthHeader(token)
 
       await Promise.all([
         phonesStore.loadPhones(true),
         threadsStore.loadThreads(),
         phonesStore.getHeartbeat(),
-      ]);
+      ])
     }
 
-    canPoll = false;
-    setTimeout(() => appStore.setPolling(false), 1000);
-  }, 10_000);
+    canPoll = false
+    setTimeout(() => appStore.setPolling(false), 1000)
+  }, 10_000)
 }
 </script>
 
@@ -77,7 +77,7 @@ function startPoller() {
       </template>
     </v-navigation-drawer>
     <v-main :class="{ 'has-drawer': hasDrawer && lgAndUp }">
-      <Toast />
+      <AppToast />
       <slot v-if="authStore.authStateChanged" />
       <LoadingDashboard v-else />
     </v-main>

@@ -1,39 +1,39 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
-import { mdiContentCopy } from "@mdi/js";
+import { useDisplay } from 'vuetify'
+import { mdiContentCopy } from '@mdi/js'
 
 const props = withDefaults(
   defineProps<{
-    value: string;
-    color?: string;
-    block?: boolean;
-    large?: boolean;
-    copyText?: string;
-    notificationText?: string;
+    value: string
+    color?: string
+    block?: boolean
+    large?: boolean
+    copyText?: string
+    notificationText?: string
   }>(),
   {
-    color: "default",
+    color: 'default',
     block: false,
     large: false,
-    copyText: "Copy",
-    notificationText: "Copied",
+    copyText: 'Copy',
+    notificationText: 'Copied',
   },
-);
+)
 
-const { smAndDown } = useDisplay();
-const notificationsStore = useNotificationsStore();
-const disabled = ref(false);
+const { smAndDown } = useDisplay()
+const notificationsStore = useNotificationsStore()
+const disabled = ref(false)
 
 async function copy() {
-  disabled.value = true;
-  await navigator.clipboard.writeText(props.value);
+  disabled.value = true
+  await navigator.clipboard.writeText(props.value)
   notificationsStore.addNotification({
     message: props.notificationText,
-    type: "success",
-  });
+    type: 'success',
+  })
   setTimeout(() => {
-    disabled.value = false;
-  }, 5000);
+    disabled.value = false
+  }, 5000)
 }
 </script>
 

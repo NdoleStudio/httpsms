@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+import { mdiLanguageGo, mdiLanguageJavascript } from '@mdi/js'
+import { ref } from 'vue'
 
-import { mdiLanguageGo, mdiLanguageJavascript } from "@mdi/js";
-import { ref } from "vue";
+const { mdAndUp } = useDisplay()
 
-const encryptTab = ref("javascript");
-const sendTab = ref("javascript");
-const receiveTab = ref("javascript");
+const encryptTab = ref('javascript')
+const sendTab = ref('javascript')
+const receiveTab = ref('javascript')
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
   title:
-    "Secure your conversations with end-to-end encryption for SMS messages - httpSMS",
+    'Secure your conversations with end-to-end encryption for SMS messages - httpSMS',
   meta: [
     {
-      property: "og:title",
+      property: 'og:title',
       content:
-        "Secure your conversations with end-to-end encryption for SMS messages",
+        'Secure your conversations with end-to-end encryption for SMS messages',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "We have added support for end-to-end encryption for SMS messages so that no one can see the content of the messages you send using httpSMS except you.",
+        'We have added support for end-to-end encryption for SMS messages so that no one can see the content of the messages you send using httpSMS except you.',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -41,7 +41,7 @@ useHead({
         >
           Secure your conversations by encrypting your SMS messages end-to-end
         </h1>
-        <BlogInfo date="January 21, 2024" readTime="10 min read" />
+        <BlogInfo date="January 21, 2024" read-time="10 min read" />
 
         <p class="text-body-large mt-2">
           We have added support for end-to-end encryption for SMS messages so

@@ -1,20 +1,20 @@
-import { initializeApp, getApps } from "firebase/app";
-import type { FirebaseApp } from "firebase/app";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useAuthStore } from "../stores/auth";
+import { initializeApp, getApps } from 'firebase/app'
+import type { FirebaseApp } from 'firebase/app'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { useAuthStore } from '../stores/auth'
 
 export default defineNuxtPlugin(() => {
-  const config = useRuntimeConfig();
-  const publicConfig = config.public as Record<string, string>;
+  const config = useRuntimeConfig()
+  const publicConfig = config.public as Record<string, string>
 
   // Skip initialization if no API key is configured
   if (!publicConfig.firebaseApiKey) {
     console.warn(
-      "[firebase] No FIREBASE_API_KEY configured. Auth will not work.",
-    );
+      '[firebase] No FIREBASE_API_KEY configured. Auth will not work.',
+    )
     // Resolve auth readiness so route middleware doesn't hang forever.
-    useAuthStore().onAuthStateChanged(null);
-    return;
+    useAuthStore().onAuthStateChanged(null)
+    return
   }
 
   const firebaseConfig = {
@@ -25,23 +25,23 @@ export default defineNuxtPlugin(() => {
     messagingSenderId: publicConfig.firebaseMessagingSenderId,
     appId: publicConfig.firebaseAppId,
     measurementId: publicConfig.firebaseMeasurementId,
-  };
+  }
 
   // Initialise Firebase (only once)
   const app: FirebaseApp =
-    getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]!;
-  const auth = getAuth(app);
+    getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]!
+  const auth = getAuth(app)
 
   // Listen for auth state changes and update the auth store
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
   onAuthStateChanged(auth, (user) => {
-    authStore.onAuthStateChanged(user);
-  });
+    authStore.onAuthStateChanged(user)
+  })
 
   return {
     provide: {
       firebaseApp: app,
       firebaseAuth: auth,
     },
-  };
-});
+  }
+})

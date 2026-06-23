@@ -12,133 +12,136 @@ import {
   mdiDelete,
   mdiContentSave,
   mdiConnection,
-  mdiClose,
   mdiCalendarClock,
   mdiPlus,
-} from "@mdi/js";
-import { getAuth, signOut, type User as FirebaseUser } from "firebase/auth";
-import QRCode from "qrcode";
-import { ErrorMessages } from "~/utils/errors";
+} from '@mdi/js'
+import { getAuth, signOut, type User as FirebaseUser } from 'firebase/auth'
+import QRCode from 'qrcode'
+import { ErrorMessages } from '~/utils/errors'
+import { toApiError } from '~/utils/api-error'
 import type {
   EntitiesPhone,
   EntitiesWebhook,
   EntitiesDiscord,
   EntitiesMessageSendSchedule,
-} from "~~/shared/types/api";
+} from '~~/shared/types/api'
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Settings - httpSMS",
-});
+  title: 'Settings - httpSMS',
+})
 
-const config = useRuntimeConfig();
-const route = useRoute();
-const router = useRouter();
-const { mdAndDown, mdAndUp, lgAndUp, xlAndUp, smAndUp } = useDisplay();
-const authStore = useAuthStore();
-const phonesStore = usePhonesStore();
-const billingStore = useBillingStore();
-const notificationsStore = useNotificationsStore();
+const config = useRuntimeConfig()
+const route = useRoute()
+const router = useRouter()
+const { mdAndDown, mdAndUp, lgAndUp, xlAndUp, smAndUp } = useDisplay()
+const authStore = useAuthStore()
+const phonesStore = usePhonesStore()
+const billingStore = useBillingStore()
+const notificationsStore = useNotificationsStore()
 
-const firebaseUser = ref<FirebaseUser | null>(null);
+const firebaseUser = ref<FirebaseUser | null>(null)
 
-const apiKeyShow = ref(false);
-const showQrCodeDialog = ref(false);
-const showRotateApiKey = ref(false);
-const rotatingApiKey = ref(false);
-const qrCodeCanvas = ref<HTMLCanvasElement | null>(null);
+const apiKeyShow = ref(false)
+const showQrCodeDialog = ref(false)
+const showRotateApiKey = ref(false)
+const rotatingApiKey = ref(false)
+const qrCodeCanvas = ref<HTMLCanvasElement | null>(null)
 
-const errorMessages = ref(new ErrorMessages());
+const errorMessages = ref(new ErrorMessages())
 
 // Timezones
 const timezones = (() => {
   try {
-    return (Intl as any).supportedValuesOf("timeZone") as string[];
+    const intlWithTimeZones = Intl as typeof Intl & {
+      supportedValuesOf(key: string): string[]
+    }
+    return intlWithTimeZones.supportedValuesOf('timeZone')
   } catch {
-    return [] as string[];
+    return [] as string[]
   }
-})();
+})()
 
-const apiKey = computed(() => authStore.user?.api_key ?? "");
+const apiKey = computed(() => authStore.user?.api_key ?? '')
 
 const hasActiveSubscription = computed(() => {
-  if (authStore.user === null) return true;
-  return authStore.user.subscription_renews_at != null;
-});
+  if (authStore.user === null) return true
+  return authStore.user.subscription_renews_at != null
+})
 
 const phoneNumbers = computed(() =>
   phonesStore.phones.map((phone) => phone.phone_number),
-);
+)
 
 const webhookEventOptions = [
-  "message.phone.received",
-  "message.phone.sent",
-  "message.phone.delivered",
-  "message.send.failed",
-  "message.send.expired",
-  "message.call.missed",
-  "phone.heartbeat.offline",
-  "phone.heartbeat.online",
-];
+  'message.phone.received',
+  'message.phone.sent',
+  'message.phone.delivered',
+  'message.send.failed',
+  'message.send.expired',
+  'message.call.missed',
+  'phone.heartbeat.offline',
+  'phone.heartbeat.online',
+]
 
 function resetErrors() {
-  errorMessages.value = new ErrorMessages();
+  errorMessages.value = new ErrorMessages()
 }
 
-function parseErrors(error: any): ErrorMessages {
-  const bag = new ErrorMessages();
-  const data = error?.data?.data;
-  if (data && typeof data === "object") {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]));
+function parseErrors(error: unknown): ErrorMessages {
+  const bag = new ErrorMessages()
+  const data = toApiError(error).data?.data
+  if (data && typeof data === 'object') {
+    Object.keys(data).forEach((key) => bag.addMany(key, data[key]))
   }
-  return bag;
+  return bag
 }
 
 // ---------------------------------------------------------------------------
 // API Key
 // ---------------------------------------------------------------------------
 async function rotateApiKey() {
-  if (!authStore.user) return;
-  rotatingApiKey.value = true;
+  if (!authStore.user) return
+  rotatingApiKey.value = true
   try {
-    await authStore.rotateApiKey(authStore.user.id);
-    showRotateApiKey.value = false;
+    await authStore.rotateApiKey(authStore.user.id)
+    showRotateApiKey.value = false
     notificationsStore.addNotification({
-      message: "API Key rotated successfully",
-      type: "success",
-    });
+      message: 'API Key rotated successfully',
+      type: 'success',
+    })
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to rotate API Key",
-      type: "error",
-    });
+      message: 'Failed to rotate API Key',
+      type: 'error',
+    })
   } finally {
-    rotatingApiKey.value = false;
+    rotatingApiKey.value = false
   }
 }
 
 function generateQrCode() {
-  showQrCodeDialog.value = true;
+  showQrCodeDialog.value = true
   nextTick(() => {
     if (qrCodeCanvas.value) {
       QRCode.toCanvas(
         qrCodeCanvas.value,
         apiKey.value,
-        { errorCorrectionLevel: "H", width: 300, margin: 2 },
+        { errorCorrectionLevel: 'H', width: 300, margin: 2 },
         (err) => {
           if (err) {
             notificationsStore.addNotification({
-              message: "Failed to generate API key QR code",
-              type: "error",
-            });
+              message: 'Failed to generate API key QR code',
+              type: 'error',
+            })
           }
         },
-      );
+      )
     }
-  });
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -146,71 +149,71 @@ function generateQrCode() {
 // ---------------------------------------------------------------------------
 async function updateTimezone(timezone: string) {
   try {
-    await authStore.updateUser({ timezone });
+    await authStore.updateUser({ timezone })
     notificationsStore.addNotification({
-      message: "Timezone updated successfully",
-      type: "success",
-    });
+      message: 'Timezone updated successfully',
+      type: 'success',
+    })
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to update timezone",
-      type: "error",
-    });
+      message: 'Failed to update timezone',
+      type: 'error',
+    })
   }
 }
 
 // ---------------------------------------------------------------------------
 // Webhooks
 // ---------------------------------------------------------------------------
-const loadingWebhooks = ref(true);
-const webhooks = ref<EntitiesWebhook[]>([]);
-const updatingWebhook = ref(false);
-const showWebhookEdit = ref(false);
+const loadingWebhooks = ref(true)
+const webhooks = ref<EntitiesWebhook[]>([])
+const updatingWebhook = ref(false)
+const showWebhookEdit = ref(false)
 const activeWebhook = ref<{
-  id: string | null;
-  url: string;
-  signing_key: string;
-  phone_numbers: string[];
-  events: string[];
+  id: string | null
+  url: string
+  signing_key: string
+  phone_numbers: string[]
+  events: string[]
 }>({
   id: null,
-  url: "",
-  signing_key: "",
+  url: '',
+  signing_key: '',
   phone_numbers: [],
-  events: ["message.phone.received"],
-});
+  events: ['message.phone.received'],
+})
 
 async function loadWebhooks() {
-  loadingWebhooks.value = true;
+  loadingWebhooks.value = true
   try {
-    webhooks.value = await billingStore.getWebhooks();
+    webhooks.value = await billingStore.getWebhooks()
   } finally {
-    loadingWebhooks.value = false;
+    loadingWebhooks.value = false
   }
 }
 
 function onWebhookCreate() {
-  resetErrors();
+  resetErrors()
   activeWebhook.value = {
     id: null,
-    url: "",
-    signing_key: "",
+    url: '',
+    signing_key: '',
     phone_numbers: phoneNumbers.value.slice(),
     events: [
-      "message.phone.received",
-      "message.phone.sent",
-      "message.phone.delivered",
-      "message.send.failed",
-      "message.send.expired",
+      'message.phone.received',
+      'message.phone.sent',
+      'message.phone.delivered',
+      'message.send.failed',
+      'message.send.expired',
     ],
-  };
-  showWebhookEdit.value = true;
+  }
+  showWebhookEdit.value = true
 }
 
 function onWebhookEdit(webhookId: string) {
-  const webhook = webhooks.value.find((x) => x.id === webhookId);
-  if (!webhook) return;
-  resetErrors();
+  const webhook = webhooks.value.find((x) => x.id === webhookId)
+  if (!webhook) return
+  resetErrors()
   activeWebhook.value = {
     id: webhook.id,
     url: webhook.url,
@@ -219,279 +222,279 @@ function onWebhookEdit(webhookId: string) {
       phoneNumbers.value.includes(x),
     ),
     events: webhook.events ?? [],
-  };
-  showWebhookEdit.value = true;
+  }
+  showWebhookEdit.value = true
 }
 
 async function saveWebhook() {
-  resetErrors();
-  updatingWebhook.value = true;
+  resetErrors()
+  updatingWebhook.value = true
   try {
     const payload = {
       url: activeWebhook.value.url,
       signing_key: activeWebhook.value.signing_key,
       phone_numbers: activeWebhook.value.phone_numbers,
       events: activeWebhook.value.events,
-    };
+    }
     if (activeWebhook.value.id) {
       await billingStore.updateWebhook({
         id: activeWebhook.value.id,
         ...payload,
-      });
+      })
     } else {
-      await billingStore.createWebhook(payload);
+      await billingStore.createWebhook(payload)
     }
     notificationsStore.addNotification({
-      message: `Webhook ${activeWebhook.value.id ? "updated" : "created"} successfully`,
-      type: "success",
-    });
-    showWebhookEdit.value = false;
-    await loadWebhooks();
-  } catch (error: any) {
-    errorMessages.value = parseErrors(error);
+      message: `Webhook ${activeWebhook.value.id ? 'updated' : 'created'} successfully`,
+      type: 'success',
+    })
+    showWebhookEdit.value = false
+    await loadWebhooks()
+  } catch (error: unknown) {
+    errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        message: "Failed to save webhook",
-        type: "error",
-      });
+        message: 'Failed to save webhook',
+        type: 'error',
+      })
     }
   } finally {
-    updatingWebhook.value = false;
+    updatingWebhook.value = false
   }
 }
 
 async function deleteWebhook(id: string) {
-  updatingWebhook.value = true;
+  updatingWebhook.value = true
   try {
-    await billingStore.deleteWebhook(id);
+    await billingStore.deleteWebhook(id)
     notificationsStore.addNotification({
-      message: "Webhook deleted successfully",
-      type: "success",
-    });
-    showWebhookEdit.value = false;
-    await loadWebhooks();
+      message: 'Webhook deleted successfully',
+      type: 'success',
+    })
+    showWebhookEdit.value = false
+    await loadWebhooks()
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to delete webhook",
-      type: "error",
-    });
+      message: 'Failed to delete webhook',
+      type: 'error',
+    })
   } finally {
-    updatingWebhook.value = false;
+    updatingWebhook.value = false
   }
 }
 
 // ---------------------------------------------------------------------------
 // Discord
 // ---------------------------------------------------------------------------
-const loadingDiscordIntegrations = ref(true);
-const discords = ref<EntitiesDiscord[]>([]);
-const updatingDiscord = ref(false);
-const showDiscordEdit = ref(false);
+const loadingDiscordIntegrations = ref(true)
+const discords = ref<EntitiesDiscord[]>([])
+const updatingDiscord = ref(false)
+const showDiscordEdit = ref(false)
 const activeDiscord = ref<{
-  id: string | null;
-  name: string;
-  server_id: string;
-  incoming_channel_id: string;
+  id: string | null
+  name: string
+  server_id: string
+  incoming_channel_id: string
 }>({
   id: null,
-  name: "",
-  server_id: "",
-  incoming_channel_id: "",
-});
+  name: '',
+  server_id: '',
+  incoming_channel_id: '',
+})
 
 async function loadDiscordIntegrations() {
-  loadingDiscordIntegrations.value = true;
+  loadingDiscordIntegrations.value = true
   try {
-    discords.value = await billingStore.getDiscordIntegrations();
+    discords.value = await billingStore.getDiscordIntegrations()
   } finally {
-    loadingDiscordIntegrations.value = false;
+    loadingDiscordIntegrations.value = false
   }
 }
 
 function onDiscordCreate() {
-  resetErrors();
+  resetErrors()
   activeDiscord.value = {
     id: null,
-    name: "",
-    server_id: "",
-    incoming_channel_id: "",
-  };
-  showDiscordEdit.value = true;
+    name: '',
+    server_id: '',
+    incoming_channel_id: '',
+  }
+  showDiscordEdit.value = true
 }
 
 function onDiscordEdit(discordId: string) {
-  const discord = discords.value.find((x) => x.id === discordId);
-  if (!discord) return;
-  resetErrors();
+  const discord = discords.value.find((x) => x.id === discordId)
+  if (!discord) return
+  resetErrors()
   activeDiscord.value = {
     id: discord.id,
     name: discord.name,
     server_id: discord.server_id,
     incoming_channel_id: discord.incoming_channel_id,
-  };
-  showDiscordEdit.value = true;
+  }
+  showDiscordEdit.value = true
 }
 
 async function saveDiscord() {
-  resetErrors();
-  updatingDiscord.value = true;
+  resetErrors()
+  updatingDiscord.value = true
   try {
     const payload = {
       name: activeDiscord.value.name,
       server_id: activeDiscord.value.server_id,
       incoming_channel_id: activeDiscord.value.incoming_channel_id,
-    };
+    }
     if (activeDiscord.value.id) {
       await billingStore.updateDiscordIntegration({
         id: activeDiscord.value.id,
         ...payload,
-      });
+      })
     } else {
-      await billingStore.createDiscord(payload);
+      await billingStore.createDiscord(payload)
     }
     notificationsStore.addNotification({
-      message: `Discord integration ${activeDiscord.value.id ? "updated" : "created"} successfully`,
-      type: "success",
-    });
-    showDiscordEdit.value = false;
-    await loadDiscordIntegrations();
-  } catch (error: any) {
-    errorMessages.value = parseErrors(error);
+      message: `Discord integration ${activeDiscord.value.id ? 'updated' : 'created'} successfully`,
+      type: 'success',
+    })
+    showDiscordEdit.value = false
+    await loadDiscordIntegrations()
+  } catch (error: unknown) {
+    errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        message: "Failed to save discord integration",
-        type: "error",
-      });
+        message: 'Failed to save discord integration',
+        type: 'error',
+      })
     }
   } finally {
-    updatingDiscord.value = false;
+    updatingDiscord.value = false
   }
 }
 
 async function deleteDiscord(id: string) {
-  updatingDiscord.value = true;
+  updatingDiscord.value = true
   try {
-    await billingStore.deleteDiscordIntegration(id);
+    await billingStore.deleteDiscordIntegration(id)
     notificationsStore.addNotification({
-      message: "Discord integration deleted successfully",
-      type: "success",
-    });
-    showDiscordEdit.value = false;
-    await loadDiscordIntegrations();
+      message: 'Discord integration deleted successfully',
+      type: 'success',
+    })
+    showDiscordEdit.value = false
+    await loadDiscordIntegrations()
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to delete discord integration",
-      type: "error",
-    });
+      message: 'Failed to delete discord integration',
+      type: 'error',
+    })
   } finally {
-    updatingDiscord.value = false;
+    updatingDiscord.value = false
   }
 }
 
 // ---------------------------------------------------------------------------
 // Phones
 // ---------------------------------------------------------------------------
-const updatingPhone = ref(false);
-const showPhoneEdit = ref(false);
-const activePhone = ref<EntitiesPhone | null>(null);
+const updatingPhone = ref(false)
+const showPhoneEdit = ref(false)
+const activePhone = ref<EntitiesPhone | null>(null)
 
 function showEditPhone(phoneId: string) {
-  const phone = phonesStore.phones.find((x) => x.id === phoneId);
-  if (!phone) return;
-  resetErrors();
-  activePhone.value = { ...phone };
-  showPhoneEdit.value = true;
+  const phone = phonesStore.phones.find((x) => x.id === phoneId)
+  if (!phone) return
+  resetErrors()
+  activePhone.value = { ...phone }
+  showPhoneEdit.value = true
 }
 
 async function updatePhone() {
-  if (!activePhone.value) return;
-  updatingPhone.value = true;
+  if (!activePhone.value) return
+  updatingPhone.value = true
   try {
-    await phonesStore.updatePhone(activePhone.value);
-    showPhoneEdit.value = false;
-    activePhone.value = null;
+    await phonesStore.updatePhone(activePhone.value)
+    showPhoneEdit.value = false
+    activePhone.value = null
   } finally {
-    updatingPhone.value = false;
+    updatingPhone.value = false
   }
 }
 
 async function deletePhone(phoneId: string) {
-  updatingPhone.value = true;
+  updatingPhone.value = true
   try {
-    await phonesStore.deletePhone(phoneId);
+    await phonesStore.deletePhone(phoneId)
     notificationsStore.addNotification({
-      message: "Phone deleted successfully",
-      type: "success",
-    });
-    showPhoneEdit.value = false;
-    activePhone.value = null;
+      message: 'Phone deleted successfully',
+      type: 'success',
+    })
+    showPhoneEdit.value = false
+    activePhone.value = null
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to delete phone",
-      type: "error",
-    });
+      message: 'Failed to delete phone',
+      type: 'error',
+    })
   } finally {
-    updatingPhone.value = false;
+    updatingPhone.value = false
   }
 }
 
 // ---------------------------------------------------------------------------
 // Send Schedules
 // ---------------------------------------------------------------------------
-const loadingSendSchedules = ref(true);
-const sendSchedules = ref<EntitiesMessageSendSchedule[]>([]);
-const showScheduleEdit = ref(false);
-const showScheduleDelete = ref(false);
-const savingSchedule = ref(false);
+const loadingSendSchedules = ref(true)
+const sendSchedules = ref<EntitiesMessageSendSchedule[]>([])
+const showScheduleEdit = ref(false)
+const showScheduleDelete = ref(false)
+const savingSchedule = ref(false)
 const activeSchedule = ref<{
-  id: string | null;
-  name: string;
-  timezone: string;
+  id: string | null
+  name: string
+  timezone: string
   windows: Array<{
-    day_of_week: number;
-    start_time: string;
-    end_time: string;
-  }>;
+    day_of_week: number
+    start_time: string
+    end_time: string
+  }>
 }>({
   id: null,
-  name: "",
-  timezone: "",
+  name: '',
+  timezone: '',
   windows: [],
-});
+})
 
 const weekDays = [
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-  { value: 0, label: "Sunday" },
-];
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+  { value: 0, label: 'Sunday' },
+]
 
 async function loadSendSchedules() {
-  loadingSendSchedules.value = true;
+  loadingSendSchedules.value = true
   try {
-    sendSchedules.value = await billingStore.getSendSchedules();
+    sendSchedules.value = await billingStore.getSendSchedules()
   } finally {
-    loadingSendSchedules.value = false;
+    loadingSendSchedules.value = false
   }
 }
 
 function minuteToClock(value: number): string {
-  const hours = String(Math.floor(value / 60)).padStart(2, "0");
-  const minutes = String(value % 60).padStart(2, "0");
-  return `${hours}:${minutes}`;
+  const hours = String(Math.floor(value / 60)).padStart(2, '0')
+  const minutes = String(value % 60).padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 
 function clockToMinute(value: string): number {
-  if (!value || !value.includes(":")) return 0;
-  const [hours = 0, minutes = 0] = value.split(":").map((x) => parseInt(x, 10));
-  return hours * 60 + minutes;
+  if (!value || !value.includes(':')) return 0
+  const [hours = 0, minutes = 0] = value.split(':').map((x) => parseInt(x, 10))
+  return hours * 60 + minutes
 }
 
 function getWeekday(index: number): string {
-  return weekDays.find((x) => x.value === index)?.label ?? "";
+  return weekDays.find((x) => x.value === index)?.label ?? ''
 }
 
 function scheduleSummary(schedule: EntitiesMessageSendSchedule): string[][] {
@@ -499,8 +502,8 @@ function scheduleSummary(schedule: EntitiesMessageSendSchedule): string[][] {
     .map((day) => {
       const windows = (schedule.windows || []).filter(
         (x) => x.day_of_week === day.value,
-      );
-      if (windows.length === 0) return [];
+      )
+      if (windows.length === 0) return []
       return [
         day.label,
         windows
@@ -508,35 +511,35 @@ function scheduleSummary(schedule: EntitiesMessageSendSchedule): string[][] {
             (w) =>
               `${minuteToClock(w.start_minute)} - ${minuteToClock(w.end_minute)}`,
           )
-          .join(", "),
-      ];
+          .join(', '),
+      ]
     })
-    .filter((x) => x.length > 0);
+    .filter((x) => x.length > 0)
 }
 
 function defaultTimezone(): string {
   return (
     authStore.user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
+  )
 }
 
 function openCreateSchedule() {
-  resetErrors();
+  resetErrors()
   activeSchedule.value = {
     id: null,
-    name: "",
+    name: '',
     timezone: defaultTimezone(),
     windows: [1, 2, 3, 4, 5].map((day) => ({
       day_of_week: day,
-      start_time: "09:00",
-      end_time: "17:00",
+      start_time: '09:00',
+      end_time: '17:00',
     })),
-  };
-  showScheduleEdit.value = true;
+  }
+  showScheduleEdit.value = true
 }
 
 function openEditSchedule(schedule: EntitiesMessageSendSchedule) {
-  resetErrors();
+  resetErrors()
   activeSchedule.value = {
     id: schedule.id,
     name: schedule.name,
@@ -546,64 +549,62 @@ function openEditSchedule(schedule: EntitiesMessageSendSchedule) {
       start_time: minuteToClock(x.start_minute),
       end_time: minuteToClock(x.end_minute),
     })),
-  };
-  showScheduleEdit.value = true;
+  }
+  showScheduleEdit.value = true
 }
 
 function scheduleWindowsForDay(dayOfWeek: number) {
-  return activeSchedule.value.windows.filter(
-    (x) => x.day_of_week === dayOfWeek,
-  );
+  return activeSchedule.value.windows.filter((x) => x.day_of_week === dayOfWeek)
 }
 
 function scheduleDayEnabled(dayOfWeek: number): boolean {
-  return scheduleWindowsForDay(dayOfWeek).length > 0;
+  return scheduleWindowsForDay(dayOfWeek).length > 0
 }
 
 function scheduleToggleDay(dayOfWeek: number, enabled: boolean | null) {
   if (enabled) {
     if (!scheduleDayEnabled(dayOfWeek)) {
-      scheduleAddWindow(dayOfWeek);
+      scheduleAddWindow(dayOfWeek)
     }
-    return;
+    return
   }
   activeSchedule.value.windows = activeSchedule.value.windows.filter(
     (x) => x.day_of_week !== dayOfWeek,
-  );
+  )
 }
 
 function scheduleAddWindow(dayOfWeek: number) {
   activeSchedule.value.windows.push({
     day_of_week: dayOfWeek,
-    start_time: "09:00",
-    end_time: "17:00",
-  });
+    start_time: '09:00',
+    end_time: '17:00',
+  })
 }
 
 function scheduleRemoveWindow(dayOfWeek: number, index: number) {
   const matches = activeSchedule.value.windows.filter(
     (x) => x.day_of_week === dayOfWeek,
-  );
-  const target = matches[index];
+  )
+  const target = matches[index]
   activeSchedule.value.windows = activeSchedule.value.windows.filter(
     (x) => x !== target,
-  );
+  )
 }
 
 function scheduleWindowError(index: number): string | null {
-  const messages = errorMessages.value.has("windows")
-    ? errorMessages.value.get("windows")
-    : [];
-  if (messages.length === 0) return null;
-  const message = messages.find((x) => x.includes(`Day of week ${index}`));
+  const messages = errorMessages.value.has('windows')
+    ? errorMessages.value.get('windows')
+    : []
+  if (messages.length === 0) return null
+  const message = messages.find((x) => x.includes(`Day of week ${index}`))
   return message
     ? message.replace(`Day of week ${index}`, getWeekday(index))
-    : null;
+    : null
 }
 
 async function saveSchedule() {
-  resetErrors();
-  savingSchedule.value = true;
+  resetErrors()
+  savingSchedule.value = true
   try {
     const payload = {
       name: activeSchedule.value.name,
@@ -613,158 +614,158 @@ async function saveSchedule() {
         start_minute: clockToMinute(window.start_time),
         end_minute: clockToMinute(window.end_time),
       })),
-    };
+    }
     if (activeSchedule.value.id) {
       await billingStore.updateSendSchedule({
         id: activeSchedule.value.id,
         ...payload,
-      });
+      })
     } else {
-      await billingStore.createSendSchedule(payload);
+      await billingStore.createSendSchedule(payload)
     }
     notificationsStore.addNotification({
-      type: "success",
-      message: "Send schedule saved successfully",
-    });
-    showScheduleEdit.value = false;
-    await loadSendSchedules();
-  } catch (error: any) {
-    errorMessages.value = parseErrors(error);
+      type: 'success',
+      message: 'Send schedule saved successfully',
+    })
+    showScheduleEdit.value = false
+    await loadSendSchedules()
+  } catch (error: unknown) {
+    errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        type: "error",
-        message: "Failed to save send schedule",
-      });
+        type: 'error',
+        message: 'Failed to save send schedule',
+      })
     }
   } finally {
-    savingSchedule.value = false;
+    savingSchedule.value = false
   }
 }
 
 function confirmDeleteSchedule() {
-  showScheduleDelete.value = true;
+  showScheduleDelete.value = true
 }
 
 async function deleteSchedule() {
-  if (!activeSchedule.value.id) return;
-  savingSchedule.value = true;
+  if (!activeSchedule.value.id) return
+  savingSchedule.value = true
   try {
-    await billingStore.deleteSendSchedule(activeSchedule.value.id);
+    await billingStore.deleteSendSchedule(activeSchedule.value.id)
     notificationsStore.addNotification({
-      type: "success",
-      message: "Send schedule deleted successfully",
-    });
-    showScheduleDelete.value = false;
-    showScheduleEdit.value = false;
-    await loadSendSchedules();
+      type: 'success',
+      message: 'Send schedule deleted successfully',
+    })
+    showScheduleDelete.value = false
+    showScheduleEdit.value = false
+    await loadSendSchedules()
   } catch {
     notificationsStore.addNotification({
-      type: "error",
-      message: "Failed to delete send schedule",
-    });
+      type: 'error',
+      message: 'Failed to delete send schedule',
+    })
   } finally {
-    savingSchedule.value = false;
+    savingSchedule.value = false
   }
 }
 
 // ---------------------------------------------------------------------------
 // Email Notifications
 // ---------------------------------------------------------------------------
-const updatingEmailNotifications = ref(false);
+const updatingEmailNotifications = ref(false)
 const notificationSettings = ref({
   webhook_enabled: true,
   message_status_enabled: true,
   newsletter_enabled: true,
   heartbeat_enabled: true,
-});
+})
 
 function syncEmailNotifications() {
-  if (!authStore.user) return;
+  if (!authStore.user) return
   notificationSettings.value = {
     webhook_enabled: authStore.user.notification_webhook_enabled,
     message_status_enabled: authStore.user.notification_message_status_enabled,
     heartbeat_enabled: authStore.user.notification_heartbeat_enabled,
     newsletter_enabled: authStore.user.notification_newsletter_enabled,
-  };
+  }
 }
 
 async function saveEmailNotifications() {
-  if (!authStore.user) return;
-  updatingEmailNotifications.value = true;
+  if (!authStore.user) return
+  updatingEmailNotifications.value = true
   try {
     await billingStore.saveEmailNotifications(
       authStore.user.id,
       notificationSettings.value,
-    );
+    )
     notificationsStore.addNotification({
-      message: "Email notifications saved successfully",
-      type: "success",
-    });
-    syncEmailNotifications();
+      message: 'Email notifications saved successfully',
+      type: 'success',
+    })
+    syncEmailNotifications()
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to save email notifications",
-      type: "error",
-    });
+      message: 'Failed to save email notifications',
+      type: 'error',
+    })
   } finally {
-    updatingEmailNotifications.value = false;
+    updatingEmailNotifications.value = false
   }
 }
 
 // ---------------------------------------------------------------------------
 // Delete account
 // ---------------------------------------------------------------------------
-const deletingAccount = ref(false);
-const showDeleteAccountDialog = ref(false);
+const deletingAccount = ref(false)
+const showDeleteAccountDialog = ref(false)
 
 async function deleteUserAccount() {
-  deletingAccount.value = true;
+  deletingAccount.value = true
   try {
-    const message = await authStore.deleteUserAccount();
+    const message = await authStore.deleteUserAccount()
     notificationsStore.addNotification({
-      message: message ?? "Your account has been deleted successfully",
-      type: "success",
-    });
-    const auth = getAuth();
-    await signOut(auth);
-    authStore.resetState();
-    phonesStore.resetState();
+      message: message ?? 'Your account has been deleted successfully',
+      type: 'success',
+    })
+    const auth = getAuth()
+    await signOut(auth)
+    authStore.resetState()
+    phonesStore.resetState()
     notificationsStore.addNotification({
-      type: "info",
-      message: "You have successfully logged out",
-    });
-    await router.push({ name: "index" });
+      type: 'info',
+      message: 'You have successfully logged out',
+    })
+    await router.push({ name: 'index' })
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to delete your account",
-      type: "error",
-    });
+      message: 'Failed to delete your account',
+      type: 'error',
+    })
   } finally {
-    deletingAccount.value = false;
-    showDeleteAccountDialog.value = false;
+    deletingAccount.value = false
+    showDeleteAccountDialog.value = false
   }
 }
 
 watch(showQrCodeDialog, (open) => {
   if (open && apiKey.value) {
-    nextTick(() => generateQrCode());
+    nextTick(() => generateQrCode())
   }
-});
+})
 
 onMounted(async () => {
-  firebaseUser.value = getAuth().currentUser;
-  await Promise.all([authStore.loadUser(), phonesStore.loadPhones()]);
-  syncEmailNotifications();
-  loadWebhooks();
-  loadDiscordIntegrations();
-  loadSendSchedules();
+  firebaseUser.value = getAuth().currentUser
+  await Promise.all([authStore.loadUser(), phonesStore.loadPhones()])
+  syncEmailNotifications()
+  loadWebhooks()
+  loadDiscordIntegrations()
+  loadSendSchedules()
   if (route.hash) {
     nextTick(() => {
-      const el = document.querySelector(route.hash);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-    });
+      const el = document.querySelector(route.hash)
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    })
   }
-});
+})
 </script>
 
 <template>
@@ -791,8 +792,8 @@ onMounted(async () => {
               </v-avatar>
 
               <h3
-                class="text-title-large mt-2 mb-0"
                 v-if="firebaseUser.displayName"
+                class="text-title-large mt-2 mb-0"
               >
                 {{ firebaseUser.displayName }}
               </h3>
@@ -1407,7 +1408,7 @@ onMounted(async () => {
             :loading="updatingWebhook"
             @click="saveWebhook"
           >
-            {{ activeWebhook.id ? "Update Webhook" : "Save Webhook" }}
+            {{ activeWebhook.id ? 'Update Webhook' : 'Save Webhook' }}
           </LoadingButton>
           <VSpacer />
           <VBtn
@@ -1514,8 +1515,8 @@ onMounted(async () => {
           >
             {{
               activeDiscord.id
-                ? "Update Discord Integration"
-                : "Save Discord Integration"
+                ? 'Update Discord Integration'
+                : 'Save Discord Integration'
             }}
           </LoadingButton>
           <VSpacer />
@@ -1782,7 +1783,7 @@ onMounted(async () => {
             :loading="savingSchedule"
             @click="saveSchedule"
           >
-            {{ activeSchedule.id ? "Update Schedule" : "Save Schedule" }}
+            {{ activeSchedule.id ? 'Update Schedule' : 'Save Schedule' }}
           </LoadingButton>
           <VSpacer />
           <VBtn

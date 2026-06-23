@@ -5,36 +5,36 @@
  * without running the Nuxt build pipeline.
  */
 
-import type { $Fetch } from "ofetch";
-import type { App } from "vue";
+import type { $Fetch } from 'ofetch'
+import type { App } from 'vue'
 
 declare global {
   // Nuxt composables
   function useRuntimeConfig(): {
-    public: Record<string, string>;
-    [key: string]: unknown;
-  };
+    public: Record<string, string>
+    [key: string]: unknown
+  }
 
   // Nuxt fetch utility
-  const $fetch: $Fetch;
+  const $fetch: $Fetch
 
   // Nuxt plugin helper
   function defineNuxtPlugin(
-    plugin: (nuxtApp: { vueApp: App }) => void | Record<string, unknown>,
-  ): unknown;
+    plugin: (nuxtApp: { vueApp: App }) => Record<string, unknown> | undefined,
+  ): unknown
 
   // Nuxt route middleware helper
   function defineNuxtRouteMiddleware(
     middleware: (to: {
-      path: string;
-      query?: Record<string, string>;
+      path: string
+      query?: Record<string, string>
     }) => unknown,
-  ): unknown;
+  ): unknown
 
   // Nuxt navigation
   function navigateTo(
     to: string | { path: string; query?: Record<string, string | undefined> },
-  ): unknown;
+  ): unknown
 }
 
-export {};
+export {}

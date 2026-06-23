@@ -1,11 +1,11 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: "website",
-});
+  layout: 'website',
+})
 
 useHead({
-  title: "Privacy Policy - httpSMS",
-});
+  title: 'Privacy Policy - httpSMS',
+})
 </script>
 
 <template>

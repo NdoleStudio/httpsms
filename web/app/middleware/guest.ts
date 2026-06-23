@@ -1,5 +1,5 @@
 export default defineNuxtRouteMiddleware(async () => {
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
 
   if (!authStore.authStateChanged) {
     await new Promise<void>((resolve) => {
@@ -7,16 +7,16 @@ export default defineNuxtRouteMiddleware(async () => {
         () => authStore.authStateChanged,
         (changed) => {
           if (changed) {
-            stop();
-            resolve();
+            stop()
+            resolve()
           }
         },
         { immediate: true },
-      );
-    });
+      )
+    })
   }
 
   if (authStore.authUser !== null) {
-    return navigateTo("/threads");
+    return navigateTo('/threads')
   }
-});
+})

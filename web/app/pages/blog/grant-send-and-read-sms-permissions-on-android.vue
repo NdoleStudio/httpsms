@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { mdiDotsVertical } from "@mdi/js";
-import { useDisplay } from "vuetify";
+import { mdiDotsVertical } from '@mdi/js'
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+const { mdAndUp } = useDisplay()
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
   title:
-    "How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+ - httpSMS",
+    'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+ - httpSMS',
   meta: [
     {
-      property: "og:title",
+      property: 'og:title',
       content:
-        "How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+",
+        'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "In Android 15 (Vanilla Ice Cream), the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions step by step.",
+        'In Android 15 (Vanilla Ice Cream), the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions step by step.',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -35,7 +35,7 @@ useHead({
         >
           How to grant SMS permissions on Android 15+
         </h1>
-        <BlogInfo date="February 18, 2025" readTime="5 min read" />
+        <BlogInfo date="February 18, 2025" read-time="5 min read" />
 
         <p class="text-body-large mt-2">
           In Android 15 (Vanilla Ice Cream), the

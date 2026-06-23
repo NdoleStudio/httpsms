@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{
-  date: string;
-  readTime: string;
-}>();
+  date: string
+  readTime: string
+}>()
 </script>
 
 <template>

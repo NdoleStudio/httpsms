@@ -10,8 +10,8 @@ import {
   Legend,
   Filler,
   TimeScale,
-} from "chart.js";
-import "chartjs-adapter-moment";
+} from 'chart.js'
+import 'chartjs-adapter-moment'
 
 export default defineNuxtPlugin(() => {
   ChartJS.register(
@@ -25,5 +25,5 @@ export default defineNuxtPlugin(() => {
     Legend,
     Filler,
     TimeScale,
-  );
-});
+  )
+})

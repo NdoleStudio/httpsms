@@ -1,28 +1,28 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia'
 
-export type NotificationType = "error" | "success" | "info";
+export type NotificationType = 'error' | 'success' | 'info'
 
 export interface Notification {
-  message: string;
-  timeout: number;
-  active: boolean;
-  type: NotificationType;
+  message: string
+  timeout: number
+  active: boolean
+  type: NotificationType
 }
 
 export interface NotificationRequest {
-  message: string;
-  type: NotificationType;
+  message: string
+  type: NotificationType
 }
 
-const DEFAULT_TIMEOUT = 3000;
+const DEFAULT_TIMEOUT = 3000
 
-export const useNotificationsStore = defineStore("notifications", () => {
+export const useNotificationsStore = defineStore('notifications', () => {
   const notification = ref<Notification>({
     active: false,
-    message: "",
-    type: "success",
+    message: '',
+    type: 'success',
     timeout: DEFAULT_TIMEOUT,
-  });
+  })
 
   function addNotification(request: NotificationRequest) {
     notification.value = {
@@ -30,16 +30,16 @@ export const useNotificationsStore = defineStore("notifications", () => {
       message: request.message,
       type: request.type,
       timeout: Math.floor(Math.random() * 100) + DEFAULT_TIMEOUT,
-    };
+    }
   }
 
   function disableNotification() {
-    notification.value.active = false;
+    notification.value.active = false
   }
 
   return {
     notification,
     addNotification,
     disableNotification,
-  };
-});
+  }
+})

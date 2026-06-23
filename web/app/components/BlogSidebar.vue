@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { mdiBookOpenVariant } from "@mdi/js";
+import { mdiBookOpenVariant } from '@mdi/js'
 
-const appStore = useAppStore();
+const appStore = useAppStore()
 </script>
 
 <template>

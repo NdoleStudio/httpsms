@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
-import { mdiCheck, mdiInformation } from "@mdi/js";
+import { useDisplay } from 'vuetify'
+import { mdiCheck, mdiInformation } from '@mdi/js'
 
-const { lgAndUp } = useDisplay();
-const notificationsStore = useNotificationsStore();
+const { lgAndUp } = useDisplay()
+const notificationsStore = useNotificationsStore()
 
 const notificationActive = computed({
   get: () => notificationsStore.notification.active,
   set: () => notificationsStore.disableNotification(),
-});
+})
 </script>
 
 <template>
   <v-snackbar
-    variant="tonal"
     v-model="notificationActive"
+    variant="tonal"
     :color="notificationsStore.notification.type"
     :timeout="notificationsStore.notification.timeout"
   >

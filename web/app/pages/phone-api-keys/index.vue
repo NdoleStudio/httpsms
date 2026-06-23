@@ -1,222 +1,228 @@
 <script setup lang="ts">
-import { mdiArrowLeft, mdiPlus, mdiDelete, mdiEye } from "@mdi/js";
-import QRCode from "qrcode";
-import Pusher from "pusher-js";
-import type { Channel } from "pusher-js";
-import { ErrorMessages } from "~/utils/errors";
-import type { EntitiesPhoneAPIKey } from "~~/shared/types/api";
+import { mdiArrowLeft, mdiPlus, mdiDelete, mdiEye } from '@mdi/js'
+import QRCode from 'qrcode'
+import Pusher from 'pusher-js'
+import type { Channel } from 'pusher-js'
+import { ErrorMessages } from '~/utils/errors'
+import { toApiError } from '~/utils/api-error'
+import type { EntitiesPhoneAPIKey } from '~~/shared/types/api'
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Phone API Keys - httpSMS",
-});
+  title: 'Phone API Keys - httpSMS',
+})
 
-const config = useRuntimeConfig();
-const { mdAndDown, lgAndUp } = useDisplay();
-const authStore = useAuthStore();
-const appStore = useAppStore();
-const phonesStore = usePhonesStore();
-const notificationsStore = useNotificationsStore();
-const { formatTimestamp, formatPhoneNumber } = useFilters();
-const { useApi } = useApiComposable();
+const config = useRuntimeConfig()
+const { mdAndDown, lgAndUp } = useDisplay()
+const authStore = useAuthStore()
+const appStore = useAppStore()
+const phonesStore = usePhonesStore()
+const notificationsStore = useNotificationsStore()
+const { formatTimestamp, formatPhoneNumber } = useFilters()
+const { useApi } = useApiComposable()
 
-const loading = ref(true);
-const phoneApiKeys = ref<EntitiesPhoneAPIKey[]>([]);
-const errorMessages = ref(new ErrorMessages());
+const loading = ref(true)
+const phoneApiKeys = ref<EntitiesPhoneAPIKey[]>([])
+const errorMessages = ref(new ErrorMessages())
 
-const showCreateApiKeyDialog = ref(false);
-const formPhoneApiKeyName = ref("");
+const showCreateApiKeyDialog = ref(false)
+const formPhoneApiKeyName = ref('')
 
-const showPhoneApiKeyQrCode = ref(false);
-const deleteApiKeyDialog = ref(false);
-const removePhoneFromApiKeyDialog = ref(false);
-const activePhoneApiKey = ref<EntitiesPhoneAPIKey | null>(null);
-const activePhoneNumber = ref("");
+const showPhoneApiKeyQrCode = ref(false)
+const deleteApiKeyDialog = ref(false)
+const removePhoneFromApiKeyDialog = ref(false)
+const activePhoneApiKey = ref<EntitiesPhoneAPIKey | null>(null)
+const activePhoneNumber = ref('')
 
-const qrCodeCanvas = ref<HTMLCanvasElement | null>(null);
-let webhookChannel: Channel | null = null;
+const qrCodeCanvas = ref<HTMLCanvasElement | null>(null)
+let webhookChannel: Channel | null = null
 
-function parseErrors(error: any): ErrorMessages {
-  const bag = new ErrorMessages();
-  const data = error?.data?.data;
-  if (data && typeof data === "object") {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]));
+function parseErrors(error: unknown): ErrorMessages {
+  const bag = new ErrorMessages()
+  const data = toApiError(error).data?.data
+  if (data && typeof data === 'object') {
+    Object.keys(data).forEach((key) => bag.addMany(key, data[key]))
   }
-  return bag;
+  return bag
 }
 
 async function loadPhoneApiKeys() {
-  loading.value = true;
+  loading.value = true
   try {
-    const api = useApi();
+    const api = useApi()
     const response = await api<{ data: EntitiesPhoneAPIKey[] }>(
-      "/v1/phone-api-keys",
+      '/v1/phone-api-keys',
       { query: { limit: 100 } },
-    );
-    phoneApiKeys.value = response.data ?? [];
+    )
+    phoneApiKeys.value = response.data ?? []
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to load Phone API Keys",
-      type: "error",
-    });
+      message: 'Failed to load Phone API Keys',
+      type: 'error',
+    })
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function createPhoneApiKey() {
-  errorMessages.value = new ErrorMessages();
-  loading.value = true;
+  errorMessages.value = new ErrorMessages()
+  loading.value = true
   try {
-    const api = useApi();
-    await api("/v1/phone-api-keys", {
-      method: "POST",
+    const api = useApi()
+    await api('/v1/phone-api-keys', {
+      method: 'POST',
       body: { name: formPhoneApiKeyName.value },
-    });
+    })
     notificationsStore.addNotification({
-      message: "Phone API Key created successfully",
-      type: "success",
-    });
-    formPhoneApiKeyName.value = "";
-    showCreateApiKeyDialog.value = false;
-    await loadPhoneApiKeys();
-  } catch (error: any) {
-    errorMessages.value = parseErrors(error);
+      message: 'Phone API Key created successfully',
+      type: 'success',
+    })
+    formPhoneApiKeyName.value = ''
+    showCreateApiKeyDialog.value = false
+    await loadPhoneApiKeys()
+  } catch (error: unknown) {
+    errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        message: "Failed to create Phone API Key",
-        type: "error",
-      });
+        message: 'Failed to create Phone API Key',
+        type: 'error',
+      })
     }
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 function generateQrCode(text: string) {
-  const canvas = qrCodeCanvas.value;
+  const canvas = qrCodeCanvas.value
   if (!canvas) {
-    return;
+    return
   }
-  QRCode.toCanvas(canvas, text, { errorCorrectionLevel: "H" }, (err: any) => {
-    if (err) {
-      notificationsStore.addNotification({
-        message: "Failed to generate phone API key QR code",
-        type: "error",
-      });
-    }
-  });
+  QRCode.toCanvas(
+    canvas,
+    text,
+    { errorCorrectionLevel: 'H' },
+    (err: Error | null | undefined) => {
+      if (err) {
+        notificationsStore.addNotification({
+          message: 'Failed to generate phone API key QR code',
+          type: 'error',
+        })
+      }
+    },
+  )
 }
 
 function showPhoneApiKey(apiKey: EntitiesPhoneAPIKey) {
-  activePhoneApiKey.value = apiKey;
-  showPhoneApiKeyQrCode.value = true;
+  activePhoneApiKey.value = apiKey
+  showPhoneApiKeyQrCode.value = true
   nextTick(() => {
-    generateQrCode(apiKey.api_key);
-  });
+    generateQrCode(apiKey.api_key)
+  })
 }
 
 function showDeletePhoneApiKeyDialog(apiKey: EntitiesPhoneAPIKey) {
-  activePhoneApiKey.value = apiKey;
-  deleteApiKeyDialog.value = true;
+  activePhoneApiKey.value = apiKey
+  deleteApiKeyDialog.value = true
 }
 
 function showRemovePhoneFromApiKeyDialog(
   apiKey: EntitiesPhoneAPIKey,
   phoneNumber: string,
 ) {
-  activePhoneApiKey.value = apiKey;
-  activePhoneNumber.value = phoneNumber;
-  removePhoneFromApiKeyDialog.value = true;
+  activePhoneApiKey.value = apiKey
+  activePhoneNumber.value = phoneNumber
+  removePhoneFromApiKeyDialog.value = true
 }
 
 async function deleteApiKey() {
   if (!activePhoneApiKey.value) {
-    return;
+    return
   }
-  loading.value = true;
+  loading.value = true
   try {
-    const api = useApi();
+    const api = useApi()
     await api(`/v1/phone-api-keys/${activePhoneApiKey.value.id}`, {
-      method: "DELETE",
-    });
+      method: 'DELETE',
+    })
     notificationsStore.addNotification({
-      message: "The phone API key has been deleted successfully",
-      type: "success",
-    });
-    deleteApiKeyDialog.value = false;
-    await loadPhoneApiKeys();
+      message: 'The phone API key has been deleted successfully',
+      type: 'success',
+    })
+    deleteApiKeyDialog.value = false
+    await loadPhoneApiKeys()
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to delete Phone API Key",
-      type: "error",
-    });
-    loading.value = false;
+      message: 'Failed to delete Phone API Key',
+      type: 'error',
+    })
+    loading.value = false
   }
 }
 
 async function removePhoneFromPhoneKey() {
   if (!activePhoneApiKey.value) {
-    return;
+    return
   }
   const phoneId = phonesStore.phones.find(
     (phone) => phone.phone_number === activePhoneNumber.value,
-  )?.id;
+  )?.id
   if (!phoneId) {
     notificationsStore.addNotification({
-      message: "Could not find the phone to remove from the API key",
-      type: "error",
-    });
-    return;
+      message: 'Could not find the phone to remove from the API key',
+      type: 'error',
+    })
+    return
   }
-  loading.value = true;
+  loading.value = true
   try {
-    const api = useApi();
+    const api = useApi()
     await api(
       `/v1/phone-api-keys/${activePhoneApiKey.value.id}/phones/${phoneId}`,
-      { method: "DELETE" },
-    );
+      { method: 'DELETE' },
+    )
     notificationsStore.addNotification({
-      message: "The phone has been removed from the phone API key successfully",
-      type: "success",
-    });
-    removePhoneFromApiKeyDialog.value = false;
-    await loadPhoneApiKeys();
+      message: 'The phone has been removed from the phone API key successfully',
+      type: 'success',
+    })
+    removePhoneFromApiKeyDialog.value = false
+    await loadPhoneApiKeys()
   } catch {
     notificationsStore.addNotification({
-      message: "Failed to remove the phone from the Phone API Key",
-      type: "error",
-    });
-    loading.value = false;
+      message: 'Failed to remove the phone from the Phone API Key',
+      type: 'error',
+    })
+    loading.value = false
   }
 }
 
 onMounted(async () => {
-  await authStore.loadUser();
-  await phonesStore.loadPhones();
-  await loadPhoneApiKeys();
+  await authStore.loadUser()
+  await phonesStore.loadPhones()
+  await loadPhoneApiKeys()
 
-  const pusherKey = config.public.pusherKey as string;
-  const pusherCluster = config.public.pusherCluster as string;
+  const pusherKey = config.public.pusherKey as string
+  const pusherCluster = config.public.pusherCluster as string
   if (pusherKey && authStore.user?.id) {
-    const pusher = new Pusher(pusherKey, { cluster: pusherCluster });
-    webhookChannel = pusher.subscribe(authStore.user.id);
-    webhookChannel.bind("phone.updated", () => {
+    const pusher = new Pusher(pusherKey, { cluster: pusherCluster })
+    webhookChannel = pusher.subscribe(authStore.user.id)
+    webhookChannel.bind('phone.updated', () => {
       if (!loading.value) {
-        loadPhoneApiKeys();
+        loadPhoneApiKeys()
       }
-    });
+    })
   }
-});
+})
 
 onBeforeUnmount(() => {
   if (webhookChannel) {
-    webhookChannel.unsubscribe();
+    webhookChannel.unsubscribe()
   }
-});
+})
 </script>
 
 <template>
@@ -381,7 +387,7 @@ onBeforeUnmount(() => {
             :loading="loading"
             @click="createPhoneApiKey"
           >
-            Create<span class="mx-1" v-if="lgAndUp">Phone API</span>Key
+            Create<span v-if="lgAndUp" class="mx-1">Phone API</span>Key
           </VBtn>
           <VSpacer />
           <VBtn

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiTwitter, mdiGithub } from "@mdi/js";
+import { mdiTwitter, mdiGithub } from '@mdi/js'
 </script>
 
 <template>

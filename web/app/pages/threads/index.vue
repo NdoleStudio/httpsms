@@ -1,22 +1,22 @@
 <script setup lang="ts">
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Threads - httpSMS",
-});
+  title: 'Threads - httpSMS',
+})
 
-const { lgAndUp } = useDisplay();
-const authStore = useAuthStore();
-const phonesStore = usePhonesStore();
-const threadsStore = useThreadsStore();
+const { lgAndUp } = useDisplay()
+const authStore = useAuthStore()
+const phonesStore = usePhonesStore()
+const threadsStore = useThreadsStore()
 
 onMounted(async () => {
-  await authStore.loadUser();
-  await phonesStore.loadPhones();
-  await threadsStore.loadThreads();
-});
+  await authStore.loadUser()
+  await phonesStore.loadPhones()
+  await threadsStore.loadThreads()
+})
 </script>
 
 <template>

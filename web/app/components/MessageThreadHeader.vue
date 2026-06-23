@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
-import { getAuth, signOut } from "firebase/auth";
+import { useDisplay } from 'vuetify'
+import { getAuth, signOut } from 'firebase/auth'
 import {
   mdiPlus,
   mdiAccountCog,
@@ -15,67 +15,67 @@ import {
   mdiMagnify,
   mdiCommentTextMultipleOutline,
   mdiCircle,
-} from "@mdi/js";
-import { formatPhoneNumber, phoneCountry, humanizeTime } from "~/utils/filters";
-import type { EntitiesPhone } from "~~/shared/types/api";
+} from '@mdi/js'
+import { formatPhoneNumber, phoneCountry, humanizeTime } from '~/utils/filters'
+import type { EntitiesPhone } from '~~/shared/types/api'
 
-const router = useRouter();
-const route = useRoute();
-const { mdAndDown, mdAndUp, lgAndUp } = useDisplay();
-const authStore = useAuthStore();
-const phonesStore = usePhonesStore();
-const threadsStore = useThreadsStore();
-const appStore = useAppStore();
-const notificationsStore = useNotificationsStore();
+const router = useRouter()
+const route = useRoute()
+const { mdAndDown, lgAndUp } = useDisplay()
+const authStore = useAuthStore()
+const phonesStore = usePhonesStore()
+const threadsStore = useThreadsStore()
+const appStore = useAppStore()
+const notificationsStore = useNotificationsStore()
 
-const selectedMenuItem = ref(-1);
+const selectedMenuItem = ref(-1)
 
 interface SelectItem {
-  title: string;
-  value: string;
+  title: string
+  value: string
 }
 
 const owners = computed<SelectItem[]>(() => {
   return phonesStore.phones.map((phone: EntitiesPhone) => ({
     title: formatPhoneNumber(phone.phone_number),
     value: phone.phone_number,
-  }));
-});
+  }))
+})
 
 async function onOwnerChanged(owner: string) {
-  await authStore.updateUser({ owner });
-  if (route.name !== "threads") {
-    threadsStore.setThreadId(null);
-    await router.push({ name: "threads" });
-    return;
+  await authStore.updateUser({ owner })
+  if (route.name !== 'threads') {
+    threadsStore.setThreadId(null)
+    await router.push({ name: 'threads' })
+    return
   }
-  await threadsStore.loadThreads();
+  await threadsStore.loadThreads()
 }
 
 async function toggleArchive() {
-  threadsStore.toggleArchive();
+  threadsStore.toggleArchive()
   setTimeout(() => {
-    selectedMenuItem.value = -1;
-  }, 1000);
-  if (route.name !== "threads") {
-    threadsStore.setThreadId(null);
-    await router.push({ name: "threads" });
-    return;
+    selectedMenuItem.value = -1
+  }, 1000)
+  if (route.name !== 'threads') {
+    threadsStore.setThreadId(null)
+    await router.push({ name: 'threads' })
+    return
   }
-  await threadsStore.loadThreads();
+  await threadsStore.loadThreads()
 }
 
 async function logout() {
-  const auth = getAuth();
-  await signOut(auth);
-  authStore.resetState();
-  phonesStore.resetState();
-  threadsStore.resetState();
+  const auth = getAuth()
+  await signOut(auth)
+  authStore.resetState()
+  phonesStore.resetState()
+  threadsStore.resetState()
   notificationsStore.addNotification({
-    type: "info",
-    message: "You have successfully logged out",
-  });
-  router.push({ name: "index" });
+    type: 'info',
+    message: 'You have successfully logged out',
+  })
+  router.push({ name: 'index' })
 }
 </script>
 
@@ -158,7 +158,7 @@ async function logout() {
             <v-icon v-else :icon="mdiPackageUp" />
           </template>
           <v-list-item-title>
-            {{ threadsStore.archivedThreads ? "Unarchived" : "Archived" }}
+            {{ threadsStore.archivedThreads ? 'Unarchived' : 'Archived' }}
           </v-list-item-title>
         </v-list-item>
         <v-list-item v-if="phonesStore.owner" :to="{ name: 'messages' }">

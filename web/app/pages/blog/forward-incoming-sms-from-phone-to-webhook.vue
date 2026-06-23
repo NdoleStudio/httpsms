@@ -1,40 +1,40 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+const { mdAndUp } = useDisplay()
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
   title:
-    "How to forward a text message (SMS) from an android phone into your webhook - httpSMS",
+    'How to forward a text message (SMS) from an android phone into your webhook - httpSMS',
   meta: [
     {
-      property: "og:title",
+      property: 'og:title',
       content:
-        "How to forward a text message (SMS) from an android phone into your webhook",
+        'How to forward a text message (SMS) from an android phone into your webhook',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "You can now program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like Zapier and IFTTT.",
+        'You can now program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like Zapier and IFTTT.',
     },
     {
-      property: "og:image",
+      property: 'og:image',
       content:
-        "https://httpsms.com/img/blog/forward-incoming-sms-from-phone-to-webhook/header.png",
+        'https://httpsms.com/img/blog/forward-incoming-sms-from-phone-to-webhook/header.png',
     },
     {
-      name: "twitter:card",
-      content: "summary_large_image",
+      name: 'twitter:card',
+      content: 'summary_large_image',
     },
     {
-      property: "og:url",
+      property: 'og:url',
       content:
-        "https://httpsms.com/blog/forward-incoming-sms-from-phone-to-webhook/",
+        'https://httpsms.com/blog/forward-incoming-sms-from-phone-to-webhook/',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -55,7 +55,7 @@ useHead({
           How to forward a text message (SMS) from an android phone into your
           webhook
         </h1>
-        <BlogInfo date="April 08, 2023" readTime="5 min read" />
+        <BlogInfo date="April 08, 2023" read-time="5 min read" />
 
         <p class="text-body-large mt-2">
           You can now program your android phone to forward messages received on

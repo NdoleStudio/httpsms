@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+import { mdiCommentTextMultipleOutline } from '@mdi/js'
 
-import { mdiCommentTextMultipleOutline } from "@mdi/js";
+const { mdAndUp } = useDisplay()
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
-  title: "Send bulk SMS messages from a CSV file with no code  - httpSMS",
+  title: 'Send bulk SMS messages from a CSV file with no code  - httpSMS',
   meta: [
     {
-      property: "og:title",
-      content: "Send bulk SMS messages from a CSV file with no code",
+      property: 'og:title',
+      content: 'Send bulk SMS messages from a CSV file with no code',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Send personalized SMS messages from your CSV file instantly using your Android phone as the SMS gateway.",
+        'Send personalized SMS messages from your CSV file instantly using your Android phone as the SMS gateway.',
     },
     {
-      name: "twitter:card",
-      content: "summary_large_image",
+      name: 'twitter:card',
+      content: 'summary_large_image',
     },
     {
-      property: "og:url",
+      property: 'og:url',
       content:
-        "https://httpsms.com/blog/send-bulk-sms-from-csv-file-with-no-code/",
+        'https://httpsms.com/blog/send-bulk-sms-from-csv-file-with-no-code/',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -43,7 +43,7 @@ useHead({
         >
           Send multiple SMS messages from a CSV file with no code
         </h1>
-        <BlogInfo date="October 29, 2023" readTime="7 min read" />
+        <BlogInfo date="October 29, 2023" read-time="7 min read" />
 
         <p class="text-body-large mt-2">
           Send personalized SMS messages to your users in bulk using your

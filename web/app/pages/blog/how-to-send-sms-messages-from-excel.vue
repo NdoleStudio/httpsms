@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+import { mdiCommentTextMultipleOutline } from '@mdi/js'
 
-import { mdiCommentTextMultipleOutline } from "@mdi/js";
+const { mdAndUp } = useDisplay()
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
   title:
-    "How to send SMS messages to multiple phone numbers from Excel  - httpSMS",
+    'How to send SMS messages to multiple phone numbers from Excel  - httpSMS',
   meta: [
     {
-      property: "og:title",
-      content: "How to send SMS messages to multiple phone numbers from Excel",
+      property: 'og:title',
+      content: 'How to send SMS messages to multiple phone numbers from Excel',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Send personalized SMS messages to multiple phone numbers for less than $0.002 per SMS message using your Android phone as the SMS gateway.",
+        'Send personalized SMS messages to multiple phone numbers for less than $0.002 per SMS message using your Android phone as the SMS gateway.',
     },
     {
-      name: "twitter:card",
-      content: "summary_large_image",
+      name: 'twitter:card',
+      content: 'summary_large_image',
     },
     {
-      property: "og:url",
-      content: "https://httpsms.com/blog/how-to-send-sms-messages-from-excel/",
+      property: 'og:url',
+      content: 'https://httpsms.com/blog/how-to-send-sms-messages-from-excel/',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -43,7 +43,7 @@ useHead({
         >
           How to send SMS messages to multiple phone numbers from Excel
         </h1>
-        <BlogInfo date="October 29, 2023" readTime="5 min read" />
+        <BlogInfo date="October 29, 2023" read-time="5 min read" />
 
         <p class="text-body-large mt-2">
           Send personalized SMS messages to multiple phone numbers for less than

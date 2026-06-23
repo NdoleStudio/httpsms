@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { mdAndUp } = useDisplay();
+const { mdAndUp } = useDisplay()
 
-definePageMeta({ layout: "website" });
+definePageMeta({ layout: 'website' })
 
 useHead({
-  title: "Send an SMS from your Android phone with Python - httpSMS",
+  title: 'Send an SMS from your Android phone with Python - httpSMS',
   meta: [
     {
-      property: "og:title",
-      content: "Send an SMS from your Android phone with Python",
+      property: 'og:title',
+      content: 'Send an SMS from your Android phone with Python',
     },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.",
+        'Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.',
     },
     {
-      property: "og:image",
+      property: 'og:image',
       content:
-        "https://httpsms.com/img/blog/send-sms-from-android-phone-with-python/header.png",
+        'https://httpsms.com/img/blog/send-sms-from-android-phone-with-python/header.png',
     },
     {
-      name: "twitter:card",
-      content: "summary_large_image",
+      name: 'twitter:card',
+      content: 'summary_large_image',
     },
     {
-      property: "og:url",
+      property: 'og:url',
       content:
-        "https://httpsms.com/blog/send-sms-from-android-phone-with-python/",
+        'https://httpsms.com/blog/send-sms-from-android-phone-with-python/',
     },
   ],
-});
+})
 </script>
 
 <template>
@@ -52,7 +52,7 @@ useHead({
         >
           Send an SMS from your Android phone with Python
         </h1>
-        <BlogInfo date="June 03, 2023" readTime="6 min read" />
+        <BlogInfo date="June 03, 2023" read-time="6 min read" />
 
         <p class="text-body-large mt-2">
           In an era dominated by social media, instant messaging apps, and

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 
-const { lgAndUp, mdAndDown } = useDisplay();
+const { lgAndUp, mdAndDown } = useDisplay()
 </script>
 
 <template>

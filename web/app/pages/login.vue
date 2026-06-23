@@ -1,15 +1,15 @@
 <script setup lang="ts">
 definePageMeta({
-  middleware: ["guest"],
-  layout: "blank",
-});
+  middleware: ['guest'],
+  layout: 'blank',
+})
 
 useHead({
-  title: "Login To Your Account - httpSMS",
-});
+  title: 'Login To Your Account - httpSMS',
+})
 
-const route = useRoute();
-const to = computed(() => (route.query.to as string) || "/threads");
+const route = useRoute()
+const to = computed(() => (route.query.to as string) || '/threads')
 </script>
 
 <template>

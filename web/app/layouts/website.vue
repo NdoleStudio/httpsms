@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
+import { useDisplay } from 'vuetify'
 import {
   mdiGithub,
   mdiCircle,
@@ -14,25 +14,25 @@ import {
   mdiScaleBalance,
   mdiEmailOutline,
   mdiBookOpenVariant,
-} from "@mdi/js";
+} from '@mdi/js'
 
-const router = useRouter();
-const route = useRoute();
-const { lgAndUp, mdAndUp } = useDisplay();
-const authStore = useAuthStore();
-const appStore = useAppStore();
+const router = useRouter()
+const route = useRoute()
+const { lgAndUp, mdAndUp } = useDisplay()
+const authStore = useAuthStore()
+const appStore = useAppStore()
 
 function goToPricing() {
-  if (route.name === "index") {
-    document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+  if (route.name === 'index') {
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
   } else {
-    router.push("/").then(() => {
+    router.push('/').then(() => {
       setTimeout(() => {
         document
-          .getElementById("pricing")
-          ?.scrollIntoView({ behavior: "smooth" });
-      }, 300);
-    });
+          .getElementById('pricing')
+          ?.scrollIntoView({ behavior: 'smooth' })
+      }, 300)
+    })
   }
 }
 </script>
@@ -115,7 +115,7 @@ function goToPricing() {
       </v-container>
     </v-app-bar>
     <v-main>
-      <Toast />
+      <AppToast />
       <slot />
     </v-main>
     <v-footer>

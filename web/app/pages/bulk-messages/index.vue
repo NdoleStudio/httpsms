@@ -1,105 +1,111 @@
 <script setup lang="ts">
-import { mdiArrowLeft, mdiMicrosoftExcel, mdiSendCheck } from "@mdi/js";
-import { ErrorMessages } from "~/utils/errors";
-import capitalize from "~/utils/capitalize";
+import { mdiArrowLeft, mdiMicrosoftExcel, mdiSendCheck } from '@mdi/js'
+import { ErrorMessages } from '~/utils/errors'
+import { toApiError } from '~/utils/api-error'
+import type { BulkMessageOrder } from '~~/shared/types/bulk-message'
+import capitalize from '~/utils/capitalize'
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Send Bulk Messages - httpSMS",
-});
+  title: 'Send Bulk Messages - httpSMS',
+})
 
-const router = useRouter();
-const { mdAndUp, mdAndDown } = useDisplay();
-const authStore = useAuthStore();
-const notificationsStore = useNotificationsStore();
-const { formatTimestamp } = useFilters();
-const { useApi } = useApiComposable();
+const router = useRouter()
+const { mdAndUp, mdAndDown } = useDisplay()
+const authStore = useAuthStore()
+const notificationsStore = useNotificationsStore()
+const { formatTimestamp } = useFilters()
+const { useApi } = useApiComposable()
 
-const formFile = ref<File | null>(null);
-const loading = ref(true);
-const loadingHistory = ref(true);
-const errorTitle = ref("");
-const errorMessages = ref(new ErrorMessages());
-const bulkOrders = ref<any[]>([]);
+const formFile = ref<File | null>(null)
+const loading = ref(true)
+const loadingHistory = ref(true)
+const errorTitle = ref('')
+const errorMessages = ref(new ErrorMessages())
+const bulkOrders = ref<BulkMessageOrder[]>([])
 
-function parseErrors(error: any): ErrorMessages {
-  const bag = new ErrorMessages();
-  const data = error?.data?.data;
-  if (data && typeof data === "object") {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]));
+function parseErrors(error: unknown): ErrorMessages {
+  const bag = new ErrorMessages()
+  const data = toApiError(error).data?.data
+  if (data && typeof data === 'object') {
+    Object.keys(data).forEach((key) => bag.addMany(key, data[key]))
   }
-  return bag;
+  return bag
 }
 
 function cleanName(requestId: string): string {
-  if (requestId.startsWith("bulk-csv-"))
-    return requestId.replace(/^bulk-csv-/, "") + ".csv";
-  if (requestId.startsWith("bulk-xls-"))
-    return requestId.replace(/^bulk-xls-/, "") + ".xlsx";
-  const newFormatMatch = requestId.match(/^bulk-[0-9A-Za-z]+-(.+)$/);
-  if (newFormatMatch) return newFormatMatch[1];
-  return requestId.replace(/^bulk-/, "");
+  if (requestId.startsWith('bulk-csv-'))
+    return requestId.replace(/^bulk-csv-/, '') + '.csv'
+  if (requestId.startsWith('bulk-xls-'))
+    return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
+  const newFormatMatch = requestId.match(/^bulk-[0-9A-Za-z]+-(.+)$/)
+  if (newFormatMatch) return newFormatMatch[1]
+  return requestId.replace(/^bulk-/, '')
 }
 
 async function fetchBulkOrders() {
-  loadingHistory.value = true;
+  loadingHistory.value = true
   try {
-    const api = useApi();
-    const response = await api<{ data: any[] }>("/v1/bulk-messages", {
-      method: "GET",
-    });
-    bulkOrders.value = response.data ?? [];
+    const api = useApi()
+    const response = await api<{ data: BulkMessageOrder[] }>(
+      '/v1/bulk-messages',
+      {
+        method: 'GET',
+      },
+    )
+    bulkOrders.value = response.data ?? []
   } catch {
     notificationsStore.addNotification({
-      message: "Error while fetching bulk messages history",
-      type: "error",
-    });
+      message: 'Error while fetching bulk messages history',
+      type: 'error',
+    })
   } finally {
-    loadingHistory.value = false;
+    loadingHistory.value = false
   }
 }
 
 async function sendBulkMessages() {
-  loading.value = true;
-  errorMessages.value = new ErrorMessages();
-  errorTitle.value = "";
+  loading.value = true
+  errorMessages.value = new ErrorMessages()
+  errorTitle.value = ''
 
   try {
-    const api = useApi();
-    const formData = new FormData();
-    if (formFile.value) formData.append("document", formFile.value);
-    const response = await api<{ message?: string }>("/v1/bulk-messages", {
-      method: "POST",
+    const api = useApi()
+    const formData = new FormData()
+    if (formFile.value) formData.append('document', formFile.value)
+    const response = await api<{ message?: string }>('/v1/bulk-messages', {
+      method: 'POST',
       body: formData,
-    });
+    })
     notificationsStore.addNotification({
-      message: response?.message ?? "Bulk messages sent successfully",
-      type: "success",
-    });
-    loading.value = false;
-    formFile.value = null;
-    fetchBulkOrders();
-  } catch (error: any) {
+      message: response?.message ?? 'Bulk messages sent successfully',
+      type: 'success',
+    })
+    loading.value = false
+    formFile.value = null
+    fetchBulkOrders()
+  } catch (error: unknown) {
     errorTitle.value = capitalize(
-      error?.data?.message ?? "Error while sending bulk messages",
-    );
-    errorMessages.value = parseErrors(error);
+      toApiError(error).data?.message ?? 'Error while sending bulk messages',
+    )
+    errorMessages.value = parseErrors(error)
     notificationsStore.addNotification({
-      message: error?.data?.message ?? "Errors while sending bulk messages",
-      type: "error",
-    });
-    loading.value = false;
+      message:
+        toApiError(error).data?.message ?? 'Errors while sending bulk messages',
+      type: 'error',
+    })
+    loading.value = false
   }
 }
 
 onMounted(async () => {
-  await authStore.loadUser();
-  loading.value = false;
-  fetchBulkOrders();
-});
+  await authStore.loadUser()
+  loading.value = false
+  fetchBulkOrders()
+})
 </script>
 
 <template>
@@ -206,12 +212,12 @@ onMounted(async () => {
               individual messages on the search page.
             </p>
             <VProgressLinear
-              color="primary"
               v-if="loadingHistory"
+              color="primary"
               indeterminate
               class="mb-4"
             />
-            <VTable density="comfortable" v-else>
+            <VTable v-else density="comfortable">
               <thead>
                 <tr class="text-uppercase text-medium-emphasis">
                   <th class="text-left">Name</th>
@@ -259,6 +265,7 @@ onMounted(async () => {
 .clickable-row {
   cursor: pointer;
 }
+
 .clickable-row:hover {
   background-color: rgb(0 0 0 / 4%);
 }

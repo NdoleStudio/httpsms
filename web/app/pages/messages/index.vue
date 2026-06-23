@@ -1,103 +1,104 @@
 <script setup lang="ts">
-import { mdiArrowLeft, mdiSend, mdiCircle } from "@mdi/js";
+import { mdiArrowLeft, mdiSend, mdiCircle } from '@mdi/js'
 import {
   isValidPhoneNumber,
   getCountryCallingCode,
   type CountryCode,
-} from "libphonenumber-js";
+} from 'libphonenumber-js'
+import { toApiError } from '~/utils/api-error'
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "New Message - httpSMS",
-});
+  title: 'New Message - httpSMS',
+})
 
-const router = useRouter();
-const { mdAndDown } = useDisplay();
-const notificationsStore = useNotificationsStore();
-const phonesStore = usePhonesStore();
-const { useApi } = useApiComposable();
-const { formatPhoneNumber } = useFilters();
+const router = useRouter()
+const { mdAndDown } = useDisplay()
+const notificationsStore = useNotificationsStore()
+const phonesStore = usePhonesStore()
+const { useApi } = useApiComposable()
+const { formatPhoneNumber } = useFilters()
 
-const sending = ref(false);
-const formPhoneNumber = ref("");
-const phoneCountry = ref("US");
-const formContent = ref("");
-const formAttachments = ref("");
-const errors = ref(new Map<string, string[]>());
+const sending = ref(false)
+const formPhoneNumber = ref('')
+const phoneCountry = ref('US')
+const formContent = ref('')
+const formAttachments = ref('')
+const errors = ref(new Map<string, string[]>())
 
 function getRecipientNumber(): string {
-  const phone = formPhoneNumber.value;
+  const phone = formPhoneNumber.value
   if (isValidPhoneNumber(phone)) {
-    return phone;
+    return phone
   }
   // Short code — strip the country dial code prefix
   const dialCode = getCountryCallingCode(
     phoneCountry.value.toUpperCase() as CountryCode,
-  );
-  const prefix = `+${dialCode}`;
+  )
+  const prefix = `+${dialCode}`
   if (phone.startsWith(prefix)) {
-    return phone.slice(prefix.length);
+    return phone.slice(prefix.length)
   }
-  return phone;
+  return phone
 }
 
 async function sendMessage() {
-  errors.value = new Map();
-  sending.value = true;
+  errors.value = new Map()
+  sending.value = true
 
   try {
-    const api = useApi();
-    await api("/v1/messages/send", {
-      method: "POST",
+    const api = useApi()
+    await api('/v1/messages/send', {
+      method: 'POST',
       body: {
         to: getRecipientNumber(),
         from: phonesStore.owner,
         content: formContent.value,
-        sim: "DEFAULT",
+        sim: 'DEFAULT',
         attachments: formAttachments.value
           .trim()
-          .split(",")
-          .filter((x) => x.trim() !== "")
+          .split(',')
+          .filter((x) => x.trim() !== '')
           .map((x) => x.trim()),
       },
-    });
+    })
     notificationsStore.addNotification({
-      message: "Message Sent!",
-      type: "success",
-    });
-    await router.push("/threads");
-  } catch (err: any) {
-    const data = err?.data?.data;
+      message: 'Message Sent!',
+      type: 'success',
+    })
+    await router.push('/threads')
+  } catch (err: unknown) {
+    const data = toApiError(err).data?.data
     if (data) {
-      const newErrors = new Map<string, string[]>();
-      if (data.content) newErrors.set("content", data.content);
+      const newErrors = new Map<string, string[]>()
+      if (data.content) newErrors.set('content', data.content)
       if (data.to)
         newErrors.set(
-          "to",
+          'to',
           data.to.map((x: string) =>
-            x.replace("to field", "phone number field"),
+            x.replace('to field', 'phone number field'),
           ),
-        );
-      if (data.attachments) newErrors.set("attachments", data.attachments);
+        )
+      if (data.attachments) newErrors.set('attachments', data.attachments)
       if (data.from) {
         notificationsStore.addNotification({
           message: data.from[0],
-          type: "error",
-        });
+          type: 'error',
+        })
       }
-      errors.value = newErrors;
+      errors.value = newErrors
     }
   } finally {
-    sending.value = false;
+    sending.value = false
   }
 }
 
 onMounted(async () => {
-  await phonesStore.loadPhones();
-});
+  await phonesStore.loadPhones()
+})
 </script>
 
 <template>

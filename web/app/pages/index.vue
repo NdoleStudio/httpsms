@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import {
-  mdiGithub,
   mdiCheckCircle,
   mdiSend,
   mdiGift,
   mdiLightbulbOn60,
-  mdiForum,
   mdiCreation,
-  mdiSale,
   mdiLockOutline,
   mdiLanguagePython,
   mdiCellphoneKey,
@@ -27,37 +24,37 @@ import {
   mdiArrowRightThin,
   mdiPowershell,
   mdiLanguageGo,
-} from "@mdi/js";
+} from '@mdi/js'
 
 definePageMeta({
-  layout: "website",
-});
+  layout: 'website',
+})
 
 useHead({
-  title: "Convert your android phone into an SMS gateway - httpSMS",
-});
+  title: 'Convert your android phone into an SMS gateway - httpSMS',
+})
 
-const config = useRuntimeConfig();
-const { lgAndUp, mdAndUp, mdAndDown, md, smAndDown, xl } = useDisplay();
+const config = useRuntimeConfig()
+const { lgAndUp, mdAndUp, mdAndDown, md, smAndDown, xl } = useDisplay()
 
-const selectedTab = ref("javascript");
-const yearlyPricing = ref(false);
-const faqPanel = ref<number | undefined>(undefined);
-const pricing = ref(0);
+const selectedTab = ref('javascript')
+const yearlyPricing = ref(false)
+const faqPanel = ref<number | undefined>(undefined)
+const pricing = ref(0)
 
-const pricingLabels = ["10K", "20K", "50K", "100K", "200K"];
-const pricingLabelsFull = ["10,000", "20,000", "50,000", "100,000", "200,000"];
+const pricingLabels = ['10K', '20K', '50K', '100K', '200K']
+const pricingLabelsFull = ['10,000', '20,000', '50,000', '100,000', '200,000']
 
 const planMessages = computed(() =>
-  pricingLabels[pricing.value].replace("K", ",000"),
-);
-const planMonthlyPrice = computed(() => [20, 35, 89, 175, 350][pricing.value]);
+  pricingLabels[pricing.value].replace('K', ',000'),
+)
+const planMonthlyPrice = computed(() => [20, 35, 89, 175, 350][pricing.value])
 const planYearlyPrice = computed(
   () => [200, 350, 1068, 2100, 4200][pricing.value],
-);
+)
 const planYearlyMonthlyPrice = computed(
   () => [16.66, 29.16, 89, 175, 350][pricing.value],
-);
+)
 </script>
 
 <template>
@@ -483,9 +480,9 @@ const planYearlyMonthlyPrice = computed(
             <VCol cols="12" md="7">
               <div class="w-100 mt-n8">
                 <VTabs
+                  v-model="selectedTab"
                   color="primary"
                   bg-color="#212121"
-                  v-model="selectedTab"
                   show-arrows
                 >
                   <VTab value="javascript">

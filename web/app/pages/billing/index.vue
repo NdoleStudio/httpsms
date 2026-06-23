@@ -1,219 +1,220 @@
 <script setup lang="ts">
 import {
   mdiArrowLeft,
-  mdiCreditCard,
   mdiCallReceived,
   mdiCallMade,
   mdiCheck,
   mdiAlert,
   mdiInvoice,
   mdiDownloadOutline,
-} from "@mdi/js";
-import type { BillingUsage } from "~~/shared/types/billing";
+} from '@mdi/js'
 import type {
   RequestsUserPaymentInvoice,
   ResponsesUserSubscriptionPaymentsResponse,
-} from "~~/shared/types/api";
-import { formatBillingPeriodDateOrdinal } from "~/utils/filters";
-import { countries, getStateOptions } from "~/utils/countries";
+} from '~~/shared/types/api'
+import { formatBillingPeriodDateOrdinal } from '~/utils/filters'
+import { countries, getStateOptions } from '~/utils/countries'
+
+type SubscriptionPayment =
+  ResponsesUserSubscriptionPaymentsResponse['data'][number]
 
 definePageMeta({
-  middleware: ["auth"],
-});
+  middleware: ['auth'],
+})
 
 useHead({
-  title: "Usage & Billing - httpSMS",
-});
+  title: 'Usage & Billing - httpSMS',
+})
 
-const config = useRuntimeConfig();
-const { mdAndDown, lgAndUp } = useDisplay();
-const authStore = useAuthStore();
-const billingStore = useBillingStore();
-const notificationsStore = useNotificationsStore();
-const { formatDecimal, formatMoney, formatTimestamp } = useFilters();
+const config = useRuntimeConfig()
+const { mdAndDown, lgAndUp } = useDisplay()
+const authStore = useAuthStore()
+const billingStore = useBillingStore()
+const notificationsStore = useNotificationsStore()
+const { formatDecimal, formatTimestamp } = useFilters()
 
-const loading = ref(true);
-const loadingSubscriptionPayments = ref(false);
-const dialog = ref(false);
-const subscriptionInvoiceDialog = ref(false);
-const payments = ref<ResponsesUserSubscriptionPaymentsResponse | null>(null);
-const selectedPayment = ref<any>(null);
-const invoiceFormName = ref("");
-const invoiceFormAddress = ref("");
-const invoiceFormCity = ref("");
-const invoiceFormState = ref("");
-const invoiceFormZipCode = ref("");
-const invoiceFormCountry = ref("");
-const invoiceFormNotes = ref("");
-const errorMessages = ref(new Map<string, string>());
+const loading = ref(true)
+const loadingSubscriptionPayments = ref(false)
+const dialog = ref(false)
+const subscriptionInvoiceDialog = ref(false)
+const payments = ref<ResponsesUserSubscriptionPaymentsResponse | null>(null)
+const selectedPayment = ref<SubscriptionPayment | null>(null)
+const invoiceFormName = ref('')
+const invoiceFormAddress = ref('')
+const invoiceFormCity = ref('')
+const invoiceFormState = ref('')
+const invoiceFormZipCode = ref('')
+const invoiceFormCountry = ref('')
+const invoiceFormNotes = ref('')
+const errorMessages = ref(new Map<string, string>())
 
 type PaymentPlan = {
-  name: string;
-  id: string;
-  price: number;
-  messagesPerMonth: number;
-};
+  name: string
+  id: string
+  price: number
+  messagesPerMonth: number
+}
 
 const plans: PaymentPlan[] = [
-  { name: "Free", id: "free", messagesPerMonth: 200, price: 0 },
+  { name: 'Free', id: 'free', messagesPerMonth: 200, price: 0 },
   {
-    name: "PRO - Monthly",
-    id: "pro-monthly",
+    name: 'PRO - Monthly',
+    id: 'pro-monthly',
     messagesPerMonth: 5000,
     price: 10,
   },
   {
-    name: "PRO - Yearly",
-    id: "pro-yearly",
+    name: 'PRO - Yearly',
+    id: 'pro-yearly',
     messagesPerMonth: 5000,
     price: 100,
   },
   {
-    name: "Ultra - Monthly",
-    id: "ultra-monthly",
+    name: 'Ultra - Monthly',
+    id: 'ultra-monthly',
     messagesPerMonth: 10000,
     price: 20,
   },
   {
-    name: "Ultra - Yearly",
-    id: "ultra-yearly",
+    name: 'Ultra - Yearly',
+    id: 'ultra-yearly',
     messagesPerMonth: 10000,
     price: 200,
   },
   {
-    name: "20k - Monthly",
-    id: "20k-monthly",
+    name: '20k - Monthly',
+    id: '20k-monthly',
     messagesPerMonth: 20000,
     price: 35,
   },
   {
-    name: "20k - Yearly",
-    id: "20k-yearly",
+    name: '20k - Yearly',
+    id: '20k-yearly',
     messagesPerMonth: 20000,
     price: 350,
   },
   {
-    name: "50k - Monthly",
-    id: "50k-monthly",
+    name: '50k - Monthly',
+    id: '50k-monthly',
     messagesPerMonth: 50000,
     price: 89,
   },
   {
-    name: "100k - Monthly",
-    id: "100k-monthly",
+    name: '100k - Monthly',
+    id: '100k-monthly',
     messagesPerMonth: 100000,
     price: 175,
   },
   {
-    name: "200k - Monthly",
-    id: "200k-monthly",
+    name: '200k - Monthly',
+    id: '200k-monthly',
     messagesPerMonth: 200000,
     price: 350,
   },
   {
-    name: "PRO - Lifetime",
-    id: "pro-lifetime",
+    name: 'PRO - Lifetime',
+    id: 'pro-lifetime',
     messagesPerMonth: 10000,
     price: 1000,
   },
-];
+]
 
 const plan = computed<PaymentPlan>(() => {
   return (plans.find(
-    (x) => x.id === (authStore.user?.subscription_name || "free"),
-  ) ?? plans[0])!;
-});
+    (x) => x.id === (authStore.user?.subscription_name || 'free'),
+  ) ?? plans[0])!
+})
 
-const isOnFreePlan = computed(() => plan.value.id === "free");
-const isOnLifetimePlan = computed(() => plan.value.id === "pro-lifetime");
+const isOnFreePlan = computed(() => plan.value.id === 'free')
+const isOnLifetimePlan = computed(() => plan.value.id === 'pro-lifetime')
 const subscriptionIsCancelled = computed(
-  () => authStore.user?.subscription_status === "cancelled",
-);
+  () => authStore.user?.subscription_status === 'cancelled',
+)
 
 const invoiceStateOptions = computed(() =>
   getStateOptions(invoiceFormCountry.value),
-);
+)
 
 const totalMessages = computed(() => {
-  if (!billingStore.billingUsage) return 0;
+  if (!billingStore.billingUsage) return 0
   return (
     billingStore.billingUsage.sent_messages +
     billingStore.billingUsage.received_messages
-  );
-});
+  )
+})
 
 const checkoutURL = computed(() => {
-  const url = new URL(config.public.checkoutUrl as string);
-  const user = authStore.authUser;
+  const url = new URL(config.public.checkoutUrl as string)
+  const user = authStore.authUser
   if (user) {
-    url.searchParams.append("checkout[custom][user_id]", user.id);
-    url.searchParams.append("checkout[email]", user.email || "");
-    url.searchParams.append("checkout[name]", user.displayName || "");
+    url.searchParams.append('checkout[custom][user_id]', user.id)
+    url.searchParams.append('checkout[email]', user.email || '')
+    url.searchParams.append('checkout[name]', user.displayName || '')
   }
-  return url.toString();
-});
+  return url.toString()
+})
 
 const enterpriseCheckoutURL = computed(() => {
-  const url = new URL(config.public.enterpriseCheckoutUrl as string);
-  const user = authStore.authUser;
+  const url = new URL(config.public.enterpriseCheckoutUrl as string)
+  const user = authStore.authUser
   if (user) {
-    url.searchParams.append("checkout[custom][user_id]", user.id);
-    url.searchParams.append("checkout[email]", user.email || "");
-    url.searchParams.append("checkout[name]", user.displayName || "");
+    url.searchParams.append('checkout[custom][user_id]', user.id)
+    url.searchParams.append('checkout[email]', user.email || '')
+    url.searchParams.append('checkout[name]', user.displayName || '')
   }
-  return url.toString();
-});
+  return url.toString()
+})
 
 async function loadData() {
   await Promise.all([
     authStore.loadUser(),
     billingStore.loadBillingUsage(),
     billingStore.loadBillingUsageHistory(),
-  ]);
-  loading.value = false;
-  loadSubscriptionInvoices();
+  ])
+  loading.value = false
+  loadSubscriptionInvoices()
 }
 
 async function loadSubscriptionInvoices() {
-  if (!authStore.user?.subscription_id) return;
-  loadingSubscriptionPayments.value = true;
+  if (!authStore.user?.subscription_id) return
+  loadingSubscriptionPayments.value = true
   try {
-    payments.value = await billingStore.indexSubscriptionPayments();
+    payments.value = await billingStore.indexSubscriptionPayments()
   } finally {
-    loadingSubscriptionPayments.value = false;
+    loadingSubscriptionPayments.value = false
   }
 }
 
 async function updateDetails() {
-  loading.value = true;
+  loading.value = true
   try {
-    const link = await billingStore.getSubscriptionUpdateLink();
-    window.location.href = link;
+    const link = await billingStore.getSubscriptionUpdateLink()
+    window.location.href = link
   } catch {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function cancelPlan() {
-  loading.value = true;
+  loading.value = true
   try {
-    await billingStore.cancelSubscription();
+    await billingStore.cancelSubscription()
     notificationsStore.addNotification({
-      message: "Subscription cancelled successfully",
-      type: "success",
-    });
-    navigateTo("/");
+      message: 'Subscription cancelled successfully',
+      type: 'success',
+    })
+    navigateTo('/')
   } catch {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function generateInvoice() {
-  errorMessages.value = new Map();
-  loading.value = true;
+  errorMessages.value = new Map()
+  loading.value = true
   try {
     await billingStore.generateSubscriptionPaymentInvoice(
-      selectedPayment.value?.id || "",
+      selectedPayment.value?.id || '',
       {
         name: invoiceFormName.value,
         address: invoiceFormAddress.value,
@@ -223,25 +224,25 @@ async function generateInvoice() {
         country: invoiceFormCountry.value,
         notes: invoiceFormNotes.value,
       } as RequestsUserPaymentInvoice,
-    );
-    subscriptionInvoiceDialog.value = false;
-  } catch (error: any) {
+    )
+    subscriptionInvoiceDialog.value = false
+  } catch (error: unknown) {
     if (error instanceof Map) {
-      errorMessages.value = error;
+      errorMessages.value = error
     }
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
-function showInvoiceDialog(payment: any) {
-  selectedPayment.value = payment;
-  subscriptionInvoiceDialog.value = true;
+function showInvoiceDialog(payment: SubscriptionPayment) {
+  selectedPayment.value = payment
+  subscriptionInvoiceDialog.value = true
 }
 
 onMounted(async () => {
-  await loadData();
-});
+  await loadData()
+})
 </script>
 
 <template>
@@ -630,7 +631,7 @@ onMounted(async () => {
         <VCardSubtitle class="mt-n1">
           Create an invoice for your
           <b>{{ selectedPayment?.attributes.total_formatted }}</b> payment on
-          {{ formatTimestamp(selectedPayment?.attributes.created_at ?? "") }}
+          {{ formatTimestamp(selectedPayment?.attributes.created_at ?? '') }}
         </VCardSubtitle>
         <VCardText>
           <VContainer>

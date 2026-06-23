@@ -1,36 +1,36 @@
-import { defineStore } from "pinia";
-import type { MessageThread } from "~~/shared/types/message-thread";
-import type { Message } from "~~/shared/types/message";
+import { defineStore } from 'pinia'
+import type { MessageThread } from '~~/shared/types/message-thread'
+import type { Message } from '~~/shared/types/message'
 
-export const useThreadsStore = defineStore("threads", () => {
-  const threads = ref<MessageThread[]>([]);
-  const threadId = ref<string | null>(null);
-  const loadingThreads = ref(true);
-  const archivedThreads = ref(false);
-  const { apiFetch } = useApi();
-  const notificationsStore = useNotificationsStore();
+export const useThreadsStore = defineStore('threads', () => {
+  const threads = ref<MessageThread[]>([])
+  const threadId = ref<string | null>(null)
+  const loadingThreads = ref(true)
+  const archivedThreads = ref(false)
+  const { apiFetch } = useApi()
+  const notificationsStore = useNotificationsStore()
 
   const currentThread = computed<MessageThread | null>(() => {
-    return threads.value.find((x) => x.id === threadId.value) ?? null;
-  });
+    return threads.value.find((x) => x.id === threadId.value) ?? null
+  })
 
   const hasThread = computed(
     () => threadId.value != null && !loadingThreads.value,
-  );
+  )
 
   function hasThreadId(id: string): boolean {
-    return threads.value.find((x) => x.id === id) !== undefined;
+    return threads.value.find((x) => x.id === id) !== undefined
   }
 
   async function loadThreads() {
-    const phonesStore = usePhonesStore();
+    const phonesStore = usePhonesStore()
     if (phonesStore.owner === null && phonesStore.phones.length === 0) {
-      loadingThreads.value = false;
-      return;
+      loadingThreads.value = false
+      return
     }
 
     const response = await apiFetch<{ data: MessageThread[] }>(
-      "/v1/message-threads",
+      '/v1/message-threads',
       {
         params: {
           owner: phonesStore.owner ?? phonesStore.phones[0]?.phone_number,
@@ -38,62 +38,62 @@ export const useThreadsStore = defineStore("threads", () => {
           is_archived: archivedThreads.value,
         },
       },
-    );
+    )
 
-    phonesStore.getHeartbeat().catch(console.error);
-    threads.value = [...response.data];
-    loadingThreads.value = false;
+    phonesStore.getHeartbeat().catch(console.error)
+    threads.value = [...response.data]
+    loadingThreads.value = false
   }
 
   async function loadThreadMessages(id: string | null): Promise<Message[]> {
-    threadId.value = id;
-    const thread = currentThread.value;
-    if (!thread) throw new Error(`Cannot find thread with id ${id}`);
+    threadId.value = id
+    const thread = currentThread.value
+    if (!thread) throw new Error(`Cannot find thread with id ${id}`)
 
-    const response = await apiFetch<{ data: Message[] }>("/v1/messages", {
+    const response = await apiFetch<{ data: Message[] }>('/v1/messages', {
       params: {
         contact: thread.contact,
         owner: thread.owner,
         limit: 50,
       },
-    });
-    return response.data;
+    })
+    return response.data
   }
 
   function setThreadId(id: string | null) {
-    threadId.value = id;
+    threadId.value = id
   }
 
   function toggleArchive() {
-    archivedThreads.value = !archivedThreads.value;
+    archivedThreads.value = !archivedThreads.value
   }
 
   async function updateThread(payload: {
-    threadId: string;
-    isArchived: boolean;
+    threadId: string
+    isArchived: boolean
   }) {
     await apiFetch(`/v1/message-threads/${payload.threadId}`, {
-      method: "PUT",
+      method: 'PUT',
       body: { is_archived: payload.isArchived },
-    });
-    archivedThreads.value = payload.isArchived;
-    await loadThreads();
+    })
+    archivedThreads.value = payload.isArchived
+    await loadThreads()
   }
 
   async function deleteThread(id: string) {
-    await apiFetch(`/v1/message-threads/${id}`, { method: "DELETE" });
-    threadId.value = null;
+    await apiFetch(`/v1/message-threads/${id}`, { method: 'DELETE' })
+    threadId.value = null
     notificationsStore.addNotification({
-      message: "The message thread has been deleted successfully",
-      type: "success",
-    });
+      message: 'The message thread has been deleted successfully',
+      type: 'success',
+    })
   }
 
   function resetState() {
-    threads.value = [];
-    threadId.value = null;
-    archivedThreads.value = false;
-    loadingThreads.value = true;
+    threads.value = []
+    threadId.value = null
+    archivedThreads.value = false
+    loadingThreads.value = true
   }
 
   return {
@@ -111,5 +111,5 @@ export const useThreadsStore = defineStore("threads", () => {
     updateThread,
     deleteThread,
     resetState,
-  };
-});
+  }
+})

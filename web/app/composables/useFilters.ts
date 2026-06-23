@@ -7,8 +7,8 @@ import {
   formatBillingPeriod,
   formatBillingPeriodDateOrdinal,
   humanizeTime,
-} from "../utils/filters";
-import { capitalize } from "../utils/capitalize";
+} from '../utils/filters'
+import { capitalize } from '../utils/capitalize'
 
 export function useFilters() {
   return {
@@ -21,5 +21,5 @@ export function useFilters() {
     formatBillingPeriodDateOrdinal,
     humanizeTime,
     capitalize,
-  };
+  }
 }
