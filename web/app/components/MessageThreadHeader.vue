@@ -148,7 +148,7 @@ async function logout() {
           <v-icon :icon="mdiDotsVertical" />
         </v-btn>
       </template>
-      <v-list class="pa-0" :density="mdAndDown ? 'compact' : 'default'">
+      <v-list class="pa-0" :density="mdAndDown ? 'compact' : 'default'" prepend-gap="16">
         <v-list-item @click.prevent="toggleArchive">
           <template #prepend>
             <v-icon

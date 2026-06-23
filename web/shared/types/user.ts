@@ -9,6 +9,8 @@ export interface User {
   subscription_status: string | null;
   subscription_renews_at: string | null;
   subscription_ends_at: string | null;
+  notification_heartbeat_enabled: boolean;
   notification_message_status_enabled: boolean;
-  notification_webhooks_enabled: boolean;
+  notification_newsletter_enabled: boolean;
+  notification_webhook_enabled: boolean;
 }
