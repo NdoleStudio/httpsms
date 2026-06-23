@@ -15,6 +15,7 @@ import type {
   ResponsesUserSubscriptionPaymentsResponse,
 } from "~~/shared/types/api";
 import { formatBillingPeriodDateOrdinal } from "~/utils/filters";
+import { countries, getStateOptions } from "~/utils/countries";
 
 definePageMeta({
   middleware: ["auth"],
@@ -78,6 +79,10 @@ const isOnFreePlan = computed(() => plan.value.id === "free");
 const isOnLifetimePlan = computed(() => plan.value.id === "pro-lifetime");
 const subscriptionIsCancelled = computed(
   () => authStore.user?.subscription_status === "cancelled",
+);
+
+const invoiceStateOptions = computed(() =>
+  getStateOptions(invoiceFormCountry.value),
 );
 
 const totalMessages = computed(() => {
@@ -202,16 +207,16 @@ onMounted(async () => {
           location="bottom"
         />
       </VAppBar>
-      <VContainer class="mt-16">
+      <VContainer>
         <VRow>
           <VCol cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <!-- Current Plan -->
-            <h4 class="text-h4 mb-3 mt-3">Current Plan</h4>
+            <h4 class="text-headline-large mb-3 mt-0">Current Plan</h4>
             <VRow v-if="authStore.user">
-              <VCol md="6" xl="4">
-                <VAlert type="info" variant="tonal" prominent>
+              <VCol md="6">
+                <VAlert type="info" :icon="false" variant="tonal" prominent>
                   <div>
-                    <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
+                    <h1 class="text-title-large mt-0 mb-0 font-weight-bold text-uppercase">
                       <span v-if="isOnFreePlan">{{ plan.name }}</span>
                       <span v-else-if="subscriptionIsCancelled">
                         <span class="text-warning">{{ plan.name }}</span> → Free
@@ -220,7 +225,7 @@ onMounted(async () => {
                     </h1>
                     <p
                       v-if="!isOnFreePlan && !isOnLifetimePlan && !subscriptionIsCancelled"
-                      class="text-medium-emphasis"
+                      class="text-medium-emphasis mt-1"
                     >
                       Your next bill is for <b>${{ plan.price }}</b> on
                       <b>{{
@@ -237,11 +242,11 @@ onMounted(async () => {
                         new Date(authStore.user.subscription_ends_at!).toLocaleDateString()
                       }}</b>
                     </p>
-                    <p v-else class="text-medium-emphasis">
+                    <p v-else class="text-medium-emphasis mt-1">
                       {{ totalMessages }}/{{ plan.messagesPerMonth }} messages
                     </p>
                   </div>
-                  <div class="d-flex mb-2 mt-2">
+                  <div class="d-flex mb-1 mt-1">
                     <VBtn
                       v-if="!subscriptionIsCancelled && !isOnFreePlan && !isOnLifetimePlan"
                       color="primary"
@@ -262,6 +267,7 @@ onMounted(async () => {
                       v-if="!subscriptionIsCancelled && !isOnFreePlan && !isOnLifetimePlan"
                       v-model="dialog"
                       max-width="590"
+                      opacity="0.9"
                     >
                       <template #activator="{ props: activatorProps }">
                         <VBtn v-bind="activatorProps" color="error" variant="text">
@@ -270,7 +276,7 @@ onMounted(async () => {
                       </template>
                       <VCard>
                         <VCardText class="pt-4">
-                          <h2 class="text-h5 mb-2">
+                          <h2 class="text-headline-medium mb-2">
                             Are you sure you want to cancel your subscription?
                           </h2>
                           <p>
@@ -307,57 +313,41 @@ onMounted(async () => {
 
             <!-- Upgrade Plan (only for free users) -->
             <template v-if="isOnFreePlan">
-              <h2 class="text-h4 mt-4 mb-2">Upgrade Plan</h2>
+              <h2 class="text-headline-large mt-4 mb-2">Upgrade Plan</h2>
               <VRow>
-                <VCol cols="12" md="6" xl="4">
-                  <VCard variant="outlined" :href="checkoutURL">
+                <VCol cols="12" md="6">
+                  <VCard :href="checkoutURL" link>
                     <VCardText>
                       <VRow align="center">
-                        <VCol class="flex-grow-1">
-                          <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
-                            Pro - Monthly
+                        <VCol class="flex-grow-1 flex-shrink-1">
+                          <h1 class="text-title-large font-weight-bold text-uppercase mt-3">
+                            Pro Plan
                           </h1>
-                          <p class="text-medium-emphasis">5,000 messages monthly</p>
+                          <p class="text-medium-emphasis">
+                            Send and receive up to 20,000 messages per month
+                          </p>
                         </VCol>
-                        <VCol class="flex-shrink-1">
-                          <span class="text-h5">$10</span>/month
+                        <VCol class="flex-grow-0 flex-shrink-0">
+                          <span class="text-headline-medium">$10</span>/month
                         </VCol>
                       </VRow>
                     </VCardText>
                   </VCard>
                 </VCol>
-                <VCol cols="12" md="6" xl="4">
-                  <VCard variant="outlined" :href="checkoutURL">
+                <VCol cols="12" md="6">
+                  <VCard :href="enterpriseCheckoutURL" link>
                     <VCardText>
                       <VRow align="center">
-                        <VCol class="flex-grow-1">
-                          <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
-                            Pro - Yearly
-                            <VChip size="small" color="primary" class="mt-n1">
-                              2 months free
-                            </VChip>
+                        <VCol class="flex-grow-1 flex-shrink-1">
+                          <h1 class="text-title-large font-weight-bold text-uppercase mt-3">
+                            Enterprise Plan
                           </h1>
-                          <p class="text-medium-emphasis">5,000 messages monthly</p>
+                          <p class="text-medium-emphasis">
+                            Send and receive up to 200,000 messages per month
+                          </p>
                         </VCol>
-                        <VCol class="flex-shrink-1">
-                          <span class="text-h5">$100</span>/year
-                        </VCol>
-                      </VRow>
-                    </VCardText>
-                  </VCard>
-                </VCol>
-                <VCol cols="12" md="6" xl="4">
-                  <VCard variant="outlined" :href="enterpriseCheckoutURL">
-                    <VCardText>
-                      <VRow align="center">
-                        <VCol class="flex-grow-1">
-                          <h1 class="text-subtitle-1 font-weight-bold text-uppercase mt-3">
-                            100k - Monthly
-                          </h1>
-                          <p class="text-medium-emphasis">100,000 messages monthly</p>
-                        </VCol>
-                        <VCol class="flex-shrink-1">
-                          <span class="text-h5">$175</span>/month
+                        <VCol class="flex-grow-0 flex-shrink-0">
+                          <span class="text-headline-medium">$89</span>/month
                         </VCol>
                       </VRow>
                     </VCardText>
@@ -367,7 +357,7 @@ onMounted(async () => {
             </template>
 
             <!-- Overview -->
-            <h4 class="text-h4 mb-3 mt-8">Overview</h4>
+            <h4 class="text-headline-large mb-3 mt-8">Overview</h4>
             <p class="text-medium-emphasis">
               This is the summary of the sent messages and received messages in
               <code
@@ -383,50 +373,37 @@ onMounted(async () => {
               />.
             </p>
             <VRow v-if="billingStore.billingUsage">
-              <VCol cols="12" md="4">
+              <VCol cols="12" md="6">
                 <VAlert
                   type="info"
                   variant="tonal"
                   :icon="mdiCallMade"
                   prominent
                 >
-                  <h2 class="text-h4 font-weight-bold mt-4">
+                  <h2 class="text-headline-large my-0">
                     {{ formatDecimal(billingStore.billingUsage.sent_messages) }}
                   </h2>
                   <p class="text-medium-emphasis mt-n1">Messages Sent</p>
                 </VAlert>
               </VCol>
-              <VCol cols="12" md="4">
+              <VCol cols="12" md="6">
                 <VAlert
                   type="warning"
                   variant="tonal"
                   :icon="mdiCallReceived"
                   prominent
                 >
-                  <h2 class="text-h4 font-weight-bold mt-4">
+                  <h2 class="text-headline-large font-weight-bold my-0">
                     {{ formatDecimal(billingStore.billingUsage.received_messages) }}
                   </h2>
                   <p class="text-medium-emphasis mt-n1">Messages Received</p>
-                </VAlert>
-              </VCol>
-              <VCol cols="12" md="4">
-                <VAlert
-                  type="success"
-                  variant="tonal"
-                  :icon="mdiCreditCard"
-                  prominent
-                >
-                  <h2 class="text-h4 font-weight-bold mt-4">
-                    {{ formatMoney(billingStore.billingUsage.total_cost) }}
-                  </h2>
-                  <p class="text-medium-emphasis mt-n1">Total Cost</p>
                 </VAlert>
               </VCol>
             </VRow>
 
             <!-- Subscription Payments -->
             <template v-if="authStore.user?.subscription_id != null">
-              <h4 class="text-h4 mb-3 mt-8">Subscription Payments</h4>
+              <h4 class="text-headline-large mb-3 mt-8">Subscription Payments</h4>
               <p class="text-medium-emphasis">
                 This is a list of your last 10 subscription payments made using
                 our payment provider
@@ -492,14 +469,14 @@ onMounted(async () => {
             </template>
 
             <!-- Usage History -->
-            <h4 class="text-h4 mb-3 mt-8">Usage History</h4>
+            <h4 class="text-headline-large mb-3 mt-8">Usage History</h4>
             <p class="text-medium-emphasis">
               Summary of all the sent and received messages in the past 12
               billing periods
             </p>
-            <VTable>
+            <VTable density="comfortable">
               <thead>
-                <tr class="text-uppercase">
+                <tr class="text-uppercase text-medium-emphasis">
                   <th class="text-left">Start Date</th>
                   <th class="text-left">End Date</th>
                   <th class="text-left">
@@ -534,9 +511,10 @@ onMounted(async () => {
       v-model="subscriptionInvoiceDialog"
       persistent
       max-width="600"
+      opacity="0.9"
     >
       <VCard>
-        <VCardTitle class="text-h4">Generate Invoice</VCardTitle>
+        <VCardTitle class="text-headline-large">Generate Invoice</VCardTitle>
         <VCardSubtitle class="mt-n1">
           Create an invoice for your
           <b>{{ selectedPayment?.attributes.total_formatted }}</b> payment on
@@ -588,11 +566,25 @@ onMounted(async () => {
               </VCol>
               <VCol cols="6">
                 <VTextField
+                  v-if="invoiceStateOptions.length === 0"
                   v-model="invoiceFormState"
                   density="compact"
                   :disabled="loading"
                   :error="errorMessages.has('state')"
                   :error-messages="errorMessages.get('state')"
+                  label="State"
+                  placeholder="e.g CA"
+                  persistent-placeholder
+                  variant="outlined"
+                />
+                <VAutocomplete
+                  v-else
+                  v-model="invoiceFormState"
+                  density="compact"
+                  :disabled="loading"
+                  :error="errorMessages.has('state')"
+                  :error-messages="errorMessages.get('state')"
+                  :items="invoiceStateOptions"
                   label="State"
                   placeholder="e.g CA"
                   persistent-placeholder
@@ -615,12 +607,13 @@ onMounted(async () => {
                 />
               </VCol>
               <VCol cols="6">
-                <VTextField
+                <VAutocomplete
                   v-model="invoiceFormCountry"
                   density="compact"
                   :disabled="loading"
                   :error="errorMessages.has('country')"
                   :error-messages="errorMessages.get('country')"
+                  :items="countries"
                   label="Country"
                   placeholder="e.g United States"
                   persistent-placeholder
@@ -652,7 +645,7 @@ onMounted(async () => {
             Download Invoice
           </VBtn>
           <VSpacer />
-          <VBtn color="error" variant="text" @click="subscriptionInvoiceDialog = false">
+          <VBtn color="warning" variant="text" @click="subscriptionInvoiceDialog = false">
             Close
           </VBtn>
         </VCardActions>

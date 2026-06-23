@@ -773,7 +773,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           </VCol>
           <!-- Pro Plan -->
           <VCol cols="12" lg="4">
-            <VCard elevation="4" color="#121212">
+            <VCard elevation="4" color="#000000">
               <VCardText>
                 <h1 class="text-center text-display-medium mt-0 mb-4 text-primary">Pro</h1>
                 <p class="text-body-large text-center mt-0 text-medium-emphasis">
