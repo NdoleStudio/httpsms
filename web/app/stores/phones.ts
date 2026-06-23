@@ -36,7 +36,7 @@ export const usePhonesStore = defineStore("phones", () => {
     }
 
     if (!owner.value && phones.value.length > 0) {
-      owner.value = phones.value[0].phone_number;
+      owner.value = phones.value[0]!.phone_number;
     }
   }
 
@@ -77,10 +77,10 @@ export const usePhonesStore = defineStore("phones", () => {
 
   async function getHeartbeat(limit = 1): Promise<Heartbeat[]> {
     const response = await apiFetch<{ data: Heartbeat[] }>("/v1/heartbeats", {
-      params: { limit, owner: owner.value },
+      query: { limit, owner: owner.value },
     });
     if (response.data.length > 0) {
-      heartbeat.value = response.data[0];
+      heartbeat.value = response.data[0]!;
     } else {
       heartbeat.value = null;
     }

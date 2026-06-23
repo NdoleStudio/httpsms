@@ -98,6 +98,7 @@ function goToPricing() {
             <v-btn
               v-show="authStore.authUser !== null"
               color="primary"
+              variant="flat"
               :class="{ 'mt-5': mdAndUp, 'mt-1': !mdAndUp }"
               :size="lgAndUp ? 'large' : 'default'"
               :to="{ name: 'threads' }"

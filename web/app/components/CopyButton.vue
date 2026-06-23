@@ -40,9 +40,10 @@ async function copy() {
 <template>
   <v-btn
     :disabled="disabled"
-    :color="color"
+    :color="disabled? 'default': color"
     :size="smAndDown ? 'small' : large ? 'large' : 'default'"
     :block="block"
+    variant="flat"
     @click="copy"
   >
     <v-icon start :icon="mdiContentCopy" />
