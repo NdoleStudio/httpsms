@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { mdiArrowLeft, mdiMicrosoftExcel, mdiSendCheck } from "@mdi/js";
-import { ErrorMessages, getErrorMessages } from "~/utils/errors";
+import { ErrorMessages } from "~/utils/errors";
 import capitalize from "~/utils/capitalize";
 
 definePageMeta({
@@ -14,7 +14,8 @@ useHead({
 const router = useRouter();
 const { mdAndUp, mdAndDown } = useDisplay();
 const authStore = useAuthStore();
-const billingStore = useBillingStore();
+const notificationsStore = useNotificationsStore();
+const { formatTimestamp } = useFilters();
 const { useApi } = useApiComposable();
 
 const formFile = ref<File | null>(null);
@@ -23,6 +24,15 @@ const loadingHistory = ref(true);
 const errorTitle = ref("");
 const errorMessages = ref(new ErrorMessages());
 const bulkOrders = ref<any[]>([]);
+
+function parseErrors(error: any): ErrorMessages {
+  const bag = new ErrorMessages();
+  const data = error?.data?.data;
+  if (data && typeof data === "object") {
+    Object.keys(data).forEach((key) => bag.addMany(key, data[key]));
+  }
+  return bag;
+}
 
 function cleanName(requestId: string): string {
   if (requestId.startsWith("bulk-csv-"))
@@ -43,7 +53,10 @@ async function fetchBulkOrders() {
     });
     bulkOrders.value = response.data ?? [];
   } catch {
-    // silently fail
+    notificationsStore.addNotification({
+      message: "Error while fetching bulk messages history",
+      type: "error",
+    });
   } finally {
     loadingHistory.value = false;
   }
@@ -58,7 +71,14 @@ async function sendBulkMessages() {
     const api = useApi();
     const formData = new FormData();
     if (formFile.value) formData.append("document", formFile.value);
-    await api("/v1/bulk-messages", { method: "POST", body: formData });
+    const response = await api<{ message?: string }>("/v1/bulk-messages", {
+      method: "POST",
+      body: formData,
+    });
+    notificationsStore.addNotification({
+      message: response?.message ?? "Bulk messages sent successfully",
+      type: "success",
+    });
     loading.value = false;
     formFile.value = null;
     fetchBulkOrders();
@@ -66,7 +86,11 @@ async function sendBulkMessages() {
     errorTitle.value = capitalize(
       error?.data?.message ?? "Error while sending bulk messages",
     );
-    errorMessages.value = getErrorMessages(error);
+    errorMessages.value = parseErrors(error);
+    notificationsStore.addNotification({
+      message: error?.data?.message ?? "Errors while sending bulk messages",
+      type: "error",
+    });
     loading.value = false;
   }
 }
@@ -97,7 +121,7 @@ onMounted(async () => {
       </VAppBar>
       <VContainer>
         <VRow>
-          <VCol cols="12">
+          <VCol cols="12" md="10" offset-md="1" xxl="8" offset-xxl="2">
             <h5 class="text-headline-large mb-3 mt-3">Bulk Messages</h5>
             <p>
               Fill in our bulk SMS
@@ -142,11 +166,9 @@ onMounted(async () => {
               <VFileInput
                 v-model="formFile"
                 label="File"
-                :prepend-icon="undefined"
+                color="primary"
                 accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 :error-messages="errorMessages.get('document')"
-                persistent-placeholder
-                placeholder="Click here to upload your bulk SMS file."
                 :append-inner-icon="mdiMicrosoftExcel"
                 variant="outlined"
               />
@@ -175,7 +197,7 @@ onMounted(async () => {
           </VCol>
         </VRow>
         <VRow class="mt-8">
-          <VCol cols="12">
+          <VCol cols="12" md="10" offset-md="1" xxl="8" offset-xxl="2">
             <h4 class="text-headline-large mb-3">Bulk Message History</h4>
             <p class="text-medium-emphasis">
               Your 10 most recent bulk SMS uploads are shown below, including a
@@ -183,9 +205,9 @@ onMounted(async () => {
               individual messages on the search page.
             </p>
             <VProgressLinear v-if="loadingHistory" indeterminate class="mb-4" />
-            <VTable v-else>
+            <VTable density="comfortable" v-else>
               <thead>
-                <tr class="text-uppercase text-title-medium">
+                <tr class="text-uppercase text-medium-emphasis">
                   <th class="text-left">Name</th>
                   <th class="text-center">Created At</th>
                   <th class="text-center">Total</th>
@@ -208,7 +230,7 @@ onMounted(async () => {
                 >
                   <td class="text-left">{{ cleanName(order.request_id) }}</td>
                   <td class="text-center">
-                    {{ useFilters().timestamp(order.created_at) }}
+                    {{ formatTimestamp(order.created_at) }}
                   </td>
                   <td class="text-center">{{ order.total }}</td>
                   <td class="text-center">{{ order.pending_count }}</td>
