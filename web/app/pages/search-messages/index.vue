@@ -28,7 +28,6 @@ interface Turnstile {
       "error-callback"?: (error: string) => void;
     },
   ): string | null | undefined;
-  reset(widgetId?: string): void;
   remove(widgetId?: string): void;
 }
 
@@ -66,7 +65,6 @@ const messages = ref<EntitiesMessage[]>([]);
 const totalMessages = ref(0);
 const selectedIds = ref<string[]>([]);
 let turnstileWidgetId: string | null = null;
-let captchaPromise: Promise<string> | null = null;
 
 const page = ref(1);
 const itemsPerPage = ref(100);
@@ -127,50 +125,22 @@ const messageStatusSelectItems = [
 ];
 
 function getCaptcha(): Promise<string> {
-  if (captchaPromise) {
-    return captchaPromise;
-  }
-
-  captchaPromise = new Promise<string>((resolve, reject) => {
-    const turnstile = (window as unknown as { turnstile?: Turnstile })
-      .turnstile;
-    if (!turnstile) {
-      resolve("");
-      return;
-    }
-
-    const resetPromise = () => {
-      captchaPromise = null;
-    };
-
+  return new Promise<string>((resolve, reject) => {
+    const turnstile: Turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile!;
     turnstile.ready(() => {
-      const complete = (token: string) => {
-        resetPromise();
-        resolve(token);
-      };
-      const fail = (error: string) => {
-        resetPromise();
-        reject(error);
-      };
-
       if (turnstileWidgetId) {
-        turnstile.reset(turnstileWidgetId);
-        return;
+        turnstile.remove(turnstileWidgetId);
+        turnstileWidgetId = null;
       }
 
-      turnstileWidgetId =
-        turnstile.render("#cloudflare-turnstile", {
+      turnstileWidgetId = turnstile.render("#cloudflare-turnstile", {
           sitekey: (config.public as Record<string, string>)
             .cloudflareTurnstileSiteKey!,
           action: "search_messages",
-          callback: complete,
-          "error-callback": fail,
+          callback: (token) => resolve(token),
+          "error-callback": (error: string) => reject(error),
         }) ?? null;
     });
-  });
-
-  return captchaPromise.finally(() => {
-    captchaPromise = null;
   });
 }
 
@@ -214,7 +184,7 @@ async function fetchMessages(reset = false) {
     }
   } catch (error: any) {
     errorTitle.value = capitalize(
-      error?.data?.message ?? "Error while searching messages",
+      error?.data?.message ?? "Error while searching messages. Contact us via email"
     );
     errorMessages.value = parseErrors(error);
   } finally {
@@ -393,7 +363,7 @@ onBeforeUnmount(() => {
       <VContainer>
         <VRow>
           <VCol cols="12">
-            <h5 class="text-headline-large mb-3 mt-3">Search Messages</h5>
+            <h5 class="text-headline-large mb-3 mt-0">Search Messages</h5>
             <p>
               On this page, you can search all your messages by phone number,
               message type, and message status and even using the content of the
