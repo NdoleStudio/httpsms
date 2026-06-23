@@ -148,7 +148,7 @@ async function logout() {
           <v-icon :icon="mdiDotsVertical" />
         </v-btn>
       </template>
-      <v-list class="px-2" nav :density="mdAndDown ? 'compact' : 'default'">
+      <v-list class="pa-0" :density="mdAndDown ? 'compact' : 'default'">
         <v-list-item @click.prevent="toggleArchive">
           <template #prepend>
             <v-icon
@@ -181,7 +181,7 @@ async function logout() {
         </v-list-item>
         <v-list-item :to="{ name: 'phone-api-keys' }">
           <template #prepend><v-icon :icon="mdiCellphoneKey" /></template>
-          <v-list-item-title>Phone API Keys</v-list-item-title>
+          <v-list-item-title :class="{'pr-16': lgAndUp}">Phone API Keys</v-list-item-title>
         </v-list-item>
         <v-list-item
           v-if="phonesStore.owner"
