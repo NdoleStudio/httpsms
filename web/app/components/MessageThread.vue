@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { useDisplay } from "vuetify";
-import {
-  mdiPlus,
-  mdiDownload,
-  mdiCheckAll,
-  mdiCheck,
-  mdiAlert,
-} from "@mdi/js";
+import { mdiPlus, mdiDownload, mdiCheckAll, mdiCheck, mdiAlert } from "@mdi/js";
 import { formatPhoneNumber } from "~/utils/filters";
 import type { MessageThread } from "~~/shared/types/message-thread";
 
@@ -164,4 +158,3 @@ function onInstallApp() {
     </v-list>
   </div>
 </template>
-

@@ -28,7 +28,9 @@ function goToPricing() {
   } else {
     router.push("/").then(() => {
       setTimeout(() => {
-        document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+        document
+          .getElementById("pricing")
+          ?.scrollIntoView({ behavior: "smooth" });
       }, 300);
     });
   }
@@ -41,11 +43,14 @@ function goToPricing() {
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
-            <NuxtLink
-              to="/"
-              class="text-decoration-none d-flex"
-            >
-              <v-avatar color="#121212" class="mt-6 pa-1" rounded="0" :image="'/img/logo.svg'" :size="38" />
+            <NuxtLink to="/" class="text-decoration-none d-flex">
+              <v-avatar
+                color="#121212"
+                class="mt-6 pa-1"
+                rounded="0"
+                :image="'/img/logo.svg'"
+                :size="38"
+              />
               <h3
                 v-if="lgAndUp"
                 class="text-headline-large mb-0 ml-1 mt-6 text-white"
@@ -118,7 +123,13 @@ function goToPricing() {
         <v-row>
           <v-col cols="12" md="3">
             <NuxtLink to="/" class="text-decoration-none d-flex mt-n6">
-              <v-avatar color="#212121" class="mt-8 pa-1" rounded="0" :image="'/img/logo.svg'" :size="38" />
+              <v-avatar
+                color="#212121"
+                class="mt-8 pa-1"
+                rounded="0"
+                :image="'/img/logo.svg'"
+                :size="38"
+              />
               <h3 class="text-headline-large ml-1 mb-0 text-white">httpSMS</h3>
             </NuxtLink>
             <div class="text-title-medium mb-4 text-medium-emphasis">

@@ -126,14 +126,17 @@ const messageStatusSelectItems = [
 
 function getCaptcha(): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    const turnstile: Turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile!;
+    const turnstile: Turnstile = (
+      window as unknown as { turnstile?: Turnstile }
+    ).turnstile!;
     turnstile.ready(() => {
       if (turnstileWidgetId) {
         turnstile.remove(turnstileWidgetId);
         turnstileWidgetId = null;
       }
 
-      turnstileWidgetId = turnstile.render("#cloudflare-turnstile", {
+      turnstileWidgetId =
+        turnstile.render("#cloudflare-turnstile", {
           sitekey: (config.public as Record<string, string>)
             .cloudflareTurnstileSiteKey!,
           action: "search_messages",
@@ -178,13 +181,15 @@ async function fetchMessages(reset = false) {
     } as SearchMessagesRequest);
 
     messages.value = results;
-    totalMessages.value = (page.value - 1) * itemsPerPage.value + results.length;
+    totalMessages.value =
+      (page.value - 1) * itemsPerPage.value + results.length;
     if (results.length === itemsPerPage.value) {
       totalMessages.value += 1;
     }
   } catch (error: any) {
     errorTitle.value = capitalize(
-      error?.data?.message ?? "Error while searching messages. Contact us via email"
+      error?.data?.message ??
+        "Error while searching messages. Contact us via email",
     );
     errorMessages.value = parseErrors(error);
   } finally {
@@ -333,8 +338,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  const turnstile = (window as unknown as { turnstile?: Turnstile })
-    .turnstile;
+  const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
   if (turnstile && turnstileWidgetId) {
     turnstile.remove(turnstileWidgetId);
     turnstileWidgetId = null;
@@ -367,8 +371,8 @@ onBeforeUnmount(() => {
             <p>
               On this page, you can search all your messages by phone number,
               message type, and message status and even using the content of the
-              SMS message. You will also be able to bulk delete messages and even
-              export your messages in a CSV file.
+              SMS message. You will also be able to bulk delete messages and
+              even export your messages in a CSV file.
             </p>
             <VAlert v-if="errorTitle" variant="tonal" prominent type="warning">
               <h6 class="text-title-large font-weight-bold">
@@ -471,7 +475,8 @@ onBeforeUnmount(() => {
               </template>
               <VCard>
                 <VCardTitle>
-                  Delete <v-code>{{ selectedMessages.length }}</v-code> selected messages?
+                  Delete <v-code>{{ selectedMessages.length }}</v-code> selected
+                  messages?
                 </VCardTitle>
                 <VCardText class="text-medium-emphasis">
                   The messages will be deleted permanently from the httpSMS
@@ -508,7 +513,8 @@ onBeforeUnmount(() => {
               </template>
               <VCard>
                 <VCardTitle class="text-headline-medium text-break">
-                 Resend <v-code>{{ selectedMessages.length }}</v-code> selected messages?
+                  Resend <v-code>{{ selectedMessages.length }}</v-code> selected
+                  messages?
                 </VCardTitle>
                 <VCardText class="text-medium-emphasis">
                   The selected messages will be queued for sending again using

@@ -205,7 +205,12 @@ onMounted(async () => {
               delivery status breakdown for each batch. Click on a row to see
               individual messages on the search page.
             </p>
-            <VProgressLinear color="primary" v-if="loadingHistory" indeterminate class="mb-4" />
+            <VProgressLinear
+              color="primary"
+              v-if="loadingHistory"
+              indeterminate
+              class="mb-4"
+            />
             <VTable density="comfortable" v-else>
               <thead>
                 <tr class="text-uppercase text-medium-emphasis">

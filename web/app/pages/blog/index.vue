@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const {mdAndUp} = useDisplay();
+const { mdAndUp } = useDisplay();
 
 definePageMeta({
   layout: "website",
@@ -106,7 +106,9 @@ const sortedArticles = computed(() =>
         <VRow>
           <VCol cols="12">
             <h1 class="text-display-large mb-2">Blog</h1>
-            <h2 class="text-medium-emphasis mt-2 mb-n4 text-title-large font-weight-light">
+            <h2
+              class="text-medium-emphasis mt-2 mb-n4 text-title-large font-weight-light"
+            >
               Learn more about httpSMS through our blog!
             </h2>
           </VCol>
@@ -129,9 +131,10 @@ const sortedArticles = computed(() =>
                   :color="isHovering ? 'blue-darken-4' : undefined"
                   class="blog-card"
                 >
-                  <VCardTitle class="text-headline-large text-wrap title-clamp">{{
-                    article.title
-                  }}</VCardTitle>
+                  <VCardTitle
+                    class="text-headline-large text-wrap title-clamp"
+                    >{{ article.title }}</VCardTitle
+                  >
                   <VCardSubtitle>
                     <span class="text-uppercase text-blue">{{
                       article.date

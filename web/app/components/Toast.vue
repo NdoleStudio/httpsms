@@ -13,7 +13,7 @@ const notificationActive = computed({
 
 <template>
   <v-snackbar
-      variant="tonal"
+    variant="tonal"
     v-model="notificationActive"
     :color="notificationsStore.notification.type"
     :timeout="notificationsStore.notification.timeout"

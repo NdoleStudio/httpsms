@@ -17,7 +17,8 @@ const appStore = useAppStore();
       <a
         class="text-decoration-none"
         href="https://github.com/NdoleStudio/httpsms"
-      >open source</a>
+        >open source</a
+      >
       application that converts your android phone into an SMS gateway so you
       can send and receive SMS messages using a simple HTTP API.
     </p>

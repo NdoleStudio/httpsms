@@ -56,23 +56,72 @@ type PaymentPlan = {
 
 const plans: PaymentPlan[] = [
   { name: "Free", id: "free", messagesPerMonth: 200, price: 0 },
-  { name: "PRO - Monthly", id: "pro-monthly", messagesPerMonth: 5000, price: 10 },
-  { name: "PRO - Yearly", id: "pro-yearly", messagesPerMonth: 5000, price: 100 },
-  { name: "Ultra - Monthly", id: "ultra-monthly", messagesPerMonth: 10000, price: 20 },
-  { name: "Ultra - Yearly", id: "ultra-yearly", messagesPerMonth: 10000, price: 200 },
-  { name: "20k - Monthly", id: "20k-monthly", messagesPerMonth: 20000, price: 35 },
-  { name: "20k - Yearly", id: "20k-yearly", messagesPerMonth: 20000, price: 350 },
-  { name: "50k - Monthly", id: "50k-monthly", messagesPerMonth: 50000, price: 89 },
-  { name: "100k - Monthly", id: "100k-monthly", messagesPerMonth: 100000, price: 175 },
-  { name: "200k - Monthly", id: "200k-monthly", messagesPerMonth: 200000, price: 350 },
-  { name: "PRO - Lifetime", id: "pro-lifetime", messagesPerMonth: 10000, price: 1000 },
+  {
+    name: "PRO - Monthly",
+    id: "pro-monthly",
+    messagesPerMonth: 5000,
+    price: 10,
+  },
+  {
+    name: "PRO - Yearly",
+    id: "pro-yearly",
+    messagesPerMonth: 5000,
+    price: 100,
+  },
+  {
+    name: "Ultra - Monthly",
+    id: "ultra-monthly",
+    messagesPerMonth: 10000,
+    price: 20,
+  },
+  {
+    name: "Ultra - Yearly",
+    id: "ultra-yearly",
+    messagesPerMonth: 10000,
+    price: 200,
+  },
+  {
+    name: "20k - Monthly",
+    id: "20k-monthly",
+    messagesPerMonth: 20000,
+    price: 35,
+  },
+  {
+    name: "20k - Yearly",
+    id: "20k-yearly",
+    messagesPerMonth: 20000,
+    price: 350,
+  },
+  {
+    name: "50k - Monthly",
+    id: "50k-monthly",
+    messagesPerMonth: 50000,
+    price: 89,
+  },
+  {
+    name: "100k - Monthly",
+    id: "100k-monthly",
+    messagesPerMonth: 100000,
+    price: 175,
+  },
+  {
+    name: "200k - Monthly",
+    id: "200k-monthly",
+    messagesPerMonth: 200000,
+    price: 350,
+  },
+  {
+    name: "PRO - Lifetime",
+    id: "pro-lifetime",
+    messagesPerMonth: 10000,
+    price: 1000,
+  },
 ];
 
 const plan = computed<PaymentPlan>(() => {
-  return (
-    plans.find((x) => x.id === (authStore.user?.subscription_name || "free")) ??
-    plans[0]
-  )!;
+  return (plans.find(
+    (x) => x.id === (authStore.user?.subscription_name || "free"),
+  ) ?? plans[0])!;
 });
 
 const isOnFreePlan = computed(() => plan.value.id === "free");
@@ -87,7 +136,10 @@ const invoiceStateOptions = computed(() =>
 
 const totalMessages = computed(() => {
   if (!billingStore.billingUsage) return 0;
-  return billingStore.billingUsage.sent_messages + billingStore.billingUsage.received_messages;
+  return (
+    billingStore.billingUsage.sent_messages +
+    billingStore.billingUsage.received_messages
+  );
 });
 
 const checkoutURL = computed(() => {
@@ -201,7 +253,7 @@ onMounted(async () => {
         </VBtn>
         <VToolbarTitle>Account Usage</VToolbarTitle>
         <VProgressLinear
-            color="primary"
+          color="primary"
           :active="loading"
           :indeterminate="loading"
           absolute
@@ -217,7 +269,9 @@ onMounted(async () => {
               <VCol md="6">
                 <VAlert type="info" :icon="false" variant="tonal" prominent>
                   <div>
-                    <h1 class="text-title-large mt-0 mb-0 font-weight-bold text-uppercase">
+                    <h1
+                      class="text-title-large mt-0 mb-0 font-weight-bold text-uppercase"
+                    >
                       <span v-if="isOnFreePlan">{{ plan.name }}</span>
                       <span v-else-if="subscriptionIsCancelled">
                         <span class="text-warning">{{ plan.name }}</span> → Free
@@ -225,22 +279,33 @@ onMounted(async () => {
                       <span v-else>{{ plan.name }}</span>
                     </h1>
                     <p
-                      v-if="!isOnFreePlan && !isOnLifetimePlan && !subscriptionIsCancelled"
+                      v-if="
+                        !isOnFreePlan &&
+                        !isOnLifetimePlan &&
+                        !subscriptionIsCancelled
+                      "
                       class="text-medium-emphasis mt-1"
                     >
                       Your next bill is for <b>${{ plan.price }}</b> on
                       <b>{{
-                        new Date(authStore.user.subscription_renews_at!).toLocaleDateString()
+                        new Date(
+                          authStore.user.subscription_renews_at!,
+                        ).toLocaleDateString()
                       }}</b>
                     </p>
                     <p v-if="isOnLifetimePlan" class="text-medium-emphasis">
                       You are on the life time plan which costs
                       <b>${{ plan.price }}</b>
                     </p>
-                    <p v-else-if="subscriptionIsCancelled" class="text-medium-emphasis">
+                    <p
+                      v-else-if="subscriptionIsCancelled"
+                      class="text-medium-emphasis"
+                    >
                       You will be downgraded to the <b>FREE</b> plan on
                       <b>{{
-                        new Date(authStore.user.subscription_ends_at!).toLocaleDateString()
+                        new Date(
+                          authStore.user.subscription_ends_at!,
+                        ).toLocaleDateString()
                       }}</b>
                     </p>
                     <p v-else class="text-medium-emphasis mt-1">
@@ -249,7 +314,11 @@ onMounted(async () => {
                   </div>
                   <div class="d-flex mb-1 mt-1">
                     <VBtn
-                      v-if="!subscriptionIsCancelled && !isOnFreePlan && !isOnLifetimePlan"
+                      v-if="
+                        !subscriptionIsCancelled &&
+                        !isOnFreePlan &&
+                        !isOnLifetimePlan
+                      "
                       color="primary"
                       :loading="loading"
                       @click="updateDetails"
@@ -265,13 +334,21 @@ onMounted(async () => {
                     </VBtn>
                     <VSpacer />
                     <VDialog
-                      v-if="!subscriptionIsCancelled && !isOnFreePlan && !isOnLifetimePlan"
+                      v-if="
+                        !subscriptionIsCancelled &&
+                        !isOnFreePlan &&
+                        !isOnLifetimePlan
+                      "
                       v-model="dialog"
                       max-width="590"
                       opacity="0.9"
                     >
                       <template #activator="{ props: activatorProps }">
-                        <VBtn v-bind="activatorProps" color="error" variant="text">
+                        <VBtn
+                          v-bind="activatorProps"
+                          color="error"
+                          variant="text"
+                        >
                           Cancel Plan
                         </VBtn>
                       </template>
@@ -321,7 +398,9 @@ onMounted(async () => {
                     <VCardText>
                       <VRow align="center">
                         <VCol class="flex-grow-1 flex-shrink-1">
-                          <h1 class="text-title-large font-weight-bold text-uppercase mt-3">
+                          <h1
+                            class="text-title-large font-weight-bold text-uppercase mt-3"
+                          >
                             Pro Plan
                           </h1>
                           <p class="text-medium-emphasis">
@@ -340,7 +419,9 @@ onMounted(async () => {
                     <VCardText>
                       <VRow align="center">
                         <VCol class="flex-grow-1 flex-shrink-1">
-                          <h1 class="text-title-large font-weight-bold text-uppercase mt-3">
+                          <h1
+                            class="text-title-large font-weight-bold text-uppercase mt-3"
+                          >
                             Enterprise Plan
                           </h1>
                           <p class="text-medium-emphasis">
@@ -364,13 +445,21 @@ onMounted(async () => {
               <code
                 v-if="billingStore.billingUsage"
                 class="font-weight-bold"
-                v-html="formatBillingPeriodDateOrdinal(billingStore.billingUsage.start_timestamp)"
+                v-html="
+                  formatBillingPeriodDateOrdinal(
+                    billingStore.billingUsage.start_timestamp,
+                  )
+                "
               />
               to
               <code
                 v-if="billingStore.billingUsage"
                 class="font-weight-bold"
-                v-html="formatBillingPeriodDateOrdinal(billingStore.billingUsage.end_timestamp)"
+                v-html="
+                  formatBillingPeriodDateOrdinal(
+                    billingStore.billingUsage.end_timestamp,
+                  )
+                "
               />.
             </p>
             <VRow v-if="billingStore.billingUsage">
@@ -395,7 +484,9 @@ onMounted(async () => {
                   prominent
                 >
                   <h2 class="text-headline-large font-weight-bold my-0">
-                    {{ formatDecimal(billingStore.billingUsage.received_messages) }}
+                    {{
+                      formatDecimal(billingStore.billingUsage.received_messages)
+                    }}
                   </h2>
                   <p class="text-medium-emphasis mt-n1">Messages Received</p>
                 </VAlert>
@@ -404,12 +495,18 @@ onMounted(async () => {
 
             <!-- Subscription Payments -->
             <template v-if="authStore.user?.subscription_id != null">
-              <h4 class="text-headline-large mb-3 mt-8">Subscription Payments</h4>
+              <h4 class="text-headline-large mb-3 mt-8">
+                Subscription Payments
+              </h4>
               <p class="text-medium-emphasis">
                 This is a list of your last 10 subscription payments made using
                 our payment provider
-                <a class="text-decoration-none" href="https://www.lemonsqueezy.com">
-                  Lemon Squeezy</a>.
+                <a
+                  class="text-decoration-none"
+                  href="https://www.lemonsqueezy.com"
+                >
+                  Lemon Squeezy</a
+                >.
               </p>
               <VProgressCircular
                 v-if="payments == null && loadingSubscriptionPayments"
@@ -432,7 +529,9 @@ onMounted(async () => {
                 <tbody>
                   <tr v-for="payment in payments.data" :key="payment.id">
                     <td v-if="lgAndUp">{{ payment.id }}</td>
-                    <td>{{ formatTimestamp(payment.attributes.created_at) }}</td>
+                    <td>
+                      {{ formatTimestamp(payment.attributes.created_at) }}
+                    </td>
                     <td>
                       <VChip
                         v-if="payment.attributes.status === 'paid'"
@@ -450,7 +549,9 @@ onMounted(async () => {
                         {{ payment.attributes.status_formatted }}
                       </VChip>
                     </td>
-                    <td v-if="lgAndUp">{{ payment.attributes.tax_formatted }}</td>
+                    <td v-if="lgAndUp">
+                      {{ payment.attributes.tax_formatted }}
+                    </td>
                     <td class="font-weight-bold">
                       {{ payment.attributes.total_formatted }}
                     </td>
@@ -495,8 +596,18 @@ onMounted(async () => {
                   v-for="billingUsage in billingStore.billingUsageHistory"
                   :key="billingUsage.id"
                 >
-                  <td v-html="formatBillingPeriodDateOrdinal(billingUsage.start_timestamp)" />
-                  <td v-html="formatBillingPeriodDateOrdinal(billingUsage.end_timestamp)" />
+                  <td
+                    v-html="
+                      formatBillingPeriodDateOrdinal(
+                        billingUsage.start_timestamp,
+                      )
+                    "
+                  />
+                  <td
+                    v-html="
+                      formatBillingPeriodDateOrdinal(billingUsage.end_timestamp)
+                    "
+                  />
                   <td>{{ formatDecimal(billingUsage.sent_messages) }}</td>
                   <td>{{ billingUsage.received_messages }}</td>
                 </tr>
@@ -646,7 +757,11 @@ onMounted(async () => {
             Download Invoice
           </VBtn>
           <VSpacer />
-          <VBtn color="warning" variant="text" @click="subscriptionInvoiceDialog = false">
+          <VBtn
+            color="warning"
+            variant="text"
+            @click="subscriptionInvoiceDialog = false"
+          >
             Close
           </VBtn>
         </VCardActions>

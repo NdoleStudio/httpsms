@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  mdiArrowLeft,
-  mdiPlus,
-  mdiDelete,
-  mdiEye,
-} from "@mdi/js";
+import { mdiArrowLeft, mdiPlus, mdiDelete, mdiEye } from "@mdi/js";
 import QRCode from "qrcode";
 import Pusher from "pusher-js";
 import type { Channel } from "pusher-js";
@@ -231,11 +226,9 @@ onBeforeUnmount(() => {
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
-        <VToolbarTitle>
-          Phone API Keys
-        </VToolbarTitle>
+        <VToolbarTitle> Phone API Keys </VToolbarTitle>
         <VProgressLinear
-            color="primary"
+          color="primary"
           :active="loading"
           :indeterminate="loading"
           absolute
@@ -287,7 +280,9 @@ onBeforeUnmount(() => {
                 href="https://api.httpsms.com"
                 >httpSMS API</a
               >, use the API key under your account settings page instead
-              <NuxtLink class="text-decoration-none hover:text-decoration-underline" to="/settings"
+              <NuxtLink
+                class="text-decoration-none hover:text-decoration-underline"
+                to="/settings"
                 >https://httpsms.com/settings</NuxtLink
               >.
             </p>
@@ -380,11 +375,20 @@ onBeforeUnmount(() => {
           </VForm>
         </VCardText>
         <VCardActions class="mt-n6 mb-1">
-          <VBtn color="primary" variant="flat" :loading="loading" @click="createPhoneApiKey">
+          <VBtn
+            color="primary"
+            variant="flat"
+            :loading="loading"
+            @click="createPhoneApiKey"
+          >
             Create<span class="mx-1" v-if="lgAndUp">Phone API</span>Key
           </VBtn>
           <VSpacer />
-          <VBtn variant="text" color="warning" @click="showCreateApiKeyDialog = false">
+          <VBtn
+            variant="text"
+            color="warning"
+            @click="showCreateApiKeyDialog = false"
+          >
             Close
           </VBtn>
         </VCardActions>
@@ -421,7 +425,11 @@ onBeforeUnmount(() => {
             notification-text="Phone API Key copied successfully"
           />
           <VSpacer />
-          <VBtn color="warning" variant="text" @click="showPhoneApiKeyQrCode = false">
+          <VBtn
+            color="warning"
+            variant="text"
+            @click="showPhoneApiKeyQrCode = false"
+          >
             Close
           </VBtn>
         </VCardActions>
@@ -438,17 +446,31 @@ onBeforeUnmount(() => {
           app on all of the phones which are currently using this API key.
         </VCardText>
         <VCardActions class="pb-2 mt-n2">
-          <VBtn color="error" variant="flat" :loading="loading" @click="deleteApiKey">
+          <VBtn
+            color="error"
+            variant="flat"
+            :loading="loading"
+            @click="deleteApiKey"
+          >
             <VIcon start :icon="mdiDelete" />
             Delete API Key
           </VBtn>
           <VSpacer />
-          <VBtn variant="text" color="warning" @click="deleteApiKeyDialog = false">Close</VBtn>
+          <VBtn
+            variant="text"
+            color="warning"
+            @click="deleteApiKeyDialog = false"
+            >Close</VBtn
+          >
         </VCardActions>
       </VCard>
     </VDialog>
 
-    <VDialog v-model="removePhoneFromApiKeyDialog" max-width="600" opacity="0.9">
+    <VDialog
+      v-model="removePhoneFromApiKeyDialog"
+      max-width="600"
+      opacity="0.9"
+    >
       <VCard>
         <VCardTitle class="text-h5 text-break">
           Are you sure you want to remove this phone number from the Phone API
@@ -471,7 +493,11 @@ onBeforeUnmount(() => {
             Remove Phone from key
           </VBtn>
           <VSpacer />
-          <VBtn variant="text" color="warning" @click="removePhoneFromApiKeyDialog = false">
+          <VBtn
+            variant="text"
+            color="warning"
+            @click="removePhoneFromApiKeyDialog = false"
+          >
             Close
           </VBtn>
         </VCardActions>

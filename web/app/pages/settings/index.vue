@@ -781,12 +781,19 @@ onMounted(async () => {
           <VCol cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <!-- Profile -->
             <div v-if="firebaseUser" class="text-center">
-              <VAvatar v-if="firebaseUser.photoURL" size="100" :image="firebaseUser.photoURL"/>
+              <VAvatar
+                v-if="firebaseUser.photoURL"
+                size="100"
+                :image="firebaseUser.photoURL"
+              />
               <v-avatar v-else size="100">
-                <VIcon size="80" :icon="mdiAccountCircle"/>
+                <VIcon size="80" :icon="mdiAccountCircle" />
               </v-avatar>
 
-              <h3 class="text-title-large mt-2 mb-0" v-if="firebaseUser.displayName">
+              <h3
+                class="text-title-large mt-2 mb-0"
+                v-if="firebaseUser.displayName"
+              >
                 {{ firebaseUser.displayName }}
               </h3>
               <h4 class="text-medium-emphasis mb-2 mt-0">
@@ -814,8 +821,8 @@ onMounted(async () => {
             <!-- API Key -->
             <h5 class="text-headline-large mb-3 mt-3">API Key</h5>
             <p class="text-medium-emphasis">
-              Use your API Key in the <v-code>x-api-key</v-code> HTTP Header when
-              sending requests to
+              Use your API Key in the <v-code>x-api-key</v-code> HTTP Header
+              when sending requests to
               <v-code>https://api.httpsms.com</v-code> endpoints.
             </p>
             <div v-if="apiKey === ''" class="mb-n9 pl-3 pt-5">
@@ -853,13 +860,21 @@ onMounted(async () => {
                 <VIcon start :icon="mdiQrcode" />
                 Show QR Code
               </VBtn>
-              <VDialog v-model="showQrCodeDialog" max-width="400px" opacity="0.9">
+              <VDialog
+                v-model="showQrCodeDialog"
+                max-width="400px"
+                opacity="0.9"
+              >
                 <VCard>
                   <VCardTitle class="text-center">API Key QR Code</VCardTitle>
                   <VCardText class="text-center">
                     <p class="text-body-large mt-0">
                       Scan this QR code with the
-                      <a class="text-decoration-none hover:text-decoration-underline" :href="config.public.appDownloadUrl">httpSMS app</a>
+                      <a
+                        class="text-decoration-none hover:text-decoration-underline"
+                        :href="config.public.appDownloadUrl"
+                        >httpSMS app</a
+                      >
                       on your Android phone to login.
                     </p>
                     <canvas ref="qrCodeCanvas" />
@@ -1293,7 +1308,11 @@ onMounted(async () => {
                     Delete My Account
                   </VBtn>
                   <VSpacer />
-                  <VBtn color="primary" variant="flat" @click="showDeleteAccountDialog = false">
+                  <VBtn
+                    color="primary"
+                    variant="flat"
+                    @click="showDeleteAccountDialog = false"
+                  >
                     <span v-if="lgAndUp">Keep My account</span>
                     <span v-else>Close</span>
                   </VBtn>
@@ -1402,7 +1421,13 @@ onMounted(async () => {
             <VIcon v-if="lgAndUp" start :icon="mdiDelete" />
             Delete
           </VBtn>
-          <VBtn v-else variant="text" color="warning" @click="showWebhookEdit = false">Close</VBtn>
+          <VBtn
+            v-else
+            variant="text"
+            color="warning"
+            @click="showWebhookEdit = false"
+            >Close</VBtn
+          >
         </VCardActions>
       </VCard>
     </VDialog>
@@ -1504,7 +1529,13 @@ onMounted(async () => {
             <VIcon v-if="lgAndUp" start :icon="mdiDelete" />
             Delete
           </VBtn>
-          <VBtn v-else variant="text" color="warning" @click="showDiscordEdit = false">Close</VBtn>
+          <VBtn
+            v-else
+            variant="text"
+            color="warning"
+            @click="showDiscordEdit = false"
+            >Close</VBtn
+          >
         </VCardActions>
       </VCard>
     </VDialog>
@@ -1603,10 +1634,7 @@ onMounted(async () => {
           </VContainer>
         </VCardText>
         <VCardActions class="pb-4 px-4 mt-n4">
-          <loading-button
-            :loading="updatingPhone"
-            @click="updatePhone"
-          >
+          <loading-button :loading="updatingPhone" @click="updatePhone">
             <VIcon v-if="lgAndUp" start :icon="mdiContentSave" />
             Update Phone
           </loading-button>
@@ -1625,7 +1653,7 @@ onMounted(async () => {
     </VDialog>
 
     <!-- Send Schedule Edit Dialog -->
-    <VDialog v-model="showScheduleEdit" max-width="800px"  opacity="0.9">
+    <VDialog v-model="showScheduleEdit" max-width="800px" opacity="0.9">
       <VCard>
         <VCardTitle>
           <span v-if="!activeSchedule.id">Create Message Send Schedule</span>
@@ -1685,7 +1713,10 @@ onMounted(async () => {
                     :key="`${day.value}-${index}`"
                     class="d-flex align-center flex-wrap mb-2"
                   >
-                    <div class="mr-2 mb-2" style="width: 130px; max-width: 100%">
+                    <div
+                      class="mr-2 mb-2"
+                      style="width: 130px; max-width: 100%"
+                    >
                       <VTextField
                         v-model="window.start_time"
                         density="compact"
@@ -1697,7 +1728,10 @@ onMounted(async () => {
                       />
                     </div>
                     <div class="mb-2 mr-2">–</div>
-                    <div class="mr-2 mb-2" style="width: 130px; max-width: 100%">
+                    <div
+                      class="mr-2 mb-2"
+                      style="width: 130px; max-width: 100%"
+                    >
                       <VTextField
                         v-model="window.end_time"
                         density="compact"
@@ -1761,7 +1795,12 @@ onMounted(async () => {
             <VIcon v-if="lgAndUp" start :icon="mdiDelete" />
             Delete
           </VBtn>
-          <VBtn v-else variant="text" color="warning" @click="showScheduleEdit = false">
+          <VBtn
+            v-else
+            variant="text"
+            color="warning"
+            @click="showScheduleEdit = false"
+          >
             Close
           </VBtn>
         </VCardActions>
@@ -1778,7 +1817,12 @@ onMounted(async () => {
           restrictions.
         </VCardText>
         <VCardActions>
-          <VBtn variant="flat" color="error" :loading="savingSchedule" @click="deleteSchedule">
+          <VBtn
+            variant="flat"
+            color="error"
+            :loading="savingSchedule"
+            @click="deleteSchedule"
+          >
             Delete
           </VBtn>
           <VSpacer />

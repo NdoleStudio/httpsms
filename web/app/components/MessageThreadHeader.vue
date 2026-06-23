@@ -80,11 +80,7 @@ async function logout() {
 </script>
 
 <template>
-  <v-sheet
-    class="pa-4 d-flex"
-    :elevation="lgAndUp ? 0 : 2"
-    color="black"
-  >
+  <v-sheet class="pa-4 d-flex" :elevation="lgAndUp ? 0 : 2" color="black">
     <div :class="{ 'px-2': mdAndDown }">
       <v-toolbar-title>
         <div class="d-flex pt-2" style="width: 245px">
@@ -148,7 +144,11 @@ async function logout() {
           <v-icon :icon="mdiDotsVertical" />
         </v-btn>
       </template>
-      <v-list class="pa-0" :density="mdAndDown ? 'compact' : 'default'" prepend-gap="20">
+      <v-list
+        class="pa-0"
+        :density="mdAndDown ? 'compact' : 'default'"
+        prepend-gap="20"
+      >
         <v-list-item @click.prevent="toggleArchive">
           <template #prepend>
             <v-icon
@@ -181,7 +181,9 @@ async function logout() {
         </v-list-item>
         <v-list-item :to="{ name: 'phone-api-keys' }">
           <template #prepend><v-icon :icon="mdiCellphoneKey" /></template>
-          <v-list-item-title :class="{'pr-16': lgAndUp}">Phone API Keys</v-list-item-title>
+          <v-list-item-title :class="{ 'pr-16': lgAndUp }"
+            >Phone API Keys</v-list-item-title
+          >
         </v-list-item>
         <v-list-item
           v-if="phonesStore.owner"

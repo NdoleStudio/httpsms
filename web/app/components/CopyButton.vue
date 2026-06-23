@@ -40,7 +40,7 @@ async function copy() {
 <template>
   <v-btn
     :disabled="disabled"
-    :color="disabled? 'default': color"
+    :color="disabled ? 'default' : color"
     :size="smAndDown ? 'small' : large ? 'large' : 'default'"
     :block="block"
     variant="flat"

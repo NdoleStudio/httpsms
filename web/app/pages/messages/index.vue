@@ -110,12 +110,7 @@ onMounted(async () => {
         <VToolbarTitle>
           New Message
           <template v-if="phonesStore.owner">
-            <VIcon
-                size="12"
-                class="mx-2"
-                color="primary"
-                :icon="mdiCircle"
-            />
+            <VIcon size="12" class="mx-2" color="primary" :icon="mdiCircle" />
             {{ formatPhoneNumber(phonesStore.owner) }}
           </template>
         </VToolbarTitle>

@@ -145,7 +145,10 @@ const planYearlyMonthlyPrice = computed(
         <VRow class="mb-16">
           <VCol cols="12" md="6" class="d-flex align-center" order-lg="2">
             <div>
-              <h3 class="text-display-medium mb-1" :class="{'mt-n8': mdAndUp}">
+              <h3
+                class="text-display-medium mb-1"
+                :class="{ 'mt-n8': mdAndUp }"
+              >
                 Bulk SMS
                 <VChip class="ma-2" color="pink" label>
                   <VIcon start :icon="mdiLabel" />
@@ -215,7 +218,12 @@ const planYearlyMonthlyPrice = computed(
             </div>
           </VCol>
           <VCol cols="12" md="6" order-lg="2">
-            <VImg class="mb-4" :class="{'mt-16': mdAndUp}" max-height="400" :src="'/img/zapier-logo.svg'" />
+            <VImg
+              class="mb-4"
+              :class="{ 'mt-16': mdAndUp }"
+              max-height="400"
+              :src="'/img/zapier-logo.svg'"
+            />
           </VCol>
         </VRow>
 
@@ -420,7 +428,11 @@ const planYearlyMonthlyPrice = computed(
         <VCol cols="12">
           <VRow class="align-baseline">
             <VCol cols="12" md="5" class="pr-4">
-              <VTimeline truncate-line="both" density="compact" class="mt-10 ml-n4">
+              <VTimeline
+                truncate-line="both"
+                density="compact"
+                class="mt-10 ml-n4"
+              >
                 <VTimelineItem dot-color="primary" :icon="mdiTallyMark1">
                   <VCard variant="elevated">
                     <VCardTitle class="text-headline-medium">Step 1</VCardTitle>
@@ -470,7 +482,12 @@ const planYearlyMonthlyPrice = computed(
             </VCol>
             <VCol cols="12" md="7">
               <div class="w-100 mt-n8">
-                <VTabs color="primary" bg-color="#212121" v-model="selectedTab" show-arrows>
+                <VTabs
+                  color="primary"
+                  bg-color="#212121"
+                  v-model="selectedTab"
+                  show-arrows
+                >
                   <VTab value="javascript">
                     <VIcon
                       color="#efd81d"
@@ -674,7 +691,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           <VCol md="6" offset-md="3">
             <h2
               id="pricing"
-              style="text-decoration-color: #329ef4;"
+              style="text-decoration-color: #329ef4"
               class="text-center text-display-large mb-4 text-decoration-underline dark:text-white"
             >
               Pricing
@@ -685,9 +702,22 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               extra, you can go pro
             </h4>
             <div class="d-flex justify-center mt-4 align-center">
-              <p class="text-headline-small mr-3 mt-3" :class="{'text-medium-emphasis': yearlyPricing}">Monthly</p>
-              <VSwitch v-model="yearlyPricing" color="primary" class="mt-n2" hide-details />
-              <p class="text-headline-small ml-3 mt-3" :class="{'text-medium-emphasis': !yearlyPricing}">
+              <p
+                class="text-headline-small mr-3 mt-3"
+                :class="{ 'text-medium-emphasis': yearlyPricing }"
+              >
+                Monthly
+              </p>
+              <VSwitch
+                v-model="yearlyPricing"
+                color="primary"
+                class="mt-n2"
+                hide-details
+              />
+              <p
+                class="text-headline-small ml-3 mt-3"
+                :class="{ 'text-medium-emphasis': !yearlyPricing }"
+              >
                 Yearly
                 <VChip color="primary" size="small">
                   <VIcon start :icon="mdiGift" size="small" />
@@ -723,15 +753,21 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
             <VCard elevation="4" color="#121212">
               <VCardText>
                 <h1 class="text-center text-display-medium mt-0 mb-4">Free</h1>
-                <p class="text-body-large text-center mt-0 text-medium-emphasis">
+                <p
+                  class="text-body-large text-center mt-0 text-medium-emphasis"
+                >
                   Try sending and receiving SMS on your hobby websites and
                   experiments.
                 </p>
                 <p class="text-center">
                   <span class="text-display-small">$0</span>
                 </p>
-                <p class="text-center mt-n3 text-medium-emphasis">No credit card required</p>
-                <VBtn block to="/login"  variant="tonal" size="large">Get Started</VBtn>
+                <p class="text-center mt-n3 text-medium-emphasis">
+                  No credit card required
+                </p>
+                <VBtn block to="/login" variant="tonal" size="large"
+                  >Get Started</VBtn
+                >
                 <p class="mt-6 text-body-large">
                   <VIcon
                     color="primary"
@@ -775,8 +811,14 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
           <VCol cols="12" lg="4">
             <VCard elevation="4" color="#000000">
               <VCardText>
-                <h1 class="text-center text-display-medium mt-0 mb-4 text-primary">Pro</h1>
-                <p class="text-body-large text-center mt-0 text-medium-emphasis">
+                <h1
+                  class="text-center text-display-medium mt-0 mb-4 text-primary"
+                >
+                  Pro
+                </h1>
+                <p
+                  class="text-body-large text-center mt-0 text-medium-emphasis"
+                >
                   Send and receive more SMS messages like a pro with advanced
                   features.
                 </p>
@@ -786,7 +828,10 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <p v-else class="text-center">
                   <span class="text-display-small">$100</span>/year
                 </p>
-                <p v-if="!yearlyPricing" class="text-center mt-n3 text-medium-emphasis">
+                <p
+                  v-if="!yearlyPricing"
+                  class="text-center mt-n3 text-medium-emphasis"
+                >
                   or <b>$100</b> per year
                 </p>
                 <p v-else class="text-center mt-n3 text-medium-emphasis">
@@ -841,7 +886,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <h1 class="text-center text-display-medium mt-0 mb-4">
                   {{ pricingLabels[pricing] }} Plan
                 </h1>
-                <p class="text-body-large text-center mt-0 text-medium-emphasis">
+                <p
+                  class="text-body-large text-center mt-0 text-medium-emphasis"
+                >
                   Send and receive up to {{ planMessages }} SMS messages like a
                   power user.
                 </p>
@@ -853,7 +900,10 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   <span class="text-display-small">${{ planYearlyPrice }}</span
                   >/year
                 </p>
-                <p v-if="!yearlyPricing" class="text-center mt-n3 text-medium-emphasis">
+                <p
+                  v-if="!yearlyPricing"
+                  class="text-center mt-n3 text-medium-emphasis"
+                >
                   or <b>${{ planYearlyPrice }}</b> per year
                 </p>
                 <p v-else class="text-center mt-n3 text-medium-emphasis">
@@ -916,7 +966,8 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               API on your dedicated server. If you would still like to support
               us, please donate via
               <a href="https://github.com/sponsors/NdoleStudio"
-                >GitHub Sponsors</a>💖
+                >GitHub Sponsors</a
+              >💖
             </VAlert>
           </VCol>
         </VRow>
@@ -957,8 +1008,8 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 </div>
               </div>
               <p class="text-title-large font-weight-light mt-0">
-                httpSMS is free platform which transforms your phone into an
-                sms server! It has no hard limit also. It is an
+                httpSMS is free platform which transforms your phone into an sms
+                server! It has no hard limit also. It is an
                 <b>innovative</b> idea, I have not seen such tech before. If you
                 have an <b>sms active pack</b> in your phone then good to go
                 with httpSMS.
@@ -988,10 +1039,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 </div>
                 <VSpacer />
                 <div>
-                  <v-img
-                      width="64"
-                    src="/img/logos/uneed.svg"
-                  />
+                  <v-img width="64" src="/img/logos/uneed.svg" />
                 </div>
               </div>
               <p class="text-title-large font-weight-light mt-0">
@@ -1010,7 +1058,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
     <VContainer class="pb-16">
       <VRow>
         <VCol md="8" offset-md="2">
-          <h2 class="text-display-large  mb-4 text-center">Frequently Asked Questions</h2>
+          <h2 class="text-display-large mb-4 text-center">
+            Frequently Asked Questions
+          </h2>
           <p class="text-center text-title-large mt-4 text-medium-emphasis">
             If you still cannot find the answer to your question,
             <a href="mailto:arnold@httpsms.com">send us an email</a> or ask in

@@ -129,7 +129,7 @@ function handleError(error: unknown, isSocial = false) {
       :disabled="loading"
       @click="signInWithGoogle"
     >
-      <v-icon  color="red" :icon="mdiGoogle" class="mr-2" />
+      <v-icon color="red" :icon="mdiGoogle" class="mr-2" />
       Continue with Google
     </v-btn>
 
@@ -214,7 +214,10 @@ function handleError(error: unknown, isSocial = false) {
         Terms of Service
       </a>
       and
-      <a :href="appStore.appData.url + '/privacy-policy'" class="text-decoration-none">
+      <a
+        :href="appStore.appData.url + '/privacy-policy'"
+        class="text-decoration-none"
+      >
         Privacy Policy.</a
       >
     </p>

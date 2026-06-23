@@ -21,7 +21,12 @@ onMounted(async () => {
 
 <template>
   <VContainer fluid :class="{ 'fill-height': lgAndUp }">
-    <VRow v-if="lgAndUp" align="center" :class="{ 'fill-height': lgAndUp }" justify="center">
+    <VRow
+      v-if="lgAndUp"
+      align="center"
+      :class="{ 'fill-height': lgAndUp }"
+      justify="center"
+    >
       <div :class="{ 'mt-n16': lgAndUp }">
         <VImg
           class="mx-auto mb-4"

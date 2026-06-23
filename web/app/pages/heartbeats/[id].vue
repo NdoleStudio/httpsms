@@ -57,7 +57,12 @@ onMounted(async () => {
               Monitor the connectivity status of your Android phones. Heartbeats
               are sent every 15 minutes when the phone is online.
             </p>
-            <VProgressLinear color="primary" v-if="loading" indeterminate class="mb-4" />
+            <VProgressLinear
+              color="primary"
+              v-if="loading"
+              indeterminate
+              class="mb-4"
+            />
             <VTable v-else-if="heartbeats.length">
               <thead>
                 <tr class="text-uppercase text-title-medium">
