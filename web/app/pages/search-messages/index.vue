@@ -28,6 +28,8 @@ interface Turnstile {
       "error-callback"?: (error: string) => void;
     },
   ): string | null | undefined;
+  reset(widgetId?: string): void;
+  remove(widgetId?: string): void;
 }
 
 definePageMeta({
@@ -63,6 +65,8 @@ const formQuery = ref("");
 const messages = ref<EntitiesMessage[]>([]);
 const totalMessages = ref(0);
 const selectedIds = ref<string[]>([]);
+let turnstileWidgetId: string | null = null;
+let captchaPromise: Promise<string> | null = null;
 
 const page = ref(1);
 const itemsPerPage = ref(100);
@@ -123,22 +127,50 @@ const messageStatusSelectItems = [
 ];
 
 function getCaptcha(): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
+  if (captchaPromise) {
+    return captchaPromise;
+  }
+
+  captchaPromise = new Promise<string>((resolve, reject) => {
     const turnstile = (window as unknown as { turnstile?: Turnstile })
       .turnstile;
     if (!turnstile) {
       resolve("");
       return;
     }
+
+    const resetPromise = () => {
+      captchaPromise = null;
+    };
+
     turnstile.ready(() => {
-      turnstile.render("#cloudflare-turnstile", {
-        sitekey: (config.public as Record<string, string>)
-          .cloudflareTurnstileSiteKey!,
-        action: "search_messages",
-        callback: (token) => resolve(token),
-        "error-callback": (error: string) => reject(error),
-      });
+      const complete = (token: string) => {
+        resetPromise();
+        resolve(token);
+      };
+      const fail = (error: string) => {
+        resetPromise();
+        reject(error);
+      };
+
+      if (turnstileWidgetId) {
+        turnstile.reset(turnstileWidgetId);
+        return;
+      }
+
+      turnstileWidgetId =
+        turnstile.render("#cloudflare-turnstile", {
+          sitekey: (config.public as Record<string, string>)
+            .cloudflareTurnstileSiteKey!,
+          action: "search_messages",
+          callback: complete,
+          "error-callback": fail,
+        }) ?? null;
     });
+  });
+
+  return captchaPromise.finally(() => {
+    captchaPromise = null;
   });
 }
 
@@ -327,6 +359,15 @@ onMounted(async () => {
 
   if (formQuery.value) {
     await fetchMessages(true);
+  }
+});
+
+onBeforeUnmount(() => {
+  const turnstile = (window as unknown as { turnstile?: Turnstile })
+    .turnstile;
+  if (turnstile && turnstileWidgetId) {
+    turnstile.remove(turnstileWidgetId);
+    turnstileWidgetId = null;
   }
 });
 </script>
