@@ -1402,7 +1402,7 @@ onMounted(async () => {
             <VIcon v-if="lgAndUp" start :icon="mdiDelete" />
             Delete
           </VBtn>
-          <VBtn variant="text" color="warning" @click="showWebhookEdit = false">Close</VBtn>
+          <VBtn v-else variant="text" color="warning" @click="showWebhookEdit = false">Close</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
@@ -1504,16 +1504,16 @@ onMounted(async () => {
             <VIcon v-if="lgAndUp" start :icon="mdiDelete" />
             Delete
           </VBtn>
-          <VBtn variant="text" color="warning" @click="showDiscordEdit = false">Close</VBtn>
+          <VBtn v-else variant="text" color="warning" @click="showDiscordEdit = false">Close</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
 
     <!-- Phone Edit Dialog -->
-    <VDialog v-model="showPhoneEdit" max-width="700px">
+    <VDialog v-model="showPhoneEdit" max-width="700px" opacity="0.9">
       <VCard>
         <VCardTitle>Edit Phone</VCardTitle>
-        <VCardText v-if="activePhone" class="mt-6">
+        <VCardText v-if="activePhone">
           <VContainer>
             <VRow>
               <VCol>
@@ -1602,19 +1602,16 @@ onMounted(async () => {
             </VRow>
           </VContainer>
         </VCardText>
-        <VCardActions class="pb-4">
-          <VBtn
-            size="small"
-            color="info"
+        <VCardActions class="pb-4 px-4 mt-n4">
+          <loading-button
             :loading="updatingPhone"
             @click="updatePhone"
           >
             <VIcon v-if="lgAndUp" start :icon="mdiContentSave" />
-            Update
-          </VBtn>
+            Update Phone
+          </loading-button>
           <VSpacer />
           <VBtn
-            size="small"
             color="error"
             variant="text"
             :disabled="updatingPhone"

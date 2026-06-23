@@ -148,7 +148,7 @@ async function logout() {
           <v-icon :icon="mdiDotsVertical" />
         </v-btn>
       </template>
-      <v-list class="pa-0" :density="mdAndDown ? 'compact' : 'default'" prepend-gap="16">
+      <v-list class="pa-0" :density="mdAndDown ? 'compact' : 'default'" prepend-gap="20">
         <v-list-item @click.prevent="toggleArchive">
           <template #prepend>
             <v-icon
@@ -188,7 +188,7 @@ async function logout() {
           :href="appStore.appData.appDownloadUrl"
         >
           <template #prepend><v-icon :icon="mdiDownload" /></template>
-          <v-list-item-title>Install App</v-list-item-title>
+          <v-list-item-title>Download App</v-list-item-title>
         </v-list-item>
         <v-list-item :to="{ name: 'billing' }">
           <template #prepend><v-icon :icon="mdiFinance" /></template>
