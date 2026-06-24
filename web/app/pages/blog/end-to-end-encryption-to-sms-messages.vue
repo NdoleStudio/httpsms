@@ -32,11 +32,11 @@ useHead({
 
 <template>
   <VContainer v-highlight class="pt-8">
-    <VRow class="mt-16">
+    <VRow :class="{ 'mt-16': mdAndUp }">
       <VCol cols="12" md="9">
         <h1
           :class="
-            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-1'
+            mdAndUp ? 'text-display-medium mt-1' : 'text-display-small mt-n2'
           "
         >
           Secure your conversations by encrypting your SMS messages end-to-end

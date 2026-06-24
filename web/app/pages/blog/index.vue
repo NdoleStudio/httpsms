@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { mdAndUp } = useDisplay()
+const { mdAndUp, smAndDown } = useDisplay()
 
 definePageMeta({
   layout: 'website',
@@ -105,7 +105,9 @@ const sortedArticles = computed(() =>
       <VCol cols="12" md="9">
         <VRow>
           <VCol cols="12">
-            <h1 class="text-display-large mb-2">Blog</h1>
+            <h1 class="text-display-large mb-2" :class="{ 'mt-0': smAndDown }">
+              Blog
+            </h1>
             <h2
               class="text-medium-emphasis mt-2 mb-n4 text-title-large font-weight-light"
             >

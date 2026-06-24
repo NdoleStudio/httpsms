@@ -43,10 +43,10 @@ function goToPricing() {
       <v-container>
         <v-row>
           <v-col class="w-full d-flex">
-            <NuxtLink to="/" class="text-decoration-none d-flex">
+            <NuxtLink to="/" class="text-decoration-none d-flex align-baseline">
               <v-avatar
                 color="#121212"
-                class="mt-6 pa-1"
+                class="pa-1"
                 rounded="0"
                 :image="'/img/logo.svg'"
                 :size="38"

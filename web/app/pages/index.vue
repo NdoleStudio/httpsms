@@ -72,9 +72,9 @@ const planYearlyMonthlyPrice = computed(
           <h1
             class="text-display-large font-weight-bold pb-1 gradient-header"
             :class="{
-              'mt-16': lgAndUp,
+              'mt-16 font-size-45': lgAndUp,
               'mt-10': md,
-              'mt-8': smAndDown,
+              'mt-n8': smAndDown,
             }"
           >
             Convert your Android phone into an SMS gateway.
@@ -478,7 +478,7 @@ const planYearlyMonthlyPrice = computed(
               </VTimeline>
             </VCol>
             <VCol cols="12" md="7">
-              <div class="w-100 mt-n8">
+              <div class="w-100" :class="{ 'mt-n8': mdAndUp }">
                 <VTabs
                   v-model="selectedTab"
                   color="primary"
@@ -765,7 +765,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <VBtn block to="/login" variant="tonal" size="large"
                   >Get Started</VBtn
                 >
-                <p class="mt-6 text-body-large">
+                <p class="mt-6 text-md-body-large text-title-medium">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -774,7 +774,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Send or receive up to <b>200</b> SMS/month
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -783,7 +783,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Offline notifications for your phone
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -792,7 +792,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Forward received messages via webhook
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -837,7 +837,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <VBtn block color="primary" to="/login" size="large"
                   >Try For Free</VBtn
                 >
-                <p class="mt-6 text-body-large">
+                <p class="mt-6 text-md-body-large text-title-medium">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -846,7 +846,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Send or receive up to <b>5,000</b> SMS/month
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -855,7 +855,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Offline notifications for your phone
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -864,7 +864,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Forward received messages via webhook
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -909,7 +909,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                 <VBtn block variant="tonal" to="/login" size="large"
                   >Try For Free</VBtn
                 >
-                <p class="mt-6 text-body-large">
+                <p class="mt-6 text-md-body-large text-title-medium">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -919,7 +919,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   Send or receive up to
                   <b>{{ pricingLabels[pricing] }}</b> SMS/month
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -928,7 +928,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Offline notifications for your phone
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -937,7 +937,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
                   />
                   Forward received messages via webhook
                 </p>
-                <p class="text-body-large mt-n3">
+                <p class="text-md-body-large text-title-medium mt-n3">
                   <VIcon
                     color="primary"
                     class="mt-n1"
@@ -1055,7 +1055,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
     <VContainer class="pb-16">
       <VRow>
         <VCol md="8" offset-md="2">
-          <h2 class="text-display-large mb-4 text-center">
+          <h2
+            class="text-md-display-large mb-4 text-center text-display-medium"
+          >
             Frequently Asked Questions
           </h2>
           <p class="text-center text-title-large mt-4 text-medium-emphasis">
@@ -1069,7 +1071,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
         <VCol md="8" offset-md="2" class="mb-16">
           <VExpansionPanels v-model="faqPanel">
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-headline-small">
+              <VExpansionPanelTitle
+                class="text-title-large text-md-headline-small"
+              >
                 Can I install the app on my iPhone?
                 <template #actions>
                   <VIcon :icon="faqPanel === 0 ? mdiMinus : mdiPlus" />
@@ -1084,7 +1088,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               </VExpansionPanelText>
             </VExpansionPanel>
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-headline-small">
+              <VExpansionPanelTitle
+                class="text-title-large text-md-headline-small"
+              >
                 What's the minimum supported Android version?
                 <template #actions>
                   <VIcon :icon="faqPanel === 1 ? mdiMinus : mdiPlus" />
@@ -1099,7 +1105,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               </VExpansionPanelText>
             </VExpansionPanel>
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-headline-small">
+              <VExpansionPanelTitle
+                class="text-title-large text-md-headline-small"
+              >
                 Can I send unlimited number of messages per month?
                 <template #actions>
                   <VIcon :icon="faqPanel === 2 ? mdiMinus : mdiPlus" />
@@ -1116,7 +1124,9 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
               </VExpansionPanelText>
             </VExpansionPanel>
             <VExpansionPanel>
-              <VExpansionPanelTitle class="text-headline-small">
+              <VExpansionPanelTitle
+                class="text-title-large text-md-headline-small"
+              >
                 Can I change the sender of the SMS message?
                 <template #actions>
                   <VIcon :icon="faqPanel === 3 ? mdiMinus : mdiPlus" />
@@ -1140,11 +1150,14 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());</code></pre>
 
 <style lang="scss">
 .gradient-header {
-  font-size: 4.5rem;
   color: #1ad37f;
   background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.font-size-45 {
+  font-size: 4.5rem;
 }
 
 .gradient-underline {
