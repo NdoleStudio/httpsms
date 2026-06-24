@@ -6,7 +6,7 @@ import {
 } from 'date-fns'
 import { Bar } from 'vue-chartjs'
 import type { ChartData, ChartOptions } from 'chart.js'
-import type { Heartbeat } from '~~/shared/types/heartbeat'
+import type { EntitiesHeartbeat } from '~~/shared/types/api'
 
 definePageMeta({
   middleware: ['auth'],
@@ -23,7 +23,7 @@ const phonesStore = usePhonesStore()
 const { formatPhoneNumber, formatTimestamp } = useFilters()
 
 const loading = ref(true)
-const heartbeats = ref<Heartbeat[]>([])
+const heartbeats = ref<EntitiesHeartbeat[]>([])
 const phoneId = computed(() => route.params.id as string)
 
 interface HeartbeatTableItem {

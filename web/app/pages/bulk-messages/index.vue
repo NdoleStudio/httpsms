@@ -2,7 +2,7 @@
 import { mdiArrowLeft, mdiMicrosoftExcel, mdiSendCheck } from '@mdi/js'
 import { ErrorMessages } from '~/utils/errors'
 import { toApiError } from '~/utils/api-error'
-import type { BulkMessageOrder } from '~~/shared/types/bulk-message'
+import type { EntitiesBulkMessage } from '~~/shared/types/api'
 import capitalize from '~/utils/capitalize'
 
 definePageMeta({
@@ -25,7 +25,7 @@ const loading = ref(true)
 const loadingHistory = ref(true)
 const errorTitle = ref('')
 const errorMessages = ref(new ErrorMessages())
-const bulkOrders = ref<BulkMessageOrder[]>([])
+const bulkOrders = ref<EntitiesBulkMessage[]>([])
 
 function parseErrors(error: unknown): ErrorMessages {
   const bag = new ErrorMessages()
@@ -50,7 +50,7 @@ async function fetchBulkOrders() {
   loadingHistory.value = true
   try {
     const api = useApi()
-    const response = await api<{ data: BulkMessageOrder[] }>(
+    const response = await api<{ data: EntitiesBulkMessage[] }>(
       '/v1/bulk-messages',
       {
         method: 'GET',

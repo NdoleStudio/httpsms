@@ -1,16 +1,18 @@
 import { defineStore } from 'pinia'
-import type { MessageThread } from '~~/shared/types/message-thread'
-import type { Message } from '~~/shared/types/message'
+import type {
+  EntitiesMessageThread,
+  EntitiesMessage,
+} from '~~/shared/types/api'
 
 export const useThreadsStore = defineStore('threads', () => {
-  const threads = ref<MessageThread[]>([])
+  const threads = ref<EntitiesMessageThread[]>([])
   const threadId = ref<string | null>(null)
   const loadingThreads = ref(true)
   const archivedThreads = ref(false)
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
 
-  const currentThread = computed<MessageThread | null>(() => {
+  const currentThread = computed<EntitiesMessageThread | null>(() => {
     return threads.value.find((x) => x.id === threadId.value) ?? null
   })
 
@@ -29,7 +31,7 @@ export const useThreadsStore = defineStore('threads', () => {
       return
     }
 
-    const response = await apiFetch<{ data: MessageThread[] }>(
+    const response = await apiFetch<{ data: EntitiesMessageThread[] }>(
       '/v1/message-threads',
       {
         params: {
@@ -45,18 +47,23 @@ export const useThreadsStore = defineStore('threads', () => {
     loadingThreads.value = false
   }
 
-  async function loadThreadMessages(id: string | null): Promise<Message[]> {
+  async function loadThreadMessages(
+    id: string | null,
+  ): Promise<EntitiesMessage[]> {
     threadId.value = id
     const thread = currentThread.value
     if (!thread) throw new Error(`Cannot find thread with id ${id}`)
 
-    const response = await apiFetch<{ data: Message[] }>('/v1/messages', {
-      params: {
-        contact: thread.contact,
-        owner: thread.owner,
-        limit: 50,
+    const response = await apiFetch<{ data: EntitiesMessage[] }>(
+      '/v1/messages',
+      {
+        params: {
+          contact: thread.contact,
+          owner: thread.owner,
+          limit: 50,
+        },
       },
-    })
+    )
     return response.data
   }
 

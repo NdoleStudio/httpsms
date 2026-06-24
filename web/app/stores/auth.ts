@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { setAuthHeader, setApiKey } from '~/composables/useApi'
-import type { User } from '~~/shared/types/user'
+import type { EntitiesUser } from '~~/shared/types/api'
 
 export interface AuthUser {
   email: string | null
@@ -12,7 +12,7 @@ export interface AuthUser {
 export const useAuthStore = defineStore('auth', () => {
   const authStateChanged = ref(false)
   const authUser = ref<AuthUser | null>(null)
-  const user = ref<User | null>(null)
+  const user = ref<EntitiesUser | null>(null)
   const { apiFetch } = useApi()
 
   async function setAuthUserAction(newUser: AuthUser | null | undefined) {
@@ -48,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function loadUser() {
-    const response = await apiFetch<{ data: User }>('/v1/users/me')
+    const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me')
     user.value = response.data
   }
 
@@ -61,7 +61,7 @@ export const useAuthStore = defineStore('auth', () => {
     const activePhone = phonesStore.activePhone
     if (!activePhone) return
 
-    const response = await apiFetch<{ data: User }>('/v1/users/me', {
+    const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me', {
       method: 'PUT',
       body: {
         active_phone_id: activePhone.id,
@@ -80,8 +80,8 @@ export const useAuthStore = defineStore('auth', () => {
     return response.message
   }
 
-  async function rotateApiKey(userId: string): Promise<User> {
-    const response = await apiFetch<{ data: User }>(
+  async function rotateApiKey(userId: string): Promise<EntitiesUser> {
+    const response = await apiFetch<{ data: EntitiesUser }>(
       `/v1/users/${userId}/api-keys`,
       {
         method: 'DELETE',

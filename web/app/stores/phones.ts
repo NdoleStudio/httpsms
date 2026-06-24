@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
-import type { EntitiesPhone } from '~~/shared/types/api'
-import type { Heartbeat } from '~~/shared/types/heartbeat'
+import type { EntitiesPhone, EntitiesHeartbeat } from '~~/shared/types/api'
 import { getApiErrorMessage } from '~/utils/api-error'
 
 export const usePhonesStore = defineStore('phones', () => {
   const phones = ref<EntitiesPhone[]>([])
   const owner = ref<string | null>(null)
-  const heartbeat = ref<Heartbeat | null>(null)
+  const heartbeat = ref<EntitiesHeartbeat | null>(null)
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
 
@@ -76,10 +75,13 @@ export const usePhonesStore = defineStore('phones', () => {
     }
   }
 
-  async function getHeartbeat(limit = 1): Promise<Heartbeat[]> {
-    const response = await apiFetch<{ data: Heartbeat[] }>('/v1/heartbeats', {
-      query: { limit, owner: owner.value },
-    })
+  async function getHeartbeat(limit = 1): Promise<EntitiesHeartbeat[]> {
+    const response = await apiFetch<{ data: EntitiesHeartbeat[] }>(
+      '/v1/heartbeats',
+      {
+        query: { limit, owner: owner.value },
+      },
+    )
     if (response.data.length > 0) {
       heartbeat.value = response.data[0]!
     } else {

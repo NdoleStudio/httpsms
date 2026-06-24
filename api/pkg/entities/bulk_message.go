@@ -4,7 +4,7 @@ import "time"
 
 // BulkMessage represents a summary of a bulk message batch
 type BulkMessage struct {
-	RequestID      string    `json:"request_id" example:"bulk-csv-a1B2c3D4e5"`
+	RequestID      string    `json:"request_id" example:"bulk-httpsms-file.csv"`
 	Total          int64     `json:"total" example:"150"`
 	ScheduledCount int64     `json:"scheduled_count" example:"50"`
 	PendingCount   int64     `json:"pending_count" example:"30"`

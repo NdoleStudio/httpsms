@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
-import type { EntitiesMessage } from '~~/shared/types/api'
+import type { EntitiesMessage, EntitiesBulkMessage } from '~~/shared/types/api'
 import type { SearchMessagesRequest } from '~~/shared/types/message'
-import type { BulkMessageOrder } from '~~/shared/types/bulk-message'
 import { getApiErrorMessage } from '~/utils/api-error'
 
 export type SIM = 'SIM1' | 'SIM2' | 'DEFAULT'
@@ -79,8 +78,8 @@ export const useMessagesStore = defineStore('messages', () => {
     })
   }
 
-  async function fetchBulkMessageOrders(): Promise<BulkMessageOrder[]> {
-    const response = await apiFetch<{ data: BulkMessageOrder[] }>(
+  async function fetchBulkMessageOrders(): Promise<EntitiesBulkMessage[]> {
+    const response = await apiFetch<{ data: EntitiesBulkMessage[] }>(
       '/v1/bulk-messages',
     )
     return response.data ?? []

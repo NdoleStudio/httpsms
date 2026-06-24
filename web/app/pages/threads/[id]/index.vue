@@ -18,7 +18,7 @@ import {
 import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import type { Message } from '~/shared/types/message'
+import type { EntitiesMessage } from '~~/shared/types/api'
 
 definePageMeta({
   middleware: ['auth'],
@@ -43,7 +43,7 @@ const formMessage = ref('')
 const submitting = ref(false)
 const loadingMessages = ref(false)
 const hideMessages = ref(true)
-const messages = ref<Message[]>([])
+const messages = ref<EntitiesMessage[]>([])
 const selectedMenuItem = ref(-1)
 const messageBody = ref<HTMLElement | null>(null)
 const form = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
@@ -68,29 +68,29 @@ const messageVisibility = computed(() =>
 )
 const contact = computed(() => threadsStore.currentThread?.contact ?? '')
 
-function isMT(message: Message): boolean {
+function isMT(message: EntitiesMessage): boolean {
   return message.type === 'mobile-terminated'
 }
 
-function isMo(message: Message): boolean {
+function isMo(message: EntitiesMessage): boolean {
   return message.type === 'mobile-originated'
 }
 
-function isMissedCall(message: Message): boolean {
+function isMissedCall(message: EntitiesMessage): boolean {
   return message.type === 'call/missed'
 }
 
-function isPending(message: Message): boolean {
+function isPending(message: EntitiesMessage): boolean {
   return ['sending', 'pending', 'scheduled'].includes(message.status)
 }
 
-function statusColor(message: Message): string {
+function statusColor(message: EntitiesMessage): string {
   if (message.status === 'sending') return 'warning'
   if (message.status === 'scheduled') return 'teal'
   return 'primary'
 }
 
-function canResend(message: Message): boolean {
+function canResend(message: EntitiesMessage): boolean {
   return (
     isMT(message) &&
     (message.status === 'expired' || message.status === 'failed')
@@ -114,9 +114,9 @@ function scrollToElement() {
 function loadMessages(hide = true) {
   loadingMessages.value = true
   const threadId = route.params.id as string
-  messagesStore
+  threadsStore
     .loadThreadMessages(threadId)
-    .then((msgs: Message[]) => {
+    .then((msgs: EntitiesMessage[]) => {
       messages.value = [...msgs].reverse()
     })
     .finally(() => {
@@ -143,20 +143,26 @@ async function loadData() {
 }
 
 async function archiveThread() {
-  await threadsStore.updateThread(threadsStore.currentThread!.id, true)
+  await threadsStore.updateThread({
+    threadId: threadsStore.currentThread!.id,
+    isArchived: true,
+  })
   setTimeout(() => {
     selectedMenuItem.value = -1
   }, 1000)
 }
 
 async function unArchiveThread() {
-  await threadsStore.updateThread(threadsStore.currentThread!.id, false)
+  await threadsStore.updateThread({
+    threadId: threadsStore.currentThread!.id,
+    isArchived: false,
+  })
   setTimeout(() => {
     selectedMenuItem.value = -1
   }, 1000)
 }
 
-async function resendMessage(message: Message) {
+async function resendMessage(message: EntitiesMessage) {
   await messagesStore.sendMessage({
     from: message.owner,
     to: message.contact,
@@ -169,7 +175,7 @@ async function resendMessage(message: Message) {
   loadMessages(false)
 }
 
-async function deleteMessage(message: Message) {
+async function deleteMessage(message: EntitiesMessage) {
   await messagesStore.deleteMessage(message.id)
   setTimeout(() => {
     selectedMenuItem.value = -1
@@ -177,7 +183,7 @@ async function deleteMessage(message: Message) {
   loadMessages(false)
 }
 
-async function copyMessageId(message: Message) {
+async function copyMessageId(message: EntitiesMessage) {
   await navigator.clipboard.writeText(message.id)
   notificationsStore.addNotification({
     message: 'Message ID copied to clipboard',
@@ -204,7 +210,7 @@ async function sendMessage(event: KeyboardEvent | Event) {
 
   submitting.value = true
   await messagesStore.sendMessage({
-    from: phonesStore.owner,
+    from: phonesStore.owner!,
     to: threadsStore.currentThread!.contact,
     content: formMessage.value,
     sim: 'DEFAULT',
@@ -256,7 +262,11 @@ onBeforeUnmount(() => {
               <VIcon :icon="mdiDotsVertical" />
             </VBtn>
           </template>
-          <VList class="px-2" nav :density="mdAndDown ? 'compact' : 'default'">
+          <VList
+            class="pa-0"
+            prepend-gap="24"
+            :density="mdAndDown ? 'compact' : 'default'"
+          >
             <VListItem
               v-if="
                 threadsStore.currentThread &&
@@ -293,12 +303,17 @@ onBeforeUnmount(() => {
           </VList>
         </VMenu>
       </VAppBar>
-      <VProgressLinear v-if="loadingMessages" color="primary" indeterminate />
+      <VProgressLinear
+        v-if="loadingMessages"
+        class="mt-n5 py-1"
+        color="primary"
+        indeterminate
+      />
       <VContainer v-if="threadsStore.currentThread">
         <div
           ref="messageBody"
           class="messages-body no-scrollbar"
-          :class="{ 'pr-7': lgAndUp }"
+          :class="{ 'pr-7 pl-3': lgAndUp }"
         >
           <VRow
             v-for="message in messages"
@@ -315,12 +330,20 @@ onBeforeUnmount(() => {
               }"
             >
               <VSpacer v-if="isMT(message)" />
-              <VAvatar
+              <v-avatar
                 v-if="isMo(message)"
                 :color="threadsStore.currentThread!.color"
+                size="40"
               >
-                <VIcon :icon="mdiAccount" />
-              </VAvatar>
+                <v-icon
+                  v-if="isValidPhoneNumber(message.contact)"
+                  color="white"
+                  >{{ mdiAccount }}</v-icon
+                >
+                <span v-else class="text-white text-headline-small">{{
+                  message.contact.substring(0, 1)
+                }}</span>
+              </v-avatar>
               <VAvatar v-if="isMissedCall(message)" color="#1e1e1e">
                 <VIcon size="large" color="red" :icon="mdiCallMissed" />
               </VAvatar>
@@ -331,33 +354,42 @@ onBeforeUnmount(() => {
                     <VIcon :icon="mdiDotsVertical" />
                   </VBtn>
                 </template>
-                <VList class="px-2" nav density="compact">
+                <VList class="pa-0" prepend-gap="24" density="compact">
                   <VListItem
                     v-if="canResend(message)"
                     @click.prevent="resendMessage(message)"
                   >
-                    <template #prepend><VIcon :icon="mdiRefresh" /></template>
-                    <VListItemTitle>Resend Message</VListItemTitle>
+                    <template #prepend
+                      ><VIcon size="small" :icon="mdiRefresh"
+                    /></template>
+                    <VListItemTitle class="text-body-medium"
+                      >Resend Message</VListItemTitle
+                    >
                   </VListItem>
                   <VListItem @click.prevent="copyMessageId(message)">
                     <template #prepend
-                      ><VIcon :icon="mdiContentCopy"
+                      ><VIcon size="small" :icon="mdiContentCopy"
                     /></template>
-                    <VListItemTitle>Copy Message ID</VListItemTitle>
+                    <VListItemTitle class="text-body-medium"
+                      >Copy Message ID</VListItemTitle
+                    >
                   </VListItem>
                   <VListItem @click.prevent="deleteMessage(message)">
                     <template #prepend
-                      ><VIcon :icon="mdiDelete" color="error"
+                      ><VIcon size="small" :icon="mdiDelete" color="error"
                     /></template>
-                    <VListItemTitle>Delete Message</VListItemTitle>
+                    <VListItemTitle class="text-body-medium"
+                      >Delete Message</VListItemTitle
+                    >
                   </VListItem>
                 </VList>
               </VMenu>
               <div>
                 <VCard
-                  class="ml-2"
                   rounded="shaped"
+                  :variant="isMT(message) ? 'flat' : 'tonal'"
                   :color="isMT(message) ? 'primary' : undefined"
+                  :class="{ 'ml-2': !isMT(message) }"
                 >
                   <VCardText
                     v-if="message.content"
@@ -372,7 +404,10 @@ onBeforeUnmount(() => {
                     >
                   </VCardText>
                 </VCard>
-                <VCard v-if="message.attachments?.length">
+                <VCard
+                  v-if="message.attachments?.length"
+                  :class="{ 'ml-2': !isMT(message) }"
+                >
                   <VCardText class="pb-2">
                     <a
                       v-for="(attachment, index) in message.attachments"
@@ -443,25 +478,33 @@ onBeforeUnmount(() => {
                     <VIcon :icon="mdiDotsVertical" />
                   </VBtn>
                 </template>
-                <VList class="px-2" nav density="compact">
+                <VList class="pa-0" prepend-gap="16" density="compact">
                   <VListItem
                     v-if="canResend(message)"
                     @click.prevent="resendMessage(message)"
                   >
-                    <template #prepend><VIcon :icon="mdiRefresh" /></template>
-                    <VListItemTitle>Resend Message</VListItemTitle>
+                    <template #prepend
+                      ><VIcon size="small" :icon="mdiRefresh"
+                    /></template>
+                    <VListItemTitle class="text-body-medium"
+                      >Resend Message</VListItemTitle
+                    >
                   </VListItem>
                   <VListItem @click.prevent="copyMessageId(message)">
                     <template #prepend
-                      ><VIcon :icon="mdiContentCopy"
+                      ><VIcon size="small" :icon="mdiContentCopy"
                     /></template>
-                    <VListItemTitle>Copy Message ID</VListItemTitle>
+                    <VListItemTitle class="text-body-medium"
+                      >Copy Message ID</VListItemTitle
+                    >
                   </VListItem>
                   <VListItem @click.prevent="deleteMessage(message)">
                     <template #prepend
-                      ><VIcon :icon="mdiDelete" color="error"
+                      ><VIcon size="small" :icon="mdiDelete" color="error"
                     /></template>
-                    <VListItemTitle>Delete Message</VListItemTitle>
+                    <VListItemTitle class="text-body-medium"
+                      >Delete Message</VListItemTitle
+                    >
                   </VListItem>
                 </VList>
               </VMenu>

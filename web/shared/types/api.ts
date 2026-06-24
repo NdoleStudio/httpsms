@@ -55,11 +55,13 @@ export interface EntitiesBulkMessage {
   created_at: string;
   /** @example 25 */
   delivered_count: number;
+  /** @example 3 */
+  expired_count: number;
   /** @example 5 */
   failed_count: number;
   /** @example 30 */
   pending_count: number;
-  /** @example "bulk-32343a19-da5e-4b1b-a767-3298a73703cb" */
+  /** @example "bulk-csv-a1B2c3D4e5" */
   request_id: string;
   /** @example 50 */
   scheduled_count: number;

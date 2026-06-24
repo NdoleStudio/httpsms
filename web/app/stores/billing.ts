@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import type { BillingUsage } from '~~/shared/types/billing'
-import type { User } from '~~/shared/types/user'
 import type {
+  EntitiesBillingUsage,
+  EntitiesUser,
   EntitiesWebhook,
   EntitiesDiscord,
   EntitiesMessageSendSchedule,
@@ -17,18 +17,20 @@ import type {
 } from '~~/shared/types/api'
 
 export const useBillingStore = defineStore('billing', () => {
-  const billingUsage = ref<BillingUsage | null>(null)
-  const billingUsageHistory = ref<BillingUsage[]>([])
+  const billingUsage = ref<EntitiesBillingUsage | null>(null)
+  const billingUsageHistory = ref<EntitiesBillingUsage[]>([])
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
 
   async function loadBillingUsage() {
-    const response = await apiFetch<{ data: BillingUsage }>('/v1/billing/usage')
+    const response = await apiFetch<{ data: EntitiesBillingUsage }>(
+      '/v1/billing/usage',
+    )
     billingUsage.value = response.data
   }
 
   async function loadBillingUsageHistory() {
-    const response = await apiFetch<{ data: BillingUsage[] }>(
+    const response = await apiFetch<{ data: EntitiesBillingUsage[] }>(
       '/v1/billing/usage-history',
     )
     billingUsageHistory.value = response.data
@@ -257,7 +259,7 @@ export const useBillingStore = defineStore('billing', () => {
     payload: RequestsUserNotificationUpdate,
   ): Promise<void> {
     const authStore = useAuthStore()
-    const response = await apiFetch<{ data: User }>(
+    const response = await apiFetch<{ data: EntitiesUser }>(
       `/v1/users/${userId}/notifications`,
       {
         method: 'PUT',
