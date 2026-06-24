@@ -106,22 +106,24 @@ async function logout() {
           </div>
         </div>
       </v-toolbar-title>
-      <div v-if="phonesStore.owner" class="d-flex mt-n4">
-        <p class="text-medium-emphasis mb-n1">
+      <div v-if="phonesStore.owner" class="d-flex mt-n2">
+        <p class="text-medium-emphasis mb-n1 mt-0">
           {{ phoneCountry(phonesStore.owner) }}
         </p>
         <v-tooltip v-if="phonesStore.heartbeat" location="end">
           <template #activator="{ props: tooltipProps }">
             <v-btn
               v-bind="tooltipProps"
-              size="x-small"
+              size="small"
+              density="compact"
               :to="{
                 name: 'heartbeats-id',
                 params: { id: phonesStore.owner },
               }"
               color="success"
-              class="ml-2 mt-1 mb-n1"
+              class="ml-2 mb-0 mt-1"
               icon
+              variant="text"
             >
               <v-icon
                 v-if="phonesStore.heartbeat.charging"
@@ -129,10 +131,10 @@ async function logout() {
                 class="mt-n1"
                 :icon="mdiBatteryChargingHigh"
               />
-              <v-icon v-else size="x-small" :icon="mdiCircle" />
+              <v-icon v-else size="x-small" color="success" :icon="mdiCircle" />
             </v-btn>
           </template>
-          <h4>Last Heartbeat</h4>
+          <h4 class="font-weight-bold mt-0 mb-0">Last Heartbeat</h4>
           {{ humanizeTime(phonesStore.heartbeat.timestamp) }} ago
         </v-tooltip>
       </div>

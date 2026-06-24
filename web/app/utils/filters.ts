@@ -68,8 +68,8 @@ export function formatBillingPeriodDateOrdinal(value: string): string {
 
 export function humanizeTime(value: string): string {
   const durations = intervalToDuration({
-    start: new Date(),
-    end: new Date(value),
+    start: new Date(value),
+    end: new Date(),
   })
   return formatDuration(durations)
 }
