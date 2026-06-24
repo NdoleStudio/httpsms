@@ -83,10 +83,11 @@ async function logout() {
   <v-sheet class="pa-4 d-flex" :elevation="lgAndUp ? 0 : 2" color="black">
     <div :class="{ 'px-2': mdAndDown }">
       <v-toolbar-title>
-        <div class="d-flex pt-2" style="width: 245px">
+        <div class="d-flex pt-2" style="width: 260px">
           <v-select
             variant="outlined"
             density="compact"
+            color="primary"
             :disabled="owners.length === 0"
             placeholder="Phone Numbers"
             :class="{ 'mb-n5': !phonesStore.owner }"

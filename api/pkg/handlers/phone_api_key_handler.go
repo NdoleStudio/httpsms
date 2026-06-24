@@ -10,7 +10,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 )
@@ -66,12 +66,12 @@ func (h *PhoneAPIKeyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phone-api-keys [get]
-func (h *PhoneAPIKeyHandler) index(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) index(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.PhoneAPIKeyIndex
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -107,7 +107,7 @@ func (h *PhoneAPIKeyHandler) index(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phone-api-keys [post]
-func (h *PhoneAPIKeyHandler) store(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) store(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -125,7 +125,7 @@ func (h *PhoneAPIKeyHandler) store(c *fiber.Ctx) error {
 	}
 
 	var request requests.PhoneAPIKeyStoreRequest
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -161,7 +161,7 @@ func (h *PhoneAPIKeyHandler) store(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /phone-api-keys/{phoneAPIKeyID} [delete]
-func (h *PhoneAPIKeyHandler) delete(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) delete(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -201,7 +201,7 @@ func (h *PhoneAPIKeyHandler) delete(c *fiber.Ctx) error {
 // @Failure      422  			{object} 	responses.UnprocessableEntity
 // @Failure      500  			{object}  	responses.InternalServerError
 // @Router       /phone-api-keys/{phoneAPIKeyID}/phones/{phoneID} [delete]
-func (h *PhoneAPIKeyHandler) deletePhone(c *fiber.Ctx) error {
+func (h *PhoneAPIKeyHandler) deletePhone(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 

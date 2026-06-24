@@ -216,6 +216,7 @@ function handleError(error: unknown, isSocial = false) {
       <v-text-field
         v-model="email"
         label="Email"
+        color="primary"
         type="email"
         variant="outlined"
         density="comfortable"
@@ -226,6 +227,7 @@ function handleError(error: unknown, isSocial = false) {
         v-model="password"
         label="Password"
         type="password"
+        color="primary"
         variant="outlined"
         density="comfortable"
         class="mb-2"

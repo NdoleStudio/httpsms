@@ -17,7 +17,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -82,12 +82,12 @@ func (h *DiscordHandler) RegisterRoutes(app *fiber.App, authMiddleware fiber.Han
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /discord-integrations 	[get]
-func (h *DiscordHandler) Index(c *fiber.Ctx) error {
+func (h *DiscordHandler) Index(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.DiscordIndex
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall URL [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -123,7 +123,7 @@ func (h *DiscordHandler) Index(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /discord-integrations/{discordID} [delete]
-func (h *DiscordHandler) Delete(c *fiber.Ctx) error {
+func (h *DiscordHandler) Delete(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -159,12 +159,12 @@ func (h *DiscordHandler) Delete(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /discord-integrations/{discordID} 	[put]
-func (h *DiscordHandler) Update(c *fiber.Ctx) error {
+func (h *DiscordHandler) Update(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.DiscordUpdate
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into [%T]", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -201,14 +201,14 @@ func (h *DiscordHandler) Update(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /discord-integrations [post]
-func (h *DiscordHandler) Store(c *fiber.Ctx) error {
+func (h *DiscordHandler) Store(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.DiscordStore
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall body [%s] into [%T]", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -253,7 +253,7 @@ func (h *DiscordHandler) Store(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /discord/event [post]
-func (h *DiscordHandler) Event(c *fiber.Ctx) error {
+func (h *DiscordHandler) Event(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -297,7 +297,7 @@ func (h *DiscordHandler) createRequest(payload map[string]any) requests.MessageS
 	}
 }
 
-func (h *DiscordHandler) sendSMS(ctx context.Context, c *fiber.Ctx, payload map[string]any) error {
+func (h *DiscordHandler) sendSMS(ctx context.Context, c fiber.Ctx, payload map[string]any) error {
 	_, span, ctxLogger := h.tracer.StartWithLogger(ctx, h.logger)
 	defer span.End()
 
@@ -420,7 +420,7 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c *fiber.Ctx, payload map[
 // verifyInteraction implements message verification of the discord interactions api
 // signing algorithm, as documented here:
 // https://discord.com/developers/docs/interactions/receiving-and-responding#security-and-authorization
-func (h *DiscordHandler) verifyInteraction(ctxLogger telemetry.Logger, c *fiber.Ctx) bool {
+func (h *DiscordHandler) verifyInteraction(ctxLogger telemetry.Logger, c fiber.Ctx) bool {
 	var msg bytes.Buffer
 
 	signature := c.Get("X-Signature-Ed25519")

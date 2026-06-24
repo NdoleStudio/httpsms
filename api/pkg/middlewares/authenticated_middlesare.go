@@ -3,7 +3,7 @@ package middlewares
 import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 
 // Authenticated checks if the request is authenticated
 func Authenticated(tracer telemetry.Tracer) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		_, span := tracer.StartFromFiberCtx(c, "middlewares.Authenticated")
 		defer span.End()
 

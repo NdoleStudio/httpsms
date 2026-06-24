@@ -6,7 +6,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -49,7 +49,7 @@ func (h *AttachmentHandler) RegisterRoutes(router fiber.Router) {
 // @Failure      404  {object}  responses.NotFound
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /v1/attachments/{userID}/{messageID}/{attachmentIndex}/{filename} [get]
-func (h *AttachmentHandler) GetAttachment(c *fiber.Ctx) error {
+func (h *AttachmentHandler) GetAttachment(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 

@@ -8,7 +8,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -57,14 +57,14 @@ func (h *BillingHandler) RegisterRoutes(router fiber.Router, middlewares ...fibe
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /billing/usage-history [get]
-func (h *BillingHandler) UsageHistory(c *fiber.Ctx) error {
+func (h *BillingHandler) UsageHistory(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.BillingUsageHistory
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -99,7 +99,7 @@ func (h *BillingHandler) UsageHistory(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /billing/usage [get]
-func (h *BillingHandler) Usage(c *fiber.Ctx) error {
+func (h *BillingHandler) Usage(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 

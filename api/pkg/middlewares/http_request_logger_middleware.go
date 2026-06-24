@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -15,7 +15,7 @@ const (
 
 // HTTPRequestLogger adds a trace for an HTTP request
 func HTTPRequestLogger(tracer telemetry.Tracer, logger telemetry.Logger) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		_, span, ctxLogger := tracer.StartFromFiberCtxWithLogger(c, logger)
 		defer span.End()
 

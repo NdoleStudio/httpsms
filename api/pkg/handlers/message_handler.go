@@ -17,7 +17,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -80,14 +80,14 @@ func (h *MessageHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewa
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/send [post]
-func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
+func (h *MessageHandler) PostSend(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageSend
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -128,14 +128,14 @@ func (h *MessageHandler) PostSend(c *fiber.Ctx) error {
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/bulk-send [post]
-func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
+func (h *MessageHandler) BulkSend(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageBulkSend
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -190,7 +190,7 @@ func (h *MessageHandler) BulkSend(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages/outstanding [get]
-func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
+func (h *MessageHandler) GetOutstanding(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -198,7 +198,7 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageOutstanding
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -244,14 +244,14 @@ func (h *MessageHandler) GetOutstanding(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages [get]
-func (h *MessageHandler) Index(c *fiber.Ctx) error {
+func (h *MessageHandler) Index(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageIndex
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -289,14 +289,14 @@ func (h *MessageHandler) Index(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/{messageID}/events [post]
-func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
+func (h *MessageHandler) PostEvent(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageEvent
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -352,14 +352,14 @@ func (h *MessageHandler) PostEvent(c *fiber.Ctx) error {
 // @Failure      422  {object}  responses.UnprocessableEntity
 // @Failure      500  {object}  responses.InternalServerError
 // @Router       /messages/receive [post]
-func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
+func (h *MessageHandler) PostReceive(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageReceive
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -406,7 +406,7 @@ func (h *MessageHandler) PostReceive(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/{messageID} [delete]
-func (h *MessageHandler) Delete(c *fiber.Ctx) error {
+func (h *MessageHandler) Delete(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -454,7 +454,7 @@ func (h *MessageHandler) Delete(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/{messageID} [get]
-func (h *MessageHandler) Get(c *fiber.Ctx) error {
+func (h *MessageHandler) Get(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -496,14 +496,14 @@ func (h *MessageHandler) Get(c *fiber.Ctx) error {
 // @Failure      422  		{object} 	responses.UnprocessableEntity
 // @Failure      500  		{object}  	responses.InternalServerError
 // @Router       /messages/calls/missed [post]
-func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
+func (h *MessageHandler) PostCallMissed(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.MessageCallMissed
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -548,12 +548,12 @@ func (h *MessageHandler) PostCallMissed(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /messages/search [get]
-func (h *MessageHandler) Search(c *fiber.Ctx) error {
+func (h *MessageHandler) Search(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.MessageSearch
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params in [%s] into [%T]", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)

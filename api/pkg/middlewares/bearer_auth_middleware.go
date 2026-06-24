@@ -8,14 +8,14 @@ import (
 	"firebase.google.com/go/auth"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
 // BearerAuth authenticates a user based on the bearer token
 func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *auth.Client) fiber.Handler {
 	logger = logger.WithService("middlewares.BearerAuth")
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		_, span := tracer.StartFromFiberCtx(c, "middlewares.BearerAuth")
 		defer span.End()
 

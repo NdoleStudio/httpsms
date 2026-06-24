@@ -8,7 +8,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -43,12 +43,12 @@ func (h *EventsHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber
 
 // Dispatch a cloud event
 // This is an internal API so no documentation provided
-func (h *EventsHandler) Dispatch(c *fiber.Ctx) error {
+func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request cloudevents.Event
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)

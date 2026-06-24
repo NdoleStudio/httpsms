@@ -20,7 +20,7 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 
-	"github.com/gofiber/contrib/otelfiber"
+	otelfiber "github.com/gofiber/contrib/v3/otel"
 	"gorm.io/plugin/opentelemetry/tracing"
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
@@ -60,16 +60,16 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/middlewares"
 	"google.golang.org/api/option"
 
-	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/compress"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/listeners"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
-	"github.com/gofiber/fiber/v2"
-	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/swagger"
+	swagger "github.com/gofiber/contrib/v3/swaggo"
+	"github.com/gofiber/fiber/v3"
+	fiberLogger "github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/palantir/stacktrace"
 	ttlCache "github.com/patrickmn/go-cache"
 	"gorm.io/gorm"
@@ -176,7 +176,7 @@ func (container *Container) App() (app *fiber.App) {
 	app = fiber.New()
 
 	// Health check endpoint registered before middleware for reliable Docker health checks
-	app.Get("/health", func(c *fiber.Ctx) error {
+	app.Get("/health", func(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
