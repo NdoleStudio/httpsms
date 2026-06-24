@@ -97,9 +97,9 @@ function onInstallApp() {
       </v-btn>
     </div>
     <v-list
-      class="pt-0"
-      lines="two"
+      class="py-0"
       v-if="!threadsStore.loadingThreads && threadsStore.threads.length > 0"
+      lines="two"
     >
       <v-list-item
         v-for="thread in threadsStore.threads"

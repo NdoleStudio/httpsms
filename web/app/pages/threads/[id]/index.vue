@@ -244,18 +244,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <VContainer fluid class="px-0 pt-0 pb-0" :class="{ 'fill-height': lgAndUp }">
-    <div class="w-100 h-100">
-      <VAppBar height="60" :density="mdAndDown ? 'compact' : 'default'">
+  <VContainer class="px-0" :class="{ 'fill-height': lgAndUp }">
+    <div class="h-100">
+      <VAppBar>
         <VBtn v-if="mdAndDown" icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
-        <VToolbarTitle>
-          <span v-if="threadsStore.currentThread">
-            {{ formatPhoneNumber(threadsStore.currentThread.contact) }}
-          </span>
+        <VToolbarTitle v-if="threadsStore.currentThread">
+          {{ formatPhoneNumber(threadsStore.currentThread.contact) }}
         </VToolbarTitle>
-        <VSpacer />
         <VMenu>
           <template #activator="{ props }">
             <VBtn icon variant="text" class="mt-2" v-bind="props">
@@ -558,7 +555,7 @@ onBeforeUnmount(() => {
   padding-top: 50px;
   max-height: calc(100vh - 200px);
   position: absolute;
-  width: 100%;
+  width: calc(100vw - 8px);
   bottom: 120px;
 }
 

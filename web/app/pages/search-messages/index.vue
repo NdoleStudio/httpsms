@@ -42,7 +42,7 @@ useHead({
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const { mdAndDown, mdAndUp, smAndDown, lgAndUp } = useDisplay()
+const { mdAndUp, smAndDown, lgAndUp } = useDisplay()
 const messagesStore = useMessagesStore()
 const phonesStore = usePhonesStore()
 const authStore = useAuthStore()
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
 <template>
   <VContainer fluid class="px-0 pt-0" :class="{ 'fill-height': lgAndUp }">
     <div class="w-100 h-100">
-      <VAppBar height="60" :density="mdAndDown ? 'compact' : 'default'">
+      <VAppBar>
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>

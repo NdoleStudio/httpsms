@@ -142,7 +142,7 @@ async function logout() {
     <v-spacer />
     <v-menu>
       <template #activator="{ props: menuProps }">
-        <v-btn v-bind="menuProps" icon variant="text" class="mt-2">
+        <v-btn v-bind="menuProps" icon variant="text" class="mt-2 mr-n3">
           <v-icon :icon="mdiDotsVertical" />
         </v-btn>
       </template>

@@ -20,7 +20,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <VContainer fluid :class="{ 'fill-height': lgAndUp }">
+  <VContainer class="pa-0" fluid :class="{ 'fill-height': lgAndUp }">
     <VRow
       v-if="lgAndUp"
       align="center"

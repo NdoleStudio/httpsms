@@ -17,7 +17,7 @@ useHead({
 })
 
 const router = useRouter()
-const { mdAndDown } = useDisplay()
+const { mdAndDown, mdAndUp } = useDisplay()
 const notificationsStore = useNotificationsStore()
 const phonesStore = usePhonesStore()
 const { useApi } = useApiComposable()
@@ -109,15 +109,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <VContainer fluid class="pa-0" :class="{ 'fill-height': true }">
+  <VContainer fluid :class="{ 'fill-height': true }">
     <div class="w-100 h-100">
-      <VAppBar height="60" :density="mdAndDown ? 'compact' : 'default'">
+      <VAppBar>
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
         <VToolbarTitle>
           New Message
-          <template v-if="phonesStore.owner">
+          <template v-if="phonesStore.owner && mdAndUp">
             <VIcon size="12" class="mx-2" color="primary" :icon="mdiCircle" />
             {{ formatPhoneNumber(phonesStore.owner) }}
           </template>

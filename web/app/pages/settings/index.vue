@@ -769,9 +769,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <VContainer fluid class="pa-0" :class="{ 'fill-height': lgAndUp }">
+  <VContainer fluid :class="{ 'fill-height': lgAndUp }">
     <div class="w-100 h-100">
-      <VAppBar height="60" :density="mdAndDown ? 'compact' : 'default'">
+      <VAppBar>
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>

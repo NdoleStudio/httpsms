@@ -16,7 +16,7 @@ useHead({
 })
 
 const config = useRuntimeConfig()
-const { mdAndDown, lgAndUp } = useDisplay()
+const { lgAndUp } = useDisplay()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const phonesStore = usePhonesStore()
@@ -228,11 +228,11 @@ onBeforeUnmount(() => {
 <template>
   <VContainer fluid class="px-0 pt-0" :class="{ 'fill-height': lgAndUp }">
     <div class="w-100 h-100">
-      <VAppBar height="60" :density="mdAndDown ? 'compact' : 'default'">
+      <VAppBar>
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
-        <VToolbarTitle> Phone API Keys </VToolbarTitle>
+        <VToolbarTitle>Phone API Keys</VToolbarTitle>
         <VProgressLinear
           color="primary"
           :active="loading"
@@ -253,7 +253,9 @@ onBeforeUnmount(() => {
                 class="mt-1 mr-2"
                 indeterminate
               />
-              <h5 class="text-display-small my-0">Phone API Keys</h5>
+              <h5 class="text-md-display-small text-title-large my-0">
+                Phone API Keys
+              </h5>
               <VBtn
                 color="primary"
                 class="ml-4 mt-1"

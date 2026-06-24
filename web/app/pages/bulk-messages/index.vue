@@ -14,7 +14,7 @@ useHead({
 })
 
 const router = useRouter()
-const { mdAndUp, mdAndDown } = useDisplay()
+const { mdAndUp } = useDisplay()
 const authStore = useAuthStore()
 const notificationsStore = useNotificationsStore()
 const { formatTimestamp } = useFilters()
@@ -111,7 +111,7 @@ onMounted(async () => {
 <template>
   <VContainer fluid class="px-0 pt-0" :class="{ 'fill-height': true }">
     <div class="w-100 h-100">
-      <VAppBar height="60" :density="mdAndDown ? 'compact' : 'default'">
+      <VAppBar>
         <VBtn icon to="/threads">
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
