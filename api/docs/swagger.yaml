@@ -48,6 +48,9 @@ definitions:
       delivered_count:
         example: 25
         type: integer
+      expired_count:
+        example: 3
+        type: integer
       failed_count:
         example: 5
         type: integer
@@ -55,7 +58,7 @@ definitions:
         example: 30
         type: integer
       request_id:
-        example: bulk-32343a19-da5e-4b1b-a767-3298a73703cb
+        example: bulk-csv-a1B2c3D4e5
         type: string
       scheduled_count:
         example: 50
@@ -69,6 +72,7 @@ definitions:
     required:
     - created_at
     - delivered_count
+    - expired_count
     - failed_count
     - pending_count
     - request_id

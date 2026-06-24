@@ -3348,6 +3348,7 @@ const docTemplate = `{
             "required": [
                 "created_at",
                 "delivered_count",
+                "expired_count",
                 "failed_count",
                 "pending_count",
                 "request_id",
@@ -3364,6 +3365,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 25
                 },
+                "expired_count": {
+                    "type": "integer",
+                    "example": 3
+                },
                 "failed_count": {
                     "type": "integer",
                     "example": 5
@@ -3374,7 +3379,7 @@ const docTemplate = `{
                 },
                 "request_id": {
                     "type": "string",
-                    "example": "bulk-32343a19-da5e-4b1b-a767-3298a73703cb"
+                    "example": "bulk-csv-a1B2c3D4e5"
                 },
                 "scheduled_count": {
                     "type": "integer",
