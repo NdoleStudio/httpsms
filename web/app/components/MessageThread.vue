@@ -51,8 +51,7 @@ function onInstallApp() {
         threadsStore.threads.length === 0 &&
         !threadsStore.archivedThreads
       "
-      class="text-center mt-8 mx-3"
-      :color="mdAndDown ? '#121212' : '#363636'"
+      class="text-center mt-6 mx-3"
     >
       <div v-if="mdAndDown">
         <v-img
@@ -69,7 +68,7 @@ function onInstallApp() {
         color="primary"
         :to="{ name: 'messages' }"
       >
-        <v-icon :icon="mdiPlus" />
+        <v-icon :icon="mdiPlus" start />
         New Message
       </v-btn>
     </v-sheet>

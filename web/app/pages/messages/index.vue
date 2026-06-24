@@ -3,6 +3,7 @@ import { mdiArrowLeft, mdiSend, mdiCircle } from '@mdi/js'
 import {
   isValidPhoneNumber,
   getCountryCallingCode,
+  parsePhoneNumber,
   type CountryCode,
 } from 'libphonenumber-js'
 import { toApiError } from '~/utils/api-error'
@@ -98,6 +99,12 @@ async function sendMessage() {
 
 onMounted(async () => {
   await phonesStore.loadPhones()
+  if (phonesStore.owner) {
+    const country = parsePhoneNumber(phonesStore.owner)?.country
+    if (country) {
+      phoneCountry.value = country
+    }
+  }
 })
 </script>
 
@@ -119,6 +126,12 @@ onMounted(async () => {
       <VContainer>
         <VRow>
           <VCol cols="12" md="8" offset-md="2" xl="6" offset-xl="3">
+            <p class="mb-8 mt-0">
+              Enter the recipient's phone number and your message below, and
+              we'll deliver a real SMS it through your connected Android phone.
+              You can also text a short code like
+              <v-code>24273</v-code> without entering a full phone number.
+            </p>
             <form @submit.prevent="sendMessage">
               <v-phone-input
                 v-model="formPhoneNumber"
@@ -145,22 +158,6 @@ onMounted(async () => {
                 persistent-placeholder
                 placeholder="Enter your message here"
                 label="Content"
-              />
-              <VTextarea
-                v-model="formAttachments"
-                :error="errors.has('attachments')"
-                :error-messages="errors.get('attachments')"
-                :disabled="sending"
-                variant="outlined"
-                density="compact"
-                rows="2"
-                color="primary"
-                class="mb-8"
-                persistent-placeholder
-                persistent-hint
-                hint="The message will be sent as an MMS when a comma separated list of attachment URLs are present"
-                placeholder="https://example.com/image.jpg, https://example.com/video.mp4"
-                label="Attachment URLs (optional)"
               />
               <loading-button
                 :disabled="sending"

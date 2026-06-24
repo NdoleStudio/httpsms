@@ -66,10 +66,9 @@ function startPoller() {
 
 <template>
   <v-app>
-    <v-divider v-if="appStore.isLocal" class="py-2 bg-warning" />
     <v-navigation-drawer v-if="lgAndUp && hasDrawer" :width="400" permanent>
       <template #prepend>
-        <v-divider v-if="appStore.isLocal" class="py-2 bg-warning" />
+        <div v-if="appStore.isLocal" class="py-2 bg-warning" />
         <MessageThreadHeader />
         <div class="overflow-y-auto v-navigation-drawer__message-thread">
           <MessageThread />
