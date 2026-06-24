@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { useDisplay } from 'vuetify'
-import { mdiPlus, mdiDownload, mdiCheckAll, mdiCheck, mdiAlert } from '@mdi/js'
+import {
+  mdiPlus,
+  mdiDownload,
+  mdiCheckAll,
+  mdiCheck,
+  mdiAlert,
+  mdiAccount,
+} from '@mdi/js'
 import { formatPhoneNumber } from '~/utils/filters'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 
 const { mdAndDown } = useDisplay()
 const threadsStore = useThreadsStore()
 const phonesStore = usePhonesStore()
 const appStore = useAppStore()
 const notificationsStore = useNotificationsStore()
-
-function getInitials(contact: string): string {
-  const formatted = formatPhoneNumber(contact)
-  return formatted.substring(0, 2)
-}
 
 function threadDate(date: string): string {
   return new Date(date).toLocaleString(undefined, {
@@ -96,6 +99,7 @@ function onInstallApp() {
     </div>
     <v-list
       class="pt-0"
+      lines="two"
       v-if="!threadsStore.loadingThreads && threadsStore.threads.length > 0"
     >
       <v-list-item
@@ -106,51 +110,59 @@ function onInstallApp() {
       >
         <template #prepend>
           <v-avatar :color="thread.color" size="40">
-            <span class="text-white text-body-medium">{{
-              getInitials(thread.contact)
+            <v-icon v-if="isValidPhoneNumber(thread.contact)" color="white">{{
+              mdiAccount
+            }}</v-icon>
+            <span v-else class="text-white text-headline-small">{{
+              thread.contact.substring(0, 1)
             }}</span>
           </v-avatar>
         </template>
         <v-list-item-title>{{
           formatPhoneNumber(thread.contact)
         }}</v-list-item-title>
-        <v-list-item-subtitle class="text-truncate" style="max-width: 250px">
+        <v-list-item-subtitle
+          class="text-truncate mt-1"
+          style="max-width: 250px"
+        >
           {{ thread.last_message_content }}
         </v-list-item-subtitle>
         <template #append>
           <div class="d-flex flex-column align-end">
-            <span class="text-caption text-medium-emphasis">
+            <span class="text-body-small text-medium-emphasis">
               {{ threadDate(thread.order_timestamp) }}
             </span>
-            <v-icon
-              v-if="thread.status === 'expired'"
-              color="warning"
-              size="small"
-              :icon="mdiAlert"
-            />
-            <v-icon
-              v-else-if="thread.status === 'delivered'"
-              color="primary"
-              size="small"
-              :icon="mdiCheckAll"
-            />
-            <v-icon
-              v-else-if="thread.status === 'received'"
-              color="success"
-              size="small"
-              :icon="mdiCheckAll"
-            />
-            <v-icon
-              v-else-if="thread.status === 'sent'"
-              size="small"
-              :icon="mdiCheck"
-            />
-            <v-icon
-              v-else-if="thread.status === 'failed'"
-              color="error"
-              size="small"
-              :icon="mdiAlert"
-            />
+            <div class="mt-1">
+              <v-icon
+                v-if="thread.status === 'expired'"
+                color="warning"
+                size="x-small"
+                :icon="mdiAlert"
+              />
+              <v-icon
+                v-else-if="thread.status === 'delivered'"
+                color="primary"
+                size="x-small"
+                :icon="mdiCheckAll"
+              />
+              <v-icon
+                v-else-if="thread.status === 'received'"
+                color="success"
+                size="x-small"
+                :icon="mdiCheckAll"
+              />
+              <v-icon
+                v-else-if="thread.status === 'sent'"
+                size="x-small"
+                :icon="mdiCheck"
+              />
+              <v-icon
+                v-else-if="thread.status === 'failed'"
+                color="error"
+                size="x-small"
+                :icon="mdiAlert"
+              />
+            </div>
           </div>
         </template>
       </v-list-item>
