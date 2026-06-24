@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
                     </a>
                   </VCardText>
                 </VCard>
-                <div class="d-flex">
+                <div class="d-flex mt-n2">
                   <p class="ml-2 text-medium-emphasis text-body-small mr-2">
                     {{ new Date(message.order_timestamp).toLocaleString() }}
                   </p>
@@ -437,7 +437,7 @@ onBeforeUnmount(() => {
                         <VIcon
                           v-if="message.status === 'expired'"
                           color="warning"
-                          class="mt-n2"
+                          class="mt-2"
                           :icon="mdiAlert"
                         />
                         <VProgressCircular
@@ -445,24 +445,24 @@ onBeforeUnmount(() => {
                           indeterminate
                           :size="14"
                           :width="1"
-                          class="mt-n2"
+                          class="mt-2"
                           :color="statusColor(message)"
                         />
                         <VIcon
                           v-else-if="message.status === 'delivered'"
                           color="primary"
-                          class="mt-n6"
+                          class="mt-2"
                           :icon="mdiCheckAll"
                         />
                         <VIcon
                           v-else-if="message.status === 'sent'"
-                          class="mt-n6"
+                          class="mt-2"
                           :icon="mdiCheck"
                         />
                         <VIcon
                           v-else-if="message.status === 'failed'"
                           color="error"
-                          class="mt-n2"
+                          class="mt-2"
                           :icon="mdiAlert"
                         />
                       </div>
