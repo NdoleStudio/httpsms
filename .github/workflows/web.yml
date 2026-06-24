@@ -51,7 +51,7 @@ jobs:
   deploy:
     name: Deploy
     needs: validate
-#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -77,11 +77,11 @@ jobs:
           command: pages deploy web/.output/public --project-name=httpsms
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
-#      - name: Firebase Deploy 🚀
-#        uses: FirebaseExtended/action-hosting-deploy@v0
-#        with:
-#          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-#          channelId: live
-#          entryPoint: "./web"
-#          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}"
-#          projectId: httpsms-86c51
+      - name: Firebase Deploy 🚀
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          channelId: live
+          entryPoint: "./web"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}"
+          projectId: httpsms-86c51
