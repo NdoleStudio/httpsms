@@ -70,12 +70,11 @@ jobs:
         run: mv .env.production .env && echo "GITHUB_SHA=${GITHUB_SHA}" >> .env && pnpm run generate
 
       - name: Cloudflare Deploy 🚀
-        uses: cloudflare/pages-action@1
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: httpsms
-          directory: web/.output/public
+          command: pages deploy web/.output/public --project-name=httpsms
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Firebase Deploy 🚀
