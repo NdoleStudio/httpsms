@@ -47,8 +47,10 @@ func getAPIKeyFromRequest(c fiber.Ctx) string {
 		APIKey string `json:"x-api-key" form:"x-api-key" query:"x-api-key"`
 	}{}
 
-	if err := c.Bind().Body(&payload); err == nil && payload.APIKey != "" {
-		return payload.APIKey
+	if c.HasBody() {
+		if err := c.Bind().Body(&payload); err == nil && payload.APIKey != "" {
+			return payload.APIKey
+		}
 	}
 
 	if err := c.Bind().Query(&payload); err != nil {

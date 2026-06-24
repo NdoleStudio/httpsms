@@ -84,5 +84,3 @@ func functionName() string {
 
 	return strings.ReplaceAll(frame.Function, "github.com/NdoleStudio/http-sms-manager/", "")
 }
-
-// fiber:context-methods migrated
