@@ -442,7 +442,8 @@ onMounted(async () => {
             <!-- Overview -->
             <h4 class="text-headline-large mb-3 mt-8">Overview</h4>
             <p class="text-medium-emphasis">
-              This is the summary of the sent messages and received messages in
+              This is the summary of the sent messages and received messages
+              from
               <code
                 v-if="billingStore.billingUsage"
                 class="font-weight-bold"
@@ -633,13 +634,14 @@ onMounted(async () => {
           <b>{{ selectedPayment?.attributes.total_formatted }}</b> payment on
           {{ formatTimestamp(selectedPayment?.attributes.created_at ?? '') }}
         </VCardSubtitle>
-        <VCardText>
+        <VCardText class="pb-0">
           <VContainer>
             <VRow>
               <VCol cols="12">
                 <VTextField
                   v-model="invoiceFormName"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('name')"
                   :error-messages="errorMessages.get('name')"
@@ -653,6 +655,7 @@ onMounted(async () => {
                 <VTextField
                   v-model="invoiceFormAddress"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('address')"
                   :error-messages="errorMessages.get('address')"
@@ -682,6 +685,7 @@ onMounted(async () => {
                   v-if="invoiceStateOptions.length === 0"
                   v-model="invoiceFormState"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('state')"
                   :error-messages="errorMessages.get('state')"
@@ -694,6 +698,7 @@ onMounted(async () => {
                   v-else
                   v-model="invoiceFormState"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('state')"
                   :error-messages="errorMessages.get('state')"
@@ -710,6 +715,7 @@ onMounted(async () => {
                 <VTextField
                   v-model="invoiceFormZipCode"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('zip_code')"
                   :error-messages="errorMessages.get('zip_code')"
@@ -723,6 +729,7 @@ onMounted(async () => {
                 <VAutocomplete
                   v-model="invoiceFormCountry"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('country')"
                   :error-messages="errorMessages.get('country')"
@@ -739,6 +746,7 @@ onMounted(async () => {
                 <VTextarea
                   v-model="invoiceFormNotes"
                   density="compact"
+                  color="primary"
                   :disabled="loading"
                   :error="errorMessages.has('notes')"
                   :error-messages="errorMessages.get('notes')"
@@ -752,8 +760,13 @@ onMounted(async () => {
             </VRow>
           </VContainer>
         </VCardText>
-        <VCardActions class="pb-4">
-          <VBtn :loading="loading" color="primary" @click="generateInvoice">
+        <VCardActions class="pb-4 mt-n4">
+          <VBtn
+            variant="flat"
+            :loading="loading"
+            color="primary"
+            @click="generateInvoice"
+          >
             <VIcon start :icon="mdiDownloadOutline" />
             Download Invoice
           </VBtn>
