@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth'
 import { mdiGoogle, mdiGithub, mdiEmail } from '@mdi/js'
+import type { User as FirebaseUser } from 'firebase/auth'
 
 const props = withDefaults(
   defineProps<{
@@ -28,12 +29,27 @@ const email = ref('')
 const password = ref('')
 const emailError = ref('')
 
+type LoginMethod = 'google' | 'github' | 'email'
+const LAST_LOGIN_METHOD_KEY = 'httpsms_last_login_method'
+const lastUsedMethod = ref<LoginMethod | null>(null)
+
+onMounted(() => {
+  try {
+    const stored = localStorage.getItem(LAST_LOGIN_METHOD_KEY)
+    if (stored === 'google' || stored === 'github' || stored === 'email') {
+      lastUsedMethod.value = stored
+    }
+  } catch (error) {
+    console.error(error)
+  }
+})
+
 async function signInWithGoogle() {
   loading.value = true
   try {
     const auth = getAuth()
     const result = await signInWithPopup(auth, new GoogleAuthProvider())
-    onSuccess(result.user)
+    onSuccess(result.user, 'google')
   } catch (error: unknown) {
     handleError(error, true)
   } finally {
@@ -46,7 +62,7 @@ async function signInWithGithub() {
   try {
     const auth = getAuth()
     const result = await signInWithPopup(auth, new GithubAuthProvider())
-    onSuccess(result.user)
+    onSuccess(result.user, 'github')
   } catch (error: unknown) {
     handleError(error, true)
   } finally {
@@ -73,7 +89,7 @@ async function submitEmail() {
         password.value,
       )
     }
-    onSuccess(result.user)
+    onSuccess(result.user, 'email')
   } catch (error: unknown) {
     handleError(error)
   } finally {
@@ -81,7 +97,12 @@ async function submitEmail() {
   }
 }
 
-function onSuccess(user: unknown) {
+function onSuccess(user: FirebaseUser, method: LoginMethod) {
+  try {
+    localStorage.setItem(LAST_LOGIN_METHOD_KEY, method)
+  } catch (error) {
+    console.error(error)
+  }
   notificationsStore.addNotification({
     message: 'Login successful!',
     type: 'success',
@@ -124,11 +145,21 @@ function handleError(error: unknown, isSocial = false) {
       block
       color="white"
       size="large"
-      class="mb-3"
+      class="mb-3 position-relative"
       :loading="loading"
       :disabled="loading"
       @click="signInWithGoogle"
     >
+      <v-chip
+        v-if="lastUsedMethod === 'google'"
+        size="x-small"
+        color="primary"
+        label
+        variant="flat"
+        class="position-absolute last-used-chip"
+      >
+        Last Used
+      </v-chip>
       <v-icon color="red" :icon="mdiGoogle" class="mr-2" />
       Continue with Google
     </v-btn>
@@ -138,11 +169,21 @@ function handleError(error: unknown, isSocial = false) {
       size="large"
       variant="flat"
       color="black"
-      class="mb-3"
+      class="mb-3 position-relative"
       :loading="loading"
       :disabled="loading"
       @click="signInWithGithub"
     >
+      <v-chip
+        v-if="lastUsedMethod === 'github'"
+        label
+        size="x-small"
+        color="primary"
+        variant="flat"
+        class="position-absolute last-used-chip"
+      >
+        Last Used
+      </v-chip>
       <v-icon :icon="mdiGithub" class="mr-2" />
       Continue with GitHub
     </v-btn>
@@ -153,10 +194,20 @@ function handleError(error: unknown, isSocial = false) {
       size="large"
       variant="flat"
       color="red"
-      class="mb-3"
+      class="mb-3 position-relative"
       :disabled="loading"
       @click="showEmailForm = true"
     >
+      <v-chip
+        v-if="lastUsedMethod === 'email'"
+        label
+        size="x-small"
+        color="primary"
+        variant="flat"
+        class="position-absolute last-used-chip"
+      >
+        Last Used
+      </v-chip>
       <v-icon :icon="mdiEmail" class="mr-2" />
       Continue with email
     </v-btn>
@@ -223,3 +274,11 @@ function handleError(error: unknown, isSocial = false) {
     </p>
   </div>
 </template>
+
+<style scoped>
+.last-used-chip {
+  top: -8px;
+  left: -8px;
+  z-index: 1;
+}
+</style>
