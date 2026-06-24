@@ -306,7 +306,7 @@ onBeforeUnmount(() => {
         color="primary"
         indeterminate
       />
-      <VContainer class="pa-0" v-if="threadsStore.currentThread">
+      <VContainer v-if="threadsStore.currentThread" class="pa-0">
         <div
           ref="messageBody"
           class="messages-body no-scrollbar w-100 pl-2"
@@ -328,11 +328,11 @@ onBeforeUnmount(() => {
             >
               <VSpacer v-if="isMT(message)" />
               <v-avatar
+                v-if="isMo(message)"
                 :class="{
                   'ml-2': !mdAndUp,
                   'ml-4': mdAndUp,
                 }"
-                v-if="isMo(message)"
                 :color="threadsStore.currentThread!.color"
                 size="40"
               >

@@ -12,7 +12,7 @@ import type {
   RequestsUserPaymentInvoice,
   ResponsesUserSubscriptionPaymentsResponse,
 } from '~~/shared/types/api'
-import { formatBillingPeriodDateOrdinal } from '~/utils/filters'
+
 import { countries, getStateOptions } from '~/utils/countries'
 
 type SubscriptionPayment =
@@ -445,22 +445,14 @@ onMounted(async () => {
               This is the summary of the sent messages and received messages
               from
               <v-code v-if="billingStore.billingUsage" class="font-weight-bold">
-                <span
-                  v-html="
-                    formatBillingPeriodDateOrdinal(
-                      billingStore.billingUsage.start_timestamp,
-                    )
-                  "
+                <BillingDateOrdinal
+                  :value="billingStore.billingUsage.start_timestamp"
                 />
               </v-code>
               to
               <v-code v-if="billingStore.billingUsage" class="font-weight-bold">
-                <span
-                  v-html="
-                    formatBillingPeriodDateOrdinal(
-                      billingStore.billingUsage.end_timestamp,
-                    )
-                  "
+                <BillingDateOrdinal
+                  :value="billingStore.billingUsage.end_timestamp"
                 /> </v-code
               >.
             </p>
@@ -598,18 +590,12 @@ onMounted(async () => {
                   v-for="billingUsage in billingStore.billingUsageHistory"
                   :key="billingUsage.id"
                 >
-                  <td
-                    v-html="
-                      formatBillingPeriodDateOrdinal(
-                        billingUsage.start_timestamp,
-                      )
-                    "
-                  />
-                  <td
-                    v-html="
-                      formatBillingPeriodDateOrdinal(billingUsage.end_timestamp)
-                    "
-                  />
+                  <td>
+                    <BillingDateOrdinal :value="billingUsage.start_timestamp" />
+                  </td>
+                  <td>
+                    <BillingDateOrdinal :value="billingUsage.end_timestamp" />
+                  </td>
                   <td>{{ formatDecimal(billingUsage.sent_messages) }}</td>
                   <td>{{ billingUsage.received_messages }}</td>
                 </tr>

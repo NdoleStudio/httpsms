@@ -9,6 +9,7 @@ const props = withDefaults(
     block?: boolean
   }>(),
   {
+    route: undefined,
     block: false,
   },
 )
