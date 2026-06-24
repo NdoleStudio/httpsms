@@ -46,8 +46,8 @@ func NewBulkMessageHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/bulk-messages", h.computeRoute(middlewares, h.Index)...)
-	router.Post("/v1/bulk-messages", h.computeRoute(middlewares, h.Store)...)
+	h.register(router, fiber.MethodGet, "/v1/bulk-messages", middlewares, h.Index)
+	h.register(router, fiber.MethodPost, "/v1/bulk-messages", middlewares, h.Store)
 }
 
 // Index fetches the bulk message order history.

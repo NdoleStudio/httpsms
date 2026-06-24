@@ -39,7 +39,7 @@ func NewIntegration3CxHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *Integration3CXHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
 	router := app.Group("integration/3cx/")
-	router.Post("/messages", h.computeRoute(middlewares, h.Messages)...)
+	h.register(router, fiber.MethodPost, "/messages", middlewares, h.Messages)
 }
 
 // Messages consumes a 3cx event

@@ -50,20 +50,20 @@ func NewMessageHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Post("/v1/messages/send", h.computeRoute(middlewares, h.PostSend)...)
-	router.Post("/v1/messages/bulk-send", h.computeRoute(middlewares, h.BulkSend)...)
-	router.Get("/v1/messages", h.computeRoute(middlewares, h.Index)...)
-	router.Get("/v1/messages/search", h.computeRoute(middlewares, h.Search)...)
-	router.Get("/v1/messages/:messageID", h.computeRoute(middlewares, h.Get)...)
-	router.Delete("/v1/messages/:messageID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodPost, "/v1/messages/send", middlewares, h.PostSend)
+	h.register(router, fiber.MethodPost, "/v1/messages/bulk-send", middlewares, h.BulkSend)
+	h.register(router, fiber.MethodGet, "/v1/messages", middlewares, h.Index)
+	h.register(router, fiber.MethodGet, "/v1/messages/search", middlewares, h.Search)
+	h.register(router, fiber.MethodGet, "/v1/messages/:messageID", middlewares, h.Get)
+	h.register(router, fiber.MethodDelete, "/v1/messages/:messageID", middlewares, h.Delete)
 }
 
 // RegisterPhoneAPIKeyRoutes registers the routes for the MessageHandler
 func (h *MessageHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Post("/v1/messages/:messageID/events", h.computeRoute(middlewares, h.PostEvent)...)
-	router.Post("/v1/messages/receive", h.computeRoute(middlewares, h.PostReceive)...)
-	router.Post("/v1/messages/calls/missed", h.computeRoute(middlewares, h.PostCallMissed)...)
-	router.Get("/v1/messages/outstanding", h.computeRoute(middlewares, h.GetOutstanding)...)
+	h.register(router, fiber.MethodPost, "/v1/messages/:messageID/events", middlewares, h.PostEvent)
+	h.register(router, fiber.MethodPost, "/v1/messages/receive", middlewares, h.PostReceive)
+	h.register(router, fiber.MethodPost, "/v1/messages/calls/missed", middlewares, h.PostCallMissed)
+	h.register(router, fiber.MethodGet, "/v1/messages/outstanding", middlewares, h.GetOutstanding)
 }
 
 // PostSend a new entities.Message

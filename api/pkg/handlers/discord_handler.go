@@ -57,13 +57,13 @@ func NewDiscordHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *DiscordHandler) RegisterRoutes(app *fiber.App, authMiddleware fiber.Handler, middlewares ...fiber.Handler) {
 	router := app.Group("discord")
-	router.Post("/event", h.computeRoute(middlewares, h.Event)...)
+	h.register(router, fiber.MethodPost, "/event", middlewares, h.Event)
 
 	authRouter := app.Group("v1/discord-integrations")
-	authRouter.Post("/", h.computeRoute(append(middlewares, authMiddleware), h.Store)...)
-	authRouter.Get("/", h.computeRoute(append(middlewares, authMiddleware), h.Index)...)
-	authRouter.Delete("/:discordID", h.computeRoute(append(middlewares, authMiddleware), h.Delete)...)
-	authRouter.Put("/:discordID", h.computeRoute(append(middlewares, authMiddleware), h.Update)...)
+	h.register(authRouter, fiber.MethodPost, "/", append(middlewares, authMiddleware), h.Store)
+	h.register(authRouter, fiber.MethodGet, "/", append(middlewares, authMiddleware), h.Index)
+	h.register(authRouter, fiber.MethodDelete, "/:discordID", append(middlewares, authMiddleware), h.Delete)
+	h.register(authRouter, fiber.MethodPut, "/:discordID", append(middlewares, authMiddleware), h.Update)
 }
 
 // Index returns the discord integrations of a user

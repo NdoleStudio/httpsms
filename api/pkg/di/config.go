@@ -3,6 +3,7 @@ package di
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -22,4 +23,16 @@ func getEnvWithDefault(key, defaultValue string) string {
 	}
 
 	return value
+}
+
+func splitCommaEnv(key, defaultValue string) []string {
+	value := getEnvWithDefault(key, defaultValue)
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }

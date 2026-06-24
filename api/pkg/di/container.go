@@ -192,11 +192,11 @@ func (container *Container) App() (app *fiber.App) {
 	app.Use(
 		cors.New(
 			cors.Config{
-				AllowOrigins:     getEnvWithDefault("CORS_ALLOW_ORIGINS", "*"),
-				AllowHeaders:     getEnvWithDefault("CORS_ALLOW_HEADERS", "*"),
-				AllowMethods:     getEnvWithDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
+				AllowOrigins:     splitCommaEnv("CORS_ALLOW_ORIGINS", "*"),
+				AllowHeaders:     splitCommaEnv("CORS_ALLOW_HEADERS", "*"),
+				AllowMethods:     splitCommaEnv("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
 				AllowCredentials: false,
-				ExposeHeaders:    getEnvWithDefault("CORS_EXPOSE_HEADERS", "*"),
+				ExposeHeaders:    splitCommaEnv("CORS_EXPOSE_HEADERS", "*"),
 			},
 		),
 	)

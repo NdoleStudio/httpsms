@@ -42,10 +42,10 @@ func NewWebhookHandler(
 
 // RegisterRoutes registers the routes for the WebhookHandler
 func (h *WebhookHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/webhooks", h.computeRoute(middlewares, h.Index)...)
-	router.Post("/v1/webhooks", h.computeRoute(middlewares, h.Store)...)
-	router.Put("/v1/webhooks/:webhookID", h.computeRoute(middlewares, h.Update)...)
-	router.Delete("/v1/webhooks/:webhookID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodGet, "/v1/webhooks", middlewares, h.Index)
+	h.register(router, fiber.MethodPost, "/v1/webhooks", middlewares, h.Store)
+	h.register(router, fiber.MethodPut, "/v1/webhooks/:webhookID", middlewares, h.Update)
+	h.register(router, fiber.MethodDelete, "/v1/webhooks/:webhookID", middlewares, h.Delete)
 }
 
 // Index returns the webhooks of a user

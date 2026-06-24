@@ -39,15 +39,15 @@ func NewUserHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/users/me", h.computeRoute(middlewares, h.Show)...)
-	router.Put("/v1/users/me", h.computeRoute(middlewares, h.Update)...)
-	router.Delete("/v1/users/me", h.computeRoute(middlewares, h.Delete)...)
-	router.Delete("/v1/users/:userID/api-keys", h.computeRoute(middlewares, h.DeleteAPIKey)...)
-	router.Put("/v1/users/:userID/notifications", h.computeRoute(middlewares, h.UpdateNotifications)...)
-	router.Get("/v1/users/subscription-update-url", h.computeRoute(middlewares, h.subscriptionUpdateURL)...)
-	router.Delete("/v1/users/subscription", h.computeRoute(middlewares, h.cancelSubscription)...)
-	router.Get("/v1/users/subscription/payments", h.computeRoute(middlewares, h.subscriptionPayments)...)
-	router.Post("/v1/users/subscription/invoices/:subscriptionInvoiceID", h.computeRoute(middlewares, h.subscriptionInvoice)...)
+	h.register(router, fiber.MethodGet, "/v1/users/me", middlewares, h.Show)
+	h.register(router, fiber.MethodPut, "/v1/users/me", middlewares, h.Update)
+	h.register(router, fiber.MethodDelete, "/v1/users/me", middlewares, h.Delete)
+	h.register(router, fiber.MethodDelete, "/v1/users/:userID/api-keys", middlewares, h.DeleteAPIKey)
+	h.register(router, fiber.MethodPut, "/v1/users/:userID/notifications", middlewares, h.UpdateNotifications)
+	h.register(router, fiber.MethodGet, "/v1/users/subscription-update-url", middlewares, h.subscriptionUpdateURL)
+	h.register(router, fiber.MethodDelete, "/v1/users/subscription", middlewares, h.cancelSubscription)
+	h.register(router, fiber.MethodGet, "/v1/users/subscription/payments", middlewares, h.subscriptionPayments)
+	h.register(router, fiber.MethodPost, "/v1/users/subscription/invoices/:subscriptionInvoiceID", middlewares, h.subscriptionInvoice)
 }
 
 // Show returns an entities.User

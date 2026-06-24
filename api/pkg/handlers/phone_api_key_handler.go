@@ -45,10 +45,10 @@ func NewPhoneAPIKeyHandler(
 // RegisterRoutes registers the routes for the PhoneAPIKeyHandler
 func (h *PhoneAPIKeyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
 	router := app.Group("/v1/phone-api-keys/")
-	router.Get("/", h.computeRoute(middlewares, h.index)...)
-	router.Post("/", h.computeRoute(middlewares, h.store)...)
-	router.Delete("/:phoneAPIKeyID", h.computeRoute(middlewares, h.delete)...)
-	router.Delete("/:phoneAPIKeyID/phones/:phoneID", h.computeRoute(middlewares, h.deletePhone)...)
+	h.register(router, fiber.MethodGet, "/", middlewares, h.index)
+	h.register(router, fiber.MethodPost, "/", middlewares, h.store)
+	h.register(router, fiber.MethodDelete, "/:phoneAPIKeyID", middlewares, h.delete)
+	h.register(router, fiber.MethodDelete, "/:phoneAPIKeyID/phones/:phoneID", middlewares, h.deletePhone)
 }
 
 // @Summary      Get the phone API keys of a user

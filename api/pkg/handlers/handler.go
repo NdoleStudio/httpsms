@@ -123,8 +123,13 @@ func (h *handler) userIDFomContext(c fiber.Ctx) entities.UserID {
 	return h.userFromContext(c).ID
 }
 
-func (h *handler) computeRoute(middlewares []fiber.Handler, route fiber.Handler) []fiber.Handler {
-	return append(append([]fiber.Handler{}, middlewares...), route)
+func (h *handler) register(router fiber.Router, method, path string, middlewares []fiber.Handler, route fiber.Handler) {
+	handlers := make([]any, 0, len(middlewares)+1)
+	for _, middleware := range middlewares {
+		handlers = append(handlers, middleware)
+	}
+	handlers = append(handlers, route)
+	router.Add([]string{method}, path, handlers[0], handlers[1:]...)
 }
 
 func (h *handler) mergeErrors(errors ...url.Values) url.Values {

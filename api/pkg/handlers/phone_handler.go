@@ -40,14 +40,14 @@ func NewPhoneHandler(
 
 // RegisterRoutes registers the routes for the PhoneHandler
 func (h *PhoneHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/phones", h.computeRoute(middlewares, h.Index)...)
-	router.Put("/v1/phones", h.computeRoute(middlewares, h.Upsert)...)
-	router.Delete("/v1/phones/:phoneID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodGet, "/v1/phones", middlewares, h.Index)
+	h.register(router, fiber.MethodPut, "/v1/phones", middlewares, h.Upsert)
+	h.register(router, fiber.MethodDelete, "/v1/phones/:phoneID", middlewares, h.Delete)
 }
 
 // RegisterPhoneAPIKeyRoutes registers the routes for the PhoneHandler
 func (h *PhoneHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Put("/v1/phones/fcm-token", h.computeRoute(middlewares, h.UpsertFCMToken)...)
+	h.register(router, fiber.MethodPut, "/v1/phones/fcm-token", middlewares, h.UpsertFCMToken)
 }
 
 // Index returns the phones of a user

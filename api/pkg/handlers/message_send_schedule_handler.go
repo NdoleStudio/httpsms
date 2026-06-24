@@ -44,10 +44,10 @@ func NewMessageSendScheduleHandler(
 
 // RegisterRoutes registers send schedule routes.
 func (h *MessageSendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/send-schedules", h.computeRoute(middlewares, h.Index)...)
-	router.Post("/v1/send-schedules", h.computeRoute(middlewares, h.Store)...)
-	router.Put("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Update)...)
-	router.Delete("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodGet, "/v1/send-schedules", middlewares, h.Index)
+	h.register(router, fiber.MethodPost, "/v1/send-schedules", middlewares, h.Store)
+	h.register(router, fiber.MethodPut, "/v1/send-schedules/:scheduleID", middlewares, h.Update)
+	h.register(router, fiber.MethodDelete, "/v1/send-schedules/:scheduleID", middlewares, h.Delete)
 }
 
 // Index lists all send schedules for the authenticated user.

@@ -41,7 +41,7 @@ func NewLemonsqueezyHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *LemonsqueezyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
 	router := app.Group("lemonsqueezy")
-	router.Post("/event", h.computeRoute(middlewares, h.Event)...)
+	h.register(router, fiber.MethodPost, "/event", middlewares, h.Event)
 }
 
 // Event handles lemonsqueezy events
