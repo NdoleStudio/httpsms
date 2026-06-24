@@ -162,20 +162,15 @@ onMounted(async () => {
         </VBtn>
         <VToolbarTitle>
           Heartbeats
-          <VIcon
-            size="x-small"
-            class="mx-2"
-            color="primary"
-            :icon="mdiCircle"
-          />
+          <VIcon size="12" class="mx-2" color="primary" :icon="mdiCircle" />
           <span v-if="phonesStore.owner">{{
             formatPhoneNumber(phonesStore.owner)
           }}</span>
         </VToolbarTitle>
       </VAppBar>
-      <VContainer class="mt-16">
+      <VContainer>
         <VRow>
-          <VCol cols="12">
+          <VCol cols="12" class="mt-n8">
             <p>
               Every 15 minutes, the httpSMS app on your Android phone sends a
               heartbeat event to the httpsms API to show that it is alive. The
@@ -214,6 +209,7 @@ onMounted(async () => {
             />
             <VDataTable
               v-else
+              hover
               :headers="dataTableHeaders"
               :items="dataTableItems"
               :items-per-page="100"

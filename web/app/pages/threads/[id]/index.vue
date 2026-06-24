@@ -32,6 +32,7 @@ const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
 const { lgAndUp, mdAndDown } = useDisplay()
+const { formatPhoneNumber } = useFilters()
 const notificationsStore = useNotificationsStore()
 const authStore = useAuthStore()
 const phonesStore = usePhonesStore()
@@ -45,6 +46,14 @@ const hideMessages = ref(true)
 const messages = ref<Message[]>([])
 const selectedMenuItem = ref(-1)
 const messageBody = ref<HTMLElement | null>(null)
+const form = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
+
+const formMessageRules = [
+  (v: string) =>
+    v === '' ||
+    (v && v.length <= 320) ||
+    'Message must be less than 320 characters',
+]
 
 let webhookChannel: Channel | null = null
 
@@ -152,6 +161,7 @@ async function resendMessage(message: Message) {
     from: message.owner,
     to: message.contact,
     content: message.content,
+    sim: 'DEFAULT',
   })
   setTimeout(() => {
     selectedMenuItem.value = -1
@@ -187,11 +197,17 @@ async function sendMessage(event: KeyboardEvent | Event) {
   if (event instanceof KeyboardEvent && event.shiftKey) return
   if (!formMessage.value.trim()) return
 
+  if (form.value) {
+    const { valid } = await form.value.validate()
+    if (!valid) return
+  }
+
   submitting.value = true
   await messagesStore.sendMessage({
     from: phonesStore.owner,
     to: threadsStore.currentThread!.contact,
     content: formMessage.value,
+    sim: 'DEFAULT',
   })
   loadMessages(false)
   formMessage.value = ''
@@ -230,7 +246,7 @@ onBeforeUnmount(() => {
         </VBtn>
         <VToolbarTitle>
           <span v-if="threadsStore.currentThread">
-            {{ useFilters().phoneNumber(threadsStore.currentThread.contact) }}
+            {{ formatPhoneNumber(threadsStore.currentThread.contact) }}
           </span>
         </VToolbarTitle>
         <VSpacer />
@@ -364,7 +380,7 @@ onBeforeUnmount(() => {
                       target="_blank"
                       rel="noopener noreferrer"
                       :href="attachment"
-                      class="text-decoration-none text-body-medium mb-2 d-flex w-100"
+                      class="text-decoration-none hover:text-decoration-underline text-body-medium mb-2 d-flex w-100"
                     >
                       <VIcon
                         size="x-small"
@@ -454,12 +470,13 @@ onBeforeUnmount(() => {
         </div>
         <VFooter app color="#121212">
           <VContainer class="pb-0">
-            <form class="d-flex" @submit.prevent="sendMessage">
+            <VForm ref="form" class="d-flex" @submit.prevent="sendMessage">
               <VTextField
                 v-model="formMessage"
                 :disabled="submitting || !contactIsPhoneNumber"
                 variant="solo"
                 class="no-scrollbar ml-2"
+                :rules="formMessageRules"
                 :placeholder="
                   contactIsPhoneNumber
                     ? 'Type your message here'
@@ -485,7 +502,7 @@ onBeforeUnmount(() => {
                 />
                 <VIcon :icon="mdiSend" />
               </VBtn>
-            </form>
+            </VForm>
           </VContainer>
         </VFooter>
       </VContainer>
