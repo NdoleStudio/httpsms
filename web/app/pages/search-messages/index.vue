@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
           </VCol>
         </VRow>
         <VCard>
-          <VCardText class="pt-4 pb-0">
+          <VCardText class="pt-4" :class="{ 'pb-0': mdAndUp }">
             <VRow>
               <VCol cols="12" md="4">
                 <VSelect
@@ -445,6 +445,7 @@ onBeforeUnmount(() => {
                   :disabled="loading"
                   color="primary"
                   class="py-5"
+                  :block="!mdAndUp"
                   @click="fetchMessages(true)"
                 >
                   <VIcon v-if="mdAndUp" start :icon="mdiMagnify" />
@@ -456,8 +457,10 @@ onBeforeUnmount(() => {
           </VCardText>
         </VCard>
         <VRow>
-          <VCol cols="12" class="mt-16 mb-n2 d-flex align-baseline">
-            <h2 class="text-headline-large mb-0">Search Results</h2>
+          <VCol cols="12" class="mt-16 mb-n2 d-flex align-center">
+            <h2 class="text-md-headline-large text-headline-medium mb-0 mt-0">
+              Search Results
+            </h2>
             <VDialog v-model="showDeleteDialog" opacity="0.9" max-width="550">
               <template #activator="{ props }">
                 <VBtn
@@ -504,7 +507,7 @@ onBeforeUnmount(() => {
                   :loading="loading"
                   :disabled="loading || !canResendSelected"
                   size="small"
-                  class="ml-2 mt-2 d-none d-md-inline-flex"
+                  class="ml-2 d-none d-md-inline-flex"
                   v-bind="props"
                 >
                   <VIcon start :icon="mdiRefresh" />
@@ -542,7 +545,6 @@ onBeforeUnmount(() => {
               :disabled="loading || selectedMessages.length < 1"
               size="small"
               color="primary"
-              class="mt-2"
               @click="exportMessages"
             >
               <VIcon v-if="mdAndUp" start :icon="mdiExport" />

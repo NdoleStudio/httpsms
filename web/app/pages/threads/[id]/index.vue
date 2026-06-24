@@ -31,7 +31,7 @@ useHead({
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
-const { lgAndUp, mdAndDown } = useDisplay()
+const { lgAndUp, mdAndDown, mdAndUp } = useDisplay()
 const { formatPhoneNumber } = useFilters()
 const notificationsStore = useNotificationsStore()
 const authStore = useAuthStore()
@@ -306,11 +306,11 @@ onBeforeUnmount(() => {
         color="primary"
         indeterminate
       />
-      <VContainer v-if="threadsStore.currentThread">
+      <VContainer class="pa-0" v-if="threadsStore.currentThread">
         <div
           ref="messageBody"
-          class="messages-body no-scrollbar"
-          :class="{ 'pr-7 pl-3': lgAndUp }"
+          class="messages-body no-scrollbar w-100 pl-2"
+          :class="{ 'pr-7': lgAndUp }"
         >
           <VRow
             v-for="message in messages"
@@ -320,14 +320,18 @@ onBeforeUnmount(() => {
             <VCol
               class="d-flex"
               :class="{
-                'pr-12': mdAndDown && !isMT(message),
-                'pl-12 pr-8': mdAndDown && isMT(message),
+                'pr-10': mdAndDown && !isMT(message),
+                'pl-12 pr-4': mdAndDown && isMT(message),
                 'pl-16 ml-16': lgAndUp && isMT(message),
                 'pr-16 mr-16': lgAndUp && !isMT(message),
               }"
             >
               <VSpacer v-if="isMT(message)" />
               <v-avatar
+                :class="{
+                  'ml-2': !mdAndUp,
+                  'ml-4': mdAndUp,
+                }"
                 v-if="isMo(message)"
                 :color="threadsStore.currentThread!.color"
                 size="40"
@@ -508,14 +512,13 @@ onBeforeUnmount(() => {
             </VCol>
           </VRow>
         </div>
-        <VFooter app color="#121212">
-          <VContainer class="pb-0">
+        <VFooter app class="py-0" color="#121212">
+          <VContainer class="pb-0 pt-0">
             <VForm ref="form" class="d-flex" @submit.prevent="sendMessage">
               <VTextField
                 v-model="formMessage"
                 :disabled="submitting || !contactIsPhoneNumber"
                 variant="solo"
-                class="no-scrollbar ml-2"
                 :rules="formMessageRules"
                 :placeholder="
                   contactIsPhoneNumber
@@ -553,10 +556,10 @@ onBeforeUnmount(() => {
 <style lang="scss">
 .messages-body {
   padding-top: 50px;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 170px);
   position: absolute;
   width: calc(100vw - 8px);
-  bottom: 120px;
+  bottom: 94px;
 }
 
 @media (min-width: 960px) {
@@ -569,14 +572,20 @@ onBeforeUnmount(() => {
     max-width: 1185px;
   }
 }
-@media (min-width: 1920px) {
+
+@media (min-width: 1545px) {
   .messages-body {
-    max-width: 1785px;
+    max-width: 1280px;
   }
 }
 
-.no-scrollbar,
-.no-scrollbar textarea {
+@media (min-width: 2138px) {
+  .messages-body {
+    max-width: 2000px;
+  }
+}
+
+.no-scrollbar {
   overflow-x: hidden;
   -ms-overflow-style: none;
   overflow-y: scroll;
