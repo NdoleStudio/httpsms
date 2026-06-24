@@ -19,6 +19,7 @@ import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import type { EntitiesMessage } from '~~/shared/types/api'
+import { startsWithLetter } from '~/utils/filters'
 
 definePageMeta({
   middleware: ['auth'],
@@ -337,7 +338,7 @@ onBeforeUnmount(() => {
                 size="40"
               >
                 <v-icon
-                  v-if="isValidPhoneNumber(message.contact)"
+                  v-if="!startsWithLetter(message.contact)"
                   color="white"
                   >{{ mdiAccount }}</v-icon
                 >

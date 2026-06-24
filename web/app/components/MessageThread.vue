@@ -8,8 +8,7 @@ import {
   mdiAlert,
   mdiAccount,
 } from '@mdi/js'
-import { formatPhoneNumber } from '~/utils/filters'
-import { isValidPhoneNumber } from 'libphonenumber-js'
+import { formatPhoneNumber, startsWithLetter } from '~/utils/filters'
 
 const { mdAndDown } = useDisplay()
 const threadsStore = useThreadsStore()
@@ -109,7 +108,7 @@ function onInstallApp() {
       >
         <template #prepend>
           <v-avatar :color="thread.color" size="40">
-            <v-icon v-if="isValidPhoneNumber(thread.contact)" color="white">{{
+            <v-icon v-if="!startsWithLetter(thread.contact)" color="white">{{
               mdiAccount
             }}</v-icon>
             <span v-else class="text-white text-headline-small">{{

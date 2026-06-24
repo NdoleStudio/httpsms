@@ -99,3 +99,7 @@ export function humanizeTime(value: string): string {
   })
   return formatDuration(durations)
 }
+
+export function startsWithLetter(value: string): boolean {
+  return /^[a-zA-Z]/.test(value)
+}
