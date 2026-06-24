@@ -444,25 +444,25 @@ onMounted(async () => {
             <p class="text-medium-emphasis">
               This is the summary of the sent messages and received messages
               from
-              <code
-                v-if="billingStore.billingUsage"
-                class="font-weight-bold"
-                v-html="
-                  formatBillingPeriodDateOrdinal(
-                    billingStore.billingUsage.start_timestamp,
-                  )
-                "
-              />
+              <v-code v-if="billingStore.billingUsage" class="font-weight-bold">
+                <span
+                  v-html="
+                    formatBillingPeriodDateOrdinal(
+                      billingStore.billingUsage.start_timestamp,
+                    )
+                  "
+                />
+              </v-code>
               to
-              <code
-                v-if="billingStore.billingUsage"
-                class="font-weight-bold"
-                v-html="
-                  formatBillingPeriodDateOrdinal(
-                    billingStore.billingUsage.end_timestamp,
-                  )
-                "
-              />.
+              <v-code v-if="billingStore.billingUsage" class="font-weight-bold">
+                <span
+                  v-html="
+                    formatBillingPeriodDateOrdinal(
+                      billingStore.billingUsage.end_timestamp,
+                    )
+                  "
+                /> </v-code
+              >.
             </p>
             <VRow v-if="billingStore.billingUsage">
               <VCol cols="12" md="6">
