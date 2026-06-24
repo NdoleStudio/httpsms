@@ -117,8 +117,8 @@ function loadMessages(hide = true) {
   const threadId = route.params.id as string
   threadsStore
     .loadThreadMessages(threadId)
-    .then((msgs: EntitiesMessage[]) => {
-      messages.value = [...msgs].reverse()
+    .then((response: EntitiesMessage[]) => {
+      messages.value = [...response].reverse()
     })
     .finally(() => {
       setTimeout(() => {
@@ -227,6 +227,7 @@ onMounted(async () => {
   const pusher = new Pusher(config.public.pusherKey as string, {
     cluster: config.public.pusherCluster as string,
   })
+
   webhookChannel = pusher.subscribe(authStore.user!.id)
   webhookChannel.bind('message.phone.sent', () => {
     if (!loadingMessages.value) loadMessages(false)
