@@ -27,7 +27,8 @@ onMounted(() => {
 
     if (authStore.authUser) {
       const channel = pusher.subscribe(authStore.authUser.id)
-      channel.bind('phone.updated', () => {
+      channel.bind('phone.updated', (data: never) => {
+        console.log('phone.updated', data)
         canPoll = true
       })
     }
