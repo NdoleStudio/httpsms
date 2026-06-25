@@ -67,7 +67,7 @@ async function sendMessage() {
       },
     })
     notificationsStore.addNotification({
-      message: 'Message Sent!',
+      message: 'Message sent successfully!',
       type: 'success',
     })
     await router.push('/threads')
@@ -86,7 +86,7 @@ async function sendMessage() {
       if (data.attachments) newErrors.set('attachments', data.attachments)
       if (data.from) {
         notificationsStore.addNotification({
-          message: data.from[0],
+          message: data.from[0]!,
           type: 'error',
         })
       }
@@ -132,7 +132,7 @@ onMounted(async () => {
               You can also text a short code like
               <v-code>24273</v-code> without entering a full phone number.
             </p>
-            <form @submit.prevent="sendMessage">
+            <form>
               <v-phone-input
                 v-model="formPhoneNumber"
                 v-model:country="phoneCountry"
@@ -164,6 +164,7 @@ onMounted(async () => {
                 :block="mdAndDown"
                 :loading="sending"
                 :icon="mdiSend"
+                @click="sendMessage"
               >
                 Send Message
               </loading-button>
