@@ -44,6 +44,21 @@ const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
 
 const firebaseUser = ref<FirebaseUser | null>(null)
+const gravatarUrl = ref<string | null>(null)
+
+const computeGravatarUrl = async (email: string): Promise<string> => {
+  const normalized = email.trim().toLowerCase()
+  const data = new TextEncoder().encode(normalized)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  const hash = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+  return `https://www.gravatar.com/avatar/${hash}?d=identicon&s=200`
+}
+
+const avatarUrl = computed(
+  () => firebaseUser.value?.photoURL ?? gravatarUrl.value,
+)
 
 const apiKeyShow = ref(false)
 const showQrCodeDialog = ref(false)
@@ -754,6 +769,9 @@ watch(showQrCodeDialog, (open) => {
 
 onMounted(async () => {
   firebaseUser.value = getAuth().currentUser
+  if (firebaseUser.value?.email) {
+    gravatarUrl.value = await computeGravatarUrl(firebaseUser.value.email)
+  }
   await Promise.all([authStore.loadUser(), phonesStore.loadPhones()])
   syncEmailNotifications()
   loadWebhooks()
@@ -782,11 +800,7 @@ onMounted(async () => {
           <VCol cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <!-- Profile -->
             <div v-if="firebaseUser" class="text-center">
-              <VAvatar
-                v-if="firebaseUser.photoURL"
-                size="100"
-                :image="firebaseUser.photoURL"
-              />
+              <VAvatar v-if="avatarUrl" size="100" :image="avatarUrl" />
               <v-avatar v-else size="100">
                 <VIcon size="80" :icon="mdiAccountCircle" />
               </v-avatar>
