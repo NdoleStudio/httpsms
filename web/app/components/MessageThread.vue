@@ -98,7 +98,7 @@ function onInstallApp() {
     <v-list
       v-if="!threadsStore.loadingThreads && threadsStore.threads.length > 0"
       class="py-0"
-      lines="two"
+      lines="three"
     >
       <v-list-item
         v-for="thread in threadsStore.threads"
