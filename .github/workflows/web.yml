@@ -78,7 +78,7 @@ jobs:
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Firebase Deploy 🚀
-        uses: FirebaseExtended/action-hosting-deploy@v0
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
           channelId: live
