@@ -95,7 +95,7 @@ function parseErrors(error: unknown): ErrorMessages {
   const bag = new ErrorMessages()
   const data = toApiError(error).data?.data
   if (data && typeof data === 'object') {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]))
+    Object.keys(data).forEach((key) => bag.addMany(key, data[key]!))
   }
   return bag
 }
@@ -596,9 +596,9 @@ function scheduleWindowError(index: number): string | null {
     ? errorMessages.value.get('windows')
     : []
   if (messages.length === 0) return null
-  const message = messages.find((x) => x.includes(`Day of week ${index}`))
+  const message = messages.find((x) => x.includes(`day_of_week ${index}`))
   return message
-    ? message.replace(`Day of week ${index}`, getWeekday(index))
+    ? message.replace(`day_of_week ${index}`, getWeekday(index))
     : null
 }
 
@@ -631,7 +631,7 @@ async function saveSchedule() {
     await loadSendSchedules()
   } catch (error: unknown) {
     errorMessages.value = parseErrors(error)
-    if (errorMessages.value.size() === 0) {
+    if (errorMessages.value.size() != 0) {
       notificationsStore.addNotification({
         type: 'error',
         message: 'Failed to save send schedule',

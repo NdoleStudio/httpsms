@@ -169,7 +169,7 @@ onMounted(async () => {
                 </li>
               </ul>
             </VAlert>
-            <form @submit.prevent="sendBulkMessages">
+            <form>
               <VFileInput
                 v-model="formFile"
                 label="File"
@@ -180,16 +180,17 @@ onMounted(async () => {
                 variant="outlined"
               />
               <div class="d-flex">
-                <VBtn
+                <loading-button
                   color="primary"
                   type="submit"
+                  size="large"
                   :loading="loading"
                   :disabled="loading"
-                  size="large"
+                  :icon="mdiSendCheck"
+                  @click="sendBulkMessages"
                 >
-                  <VIcon start :icon="mdiSendCheck" />
                   Send Bulk Messages
-                </VBtn>
+                </loading-button>
                 <VSpacer />
                 <VBtn
                   v-if="mdAndUp"

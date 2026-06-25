@@ -72,6 +72,7 @@ export const usePhonesStore = defineStore('phones', () => {
         message: getApiErrorMessage(error, 'Error while updating phone'),
         type: 'error',
       })
+      throw error
     }
   }
 

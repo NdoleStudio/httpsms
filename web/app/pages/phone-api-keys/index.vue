@@ -383,14 +383,13 @@ onBeforeUnmount(() => {
           </VForm>
         </VCardText>
         <VCardActions class="mt-n6 mb-1">
-          <VBtn
+          <loading-button
             color="primary"
-            variant="flat"
             :loading="loading"
             @click="createPhoneApiKey"
           >
             Create<span v-if="lgAndUp" class="mx-1">Phone API</span>Key
-          </VBtn>
+          </loading-button>
           <VSpacer />
           <VBtn
             variant="text"

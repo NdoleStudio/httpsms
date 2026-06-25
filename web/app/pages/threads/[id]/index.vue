@@ -516,7 +516,7 @@ onBeforeUnmount(() => {
         </div>
         <VFooter app class="py-0" color="#121212">
           <VContainer class="pb-0 pt-0">
-            <VForm ref="form" class="d-flex" @submit.prevent="sendMessage">
+            <VForm ref="form" class="d-flex">
               <VTextField
                 v-model="formMessage"
                 :disabled="submitting || !contactIsPhoneNumber"
@@ -537,6 +537,7 @@ onBeforeUnmount(() => {
                 class="ml-2"
                 icon
                 size="large"
+                @click="sendMessage"
               >
                 <VProgressCircular
                   v-if="submitting"
