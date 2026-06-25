@@ -11,7 +11,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -41,9 +41,9 @@ func NewMessageThreadHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/message-threads", h.computeRoute(middlewares, h.Index)...)
-	router.Put("/v1/message-threads/:messageThreadID", h.computeRoute(middlewares, h.Update)...)
-	router.Delete("/v1/message-threads/:messageThreadID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodGet, "/v1/message-threads", middlewares, h.Index)
+	h.register(router, fiber.MethodPut, "/v1/message-threads/:messageThreadID", middlewares, h.Update)
+	h.register(router, fiber.MethodDelete, "/v1/message-threads/:messageThreadID", middlewares, h.Delete)
 }
 
 // Index returns message threads for a phone number
@@ -63,7 +63,7 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares .
 // @Failure      422	{object}	responses.UnprocessableEntity
 // @Failure      500	{object}	responses.InternalServerError
 // @Router       /message-threads [get]
-func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
+func (h *MessageThreadHandler) Index(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -72,7 +72,7 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 	ctxLogger.Info(c.OriginalURL())
 
 	var request requests.MessageThreadIndex
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -109,12 +109,12 @@ func (h *MessageThreadHandler) Index(c *fiber.Ctx) error {
 // @Failure      422				{object}	responses.UnprocessableEntity
 // @Failure      500				{object}	responses.InternalServerError
 // @Router       /message-threads/{messageThreadID} [put]
-func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
+func (h *MessageThreadHandler) Update(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.MessageThreadUpdate
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -152,7 +152,7 @@ func (h *MessageThreadHandler) Update(c *fiber.Ctx) error {
 // @Failure      422  				{object} 	responses.UnprocessableEntity
 // @Failure      500  				{object}  	responses.InternalServerError
 // @Router       /message-threads/{messageThreadID} [delete]
-func (h *MessageThreadHandler) Delete(c *fiber.Ctx) error {
+func (h *MessageThreadHandler) Delete(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 

@@ -8,7 +8,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
 

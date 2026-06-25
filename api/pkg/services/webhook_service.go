@@ -14,7 +14,7 @@ import (
 	"github.com/avast/retry-go/v5"
 	"github.com/pkg/errors"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 

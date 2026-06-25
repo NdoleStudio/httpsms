@@ -9,7 +9,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -39,15 +39,15 @@ func NewUserHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/users/me", h.computeRoute(middlewares, h.Show)...)
-	router.Put("/v1/users/me", h.computeRoute(middlewares, h.Update)...)
-	router.Delete("/v1/users/me", h.computeRoute(middlewares, h.Delete)...)
-	router.Delete("/v1/users/:userID/api-keys", h.computeRoute(middlewares, h.DeleteAPIKey)...)
-	router.Put("/v1/users/:userID/notifications", h.computeRoute(middlewares, h.UpdateNotifications)...)
-	router.Get("/v1/users/subscription-update-url", h.computeRoute(middlewares, h.subscriptionUpdateURL)...)
-	router.Delete("/v1/users/subscription", h.computeRoute(middlewares, h.cancelSubscription)...)
-	router.Get("/v1/users/subscription/payments", h.computeRoute(middlewares, h.subscriptionPayments)...)
-	router.Post("/v1/users/subscription/invoices/:subscriptionInvoiceID", h.computeRoute(middlewares, h.subscriptionInvoice)...)
+	h.register(router, fiber.MethodGet, "/v1/users/me", middlewares, h.Show)
+	h.register(router, fiber.MethodPut, "/v1/users/me", middlewares, h.Update)
+	h.register(router, fiber.MethodDelete, "/v1/users/me", middlewares, h.Delete)
+	h.register(router, fiber.MethodDelete, "/v1/users/:userID/api-keys", middlewares, h.DeleteAPIKey)
+	h.register(router, fiber.MethodPut, "/v1/users/:userID/notifications", middlewares, h.UpdateNotifications)
+	h.register(router, fiber.MethodGet, "/v1/users/subscription-update-url", middlewares, h.subscriptionUpdateURL)
+	h.register(router, fiber.MethodDelete, "/v1/users/subscription", middlewares, h.cancelSubscription)
+	h.register(router, fiber.MethodGet, "/v1/users/subscription/payments", middlewares, h.subscriptionPayments)
+	h.register(router, fiber.MethodPost, "/v1/users/subscription/invoices/:subscriptionInvoiceID", middlewares, h.subscriptionInvoice)
 }
 
 // Show returns an entities.User
@@ -63,7 +63,7 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.H
 // @Failure      422	{object}		responses.UnprocessableEntity
 // @Failure      500	{object}		responses.InternalServerError
 // @Router       /users/me [get]
-func (h *UserHandler) Show(c *fiber.Ctx) error {
+func (h *UserHandler) Show(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -92,14 +92,14 @@ func (h *UserHandler) Show(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/me [put]
-func (h *UserHandler) Update(c *fiber.Ctx) error {
+func (h *UserHandler) Update(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.UserUpdate
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -132,7 +132,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 // @Failure 	 401    	{object}	responses.Unauthorized
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/me [delete]
-func (h *UserHandler) Delete(c *fiber.Ctx) error {
+func (h *UserHandler) Delete(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -160,12 +160,12 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/{userID}/notifications [put]
-func (h *UserHandler) UpdateNotifications(c *fiber.Ctx) error {
+func (h *UserHandler) UpdateNotifications(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.UserNotificationUpdate
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -193,7 +193,7 @@ func (h *UserHandler) UpdateNotifications(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/subscription-update-url 	[get]
-func (h *UserHandler) subscriptionUpdateURL(c *fiber.Ctx) error {
+func (h *UserHandler) subscriptionUpdateURL(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -222,7 +222,7 @@ func (h *UserHandler) subscriptionUpdateURL(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/subscription 	[delete]
-func (h *UserHandler) cancelSubscription(c *fiber.Ctx) error {
+func (h *UserHandler) cancelSubscription(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -253,7 +253,7 @@ func (h *UserHandler) cancelSubscription(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/{userID}/api-keys [delete]
-func (h *UserHandler) DeleteAPIKey(c *fiber.Ctx) error {
+func (h *UserHandler) DeleteAPIKey(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -286,7 +286,7 @@ func (h *UserHandler) DeleteAPIKey(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /users/subscription/payments [get]
-func (h *UserHandler) subscriptionPayments(c *fiber.Ctx) error {
+func (h *UserHandler) subscriptionPayments(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -315,12 +315,12 @@ func (h *UserHandler) subscriptionPayments(c *fiber.Ctx) error {
 // @Failure      422					{object}	responses.UnprocessableEntity
 // @Failure      500					{object}	responses.InternalServerError
 // @Router       /users/subscription/invoices/{subscriptionInvoiceID} [post]
-func (h *UserHandler) subscriptionInvoice(c *fiber.Ctx) error {
+func (h *UserHandler) subscriptionInvoice(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	var request requests.UserPaymentInvoice
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)

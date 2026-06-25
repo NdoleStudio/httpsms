@@ -13,7 +13,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -46,8 +46,8 @@ func NewBulkMessageHandler(
 
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/bulk-messages", h.computeRoute(middlewares, h.Index)...)
-	router.Post("/v1/bulk-messages", h.computeRoute(middlewares, h.Store)...)
+	h.register(router, fiber.MethodGet, "/v1/bulk-messages", middlewares, h.Index)
+	h.register(router, fiber.MethodPost, "/v1/bulk-messages", middlewares, h.Store)
 }
 
 // Index fetches the bulk message order history.
@@ -61,7 +61,7 @@ func (h *BulkMessageHandler) RegisterRoutes(router fiber.Router, middlewares ...
 // @Failure 	 401	    {object}	responses.Unauthorized
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /bulk-messages [get]
-func (h *BulkMessageHandler) Index(c *fiber.Ctx) error {
+func (h *BulkMessageHandler) Index(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -89,7 +89,7 @@ func (h *BulkMessageHandler) Index(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /bulk-messages [post]
-func (h *BulkMessageHandler) Store(c *fiber.Ctx) error {
+func (h *BulkMessageHandler) Store(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 

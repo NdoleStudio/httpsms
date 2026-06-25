@@ -10,7 +10,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -40,14 +40,14 @@ func NewPhoneHandler(
 
 // RegisterRoutes registers the routes for the PhoneHandler
 func (h *PhoneHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/phones", h.computeRoute(middlewares, h.Index)...)
-	router.Put("/v1/phones", h.computeRoute(middlewares, h.Upsert)...)
-	router.Delete("/v1/phones/:phoneID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodGet, "/v1/phones", middlewares, h.Index)
+	h.register(router, fiber.MethodPut, "/v1/phones", middlewares, h.Upsert)
+	h.register(router, fiber.MethodDelete, "/v1/phones/:phoneID", middlewares, h.Delete)
 }
 
 // RegisterPhoneAPIKeyRoutes registers the routes for the PhoneHandler
 func (h *PhoneHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Put("/v1/phones/fcm-token", h.computeRoute(middlewares, h.UpsertFCMToken)...)
+	h.register(router, fiber.MethodPut, "/v1/phones/fcm-token", middlewares, h.UpsertFCMToken)
 }
 
 // Index returns the phones of a user
@@ -66,14 +66,14 @@ func (h *PhoneHandler) RegisterPhoneAPIKeyRoutes(router fiber.Router, middleware
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phones [get]
-func (h *PhoneHandler) Index(c *fiber.Ctx) error {
+func (h *PhoneHandler) Index(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.PhoneIndex
-	if err := c.QueryParser(&request); err != nil {
+	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -109,14 +109,14 @@ func (h *PhoneHandler) Index(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phones [put]
-func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
+func (h *PhoneHandler) Upsert(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.PhoneUpsert
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)
@@ -152,7 +152,7 @@ func (h *PhoneHandler) Upsert(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phones/{phoneID} [delete]
-func (h *PhoneHandler) Delete(c *fiber.Ctx) error {
+func (h *PhoneHandler) Delete(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
@@ -192,14 +192,14 @@ func (h *PhoneHandler) Delete(c *fiber.Ctx) error {
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /phones/fcm-token [put]
-func (h *PhoneHandler) UpsertFCMToken(c *fiber.Ctx) error {
+func (h *PhoneHandler) UpsertFCMToken(c fiber.Ctx) error {
 	ctx, span := h.tracer.StartFromFiberCtx(c)
 	defer span.End()
 
 	ctxLogger := h.tracer.CtxLogger(h.logger, span)
 
 	var request requests.PhoneFCMToken
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)

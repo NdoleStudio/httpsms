@@ -6,7 +6,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -14,7 +14,7 @@ import (
 func BearerAPIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository repositories.UserRepository) fiber.Handler {
 	logger = logger.WithService("middlewares.APIKeyAuth")
 
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		ctx, span, ctxLogger := tracer.StartFromFiberCtxWithLogger(c, logger, "middlewares.APIKeyAuth")
 		defer span.End()
 

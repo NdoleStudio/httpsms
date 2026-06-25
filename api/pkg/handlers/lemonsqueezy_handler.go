@@ -10,7 +10,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -41,11 +41,11 @@ func NewLemonsqueezyHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *LemonsqueezyHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
 	router := app.Group("lemonsqueezy")
-	router.Post("/event", h.computeRoute(middlewares, h.Event)...)
+	h.register(router, fiber.MethodPost, "/event", middlewares, h.Event)
 }
 
 // Event handles lemonsqueezy events
-func (h *LemonsqueezyHandler) Event(c *fiber.Ctx) error {
+func (h *LemonsqueezyHandler) Event(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -65,7 +65,7 @@ func (h *LemonsqueezyHandler) Event(c *fiber.Ctx) error {
 	return h.responseNoContent(c, "event consumed successfully")
 }
 
-func (h *LemonsqueezyHandler) handleRequest(ctx context.Context, c *fiber.Ctx) error {
+func (h *LemonsqueezyHandler) handleRequest(ctx context.Context, c fiber.Ctx) error {
 	eventName := c.Get("X-Event-Name")
 	switch eventName {
 	case "subscription_created":

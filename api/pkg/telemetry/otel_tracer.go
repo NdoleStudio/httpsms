@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -24,13 +24,13 @@ func NewOtelLogger(projectID string, logger Logger) Tracer {
 	}
 }
 
-func (tracer *otelTracer) StartFromFiberCtxWithLogger(c *fiber.Ctx, logger Logger, name ...string) (context.Context, trace.Span, Logger) {
+func (tracer *otelTracer) StartFromFiberCtxWithLogger(c fiber.Ctx, logger Logger, name ...string) (context.Context, trace.Span, Logger) {
 	ctx, span := tracer.StartFromFiberCtx(c, getName(name...))
 	return ctx, span, tracer.CtxLogger(logger, span)
 }
 
-func (tracer *otelTracer) StartFromFiberCtx(c *fiber.Ctx, name ...string) (context.Context, trace.Span) {
-	return tracer.Start(c.UserContext(), getName(name...))
+func (tracer *otelTracer) StartFromFiberCtx(c fiber.Ctx, name ...string) (context.Context, trace.Span) {
+	return tracer.Start(c.Context(), getName(name...))
 }
 
 func (tracer *otelTracer) CtxLogger(logger Logger, span trace.Span) Logger {

@@ -10,7 +10,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 )
@@ -44,10 +44,10 @@ func NewMessageSendScheduleHandler(
 
 // RegisterRoutes registers send schedule routes.
 func (h *MessageSendScheduleHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
-	router.Get("/v1/send-schedules", h.computeRoute(middlewares, h.Index)...)
-	router.Post("/v1/send-schedules", h.computeRoute(middlewares, h.Store)...)
-	router.Put("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Update)...)
-	router.Delete("/v1/send-schedules/:scheduleID", h.computeRoute(middlewares, h.Delete)...)
+	h.register(router, fiber.MethodGet, "/v1/send-schedules", middlewares, h.Index)
+	h.register(router, fiber.MethodPost, "/v1/send-schedules", middlewares, h.Store)
+	h.register(router, fiber.MethodPut, "/v1/send-schedules/:scheduleID", middlewares, h.Update)
+	h.register(router, fiber.MethodDelete, "/v1/send-schedules/:scheduleID", middlewares, h.Delete)
 }
 
 // Index lists all send schedules for the authenticated user.
@@ -61,7 +61,7 @@ func (h *MessageSendScheduleHandler) RegisterRoutes(router fiber.Router, middlew
 // @Failure 401 {object} responses.Unauthorized
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [get]
-func (h *MessageSendScheduleHandler) Index(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Index(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -92,7 +92,7 @@ func (h *MessageSendScheduleHandler) Index(c *fiber.Ctx) error {
 // @Failure 422 {object} responses.UnprocessableEntity
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules [post]
-func (h *MessageSendScheduleHandler) Store(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Store(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -110,7 +110,7 @@ func (h *MessageSendScheduleHandler) Store(c *fiber.Ctx) error {
 	}
 
 	var request requests.MessageSendScheduleStore
-	if err = c.BodyParser(&request); err != nil {
+	if err = c.Bind().Body(&request); err != nil {
 		return h.responseBadRequest(c, err)
 	}
 
@@ -150,7 +150,7 @@ func (h *MessageSendScheduleHandler) Store(c *fiber.Ctx) error {
 // @Failure 422 {object} responses.UnprocessableEntity
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules/{scheduleID} [put]
-func (h *MessageSendScheduleHandler) Update(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Update(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
@@ -160,7 +160,7 @@ func (h *MessageSendScheduleHandler) Update(c *fiber.Ctx) error {
 	}
 
 	var request requests.MessageSendScheduleStore
-	if err = c.BodyParser(&request); err != nil {
+	if err = c.Bind().Body(&request); err != nil {
 		return h.responseBadRequest(c, err)
 	}
 
@@ -197,7 +197,7 @@ func (h *MessageSendScheduleHandler) Update(c *fiber.Ctx) error {
 // @Failure 404 {object} responses.NotFound
 // @Failure 500 {object} responses.InternalServerError
 // @Router /send-schedules/{scheduleID} [delete]
-func (h *MessageSendScheduleHandler) Delete(c *fiber.Ctx) error {
+func (h *MessageSendScheduleHandler) Delete(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 

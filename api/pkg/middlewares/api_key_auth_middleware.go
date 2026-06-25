@@ -6,7 +6,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -14,7 +14,7 @@ import (
 func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository repositories.UserRepository) fiber.Handler {
 	logger = logger.WithService("middlewares.APIKeyAuth")
 
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		ctx, span := tracer.StartFromFiberCtx(c, "middlewares.APIKeyAuth")
 		defer span.End()
 
@@ -37,7 +37,7 @@ func APIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepository
 	}
 }
 
-func getAPIKeyFromRequest(c *fiber.Ctx) string {
+func getAPIKeyFromRequest(c fiber.Ctx) string {
 	apiKey := c.Get(authHeaderAPIKey)
 	if len(apiKey) != 0 {
 		return apiKey
@@ -47,11 +47,13 @@ func getAPIKeyFromRequest(c *fiber.Ctx) string {
 		APIKey string `json:"x-api-key" form:"x-api-key" query:"x-api-key"`
 	}{}
 
-	if err := c.BodyParser(&payload); err == nil && payload.APIKey != "" {
-		return payload.APIKey
+	if c.HasBody() {
+		if err := c.Bind().Body(&payload); err == nil && payload.APIKey != "" {
+			return payload.APIKey
+		}
 	}
 
-	if err := c.QueryParser(&payload); err != nil {
+	if err := c.Bind().Query(&payload); err != nil {
 		return ""
 	}
 

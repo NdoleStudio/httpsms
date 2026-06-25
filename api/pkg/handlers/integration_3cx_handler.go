@@ -8,7 +8,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/palantir/stacktrace"
 )
 
@@ -39,7 +39,7 @@ func NewIntegration3CxHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *Integration3CXHandler) RegisterRoutes(app *fiber.App, middlewares ...fiber.Handler) {
 	router := app.Group("integration/3cx/")
-	router.Post("/messages", h.computeRoute(middlewares, h.Messages)...)
+	h.register(router, fiber.MethodPost, "/messages", middlewares, h.Messages)
 }
 
 // Messages consumes a 3cx event
@@ -54,14 +54,14 @@ func (h *Integration3CXHandler) RegisterRoutes(app *fiber.App, middlewares ...fi
 // @Failure      422		{object}	responses.UnprocessableEntity
 // @Failure      500		{object}	responses.InternalServerError
 // @Router       /integration/3cx/messages [post]
-func (h *Integration3CXHandler) Messages(c *fiber.Ctx) error {
+func (h *Integration3CXHandler) Messages(c fiber.Ctx) error {
 	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
 	defer span.End()
 
 	spew.Dump(string(c.Body()))
 
 	var request requests.Integration3CXMessage
-	if err := c.BodyParser(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
 		ctxLogger.Warn(stacktrace.Propagate(err, msg))
 		return h.responseBadRequest(c, err)

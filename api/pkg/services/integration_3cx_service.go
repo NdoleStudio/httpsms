@@ -10,7 +10,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
