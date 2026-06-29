@@ -430,8 +430,9 @@ function getGeneralErrorMessage(
       <v-btn
         v-if="!isSignUp"
         variant="plain"
+        size="small"
         color="primary"
-        class="mb-2 px-0 mt-n4"
+        class="mb-3 px-0 mt-n4"
         @click="showForgotPasswordForm"
       >
         Forgot Password?
