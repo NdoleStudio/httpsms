@@ -123,13 +123,13 @@ async function submitEmail() {
     if (isSignUp.value) {
       result = await createUserWithEmailAndPassword(
         auth,
-        email.value,
+        email.value.trim(),
         password.value,
       )
     } else {
       result = await signInWithEmailAndPassword(
         auth,
-        email.value,
+        email.value.trim(),
         password.value,
       )
     }
@@ -202,8 +202,11 @@ function handleError(error: unknown, isSocial = false) {
 
   switch (code) {
     case 'auth/wrong-password':
-    case 'auth/invalid-credential':
       errorMessages.value.add('password', 'Incorrect password')
+      break
+    case 'auth/invalid-credential':
+      errorMessages.value.add('email', 'Invalid email or password')
+      errorMessages.value.add('password', 'Invalid email or password')
       break
     case 'auth/user-not-found':
       errorMessages.value.add(
