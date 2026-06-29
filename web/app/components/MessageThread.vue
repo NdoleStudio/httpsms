@@ -42,13 +42,13 @@ function onInstallApp() {
     >
       Archived Messages
     </div>
-    <v-sheet
+    <div
       v-if="
         !threadsStore.loadingThreads &&
         threadsStore.threads.length === 0 &&
         !threadsStore.archivedThreads
       "
-      class="text-center mt-6 mx-3 bg-transparent"
+      class="text-center mt-6"
     >
       <p v-if="phonesStore.owner" class="text-medium-emphasis text-center">
         Start sending messages
@@ -61,7 +61,7 @@ function onInstallApp() {
         <v-icon :icon="mdiPlus" start />
         New Message
       </v-btn>
-    </v-sheet>
+    </div>
     <div
       v-if="phonesStore.phones.length === 0 && !threadsStore.loadingThreads"
       class="px-4 text-center"
