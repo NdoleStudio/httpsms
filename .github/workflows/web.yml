@@ -61,7 +61,7 @@ jobs:
       - name: Setup Node 🟢
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.18'
 
       - uses: pnpm/action-setup@v6
         name: Install pnpm
