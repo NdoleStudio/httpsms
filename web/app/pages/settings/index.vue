@@ -63,7 +63,8 @@ async function sendVerificationEmail() {
       message: 'Verification email sent. Please check your inbox.',
       type: 'success',
     })
-  } catch {
+  } catch (error) {
+    console.error('sendEmailVerification failed:', error)
     notificationsStore.addNotification({
       message: 'Failed to send verification email. Please try again later.',
       type: 'error',
