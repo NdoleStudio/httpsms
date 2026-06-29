@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDisplay } from 'vuetify'
 import {
   mdiPlus,
   mdiDownload,
@@ -10,7 +9,6 @@ import {
 } from '@mdi/js'
 import { formatPhoneNumber, startsWithLetter } from '~/utils/filters'
 
-const { mdAndDown } = useDisplay()
 const threadsStore = useThreadsStore()
 const phonesStore = usePhonesStore()
 const appStore = useAppStore()
@@ -50,18 +48,11 @@ function onInstallApp() {
         threadsStore.threads.length === 0 &&
         !threadsStore.archivedThreads
       "
-      class="text-center mt-6 mx-3"
+      class="text-center mt-6 mx-3 bg-transparent"
     >
-      <div v-if="mdAndDown">
-        <v-img
-          class="mx-auto mb-4"
-          max-width="80%"
-          src="/img/person-texting.svg"
-        />
-        <p v-if="phonesStore.owner" class="text-medium-emphasis">
-          Start sending messages
-        </p>
-      </div>
+      <p v-if="phonesStore.owner" class="text-medium-emphasis text-center">
+        Start sending messages
+      </p>
       <v-btn
         v-if="phonesStore.owner && phonesStore.phones.length !== 0"
         color="primary"
