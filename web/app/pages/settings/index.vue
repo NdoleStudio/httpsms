@@ -15,7 +15,12 @@ import {
   mdiCalendarClock,
   mdiPlus,
 } from '@mdi/js'
-import { getAuth, signOut, type User as FirebaseUser } from 'firebase/auth'
+import {
+  getAuth,
+  sendEmailVerification,
+  signOut,
+  type User as FirebaseUser,
+} from 'firebase/auth'
 import QRCode from 'qrcode'
 import { ErrorMessages } from '~/utils/errors'
 import { toApiError } from '~/utils/api-error'
@@ -45,6 +50,29 @@ const notificationsStore = useNotificationsStore()
 
 const firebaseUser = ref<FirebaseUser | null>(null)
 const gravatarUrl = ref<string | null>(null)
+const sendingVerificationEmail = ref(false)
+const verificationEmailSent = ref(false)
+
+async function sendVerificationEmail() {
+  if (!firebaseUser.value) return
+  sendingVerificationEmail.value = true
+  try {
+    await sendEmailVerification(firebaseUser.value)
+    verificationEmailSent.value = true
+    notificationsStore.addNotification({
+      message: 'Verification email sent. Please check your inbox.',
+      type: 'success',
+    })
+  } catch (error) {
+    console.error('sendEmailVerification failed:', error)
+    notificationsStore.addNotification({
+      message: 'Failed to send verification email. Please try again later.',
+      type: 'error',
+    })
+  } finally {
+    sendingVerificationEmail.value = false
+  }
+}
 
 const computeGravatarUrl = async (email: string): Promise<string> => {
   const normalized = email.trim().toLowerCase()
@@ -819,6 +847,17 @@ onMounted(async () => {
                   color="primary"
                   :icon="mdiShieldCheck"
                 />
+                <VBtn
+                  v-else
+                  size="x-small"
+                  variant="tonal"
+                  color="warning"
+                  :loading="sendingVerificationEmail"
+                  :disabled="verificationEmailSent"
+                  @click="sendVerificationEmail"
+                >
+                  Verify Email
+                </VBtn>
               </h4>
               <VAutocomplete
                 v-if="authStore.user"
@@ -834,7 +873,7 @@ onMounted(async () => {
             </div>
 
             <!-- API Key -->
-            <h5 class="text-headline-large mb-3 mt-3">API Key</h5>
+            <h5 class="text-headline-large mb-3 mt-0">API Key</h5>
             <p class="text-medium-emphasis">
               Use your API Key in the <v-code>x-api-key</v-code> HTTP Header
               when sending requests to
