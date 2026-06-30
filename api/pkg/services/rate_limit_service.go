@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	rateLimitKeyPrefix      = "rate_limit:"
-	rateLimitNotifiedPrefix = "rate_limit_notified:"
+	rateLimitKeyPrefix      = "user_rate_limit:"
+	rateLimitNotifiedPrefix = "user_rate_limit_notified:"
 	rateLimitWindow         = 24 * time.Hour
 	rateLimitFlushInterval  = 30 * time.Second
 	rateLimitRedisTimeout   = 1 * time.Second
@@ -50,7 +50,7 @@ func NewRateLimitService(
 	client *redis.Client,
 	dispatcher *EventDispatcher,
 ) *RateLimitService {
-	svc := &RateLimitService{
+	rateLimiter := &RateLimitService{
 		tracer:     tracer,
 		logger:     logger,
 		client:     client,
@@ -60,8 +60,8 @@ func NewRateLimitService(
 		done:       make(chan struct{}),
 	}
 
-	go svc.flushLoop()
-	return svc
+	go rateLimiter.flushLoop()
+	return rateLimiter
 }
 
 // Increment adds cost to the user's counter and returns the current count.
