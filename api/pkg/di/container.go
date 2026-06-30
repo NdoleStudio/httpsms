@@ -212,18 +212,20 @@ func (container *Container) App() (app *fiber.App) {
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
-	app.Use(middlewares.RateLimit(
-		container.Tracer(),
-		container.Logger(),
-		container.RateLimitService(),
-		container.UserRepository(),
-		[]string{"/v1/events"},
-	))
 
-	app.Hooks().OnPreShutdown(func() error {
-		container.RateLimitService().Close()
-		return nil
-	})
+	if os.Getenv("RATE_LIMIT_ENABLED") == "true" {
+		app.Use(middlewares.RateLimit(
+			container.Tracer(),
+			container.Logger(),
+			container.RateLimitService(),
+			container.UserRepository(),
+			[]string{"/v1/events"},
+		))
+		app.Hooks().OnPreShutdown(func() error {
+			container.RateLimitService().Close()
+			return nil
+		})
+	}
 
 	container.app = app
 	return app
