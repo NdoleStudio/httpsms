@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestRateLimitService_Increment_BasicCount(t *testing.T) {
@@ -107,5 +109,18 @@ func TestRateLimitService_Increment_WindowExpiry(t *testing.T) {
 // suitable for unit tests that only test in-memory logic.
 func newTestRateLimitService(t *testing.T) *RateLimitService {
 	t.Helper()
-	return NewRateLimitService(nil, nil, nil, nil)
+	return NewRateLimitService(nil, &testLogger{}, nil, nil)
 }
+
+type testLogger struct{}
+
+func (l *testLogger) Info(string)                                {}
+func (l *testLogger) Error(error)                                {}
+func (l *testLogger) Warn(error)                                 {}
+func (l *testLogger) Fatal(error)                                {}
+func (l *testLogger) Trace(string)                               {}
+func (l *testLogger) Debug(string)                               {}
+func (l *testLogger) WithService(string) telemetry.Logger        { return l }
+func (l *testLogger) WithString(string, string) telemetry.Logger { return l }
+func (l *testLogger) WithSpan(trace.SpanContext) telemetry.Logger { return l }
+func (l *testLogger) Printf(string, ...interface{})              {}
