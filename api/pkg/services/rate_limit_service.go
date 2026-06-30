@@ -165,16 +165,18 @@ func (service *RateLimitService) flush(ctx context.Context) {
 	}
 	service.mu.Unlock()
 
-	// Flush to Redis outside the lock with timeout
+	// Flush to Redis outside the lock with timeout using a single pipeline batch
 	redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
 	defer cancel()
 
+	pipe := service.client.Pipeline()
 	for _, entry := range entries {
-		pipe := service.client.Pipeline()
 		pipe.IncrBy(redisCtx, entry.key, entry.delta)
 		pipe.ExpireNX(redisCtx, entry.key, entry.ttl)
+	}
+	if len(entries) > 0 {
 		if _, err := pipe.Exec(redisCtx); err != nil {
-			service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot flush rate limit for key [%s]", entry.key)))
+			service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot flush rate limit batch of %d entries", len(entries))))
 		}
 	}
 }
