@@ -166,7 +166,7 @@ func (service *RateLimitService) flush(ctx context.Context) {
 	service.mu.Unlock()
 
 	// Flush to Redis outside the lock with timeout using a single pipeline batch
-	redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
+	redisCtx, cancel := context.WithTimeout(ctx, 10*rateLimitRedisTimeout)
 	defer cancel()
 
 	pipe := service.client.Pipeline()
@@ -176,7 +176,7 @@ func (service *RateLimitService) flush(ctx context.Context) {
 	}
 	if len(entries) > 0 {
 		if _, err := pipe.Exec(redisCtx); err != nil {
-			service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot flush rate limit batch of %d entries", len(entries))))
+			service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot flush rate limit batch of [%d] entries", len(entries))))
 		}
 	}
 }
@@ -189,6 +189,9 @@ func (service *RateLimitService) hydrate(ctx context.Context, userID string) (*u
 			dirty:        0,
 		}, nil
 	}
+
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
 
 	redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
 	defer cancel()
@@ -203,12 +206,12 @@ func (service *RateLimitService) hydrate(ctx context.Context, userID string) (*u
 		}, nil
 	}
 	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot hydrate rate limit for user [%s]", userID))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot hydrate rate limit for user [%s]", userID)))
 	}
 
 	count, err := strconv.ParseInt(countStr, 10, 64)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse rate limit count [%s] for user [%s]", countStr, userID))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot parse rate limit count [%s] for user [%s]", countStr, userID)))
 	}
 
 	ttl, err := service.client.TTL(redisCtx, key).Result()
@@ -222,6 +225,8 @@ func (service *RateLimitService) hydrate(ctx context.Context, userID string) (*u
 		service.notified[userID] = true
 	}
 
+	ctxLogger.Info(fmt.Sprintf("hydrated rate limit for user [%s] with count [%d]", userID, count))
+
 	return &userCounter{
 		count:        count,
 		windowExpiry: time.Now().Add(ttl),
@@ -234,13 +239,16 @@ func (service *RateLimitService) emitExceededEvent(ctx context.Context, userID e
 		return
 	}
 
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
 	// Set notified flag in Redis (24h TTL) to survive restarts
 	if service.client != nil {
 		redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
 		defer cancel()
 		notifiedKey := rateLimitNotifiedPrefix + string(userID)
 		if err := service.client.Set(redisCtx, notifiedKey, "1", rateLimitWindow).Err(); err != nil {
-			service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot persist rate limit notified flag for user [%s]", userID)))
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot persist rate limit notified flag for user [%s]", userID))))
 		}
 	}
 
@@ -254,11 +262,11 @@ func (service *RateLimitService) emitExceededEvent(ctx context.Context, userID e
 
 	event, err := service.createEvent(events.RateLimitExceeded, string(userID), payload)
 	if err != nil {
-		service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot create rate limit exceeded event for user [%s]", userID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot create rate limit exceeded event for user [%s]", userID))))
 		return
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
-		service.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch rate limit exceeded event for user [%s]", userID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot dispatch rate limit exceeded event for user [%s]", userID))))
 	}
 }
