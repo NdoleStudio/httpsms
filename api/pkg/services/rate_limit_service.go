@@ -19,6 +19,7 @@ const (
 	rateLimitNotifiedPrefix = "rate_limit_notified:"
 	rateLimitWindow         = 24 * time.Hour
 	rateLimitFlushInterval  = 30 * time.Second
+	rateLimitRedisTimeout   = 1 * time.Second
 )
 
 // RateLimitService tracks per-user API request counts with in-memory counters
@@ -108,15 +109,25 @@ func (svc *RateLimitService) Increment(ctx context.Context, userID entities.User
 
 // Close flushes remaining dirty counters and stops the background goroutine.
 func (svc *RateLimitService) Close() {
+	if svc.logger != nil {
+		svc.logger.Info("RateLimitService shutting down, flushing counters")
+	}
 	close(svc.done)
 	if svc.client != nil {
 		svc.flush(context.Background())
+	}
+	if svc.logger != nil {
+		svc.logger.Info("RateLimitService shutdown complete")
 	}
 }
 
 func (svc *RateLimitService) flushLoop() {
 	ticker := time.NewTicker(rateLimitFlushInterval)
 	defer ticker.Stop()
+
+	if svc.logger != nil {
+		svc.logger.Info(fmt.Sprintf("RateLimitService flush loop started (interval: %s)", rateLimitFlushInterval))
+	}
 
 	for {
 		select {
@@ -125,6 +136,9 @@ func (svc *RateLimitService) flushLoop() {
 				svc.flush(context.Background())
 			}
 		case <-svc.done:
+			if svc.logger != nil {
+				svc.logger.Info("RateLimitService flush loop stopped")
+			}
 			return
 		}
 	}
@@ -159,12 +173,15 @@ func (svc *RateLimitService) flush(ctx context.Context) {
 	}
 	svc.mu.Unlock()
 
-	// Flush to Redis outside the lock
+	// Flush to Redis outside the lock with timeout
+	redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
+	defer cancel()
+
 	for _, entry := range entries {
 		pipe := svc.client.Pipeline()
-		pipe.IncrBy(ctx, entry.key, entry.delta)
-		pipe.ExpireNX(ctx, entry.key, entry.ttl)
-		if _, err := pipe.Exec(ctx); err != nil {
+		pipe.IncrBy(redisCtx, entry.key, entry.delta)
+		pipe.ExpireNX(redisCtx, entry.key, entry.ttl)
+		if _, err := pipe.Exec(redisCtx); err != nil {
 			if svc.logger != nil {
 				svc.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot flush rate limit for key [%s]", entry.key)))
 			}
@@ -181,8 +198,11 @@ func (svc *RateLimitService) hydrate(ctx context.Context, userID string) (*userC
 		}, nil
 	}
 
+	redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
+	defer cancel()
+
 	key := rateLimitKeyPrefix + userID
-	countStr, err := svc.client.Get(ctx, key).Result()
+	countStr, err := svc.client.Get(redisCtx, key).Result()
 	if err == redis.Nil {
 		return &userCounter{
 			count:        0,
@@ -199,14 +219,14 @@ func (svc *RateLimitService) hydrate(ctx context.Context, userID string) (*userC
 		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot parse rate limit count [%s] for user [%s]", countStr, userID))
 	}
 
-	ttl, err := svc.client.TTL(ctx, key).Result()
+	ttl, err := svc.client.TTL(redisCtx, key).Result()
 	if err != nil || ttl <= 0 {
 		ttl = rateLimitWindow
 	}
 
 	// Check if already notified (in Redis)
 	notifiedKey := rateLimitNotifiedPrefix + userID
-	if exists, _ := svc.client.Exists(ctx, notifiedKey).Result(); exists > 0 {
+	if exists, _ := svc.client.Exists(redisCtx, notifiedKey).Result(); exists > 0 {
 		svc.notified[userID] = true
 	}
 
@@ -224,8 +244,10 @@ func (svc *RateLimitService) emitExceededEvent(ctx context.Context, userID entit
 
 	// Set notified flag in Redis (24h TTL) to survive restarts
 	if svc.client != nil {
+		redisCtx, cancel := context.WithTimeout(ctx, rateLimitRedisTimeout)
+		defer cancel()
 		notifiedKey := rateLimitNotifiedPrefix + string(userID)
-		if err := svc.client.Set(ctx, notifiedKey, "1", rateLimitWindow).Err(); err != nil && svc.logger != nil {
+		if err := svc.client.Set(redisCtx, notifiedKey, "1", rateLimitWindow).Err(); err != nil && svc.logger != nil {
 			svc.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot persist rate limit notified flag for user [%s]", userID)))
 		}
 	}
