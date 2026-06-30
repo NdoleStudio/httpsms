@@ -42,5 +42,6 @@ func main() {
 	}
 
 	container := di.NewContainer(os.Getenv("GCP_PROJECT_ID"), Version)
+	defer container.Close()
 	container.Logger().Info(container.App().Listen(fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT"))).Error())
 }
