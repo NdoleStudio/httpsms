@@ -124,13 +124,20 @@ const planYearlyMonthlyPrice = computed(
             :class="{ 'ml-16': mdAndDown }"
           />
         </VCol>
-        <VCol v-if="mdAndUp" cols="12" md="6" class="pt-16">
-          <VImg
-            class="mx-auto mt-8"
-            max-height="700"
-            max-width="98%"
-            :src="'/img/writing-code-phone.svg'"
-          />
+        <VCol v-if="mdAndUp" cols="12" md="6" class="d-flex align-center">
+          <div
+            class="mx-auto"
+            style="max-width: 98%; width: 100%; aspect-ratio: 16/9"
+          >
+            <iframe
+              src="https://player.cloudinary.com/embed/?cloud_name=dnzklcz1h&public_id=httpsms.com"
+              width="100%"
+              height="100%"
+              style="border: none; border-radius: 8px"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowfullscreen
+            />
+          </div>
         </VCol>
       </VRow>
     </VContainer>
