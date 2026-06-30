@@ -37,6 +37,11 @@ func (subscription SubscriptionName) Limit() uint {
 	}
 }
 
+// RateLimit returns the daily API request rate limit for a subscription
+func (subscription SubscriptionName) RateLimit() uint {
+	return subscription.Limit() * 2
+}
+
 // SubscriptionNameFree represents a free subscription
 const SubscriptionNameFree = SubscriptionName("free")
 
