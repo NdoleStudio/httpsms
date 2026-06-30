@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"os"
 	"strconv"
 	"strings"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-const rateLimitCostCap = 200
+const rateLimitCostCap = 100
 
 // RateLimit tracks per-user API request counts without blocking requests.
 func RateLimit(
@@ -22,14 +21,9 @@ func RateLimit(
 	userRepository repositories.UserRepository,
 	excludePaths []string,
 ) fiber.Handler {
-	enabled := os.Getenv("RATE_LIMIT_ENABLED") == "true"
 	logger = logger.WithService("middlewares.RateLimit")
 
 	return func(c fiber.Ctx) error {
-		if !enabled {
-			return c.Next()
-		}
-
 		path := c.Path()
 		for _, excluded := range excludePaths {
 			if strings.HasPrefix(path, excluded) {
@@ -49,10 +43,7 @@ func RateLimit(
 		if c.Method() == fiber.MethodGet {
 			if limitParam := c.Query("limit"); limitParam != "" {
 				if parsed, err := strconv.Atoi(limitParam); err == nil && parsed > 0 {
-					cost = parsed
-					if cost > rateLimitCostCap {
-						cost = rateLimitCostCap
-					}
+					cost = min(parsed, rateLimitCostCap)
 				}
 			}
 		}
