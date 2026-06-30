@@ -225,7 +225,9 @@ func (svc *RateLimitService) emitExceededEvent(ctx context.Context, userID entit
 	// Set notified flag in Redis (24h TTL) to survive restarts
 	if svc.client != nil {
 		notifiedKey := rateLimitNotifiedPrefix + string(userID)
-		svc.client.Set(ctx, notifiedKey, "1", rateLimitWindow)
+		if err := svc.client.Set(ctx, notifiedKey, "1", rateLimitWindow).Err(); err != nil && svc.logger != nil {
+			svc.logger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot persist rate limit notified flag for user [%s]", userID)))
+		}
 	}
 
 	payload := events.RateLimitExceededPayload{

@@ -107,6 +107,13 @@ func NewLiteContainer() (container *Container) {
 	}
 }
 
+// Close gracefully shuts down container resources
+func (container *Container) Close() {
+	if container.rateLimitService != nil {
+		container.rateLimitService.Close()
+	}
+}
+
 // NewContainer creates a new dependency injection container
 func NewContainer(projectID string, version string) (container *Container) {
 	container = &Container{
