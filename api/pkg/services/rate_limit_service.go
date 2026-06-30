@@ -49,10 +49,10 @@ func NewRateLimitService(
 	logger telemetry.Logger,
 	client *redis.Client,
 	dispatcher *EventDispatcher,
-) *RateLimitService {
-	rateLimiter := &RateLimitService{
+) (rateLimiter *RateLimitService) {
+	rateLimiter = &RateLimitService{
 		tracer:     tracer,
-		logger:     logger,
+		logger:     logger.WithService(fmt.Sprintf("%T", rateLimiter)),
 		client:     client,
 		dispatcher: dispatcher,
 		counters:   make(map[string]*userCounter),
@@ -109,19 +109,19 @@ func (service *RateLimitService) Increment(ctx context.Context, userID entities.
 
 // Close flushes remaining dirty counters and stops the background goroutine.
 func (service *RateLimitService) Close() {
-	service.logger.Info("RateLimitService shutting down, flushing counters")
+	service.logger.Info("rate limit service shutting down, flushing counters")
 	close(service.done)
 	if service.client != nil {
 		service.flush(context.Background())
 	}
-	service.logger.Info("RateLimitService shutdown complete")
+	service.logger.Info("rate limit service shutdown complete")
 }
 
 func (service *RateLimitService) flushLoop() {
 	ticker := time.NewTicker(rateLimitFlushInterval)
 	defer ticker.Stop()
 
-	service.logger.Info(fmt.Sprintf("RateLimitService flush loop started (interval: %s)", rateLimitFlushInterval))
+	service.logger.Info(fmt.Sprintf("rate limit service flush loop started with interval [%s]", rateLimitFlushInterval))
 
 	for {
 		select {
@@ -130,7 +130,7 @@ func (service *RateLimitService) flushLoop() {
 				service.flush(context.Background())
 			}
 		case <-service.done:
-			service.logger.Info("RateLimitService flush loop stopped")
+			service.logger.Info("rate limit service flush loop stopped")
 			return
 		}
 	}
