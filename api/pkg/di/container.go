@@ -220,6 +220,11 @@ func (container *Container) App() (app *fiber.App) {
 		[]string{"/v1/events"},
 	))
 
+	app.Hooks().OnPreShutdown(func() error {
+		container.RateLimitService().Close()
+		return nil
+	})
+
 	container.app = app
 	return app
 }
