@@ -156,6 +156,9 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterPhoneAPIKeyRoutes()
 	container.RegisterPhoneAPIKeyListeners()
 
+	container.RegisterUSSDListeners()
+	container.RegisterUSSDRoutes()
+
 	container.RegisterMarketingListeners()
 	container.RegisterWebsocketListeners()
 
@@ -412,6 +415,10 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 
 	if err = db.AutoMigrate(&entities.PhoneAPIKey{}); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneAPIKey{})))
+	}
+
+	if err = db.AutoMigrate(&entities.USSD{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.USSD{})))
 	}
 
 	return container.db
@@ -1791,6 +1798,60 @@ func (container *Container) UserRistrettoCache() *ristretto.Cache[string, entiti
 	}
 	container.userRistrettoCache = ristrettoCache
 	return ristrettoCache
+}
+
+// USSDRepository creates a new instance of repositories.USSDRepository
+func (container *Container) USSDRepository() repositories.USSDRepository {
+	container.logger.Debug("creating GORM repositories.USSDRepository")
+	return repositories.NewGormUSSDRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// USSDService creates a new instance of services.USSDService
+func (container *Container) USSDService() *services.USSDService {
+	container.logger.Debug("creating services.USSDService")
+	return services.NewUSSDService(
+		container.Logger(),
+		container.Tracer(),
+		container.USSDRepository(),
+		container.EventDispatcher(),
+	)
+}
+
+// USSDHandlerValidator creates a new instance of validators.USSDHandlerValidator
+func (container *Container) USSDHandlerValidator() *validators.USSDHandlerValidator {
+	container.logger.Debug("creating validators.USSDHandlerValidator")
+	return validators.NewUSSDHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// USSDHandler creates a new instance of handlers.USSDHandler
+func (container *Container) USSDHandler() *handlers.USSDHandler {
+	container.logger.Debug("creating handlers.USSDHandler")
+	return handlers.NewUSSDHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.USSDService(),
+		container.USSDHandlerValidator(),
+	)
+}
+
+// RegisterUSSDRoutes registers routes for the /ussd prefix
+func (container *Container) RegisterUSSDRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.USSDHandler{}))
+	container.USSDHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+	container.USSDHandler().RegisterPhoneAPIKeyRoutes(container.App(), container.PhoneAPIKeyMiddleware(), container.AuthenticatedMiddleware())
+}
+
+// RegisterUSSDListeners registers event listeners for USSD events
+func (container *Container) RegisterUSSDListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for USSD"))
+	// USSD events are handled directly by the service, no additional listeners needed
 }
 
 // InitializeTraceProvider initializes the open telemetry trace provider
