@@ -115,6 +115,24 @@ Sometimes it happens that the phone doesn't get the push notification in time an
 possible to set a timeout for which a message is valid and if a message becomes expired after the timeout elapses, you
 will be notified.
 
+### USSD Support
+
+You can send and receive USSD (Unstructured Supplementary Service Data) messages through your Android phone. 
+USSD sessions are fully tracked with status management (pending, active, completed, failed, timed-out) and 
+support both MO-to-App (mobile originated) and App-to-MO (application originated) directions.
+
+```go
+// Sending a USSD response using Go
+client := httpsms.New(httpsms.WithAPIKey(/* API Key */))
+
+client.USSD.Send(context.Background(), &httpsms.USSDSendParams{
+    To:        "+18005550199",
+    From:      "+18005550100",
+    Content:   "Welcome to USSD menu",
+    SessionID: "USSDSESSION12345",
+})
+```
+
 ## API Clients
 
 - [x] Go: https://github.com/NdoleStudio/httpsms-go
