@@ -3,8 +3,10 @@ definePageMeta({
   layout: 'website',
 })
 
-useHead({
+useSeoMeta({
   title: 'Terms and Conditions - httpSMS',
+  description:
+    'Read the terms and conditions for using httpSMS to send and receive SMS messages through your Android phone.',
 })
 </script>
 

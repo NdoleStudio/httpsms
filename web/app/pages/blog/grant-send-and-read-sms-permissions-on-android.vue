@@ -6,21 +6,16 @@ const { mdAndUp } = useDisplay()
 
 definePageMeta({ layout: 'website' })
 
-useHead({
+useSeoMeta({
   title:
     'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+ - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content:
-        'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+',
-    },
-    {
-      property: 'og:description',
-      content:
-        'In Android 15 (Vanilla Ice Cream), the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions step by step.',
-    },
-  ],
+  description:
+    'In Android 15 (Vanilla Ice Cream), the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions step by step.',
+  ogTitle: 'How to grant SEND_SMS and RECEIVE_SMS permissions on Android 14+',
+  ogDescription:
+    'In Android 15 (Vanilla Ice Cream), the SEND_SMS and RECEIVE_SMS permissions are now hard restricted. Learn how to grant these permissions step by step.',
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 

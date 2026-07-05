@@ -7,28 +7,15 @@ const { mdAndUp } = useDisplay()
 
 definePageMeta({ layout: 'website' })
 
-useHead({
-  title: 'Send bulk SMS messages from a CSV file with no code  - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content: 'Send bulk SMS messages from a CSV file with no code',
-    },
-    {
-      property: 'og:description',
-      content:
-        'Send personalized SMS messages from your CSV file instantly using your Android phone as the SMS gateway.',
-    },
-    {
-      name: 'twitter:card',
-      content: 'summary_large_image',
-    },
-    {
-      property: 'og:url',
-      content:
-        'https://httpsms.com/blog/send-bulk-sms-from-csv-file-with-no-code/',
-    },
-  ],
+useSeoMeta({
+  title: 'Send bulk SMS messages from a CSV file with no code - httpSMS',
+  description:
+    'Upload a CSV file and send personalized bulk SMS messages in minutes using your Android phone as the SMS gateway — no code required.',
+  ogTitle: 'Send bulk SMS messages from a CSV file with no code',
+  ogDescription:
+    'Send personalized SMS messages from your CSV file instantly using your Android phone as the SMS gateway.',
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 

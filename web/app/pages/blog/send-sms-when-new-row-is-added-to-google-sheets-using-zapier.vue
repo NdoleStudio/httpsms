@@ -5,30 +5,17 @@ const { mdAndUp } = useDisplay()
 
 definePageMeta({ layout: 'website' })
 
-useHead({
+useSeoMeta({
   title:
     'Send an SMS message when a new row is added to Google Sheets using Zapier - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content:
-        'Send an SMS message when a new row is added to Google Sheets using Zapier',
-    },
-    {
-      property: 'og:description',
-      content:
-        "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier. You don't need to write any code to make this happen and you can personalize the SMS messages which are sent out.",
-    },
-    {
-      name: 'twitter:card',
-      content: 'summary_large_image',
-    },
-    {
-      property: 'og:url',
-      content:
-        'https://httpsms.com/blog/send-sms-when-new-row-is-added-to-google-sheets-using-zapier/',
-    },
-  ],
+  description:
+    'Automatically send a personalized SMS every time a new row is added to Google Sheets using Zapier and httpSMS — no code required.',
+  ogTitle:
+    'Send an SMS message when a new row is added to Google Sheets using Zapier',
+  ogDescription:
+    "Automate sending personalized SMS messages each time a new row is added to your Google Sheets document using Zapier. You don't need to write any code to make this happen and you can personalize the SMS messages which are sent out.",
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 

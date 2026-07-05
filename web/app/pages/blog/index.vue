@@ -5,8 +5,15 @@ definePageMeta({
   layout: 'website',
 })
 
-useHead({
-  title: 'Blog Posts - httpSMS',
+useSeoMeta({
+  title: 'httpSMS Blog - SMS automation guides & tutorials',
+  description:
+    'Guides and tutorials for sending and receiving SMS with your Android phone — bulk messaging, webhooks, end-to-end encryption, Zapier, Excel, and Python.',
+  ogTitle: 'httpSMS Blog - SMS automation guides & tutorials',
+  ogDescription:
+    'Learn how to send and receive SMS from your Android phone: bulk messaging, webhooks, encryption, Zapier, Excel, and Python tutorials.',
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 
 type Article = {

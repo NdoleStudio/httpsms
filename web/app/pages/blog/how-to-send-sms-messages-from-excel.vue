@@ -7,28 +7,16 @@ const { mdAndUp } = useDisplay()
 
 definePageMeta({ layout: 'website' })
 
-useHead({
+useSeoMeta({
   title:
-    'How to send SMS messages to multiple phone numbers from Excel  - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content: 'How to send SMS messages to multiple phone numbers from Excel',
-    },
-    {
-      property: 'og:description',
-      content:
-        'Send personalized SMS messages to multiple phone numbers for less than $0.002 per SMS message using your Android phone as the SMS gateway.',
-    },
-    {
-      name: 'twitter:card',
-      content: 'summary_large_image',
-    },
-    {
-      property: 'og:url',
-      content: 'https://httpsms.com/blog/how-to-send-sms-messages-from-excel/',
-    },
-  ],
+    'How to send SMS messages to multiple phone numbers from Excel - httpSMS',
+  description:
+    'Send personalized SMS messages to multiple phone numbers straight from Excel for less than $0.002 per message using your Android phone as the SMS gateway.',
+  ogTitle: 'How to send SMS messages to multiple phone numbers from Excel',
+  ogDescription:
+    'Send personalized SMS messages to multiple phone numbers for less than $0.002 per SMS message using your Android phone as the SMS gateway.',
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 
