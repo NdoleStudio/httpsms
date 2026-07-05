@@ -3,8 +3,10 @@ definePageMeta({
   layout: 'website',
 })
 
-useHead({
+useSeoMeta({
   title: 'Privacy Policy - httpSMS',
+  description:
+    'Read the httpSMS privacy policy to learn what personal information we collect, how it is used, and the steps we take to protect your data.',
 })
 </script>
 

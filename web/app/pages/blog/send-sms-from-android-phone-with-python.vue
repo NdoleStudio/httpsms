@@ -5,33 +5,16 @@ const { mdAndUp } = useDisplay()
 
 definePageMeta({ layout: 'website' })
 
-useHead({
+useSeoMeta({
   title: 'Send an SMS from your Android phone with Python - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content: 'Send an SMS from your Android phone with Python',
-    },
-    {
-      property: 'og:description',
-      content:
-        'Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.',
-    },
-    {
-      property: 'og:image',
-      content:
-        'https://httpsms.com/img/blog/send-sms-from-android-phone-with-python/header.png',
-    },
-    {
-      name: 'twitter:card',
-      content: 'summary_large_image',
-    },
-    {
-      property: 'og:url',
-      content:
-        'https://httpsms.com/blog/send-sms-from-android-phone-with-python/',
-    },
-  ],
+  description:
+    'Configure your Android phone as an SMS gateway and automate sending text messages with Python in a few lines of code using the httpSMS HTTP API.',
+  ogTitle: 'Send an SMS from your Android phone with Python',
+  ogDescription:
+    'Configure your Android phone as an SMS gateway to automate sending text messages with the Python programing language.',
+  ogImage:
+    'https://httpsms.com/img/blog/send-sms-from-android-phone-with-python/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 

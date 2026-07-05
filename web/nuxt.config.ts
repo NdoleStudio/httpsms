@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     'vuetify-nuxt-module',
     '@pinia/nuxt',
     '@nuxtjs/google-fonts',
+    '@nuxtjs/seo',
   ],
 
   googleFonts: {
@@ -20,6 +21,57 @@ export default defineNuxtConfig({
   },
 
   css: ['vuetify/styles'],
+
+  site: {
+    url: process.env.APP_URL || 'https://httpsms.com',
+    name: process.env.APP_NAME || 'httpSMS',
+    description:
+      'Turn your Android phone into an SMS gateway. Send and receive text messages worldwide with a simple HTTP API — no SMS provider or short code required.',
+    defaultLocale: 'en',
+  },
+
+  // Authenticated app routes that should never appear in search engines or the
+  // sitemap. The marketing/blog/legal pages remain public and indexable.
+  robots: {
+    disallow: [
+      '/messages',
+      '/threads',
+      '/settings',
+      '/billing',
+      '/bulk-messages',
+      '/heartbeats',
+      '/phone-api-keys',
+      '/search-messages',
+    ],
+  },
+
+  sitemap: {
+    exclude: [
+      '/messages',
+      '/threads',
+      '/threads/**',
+      '/settings',
+      '/billing',
+      '/bulk-messages',
+      '/heartbeats/**',
+      '/phone-api-keys',
+      '/search-messages',
+      '/login',
+    ],
+  },
+
+  // The app ships as a client-rendered SPA (ssr: false) served statically, so
+  // runtime Satori OG-image generation is not available. Curated static OG
+  // images are set per page instead.
+  ogImage: {
+    enabled: false,
+  },
+
+  // Static download assets in /public are valid at runtime but are not Nuxt
+  // routes, so exclude them from link validation to avoid false positives.
+  linkChecker: {
+    excludeLinks: ['/templates/**'],
+  },
 
   build: {
     transpile: ['vuetify', 'chart.js', 'vue-chartjs', 'v-phone-input'],
@@ -91,7 +143,17 @@ export default defineNuxtConfig({
     },
   },
 
-  routeRules: {},
+  routeRules: {
+    '/messages': { robots: false },
+    '/threads': { robots: false },
+    '/threads/**': { robots: false },
+    '/settings': { robots: false },
+    '/billing': { robots: false },
+    '/bulk-messages': { robots: false },
+    '/heartbeats/**': { robots: false },
+    '/phone-api-keys': { robots: false },
+    '/search-messages': { robots: false },
+  },
 
   app: {
     head: {

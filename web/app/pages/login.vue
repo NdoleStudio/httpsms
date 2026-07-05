@@ -4,8 +4,10 @@ definePageMeta({
   layout: 'blank',
 })
 
-useHead({
-  title: 'Login To Your Account - httpSMS',
+useSeoMeta({
+  title: 'Log in to your account - httpSMS',
+  description:
+    'Log in to httpSMS to send and receive SMS messages through your own Android phone with a simple HTTP API.',
 })
 
 const route = useRoute()

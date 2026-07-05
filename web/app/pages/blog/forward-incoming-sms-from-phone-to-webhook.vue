@@ -5,35 +5,18 @@ const { mdAndUp } = useDisplay()
 
 definePageMeta({ layout: 'website' })
 
-useHead({
+useSeoMeta({
   title:
     'How to forward a text message (SMS) from an android phone into your webhook - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content:
-        'How to forward a text message (SMS) from an android phone into your webhook',
-    },
-    {
-      property: 'og:description',
-      content:
-        'You can now program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like Zapier and IFTTT.',
-    },
-    {
-      property: 'og:image',
-      content:
-        'https://httpsms.com/img/blog/forward-incoming-sms-from-phone-to-webhook/header.png',
-    },
-    {
-      name: 'twitter:card',
-      content: 'summary_large_image',
-    },
-    {
-      property: 'og:url',
-      content:
-        'https://httpsms.com/blog/forward-incoming-sms-from-phone-to-webhook/',
-    },
-  ],
+  description:
+    'Program your Android phone to forward incoming SMS messages to your server webhook and trigger powerful automations with tools like Zapier and IFTTT.',
+  ogTitle:
+    'How to forward a text message (SMS) from an android phone into your webhook',
+  ogDescription:
+    'You can now program your android phone to forward messages received on your phone to your server and trigger powerful automations with tools like Zapier and IFTTT.',
+  ogImage:
+    'https://httpsms.com/img/blog/forward-incoming-sms-from-phone-to-webhook/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 

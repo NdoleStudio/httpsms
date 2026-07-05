@@ -30,8 +30,15 @@ definePageMeta({
   layout: 'website',
 })
 
-useHead({
-  title: 'Convert your android phone into an SMS gateway - httpSMS',
+useSeoMeta({
+  title: 'Convert your Android phone into an SMS gateway - httpSMS',
+  description:
+    'Turn your Android phone into an SMS gateway and send or receive text messages with a simple HTTP API. Get started free — no SMS provider or short code needed.',
+  ogTitle: 'Convert your Android phone into an SMS gateway',
+  ogDescription:
+    'Send and receive SMS messages worldwide through your own Android phone using a simple HTTP API. No SMS provider, short code, or monthly minimum required.',
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 
 const config = useRuntimeConfig()

@@ -12,21 +12,17 @@ const receiveTab = ref('javascript')
 
 definePageMeta({ layout: 'website' })
 
-useHead({
+useSeoMeta({
   title:
     'Secure your conversations with end-to-end encryption for SMS messages - httpSMS',
-  meta: [
-    {
-      property: 'og:title',
-      content:
-        'Secure your conversations with end-to-end encryption for SMS messages',
-    },
-    {
-      property: 'og:description',
-      content:
-        'We have added support for end-to-end encryption for SMS messages so that no one can see the content of the messages you send using httpSMS except you.',
-    },
-  ],
+  description:
+    'Enable end-to-end encryption for your SMS messages with httpSMS so no one but you can read the texts you send and receive through your Android phone.',
+  ogTitle:
+    'Secure your conversations with end-to-end encryption for SMS messages',
+  ogDescription:
+    'We have added support for end-to-end encryption for SMS messages so that no one can see the content of the messages you send using httpSMS except you.',
+  ogImage: 'https://httpsms.com/header.png',
+  twitterCard: 'summary_large_image',
 })
 </script>
 
