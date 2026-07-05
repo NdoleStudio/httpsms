@@ -194,13 +194,13 @@ function goToPricing() {
                 </a>
               </li>
               <li class="mb-2">
-                <a
-                  href="https://httpsms.lemonsqueezy.com/affiliates"
+                <NuxtLink
+                  to="/affiliates"
                   class="text-white text-decoration-none footer-link"
                 >
                   Affiliates
                   <v-icon color="warning" size="small" :icon="mdiShieldStar" />
-                </a>
+                </NuxtLink>
               </li>
               <li class="mb-2">
                 <a
