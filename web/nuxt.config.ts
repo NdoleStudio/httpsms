@@ -145,6 +145,7 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/messages': { robots: false },
+    '/threads': { robots: false },
     '/threads/**': { robots: false },
     '/settings': { robots: false },
     '/billing': { robots: false },
