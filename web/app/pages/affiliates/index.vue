@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {
   mdiCashMultiple,
-  mdiRepeatVariant,
-  mdiMagnet,
-  mdiCreditCardCheckOutline,
+  mdiCreation,
+  mdiLinkVariant,
+  mdiWalletOutline,
+  mdiCalendarClock,
+  mdiCursorDefaultClick,
   mdiArrowRightThin,
   mdiChevronDown,
 } from '@mdi/js'
@@ -13,90 +15,68 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Affiliate Program — Earn up to $70 per Sale | httpSMS',
+  title: 'Affiliate Program — Earn 20% on every sale | httpSMS',
   description:
-    'Join the httpSMS affiliate program and earn up to $70 for every customer you refer, with recurring commissions. Free to join, powered by LemonSqueezy.',
-  ogTitle: 'Get paid to share httpSMS — earn up to $70 per sale',
+    'Become a httpSMS affiliate and earn 20% commission — up to $70.00 — on every customer you refer. Free to join, powered by Lemon Squeezy.',
+  ogTitle: 'Get paid to share httpSMS — earn 20% on every sale',
   ogDescription:
-    'Join the httpSMS affiliate program and earn up to $70 for every customer you refer, with recurring commissions. Free to join, powered by LemonSqueezy.',
+    'Become a httpSMS affiliate and earn 20% commission — up to $70.00 — on every customer you refer. Free to join, powered by Lemon Squeezy.',
   ogImage: 'https://httpsms.com/header.png',
   twitterCard: 'summary_large_image',
 })
 
-const { mdAndUp, mdAndDown } = useDisplay()
+const { mdAndDown } = useDisplay()
 
 const signupUrl = 'https://affiliates.lemonsqueezy.com/programs/httpsms'
 
-const benefits = [
-  {
-    icon: mdiCashMultiple,
-    title: 'Up to $70 per sale',
-    body: 'Real commission on real subscriptions, not pennies per click.',
-  },
-  {
-    icon: mdiRepeatVariant,
-    title: 'Recurring commission',
-    body: 'Get paid every month your referral stays, not just once.',
-  },
-  {
-    icon: mdiMagnet,
-    title: 'A product that sticks',
-    body: 'Developers wire httpSMS into daily workflows, so they rarely leave.',
-  },
-  {
-    icon: mdiCreditCardCheckOutline,
-    title: 'Payouts on autopilot',
-    body: 'LemonSqueezy tracks every referral and pays you automatically.',
-  },
-]
-
-const steps = [
-  {
-    title: 'Sign up free',
-    body: 'Join through LemonSqueezy in under a minute. No cost, no catch.',
-  },
-  {
-    title: 'Share your link',
-    body: 'Drop it in your blog posts, videos, docs, or DMs.',
-  },
-  {
-    title: 'Get paid',
-    body: 'We handle tracking and payouts. You collect on every sale.',
-  },
+const highlights = [
+  { value: '20%', label: 'commission on every sale' },
+  { value: '$70', label: 'max earned per referral' },
+  { value: 'NET30', label: 'payout terms' },
+  { value: '$10', label: 'minimum payout' },
 ]
 
 const faqs = [
   {
+    icon: mdiCreation,
+    question: 'Why promote us?',
+    answer:
+      "Affiliate partnerships are one of the simplest yet most profitable ways to make money online. You send customers our way, and we'll pay you for it.",
+  },
+  {
+    icon: mdiLinkVariant,
+    question: 'How do I make money as an affiliate?',
+    answer:
+      'All you have to do is recommend us using your affiliate link on your website, blog, and social media. We track your clicks and transactions so you can get paid.',
+  },
+  {
+    icon: mdiCashMultiple,
     question: 'How much can I earn?',
     answer:
-      'Up to $70 per sale, plus recurring commission for as long as your referral stays subscribed.',
+      "You earn 20% commission — up to $70.00 — on every referral that results in a successful sale. There's no limit to how much you can make by promoting us.",
   },
   {
-    question: 'How do I get paid?',
+    icon: mdiWalletOutline,
+    question: 'What are the payout minimums?',
     answer:
-      'LemonSqueezy tracks your referrals and pays you automatically on their schedule.',
+      'We require a minimum balance of $10.00 before processing an affiliate payout. We set this to avoid any fraudulent issues with our affiliate program.',
   },
   {
-    question: 'Who can join?',
+    icon: mdiCalendarClock,
+    question: 'When do I get paid?',
     answer:
-      "Anyone. Bloggers, YouTubers, developers, agencies — and it's free to join.",
+      'We payout on NET30 terms to account for refunds and chargebacks. For example, commissions generated in January would be paid out on March 15th (NET30).',
   },
   {
-    question: 'How do I track my referrals?',
+    icon: mdiCursorDefaultClick,
+    question: 'How do I sign up?',
     answer:
-      'Your LemonSqueezy dashboard shows clicks, referrals, and earnings in real time.',
-  },
-  {
-    question: 'What converts best?',
-    answer:
-      'Tutorials, honest reviews, and comparisons that show how httpSMS turns an Android phone into an SMS gateway.',
+      'The Lemon Squeezy affiliate hub hosts our affiliate program. Click the "Become an affiliate" button below to create a Lemon Squeezy account and join our program.',
   },
 ]
 
-const scrollToHowItWorks = () => {
-  document
-    .getElementById('how-it-works')
-    ?.scrollIntoView({ behavior: 'smooth' })
+const scrollToFaq = () => {
+  document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })
 }
 </script>
 
@@ -106,22 +86,20 @@ const scrollToHowItWorks = () => {
     <VContainer>
       <VRow>
         <VCol cols="12" md="8" offset-md="2" class="pt-16 pb-8 text-center">
-          <p
-            class="text-overline text-medium-emphasis mb-2"
-            style="letter-spacing: 0.3em !important"
-          >
+          <VChip color="pink" label class="mb-6">
+            <VIcon start :icon="mdiCashMultiple" />
             Affiliate Program
-          </p>
-          <h1 class="text-display-medium font-weight-bold gradient-header mb-6">
+          </VChip>
+          <h1 class="text-display-large font-weight-bold gradient-header pb-1">
             Get paid to share httpSMS
           </h1>
           <h2
-            class="text-headline-small font-weight-light text-medium-emphasis mb-8"
+            class="text-medium-emphasis text-headline-small font-weight-light mt-8 mb-8"
           >
-            Earn up to <span class="text-white font-weight-bold">$70</span> for
-            every customer you refer — and keep earning every month they stay
-            subscribed. If you already tell people to ditch expensive short
-            codes, you might as well get paid for it.
+            Earn <span class="gradient-underline">20% commission</span> — up to
+            <span class="gradient-underline">$70.00</span> — on every customer
+            you refer. Recommend httpSMS on your blog, videos, or social, and
+            we'll track every click and pay you.
           </h2>
           <div>
             <VBtn
@@ -139,9 +117,9 @@ const scrollToHowItWorks = () => {
               size="large"
               variant="tonal"
               class="ma-2"
-              @click="scrollToHowItWorks"
+              @click="scrollToFaq"
             >
-              See how it works
+              How it works
               <VIcon end :icon="mdiChevronDown" />
             </VBtn>
           </div>
@@ -149,118 +127,92 @@ const scrollToHowItWorks = () => {
       </VRow>
     </VContainer>
 
-    <!-- Why promote httpSMS -->
+    <!-- Highlights -->
     <VSheet class="py-16">
       <VContainer>
-        <h2 class="text-headline-large font-weight-bold text-center mb-2">
-          Why promote httpSMS
-        </h2>
-        <p class="text-body-large text-medium-emphasis text-center mb-10">
-          A generous program built on a product people actually keep.
-        </p>
         <VRow>
           <VCol
-            v-for="benefit in benefits"
-            :key="benefit.title"
-            cols="12"
-            sm="6"
+            v-for="highlight in highlights"
+            :key="highlight.label"
+            cols="6"
             md="3"
+            class="text-center"
           >
-            <VCard height="100%" class="pa-4" variant="tonal">
-              <VIcon size="40" color="primary" :icon="benefit.icon" />
-              <h3 class="text-title-large font-weight-bold mt-4 mb-2">
-                {{ benefit.title }}
-              </h3>
-              <p class="text-body-medium text-medium-emphasis">
-                {{ benefit.body }}
-              </p>
-            </VCard>
+            <p
+              class="text-display-medium font-weight-bold gradient-header mb-1"
+            >
+              {{ highlight.value }}
+            </p>
+            <p class="text-title-large font-weight-light text-medium-emphasis">
+              {{ highlight.label }}
+            </p>
           </VCol>
         </VRow>
       </VContainer>
     </VSheet>
 
-    <!-- How it works -->
-    <VContainer id="how-it-works" class="py-16">
-      <h2 class="text-headline-large font-weight-bold text-center mb-2">
-        How it works
-      </h2>
-      <p class="text-body-large text-medium-emphasis text-center mb-10">
-        From sign-up to payout in three steps.
-      </p>
+    <!-- FAQ -->
+    <VContainer id="faq" class="py-16">
+      <VRow>
+        <VCol cols="12" md="8" offset-md="2">
+          <h2
+            class="text-md-display-large text-display-medium text-center mb-4"
+          >
+            Frequently Asked Questions
+          </h2>
+          <p class="text-center text-title-large text-medium-emphasis mb-8">
+            Everything you need to know before you start earning with httpSMS.
+          </p>
+        </VCol>
+      </VRow>
       <VRow>
         <VCol
-          v-for="(step, index) in steps"
-          :key="step.title"
+          v-for="faq in faqs"
+          :key="faq.question"
           cols="12"
-          md="4"
-          :class="{ 'text-center': mdAndDown }"
+          md="6"
+          class="py-6"
         >
-          <div
-            class="d-flex align-center justify-center gradient-step mb-4"
-            :class="{ 'mx-auto': mdAndDown }"
-          >
-            <span class="text-headline-small font-weight-bold">
-              {{ index + 1 }}
-            </span>
+          <div class="d-flex" :class="{ 'flex-column text-center': mdAndDown }">
+            <VIcon
+              size="32"
+              color="primary"
+              class="mr-4 mb-2"
+              :class="{ 'mx-auto': mdAndDown }"
+              :icon="faq.icon"
+            />
+            <div>
+              <h3 class="text-headline-small font-weight-bold mb-2">
+                {{ faq.question }}
+              </h3>
+              <p
+                class="text-title-large font-weight-light text-medium-emphasis"
+              >
+                {{ faq.answer }}
+              </p>
+            </div>
           </div>
-          <h3 class="text-title-large font-weight-bold mb-2">
-            {{ step.title }}
-          </h3>
-          <p class="text-body-large text-medium-emphasis">
-            {{ step.body }}
-          </p>
         </VCol>
       </VRow>
     </VContainer>
 
-    <!-- FAQ -->
+    <!-- Closing CTA -->
     <VSheet class="py-16">
       <VContainer>
         <VRow>
-          <VCol cols="12" md="10" offset-md="1">
-            <h2 class="text-headline-large font-weight-bold mb-10">
-              Frequently asked questions
-            </h2>
-            <VRow>
-              <VCol
-                v-for="faq in faqs"
-                :key="faq.question"
-                cols="12"
-                md="6"
-                class="mb-4"
-              >
-                <h3 class="text-title-large font-weight-bold mb-2">
-                  {{ faq.question }}
-                </h3>
-                <p class="text-body-large text-medium-emphasis">
-                  {{ faq.answer }}
-                </p>
-              </VCol>
-            </VRow>
-          </VCol>
-        </VRow>
-      </VContainer>
-    </VSheet>
-
-    <!-- Closing CTA -->
-    <VContainer class="py-16">
-      <VRow>
-        <VCol cols="12" md="8" offset-md="2">
-          <VCard
-            class="pa-8 text-center gradient-cta"
-            :class="{ 'pa-md-16': mdAndUp }"
-          >
-            <h2 class="text-headline-large font-weight-bold mb-2">
+          <VCol cols="12" md="8" offset-md="2" class="text-center">
+            <h2 class="text-display-medium font-weight-bold mb-4">
               Ready to start earning?
             </h2>
-            <p class="text-body-large text-medium-emphasis mb-6">
+            <p
+              class="text-title-large font-weight-light text-medium-emphasis mb-8"
+            >
               Join free, grab your link, and turn your audience into recurring
               income.
             </p>
             <VBtn
               color="primary"
-              size="large"
+              size="x-large"
               :href="signupUrl"
               target="_blank"
               rel="noopener"
@@ -269,10 +221,10 @@ const scrollToHowItWorks = () => {
               Become an affiliate
               <VIcon end :icon="mdiArrowRightThin" />
             </VBtn>
-          </VCard>
-        </VCol>
-      </VRow>
-    </VContainer>
+          </VCol>
+        </VRow>
+      </VContainer>
+    </VSheet>
   </div>
 </template>
 
@@ -284,15 +236,11 @@ const scrollToHowItWorks = () => {
   -webkit-text-fill-color: transparent;
 }
 
-.gradient-step {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
+.gradient-underline {
   color: #fff;
-}
-
-.gradient-cta {
-  border: 1px solid rgba(26, 211, 127, 0.4);
+  background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 3px;
 }
 </style>
