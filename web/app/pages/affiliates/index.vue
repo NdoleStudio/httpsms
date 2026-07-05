@@ -90,16 +90,17 @@ const scrollToFaq = () => {
             <VIcon start :icon="mdiCashMultiple" />
             Affiliate Program
           </VChip>
-          <h1 class="text-display-large font-weight-bold gradient-header pb-1">
+          <h1 class="text-display-large font-weight-bold pb-1">
             Get paid to share httpSMS
           </h1>
           <h2
             class="text-medium-emphasis text-headline-small font-weight-light mt-8 mb-8"
           >
-            Earn <span class="gradient-underline">20% commission</span> — up to
-            <span class="gradient-underline">$70.00</span> — on every customer
-            you refer. Recommend httpSMS on your blog, videos, or social, and
-            we'll track every click and pay you.
+            Earn
+            <span class="text-primary font-weight-bold">20% commission</span> —
+            up to <span class="text-primary font-weight-bold">$70.00</span> — on
+            every customer you refer. Recommend httpSMS on your blog, videos, or
+            social, and we'll track every click and pay you.
           </h2>
           <div>
             <VBtn
@@ -138,9 +139,7 @@ const scrollToFaq = () => {
             md="3"
             class="text-center"
           >
-            <p
-              class="text-display-medium font-weight-bold gradient-header mb-1"
-            >
+            <p class="text-display-medium font-weight-bold text-primary mb-1">
               {{ highlight.value }}
             </p>
             <p class="text-title-large font-weight-light text-medium-emphasis">
@@ -227,20 +226,3 @@ const scrollToFaq = () => {
     </VSheet>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.gradient-header {
-  color: #1ad37f;
-  background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.gradient-underline {
-  color: #fff;
-  background-image: -webkit-linear-gradient(0deg, #1ad37f 14%, #329ef4 55%);
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  background-size: 100% 3px;
-}
-</style>
