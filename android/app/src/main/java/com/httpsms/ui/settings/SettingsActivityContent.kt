@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -138,6 +139,12 @@ fun SettingsScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                 contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
             ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     stringResource(id = R.string.main_log_out),
                     color = Color.White,

@@ -6,9 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -125,27 +124,38 @@ fun MainScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = onHeartbeatClick,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            enabled = !uiState.isHeartbeatLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = Blue500),
-            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+        Column(
+            modifier = Modifier.width(IntrinsicSize.Max),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                stringResource(id = R.string.send_heartbeat),
-                color = Color.White,
-                fontSize = 18.sp
-            )
-        }
+            Button(
+                onClick = onHeartbeatClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isHeartbeatLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = Blue500),
+                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = Pink500
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    stringResource(id = R.string.send_heartbeat),
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            }
 
-        if (uiState.isHeartbeatLoading) {
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                color = Pink500
-            )
+            if (uiState.isHeartbeatLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    color = Pink500
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
