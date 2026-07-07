@@ -138,7 +138,7 @@ fun MainScreen(
                 Icon(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = null,
-                    tint = Pink500
+                    tint = if (uiState.isHeartbeatLoading) LocalContentColor.current else Pink500
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
