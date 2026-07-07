@@ -18,6 +18,7 @@ import androidx.core.view.WindowCompat
 
 val Blue500 = Color(0xFF2196F3)
 val Pink500 = Color(0xFFE91E63)
+val LogoGreen = Color(0xFF70AB5C)
 
 private val DarkColorScheme = darkColorScheme(
     primary = Blue500,
