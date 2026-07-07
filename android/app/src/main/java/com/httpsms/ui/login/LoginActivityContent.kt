@@ -86,7 +86,7 @@ fun LoginScreen(
             trailingIcon = {
                 IconButton(onClick = onQrScanClick) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = android.R.drawable.ic_menu_camera),
+                        painter = painterResource(id = android.R.drawable.ic_menu_camera),
                         contentDescription = "Scan QR Code"
                     )
                 }

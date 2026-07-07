@@ -101,7 +101,7 @@ fun MainScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Pink500)
                     ) {
                         Icon(
-                            imageVector = ImageVector.vectorResource(id = android.R.drawable.ic_lock_idle_low_battery),
+                            painter = painterResource(id = android.R.drawable.ic_lock_idle_low_battery),
                             contentDescription = null,
                             tint = Color.White
                         )
