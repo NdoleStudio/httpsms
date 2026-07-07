@@ -118,13 +118,16 @@ class LoginActivity : AppCompatActivity() {
         return telephonyManager.line1Number
     }
 
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        permissions.entries.forEach {
+            Timber.d("${it.key} = ${it.value}")
+        }
+        // Try to auto-detect phone numbers after permissions are granted
+        viewModel.autoDetectPhoneNumbers(this)
+    }
+
     private fun requestPermissions() {
         Timber.d("requesting permissions")
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            permissions.entries.forEach {
-                Timber.d("${it.key} = ${it.value}")
-            }
-        }
 
         var permissions = arrayOf(
             Manifest.permission.SEND_SMS,

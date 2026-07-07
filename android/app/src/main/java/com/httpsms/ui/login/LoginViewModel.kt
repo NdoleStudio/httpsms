@@ -1,6 +1,12 @@
 package com.httpsms.ui.login
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.telephony.SubscriptionManager
+import android.telephony.TelephonyManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.httpsms.Constants
@@ -13,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.net.URI
 
 data class LoginUiState(
@@ -35,11 +42,66 @@ class LoginViewModel : ViewModel() {
 
     fun initialize(context: Context, defaultServerUrl: String) {
         val isDualSim = SmsManagerService.isDualSIM(context)
-        val phoneNumberSIM1 = Settings.getSIM1PhoneNumber(context) ?: ""
+        val phoneNumberSIM1 = Settings.getSIM1PhoneNumber(context)
+        val phoneNumberSIM2 = Settings.getSIM2PhoneNumber(context)
+        
         _uiState.value = _uiState.value.copy(
             isDualSim = isDualSim,
             phoneNumberSIM1 = phoneNumberSIM1,
+            phoneNumberSIM2 = phoneNumberSIM2,
             serverUrl = defaultServerUrl
+        )
+        
+        // Try to auto-detect if fields are empty
+        if (phoneNumberSIM1.isEmpty() || (isDualSim && phoneNumberSIM2.isEmpty())) {
+            autoDetectPhoneNumbers(context)
+        }
+    }
+
+    fun autoDetectPhoneNumbers(context: Context) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            Timber.d("Permissions not granted for auto-detecting phone numbers")
+            return
+        }
+
+        val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        
+        var detectedSIM1 = _uiState.value.phoneNumberSIM1
+        var detectedSIM2 = _uiState.value.phoneNumberSIM2
+
+        try {
+            val subscriptionManager = if (Build.VERSION.SDK_INT >= 31) {
+                context.getSystemService(SubscriptionManager::class.java)
+            } else {
+                SubscriptionManager.from(context)
+            }
+            
+            val activeSubscriptions = try { subscriptionManager.activeSubscriptionInfoList } catch (e: Exception) { null }
+            
+            if (detectedSIM1.isEmpty()) {
+                val line1Number = try { telephonyManager.line1Number } catch (e: Exception) { null }
+                if (!line1Number.isNullOrEmpty()) {
+                    detectedSIM1 = line1Number
+                } else if (activeSubscriptions != null && activeSubscriptions.isNotEmpty()) {
+                    detectedSIM1 = activeSubscriptions[0].number ?: ""
+                }
+            }
+
+            if (detectedSIM2.isEmpty() && activeSubscriptions != null && activeSubscriptions.size >= 2) {
+                detectedSIM2 = activeSubscriptions[1].number ?: ""
+            }
+            
+            Timber.d("Auto-detected numbers - SIM1: $detectedSIM1, SIM2: $detectedSIM2")
+
+        } catch (e: SecurityException) {
+            Timber.e(e, "Security exception while auto-detecting phone numbers")
+        }
+
+        _uiState.value = _uiState.value.copy(
+            phoneNumberSIM1 = detectedSIM1,
+            phoneNumberSIM2 = detectedSIM2,
+            isDualSim = SmsManagerService.isDualSIM(context)
         )
     }
 
