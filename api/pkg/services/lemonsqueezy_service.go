@@ -237,5 +237,6 @@ func (service *LemonsqueezyService) subscriptionName(variant string) entities.Su
 		}
 	}
 
+	service.logger.Warn(stacktrace.NewError(fmt.Sprintf("unknown subscription variant [%s], defaulting to free", variant)))
 	return entities.SubscriptionNameFree
 }
