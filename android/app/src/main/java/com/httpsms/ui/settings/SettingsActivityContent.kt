@@ -134,7 +134,7 @@ fun SettingsScreen(
 
             Button(
                 onClick = onLogoutClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.align(Alignment.CenterHorizontally),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                 contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
             ) {

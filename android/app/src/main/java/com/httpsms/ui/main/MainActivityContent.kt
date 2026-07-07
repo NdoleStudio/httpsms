@@ -81,7 +81,7 @@ fun MainScreen(
                 if (!uiState.isSmsPermissionGranted) {
                     Button(
                         onClick = onSmsPermissionClick,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                     ) {
@@ -103,7 +103,7 @@ fun MainScreen(
                 if (!uiState.isBatteryOptimizationDisabled) {
                     Button(
                         onClick = onBatteryOptimizationClick,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
                         colors = ButtonDefaults.buttonColors(containerColor = Pink500),
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                     ) {
@@ -127,7 +127,7 @@ fun MainScreen(
 
         Button(
             onClick = onHeartbeatClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
             enabled = !uiState.isHeartbeatLoading,
             colors = ButtonDefaults.buttonColors(containerColor = Blue500),
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
