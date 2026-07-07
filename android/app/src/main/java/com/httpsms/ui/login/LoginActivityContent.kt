@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -86,7 +87,7 @@ fun LoginScreen(
             trailingIcon = {
                 IconButton(onClick = onQrScanClick) {
                     Icon(
-                        painter = painterResource(id = android.R.drawable.ic_menu_camera),
+                        imageVector = Icons.Default.QrCodeScanner,
                         contentDescription = "Scan QR Code"
                     )
                 }

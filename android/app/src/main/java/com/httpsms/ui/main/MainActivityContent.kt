@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -101,7 +102,7 @@ fun MainScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Pink500)
                     ) {
                         Icon(
-                            painter = painterResource(id = android.R.drawable.ic_lock_idle_low_battery),
+                            imageVector = Icons.Default.BatteryAlert,
                             contentDescription = null,
                             tint = Color.White
                         )
