@@ -2,6 +2,7 @@ package com.httpsms.ui.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,36 +12,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.httpsms.R
 import com.httpsms.ui.theme.Blue500
 import com.httpsms.ui.theme.Pink500
-import androidx.compose.foundation.layout.*
 
 @Composable
 fun LoginScreen(
@@ -49,6 +44,7 @@ fun LoginScreen(
     onLoginClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val uriHandler = LocalUriHandler.current
 
     Column(
         modifier = Modifier
@@ -67,11 +63,40 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text(
-            text = stringResource(id = R.string.get_your_api_key),
-            textAlign = TextAlign.Center,
-            fontSize = 20.sp,
-            lineHeight = 28.sp,
+        val annotatedString = buildAnnotatedString {
+            val text = stringResource(id = R.string.get_your_api_key)
+            val linkText = "httpsms.com/settings"
+            val startIndex = text.indexOf(linkText)
+
+            if (startIndex >= 0) {
+                append(text.substring(0, startIndex))
+
+                pushStringAnnotation(tag = "URL", annotation = "https://httpsms.com/settings")
+                withStyle(style = SpanStyle(color = Blue500, fontWeight = FontWeight.Bold)) {
+                    append(linkText)
+                }
+                pop()
+
+                append(text.substring(startIndex + linkText.length))
+            } else {
+                append(text)
+            }
+        }
+
+        ClickableText(
+            text = annotatedString,
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        uriHandler.openUri(annotation.item)
+                    }
+            },
+            style = MaterialTheme.typography.bodyLarge.copy(
+                textAlign = TextAlign.Center,
+                fontSize = 20.sp,
+                lineHeight = 28.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -157,17 +182,19 @@ fun LoginScreen(
             onClick = onLoginClick,
             enabled = !uiState.isLoading,
             modifier = Modifier.align(Alignment.CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(containerColor = Blue500)
+            colors = ButtonDefaults.buttonColors(containerColor = Blue500),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_login),
                 contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
+                modifier = Modifier.padding(end = 8.dp),
+                tint = Color.White
             )
             Text(
                 text = stringResource(id = R.string.sign_in_button),
                 color = Color.White,
-                fontSize = 16.sp
+                fontSize = 18.sp
             )
         }
 

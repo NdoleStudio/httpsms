@@ -82,9 +82,14 @@ fun MainScreen(
                     Button(
                         onClick = onSmsPermissionClick,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                     ) {
-                        Text(stringResource(id = R.string.enable_sms_permission), color = Color.White)
+                        Text(
+                            stringResource(id = R.string.enable_sms_permission),
+                            color = Color.White,
+                            fontSize = 18.sp
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             painter = painterResource(id = R.drawable.open_in_new_24),
@@ -99,7 +104,8 @@ fun MainScreen(
                     Button(
                         onClick = onBatteryOptimizationClick,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Pink500)
+                        colors = ButtonDefaults.buttonColors(containerColor = Pink500),
+                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.BatteryAlert,
@@ -107,7 +113,11 @@ fun MainScreen(
                             tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(id = R.string.disable_battery_optimization), color = Color.White)
+                        Text(
+                            stringResource(id = R.string.disable_battery_optimization),
+                            color = Color.White,
+                            fontSize = 18.sp
+                        )
                     }
                 }
             }
@@ -119,9 +129,14 @@ fun MainScreen(
             onClick = onHeartbeatClick,
             modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.isHeartbeatLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = Blue500)
+            colors = ButtonDefaults.buttonColors(containerColor = Blue500),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
         ) {
-            Text(stringResource(id = R.string.send_heartbeat), color = Color.White)
+            Text(
+                stringResource(id = R.string.send_heartbeat),
+                color = Color.White,
+                fontSize = 18.sp
+            )
         }
 
         if (uiState.isHeartbeatLoading) {
@@ -146,11 +161,16 @@ fun MainScreen(
 
         Button(
             onClick = onSettingsClick,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
         ) {
             Icon(Icons.Default.Settings, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(id = R.string.main_app_settings), color = Color.White)
+            Text(
+                stringResource(id = R.string.main_app_settings),
+                color = Color.White,
+                fontSize = 18.sp
+            )
         }
         
         Spacer(modifier = Modifier.height(16.dp))

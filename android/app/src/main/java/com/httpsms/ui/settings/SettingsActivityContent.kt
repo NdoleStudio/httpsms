@@ -135,9 +135,14 @@ fun SettingsScreen(
             Button(
                 onClick = onLogoutClick,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
             ) {
-                Text(stringResource(id = R.string.main_log_out), color = Color.White)
+                Text(
+                    stringResource(id = R.string.main_log_out),
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
             }
         }
     }
