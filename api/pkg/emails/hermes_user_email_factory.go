@@ -15,9 +15,10 @@ type hermesUserEmailFactory struct {
 	generator hermes.Hermes
 }
 
-// formatBillingDate renders a date like "19 June 2026"
+// formatBillingDate renders a date like "19 June 2026" in UTC, matching how
+// the billing cycle boundaries are computed in the billing usage repository.
 func formatBillingDate(t time.Time) string {
-	return t.Format("2 January 2006")
+	return t.UTC().Format("2 January 2006")
 }
 
 func (factory *hermesUserEmailFactory) APIKeyRotated(emailAddress string, timestamp time.Time, timezone string) (*Email, error) {
