@@ -74,10 +74,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function deleteUserAccount(): Promise<string> {
-    const response = await apiFetch<{ message: string }>('/v1/users/me', {
+    await apiFetch<{ message: string }>('/v1/users/me', {
       method: 'DELETE',
     })
-    return response.message
+    return 'Your account has been deleted successfully'
   }
 
   async function rotateApiKey(userId: string): Promise<EntitiesUser> {

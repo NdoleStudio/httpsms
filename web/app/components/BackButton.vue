@@ -37,7 +37,7 @@ function goBack() {
     :block="block"
     @click="goBack"
   >
-    <v-icon :icon="mdiArrowLeft" />
+    <v-icon :icon="mdiArrowLeft" start />
     Go Back
   </v-btn>
 </template>

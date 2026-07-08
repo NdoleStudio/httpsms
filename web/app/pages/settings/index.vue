@@ -780,7 +780,8 @@ async function deleteUserAccount() {
     await router.push({ name: 'index' })
   } catch {
     notificationsStore.addNotification({
-      message: 'Failed to delete your account',
+      message:
+        'We ran into an internal error while deleteing your account please contact us.',
       type: 'error',
     })
   } finally {
@@ -965,10 +966,10 @@ onMounted(async () => {
                   </VBtn>
                 </template>
                 <VCard>
-                  <VCardTitle class="text-headline-medium text-break"
+                  <VCardTitle class="text-headline-small"
                     >Are you sure you want to rotate your API Key?</VCardTitle
                   >
-                  <VCardText>
+                  <VCardText class="text-medium-emphasis">
                     You will have to logout and login again on the
                     <b>httpSMS</b> Android app with your new API key after you
                     rotate it.
@@ -976,6 +977,7 @@ onMounted(async () => {
                   <VCardActions class="pb-4">
                     <VBtn
                       color="primary"
+                      variant="flat"
                       :loading="rotatingApiKey"
                       @click="rotateApiKey"
                     >
@@ -983,7 +985,10 @@ onMounted(async () => {
                       Yes Rotate Key
                     </VBtn>
                     <VSpacer />
-                    <VBtn variant="text" @click="showRotateApiKey = false"
+                    <VBtn
+                      variant="text"
+                      color="warning"
+                      @click="showRotateApiKey = false"
                       >Close</VBtn
                     >
                   </VCardActions>
