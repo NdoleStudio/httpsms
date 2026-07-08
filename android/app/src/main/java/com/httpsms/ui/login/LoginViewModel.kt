@@ -61,9 +61,8 @@ class LoginViewModel : ViewModel() {
     }
 
     fun autoDetectPhoneNumbers(context: Context) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-            Timber.d("Permissions not granted for auto-detecting phone numbers")
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            Timber.d("READ_PHONE_STATE permission not granted for auto-detecting phone numbers")
             return
         }
 

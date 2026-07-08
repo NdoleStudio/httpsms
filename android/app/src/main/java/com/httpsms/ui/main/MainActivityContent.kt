@@ -55,7 +55,6 @@ fun MainScreen(
     onHeartbeatClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
