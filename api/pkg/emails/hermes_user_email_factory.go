@@ -15,10 +15,9 @@ type hermesUserEmailFactory struct {
 	generator hermes.Hermes
 }
 
-// formatBillingDate renders a date like "19 June 2026" in UTC, matching how
-// the billing cycle boundaries are computed in the billing usage repository.
-func formatBillingDate(t time.Time) string {
-	return t.UTC().Format("2 January 2006")
+// formatBillingDate renders a date like "19 June 2026" in the user's timezone.
+func formatBillingDate(t time.Time, location *time.Location) string {
+	return t.In(location).Format("2 January 2006")
 }
 
 func (factory *hermesUserEmailFactory) APIKeyRotated(emailAddress string, timestamp time.Time, timezone string) (*Email, error) {
@@ -75,7 +74,7 @@ func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User, u
 		Body: hermes.Body{
 			Intros: []string{
 				fmt.Sprintf("You've reached your limit of %d messages on the %s plan, so new messages will not be processed until your usage resets.", user.SubscriptionName.Limit(), user.SubscriptionName),
-				fmt.Sprintf("Between %s and %s you sent %d messages and received %d, for a total of %d.", formatBillingDate(usage.StartTimestamp), formatBillingDate(usage.EndTimestamp), usage.SentMessages, usage.ReceivedMessages, usage.TotalMessages()),
+				fmt.Sprintf("Between %s and %s you sent %d messages and received %d, for a total of %d.", formatBillingDate(usage.StartTimestamp, user.Location()), formatBillingDate(usage.EndTimestamp, user.Location()), usage.SentMessages, usage.ReceivedMessages, usage.TotalMessages()),
 			},
 			Actions: []hermes.Action{
 				{
@@ -121,7 +120,7 @@ func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usag
 		Body: hermes.Body{
 			Intros: []string{
 				fmt.Sprintf("This is a friendly heads-up that you've used %d%% of your monthly SMS limit on the %s plan.", percent, user.SubscriptionName),
-				fmt.Sprintf("Between %s and %s you sent %d messages and received %d, for a total of %d out of your %d message limit.", formatBillingDate(usage.StartTimestamp), formatBillingDate(usage.EndTimestamp), usage.SentMessages, usage.ReceivedMessages, usage.TotalMessages(), user.SubscriptionName.Limit()),
+				fmt.Sprintf("Between %s and %s you sent %d messages and received %d, for a total of %d out of your %d message limit.", formatBillingDate(usage.StartTimestamp, user.Location()), formatBillingDate(usage.EndTimestamp, user.Location()), usage.SentMessages, usage.ReceivedMessages, usage.TotalMessages(), user.SubscriptionName.Limit()),
 			},
 			Actions: []hermes.Action{
 				{
