@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
+import android.webkit.URLUtil
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.net.URI
+import java.net.URISyntaxException
 
 data class LoginUiState(
     val apiKey: String = "",
@@ -154,8 +156,7 @@ class LoginViewModel : ViewModel() {
                 return@launch
             }
 
-            // Simple URL validation (can be improved)
-            if (!serverUrl.startsWith("http")) {
+            if (!URLUtil.isValidUrl(serverUrl)) {
                  _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     serverUrlError = "Server URL [$serverUrl] is invalid"
@@ -163,7 +164,7 @@ class LoginViewModel : ViewModel() {
                 return@launch
             }
 
-            if (!serverUrl.startsWith("https")) {
+            if (!URLUtil.isHttpsUrl(serverUrl)) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     serverUrlError = "Server URL [$serverUrl] must be HTTPS"
@@ -171,22 +172,30 @@ class LoginViewModel : ViewModel() {
                 return@launch
             }
 
-            val authResult = withContext(Dispatchers.IO) {
-                val service = HttpSmsApiService(apiKey, URI(serverUrl))
-                val e164Phone1 = PhoneNumberValidator.formatE164(phone1, countryCode)
-                val response1 = service.updateFcmToken(e164Phone1, Constants.SIM1, Settings.getFcmToken(context) ?: "")
-                
-                if (response1.second != null || response1.third != null) {
-                    return@withContext Pair(response1.second, response1.third)
-                }
+            val authResult = try {
+                withContext(Dispatchers.IO) {
+                    val service = HttpSmsApiService(apiKey, URI(serverUrl))
+                    val e164Phone1 = PhoneNumberValidator.formatE164(phone1, countryCode)
+                    val response1 = service.updateFcmToken(e164Phone1, Constants.SIM1, Settings.getFcmToken(context) ?: "")
+                    
+                    if (response1.second != null || response1.third != null) {
+                        return@withContext Pair(response1.second, response1.third)
+                    }
 
-                if (currentState.isDualSim) {
-                    val e164Phone2 = PhoneNumberValidator.formatE164(phone2, countryCode)
-                    val response2 = service.updateFcmToken(e164Phone2, Constants.SIM2, Settings.getFcmToken(context) ?: "")
-                    return@withContext Pair(response2.second, response2.third)
-                }
+                    if (currentState.isDualSim) {
+                        val e164Phone2 = PhoneNumberValidator.formatE164(phone2, countryCode)
+                        val response2 = service.updateFcmToken(e164Phone2, Constants.SIM2, Settings.getFcmToken(context) ?: "")
+                        return@withContext Pair(response2.second, response2.third)
+                    }
 
-                Pair(null, null)
+                    Pair(null, null)
+                }
+            } catch (e: URISyntaxException) {
+                Timber.e(e, "Invalid URI: $serverUrl")
+                Pair(null, "Server URL [$serverUrl] is invalid")
+            } catch (e: Exception) {
+                Timber.e(e, "Login error")
+                Pair(null, "An unexpected error occurred: ${e.message}")
             }
 
             if (authResult.first != null) {
