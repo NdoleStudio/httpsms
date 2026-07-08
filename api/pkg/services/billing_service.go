@@ -55,20 +55,20 @@ func (service *BillingService) IsEntitledWithCount(ctx context.Context, userID e
 
 	user, err := service.userRepository.Load(ctx, userID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s], entitlement successfull", userID)
+		msg := fmt.Sprintf("cannot load user with ID [%s], entitlement successful", userID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return nil
 	}
 
 	usage, err := service.billingUsageRepository.GetCurrent(ctx, userID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load billing usage for user with ID [%s], entitlement successfull", userID)
+		msg := fmt.Sprintf("cannot load billing usage for user with ID [%s], entitlement successful", userID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return nil
 	}
 
 	if !usage.IsEntitled(count, user.SubscriptionName.Limit()) {
-		return service.handleLimitExceeded(ctx, user)
+		return service.handleLimitExceeded(ctx, user, usage)
 	}
 
 	return nil
@@ -79,11 +79,11 @@ func (service *BillingService) IsEntitled(ctx context.Context, userID entities.U
 	return service.IsEntitledWithCount(ctx, userID, 1)
 }
 
-func (service *BillingService) handleLimitExceeded(ctx context.Context, user *entities.User) *string {
+func (service *BillingService) handleLimitExceeded(ctx context.Context, user *entities.User, usage *entities.BillingUsage) *string {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	service.sendLimitExceededEmail(ctx, user)
+	service.sendLimitExceededEmail(ctx, user, usage)
 
 	message := fmt.Sprintf(
 		"You have exceeded your limit of [%d] messages on your [%s] plan. Upgrade to send more messages on https://httpsms.com/billing",
@@ -93,7 +93,7 @@ func (service *BillingService) handleLimitExceeded(ctx context.Context, user *en
 	return &message
 }
 
-func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user *entities.User) {
+func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user *entities.User, usage *entities.BillingUsage) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -102,7 +102,7 @@ func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user 
 		return
 	}
 
-	email, err := service.emailFactory.UsageLimitExceeded(user)
+	email, err := service.emailFactory.UsageLimitExceeded(user, usage)
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot create usage limit email for user [%s]", user.ID)))
 		return

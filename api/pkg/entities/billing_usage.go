@@ -24,7 +24,7 @@ func (usage *BillingUsage) TotalMessages() uint {
 	return usage.SentMessages + usage.ReceivedMessages
 }
 
-// IsEntitled checks if a user can send `count` messages
+// IsEntitled checks if a user can send `count` messages without exceeding `limit`
 func (usage *BillingUsage) IsEntitled(count, limit uint) bool {
-	return (usage.TotalMessages() + count) < limit
+	return (usage.TotalMessages() + count) <= limit
 }
