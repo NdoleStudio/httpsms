@@ -55,14 +55,14 @@ func (service *BillingService) IsEntitledWithCount(ctx context.Context, userID e
 
 	user, err := service.userRepository.Load(ctx, userID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s], entitlement successfull", userID)
+		msg := fmt.Sprintf("cannot load user with ID [%s], entitlement successful", userID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return nil
 	}
 
 	usage, err := service.billingUsageRepository.GetCurrent(ctx, userID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load billing usage for user with ID [%s], entitlement successfull", userID)
+		msg := fmt.Sprintf("cannot load billing usage for user with ID [%s], entitlement successful", userID)
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
 		return nil
 	}
