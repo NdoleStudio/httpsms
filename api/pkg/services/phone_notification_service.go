@@ -167,7 +167,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 				params.MessageID,
 			),
 		))
-		msg := fmt.Sprintf("cannot send notification for to your phone [%s]. Reinstall the httpSMS app on your Android phone.", phone.PhoneNumber)
+		msg := fmt.Sprintf("cannot send notification to your phone [%s]. Reinstall the httpSMS app on your Android phone.", phone.PhoneNumber)
 		return service.handleNotificationFailed(ctx, errors.New(msg), params)
 	}
 
