@@ -62,8 +62,13 @@ fun HttpSmsTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                window.statusBarColor = if (darkTheme) Color.Black.toArgb() else LogoGreen.toArgb()
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            } else {
+                window.statusBarColor = colorScheme.primary.toArgb()
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            }
         }
     }
 
