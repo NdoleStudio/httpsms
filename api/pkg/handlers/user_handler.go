@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
@@ -333,7 +334,7 @@ func (h *UserHandler) subscriptionInvoice(c fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while generating payment invoice")
 	}
 
-	data, err := h.service.GenerateReceipt(ctx, request.UserInvoiceGenerateParams(h.userIDFomContext(c)))
+	reader, err := h.service.GenerateReceipt(ctx, request.UserInvoiceGenerateParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot generate receipt for invoice ID [%s] and user [%s]", request.SubscriptionInvoiceID, h.userFromContext(c))
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
@@ -343,5 +344,12 @@ func (h *UserHandler) subscriptionInvoice(c fiber.Ctx) error {
 	c.Set(fiber.HeaderContentType, "application/pdf")
 	c.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"httpsms.com - %s.pdf\"", request.SubscriptionInvoiceID))
 
-	return c.SendStream(data)
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		msg := fmt.Sprintf("cannot read invoice data with ID [%s] for user with ID [%s]", request.SubscriptionInvoiceID, h.userIDFomContext(c))
+		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		return h.responseInternalServerError(c)
+	}
+
+	return c.Send(data)
 }
