@@ -132,6 +132,11 @@ func (service *LemonsqueezyService) HandleSubscriptionUpdatedEvent(ctx context.C
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	if request.Data.Attributes.VariantName == "" && request.Data.Attributes.Status == "active" {
+		ctxLogger.Info(fmt.Sprintf("skipping update of subscription [%s] for user [%s] because variant name is empty", request.Data.ID, request.Data.Attributes.UserEmail))
+		return nil
+	}
+
 	user, err := service.userRepository.LoadBySubscriptionID(ctx, request.Data.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", request.Data.ID)
