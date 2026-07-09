@@ -170,7 +170,7 @@ onMounted(async () => {
       </VAppBar>
       <VContainer>
         <VRow>
-          <VCol cols="12" class="mt-n8">
+          <VCol cols="12" class="mt-n4">
             <p>
               Every 15 minutes, the httpSMS app on your Android phone sends a
               heartbeat event to the httpsms API to show that it is alive. The
