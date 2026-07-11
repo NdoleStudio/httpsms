@@ -220,7 +220,8 @@ fun PhoneCard(
                     text = PhoneNumberUtils.formatNumber(phoneNumber, Locale.getDefault().country) ?: phoneNumber,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 if (isActive) {
                     Icon(
