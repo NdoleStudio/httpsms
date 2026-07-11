@@ -10,37 +10,29 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.telephony.PhoneNumberUtils
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.provider.Settings as ProviderSettings
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.MutableLiveData
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
-import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.httpsms.services.StickyNotificationService
+import com.httpsms.ui.main.MainScreen
+import com.httpsms.ui.main.MainViewModel
+import com.httpsms.ui.theme.HttpSmsTheme
 import com.httpsms.worker.HeartbeatWorker
 import timber.log.Timber
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.*
 import java.util.concurrent.TimeUnit
-import android.provider.Settings as ProviderSettings
 
 
 class MainActivity : AppCompatActivity() {
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,20 +40,42 @@ class MainActivity : AppCompatActivity() {
 
         redirectToLogin()
 
-        setContentView(R.layout.activity_main)
+        viewModel.initialize(this, getString(R.string.app_version, BuildConfig.VERSION_NAME))
+
+        setContent {
+            HttpSmsTheme {
+                MainScreen(
+                    viewModel = viewModel,
+                    onSettingsClick = { onSettingsClick() },
+                    onSmsPermissionClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://httpsms.com/blog/grant-send-and-read-sms-permissions-on-android"))
+                        startActivity(intent)
+                    },
+                    onBatteryOptimizationClick = {
+                        val intent = Intent()
+                        intent.action = ProviderSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        intent.data = Uri.parse("package:$packageName")
+                        startActivity(intent)
+                    },
+                    onHeartbeatClick = {
+                        viewModel.sendHeartbeat(this) { error ->
+                            if (error != null) {
+                                Timber.w("heartbeat sending failed with [$error]")
+                                Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(this, "Heartbeat sent successfully", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+            }
+        }
 
         createChannel()
-
-        setCardContent(this)
-        registerListeners()
         refreshToken(this)
 
         startStickyNotification(this)
         scheduleHeartbeatWorker(this)
-        setVersion()
-        setHeartbeatListener(this)
-        setSmsPermissionListener()
-        setBatteryOptimizationListener()
     }
 
     override fun onStart() {
@@ -74,35 +88,7 @@ class MainActivity : AppCompatActivity() {
         Timber.d( "on activity resume")
         redirectToLogin()
         refreshToken(this)
-        setCardContent(this)
-        setSmsPermissionListener()
-        setBatteryOptimizationListener()
-    }
-
-    private fun setVersion() {
-        val appVersionView = findViewById<TextView>(R.id.mainAppVersion)
-        appVersionView.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
-    }
-
-    private fun setCardContent(context: Context) {
-        val titleText = findViewById<TextView>(R.id.cardPhoneNumber)
-        titleText.text = PhoneNumberUtils.formatNumber(Settings.getSIM1PhoneNumber(this), Locale.getDefault().country)
-        if(!Settings.getActiveStatus(context, Constants.SIM1)) {
-            titleText.setCompoundDrawables(null, null, null, null)
-        }
-
-        val titleTextSIM2 = findViewById<TextView>(R.id.cardPhoneNumberSIM2)
-        titleTextSIM2.text = PhoneNumberUtils.formatNumber(Settings.getSIM2PhoneNumber(this), Locale.getDefault().country)
-        if(!Settings.getActiveStatus(context, Constants.SIM2)) {
-            titleTextSIM2.setCompoundDrawables(null, null, null, null)
-        }
-
-        setLastHeartbeatTimestamp(context)
-
-        if(!Settings.isDualSIM(context)) {
-            val sim2Card = findViewById<MaterialCardView>(R.id.mainPhoneCardSIM2)
-            sim2Card.visibility = MaterialCardView.GONE
-        }
+        viewModel.updateState(this, getString(R.string.app_version, BuildConfig.VERSION_NAME))
     }
 
     private fun requestPermissions(context:Context) {
@@ -116,7 +102,7 @@ class MainActivity : AppCompatActivity() {
                     Settings.setIncomingCallEventsEnabled(context, Constants.SIM2, false)
                 }
             }
-            setSmsPermissionListener()
+            viewModel.updateState(context, getString(R.string.app_version, BuildConfig.VERSION_NAME))
         }
 
         var permissions = arrayOf(
@@ -229,10 +215,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun registerListeners() {
-        findViewById<MaterialButton>(R.id.mainSettingsButton).setOnClickListener { onSettingsClick() }
-    }
-
     private fun onSettingsClick() {
         Timber.d("settings button clicked")
         val switchActivityIntent = Intent(this, SettingsActivity::class.java)
@@ -248,28 +230,6 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    private fun setLastHeartbeatTimestamp(context: Context) {
-        val refreshTimestampView = findViewById<TextView>(R.id.cardRefreshTime)
-        val timestamp = Settings.getHeartbeatTimestamp(context)
-
-        if (timestamp == 0.toLong()) {
-            Timber.d("no heartbeat timestamp has been set")
-            refreshTimestampView.text = "--"
-            return
-        }
-
-        val timestampZdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC)
-        val localTime = timestampZdt.withZoneSameInstant(ZoneId.systemDefault())
-        Timber.d("heartbeat timestamp in UTC is [${timestampZdt}] and local is [$localTime]")
-
-        refreshTimestampView.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-
-        if (Settings.isDualSIM(context)) {
-            val refreshTimestampViewSIM2 = findViewById<TextView>(R.id.cardRefreshTimeSIM2)
-            refreshTimestampViewSIM2.text = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        }
-    }
-
     private fun createChannel() {
         // Create the NotificationChannel
         val name = getString(R.string.notification_channel_default)
@@ -281,110 +241,5 @@ class MainActivity : AppCompatActivity() {
         // or other notification behaviors after this
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(mChannel)
-    }
-
-    @SuppressLint("BatteryLife")
-    private fun setBatteryOptimizationListener() {
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
-        val button = findViewById<MaterialButton>(R.id.batteryOptimizationButtonButton)
-        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-            button.visibility = View.VISIBLE
-            button.setOnClickListener {
-                val intent = Intent()
-                intent.action = ProviderSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                intent.data = Uri.parse("package:$packageName")
-                startActivity(intent)
-            }
-        } else {
-            button.visibility = View.GONE
-        }
-        updatePermissionLayoutVisibility()
-    }
-
-    private fun setSmsPermissionListener() {
-        val smsPermissions = arrayOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_SMS
-        )
-        val allGranted = smsPermissions.all {
-            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-        }
-
-        val button = findViewById<MaterialButton>(R.id.smsPermissionButton)
-        if (!allGranted) {
-            button.visibility = View.VISIBLE
-            button.setOnClickListener {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://httpsms.com/blog/grant-send-and-read-sms-permissions-on-android"))
-                startActivity(intent)
-            }
-        } else {
-            button.visibility = View.GONE
-        }
-        updatePermissionLayoutVisibility()
-    }
-
-    private fun updatePermissionLayoutVisibility() {
-        val smsButton = findViewById<MaterialButton>(R.id.smsPermissionButton)
-        val batteryButton = findViewById<MaterialButton>(R.id.batteryOptimizationButtonButton)
-        val layout = findViewById<LinearLayout>(R.id.batteryOptimizationLinearLayout)
-
-        if (smsButton.visibility == View.GONE && batteryButton.visibility == View.GONE) {
-            layout.visibility = View.GONE
-        } else {
-            layout.visibility = View.VISIBLE
-        }
-    }
-
-    private fun setHeartbeatListener(context: Context) {
-        findViewById<MaterialButton>(R.id.mainHeartbeatButton).setOnClickListener{onHeartbeatClick(context)}
-    }
-
-    private fun onHeartbeatClick(context: Context) {
-        Timber.d("heartbeat button clicked")
-        val heartbeatButton = findViewById<MaterialButton>(R.id.mainHeartbeatButton)
-        heartbeatButton.isEnabled = false
-
-        val progressBar = findViewById<LinearProgressIndicator>(R.id.mainProgressIndicator)
-        progressBar.visibility = View.VISIBLE
-
-        val liveData = MutableLiveData<String?>()
-        liveData.observe(this) { exception ->
-            run {
-                progressBar.visibility = View.INVISIBLE
-                heartbeatButton.isEnabled = true
-
-                if (exception != null) {
-                    Timber.w("heartbeat sending failed with [$exception]")
-                    Toast.makeText(context, exception, Toast.LENGTH_LONG).show()
-                    return@run
-                }
-                Toast.makeText(context, "Heartbeat sent successfully", Toast.LENGTH_SHORT).show()
-
-                setLastHeartbeatTimestamp(this)
-            }
-        }
-
-        Thread {
-            val charging = Settings.isCharging(applicationContext)
-            var error: String? = null
-            try {
-                val phoneNumbers = mutableListOf<String>()
-                phoneNumbers.add(Settings.getSIM1PhoneNumber(applicationContext))
-                if (Settings.getActiveStatus(applicationContext, Constants.SIM2)) {
-                    phoneNumbers.add(Settings.getSIM2PhoneNumber(applicationContext))
-                }
-                val isStored = HttpSmsApiService.create(context).storeHeartbeat(phoneNumbers.toTypedArray(), charging)
-                if (!isStored) {
-                    error = "Could not send heartbeat make sure the phone is connected to the internet"
-                }
-                Settings.setHeartbeatTimestampAsync(applicationContext, System.currentTimeMillis())
-            } catch (exception: Exception) {
-                Timber.e(exception)
-                error = exception.javaClass.simpleName
-            }
-            liveData.postValue(error)
-            Timber.d("finished sending pulse")
-        }.start()
     }
 }
