@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 const STORAGE_KEY = 'httpsms_redirect_to_threads'
 
