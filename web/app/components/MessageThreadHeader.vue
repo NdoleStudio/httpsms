@@ -27,6 +27,7 @@ const phonesStore = usePhonesStore()
 const threadsStore = useThreadsStore()
 const appStore = useAppStore()
 const notificationsStore = useNotificationsStore()
+const redirectPreferenceStore = useRedirectPreferenceStore()
 
 const selectedMenuItem = ref(-1)
 
@@ -71,6 +72,7 @@ async function logout() {
   authStore.resetState()
   phonesStore.resetState()
   threadsStore.resetState()
+  redirectPreferenceStore.resetState()
   notificationsStore.addNotification({
     type: 'info',
     message: 'You have successfully logged out',
