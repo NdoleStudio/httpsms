@@ -24,7 +24,7 @@ export const useRedirectPreferenceStore = defineStore(
       } catch (error) {
         console.error(error)
       }
-      navigateTo('/threads')
+      navigateTo('/threads', { replace: true })
     }
 
     function dismiss() {
