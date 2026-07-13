@@ -28,6 +28,7 @@ import {
 
 definePageMeta({
   layout: 'website',
+  middleware: ['redirect-to-threads'],
 })
 
 useSeoMeta({
