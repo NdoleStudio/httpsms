@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mdiRocketLaunchOutline } from '@mdi/js'
+
 definePageMeta({
   middleware: ['auth'],
 })
@@ -47,6 +49,15 @@ onMounted(async () => {
             >
             if you have any questions
           </p>
+          <VBtn
+            color="primary"
+            variant="tonal"
+            class="mt-2"
+            to="/getting-started"
+            :prepend-icon="mdiRocketLaunchOutline"
+          >
+            New here? Get started
+          </VBtn>
         </div>
       </div>
     </VRow>
