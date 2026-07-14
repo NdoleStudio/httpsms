@@ -93,7 +93,7 @@ const scrollToFaq = () => {
           <h1 class="text-display-large font-weight-bold pb-1">
             Get paid to share httpSMS
           </h1>
-          <h2
+          <p
             class="text-medium-emphasis text-headline-small font-weight-light mt-8 mb-8"
           >
             Earn
@@ -101,7 +101,7 @@ const scrollToFaq = () => {
             up to <span class="text-primary font-weight-bold">$70.00</span> — on
             every customer you refer. Recommend httpSMS on your blog, videos, or
             social, and we'll track every click and pay you.
-          </h2>
+          </p>
           <div>
             <VBtn
               color="primary"
