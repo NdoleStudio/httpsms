@@ -198,14 +198,14 @@ func validateAttachmentURL(ctx context.Context, c cache.Cache, attachmentURL str
 
 	req, err := http.NewRequest(http.MethodHead, attachmentURL, nil)
 	if err != nil {
-		errMsg := fmt.Sprintf("invalid url format")
+		errMsg := "invalid url format"
 		saveToCache(ctx, c, cacheKey, errMsg)
 		return errors.New(errMsg)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		errMsg := fmt.Sprintf("could not reach the url")
+		errMsg := "could not reach the url"
 		saveToCache(ctx, c, cacheKey, errMsg)
 		return errors.New(errMsg)
 	}
