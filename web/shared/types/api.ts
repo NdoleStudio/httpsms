@@ -61,7 +61,7 @@ export interface EntitiesBulkMessage {
   failed_count: number;
   /** @example 30 */
   pending_count: number;
-  /** @example "bulk-csv-a1B2c3D4e5" */
+  /** @example "bulk-httpsms-file.csv" */
   request_id: string;
   /** @example 50 */
   scheduled_count: number;
@@ -244,6 +244,11 @@ export interface EntitiesPhone {
   /** @example "+18005550199" */
   phone_number: string;
   sim: EntitiesSIM;
+  /**
+   * UnarchiveThread moves an archived message thread back to the inbox when a new message is received on this phone.
+   * @example false
+   */
+  unarchive_thread: boolean;
   /** @example "2022-06-05T14:26:10.303278+03:00" */
   updated_at: string;
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
@@ -525,6 +530,11 @@ export interface RequestsPhoneUpsert {
    * @example "SIM1"
    */
   sim: string;
+  /**
+   * UnarchiveThread moves an archived thread back to the inbox when a new message is received on this phone.
+   * @example false
+   */
+  unarchive_thread: boolean;
 }
 
 export interface RequestsUserNotificationUpdate {
