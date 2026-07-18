@@ -103,9 +103,10 @@ func (h *MessageThreadHandler) Index(c fiber.Ctx) error {
 // @Produce      json
 // @Param 		 messageThreadID	path		string 							true 	"ID of the message thread" 						default(32343a19-da5e-4b1b-a767-3298a73703ca)
 // @Param        payload   			body 		requests.MessageThreadUpdate 	true 	"Payload of message thread details to update"
-// @Success      200 				{object}	responses.PhoneResponse
+// @Success      200 				{object}	responses.MessageThreadResponse
 // @Failure      400				{object}	responses.BadRequest
 // @Failure 	 401    			{object}	responses.Unauthorized
+// @Failure      404				{object}	responses.NotFound
 // @Failure      422				{object}	responses.UnprocessableEntity
 // @Failure      500				{object}	responses.InternalServerError
 // @Router       /message-threads/{messageThreadID} [put]
@@ -128,6 +129,9 @@ func (h *MessageThreadHandler) Update(c fiber.Ctx) error {
 	}
 
 	thread, err := h.service.UpdateStatus(ctx, request.ToUpdateParams(h.userIDFomContext(c)))
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message thread with ID [%s]", request.MessageThreadID))
+	}
 	if err != nil {
 		msg := fmt.Sprintf("cannot update message thread with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
