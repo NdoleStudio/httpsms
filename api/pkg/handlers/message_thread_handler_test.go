@@ -94,9 +94,11 @@ type messageThreadHandlerNoopLogger struct{}
 
 var _ telemetry.Logger = (*messageThreadHandlerNoopLogger)(nil)
 
-func (logger *messageThreadHandlerNoopLogger) Error(_ error)                           {}
-func (logger *messageThreadHandlerNoopLogger) WithService(_ string) telemetry.Logger   { return logger }
+func (logger *messageThreadHandlerNoopLogger) Error(_ error) {}
+func (logger *messageThreadHandlerNoopLogger) WithService(_ string) telemetry.Logger { return logger }
+
 func (logger *messageThreadHandlerNoopLogger) WithString(_, _ string) telemetry.Logger { return logger }
+
 func (logger *messageThreadHandlerNoopLogger) WithSpan(_ trace.SpanContext) telemetry.Logger {
 	return logger
 }
