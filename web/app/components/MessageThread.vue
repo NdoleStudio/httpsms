@@ -96,6 +96,7 @@ function onInstallApp() {
         :key="thread.id"
         :to="{ name: 'threads-id', params: { id: thread.id } }"
         :active="threadsStore.threadId === thread.id"
+        :class="{ 'message-thread--unread': !thread.is_read }"
       >
         <template #prepend>
           <v-avatar :color="thread.color" size="40">
@@ -107,11 +108,12 @@ function onInstallApp() {
             }}</span>
           </v-avatar>
         </template>
-        <v-list-item-title>{{
+        <v-list-item-title :class="{ 'font-weight-bold': !thread.is_read }">{{
           formatPhoneNumber(thread.contact)
         }}</v-list-item-title>
         <v-list-item-subtitle
           class="text-truncate mt-1"
+          :class="{ 'font-weight-bold': !thread.is_read }"
           style="max-width: 250px"
         >
           {{ thread.last_message_content }}
@@ -158,3 +160,9 @@ function onInstallApp() {
     </v-list>
   </div>
 </template>
+
+<style scoped lang="scss">
+.message-thread--unread {
+  background: rgba(var(--v-theme-primary), 0.1);
+}
+</style>
