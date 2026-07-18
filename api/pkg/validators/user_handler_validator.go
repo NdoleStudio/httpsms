@@ -113,7 +113,7 @@ func (validator *UserHandlerValidator) ValidatePaymentInvoice(ctx context.Contex
 	payments, err := validator.service.GetSubscriptionPayments(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot get subscription payments for user with ID [%s]", userID)
-		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		validationErrors.Add("subscriptionInvoiceID", "failed to validate subscription payment invoice ID")
 		return validationErrors
 	}

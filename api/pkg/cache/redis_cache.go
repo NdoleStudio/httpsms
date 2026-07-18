@@ -32,10 +32,10 @@ func (cache *redisCache) Get(ctx context.Context, key string) (value string, err
 
 	response, err := cache.client.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
-		return "", stacktrace.Propagate(err, fmt.Sprintf("no item found in redis with key [%s]", key))
+		return "", stacktrace.Propagate(err, "%s", fmt.Sprintf("no item found in redis with key [%s]", key))
 	}
 	if err != nil {
-		return "", stacktrace.Propagate(err, fmt.Sprintf("cannot get item in redis with key [%s]", key))
+		return "", stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot get item in redis with key [%s]", key))
 	}
 	return response, nil
 }

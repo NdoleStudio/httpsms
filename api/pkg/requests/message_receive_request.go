@@ -66,7 +66,7 @@ func (input *MessageReceive) ToMessageReceiveParams(userID entities.UserID, sour
 		UserID:      userID,
 		Timestamp:   input.Timestamp,
 		Encrypted:   input.Encrypted,
-		Owner:       *phone,
+		Owner:       phone,
 		Content:     input.Content,
 		SIM:         input.SIM,
 		Attachments: attachments,

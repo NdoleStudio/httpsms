@@ -41,7 +41,7 @@ func (repository *gormBillingUsageRepository) DeleteAllForUser(ctx context.Conte
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.BillingUsage{}).Error; err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.BillingUsage{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -131,7 +131,7 @@ func (repository *gormBillingUsageRepository) GetCurrent(ctx context.Context, us
 		},
 	)
 	if err != nil {
-		return &usage, stacktrace.Propagate(err, fmt.Sprintf("cannot load billing usage for user [%s]", userID))
+		return &usage, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot load billing usage for user [%s]", userID))
 	}
 
 	return &usage, nil
@@ -155,7 +155,7 @@ func (repository *gormBillingUsageRepository) GetHistory(ctx context.Context, us
 		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch billing usage history for userID [%s] and params [%+#v]", userID, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return usages, nil
@@ -166,7 +166,7 @@ func (repository *gormBillingUsageRepository) GetHistory(ctx context.Context, us
 func (repository *gormBillingUsageRepository) createBillingUsageForUser(ctx context.Context, tx *gorm.DB, userID entities.UserID, timestamp time.Time, sent uint, received uint) (*entities.BillingUsage, error) {
 	user := new(entities.User)
 	if err := tx.WithContext(ctx).First(user, userID).Error; err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s] to compute billing cycle", userID))
+		return nil, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot load user [%s] to compute billing cycle", userID))
 	}
 
 	start, end := computeBillingCycle(timestamp, user.GetBillingAnchorDay())

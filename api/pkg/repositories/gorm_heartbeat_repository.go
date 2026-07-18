@@ -39,7 +39,7 @@ func (repository *gormHeartbeatRepository) DeleteAllForUser(ctx context.Context,
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Heartbeat{}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Heartbeat{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -60,12 +60,12 @@ func (repository *gormHeartbeatRepository) Last(ctx context.Context, userID enti
 		First(&heartbeat).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("heartbeat with userID [%s] and owner [%s] does not exist", userID, owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load heartbeat with userID [%s] and owner [%s]", userID, owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return heartbeat, nil
@@ -89,7 +89,7 @@ func (repository *gormHeartbeatRepository) Index(ctx context.Context, userID ent
 	err := query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return heartbeats, nil
@@ -105,7 +105,7 @@ func (repository *gormHeartbeatRepository) Store(ctx context.Context, heartbeat 
 
 	if err := repository.db.WithContext(ctx).Create(heartbeat).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil

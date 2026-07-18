@@ -51,7 +51,7 @@ func (listener *UserListener) onPhoneHeartbeatDead(ctx context.Context, event cl
 	var payload events.PhoneHeartbeatOfflinePayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	sendParams := &services.UserSendPhoneDeadEmailParams{
@@ -63,7 +63,7 @@ func (listener *UserListener) onPhoneHeartbeatDead(ctx context.Context, event cl
 
 	if err := listener.service.SendPhoneDeadEmail(ctx, sendParams); err != nil {
 		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -77,12 +77,12 @@ func (listener *UserListener) onUserAPIKeyRotated(ctx context.Context, event clo
 	payload := new(events.UserAPIKeyRotatedPayload)
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.SendAPIKeyRotatedEmail(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -96,12 +96,12 @@ func (listener *UserListener) OnUserSubscriptionCreated(ctx context.Context, eve
 	var payload events.UserSubscriptionCreatedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.StartSubscription(ctx, &payload); err != nil {
 		msg := fmt.Sprintf("cannot start subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -115,12 +115,12 @@ func (listener *UserListener) OnUserSubscriptionCancelled(ctx context.Context, e
 	var payload events.UserSubscriptionCancelledPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.CancelSubscription(ctx, &payload); err != nil {
 		msg := fmt.Sprintf("cannot cancell subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -134,12 +134,12 @@ func (listener *UserListener) OnUserSubscriptionExpired(ctx context.Context, eve
 	var payload events.UserSubscriptionExpiredPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.ExpireSubscription(ctx, &payload); err != nil {
 		msg := fmt.Sprintf("cannot expire subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -153,12 +153,12 @@ func (listener *UserListener) OnUserSubscriptionUpdated(ctx context.Context, eve
 	var payload events.UserSubscriptionUpdatedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.UpdateSubscription(ctx, &payload); err != nil {
 		msg := fmt.Sprintf("cannot expire subscription for user with ID [%s] for event with ID [%s]", payload.UserID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -171,12 +171,12 @@ func (listener *UserListener) onUserAccountDeleted(ctx context.Context, event cl
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.DeleteAuthUser(ctx, payload.UserID); err != nil {
 		msg := fmt.Sprintf("cannot delete [entities.AuthUser] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil

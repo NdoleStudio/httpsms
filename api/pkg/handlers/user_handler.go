@@ -72,7 +72,7 @@ func (h *UserHandler) Show(c fiber.Ctx) error {
 	user, err := h.service.Get(ctx, c.OriginalURL(), authUser)
 	if err != nil {
 		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -102,20 +102,20 @@ func (h *UserHandler) Update(c fiber.Ctx) error {
 	var request requests.UserUpdate
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateUpdate(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating user")
 	}
 
 	user, err := h.service.Update(ctx, c.OriginalURL(), h.userFromContext(c), request.ToUpdateParams())
 	if err != nil {
 		msg := fmt.Sprintf("cannot update user with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -139,7 +139,7 @@ func (h *UserHandler) Delete(c fiber.Ctx) error {
 
 	if err := h.service.Delete(ctx, c.OriginalURL(), h.userIDFomContext(c)); err != nil {
 		msg := fmt.Sprintf("cannot delete user user with ID [%s]", h.userIDFomContext(c))
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -168,14 +168,14 @@ func (h *UserHandler) UpdateNotifications(c fiber.Ctx) error {
 	var request requests.UserNotificationUpdate
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	user, err := h.service.UpdateNotificationSettings(ctx, h.userIDFomContext(c), request.ToUserNotificationUpdateParams())
 	if err != nil {
 		msg := fmt.Sprintf("cannot update notification for [%T] with ID [%s]", user, h.userIDFomContext(c))
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -204,7 +204,7 @@ func (h *UserHandler) subscriptionUpdateURL(c fiber.Ctx) error {
 	url, err := h.service.GetSubscriptionUpdateURL(ctx, authUser.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -233,7 +233,7 @@ func (h *UserHandler) cancelSubscription(c fiber.Ctx) error {
 	err := h.service.InitiateSubscriptionCancel(ctx, authUser.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot get user with ID [%s]", authUser.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -267,7 +267,7 @@ func (h *UserHandler) DeleteAPIKey(c fiber.Ctx) error {
 	user, err := h.service.RotateAPIKey(ctx, c.OriginalURL(), h.userIDFomContext(c))
 	if err != nil {
 		msg := fmt.Sprintf("cannot rotate the api key for [%T] with ID [%s]", user, h.userIDFomContext(c))
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -294,7 +294,7 @@ func (h *UserHandler) subscriptionPayments(c fiber.Ctx) error {
 	invoices, err := h.service.GetSubscriptionPayments(ctx, h.userIDFomContext(c))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get current subscription invoices for user [%s]", h.userFromContext(c))
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -323,21 +323,21 @@ func (h *UserHandler) subscriptionInvoice(c fiber.Ctx) error {
 	var request requests.UserPaymentInvoice
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	request.SubscriptionInvoiceID = c.Params("subscriptionInvoiceID")
 	if errors := h.validator.ValidatePaymentInvoice(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while validating subscription payment invoice request [%s]", spew.Sdump(errors), c.Body())
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while generating payment invoice")
 	}
 
 	reader, err := h.service.GenerateReceipt(ctx, request.UserInvoiceGenerateParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot generate receipt for invoice ID [%s] and user [%s]", request.SubscriptionInvoiceID, h.userFromContext(c))
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -347,7 +347,7 @@ func (h *UserHandler) subscriptionInvoice(c fiber.Ctx) error {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		msg := fmt.Sprintf("cannot read invoice data with ID [%s] for user with ID [%s]", request.SubscriptionInvoiceID, h.userIDFomContext(c))
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 

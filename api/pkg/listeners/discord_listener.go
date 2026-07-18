@@ -44,12 +44,12 @@ func (listener *DiscordListener) OnMessagePhoneReceived(ctx context.Context, eve
 	var payload events.MessagePhoneReceivedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.HandleMessageReceived(ctx, payload.UserID, event); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -62,12 +62,12 @@ func (listener *DiscordListener) onUserAccountDeleted(ctx context.Context, event
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
 		msg := fmt.Sprintf("cannot delete [entities.Discord] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil

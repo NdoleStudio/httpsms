@@ -60,7 +60,7 @@ func (v *BulkMessageHandlerValidator) ValidateStore(ctx context.Context, userID 
 	if err != nil {
 		result := url.Values{}
 		result.Add("document", "Cannot load your account. Please try again later or contact support.")
-		ctxLogger.Error(v.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s]", userID))))
+		ctxLogger.Error(v.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot load user [%s]", userID))))
 		return nil, nil, result
 	}
 
@@ -104,7 +104,7 @@ func (v *BulkMessageHandlerValidator) parseFile(ctxLogger telemetry.Logger, user
 		return v.parseXlsx(ctxLogger, user, header)
 	}
 
-	ctxLogger.Error(stacktrace.NewError(fmt.Sprintf("cannot parse file [%s] for user [%s] with content type [%s]", header.Filename, user.ID, header.Header.Get("Content-Type"))))
+	ctxLogger.Error(stacktrace.NewError("%s", fmt.Sprintf("cannot parse file [%s] for user [%s] with content type [%s]", header.Filename, user.ID, header.Header.Get("Content-Type"))))
 
 	result := url.Values{}
 	result.Add("document", fmt.Sprintf("The file [%s] is not a valid CSV or Excel file.", header.Filename))
@@ -119,7 +119,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 
 	excel, err := excelize.OpenReader(bytes.NewReader(content))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot generate excel file from [%s] for user [%s]", header.Filename, user.ID)))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot generate excel file from [%s] for user [%s]", header.Filename, user.ID)))
 		result.Add("document", fmt.Sprintf("Cannot parse the uploaded excel file with name [%s].", header.Filename))
 		return nil, result
 	}
@@ -127,7 +127,7 @@ func (v *BulkMessageHandlerValidator) parseXlsx(ctxLogger telemetry.Logger, user
 
 	rows, err := excel.GetRows(excel.GetSheetName(0))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot get rows from excel file [%s] for user [%s]", header.Filename, user.ID)))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot get rows from excel file [%s] for user [%s]", header.Filename, user.ID)))
 		result.Add("document", fmt.Sprintf("Cannot parse the uploaded excel file with name [%s].", header.Filename))
 		return nil, result
 	}
@@ -177,19 +177,19 @@ func (v *BulkMessageHandlerValidator) parseBytes(ctxLogger telemetry.Logger, use
 
 	file, err := header.Open()
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot open file [%s] for reading for user [%s]", header.Filename, userID)))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot open file [%s] for reading for user [%s]", header.Filename, userID)))
 		result.Add("document", fmt.Sprintf("Cannot open the uploaded file with name [%s].", header.Filename))
 		return nil, result
 	}
 	defer func() {
 		if e := file.Close(); e != nil {
-			ctxLogger.Error(stacktrace.Propagate(e, fmt.Sprintf("cannot close file [%s] for user [%s]", header.Filename, userID)))
+			ctxLogger.Error(stacktrace.Propagate(e, "%s", fmt.Sprintf("cannot close file [%s] for user [%s]", header.Filename, userID)))
 		}
 	}()
 
 	b := new(bytes.Buffer)
 	if _, err = io.Copy(b, file); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot copy file [%s] to buffer for user [%s]", header.Filename, userID)))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot copy file [%s] to buffer for user [%s]", header.Filename, userID)))
 		result.Add("document", fmt.Sprintf("Cannot read the conents of the uploaded file [%s].", header.Filename))
 		return nil, result
 	}
@@ -205,7 +205,7 @@ func (v *BulkMessageHandlerValidator) parseCSV(ctxLogger telemetry.Logger, user 
 
 	var messages []*requests.BulkMessage
 	if err := csvutil.Unmarshal(content, &messages); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", content, messages, header.Filename, user.ID)))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot unmarshall contents [%s] into type [%T] for file [%s] and user [%s]", content, messages, header.Filename, user.ID)))
 		result.Add("document", fmt.Sprintf("Cannot read the contents of the uploaded file [%s].", header.Filename))
 		return nil, result
 	}

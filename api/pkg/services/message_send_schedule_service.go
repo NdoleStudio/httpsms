@@ -94,7 +94,7 @@ func (service *MessageSendScheduleService) Store(
 			span,
 			stacktrace.Propagate(
 				err,
-				fmt.Sprintf("cannot store message send schedule [%s]", schedule.ID),
+				"%s", fmt.Sprintf("cannot store message send schedule [%s]", schedule.ID),
 			),
 		)
 	}
@@ -127,7 +127,7 @@ func (service *MessageSendScheduleService) Update(
 			span,
 			stacktrace.Propagate(
 				err,
-				fmt.Sprintf("cannot update message send schedule [%s]", schedule.ID),
+				"%s", fmt.Sprintf("cannot update message send schedule [%s]", schedule.ID),
 			),
 		)
 	}
@@ -146,7 +146,7 @@ func (service *MessageSendScheduleService) Delete(
 
 	if err := service.repository.Delete(ctx, userID, scheduleID); err != nil {
 		msg := fmt.Sprintf("cannot delete message send schedule with ID [%s] for user [%s]", scheduleID, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	event, err := service.createEvent(events.EventTypeMessageSendScheduleDeleted, fmt.Sprintf("%T", service), events.MessageSendScheduleDeletedPayload{
@@ -156,12 +156,12 @@ func (service *MessageSendScheduleService) Delete(
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%s] event for schedule [%s]", events.EventTypeMessageSendScheduleDeleted, scheduleID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch [%s] event for schedule [%s]", event.Type(), scheduleID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -204,7 +204,7 @@ func (service *MessageSendScheduleService) DeleteAllForUser(
 			span,
 			stacktrace.Propagate(
 				err,
-				fmt.Sprintf("cannot delete message send schedules for user [%s]", userID),
+				"%s", fmt.Sprintf("cannot delete message send schedules for user [%s]", userID),
 			),
 		)
 	}

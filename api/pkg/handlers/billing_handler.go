@@ -66,20 +66,20 @@ func (h *BillingHandler) UsageHistory(c fiber.Ctx) error {
 	var request requests.BillingUsageHistory
 	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateHistory(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while fetching heartbeats [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching usage history")
 	}
 
 	heartbeats, err := h.service.GetUsageHistory(ctx, h.userIDFomContext(c), request.ToIndexParams())
 	if err != nil {
 		msg := fmt.Sprintf("cannot get billing usage history with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -108,7 +108,7 @@ func (h *BillingHandler) Usage(c fiber.Ctx) error {
 	billingUsage, err := h.service.GetCurrentUsage(ctx, h.userIDFomContext(c))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get current usage record for user [%s]", h.userFromContext(c))
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 

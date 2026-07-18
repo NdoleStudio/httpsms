@@ -41,7 +41,7 @@ func (repository *gormMessageRepository) DeleteAllForUser(ctx context.Context, u
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Message{}).Error; err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Message{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func (repository *gormMessageRepository) DeleteByOwnerAndContact(ctx context.Con
 		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete messages between owner [%s] and contact [%s] for user with ID [%s]", owner, contact, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -74,7 +74,7 @@ func (repository *gormMessageRepository) Delete(ctx context.Context, userID enti
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageID).Delete(&entities.Message{}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete message with ID [%s] for user with ID [%s]", messageID, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -98,7 +98,7 @@ func (repository *gormMessageRepository) Index(ctx context.Context, userID entit
 	messages := new([]entities.Message)
 	if err := query.Order("order_timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&messages).Error; err != nil {
 		msg := fmt.Sprintf("cannot fetch messges with owner [%s] and contact [%s] and params [%+#v]", owner, contact, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return messages, nil
@@ -119,12 +119,12 @@ func (repository *gormMessageRepository) LastMessage(ctx context.Context, userID
 	err := query.Order("order_timestamp DESC").First(&message).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("cannot get last message for [%s] with owner [%s] and contact [%s]", userID, owner, contact)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot get last message for [%s] with owner [%s] and contact [%s]", userID, owner, contact)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return message, nil
@@ -170,7 +170,7 @@ func (repository *gormMessageRepository) Search(ctx context.Context, userID enti
 		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot search messages with for user [%s] params [%+#v]", userID, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return messages, nil
@@ -201,7 +201,7 @@ func (repository *gormMessageRepository) GetBulkMessages(ctx context.Context, us
 	`, userID, limit).Scan(&orders).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch bulk message orders for user [%s]", userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return orders, nil
@@ -214,7 +214,7 @@ func (repository *gormMessageRepository) Store(ctx context.Context, message *ent
 
 	if err := repository.db.WithContext(ctx).Create(message).Error; err != nil {
 		msg := fmt.Sprintf("cannot save message with ID [%s]", message.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -229,12 +229,12 @@ func (repository *gormMessageRepository) Load(ctx context.Context, userID entiti
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageID).First(message).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("message with ID [%s] and userID [%s] does not exist", messageID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load message with ID [%s]", messageID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return message, nil
@@ -247,7 +247,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 
 	if err := repository.db.WithContext(ctx).Save(message).Error; err != nil {
 		msg := fmt.Sprintf("cannot update message with ID [%s]", message.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -276,17 +276,17 @@ func (repository *gormMessageRepository) GetOutstanding(ctx context.Context, use
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("outstanding message with ID [%s] and userID [%s] does not exist", messageID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch outstanding message with userID [%s] and messageID [%s]", userID, messageID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if message == nil || message.ID == uuid.Nil {
 		msg := fmt.Sprintf("outstanding message with ID [%s] and userID [%s] does not exist", messageID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.NewErrorWithCode(ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.NewErrorWithCode(ErrCodeNotFound, "%s", msg))
 	}
 
 	return message, nil

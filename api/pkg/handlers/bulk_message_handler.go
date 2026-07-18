@@ -68,7 +68,7 @@ func (h *BulkMessageHandler) Index(c fiber.Ctx) error {
 	orders, err := h.messageService.GetBulkMessages(ctx, h.userIDFomContext(c))
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch bulk messages for user [%s]", h.userIDFomContext(c))
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -96,19 +96,19 @@ func (h *BulkMessageHandler) Store(c fiber.Ctx) error {
 	file, err := c.FormFile("document")
 	if err != nil {
 		msg := fmt.Sprintf("cannot fetch file with name [%s] from request", "document")
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	messages, userLocation, validationErrors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), file)
 	if len(validationErrors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending bulk sms from CSV file [%s] for [%s]", spew.Sdump(validationErrors), file.Filename, h.userIDFomContext(c))
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, validationErrors, "validation errors while sending bulk SMS")
 	}
 
 	if msg := h.billingService.IsEntitledWithCount(ctx, h.userIDFomContext(c), uint(len(messages))); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not entitled to send [%d] messages", h.userIDFomContext(c), len(messages))))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] is not entitled to send [%d] messages", h.userIDFomContext(c), len(messages))))
 		return h.responsePaymentRequired(c, *msg)
 	}
 
@@ -136,7 +136,7 @@ func (h *BulkMessageHandler) Store(c fiber.Ctx) error {
 			if err != nil {
 				count.Add(-1)
 				msg := fmt.Sprintf("cannot send message with payload [%s] at index [%d]", spew.Sdump(message), index)
-				ctxLogger.Error(stacktrace.Propagate(err, msg))
+				ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 			}
 			wg.Done()
 		}(message, perPhoneIndex)

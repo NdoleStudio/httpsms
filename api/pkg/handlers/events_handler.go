@@ -50,19 +50,19 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 	var request cloudevents.Event
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if err := request.Validate(); err != nil {
 		msg := fmt.Sprintf("validation errors [%s], while dispatching event [%+#v]", spew.Sdump(err.Error()), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, map[string][]string{"event": {err.Error()}}, "validation errors while dispatching event")
 	}
 
 	if h.userIDFomContext(c) != h.queueConfig.UserID {
 		msg := fmt.Sprintf("user with ID [%s], cannot dispatch event [%+#v]", h.userIDFomContext(c), request)
-		ctxLogger.Error(stacktrace.NewError(msg))
+		ctxLogger.Error(stacktrace.NewError("%s", msg))
 		return h.responseForbidden(c)
 	}
 
@@ -70,7 +70,7 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 	err := h.service.DispatchSync(ctx, request)
 	if err != nil {
 		msg := fmt.Sprintf("cannot dispatch [%s] event with ID [%s]", request.Type(), request.ID())
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
