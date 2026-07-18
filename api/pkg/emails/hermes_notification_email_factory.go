@@ -18,6 +18,8 @@ type hermesNotificationEmailFactory struct {
 	generator hermes.Hermes
 }
 
+const webhookSendFailedEventPayloadPlaceholder = "__HTTPSMS_WEBHOOK_SEND_FAILED_EVENT_PAYLOAD__"
+
 // NewHermesNotificationEmailFactory creates a new instance of the UserEmailFactory
 func NewHermesNotificationEmailFactory(config *HermesGeneratorConfig) NotificationEmailFactory {
 	return &hermesNotificationEmailFactory{
@@ -94,7 +96,7 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 				{Key: "Error Message / HTTP Response", Value: payload.ErrorMessage},
 				{
 					Key:         "Event Payload",
-					Value:       formattedPayload,
+					Value:       webhookSendFailedEventPayloadPlaceholder,
 					UnsafeValue: formattedPayloadHTML,
 				},
 			},
@@ -125,7 +127,8 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "cannot generate text email")
 	}
-	text = formatWebhookSendFailedTextPayload(text, formattedPayload)
+	// Hermes/html2text collapses dictionary whitespace, so restore the payload after plain-text generation.
+	text = strings.Replace(text, webhookSendFailedEventPayloadPlaceholder, formattedPayload, 1)
 
 	return &Email{
 		ToEmail: user.Email,
@@ -133,26 +136,6 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		HTML:    html,
 		Text:    text,
 	}, nil
-}
-
-func formatWebhookSendFailedTextPayload(text string, formattedPayload string) string {
-	const (
-		eventPayloadPrefix = "* Event Payload: "
-		nextSectionPrefix  = "\n\nUsually this error happens"
-	)
-
-	start := strings.Index(text, eventPayloadPrefix)
-	if start == -1 {
-		return text
-	}
-
-	end := strings.Index(text[start:], nextSectionPrefix)
-	if end == -1 {
-		return text
-	}
-
-	end += start
-	return text[:start] + eventPayloadPrefix + formattedPayload + text[end:]
 }
 
 func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.User, payload *events.MessageSendExpiredPayload) (*Email, error) {
