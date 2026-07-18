@@ -58,7 +58,7 @@ definitions:
         example: 30
         type: integer
       request_id:
-        example: bulk-csv-a1B2c3D4e5
+        example: bulk-httpsms-file.csv
         type: string
       scheduled_count:
         example: 50
@@ -388,6 +388,11 @@ definitions:
         type: string
       sim:
         $ref: '#/definitions/entities.SIM'
+      unarchive_thread:
+        description: UnarchiveThread moves an archived message thread back to the
+          inbox when a new message is received on this phone.
+        example: false
+        type: boolean
       updated_at:
         example: "2022-06-05T14:26:10.303278+03:00"
         type: string
@@ -402,6 +407,7 @@ definitions:
     - messages_per_minute
     - phone_number
     - sim
+    - unarchive_thread
     - updated_at
     - user_id
     type: object
@@ -908,6 +914,11 @@ definitions:
           1 SIM slot
         example: SIM1
         type: string
+      unarchive_thread:
+        description: UnarchiveThread moves an archived thread back to the inbox when
+          a new message is received on this phone.
+        example: false
+        type: boolean
     required:
     - fcm_token
     - max_send_attempts
@@ -916,6 +927,7 @@ definitions:
     - missed_call_auto_reply
     - phone_number
     - sim
+    - unarchive_thread
     type: object
   requests.UserNotificationUpdate:
     properties:

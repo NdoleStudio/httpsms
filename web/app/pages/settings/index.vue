@@ -1688,6 +1688,15 @@ onMounted(async () => {
                   placeholder="We are currently closed at the moment, please send us a text message from 09:00 to 17:00"
                   hint="Here you can configure an automated SMS message which is sent to the caller when this phone has a missed call"
                 />
+                <VSwitch
+                  v-model="activePhone.unarchive_thread"
+                  class="mt-4"
+                  color="primary"
+                  density="compact"
+                  label="Unarchive Threads Automatically"
+                  hint="When a new message is received on an archived conversation, change it back to the unarchived state"
+                  persistent-hint
+                />
               </VCol>
             </VRow>
           </VContainer>
