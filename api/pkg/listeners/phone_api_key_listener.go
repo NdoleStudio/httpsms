@@ -48,8 +48,7 @@ func (listener *PhoneAPIKeyListener) onPhoneUpdated(ctx context.Context, event c
 
 	var payload events.PhoneUpdatedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if payload.PhoneAPIKeyID == nil {
@@ -58,8 +57,7 @@ func (listener *PhoneAPIKeyListener) onPhoneUpdated(ctx context.Context, event c
 	}
 
 	if err := listener.service.AddPhone(ctx, payload.UserID, *payload.PhoneAPIKeyID, payload.PhoneID); err != nil {
-		msg := fmt.Sprintf("cannot store heartbeat monitor with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot store heartbeat monitor with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID()))
 	}
 
 	return nil
@@ -72,13 +70,11 @@ func (listener *PhoneAPIKeyListener) onPhoneDeleted(ctx context.Context, event c
 
 	var payload events.PhoneDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.RemovePhoneByID(ctx, payload.UserID, payload.PhoneID, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot remove phone with ID [%s] from phone api key for [%s] event with ID [%s]", payload.PhoneID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot remove phone with ID [%s] from phone api key for [%s] event with ID [%s]", payload.PhoneID, event.Type(), event.ID()))
 	}
 
 	return nil
@@ -91,13 +87,11 @@ func (listener *PhoneAPIKeyListener) onUserAccountDeleted(ctx context.Context, e
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s] for [%s] event with ID [%s]", entities.PhoneAPIKey{}, payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s] for [%s] event with ID [%s]", entities.PhoneAPIKey{}, payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

@@ -77,7 +77,7 @@ func (c *EmulatorFCMClient) Send(ctx context.Context, message *messaging.Message
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot send FCM to emulator at [%s]", url))
+		return "", stacktrace.Propagate(err, "cannot send FCM to emulator at [%s]", url)
 	}
 	defer resp.Body.Close()
 

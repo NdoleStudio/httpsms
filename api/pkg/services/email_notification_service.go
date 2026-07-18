@@ -66,8 +66,7 @@ func (service *EmailNotificationService) NotifyMessageExpired(ctx context.Contex
 
 	user, err := service.userRepository.Load(ctx, payload.UserID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID))
 	}
 
 	if !user.NotificationMessageStatusEnabled {
@@ -77,13 +76,11 @@ func (service *EmailNotificationService) NotifyMessageExpired(ctx context.Contex
 
 	email, err := service.factory.MessageExpired(user, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create email for user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create email for user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID))
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
-		msg := fmt.Sprintf("cannot send email for user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send email for user with ID [%s] and for expired message with ID [%s]", payload.UserID, payload.MessageID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] email sent to [%s] for message with ID [%s]", events.EventTypeMessageSendExpired, user.ID, payload.MessageID))
@@ -104,8 +101,7 @@ func (service *EmailNotificationService) NotifyMessageFailed(ctx context.Context
 
 	user, err := service.userRepository.Load(ctx, payload.UserID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.ID))
 	}
 
 	if !user.NotificationMessageStatusEnabled {
@@ -115,13 +111,11 @@ func (service *EmailNotificationService) NotifyMessageFailed(ctx context.Context
 
 	email, err := service.factory.MessageFailed(user, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.ID))
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
-		msg := fmt.Sprintf("cannot send email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] email sent to [%s] for message with ID [%s]", events.EventTypeMessageSendFailed, user.ID, payload.ID))
@@ -142,8 +136,7 @@ func (service *EmailNotificationService) NotifyWebhookSendFailed(ctx context.Con
 
 	user, err := service.userRepository.Load(ctx, payload.UserID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s] for [%s] event with ID [%s]", payload.UserID, events.EventTypeWebhookSendFailed, payload.EventID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load user with ID [%s] for [%s] event with ID [%s]", payload.UserID, events.EventTypeWebhookSendFailed, payload.EventID))
 	}
 
 	if !user.NotificationWebhookEnabled {
@@ -153,13 +146,11 @@ func (service *EmailNotificationService) NotifyWebhookSendFailed(ctx context.Con
 
 	email, err := service.factory.WebhookSendFailed(user, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create [%s] email for user with ID [%s] for [%s] event with ID [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.EventType, payload.EventID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [%s] email for user with ID [%s] for [%s] event with ID [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.EventType, payload.EventID))
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
-		msg := fmt.Sprintf("cannot send [%s] email for user with ID [%s] for [%s] event with ID [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.EventType, payload.EventID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send [%s] email for user with ID [%s] for [%s] event with ID [%s]", events.EventTypeWebhookSendFailed, payload.UserID, payload.EventType, payload.EventID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] email sent to [%s] for [%s] event with ID [%s]", events.EventTypeWebhookSendFailed, user.ID, payload.EventType, payload.EventID))
@@ -180,8 +171,7 @@ func (service *EmailNotificationService) NotifyDiscordSendFailed(ctx context.Con
 
 	user, err := service.userRepository.Load(ctx, payload.UserID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s] for [%s] event for message with ID [%s]", payload.UserID, payload.EventType, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load user with ID [%s] for [%s] event for message with ID [%s]", payload.UserID, payload.EventType, payload.MessageID))
 	}
 
 	if !user.NotificationWebhookEnabled {
@@ -191,13 +181,11 @@ func (service *EmailNotificationService) NotifyDiscordSendFailed(ctx context.Con
 
 	email, err := service.factory.DiscordSendFailed(user, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create email for user with ID [%s] for [%s] event and message with ID  [%s]", payload.UserID, payload.EventType, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create email for user with ID [%s] for [%s] event and message with ID  [%s]", payload.UserID, payload.EventType, payload.MessageID))
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
-		msg := fmt.Sprintf("cannot send email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send email for user with ID [%s] for [%s] message with ID [%s]", payload.UserID, events.EventTypeMessageSendFailed, payload.MessageID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] email sent to [%s] for [%s] event with ID [%s]", payload.EventType, user.ID, payload.EventType, payload.MessageID))
@@ -221,6 +209,6 @@ func (service *EmailNotificationService) addToCache(ctx context.Context, timeout
 
 	cacheKey := service.getCacheKey(event, owner)
 	if err := service.cache.Set(ctx, cacheKey, "", timeout); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot set item in redis with key [%s] for owner [%s]", cacheKey, owner)))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot set item in redis with key [%s] for owner [%s]", cacheKey, owner))
 	}
 }

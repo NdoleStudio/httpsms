@@ -46,13 +46,11 @@ func (listener *Integration3CXListener) OnMessagePhoneReceived(ctx context.Conte
 
 	var payload events.MessagePhoneReceivedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -65,13 +63,11 @@ func (listener *Integration3CXListener) OnMessageSendFailed(ctx context.Context,
 
 	var payload events.MessageSendFailedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -84,13 +80,11 @@ func (listener *Integration3CXListener) OnMessagePhoneSent(ctx context.Context, 
 
 	var payload events.MessagePhoneSentPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -103,13 +97,11 @@ func (listener *Integration3CXListener) OnMessagePhoneDelivered(ctx context.Cont
 
 	var payload events.MessagePhoneDeliveredPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -121,13 +113,11 @@ func (listener *Integration3CXListener) onUserAccountDeleted(ctx context.Context
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot delete [entities.Integration3CX] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.Integration3CX] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

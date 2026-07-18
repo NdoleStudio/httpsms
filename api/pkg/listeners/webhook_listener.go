@@ -50,13 +50,11 @@ func (listener *WebhookListener) OnMessagePhoneReceived(ctx context.Context, eve
 
 	var payload events.MessagePhoneReceivedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -69,13 +67,11 @@ func (listener *WebhookListener) OnMessageSendExpired(ctx context.Context, event
 
 	var payload events.MessageSendExpiredPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -88,13 +84,11 @@ func (listener *WebhookListener) OnMessageSendFailed(ctx context.Context, event 
 
 	var payload events.MessageSendFailedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -107,13 +101,11 @@ func (listener *WebhookListener) OnMessagePhoneSent(ctx context.Context, event c
 
 	var payload events.MessagePhoneSentPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -126,13 +118,11 @@ func (listener *WebhookListener) OnMessagePhoneDelivered(ctx context.Context, ev
 
 	var payload events.MessagePhoneDeliveredPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -145,13 +135,11 @@ func (listener *WebhookListener) onPhoneHeartbeatOffline(ctx context.Context, ev
 
 	var payload events.PhoneHeartbeatOfflinePayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -164,13 +152,11 @@ func (listener *WebhookListener) onPhoneHeartbeatOnline(ctx context.Context, eve
 
 	var payload events.PhoneHeartbeatOnlinePayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -183,13 +169,11 @@ func (listener *WebhookListener) onMessageCallMissed(ctx context.Context, event 
 
 	var payload events.MessageCallMissedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.Send(ctx, payload.UserID, event, payload.Owner); err != nil {
-		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot process [%s] event with ID [%s]", event.Type(), event.ID()))
 	}
 
 	return nil
@@ -201,13 +185,11 @@ func (listener *WebhookListener) onUserAccountDeleted(ctx context.Context, event
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot delete [entities.Webhook] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.Webhook] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

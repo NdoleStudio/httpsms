@@ -68,7 +68,7 @@ func (v *TurnstileTokenValidator) ValidateToken(ctx context.Context, ipAddress, 
 	request.Header.Set("Content-Type", "application/json")
 	response, err := v.httpClient.Do(request)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("failed to send http request to [%s]", request.URL.String())))
+		ctxLogger.Error(stacktrace.Propagate(err, "failed to send http request to [%s]", request.URL.String()))
 		return false
 	}
 	defer response.Body.Close()

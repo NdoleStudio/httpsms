@@ -179,7 +179,7 @@ func (validator MessageHandlerValidator) ValidateMessageSend(ctx context.Context
 	}
 
 	if err != nil {
-		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("could not load phone for user [%s] and phone [%s]", userID, request.From))))
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not load phone for user [%s] and phone [%s]", userID, request.From)))
 		result.Add("from", fmt.Sprintf("could not validate 'from' number [%s], please try again later", request.From))
 	}
 
@@ -229,7 +229,7 @@ func (validator MessageHandlerValidator) ValidateMessageBulkSend(ctx context.Con
 	}
 
 	if err != nil {
-		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("could not load phone for user [%s] and phone [%s]", userID, request.From))))
+		ctxLogger.Error(validator.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not load phone for user [%s] and phone [%s]", userID, request.From)))
 		result.Add("from", fmt.Sprintf("could not validate 'from' number [%s], please try again later", request.From))
 	}
 

@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"reflect"
 	"time"
@@ -92,7 +91,7 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 func parseMongoDBName(uri string) (string, error) {
 	parsed, err := url.Parse(uri)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot parse MongoDB URI [%s]", uri))
+		return "", stacktrace.Propagate(err, "cannot parse MongoDB URI [%s]", uri)
 	}
 
 	appName := parsed.Query().Get("appName")

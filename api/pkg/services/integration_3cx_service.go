@@ -49,8 +49,7 @@ func (service *Integration3CXService) DeleteAllForUser(ctx context.Context, user
 	defer span.End()
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
-		msg := fmt.Sprintf("could not delete all [entities.Integration3CX] for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete all [entities.Integration3CX] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Integration3CX] for user with ID [%s]", userID))
@@ -69,8 +68,7 @@ func (service *Integration3CXService) Send(ctx context.Context, userID entities.
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load [3cx] integration for user [%s] and event [%s]", userID, event.Type())
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load [3cx] integration for user [%s] and event [%s]", userID, event.Type()))
 	}
 
 	service.sendNotification(ctx, event, webhooks)
@@ -86,29 +84,25 @@ func (service *Integration3CXService) sendNotification(ctx context.Context, even
 
 	payload, err := service.getPayload(event)
 	if err != nil {
-		msg := fmt.Sprintf("cannot generate [3cx] payload from [%s] event with ID [%s] for user [%s]", event.Type(), event.ID(), integration.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot generate [3cx] payload from [%s] event with ID [%s] for user [%s]", event.Type(), event.ID(), integration.UserID)))
 		return
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot marshal [%T] for  [%s] event with ID [%s] for user [%s]", payload, event.Type(), event.ID(), integration.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot marshal [%T] for  [%s] event with ID [%s] for user [%s]", payload, event.Type(), event.ID(), integration.UserID)))
 	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, integration.WebhookURL, bytes.NewBuffer(body))
 	if err != nil {
-		msg := fmt.Sprintf("cannot create [%T] for [%s] event with ID [%s] for user [%s]", request, event.Type(), event.ID(), integration.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [%T] for [%s] event with ID [%s] for user [%s]", request, event.Type(), event.ID(), integration.UserID)))
 		return
 	}
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	response, err := service.client.Do(request)
 	if err != nil {
-		msg := fmt.Sprintf("cannot send [%s] event to [3cx] webhook [%s] for user [%s]", event.Type(), integration.WebhookURL, integration.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send [%s] event to [3cx] webhook [%s] for user [%s]", event.Type(), integration.WebhookURL, integration.UserID)))
 	}
 	defer func() {
 		err = response.Body.Close()
@@ -141,14 +135,14 @@ func (service *Integration3CXService) getPayload(event cloudevents.Event) (fiber
 	case events.EventTypeMessageSendFailed:
 		return service.getMessageSendFailedPayload(event)
 	default:
-		return nil, stacktrace.NewError("%s", fmt.Sprintf("cannot generate [3cx] payload for event [%s] with ID [%s]", event.Type(), event.ID()))
+		return nil, stacktrace.NewError("cannot generate [3cx] payload for event [%s] with ID [%s]", event.Type(), event.ID())
 	}
 }
 
 func (service *Integration3CXService) getEventDeliveredPayload(event cloudevents.Event) (fiber.Map, error) {
 	payload := new(events.MessagePhoneDeliveredPayload)
 	if err := event.DataAs(payload); err != nil {
-		return nil, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload))
+		return nil, stacktrace.Propagate(err, "cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)
 	}
 
 	return fiber.Map{
@@ -178,7 +172,7 @@ func (service *Integration3CXService) getEventDeliveredPayload(event cloudevents
 func (service *Integration3CXService) getMessageSentPayload(event cloudevents.Event) (fiber.Map, error) {
 	payload := new(events.MessagePhoneSentPayload)
 	if err := event.DataAs(payload); err != nil {
-		return nil, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload))
+		return nil, stacktrace.Propagate(err, "cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)
 	}
 
 	return fiber.Map{
@@ -208,7 +202,7 @@ func (service *Integration3CXService) getMessageSentPayload(event cloudevents.Ev
 func (service *Integration3CXService) getMessageSendFailedPayload(event cloudevents.Event) (fiber.Map, error) {
 	payload := new(events.MessageSendFailedPayload)
 	if err := event.DataAs(payload); err != nil {
-		return nil, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload))
+		return nil, stacktrace.Propagate(err, "cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)
 	}
 
 	return fiber.Map{
@@ -238,7 +232,7 @@ func (service *Integration3CXService) getMessageSendFailedPayload(event cloudeve
 func (service *Integration3CXService) getMessageReceivedPayload(event cloudevents.Event) (fiber.Map, error) {
 	payload := new(events.MessagePhoneReceivedPayload)
 	if err := event.DataAs(payload); err != nil {
-		return nil, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload))
+		return nil, stacktrace.Propagate(err, "cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)
 	}
 
 	return fiber.Map{

@@ -69,9 +69,9 @@ func (repository *gormPhoneNotificationRepository) DeleteByMessageID(ctx context
 		Where("user_id = ? AND message_id = ?", userID, messageID).
 		Delete(&entities.PhoneNotification{}).Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot delete [%T] for user [%s] and message with ID [%s]", &entities.PhoneNotification{}, userID, messageID)
-		return repository.tracer.WrapErrorSpan(span,
-			stacktrace.Propagate(err, "%s", msg),
+		return repository.tracer.WrapErrorSpan(
+			span,
+			stacktrace.Propagate(err, "cannot delete [%T] for user [%s] and message with ID [%s]", &entities.PhoneNotification{}, userID, messageID),
 		)
 	}
 

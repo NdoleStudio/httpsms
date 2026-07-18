@@ -26,7 +26,7 @@ func BearerAPIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, userRepo
 
 		authUser, err := userRepository.LoadAuthContext(ctx, apiKey)
 		if err != nil {
-			ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot load user with api key [%s] using header [%s]", apiKey, c.Get(authHeaderBearer))))
+			ctxLogger.Error(stacktrace.Propagate(err, "cannot load user with api key [%s] using header [%s]", apiKey, c.Get(authHeaderBearer)))
 			return c.Next()
 		}
 

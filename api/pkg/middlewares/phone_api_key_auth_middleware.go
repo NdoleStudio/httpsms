@@ -26,7 +26,7 @@ func PhoneAPIKeyAuth(logger telemetry.Logger, tracer telemetry.Tracer, repositor
 
 		authUser, err := repository.LoadAuthContext(ctx, apiKey)
 		if err != nil {
-			ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot load user with phone api key [%s]", apiKey)))
+			ctxLogger.Error(stacktrace.Propagate(err, "cannot load user with phone api key [%s]", apiKey))
 			return c.Next()
 		}
 
