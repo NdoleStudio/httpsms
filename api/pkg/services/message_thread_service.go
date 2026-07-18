@@ -103,7 +103,8 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 
 // MessageThreadStatusParams are parameters for updating a thread status
 type MessageThreadStatusParams struct {
-	IsArchived      bool
+	IsArchived      *bool
+	IsRead          *bool
 	UserID          entities.UserID
 	MessageThreadID uuid.UUID
 }
@@ -121,9 +122,11 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
-	if err = service.repository.Update(ctx, thread.UpdateArchive(params.IsArchived)); err != nil {
-		msg := fmt.Sprintf("cannot update message thread with id [%s] with archive status [%t]", thread.ID, params.IsArchived)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	if params.IsArchived != nil {
+		if err = service.repository.Update(ctx, thread.UpdateArchive(*params.IsArchived)); err != nil {
+			msg := fmt.Sprintf("cannot update message thread with id [%s] with archive status [%t]", thread.ID, *params.IsArchived)
+			return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		}
 	}
 
 	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with archive status [%t]", thread.ID, thread.IsArchived))

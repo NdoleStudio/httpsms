@@ -10,7 +10,8 @@ import (
 // MessageThreadUpdate is the payload for updating a message thread
 type MessageThreadUpdate struct {
 	request
-	IsArchived bool `json:"is_archived" example:"true"`
+	IsArchived *bool `json:"is_archived,omitempty" example:"true"`
+	IsRead     *bool `json:"is_read,omitempty" example:"true"`
 
 	MessageThreadID string `json:"messageThreadID" swaggerignore:"true"` // used internally for validation
 }
@@ -21,5 +22,6 @@ func (input *MessageThreadUpdate) ToUpdateParams(userID entities.UserID) service
 		UserID:          userID,
 		MessageThreadID: uuid.MustParse(input.MessageThreadID),
 		IsArchived:      input.IsArchived,
+		IsRead:          input.IsRead,
 	}
 }
