@@ -14,6 +14,7 @@ import {
   mdiScaleBalance,
   mdiEmailOutline,
   mdiBookOpenVariant,
+  mdiRocketLaunchOutline,
 } from '@mdi/js'
 
 const router = useRouter()
@@ -184,6 +185,19 @@ function goToPricing() {
             <h2 class="text-headline-small mb-2">Resources</h2>
             <ul style="list-style: none" class="pa-0">
               <li class="mb-2">
+                <NuxtLink
+                  to="/getting-started"
+                  class="text-white text-decoration-none footer-link"
+                >
+                  Getting Started
+                  <v-icon
+                    color="primary"
+                    size="small"
+                    :icon="mdiRocketLaunchOutline"
+                  />
+                </NuxtLink>
+              </li>
+              <li class="mb-2">
                 <a
                   class="text-white text-decoration-none footer-link"
                   style="cursor: pointer"
@@ -194,13 +208,13 @@ function goToPricing() {
                 </a>
               </li>
               <li class="mb-2">
-                <a
-                  href="https://httpsms.lemonsqueezy.com/affiliates"
+                <NuxtLink
+                  to="/affiliates"
                   class="text-white text-decoration-none footer-link"
                 >
                   Affiliates
                   <v-icon color="warning" size="small" :icon="mdiShieldStar" />
-                </a>
+                </NuxtLink>
               </li>
               <li class="mb-2">
                 <a
