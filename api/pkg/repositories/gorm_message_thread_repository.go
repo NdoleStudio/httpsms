@@ -111,7 +111,24 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(thread).Error; err != nil {
+	isRead := thread.IsRead
+	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(thread)
+		thread.IsRead = isRead
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 || isRead {
+			return nil
+		}
+
+		return tx.Model(&entities.MessageThread{}).
+			Where("user_id = ?", thread.UserID).
+			Where("id = ?", thread.ID).
+			UpdateColumn("is_read", false).
+			Error
+	})
+	if err != nil {
 		msg := fmt.Sprintf("cannot save message thread with ID [%s]", thread.ID)
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
