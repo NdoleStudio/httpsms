@@ -179,14 +179,17 @@ func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
 
 func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	threadID := uuid.New()
-	isRead := true
+	isRead := false
 	var captured repositories.MessageThreadStatusUpdate
+	var calls []string
 	repository := &messageThreadRepositoryStub{
 		updateStatus: func(_ context.Context, _ entities.UserID, _ uuid.UUID, params repositories.MessageThreadStatusUpdate) error {
+			calls = append(calls, "update")
 			captured = params
 			return nil
 		},
 		load: func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
+			calls = append(calls, "load")
 			return &entities.MessageThread{ID: threadID, IsArchived: true, IsRead: true}, nil
 		},
 	}
@@ -203,10 +206,15 @@ func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	assert.Same(t, &isRead, captured.IsRead)
 	assert.False(t, captured.ReadAt.IsZero())
 	assert.True(t, thread.IsArchived)
+	assert.False(t, thread.IsRead)
+	assert.Equal(t, []string{"load", "update"}, calls)
 }
 
 func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 	repository := &messageThreadRepositoryStub{
+		load: func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
+			return &entities.MessageThread{ID: uuid.New()}, nil
+		},
 		updateStatus: func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
 			return stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 		},

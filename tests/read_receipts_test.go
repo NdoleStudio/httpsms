@@ -35,28 +35,39 @@ func requestJSON(
 ) {
 	t.Helper()
 
-	var body io.Reader
+	var encoded []byte
 	if payload != nil {
-		encoded, err := json.Marshal(payload)
+		var err error
+		encoded, err = json.Marshal(payload)
 		require.NoError(t, err)
-		body = bytes.NewReader(encoded)
 	}
 
-	request, err := http.NewRequestWithContext(ctx, method, apiBaseURL+path, body)
-	require.NoError(t, err)
-	request.Header.Set("x-api-key", apiKey)
-	request.Header.Set("Content-Type", "application/json")
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		request, err := http.NewRequestWithContext(ctx, method, apiBaseURL+path, bytes.NewReader(encoded))
+		require.NoError(t, err)
+		request.Header.Set("x-api-key", apiKey)
+		request.Header.Set("Content-Type", "application/json")
 
-	response, err := http.DefaultClient.Do(request)
-	require.NoError(t, err)
-	defer response.Body.Close()
+		response, err := http.DefaultClient.Do(request)
+		require.NoError(t, err)
 
-	responseBody, err := io.ReadAll(response.Body)
-	require.NoError(t, err)
-	require.Equal(t, expectedStatus, response.StatusCode, "response: %s", string(responseBody))
+		responseBody, err := io.ReadAll(response.Body)
+		response.Body.Close()
+		require.NoError(t, err)
 
-	if output != nil {
-		require.NoError(t, json.Unmarshal(responseBody, output))
+		if response.StatusCode == http.StatusUnauthorized &&
+			apiKey != userAPIKey &&
+			time.Now().Before(deadline) {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		require.Equal(t, expectedStatus, response.StatusCode, "response: %s", string(responseBody))
+		if output != nil {
+			require.NoError(t, json.Unmarshal(responseBody, output))
+		}
+		return
 	}
 }
 

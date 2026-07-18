@@ -121,10 +121,10 @@ async function markCurrentThreadRead(force = false) {
   }
 }
 
-function loadMessages(hide = true) {
+function loadMessages(hide = true, markRead = true) {
   loadingMessages.value = true
   const threadId = route.params.id as string
-  void markCurrentThreadRead()
+  if (markRead) void markCurrentThreadRead()
   threadsStore
     .loadThreadMessages(threadId)
     .then((response: EntitiesMessage[]) => {
@@ -244,13 +244,13 @@ onMounted(async () => {
   webhookChannel.bind('message.phone.received', () => {
     if (!loadingMessages.value) {
       void markCurrentThreadRead(true)
-      loadMessages(false)
+      loadMessages(false, false)
     }
   })
   webhookChannel.bind('message.call.missed', () => {
     if (!loadingMessages.value) {
       void markCurrentThreadRead(true)
-      loadMessages(false)
+      loadMessages(false, false)
     }
   })
 })

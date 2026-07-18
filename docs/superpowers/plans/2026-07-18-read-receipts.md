@@ -26,6 +26,7 @@
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ```
+
 - Add end-to-end coverage in the existing `tests/` integration project.
 
 ## File Structure
@@ -61,6 +62,7 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 1: Add the read-state API contract
 
 **Files:**
+
 - Modify: `api/pkg/entities/message_thread.go`
 - Create: `api/pkg/entities/message_thread_test.go`
 - Modify: `api/pkg/requests/message_thread_update_request.go`
@@ -71,6 +73,7 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 - Modify: `api/pkg/services/message_thread_service.go`
 
 **Interfaces:**
+
 - Produces: `MessageThread.IsRead bool`, `MessageThread.LastReadAt time.Time`
 - Produces: `MessageThreadUpdate.IsArchived *bool`, `MessageThreadUpdate.IsRead *bool`
 - Produces: `MessageThreadStatusParams.IsArchived *bool`, `MessageThreadStatusParams.IsRead *bool`
@@ -276,11 +279,13 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 2: Add atomic thread persistence operations
 
 **Files:**
+
 - Modify: `api/pkg/repositories/message_thread_repository.go`
 - Modify: `api/pkg/repositories/gorm_message_thread_repository.go`
 - Create: `api/pkg/repositories/gorm_message_thread_repository_test.go`
 
 **Interfaces:**
+
 - Produces: `repositories.MessageThreadActivityUpdate`
 - Produces: `repositories.MessageThreadStatusUpdate`
 - Produces: `repositories.MessageThreadDeletedUpdate`
@@ -545,6 +550,7 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 3: Apply read rules in services and listeners
 
 **Files:**
+
 - Modify: `api/pkg/services/message_thread_service.go`
 - Create: `api/pkg/services/message_thread_service_test.go`
 - Modify: `api/pkg/listeners/message_thread_listener.go`
@@ -554,6 +560,7 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 - Create: `api/pkg/listeners/websocket_listener_test.go`
 
 **Interfaces:**
+
 - Consumes: repository update types and methods from Task 2.
 - Produces: `MessageThreadUpdateParams.MarksUnread bool`
 - Produces: `MessageThreadUpdateParams.EventTimestamp time.Time`
@@ -1125,12 +1132,14 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 4: Finish the HTTP behavior and regenerate Swagger
 
 **Files:**
+
 - Modify: `api/pkg/handlers/message_thread_handler.go`
 - Modify: `api/docs/docs.go`
 - Modify: `api/docs/swagger.json`
 - Modify: `api/docs/swagger.yaml`
 
 **Interfaces:**
+
 - Consumes: `responses.MessageThreadResponse` from Task 1.
 - Produces: 404 behavior for missing thread updates.
 - Produces: Swagger schema fields `is_read`, optional `is_archived`, optional `is_read`.
@@ -1198,10 +1207,12 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 5: Add automatic read updates to the web store
 
 **Files:**
+
 - Modify: `web/shared/types/api.ts`
 - Modify: `web/app/stores/threads.ts`
 
 **Interfaces:**
+
 - Consumes: API `PUT /v1/message-threads/{id}` with `{ is_read: true }`.
 - Produces: `markThreadRead(threadId: string, force?: boolean): Promise<void>`.
 
@@ -1222,8 +1233,10 @@ In `web/app/stores/threads.ts`, add:
 
 ```ts
 function replaceThread(updatedThread: EntitiesMessageThread) {
-  const index = threads.value.findIndex((thread) => thread.id === updatedThread.id)
-  if (index !== -1) threads.value[index] = updatedThread
+  const index = threads.value.findIndex(
+    (thread) => thread.id === updatedThread.id,
+  );
+  if (index !== -1) threads.value[index] = updatedThread;
 }
 ```
 
@@ -1233,26 +1246,26 @@ Add:
 
 ```ts
 async function markThreadRead(threadId: string, force = false) {
-  const thread = threads.value.find((item) => item.id === threadId)
-  if (!thread) throw new Error(`Cannot find thread with id ${threadId}`)
-  if (!force && thread.is_read) return
+  const thread = threads.value.find((item) => item.id === threadId);
+  if (!thread) throw new Error(`Cannot find thread with id ${threadId}`);
+  if (!force && thread.is_read) return;
 
   try {
     const response = await apiFetch<{ data: EntitiesMessageThread }>(
       `/v1/message-threads/${threadId}`,
       {
-        method: 'PUT',
+        method: "PUT",
         body: { is_read: true },
       },
-    )
-    replaceThread(response.data)
+    );
+    replaceThread(response.data);
   } catch (error) {
     notificationsStore.addNotification({
-      message: 'The message thread could not be marked as read',
-      type: 'error',
-    })
-    await loadThreads()
-    throw error
+      message: "The message thread could not be marked as read",
+      type: "error",
+    });
+    await loadThreads();
+    throw error;
   }
 }
 ```
@@ -1293,10 +1306,12 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 6: Mark opened threads read and highlight unread threads
 
 **Files:**
+
 - Modify: `web/app/pages/threads/[id]/index.vue`
 - Modify: `web/app/components/MessageThread.vue`
 
 **Interfaces:**
+
 - Consumes: `threadsStore.markThreadRead(threadId, force)`.
 - Produces: automatic initial and realtime read updates.
 - Produces: shared unread list styling on mobile and desktop.
@@ -1307,11 +1322,11 @@ In `web/app/pages/threads/[id]/index.vue`, add:
 
 ```ts
 async function markCurrentThreadRead(force = false) {
-  const threadId = route.params.id as string
+  const threadId = route.params.id as string;
   try {
-    await threadsStore.markThreadRead(threadId, force)
+    await threadsStore.markThreadRead(threadId, force);
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
 }
 ```
@@ -1319,7 +1334,7 @@ async function markCurrentThreadRead(force = false) {
 At the start of `loadMessages`, after computing `threadId`, call without awaiting:
 
 ```ts
-void markCurrentThreadRead()
+void markCurrentThreadRead();
 ```
 
 This lets message loading continue even if the read update fails.
@@ -1329,23 +1344,23 @@ This lets message loading continue even if the read update fails.
 Change the incoming SMS binding:
 
 ```ts
-webhookChannel.bind('message.phone.received', () => {
+webhookChannel.bind("message.phone.received", () => {
   if (!loadingMessages.value) {
-    void markCurrentThreadRead(true)
-    loadMessages(false)
+    void markCurrentThreadRead(true);
+    loadMessages(false);
   }
-})
+});
 ```
 
 Add the missed-call binding with the same behavior:
 
 ```ts
-webhookChannel.bind('message.call.missed', () => {
+webhookChannel.bind("message.call.missed", () => {
   if (!loadingMessages.value) {
-    void markCurrentThreadRead(true)
-    loadMessages(false)
+    void markCurrentThreadRead(true);
+    loadMessages(false);
   }
-})
+});
 ```
 
 The forced call is required because the local thread may still say `is_read:
@@ -1409,10 +1424,12 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 7: Add integration coverage
 
 **Files:**
+
 - Create: `tests/read_receipts_test.go`
 - Modify: `tests/README.md`
 
 **Interfaces:**
+
 - Consumes: thread index and update HTTP endpoints from Tasks 1-4.
 - Consumes: incoming SMS, missed-call, and outbound message flows from Task 3.
 - Produces: `TestMessageThreadReadReceipts`.
@@ -1670,9 +1687,11 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ### Task 8: Verify the complete feature
 
 **Files:**
+
 - Review: all files changed since `origin/main`
 
 **Interfaces:**
+
 - Consumes: all previous tasks.
 - Produces: a clean, verified feature branch.
 

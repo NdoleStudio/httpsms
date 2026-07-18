@@ -145,18 +145,28 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
+	thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
+	if err != nil {
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot find thread with id [%s]", params.MessageThreadID))
+	}
+
 	update := repositories.MessageThreadStatusUpdate{
 		IsArchived: params.IsArchived,
 		IsRead:     params.IsRead,
 		ReadAt:     time.Now().UTC(),
 	}
-	if err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update); err != nil {
+	if err = service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update); err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot update message thread with id [%s]", params.MessageThreadID))
 	}
 
-	thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
-	if err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot find thread with id [%s]", params.MessageThreadID))
+	if params.IsArchived != nil {
+		thread.IsArchived = *params.IsArchived
+	}
+	if params.IsRead != nil {
+		thread.IsRead = *params.IsRead
+		if *params.IsRead {
+			thread.LastReadAt = update.ReadAt
+		}
 	}
 
 	return thread, nil
