@@ -104,6 +104,7 @@ type PhoneUpsertParams struct {
 	WebhookURL                *string
 	MessageExpirationDuration *time.Duration
 	MissedCallAutoReply       *string
+	UnarchiveThread           *bool
 	SIM                       entities.SIM
 	MessageSendScheduleID     *uuid.UUID
 	Source                    string
@@ -310,6 +311,10 @@ func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertPa
 
 	if params.MissedCallAutoReply != nil {
 		phone.MissedCallAutoReply = params.MissedCallAutoReply
+	}
+
+	if params.UnarchiveThread != nil {
+		phone.UnarchiveThread = *params.UnarchiveThread
 	}
 
 	phone.SIM = params.SIM

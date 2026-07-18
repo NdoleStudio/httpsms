@@ -29,6 +29,9 @@ type PhoneUpsert struct {
 
 	MissedCallAutoReply *string `json:"missed_call_auto_reply" example:"e.g. This phone cannot receive calls. Please send an SMS instead."`
 
+	// UnarchiveThread moves an archived thread back to the inbox when a new message is received on this phone.
+	UnarchiveThread bool `json:"unarchive_thread" example:"false"`
+
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
 
@@ -75,6 +78,11 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 		maxSendAttempts = &input.MaxSendAttempts
 	}
 
+	var unarchiveThread *bool
+	if _, exists := fields["unarchive_thread"]; exists {
+		unarchiveThread = &input.UnarchiveThread
+	}
+
 	var scheduleID *uuid.UUID
 	if _, exists := fields["message_send_schedule_id"]; exists {
 		if parsed, err := uuid.Parse(strings.TrimSpace(input.MessageSendScheduleID)); err == nil {
@@ -92,6 +100,7 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 		FcmToken:                  fcmToken,
 		UserID:                    user.ID,
 		SIM:                       entities.SIM(input.SIM),
+		UnarchiveThread:           unarchiveThread,
 		MessageSendScheduleID:     scheduleID,
 	}
 }
