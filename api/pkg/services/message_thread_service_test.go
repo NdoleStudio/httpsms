@@ -19,4 +19,5 @@ func TestShouldCheckUnarchive(t *testing.T) {
 	assert.True(t, service.shouldCheckUnarchive(archived, received), "archived + inbound -> consult phone setting")
 	assert.False(t, service.shouldCheckUnarchive(archived, sent), "outbound status -> no check")
 	assert.False(t, service.shouldCheckUnarchive(notArchived, received), "already unarchived -> no check")
+	assert.False(t, service.shouldCheckUnarchive(notArchived, sent), "not archived + outbound -> no check")
 }
