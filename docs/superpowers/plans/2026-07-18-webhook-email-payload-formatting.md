@@ -543,16 +543,25 @@ go test ./pkg/emails -count=1
 Expected: `go-fumpt` passes (rerun it once if it initially reformats the files),
 then all `pkg/emails` tests pass.
 
-- [ ] **Step 5: Run the complete API test suite**
+- [ ] **Step 5: Run the stable API package regression suite**
 
 Run:
 
 ```powershell
 Set-Location api
-go test ./...
+$env:GOTOOLCHAIN = 'go1.25.8'
+$packages = go list ./... | Where-Object { $_ -ne 'github.com/NdoleStudio/httpsms/pkg/handlers' }
+go test -vet=off $packages
 ```
 
-Expected: all API packages pass without adding or changing dependencies.
+Expected: all selected API packages pass without adding or changing
+dependencies.
+
+The clean baseline cannot use plain `go test ./...`: existing stacktrace calls
+fail Go vet's non-constant-format check, and
+`pkg/handlers.TestPhoneAPIKeyHandler_store` requires an API server at
+`localhost:8000`. Do not change those unrelated packages as part of this
+feature.
 
 - [ ] **Step 6: Review the final diff**
 
