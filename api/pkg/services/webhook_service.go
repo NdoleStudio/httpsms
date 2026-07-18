@@ -61,8 +61,7 @@ func (service *WebhookService) DeleteAllForUser(ctx context.Context, userID enti
 	defer span.End()
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
-		msg := fmt.Sprintf("could not delete all [entities.Webhook] for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete all [entities.Webhook] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Webhook] for user with ID [%s]", userID))
@@ -78,8 +77,7 @@ func (service *WebhookService) Index(ctx context.Context, userID entities.UserID
 
 	webhooks, err := service.repository.Index(ctx, userID, params)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch webhooks with params [%+#v]", params)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not fetch webhooks with params [%+#v]", params))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] webhooks with prams [%+#v]", len(webhooks), params))
@@ -94,13 +92,11 @@ func (service *WebhookService) Delete(ctx context.Context, userID entities.UserI
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if _, err := service.repository.Load(ctx, userID, webhookID); err != nil {
-		msg := fmt.Sprintf("cannot load webhook with userID [%s] and phoneID [%s]", userID, webhookID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load webhook with userID [%s] and phoneID [%s]", userID, webhookID))
 	}
 
 	if err := service.repository.Delete(ctx, userID, webhookID); err != nil {
-		msg := fmt.Sprintf("cannot delete webhook with id [%s] and user id [%s]", webhookID, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete webhook with id [%s] and user id [%s]", webhookID, userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted webhook with id [%s] and user id [%s]", webhookID, userID))
@@ -135,8 +131,7 @@ func (service *WebhookService) Store(ctx context.Context, params *WebhookStorePa
 	}
 
 	if err := service.repository.Save(ctx, webhook); err != nil {
-		msg := fmt.Sprintf("cannot save webhook with id [%s]", webhook.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save webhook with id [%s]", webhook.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("webhook saved with id [%s] for user [%s] in the [%T]", webhook.ID, webhook.UserID, service.repository))
@@ -160,8 +155,7 @@ func (service *WebhookService) Update(ctx context.Context, params *WebhookUpdate
 
 	webhook, err := service.repository.Load(ctx, params.UserID, params.WebhookID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load webhook with userID [%s] and phoneID [%s]", params.UserID, params.WebhookID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load webhook with userID [%s] and phoneID [%s]", params.UserID, params.WebhookID))
 	}
 
 	webhook.URL = params.URL
@@ -170,8 +164,7 @@ func (service *WebhookService) Update(ctx context.Context, params *WebhookUpdate
 	webhook.PhoneNumbers = params.PhoneNumbers
 
 	if err = service.repository.Save(ctx, webhook); err != nil {
-		msg := fmt.Sprintf("cannot save webhook with id [%s] after update", webhook.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save webhook with id [%s] after update", webhook.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("webhook updated with id [%s] in the [%T]", webhook.ID, service.repository))
@@ -185,8 +178,7 @@ func (service *WebhookService) Send(ctx context.Context, userID entities.UserID,
 
 	webhooks, err := service.repository.LoadByEvent(ctx, userID, event.Type(), phoneNumber)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load webhooks for userID [%s] and event [%s]", userID, event.Type())
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load webhooks for userID [%s] and event [%s]", userID, event.Type()))
 	}
 
 	if len(webhooks) == 0 {
@@ -220,13 +212,12 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 
 		request, err := service.createRequest(requestCtx, event, webhook)
 		if err != nil {
-			msg := fmt.Sprintf("cannot create [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)
-			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts))
 		}
 
 		response, err := service.client.Do(request)
 		if err != nil {
-			ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)))
+			ctxLogger.Warn(stacktrace.Propagate(err, "cannot send [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts))
 			if attempts == 1 {
 				return err
 			}
@@ -237,16 +228,16 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 		defer func() {
 			err = response.Body.Close()
 			if err != nil {
-				ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot close response body for [%s] event with ID [%s] after [%d] attempts", event.Type(), event.ID(), attempts)))
+				ctxLogger.Error(stacktrace.Propagate(err, "cannot close response body for [%s] event with ID [%s] after [%d] attempts", event.Type(), event.ID(), attempts))
 			}
 		}()
 
 		if response.StatusCode >= 400 {
 			ctxLogger.Info(fmt.Sprintf("cannot send [%s] event to webhook [%s] for user [%s] with response code [%d] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, response.StatusCode, attempts))
 			if attempts == 1 {
-				return stacktrace.NewError(http.StatusText(response.StatusCode))
+				return stacktrace.NewError("%s", http.StatusText(response.StatusCode))
 			}
-			service.handleWebhookSendFailed(ctx, event, webhook, owner, stacktrace.NewError(http.StatusText(response.StatusCode)), response)
+			service.handleWebhookSendFailed(ctx, event, webhook, owner, stacktrace.NewError("%s", http.StatusText(response.StatusCode)), response)
 			return nil
 		}
 
@@ -254,8 +245,7 @@ func (service *WebhookService) sendNotification(ctx context.Context, event cloud
 		return nil
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot handle [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle [%s] event to webhook [%s] for user [%s] after [%d] attempts", event.Type(), webhook.URL, webhook.UserID, attempts)))
 	}
 }
 
@@ -265,14 +255,12 @@ func (service *WebhookService) createRequest(ctx context.Context, event cloudeve
 
 	payload, err := json.Marshal(service.getPayload(ctxLogger, event, webhook))
 	if err != nil {
-		msg := fmt.Sprintf("cannot marshal payload for user [%s] and webhook [%s] for event [%s]", webhook.UserID, webhook.ID, event.ID())
-		return nil, stacktrace.Propagate(err, msg)
+		return nil, stacktrace.Propagate(err, "cannot marshal payload for user [%s] and webhook [%s] for event [%s]", webhook.UserID, webhook.ID, event.ID())
 	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, webhook.URL, bytes.NewReader(payload))
 	if err != nil {
-		msg := fmt.Sprintf("cannot create request for user [%s] and webhook [%s] for event [%s]", webhook.UserID, webhook.ID, event.ID())
-		return nil, stacktrace.Propagate(err, msg)
+		return nil, stacktrace.Propagate(err, "cannot create request for user [%s] and webhook [%s] for event [%s]", webhook.UserID, webhook.ID, event.ID())
 	}
 
 	request.Header.Add("X-Event-Type", event.Type())
@@ -281,8 +269,7 @@ func (service *WebhookService) createRequest(ctx context.Context, event cloudeve
 	if strings.TrimSpace(webhook.SigningKey) != "" {
 		token, err := service.getAuthToken(webhook)
 		if err != nil {
-			msg := fmt.Sprintf("cannot generate auth token for user [%s] and webhook [%s]", webhook.UserID, webhook.ID)
-			return nil, stacktrace.Propagate(err, msg)
+			return nil, stacktrace.Propagate(err, "cannot generate auth token for user [%s] and webhook [%s]", webhook.UserID, webhook.ID)
 		}
 		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
@@ -303,7 +290,7 @@ func (service *WebhookService) getPayload(ctxLogger telemetry.Logger, event clou
 
 	err := event.DataAs(payload)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload))
 		return event
 	}
 
@@ -382,14 +369,12 @@ func (service *WebhookService) handleWebhookSendFailed(ctx context.Context, even
 
 	event, err = service.createEvent(events.EventTypeWebhookSendFailed, event.Source(), payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create event [%s] for user with id [%s]", events.EventTypeWebhookSendFailed, payload.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create event [%s] for user with id [%s]", events.EventTypeWebhookSendFailed, payload.UserID)))
 		return
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch event [%s] for user with id [%s]", event.Type(), payload.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] for user with id [%s]", event.Type(), payload.UserID)))
 		return
 	}
 

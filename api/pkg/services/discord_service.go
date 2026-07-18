@@ -59,8 +59,7 @@ func (service *DiscordService) DeleteAllForUser(ctx context.Context, userID enti
 	defer span.End()
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
-		msg := fmt.Sprintf("could not delete all [entities.Discord] for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete all [entities.Discord] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Discord] for user with ID [%s]", userID))
@@ -76,8 +75,7 @@ func (service *DiscordService) Index(ctx context.Context, userID entities.UserID
 
 	discordIntegrations, err := service.repository.Index(ctx, userID, params)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch discord integrations with params [%+#v]", params)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not fetch discord integrations with params [%+#v]", params))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] discord integrations with prams [%+#v]", len(discordIntegrations), params))
@@ -92,13 +90,11 @@ func (service *DiscordService) Delete(ctx context.Context, userID entities.UserI
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if _, err := service.repository.Load(ctx, userID, discordID); err != nil {
-		msg := fmt.Sprintf("cannot load discord integration with userID [%s] and discordID [%s]", userID, discordID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load discord integration with userID [%s] and discordID [%s]", userID, discordID))
 	}
 
 	if err := service.repository.Delete(ctx, userID, discordID); err != nil {
-		msg := fmt.Sprintf("cannot delete discord integration with id [%s] and discordID [%s]", discordID, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete discord integration with id [%s] and discordID [%s]", discordID, userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted discord integration with id [%s] and user id [%s]", discordID, userID))
@@ -119,8 +115,7 @@ func (service *DiscordService) Store(ctx context.Context, params *DiscordStorePa
 	defer span.End()
 
 	if err := service.createSlashCommand(ctx, params.ServerID); err != nil {
-		msg := fmt.Sprintf("cannot create slash command for server [%s]", params.ServerID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create slash command for server [%s]", params.ServerID))
 	}
 
 	discordIntegration := &entities.Discord{
@@ -134,8 +129,7 @@ func (service *DiscordService) Store(ctx context.Context, params *DiscordStorePa
 	}
 
 	if err := service.repository.Save(ctx, discordIntegration); err != nil {
-		msg := fmt.Sprintf("cannot save discord integration with id [%s]", discordIntegration.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save discord integration with id [%s]", discordIntegration.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("discord integration saved with id [%s] in the [%T]", discordIntegration.ID, service.repository))
@@ -178,8 +172,7 @@ func (service *DiscordService) createSlashCommand(ctx context.Context, serverID 
 		},
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot create slash command for server [%s]", serverID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create slash command for server [%s]", serverID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("upserted a slash command with ID [%s] for discord server [%s] and applicationID [%s]", command.ID, serverID, command.ApplicationID))
@@ -202,13 +195,11 @@ func (service *DiscordService) Update(ctx context.Context, params *DiscordUpdate
 
 	discordIntegration, err := service.repository.Load(ctx, params.UserID, params.DiscordID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load discord integration with userID [%s] and discordID [%s]", params.UserID, params.DiscordID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load discord integration with userID [%s] and discordID [%s]", params.UserID, params.DiscordID))
 	}
 
 	if err = service.createSlashCommand(ctx, params.ServerID); err != nil {
-		msg := fmt.Sprintf("cannot create slash command for server [%s]", params.ServerID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create slash command for server [%s]", params.ServerID))
 	}
 
 	discordIntegration.Name = params.Name
@@ -216,8 +207,7 @@ func (service *DiscordService) Update(ctx context.Context, params *DiscordUpdate
 	discordIntegration.IncomingChannelID = params.IncomingChannelID
 
 	if err = service.repository.Save(ctx, discordIntegration); err != nil {
-		msg := fmt.Sprintf("cannot save discord integration with id [%s] after update", discordIntegration.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save discord integration with id [%s] after update", discordIntegration.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("discord integration updated with id [%s] in the [%T]", discordIntegration.ID, service.repository))
@@ -231,8 +221,7 @@ func (service *DiscordService) HandleMessageReceived(ctx context.Context, userID
 
 	discordIntegrations, err := service.repository.FetchHavingIncomingChannel(ctx, userID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load discord integrations for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot load discord integrations for user with ID [%s]", userID))
 	}
 
 	if len(discordIntegrations) == 0 {
@@ -259,15 +248,14 @@ func (service *DiscordService) sendMessage(ctx context.Context, event cloudevent
 
 	payload := new(events.MessagePhoneReceivedPayload)
 	if err := event.DataAs(payload); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload)))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot unmarshal event [%s] with ID [%s] into [%T]", event.Type(), event.ID(), payload))
 		return
 	}
 
 	request := service.createDiscordMessage(ctxLogger, payload)
 	message, response, err := service.client.Channel.CreateMessage(ctx, discord.IncomingChannelID, request)
 	if err != nil {
-		msg := fmt.Sprintf("cannot send [%s] event to discord channel [%s] for user [%s]", event.Type(), discord.IncomingChannelID, discord.UserID)
-		ctxLogger.Warn(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Warn(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send [%s] event to discord channel [%s] for user [%s]", event.Type(), discord.IncomingChannelID, discord.UserID)))
 
 		eventPayload := &events.DiscordSendFailedPayload{
 			DiscordID:        discord.ID,
@@ -327,14 +315,12 @@ func (service *DiscordService) handleDiscordMessageFailed(ctx context.Context, s
 
 	event, err := service.createEvent(events.EventTypeDiscordSendFailed, source, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create event [%s] for user with id [%s]", events.EventTypeDiscordSendFailed, payload.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create event [%s] for user with id [%s]", events.EventTypeDiscordSendFailed, payload.UserID)))
 		return
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch event [%s] for user with id [%s]", event.Type(), payload.UserID)
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] for user with id [%s]", event.Type(), payload.UserID)))
 		return
 	}
 

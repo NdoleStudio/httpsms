@@ -67,8 +67,7 @@ func (service *MessageThreadService) DeleteAllForUser(ctx context.Context, userI
 	defer span.End()
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
-		msg := fmt.Sprintf("could not delete [entities.MessageThread] for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete [entities.MessageThread] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.MessageThread] for user with ID [%s]", userID))
@@ -89,17 +88,16 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact))
 	}
 
 	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusSending && thread.HasLastMessage(params.MessageID) {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("thread [%s] has timestamp [%s] and status [%s] which is greater than timestamp [%s] for message [%s] and status [%s]", thread.ID, thread.OrderTimestamp, thread.Status, params.Timestamp, params.MessageID, params.Status)))
+		ctxLogger.Warn(stacktrace.NewError("thread [%s] has timestamp [%s] and status [%s] which is greater than timestamp [%s] for message [%s] and status [%s]", thread.ID, thread.OrderTimestamp, thread.Status, params.Timestamp, params.MessageID, params.Status))
 		return nil
 	}
 
 	if thread.Status == entities.MessageStatusDelivered && thread.LastMessageID != nil && thread.HasLastMessage(params.MessageID) {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("thread [%s] already has status [%s] not updating with status [%s] for message [%s]", thread.ID, thread.Status, params.Status, params.MessageID)))
+		ctxLogger.Warn(stacktrace.NewError("thread [%s] already has status [%s] not updating with status [%s] for message [%s]", thread.ID, thread.Status, params.Status, params.MessageID))
 		return nil
 	}
 
@@ -114,8 +112,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 	}
 
 	if err = service.repository.Update(ctx, thread.Update(params.Timestamp, params.MessageID, params.Content, params.Status)); err != nil {
-		msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s] and status [%s]", thread.ID, thread.LastMessageID, thread.Status))
@@ -138,13 +135,11 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 
 	thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot find thread with id [%s]", params.MessageThreadID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot find thread with id [%s]", params.MessageThreadID))
 	}
 
 	if err = service.repository.Update(ctx, thread.UpdateArchive(params.IsArchived)); err != nil {
-		msg := fmt.Sprintf("cannot update message thread with id [%s] with archive status [%t]", thread.ID, params.IsArchived)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update message thread with id [%s] with archive status [%t]", thread.ID, params.IsArchived))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with archive status [%t]", thread.ID, thread.IsArchived))
@@ -158,14 +153,12 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 
 	thread, err := service.repository.LoadByOwnerContact(ctx, payload.UserID, payload.Owner, payload.Contact)
 	if err != nil {
-		msg := fmt.Sprintf("cannot find thread for user [%s] with owner [%s], and contact [%s]", payload.UserID, payload.Owner, payload.Contact)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot find thread for user [%s] with owner [%s], and contact [%s]", payload.UserID, payload.Owner, payload.Contact))
 	}
 
 	if payload.PreviousMessageID == nil {
 		if err = service.repository.Delete(ctx, thread.UserID, thread.ID); err != nil {
-			msg := fmt.Sprintf("cannot delete thread with ID [%s] for user [%s] and owner [%s]", thread.ID, thread.UserID, thread.Owner)
-			ctxLogger.Error(stacktrace.Propagate(err, msg))
+			ctxLogger.Error(stacktrace.Propagate(err, "cannot delete thread with ID [%s] for user [%s] and owner [%s]", thread.ID, thread.UserID, thread.Owner))
 			return nil
 		}
 		msg := fmt.Sprintf("previous message ID is nil for thread with ID [%s] and user [%s]", thread.ID, thread.UserID)
@@ -185,8 +178,7 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 	thread.UpdatedAt = time.Now().UTC()
 
 	if err = service.repository.Update(ctx, thread); err != nil {
-		msg := fmt.Sprintf("cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("last message has been removed from thread with ID [%s] and userID [%s]", thread.ID, thread.UserID))
@@ -215,8 +207,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	}
 
 	if err := service.repository.Store(ctx, thread); err != nil {
-		msg := fmt.Sprintf("cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf(
@@ -271,8 +262,7 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 
 	threads, err := service.repository.Index(ctx, params.UserID, params.Owner, params.IsArchived, params.IndexParams)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch messages threads for params [%+#v]", params)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not fetch messages threads for params [%+#v]", params))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] threads with params [%+#v]", len(*threads), params))
@@ -286,8 +276,7 @@ func (service *MessageThreadService) GetThread(ctx context.Context, userID entit
 
 	thread, err := service.repository.Load(ctx, userID, messageThreadID)
 	if err != nil {
-		msg := fmt.Sprintf("could not fetch thread with ID [%s] for user [%s]", messageThreadID, userID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "could not fetch thread with ID [%s] for user [%s]", messageThreadID, userID))
 	}
 
 	return thread, nil
@@ -299,8 +288,7 @@ func (service *MessageThreadService) DeleteThread(ctx context.Context, source st
 	defer span.End()
 
 	if err := service.repository.Delete(ctx, thread.UserID, thread.ID); err != nil {
-		msg := fmt.Sprintf("could not delete message thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "could not delete message thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID))
 	}
 
 	event, err := service.createEvent(events.MessageThreadAPIDeleted, source, &events.MessageThreadAPIDeletedPayload{
@@ -314,14 +302,12 @@ func (service *MessageThreadService) DeleteThread(ctx context.Context, source st
 		Timestamp:       time.Now().UTC(),
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot create [%T] for message thread dleted with ID [%s]", event, thread.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [%T] for message thread dleted with ID [%s]", event, thread.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID))
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("dispatched [%s] event with id [%s] for message thread [%s]", event.Type(), event.ID(), thread.ID))

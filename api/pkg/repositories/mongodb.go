@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"reflect"
 	"time"
@@ -92,7 +91,7 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 func parseMongoDBName(uri string) (string, error) {
 	parsed, err := url.Parse(uri)
 	if err != nil {
-		return "", stacktrace.Propagate(err, fmt.Sprintf("cannot parse MongoDB URI [%s]", uri))
+		return "", stacktrace.Propagate(err, "cannot parse MongoDB URI [%s]", uri)
 	}
 
 	appName := parsed.Query().Get("appName")
@@ -108,7 +107,7 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 	heartbeatsCol := db.Collection(collectionHeartbeats)
 
 	_, err := heartbeatsCol.Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{Keys: bson.D{{"user_id", 1}, {"owner", 1}, {"timestamp", -1}}},
+		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "owner", Value: 1}, {Key: "timestamp", Value: -1}}},
 	})
 	if err != nil {
 		return stacktrace.Propagate(err, "cannot create indexes on heartbeats collection")
@@ -117,7 +116,7 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 	// Heartbeat monitors indexes
 	monitorsCol := db.Collection(collectionHeartbeatMonitors)
 	_, err = monitorsCol.Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{Keys: bson.D{{"user_id", 1}, {"owner", 1}}},
+		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "owner", Value: 1}}},
 	})
 	if err != nil {
 		return stacktrace.Propagate(err, "cannot create indexes on heartbeat_monitors collection")

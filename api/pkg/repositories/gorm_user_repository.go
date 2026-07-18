@@ -48,8 +48,7 @@ func (repository *gormUserRepository) Delete(ctx context.Context, user *entities
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Delete(user).Error; err != nil {
-		msg := fmt.Sprintf("cannot delete user with ID [%s]", user.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete user with ID [%s]", user.ID))
 	}
 
 	return nil
@@ -61,12 +60,13 @@ func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID e
 
 	apiKey, err := repository.generateAPIKey(64)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot generate apiKey for user [%s]", userID))
+		return nil, stacktrace.Propagate(err, "cannot generate apiKey for user [%s]", userID)
 	}
 
 	user := new(entities.User)
 	var oldAPIKey string
-	err = crdbgorm.ExecuteTx(ctx, repository.db, nil,
+	err = crdbgorm.ExecuteTx(
+		ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
 			if err := tx.WithContext(ctx).Where("id = ?", userID).First(user).Error; err != nil {
 				return err
@@ -79,8 +79,7 @@ func (repository *gormUserRepository) RotateAPIKey(ctx context.Context, userID e
 		},
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with ID [%s] does not exist", userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with ID [%s] does not exist", userID))
 	}
 
 	if err == nil && oldAPIKey != "" {
@@ -103,13 +102,11 @@ func (repository *gormUserRepository) LoadBySubscriptionID(ctx context.Context, 
 		First(user).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with subscriptionID [%s] does not exist", subscriptionID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with subscriptionID [%s] does not exist", subscriptionID))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", subscriptionID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with subscription ID [%s]", subscriptionID))
 	}
 
 	return user, nil
@@ -125,13 +122,11 @@ func (repository *gormUserRepository) LoadByEmail(ctx context.Context, email str
 		First(user).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with email [%s] does not exist", email)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with email [%s] does not exist", email))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with email ID [%s]", email)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with email ID [%s]", email))
 	}
 
 	return user, nil
@@ -142,8 +137,7 @@ func (repository *gormUserRepository) Store(ctx context.Context, user *entities.
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Create(user).Error; err != nil {
-		msg := fmt.Sprintf("cannot save user with ID [%s]", user.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save user with ID [%s]", user.ID))
 	}
 
 	return nil
@@ -154,8 +148,7 @@ func (repository *gormUserRepository) Update(ctx context.Context, user *entities
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(user).Error; err != nil {
-		msg := fmt.Sprintf("cannot update user with ID [%s]", user.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update user with ID [%s]", user.ID))
 	}
 
 	return nil
@@ -167,7 +160,7 @@ func (repository *gormUserRepository) LoadAuthContext(ctx context.Context, apiKe
 
 	if authUser, found := repository.cache.Get(apiKey); found {
 		if authUser.IsNoop() {
-			return authUser, repository.tracer.WrapErrorSpan(span, stacktrace.NewError(fmt.Sprintf("user with api key [%s] does not exist", apiKey)))
+			return authUser, repository.tracer.WrapErrorSpan(span, stacktrace.NewError("user with api key [%s] does not exist", apiKey))
 		}
 		return authUser, nil
 	}
@@ -176,13 +169,12 @@ func (repository *gormUserRepository) LoadAuthContext(ctx context.Context, apiKe
 	err := repository.db.WithContext(ctx).Where("api_key = ?", apiKey).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		repository.cache.SetWithTTL(apiKey, entities.AuthContext{}, 1, 2*time.Hour)
-		msg := fmt.Sprintf("user with api key [%s] does not exist", apiKey)
-		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+
+		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with api key [%s] does not exist", apiKey))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with api key [%s]", apiKey)
-		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with api key [%s]", apiKey))
 	}
 
 	authUser := entities.AuthContext{
@@ -191,8 +183,7 @@ func (repository *gormUserRepository) LoadAuthContext(ctx context.Context, apiKe
 	}
 
 	if result := repository.cache.SetWithTTL(apiKey, authUser, 1, 2*time.Hour); !result {
-		msg := fmt.Sprintf("cannot cache [%T] with ID [%s] and result [%t]", authUser, user.ID, result)
-		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError(msg)))
+		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError("cannot cache [%T] with ID [%s] and result [%t]", authUser, user.ID, result)))
 	}
 
 	return authUser, nil
@@ -205,13 +196,11 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	user := new(entities.User)
 	err := repository.db.WithContext(ctx).First(user, userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with ID [%s] does not exist", user.ID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with ID [%s] does not exist", userID))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with ID [%s]", userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with ID [%s]", userID))
 	}
 
 	return user, nil
@@ -228,7 +217,7 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 
 	apiKey, err := repository.generateAPIKey(64)
 	if err != nil {
-		return nil, false, stacktrace.Propagate(err, fmt.Sprintf("cannot generate apiKey for user [%s]", authUser.ID))
+		return nil, false, stacktrace.Propagate(err, "cannot generate apiKey for user [%s]", authUser.ID)
 	}
 
 	user = &entities.User{
@@ -252,8 +241,7 @@ func (repository *gormUserRepository) LoadOrStore(ctx context.Context, authUser 
 		return result.Error
 	})
 	if err != nil {
-		msg := fmt.Sprintf("cannot create user from auth user [%+#v]", authUser)
-		return user, isNew, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return user, isNew, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create user from auth user [%+#v]", authUser))
 	}
 
 	return user, isNew, nil
@@ -267,7 +255,7 @@ func (repository *gormUserRepository) generateRandomBytes(n int) ([]byte, error)
 	b := make([]byte, n)
 	// Note that err == nil only if we read len(b) bytes.
 	if _, err := rand.Read(b); err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot generate [%d] random bytes", n))
+		return nil, stacktrace.Propagate(err, "cannot generate [%d] random bytes", n)
 	}
 
 	return b, nil

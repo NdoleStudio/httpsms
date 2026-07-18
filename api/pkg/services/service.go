@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"regexp"
 	"time"
 
@@ -24,17 +23,18 @@ func (service *service) createEvent(eventType string, source string, payload any
 	event.SetID(uuid.New().String())
 
 	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {
-		msg := fmt.Sprintf("cannot encode %T [%#+v] as JSON", payload, payload)
-		return event, stacktrace.Propagate(err, msg)
+		return event, stacktrace.Propagate(err, "cannot encode %T [%#+v] as JSON", payload, payload)
 	}
 
 	return event, nil
 }
 
 func (service *service) getFormattedNumber(ctxLogger telemetry.Logger, phoneNumber string) string {
-	matched, err := regexp.MatchString("^\\+?[1-9]\\d{9,14}$", phoneNumber)
+	const phoneNumberPattern = "^\\+?[1-9]\\d{9,14}$"
+
+	matched, err := regexp.MatchString(phoneNumberPattern, phoneNumber)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("error while matching phoneNumber [%s] with regex [%s]", phoneNumber, "^\\+?[1-9]\\d{10,14}$")))
+		ctxLogger.Error(stacktrace.Propagate(err, "error while matching phoneNumber [%s] with regex [%s]", phoneNumber, phoneNumberPattern))
 		return phoneNumber
 	}
 	if !matched {
@@ -43,7 +43,7 @@ func (service *service) getFormattedNumber(ctxLogger telemetry.Logger, phoneNumb
 
 	number, err := phonenumbers.Parse(phoneNumber, phonenumbers.UNKNOWN_REGION)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot parse number [%s]", phoneNumber)))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot parse number [%s]", phoneNumber))
 		return phoneNumber
 	}
 

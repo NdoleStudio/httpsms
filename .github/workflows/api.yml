@@ -74,6 +74,12 @@ jobs:
           docker compose wait seed || true
           sleep 2
 
+      - name: Run Handler Integration Tests
+        working-directory: ./api
+        env:
+          USER_API_KEY: test-user-api-key
+        run: go test -tags integration -v -timeout 60s ./pkg/handlers
+
       - name: Run Integration Tests
         working-directory: ./tests
         run: go test -v -timeout 300s ./...

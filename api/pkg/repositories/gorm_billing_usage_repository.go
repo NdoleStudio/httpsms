@@ -40,8 +40,7 @@ func (repository *gormBillingUsageRepository) DeleteAllForUser(ctx context.Conte
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.BillingUsage{}).Error; err != nil {
-		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.BillingUsage{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.BillingUsage{}, userID))
 	}
 
 	return nil
@@ -52,7 +51,8 @@ func (repository *gormBillingUsageRepository) RegisterSentMessage(ctx context.Co
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return crdbgorm.ExecuteTx(ctx, repository.db, nil,
+	return crdbgorm.ExecuteTx(
+		ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
 			result := tx.WithContext(ctx).
 				Model(&entities.BillingUsage{}).
@@ -78,7 +78,8 @@ func (repository *gormBillingUsageRepository) RegisterReceivedMessage(ctx contex
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	return crdbgorm.ExecuteTx(ctx, repository.db, nil,
+	return crdbgorm.ExecuteTx(
+		ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
 			result := tx.WithContext(ctx).
 				Model(&entities.BillingUsage{}).
@@ -107,7 +108,8 @@ func (repository *gormBillingUsageRepository) GetCurrent(ctx context.Context, us
 	timestamp := time.Now().UTC()
 
 	var usage entities.BillingUsage
-	err := crdbgorm.ExecuteTx(ctx, repository.db, nil,
+	err := crdbgorm.ExecuteTx(
+		ctx, repository.db, nil,
 		func(tx *gorm.DB) error {
 			result := tx.WithContext(ctx).
 				Where("user_id = ?", userID).
@@ -131,7 +133,7 @@ func (repository *gormBillingUsageRepository) GetCurrent(ctx context.Context, us
 		},
 	)
 	if err != nil {
-		return &usage, stacktrace.Propagate(err, fmt.Sprintf("cannot load billing usage for user [%s]", userID))
+		return &usage, stacktrace.Propagate(err, "cannot load billing usage for user [%s]", userID)
 	}
 
 	return &usage, nil
@@ -154,8 +156,7 @@ func (repository *gormBillingUsageRepository) GetHistory(ctx context.Context, us
 		Find(&usages).
 		Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot fetch billing usage history for userID [%s] and params [%+#v]", userID, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot fetch billing usage history for userID [%s] and params [%+#v]", userID, params))
 	}
 
 	return usages, nil
@@ -166,7 +167,7 @@ func (repository *gormBillingUsageRepository) GetHistory(ctx context.Context, us
 func (repository *gormBillingUsageRepository) createBillingUsageForUser(ctx context.Context, tx *gorm.DB, userID entities.UserID, timestamp time.Time, sent uint, received uint) (*entities.BillingUsage, error) {
 	user := new(entities.User)
 	if err := tx.WithContext(ctx).First(user, userID).Error; err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot load user [%s] to compute billing cycle", userID))
+		return nil, stacktrace.Propagate(err, "cannot load user [%s] to compute billing cycle", userID)
 	}
 
 	start, end := computeBillingCycle(timestamp, user.GetBillingAnchorDay())

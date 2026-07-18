@@ -37,8 +37,7 @@ func (repository *gormWebhookRepository) DeleteAllForUser(ctx context.Context, u
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Webhook{}).Error; err != nil {
-		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Webhook{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.Webhook{}, userID))
 	}
 
 	return nil
@@ -49,8 +48,7 @@ func (repository *gormWebhookRepository) Save(ctx context.Context, webhook *enti
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(webhook).Error; err != nil {
-		msg := fmt.Sprintf("cannot update webhook with ID [%s]", webhook.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update webhook with ID [%s]", webhook.ID))
 	}
 
 	return nil
@@ -69,8 +67,7 @@ func (repository *gormWebhookRepository) Index(ctx context.Context, userID entit
 
 	webhooks := make([]*entities.Webhook, 0)
 	if err := query.Order("created_at DESC").Limit(params.Limit).Offset(params.Skip).Find(&webhooks).Error; err != nil {
-		msg := fmt.Sprintf("cannot fetch webhooks for user [%s] and params [%+#v]", userID, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot fetch webhooks for user [%s] and params [%+#v]", userID, params))
 	}
 
 	return webhooks, nil
@@ -86,8 +83,7 @@ func (repository *gormWebhookRepository) LoadByEvent(ctx context.Context, userID
 		Scan(&webhooks).
 		Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot load webhooks for user with ID [%s] and event [%s]", userID, event)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load webhooks for user with ID [%s] and event [%s]", userID, event))
 	}
 
 	return webhooks, nil
@@ -100,13 +96,11 @@ func (repository *gormWebhookRepository) Load(ctx context.Context, userID entiti
 	webhook := new(entities.Webhook)
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", webhookID).First(&webhook).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("webhook with ID [%s] for user [%s] does not exist", webhookID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "webhook with ID [%s] for user [%s] does not exist", webhookID, userID))
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("cannot load webhook with ID [%s] for user [%s]", webhookID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load webhook with ID [%s] for user [%s]", webhookID, userID))
 	}
 
 	return webhook, nil
@@ -121,8 +115,7 @@ func (repository *gormWebhookRepository) Delete(ctx context.Context, userID enti
 		Where("id = ?", webhookID).
 		Delete(&entities.Webhook{}).Error
 	if err != nil {
-		msg := fmt.Sprintf("cannot delete webhook with ID [%s] and userID [%s]", webhookID, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete webhook with ID [%s] and userID [%s]", webhookID, userID))
 	}
 
 	return nil

@@ -46,13 +46,11 @@ func (listener *WebsocketListener) onMessagePhoneSent(ctx context.Context, event
 
 	var payload events.MessagePhoneSentPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
-		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
 	return nil
@@ -65,13 +63,11 @@ func (listener *WebsocketListener) onMessagePhoneReceived(ctx context.Context, e
 
 	var payload events.MessagePhoneReceivedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
-		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
 	return nil
@@ -84,13 +80,11 @@ func (listener *WebsocketListener) onMessagePhoneFailed(ctx context.Context, eve
 
 	var payload events.MessageSendFailedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
-		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
 	return nil
@@ -103,13 +97,11 @@ func (listener *WebsocketListener) onPhoneUpdated(ctx context.Context, event clo
 
 	var payload events.PhoneUpdatedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
-		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
 	return nil

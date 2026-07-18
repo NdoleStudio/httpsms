@@ -279,11 +279,11 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for dedicated [%T]", db))
 	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Heartbeat{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Heartbeat{}))
 	}
 
 	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.HeartbeatMonitor{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.HeartbeatMonitor{}))
 	}
 
 	return container.dedicatedDB
@@ -371,47 +371,47 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 	}
 
 	if err = db.AutoMigrate(&entities.Message{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Message{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Message{}))
 	}
 
 	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageThread{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.MessageThread{}))
 	}
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.User{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.User{}))
 	}
 
 	if err = db.AutoMigrate(&entities.MessageSendSchedule{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.MessageSendSchedule{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.MessageSendSchedule{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Phone{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Phone{}))
 	}
 
 	if err = db.AutoMigrate(&entities.PhoneNotification{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneNotification{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.PhoneNotification{}))
 	}
 
 	if err = db.AutoMigrate(&entities.BillingUsage{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.BillingUsage{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.BillingUsage{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Webhook{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Webhook{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Discord{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Discord{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Discord{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Integration3CX{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.Integration3CX{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Integration3CX{}))
 	}
 
 	if err = db.AutoMigrate(&entities.PhoneAPIKey{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot migrate %T", &entities.PhoneAPIKey{})))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.PhoneAPIKey{}))
 	}
 
 	return container.db
@@ -423,8 +423,7 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 
 	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
 	if err != nil {
-		msg := "cannot initialize firebase application"
-		container.logger.Fatal(stacktrace.Propagate(err, msg))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase application"))
 	}
 	return app
 }
@@ -445,7 +444,7 @@ func (container *Container) Cache() cache.Cache {
 	container.logger.Debug("creating cache.Cache")
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, fmt.Sprintf("cannot parse redis url [%s]", os.Getenv("REDIS_URL"))))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot parse redis url [%s]", os.Getenv("REDIS_URL")))
 	}
 	if strings.HasPrefix(os.Getenv("REDIS_URL"), "rediss://") {
 		opt.TLSConfig = &tls.Config{
@@ -473,8 +472,7 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	authClient, err := container.FirebaseApp().Auth(context.Background())
 	if err != nil {
-		msg := "cannot initialize firebase auth client"
-		container.logger.Fatal(stacktrace.Propagate(err, msg))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase auth client"))
 	}
 	return authClient
 }
@@ -553,8 +551,7 @@ func (container *Container) FCMClient() services.FCMClient {
 	container.logger.Debug("creating FirebaseFCMClient")
 	messagingClient, err := container.FirebaseApp().Messaging(context.Background())
 	if err != nil {
-		msg := "cannot initialize firebase messaging client"
-		container.logger.Fatal(stacktrace.Propagate(err, msg))
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase messaging client"))
 	}
 	return services.NewFirebaseFCMClient(messagingClient)
 }

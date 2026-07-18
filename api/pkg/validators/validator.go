@@ -2,6 +2,7 @@ package validators
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -188,7 +189,7 @@ func validateAttachmentURL(ctx context.Context, c cache.Cache, attachmentURL str
 		if cachedVal == "valid" {
 			return nil
 		}
-		return fmt.Errorf(cachedVal)
+		return errors.New(cachedVal)
 	}
 
 	client := &http.Client{
@@ -197,23 +198,23 @@ func validateAttachmentURL(ctx context.Context, c cache.Cache, attachmentURL str
 
 	req, err := http.NewRequest(http.MethodHead, attachmentURL, nil)
 	if err != nil {
-		errMsg := fmt.Sprintf("invalid url format")
+		errMsg := "invalid url format"
 		saveToCache(ctx, c, cacheKey, errMsg)
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		errMsg := fmt.Sprintf("could not reach the url")
+		errMsg := "could not reach the url"
 		saveToCache(ctx, c, cacheKey, errMsg)
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		errMsg := fmt.Sprintf("url returned an error status code: %d", resp.StatusCode)
 		saveToCache(ctx, c, cacheKey, errMsg)
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 
 	const maxSizeBytes = 1.5 * 1024 * 1024
@@ -221,7 +222,7 @@ func validateAttachmentURL(ctx context.Context, c cache.Cache, attachmentURL str
 	if resp.ContentLength > int64(maxSizeBytes) {
 		errMsg := fmt.Sprintf("file size (%.2f MB) exceeds the 1.5 MB carrier limit", float64(resp.ContentLength)/(1024*1024))
 		saveToCache(ctx, c, cacheKey, errMsg)
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 
 	saveToCache(ctx, c, cacheKey, "valid")
