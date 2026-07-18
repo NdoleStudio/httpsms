@@ -53,6 +53,7 @@ The API's Firebase SDK is configured (via `FCM_ENDPOINT` env var) to redirect al
 
 - [x] **Send SMS E2E** — Full send lifecycle: API → FCM push → emulator responds with SENT/DELIVERED events → message reaches `delivered` status
 - [x] **Receive SMS E2E** — Phone submits received message to API → message is stored and retrievable via GET endpoint
+- [x] **Message thread read receipts E2E** — Incoming SMS and missed calls mark a thread unread, the existing thread update endpoint marks it read, and outbound activity preserves unread state
 
 ## Prerequisites
 
