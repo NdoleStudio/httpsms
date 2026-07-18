@@ -13,7 +13,6 @@ SECURITY_AUDIT_REPORT.md
 
 *.exe
 
-docs/
 .output
 .agents/
 skills-lock.json

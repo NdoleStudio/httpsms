@@ -1693,8 +1693,8 @@ onMounted(async () => {
                   class="mt-4"
                   color="primary"
                   density="compact"
-                  label="Unarchive thread on new message"
-                  hint="When a new message is received, move an archived conversation back to the inbox"
+                  label="Unarchive Threads Automatically"
+                  hint="When a new message is received, on an archived conversation change it back to the unarchived state"
                   persistent-hint
                 />
               </VCol>
