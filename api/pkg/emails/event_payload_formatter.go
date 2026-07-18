@@ -23,6 +23,7 @@ func formatEventPayload(payload string) (string, template.HTML) {
 		content = highlightEventPayloadJSON(formattedPayload)
 	}
 
+	// Every payload token is escaped before this trusted wrapper is constructed.
 	richPayload := template.HTML(`<pre style="` + eventPayloadCodeBlockStyle + `">` + content + `</pre>`)
 	return formattedPayload, richPayload
 }
@@ -52,6 +53,7 @@ func highlightEventPayloadJSON(payload string) string {
 			index = end
 		case payload[index] == '-' || isEventPayloadDigit(payload[index]):
 			end := index + 1
+			// json.Indent already validated this as JSON, so this continuation set only sees JSON number bytes.
 			for end < len(payload) && isEventPayloadNumberCharacter(payload[end]) {
 				end++
 			}

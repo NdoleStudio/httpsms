@@ -128,7 +128,7 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		return nil, stacktrace.Propagate(err, "cannot generate text email")
 	}
 	// Hermes/html2text collapses dictionary whitespace, so restore the payload after plain-text generation.
-	text = strings.Replace(text, webhookSendFailedEventPayloadPlaceholder, formattedPayload, 1)
+	text = replaceWebhookSendFailedEventPayloadPlaceholder(text, formattedPayload)
 
 	return &Email{
 		ToEmail: user.Email,
@@ -136,6 +136,15 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		HTML:    html,
 		Text:    text,
 	}, nil
+}
+
+func replaceWebhookSendFailedEventPayloadPlaceholder(text string, formattedPayload string) string {
+	before, after, found := strings.Cut(text, webhookSendFailedEventPayloadPlaceholder)
+	if !found {
+		return text
+	}
+
+	return before + formattedPayload + after
 }
 
 func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.User, payload *events.MessageSendExpiredPayload) (*Email, error) {

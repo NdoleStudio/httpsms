@@ -56,3 +56,58 @@ func TestFormatEventPayloadPreservesInvalidJSONWithoutHighlighting(t *testing.T)
 	assert.NotContains(t, html, `<span style="color:`)
 	assert.Equal(t, 1, strings.Count(html, `<pre style=`))
 }
+
+func TestFormatEventPayloadHandlesTopLevelPayloadShapes(t *testing.T) {
+	tests := []struct {
+		name                string
+		payload             string
+		wantPlain           string
+		wantHTMLContains    []string
+		wantHTMLNotContains []string
+	}{
+		{
+			name:                "empty payload falls back to unhighlighted block",
+			payload:             "",
+			wantPlain:           "",
+			wantHTMLContains:    []string{`<pre style="`, `</pre>`},
+			wantHTMLNotContains: []string{`<span style="color:`},
+		},
+		{
+			name:                "top-level number stays valid JSON",
+			payload:             "42",
+			wantPlain:           "42",
+			wantHTMLContains:    []string{`<span style="color:#953800;">42</span>`},
+			wantHTMLNotContains: []string{`color:#0550AE`},
+		},
+		{
+			name:      "json array stays readable and escaped",
+			payload:   `[{"message":"<b>safe</b>"},true,null,3]`,
+			wantPlain: "[\n  {\n    \"message\": \"<b>safe</b>\"\n  },\n  true,\n  null,\n  3\n]",
+			wantHTMLContains: []string{
+				"[\n  {",
+				`&#34;message&#34;`,
+				`&lt;b&gt;safe&lt;/b&gt;`,
+				`<span style="color:#953800;">3</span>`,
+			},
+			wantHTMLNotContains: []string{`<b>safe</b>`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plain, rich := formatEventPayload(tt.payload)
+			html := string(rich)
+
+			assert.Equal(t, tt.wantPlain, plain)
+			assert.Equal(t, 1, strings.Count(html, `<pre style=`))
+
+			for _, want := range tt.wantHTMLContains {
+				assert.Contains(t, html, want)
+			}
+
+			for _, unwanted := range tt.wantHTMLNotContains {
+				assert.NotContains(t, html, unwanted)
+			}
+		})
+	}
+}
