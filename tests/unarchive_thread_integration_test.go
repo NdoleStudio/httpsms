@@ -54,6 +54,9 @@ func setUnarchiveThread(ctx context.Context, t *testing.T, phoneNumber string, e
 }
 
 // receiveInbound submits an inbound message as the phone and returns the message ID.
+// The phone-to-API-key association is applied asynchronously after setupPhone (via
+// the phone_api_key event listener), so a freshly provisioned phone can briefly return
+// 401 until the auth cache clears. Retry on that transient authorization failure.
 func receiveInbound(ctx context.Context, t *testing.T, phoneAPIKey, from, to, content string, ts time.Time) string {
 	t.Helper()
 
@@ -67,18 +70,29 @@ func receiveInbound(ctx context.Context, t *testing.T, phoneAPIKey, from, to, co
 	body, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBaseURL+"/v1/messages/receive", bytes.NewReader(body))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", phoneAPIKey)
+	var respBody []byte
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBaseURL+"/v1/messages/receive", bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", phoneAPIKey)
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		respBody, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		require.NoError(t, err)
 
-	respBody, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode, "receive failed: %s", string(respBody))
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+		if resp.StatusCode == http.StatusUnauthorized && time.Now().Before(deadline) {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+		require.Equal(t, http.StatusOK, resp.StatusCode, "receive failed: %s", string(respBody))
+	}
 
 	var result httpsms.MessageResponse
 	require.NoError(t, json.Unmarshal(respBody, &result))
