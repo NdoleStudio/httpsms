@@ -13,13 +13,14 @@ const EventTypeMessagePhoneReceived = "message.phone.received"
 
 // MessagePhoneReceivedPayload is the payload of the EventTypeMessagePhoneReceived event
 type MessagePhoneReceivedPayload struct {
-	MessageID   uuid.UUID       `json:"message_id"`
-	UserID      entities.UserID `json:"user_id"`
-	Owner       string          `json:"owner"`
-	Encrypted   bool            `json:"encrypted"`
-	Contact     string          `json:"contact"`
-	Timestamp   time.Time       `json:"timestamp"`
-	Content     string          `json:"content"`
-	SIM         entities.SIM    `json:"sim"`
-	Attachments []string        `json:"attachments"`
+	MessageID       uuid.UUID       `json:"message_id"`
+	UserID          entities.UserID `json:"user_id"`
+	Owner           string          `json:"owner"`
+	Encrypted       bool            `json:"encrypted"`
+	Contact         string          `json:"contact"`
+	Timestamp       time.Time       `json:"timestamp"`
+	Content         string          `json:"content"`
+	SIM             entities.SIM    `json:"sim"`
+	Attachments     []string        `json:"attachments"`
+	UnarchiveThread bool            `json:"unarchive_thread"`
 }
