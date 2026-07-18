@@ -44,7 +44,7 @@ type MessageThreadRepository interface {
 	UpdateActivity(ctx context.Context, params MessageThreadActivityUpdate) error
 
 	// UpdateStatus persists archive/read status fields for a thread
-	UpdateStatus(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID, params MessageThreadStatusUpdate) error
+	UpdateStatus(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID, params MessageThreadStatusUpdate) (*entities.MessageThread, error)
 
 	// LoadByOwnerContact fetches a thread between owner and contact
 	LoadByOwnerContact(ctx context.Context, userID entities.UserID, owner string, contact string) (*entities.MessageThread, error)

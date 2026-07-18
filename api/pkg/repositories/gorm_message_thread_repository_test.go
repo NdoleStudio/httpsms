@@ -116,11 +116,27 @@ func TestMessageThreadActivityUpdatesOwnOnlyMessageColumns(t *testing.T) {
 		"order_timestamp":      time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC),
 		"last_message_id":      messageID,
 		"last_message_content": "hello",
-		"status":               entities.MessageStatusReceived,
+		"status":               entities.MessageStatus(entities.MessageStatusReceived),
 	}, updates)
 	assert.NotContains(t, updates, "is_read")
 	assert.NotContains(t, updates, "is_archived")
 	assert.NotContains(t, updates, "last_read_at")
+}
+
+func TestMessageThreadDeletedUpdatesPreserveStatusType(t *testing.T) {
+	messageID := uuid.New()
+	content := "previous message"
+	updates := messageThreadDeletedUpdates(MessageThreadDeletedUpdate{
+		LastMessageID:      &messageID,
+		LastMessageContent: &content,
+		LastMessageStatus:  entities.MessageStatusDelivered,
+	})
+
+	assert.Equal(t, map[string]any{
+		"last_message_id":      &messageID,
+		"last_message_content": &content,
+		"status":               entities.MessageStatus(entities.MessageStatusDelivered),
+	}, updates)
 }
 
 func TestMessageThreadStatusUpdatesReadOnly(t *testing.T) {

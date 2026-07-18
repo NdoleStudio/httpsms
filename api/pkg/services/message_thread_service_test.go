@@ -20,7 +20,7 @@ type messageThreadRepositoryStub struct {
 	load               func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error)
 	store              func(context.Context, *entities.MessageThread) error
 	updateActivity     func(context.Context, repositories.MessageThreadActivityUpdate) error
-	updateStatus       func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error
+	updateStatus       func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error)
 }
 
 func (stub *messageThreadRepositoryStub) Store(ctx context.Context, thread *entities.MessageThread) error {
@@ -37,11 +37,11 @@ func (stub *messageThreadRepositoryStub) UpdateActivity(ctx context.Context, par
 	return nil
 }
 
-func (stub *messageThreadRepositoryStub) UpdateStatus(ctx context.Context, userID entities.UserID, threadID uuid.UUID, params repositories.MessageThreadStatusUpdate) error {
+func (stub *messageThreadRepositoryStub) UpdateStatus(ctx context.Context, userID entities.UserID, threadID uuid.UUID, params repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
 	if stub.updateStatus != nil {
 		return stub.updateStatus(ctx, userID, threadID, params)
 	}
-	return nil
+	return &entities.MessageThread{ID: threadID}, nil
 }
 
 func (stub *messageThreadRepositoryStub) UpdateAfterDeletedMessage(context.Context, repositories.MessageThreadDeletedUpdate) error {
@@ -181,16 +181,10 @@ func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	threadID := uuid.New()
 	isRead := false
 	var captured repositories.MessageThreadStatusUpdate
-	var calls []string
 	repository := &messageThreadRepositoryStub{
-		updateStatus: func(_ context.Context, _ entities.UserID, _ uuid.UUID, params repositories.MessageThreadStatusUpdate) error {
-			calls = append(calls, "update")
+		updateStatus: func(_ context.Context, _ entities.UserID, _ uuid.UUID, params repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
 			captured = params
-			return nil
-		},
-		load: func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
-			calls = append(calls, "load")
-			return &entities.MessageThread{ID: threadID, IsArchived: true, IsRead: true}, nil
+			return &entities.MessageThread{ID: threadID, IsArchived: true, IsRead: false}, nil
 		},
 	}
 
@@ -207,16 +201,12 @@ func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	assert.False(t, captured.ReadAt.IsZero())
 	assert.True(t, thread.IsArchived)
 	assert.False(t, thread.IsRead)
-	assert.Equal(t, []string{"load", "update"}, calls)
 }
 
 func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 	repository := &messageThreadRepositoryStub{
-		load: func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
-			return &entities.MessageThread{ID: uuid.New()}, nil
-		},
-		updateStatus: func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
-			return stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+		updateStatus: func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
+			return nil, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 		},
 	}
 

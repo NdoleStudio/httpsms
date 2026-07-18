@@ -33,8 +33,8 @@ func (stub *messageThreadHandlerRepositoryStub) UpdateActivity(context.Context, 
 	return nil
 }
 
-func (stub *messageThreadHandlerRepositoryStub) UpdateStatus(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
-	return stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+func (stub *messageThreadHandlerRepositoryStub) UpdateStatus(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
+	return nil, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 }
 
 func (stub *messageThreadHandlerRepositoryStub) LoadByOwnerContact(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {

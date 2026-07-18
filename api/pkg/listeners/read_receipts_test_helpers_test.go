@@ -36,8 +36,8 @@ func (repository *listenerMessageThreadRepository) UpdateActivity(_ context.Cont
 	return nil
 }
 
-func (repository *listenerMessageThreadRepository) UpdateStatus(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
-	return nil
+func (repository *listenerMessageThreadRepository) UpdateStatus(_ context.Context, _ entities.UserID, threadID uuid.UUID, _ repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
+	return &entities.MessageThread{ID: threadID}, nil
 }
 
 func (repository *listenerMessageThreadRepository) UpdateAfterDeletedMessage(context.Context, repositories.MessageThreadDeletedUpdate) error {

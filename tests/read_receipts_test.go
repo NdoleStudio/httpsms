@@ -158,6 +158,9 @@ func TestMessageThreadReadReceipts(t *testing.T) {
 
 	updated := markMessageThreadRead(ctx, t, thread.ID)
 	assert.True(t, updated.IsRead)
+	assert.Equal(t, contact, updated.Contact)
+	require.NotNil(t, updated.LastMessageContent)
+	assert.Equal(t, "Unread inbound message", *updated.LastMessageContent)
 	waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 10*time.Second, func(thread integrationMessageThread) bool {
 		return thread.IsRead
 	})

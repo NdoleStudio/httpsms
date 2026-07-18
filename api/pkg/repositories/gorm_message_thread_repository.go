@@ -40,12 +40,20 @@ func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string
 		"order_timestamp":      params.Timestamp,
 		"last_message_id":      params.MessageID,
 		"last_message_content": params.Content,
-		"status":               string(params.Status),
+		"status":               params.Status,
 	}
 	if params.Unarchive {
 		updates["is_archived"] = false
 	}
 	return updates
+}
+
+func messageThreadDeletedUpdates(params MessageThreadDeletedUpdate) map[string]any {
+	return map[string]any{
+		"last_message_id":      params.LastMessageID,
+		"last_message_content": params.LastMessageContent,
+		"status":               params.LastMessageStatus,
+	}
 }
 
 func messageThreadStatusUpdates(params MessageThreadStatusUpdate) map[string]any {
@@ -95,11 +103,7 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 		Model(&entities.MessageThread{}).
 		Where("user_id = ?", params.UserID).
 		Where("id = ?", params.MessageThreadID).
-		Updates(map[string]any{
-			"last_message_id":      params.LastMessageID,
-			"last_message_content": params.LastMessageContent,
-			"status":               string(params.LastMessageStatus),
-		})
+		Updates(messageThreadDeletedUpdates(params))
 	if result.Error != nil {
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update deleted-message metadata for thread [%s]", params.MessageThreadID))
 	}
@@ -183,23 +187,25 @@ func (repository *gormMessageThreadRepository) UpdateStatus(
 	userID entities.UserID,
 	messageThreadID uuid.UUID,
 	params MessageThreadStatusUpdate,
-) error {
+) (*entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
+	thread := new(entities.MessageThread)
 	result := repository.db.WithContext(ctx).
-		Model(&entities.MessageThread{}).
+		Model(thread).
+		Clauses(clause.Returning{}).
 		Where("user_id = ?", userID).
 		Where("id = ?", messageThreadID).
 		Updates(messageThreadStatusUpdates(params))
 	if result.Error != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update status for thread [%s]", messageThreadID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update status for thread [%s]", messageThreadID))
 	}
 	if result.RowsAffected == 0 {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found", messageThreadID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found", messageThreadID))
 	}
 
-	return nil
+	return thread, nil
 }
 
 // LoadByOwnerContact a thread between 2 users
