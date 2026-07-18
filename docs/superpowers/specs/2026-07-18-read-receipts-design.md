@@ -250,6 +250,23 @@ pnpm lint
 pnpm run generate
 ```
 
+### Integration
+
+Add `tests/read_receipts_test.go` to exercise the feature against the Docker
+integration stack:
+
+- an inbound SMS creates or updates an unread thread;
+- marking the thread read through the existing update endpoint persists;
+- a missed call makes the thread unread again;
+- subsequent outbound activity does not clear that unread state.
+
+Update `tests/README.md` coverage and run:
+
+```bash
+cd tests
+go test -v -timeout 120s -run TestMessageThreadReadReceipts ./...
+```
+
 Manual acceptance checks:
 
 1. Existing threads appear read immediately after migration.

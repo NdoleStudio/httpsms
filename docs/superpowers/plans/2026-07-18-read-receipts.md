@@ -26,6 +26,7 @@
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 ```
+- Add end-to-end coverage in the existing `tests/` integration project.
 
 ## File Structure
 
@@ -52,6 +53,8 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 - `web/app/stores/threads.ts`: automatic read update and local state replacement.
 - `web/app/pages/threads/[id]/index.vue`: non-blocking read calls and missed-call realtime refresh.
 - `web/app/components/MessageThread.vue`: unread visual treatment.
+- `tests/read_receipts_test.go`: Docker-stack read/unread lifecycle coverage.
+- `tests/README.md`: integration coverage documentation.
 
 ---
 
@@ -1171,10 +1174,14 @@ Expected: `api/docs/docs.go`, `api/docs/swagger.json`, and `api/docs/swagger.yam
 Run:
 
 ```powershell
-go test ./...
+go test -vet=off ./pkg/entities ./pkg/repositories ./pkg/requests ./pkg/services ./pkg/validators ./pkg/listeners
+go test -vet=off ./pkg/handlers -run '^$'
 ```
 
-Expected: PASS.
+Expected: PASS. Vet is disabled because clean `origin/main` has unrelated Go
+1.25 non-constant-format vet failures. Handler tests are compile-checked only
+because the pre-existing suite expects an API server on `localhost:8000`; Task
+7 provides the HTTP integration coverage against the Docker stack.
 
 - [ ] **Step 4: Commit HTTP and documentation changes**
 
@@ -1399,7 +1406,268 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 '@ | git commit -F -
 ```
 
-### Task 7: Verify the complete feature
+### Task 7: Add integration coverage
+
+**Files:**
+- Create: `tests/read_receipts_test.go`
+- Modify: `tests/README.md`
+
+**Interfaces:**
+- Consumes: thread index and update HTTP endpoints from Tasks 1-4.
+- Consumes: incoming SMS, missed-call, and outbound message flows from Task 3.
+- Produces: `TestMessageThreadReadReceipts`.
+
+- [ ] **Step 1: Write the end-to-end read-receipts test**
+
+Create `tests/read_receipts_test.go`:
+
+```go
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"testing"
+	"time"
+
+	httpsms "github.com/NdoleStudio/httpsms-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type integrationMessageThread struct {
+	ID                 string  `json:"id"`
+	Contact            string  `json:"contact"`
+	IsRead             bool    `json:"is_read"`
+	LastMessageContent *string `json:"last_message_content"`
+}
+
+func requestJSON(
+	ctx context.Context,
+	t *testing.T,
+	method string,
+	path string,
+	apiKey string,
+	payload any,
+	expectedStatus int,
+	output any,
+) {
+	t.Helper()
+
+	var body io.Reader
+	if payload != nil {
+		encoded, err := json.Marshal(payload)
+		require.NoError(t, err)
+		body = bytes.NewReader(encoded)
+	}
+
+	request, err := http.NewRequestWithContext(ctx, method, apiBaseURL+path, body)
+	require.NoError(t, err)
+	request.Header.Set("x-api-key", apiKey)
+	request.Header.Set("Content-Type", "application/json")
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+	require.Equal(t, expectedStatus, response.StatusCode, "response: %s", string(responseBody))
+
+	if output != nil {
+		require.NoError(t, json.Unmarshal(responseBody, output))
+	}
+}
+
+func fetchMessageThreads(ctx context.Context, t *testing.T, owner string) []integrationMessageThread {
+	t.Helper()
+
+	var response struct {
+		Data []integrationMessageThread `json:"data"`
+	}
+	path := fmt.Sprintf(
+		"/v1/message-threads?owner=%s&skip=0&limit=20&is_archived=false",
+		url.QueryEscape(owner),
+	)
+	requestJSON(ctx, t, http.MethodGet, path, userAPIKey, nil, http.StatusOK, &response)
+	return response.Data
+}
+
+func waitForMessageThread(
+	ctx context.Context,
+	t *testing.T,
+	owner string,
+	contact string,
+	timeout time.Duration,
+	matches func(integrationMessageThread) bool,
+) integrationMessageThread {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		for _, thread := range fetchMessageThreads(ctx, t, owner) {
+			if thread.Contact == contact && matches(thread) {
+				return thread
+			}
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	t.Fatalf("thread %s -> %s did not reach the expected state within %v", owner, contact, timeout)
+	return integrationMessageThread{}
+}
+
+func markMessageThreadRead(ctx context.Context, t *testing.T, threadID string) integrationMessageThread {
+	t.Helper()
+
+	var response struct {
+		Data integrationMessageThread `json:"data"`
+	}
+	requestJSON(
+		ctx,
+		t,
+		http.MethodPut,
+		"/v1/message-threads/"+threadID,
+		userAPIKey,
+		map[string]any{"is_read": true},
+		http.StatusOK,
+		&response,
+	)
+	return response.Data
+}
+
+func TestMessageThreadReadReceipts(t *testing.T) {
+	ctx := context.Background()
+	phone := setupPhone(ctx, t, 60)
+	contact := randomPhoneNumber()
+
+	requestJSON(
+		ctx,
+		t,
+		http.MethodPost,
+		"/v1/messages/receive",
+		phone.PhoneAPIKey,
+		map[string]any{
+			"from":      contact,
+			"to":        phone.PhoneNumber,
+			"content":   "Unread inbound message",
+			"encrypted": false,
+			"sim":       "SIM1",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		},
+		http.StatusOK,
+		nil,
+	)
+
+	thread := waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+		return !thread.IsRead
+	})
+	assert.False(t, thread.IsRead)
+
+	updated := markMessageThreadRead(ctx, t, thread.ID)
+	assert.True(t, updated.IsRead)
+	waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 10*time.Second, func(thread integrationMessageThread) bool {
+		return thread.IsRead
+	})
+
+	requestJSON(
+		ctx,
+		t,
+		http.MethodPost,
+		"/v1/messages/calls/missed",
+		phone.PhoneAPIKey,
+		map[string]any{
+			"from":      contact,
+			"to":        phone.PhoneNumber,
+			"sim":       "SIM1",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		},
+		http.StatusOK,
+		nil,
+	)
+
+	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+		return !thread.IsRead &&
+			thread.LastMessageContent != nil &&
+			*thread.LastMessageContent == "Missed phone call"
+	})
+	assert.False(t, thread.IsRead)
+
+	outboundContent := "Outbound activity preserves unread"
+	client := newAPIClient()
+	_, response, err := client.Messages.Send(ctx, &httpsms.MessageSendParams{
+		From:    phone.PhoneNumber,
+		To:      contact,
+		Content: outboundContent,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode)
+
+	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+		return thread.LastMessageContent != nil &&
+			*thread.LastMessageContent == outboundContent
+	})
+	assert.False(t, thread.IsRead, "outbound activity must not clear unread state")
+}
+```
+
+- [ ] **Step 2: Run the test before implementation is complete**
+
+With the Docker integration stack running, execute:
+
+```powershell
+Set-Location 'C:\Users\achoa\Work\NdoleStudio\httpsms-read-receipts\tests'
+go test -v -timeout 120s -run TestMessageThreadReadReceipts ./...
+```
+
+Expected before the feature implementation: FAIL because thread responses do not expose/persist `is_read`.
+
+- [ ] **Step 3: Update integration-test documentation**
+
+Add to the Test Coverage checklist in `tests/README.md`:
+
+```markdown
+- [x] **Message thread read receipts E2E** — Incoming SMS and missed calls mark a thread unread, the existing thread update endpoint marks it read, and outbound activity preserves unread state
+```
+
+- [ ] **Step 4: Run the integration test against the completed stack**
+
+Generate credentials, start the Docker stack, run the focused test, and tear down:
+
+```powershell
+Set-Location 'C:\Users\achoa\Work\NdoleStudio\httpsms-read-receipts\tests'
+& 'C:\Program Files\Git\bin\bash.exe' generate-firebase-credentials.sh
+$env:FIREBASE_CREDENTIALS = (Get-Content firebase-credentials.json -Raw | ConvertFrom-Json | ConvertTo-Json -Compress)
+docker compose up -d --build --wait
+docker compose wait seed
+Start-Sleep -Seconds 2
+try {
+  go test -v -timeout 120s -run TestMessageThreadReadReceipts ./...
+} finally {
+  docker compose down -v
+}
+```
+
+Expected: PASS.
+
+- [ ] **Step 5: Commit integration coverage**
+
+```powershell
+git add tests/read_receipts_test.go tests/README.md
+@'
+test: cover message thread read receipts
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
+'@ | git commit -F -
+```
+
+### Task 8: Verify the complete feature
 
 **Files:**
 - Review: all files changed since `origin/main`
@@ -1414,8 +1682,9 @@ Run:
 
 ```powershell
 Set-Location 'C:\Users\achoa\Work\NdoleStudio\httpsms-read-receipts\api'
-go-fumpt -w pkg/entities/message_thread.go pkg/entities/message_thread_test.go pkg/repositories/message_thread_repository.go pkg/repositories/gorm_message_thread_repository.go pkg/repositories/gorm_message_thread_repository_test.go pkg/services/message_thread_service.go pkg/services/message_thread_service_test.go pkg/requests/message_thread_update_request.go pkg/requests/message_thread_update_request_test.go pkg/validators/message_thread_handler_validator.go pkg/validators/message_thread_handler_validator_test.go pkg/responses/message_thead_responses.go pkg/handlers/message_thread_handler.go pkg/listeners/message_thread_listener.go pkg/listeners/message_thread_listener_test.go pkg/listeners/websocket_listener.go pkg/listeners/websocket_listener_test.go
-go test ./...
+go-fumpt -w pkg/entities/message_thread.go pkg/entities/message_thread_test.go pkg/repositories/message_thread_repository.go pkg/repositories/gorm_message_thread_repository.go pkg/repositories/gorm_message_thread_repository_test.go pkg/services/message_thread_service.go pkg/services/message_thread_service_test.go pkg/requests/message_thread_update_request.go pkg/requests/message_thread_update_request_test.go pkg/validators/message_thread_handler_validator.go pkg/validators/message_thread_handler_validator_test.go pkg/responses/message_thead_responses.go pkg/handlers/message_thread_handler.go pkg/listeners/message_thread_listener.go pkg/listeners/read_receipts_test_helpers_test.go pkg/listeners/message_thread_listener_test.go pkg/listeners/websocket_listener.go pkg/listeners/websocket_listener_test.go
+go test -vet=off ./pkg/entities ./pkg/repositories ./pkg/requests ./pkg/services ./pkg/validators ./pkg/listeners
+go test -vet=off ./pkg/handlers -run '^$'
 ```
 
 Expected: formatting completes and all API tests PASS.
