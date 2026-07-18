@@ -21,6 +21,7 @@ type MessageThreadService struct {
 	logger          telemetry.Logger
 	tracer          telemetry.Tracer
 	repository      repositories.MessageThreadRepository
+	phoneRepository repositories.PhoneRepository
 	eventDispatcher *EventDispatcher
 }
 
@@ -29,6 +30,7 @@ func NewMessageThreadService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	repository repositories.MessageThreadRepository,
+	phoneRepository repositories.PhoneRepository,
 	eventDispatcher *EventDispatcher,
 ) (s *MessageThreadService) {
 	return &MessageThreadService{
@@ -36,26 +38,27 @@ func NewMessageThreadService(
 		tracer:          tracer,
 		eventDispatcher: eventDispatcher,
 		repository:      repository,
+		phoneRepository: phoneRepository,
 	}
 }
 
 // MessageThreadUpdateParams are parameters for updating a thread
 type MessageThreadUpdateParams struct {
-	Owner           string
-	Status          entities.MessageStatus
-	Contact         string
-	Content         string
-	UserID          entities.UserID
-	MessageID       uuid.UUID
-	Timestamp       time.Time
-	UnarchiveThread bool
+	Owner     string
+	Status    entities.MessageStatus
+	Contact   string
+	Content   string
+	UserID    entities.UserID
+	MessageID uuid.UUID
+	Timestamp time.Time
 }
 
-// shouldUnarchive reports whether an archived thread should be moved back to
-// the inbox because a new inbound message was received and the phone has the
-// UnarchiveThread setting enabled.
-func (service *MessageThreadService) shouldUnarchive(thread *entities.MessageThread, params MessageThreadUpdateParams) bool {
-	return thread.IsArchived && params.UnarchiveThread && params.Status == entities.MessageStatusReceived
+// shouldCheckUnarchive reports whether a thread update is a new inbound message
+// landing on an archived thread. Only in that case is the phone's
+// UnarchiveThread setting consulted, so the phone is not loaded on the common
+// path where the thread is not archived.
+func (service *MessageThreadService) shouldCheckUnarchive(thread *entities.MessageThread, params MessageThreadUpdateParams) bool {
+	return thread.IsArchived && params.Status == entities.MessageStatusReceived
 }
 
 // DeleteAllForUser deletes all entities.MessageThread for an entities.UserID.
@@ -100,9 +103,14 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return nil
 	}
 
-	if service.shouldUnarchive(thread, params) {
-		thread.UpdateArchive(false)
-		ctxLogger.Info(fmt.Sprintf("unarchiving thread [%s] after inbound message [%s]", thread.ID, params.MessageID))
+	if service.shouldCheckUnarchive(thread, params) {
+		phone, phoneErr := service.phoneRepository.Load(ctx, params.UserID, params.Owner)
+		if phoneErr != nil {
+			ctxLogger.Warn(stacktrace.Propagate(phoneErr, "cannot load phone [%s] for user [%s] to resolve UnarchiveThread; leaving thread [%s] archived", params.Owner, params.UserID, thread.ID))
+		} else if phone.UnarchiveThread {
+			thread.UpdateArchive(false)
+			ctxLogger.Info(fmt.Sprintf("unarchiving thread [%s] after inbound message [%s]", thread.ID, params.MessageID))
+		}
 	}
 
 	if err = service.repository.Update(ctx, thread.Update(params.Timestamp, params.MessageID, params.Content, params.Status)); err != nil {

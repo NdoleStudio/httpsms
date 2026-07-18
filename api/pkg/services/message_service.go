@@ -348,25 +348,16 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 
 	owner := phonenumbers.Format(&params.Owner, phonenumbers.E164)
 
-	unarchiveThread := false
-	phone, err := service.phoneService.Load(ctx, params.UserID, owner)
-	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot load phone [%s] for user [%s] to resolve UnarchiveThread; defaulting to false", owner, params.UserID))
-	} else {
-		unarchiveThread = phone.UnarchiveThread
-	}
-
 	eventPayload := events.MessagePhoneReceivedPayload{
-		MessageID:       messageID,
-		UserID:          params.UserID,
-		Encrypted:       params.Encrypted,
-		Owner:           owner,
-		Contact:         params.Contact,
-		Timestamp:       params.Timestamp,
-		Content:         params.Content,
-		SIM:             params.SIM,
-		Attachments:     attachmentURLs,
-		UnarchiveThread: unarchiveThread,
+		MessageID:   messageID,
+		UserID:      params.UserID,
+		Encrypted:   params.Encrypted,
+		Owner:       owner,
+		Contact:     params.Contact,
+		Timestamp:   params.Timestamp,
+		Content:     params.Content,
+		SIM:         params.SIM,
+		Attachments: attachmentURLs,
 	}
 
 	ctxLogger.Info(fmt.Sprintf("creating cloud event for received with ID [%s]", eventPayload.MessageID))

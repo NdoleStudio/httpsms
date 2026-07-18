@@ -222,14 +222,13 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
-		Owner:           payload.Owner,
-		Contact:         payload.Contact,
-		Timestamp:       payload.Timestamp,
-		UserID:          payload.UserID,
-		Status:          entities.MessageStatusReceived,
-		Content:         payload.Content,
-		MessageID:       payload.MessageID,
-		UnarchiveThread: payload.UnarchiveThread,
+		Owner:     payload.Owner,
+		Contact:   payload.Contact,
+		Timestamp: payload.Timestamp,
+		UserID:    payload.UserID,
+		Status:    entities.MessageStatusReceived,
+		Content:   payload.Content,
+		MessageID: payload.MessageID,
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
