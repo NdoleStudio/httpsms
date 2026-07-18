@@ -52,8 +52,7 @@ func (service *LemonsqueezyService) GetUserID(ctx context.Context, request *lemo
 	ctxLogger.Info(fmt.Sprintf("user_id not found in request meta data. Searching via email [%s]", request.Data.Attributes.UserEmail))
 	user, err := service.userRepository.LoadByEmail(ctx, request.Data.Attributes.UserEmail)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with email [%s]", request.Data.Attributes.UserEmail)
-		return "", service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return "", service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with email [%s]", request.Data.Attributes.UserEmail))
 	}
 
 	return user.ID, nil
@@ -66,8 +65,7 @@ func (service *LemonsqueezyService) HandleSubscriptionCreatedEvent(ctx context.C
 
 	userID, err := service.GetUserID(ctx, request)
 	if err != nil {
-		msg := fmt.Sprintf("cannot get user ID for subscription created event with ID [%s]", request.Data.ID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot get user ID for subscription created event with ID [%s]", request.Data.ID)
 	}
 
 	payload := &events.UserSubscriptionCreatedPayload{
@@ -81,13 +79,11 @@ func (service *LemonsqueezyService) HandleSubscriptionCreatedEvent(ctx context.C
 
 	event, err := service.createEvent(events.UserSubscriptionCreated, source, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot create [%s] event for user [%s]", events.UserSubscriptionCreated, payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot create [%s] event for user [%s]", events.UserSubscriptionCreated, payload.UserID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", events.UserSubscriptionCreated, payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot dispatch [%s] event for user [%s]", events.UserSubscriptionCreated, payload.UserID)
 	}
 	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] created for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
 	return nil
@@ -100,8 +96,7 @@ func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.
 
 	user, err := service.userRepository.LoadBySubscriptionID(ctx, request.Data.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", request.Data.ID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot load user with subscription ID [%s]", request.Data.ID)
 	}
 
 	payload := &events.UserSubscriptionCancelledPayload{
@@ -115,13 +110,11 @@ func (service *LemonsqueezyService) HandleSubscriptionCanceledEvent(ctx context.
 
 	event, err := service.createEvent(events.UserSubscriptionCancelled, source, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot created [%s] event for user [%s]", events.UserSubscriptionCancelled, payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot created [%s] event for user [%s]", events.UserSubscriptionCancelled, payload.UserID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", events.UserSubscriptionCancelled, payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot dispatch [%s] event for user [%s]", events.UserSubscriptionCancelled, payload.UserID)
 	}
 	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] cancelled for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
 	return nil
@@ -139,8 +132,7 @@ func (service *LemonsqueezyService) HandleSubscriptionUpdatedEvent(ctx context.C
 
 	user, err := service.userRepository.LoadBySubscriptionID(ctx, request.Data.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", request.Data.ID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot load user with subscription ID [%s]", request.Data.ID)
 	}
 
 	payload := &events.UserSubscriptionUpdatedPayload{
@@ -155,13 +147,11 @@ func (service *LemonsqueezyService) HandleSubscriptionUpdatedEvent(ctx context.C
 
 	event, err := service.createEvent(events.UserSubscriptionUpdated, source, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot created [%s] event for user [%s]", events.UserSubscriptionUpdated, payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot created [%s] event for user [%s]", events.UserSubscriptionUpdated, payload.UserID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot dispatch [%s] event for user [%s]", event.Type(), payload.UserID)
 	}
 	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] updated for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
 	return nil
@@ -174,8 +164,7 @@ func (service *LemonsqueezyService) HandleSubscriptionExpiredEvent(ctx context.C
 
 	user, err := service.userRepository.LoadBySubscriptionID(ctx, request.Data.ID)
 	if err != nil {
-		msg := fmt.Sprintf("cannot load user with subscription ID [%s]", request.Data.ID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot load user with subscription ID [%s]", request.Data.ID)
 	}
 
 	payload := &events.UserSubscriptionExpiredPayload{
@@ -190,13 +179,11 @@ func (service *LemonsqueezyService) HandleSubscriptionExpiredEvent(ctx context.C
 
 	event, err := service.createEvent(events.UserSubscriptionExpired, source, payload)
 	if err != nil {
-		msg := fmt.Sprintf("cannot created [%s] event for user [%s]", events.UserSubscriptionExpired, payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot created [%s] event for user [%s]", events.UserSubscriptionExpired, payload.UserID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), payload.UserID)
-		return stacktrace.Propagate(err, msg)
+		return stacktrace.Propagate(err, "cannot dispatch [%s] event for user [%s]", event.Type(), payload.UserID)
 	}
 	ctxLogger.Info(fmt.Sprintf("[%s] subscription [%s] expired for user [%s]", payload.SubscriptionName, payload.SubscriptionID, payload.UserID))
 	return nil
@@ -242,6 +229,6 @@ func (service *LemonsqueezyService) subscriptionName(variant string) entities.Su
 		}
 	}
 
-	service.logger.Warn(stacktrace.NewError(fmt.Sprintf("unknown subscription variant [%s], defaulting to free", variant)))
+	service.logger.Warn(stacktrace.NewError("unknown subscription variant [%s], defaulting to free", variant))
 	return entities.SubscriptionNameFree
 }

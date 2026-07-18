@@ -74,21 +74,18 @@ func (h *PhoneHandler) Index(c fiber.Ctx) error {
 
 	var request requests.PhoneIndex
 	if err := c.Bind().Query(&request); err != nil {
-		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateIndex(ctx, request.Sanitize()); len(errors) != 0 {
-		msg := fmt.Sprintf("validation errors [%s], while fetching phones [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while fetching phones [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching phones")
 	}
 
 	phones, err := h.service.Index(ctx, h.userFromContext(c), request.ToIndexParams())
 	if err != nil {
-		msg := fmt.Sprintf("cannot index phones with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot index phones with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -117,21 +114,18 @@ func (h *PhoneHandler) Upsert(c fiber.Ctx) error {
 
 	var request requests.PhoneUpsert
 	if err := c.Bind().Body(&request); err != nil {
-		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateUpsert(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
-		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
 	phone, err := h.service.Upsert(ctx, request.ToUpsertParams(h.userFromContext(c), c.OriginalURL(), c.Body()))
 	if err != nil {
-		msg := fmt.Sprintf("cannot update phones with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot update phones with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -160,8 +154,7 @@ func (h *PhoneHandler) Delete(c fiber.Ctx) error {
 
 	request := requests.PhoneDelete{PhoneID: c.Params("phoneID")}
 	if errors := h.validator.ValidateDelete(ctx, request); len(errors) != 0 {
-		msg := fmt.Sprintf("validation errors [%s], while deleting phone [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while deleting phone [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting phone")
 	}
 
@@ -170,8 +163,7 @@ func (h *PhoneHandler) Delete(c fiber.Ctx) error {
 		return h.responseNotFound(c, fmt.Sprintf("cannot find phone with ID [%s]", request.PhoneID))
 	}
 	if err != nil {
-		msg := fmt.Sprintf("cannot delete phones with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete phones with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -200,21 +192,18 @@ func (h *PhoneHandler) UpsertFCMToken(c fiber.Ctx) error {
 
 	var request requests.PhoneFCMToken
 	if err := c.Bind().Body(&request); err != nil {
-		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateFCMToken(ctx, request.Sanitize()); len(errors) != 0 {
-		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
 	phone, err := h.service.UpsertFCMToken(ctx, request.ToPhoneFCMTokenParams(h.userFromContext(c), c.OriginalURL()))
 	if err != nil {
-		msg := fmt.Sprintf("cannot delete phones with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete phones with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 

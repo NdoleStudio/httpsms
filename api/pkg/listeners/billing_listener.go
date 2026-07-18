@@ -46,13 +46,11 @@ func (listener *BillingListener) OnMessageAPISent(ctx context.Context, event clo
 
 	var payload events.MessageAPISentPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.RegisterSentMessage(ctx, payload.MessageID, payload.RequestReceivedAt, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot register sent message for event [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot register sent message for event [%s] for event with ID [%s]", spew.Sdump(payload), event.ID()))
 	}
 
 	return nil
@@ -65,13 +63,11 @@ func (listener *BillingListener) OnMessagePhoneReceived(ctx context.Context, eve
 
 	var payload events.MessagePhoneReceivedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.RegisterReceivedMessage(ctx, payload.MessageID, payload.Timestamp, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot register received message for event [%s] for event with ID [%s]", spew.Sdump(payload), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot register received message for event [%s] for event with ID [%s]", spew.Sdump(payload), event.ID()))
 	}
 
 	return nil
@@ -83,13 +79,11 @@ func (listener *BillingListener) onUserAccountDeleted(ctx context.Context, event
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		msg := fmt.Sprintf("cannot delete [entities.BillingUsage] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.BillingUsage] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

@@ -23,7 +23,7 @@ func formatEventPayload(payload string) (string, template.HTML) {
 		content = highlightEventPayloadJSON(formattedPayload)
 	}
 
-	// Every payload token is escaped before this trusted wrapper is constructed.
+	// #nosec G203 -- every dynamic payload token is escaped before the static wrapper is added.
 	richPayload := template.HTML(`<pre style="` + eventPayloadCodeBlockStyle + `">` + content + `</pre>`)
 	return formattedPayload, richPayload
 }

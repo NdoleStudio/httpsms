@@ -50,6 +50,7 @@ func TestWebhookSendFailedFormatsOnlyEventPayload(t *testing.T) {
 	assert.Contains(t, email.Text, `"retry": false`)
 	assert.NotContains(t, email.Text, "<pre")
 	assert.NotContains(t, email.Text, webhookSendFailedEventPayloadPlaceholder)
+	assert.NotContains(t, email.HTML, webhookSendFailedEventPayloadPlaceholder)
 }
 
 func TestWebhookSendFailedPreservesNonJSONEventPayload(t *testing.T) {
@@ -74,6 +75,24 @@ func TestWebhookSendFailedPreservesNonJSONEventPayload(t *testing.T) {
 	assert.Contains(t, email.HTML, "line one\n  line two")
 	assert.NotContains(t, email.HTML, `<span style="color:`)
 	assert.Contains(t, email.Text, "line one\n  line two")
+}
+
+func TestGenerateWebhookSendFailedPlainTextFallsBackToFormattedPayload(t *testing.T) {
+	formattedPayload := "{\n  \"message\": \"hello\"\n}"
+	values := make([]string, 0, 2)
+	generate := func(value string) (string, error) {
+		values = append(values, value)
+		if len(values) == 1 {
+			return "plain text without the placeholder", nil
+		}
+		return value, nil
+	}
+
+	text, err := generateWebhookSendFailedPlainText(generate, formattedPayload)
+
+	require.NoError(t, err)
+	assert.Equal(t, formattedPayload, text)
+	assert.Equal(t, []string{webhookSendFailedEventPayloadPlaceholder, formattedPayload}, values)
 }
 
 func TestReplaceWebhookSendFailedEventPayloadPlaceholder(t *testing.T) {

@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -31,7 +30,7 @@ func (cache *memoryCache) Get(ctx context.Context, key string) (value string, er
 
 	response, ok := cache.store.Get(key)
 	if !ok {
-		return "", stacktrace.NewError(fmt.Sprintf("no item found in cache with key [%s]", key))
+		return "", stacktrace.NewError("no item found in cache with key [%s]", key)
 	}
 
 	return response.(string), nil

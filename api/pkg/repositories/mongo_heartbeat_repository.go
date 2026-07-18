@@ -42,8 +42,7 @@ func (repository *mongoHeartbeatRepository) Store(ctx context.Context, heartbeat
 
 	_, err := repository.collection.InsertOne(ctx, heartbeat)
 	if err != nil {
-		msg := fmt.Sprintf("cannot save heartbeat with ID [%s]", heartbeat.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save heartbeat with ID [%s]", heartbeat.ID))
 	}
 
 	return nil
@@ -57,30 +56,28 @@ func (repository *mongoHeartbeatRepository) Index(ctx context.Context, userID en
 	defer cancel()
 
 	filter := bson.D{
-		{"user_id", string(userID)},
-		{"owner", owner},
+		{Key: "user_id", Value: string(userID)},
+		{Key: "owner", Value: owner},
 	}
 
 	if len(params.Query) > 0 {
-		filter = append(filter, bson.E{"version", bson.D{{"$regex", params.Query}, {"$options", "i"}}})
+		filter = append(filter, bson.E{Key: "version", Value: bson.D{{Key: "$regex", Value: params.Query}, {Key: "$options", Value: "i"}}})
 	}
 
 	opts := options.Find().
-		SetSort(bson.D{{"timestamp", -1}}).
+		SetSort(bson.D{{Key: "timestamp", Value: -1}}).
 		SetSkip(int64(params.Skip)).
 		SetLimit(int64(params.Limit))
 
 	cursor, err := repository.collection.Find(ctx, filter, opts)
 	if err != nil {
-		msg := fmt.Sprintf("cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params))
 	}
 	defer cursor.Close(ctx)
 
 	var heartbeats []entities.Heartbeat
 	if err = cursor.All(ctx, &heartbeats); err != nil {
-		msg := fmt.Sprintf("cannot decode heartbeats for owner [%s]", owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode heartbeats for owner [%s]", owner))
 	}
 
 	if heartbeats == nil {
@@ -98,21 +95,19 @@ func (repository *mongoHeartbeatRepository) Last(ctx context.Context, userID ent
 	defer cancel()
 
 	filter := bson.D{
-		{"user_id", string(userID)},
-		{"owner", owner},
+		{Key: "user_id", Value: string(userID)},
+		{Key: "owner", Value: owner},
 	}
 
-	opts := options.FindOne().SetSort(bson.D{{"timestamp", -1}})
+	opts := options.FindOne().SetSort(bson.D{{Key: "timestamp", Value: -1}})
 
 	var heartbeat entities.Heartbeat
 	err := repository.collection.FindOne(ctx, filter, opts).Decode(&heartbeat)
 	if err == mongo.ErrNoDocuments {
-		msg := fmt.Sprintf("heartbeat with userID [%s] and owner [%s] does not exist", userID, owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "heartbeat with userID [%s] and owner [%s] does not exist", userID, owner))
 	}
 	if err != nil {
-		msg := fmt.Sprintf("cannot load heartbeat with userID [%s] and owner [%s]", userID, owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load heartbeat with userID [%s] and owner [%s]", userID, owner))
 	}
 
 	return &heartbeat, nil
@@ -125,10 +120,9 @@ func (repository *mongoHeartbeatRepository) DeleteAllForUser(ctx context.Context
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
-	_, err := repository.collection.DeleteMany(ctx, bson.D{{"user_id", string(userID)}})
+	_, err := repository.collection.DeleteMany(ctx, bson.D{{Key: "user_id", Value: string(userID)}})
 	if err != nil {
-		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.Heartbeat{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.Heartbeat{}, userID))
 	}
 
 	return nil

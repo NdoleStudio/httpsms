@@ -123,12 +123,14 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		return nil, stacktrace.Propagate(err, "cannot generate html email")
 	}
 
-	text, err := factory.generator.GeneratePlainText(email)
+	eventPayloadEntryIndex := len(email.Body.Dictionary) - 1
+	text, err := generateWebhookSendFailedPlainText(func(value string) (string, error) {
+		email.Body.Dictionary[eventPayloadEntryIndex].Value = value
+		return factory.generator.GeneratePlainText(email)
+	}, formattedPayload)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "cannot generate text email")
 	}
-	// Hermes/html2text collapses dictionary whitespace, so restore the payload after plain-text generation.
-	text = replaceWebhookSendFailedEventPayloadPlaceholder(text, formattedPayload)
 
 	return &Email{
 		ToEmail: user.Email,
@@ -136,6 +138,21 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		HTML:    html,
 		Text:    text,
 	}, nil
+}
+
+func generateWebhookSendFailedPlainText(generate func(string) (string, error), formattedPayload string) (string, error) {
+	text, err := generate(webhookSendFailedEventPayloadPlaceholder)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(text, webhookSendFailedEventPayloadPlaceholder) {
+		// Hermes/html2text collapses dictionary whitespace, so restore the payload after plain-text generation.
+		return replaceWebhookSendFailedEventPayloadPlaceholder(text, formattedPayload), nil
+	}
+
+	// Preserve the real payload if a Hermes change stops carrying the placeholder through unchanged.
+	return generate(formattedPayload)
 }
 
 func replaceWebhookSendFailedEventPayloadPlaceholder(text string, formattedPayload string) string {
