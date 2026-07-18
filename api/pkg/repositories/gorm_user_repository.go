@@ -196,7 +196,7 @@ func (repository *gormUserRepository) Load(ctx context.Context, userID entities.
 	user := new(entities.User)
 	err := repository.db.WithContext(ctx).First(user, userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with ID [%s] does not exist", user.ID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "user with ID [%s] does not exist", userID))
 	}
 
 	if err != nil {

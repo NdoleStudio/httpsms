@@ -74,7 +74,7 @@ func (h *Integration3CXHandler) Messages(c fiber.Ctx) error {
 	request.Sanitize()
 	message, err := h.messageService.SendMessage(ctx, request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot send [3cx] message with paylod [%s]", c.Body()))
+		ctxLogger.Error(stacktrace.Propagate(err, "cannot send [3cx] message with payload [%s]", c.Body()))
 		return h.responseInternalServerError(c)
 	}
 

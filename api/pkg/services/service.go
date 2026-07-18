@@ -30,9 +30,11 @@ func (service *service) createEvent(eventType string, source string, payload any
 }
 
 func (service *service) getFormattedNumber(ctxLogger telemetry.Logger, phoneNumber string) string {
-	matched, err := regexp.MatchString("^\\+?[1-9]\\d{9,14}$", phoneNumber)
+	const phoneNumberPattern = "^\\+?[1-9]\\d{9,14}$"
+
+	matched, err := regexp.MatchString(phoneNumberPattern, phoneNumber)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "error while matching phoneNumber [%s] with regex [%s]", phoneNumber, "^\\+?[1-9]\\d{10,14}$"))
+		ctxLogger.Error(stacktrace.Propagate(err, "error while matching phoneNumber [%s] with regex [%s]", phoneNumber, phoneNumberPattern))
 		return phoneNumber
 	}
 	if !matched {

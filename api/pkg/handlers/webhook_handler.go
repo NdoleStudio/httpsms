@@ -159,7 +159,7 @@ func (h *WebhookHandler) Store(c fiber.Ctx) error {
 	}
 
 	if len(webhooks) == 10 {
-		ctxLogger.Warn(stacktrace.NewError("user with ID [%s] wants to create more than 5 webhooks", h.userIDFomContext(c)))
+		ctxLogger.Warn(stacktrace.NewError("user with ID [%s] wants to create more than 10 webhooks", h.userIDFomContext(c)))
 		return h.responsePaymentRequired(c, "You can't create more than 10 webhooks contact us to upgrade to our enterprise plan.")
 	}
 
