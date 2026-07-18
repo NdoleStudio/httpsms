@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -28,6 +29,8 @@ type integrationThread struct {
 func setUnarchiveThread(ctx context.Context, t *testing.T, phoneNumber string, enabled bool) {
 	t.Helper()
 
+	// sim is required by PUT /v1/phones validation, so it must be sent; setupPhone
+	// always provisions the test phone on SIM1, so this preserves the existing slot.
 	payload := map[string]interface{}{
 		"phone_number":     phoneNumber,
 		"sim":              "SIM1",
@@ -88,8 +91,8 @@ func receiveInbound(ctx context.Context, t *testing.T, phoneAPIKey, from, to, co
 func fetchThreads(ctx context.Context, t *testing.T, owner string, archived bool) []integrationThread {
 	t.Helper()
 
-	url := fmt.Sprintf("%s/v1/message-threads?owner=%s&is_archived=%t&limit=20", apiBaseURL, owner, archived)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	reqURL := fmt.Sprintf("%s/v1/message-threads?owner=%s&is_archived=%t&limit=20", apiBaseURL, url.QueryEscape(owner), archived)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	require.NoError(t, err)
 	req.Header.Set("x-api-key", userAPIKey)
 

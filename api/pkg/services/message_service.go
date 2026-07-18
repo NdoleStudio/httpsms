@@ -351,7 +351,7 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 	unarchiveThread := false
 	phone, err := service.phoneService.Load(ctx, params.UserID, owner)
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, fmt.Sprintf("cannot load phone [%s] for user [%s] to resolve UnarchiveThread; defaulting to false", owner, params.UserID)))
+		ctxLogger.Warn(stacktrace.Propagate(err, "cannot load phone [%s] for user [%s] to resolve UnarchiveThread; defaulting to false", owner, params.UserID))
 	} else {
 		unarchiveThread = phone.UnarchiveThread
 	}
