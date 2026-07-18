@@ -83,8 +83,14 @@ export const useThreadsStore = defineStore('threads', () => {
       method: 'PUT',
       body: { is_archived: payload.isArchived },
     })
-    archivedThreads.value = payload.isArchived
-    await loadThreads()
+    threads.value = threads.value.filter(
+      (thread) => thread.id !== payload.threadId,
+    )
+    threadId.value = null
+    notificationsStore.addNotification({
+      message: payload.isArchived ? 'Archived' : 'Unarchived',
+      type: 'success',
+    })
   }
 
   async function deleteThread(id: string) {
