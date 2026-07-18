@@ -18,6 +18,7 @@ type MessageThreadActivityUpdate struct {
 	Status          entities.MessageStatus
 	MarksUnread     bool
 	EventTimestamp  time.Time
+	Unarchive       bool
 }
 
 type MessageThreadStatusUpdate struct {

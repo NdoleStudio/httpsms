@@ -2,6 +2,7 @@ package emails
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
@@ -16,6 +17,8 @@ type hermesNotificationEmailFactory struct {
 	config    *HermesGeneratorConfig
 	generator hermes.Hermes
 }
+
+const webhookSendFailedEventPayloadPlaceholder = "__HTTPSMS_WEBHOOK_SEND_FAILED_EVENT_PAYLOAD__"
 
 // NewHermesNotificationEmailFactory creates a new instance of the UserEmailFactory
 func NewHermesNotificationEmailFactory(config *HermesGeneratorConfig) NotificationEmailFactory {
@@ -76,6 +79,8 @@ func (factory *hermesNotificationEmailFactory) DiscordSendFailed(user *entities.
 }
 
 func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.User, payload *events.WebhookSendFailedPayload) (*Email, error) {
+	formattedPayload, formattedPayloadHTML := formatEventPayload(payload.EventPayload)
+
 	email := hermes.Email{
 		Body: hermes.Body{
 			Title: "Hello",
@@ -89,7 +94,11 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 				{Key: "Phone Number", Value: factory.formatPhoneNumber(payload.Owner)},
 				{Key: "HTTP Response Code", Value: factory.formatHTTPResponseCode(payload.HTTPResponseStatusCode)},
 				{Key: "Error Message / HTTP Response", Value: payload.ErrorMessage},
-				{Key: "Event Payload", Value: payload.EventPayload},
+				{
+					Key:         "Event Payload",
+					Value:       webhookSendFailedEventPayloadPlaceholder,
+					UnsafeValue: formattedPayloadHTML,
+				},
 			},
 			Actions: []hermes.Action{
 				{
@@ -118,6 +127,8 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "cannot generate text email")
 	}
+	// Hermes/html2text collapses dictionary whitespace, so restore the payload after plain-text generation.
+	text = replaceWebhookSendFailedEventPayloadPlaceholder(text, formattedPayload)
 
 	return &Email{
 		ToEmail: user.Email,
@@ -125,6 +136,15 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		HTML:    html,
 		Text:    text,
 	}, nil
+}
+
+func replaceWebhookSendFailedEventPayloadPlaceholder(text string, formattedPayload string) string {
+	before, after, found := strings.Cut(text, webhookSendFailedEventPayloadPlaceholder)
+	if !found {
+		return text
+	}
+
+	return before + formattedPayload + after
 }
 
 func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.User, payload *events.MessageSendExpiredPayload) (*Email, error) {

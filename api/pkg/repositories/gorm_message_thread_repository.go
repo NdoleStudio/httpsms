@@ -36,12 +36,16 @@ func NewGormMessageThreadRepository(
 }
 
 func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string]any {
-	return map[string]any{
+	updates := map[string]any{
 		"order_timestamp":      params.Timestamp,
 		"last_message_id":      params.MessageID,
 		"last_message_content": params.Content,
 		"status":               string(params.Status),
 	}
+	if params.Unarchive {
+		updates["is_archived"] = false
+	}
+	return updates
 }
 
 func messageThreadStatusUpdates(params MessageThreadStatusUpdate) map[string]any {

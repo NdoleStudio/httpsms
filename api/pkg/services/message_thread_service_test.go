@@ -72,7 +72,7 @@ func (stub *messageThreadRepositoryStub) DeleteAllForUser(context.Context, entit
 func newMessageThreadServiceForTest(repository repositories.MessageThreadRepository) *MessageThreadService {
 	logger := &noopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	return NewMessageThreadService(logger, tracer, repository, nil)
+	return NewMessageThreadService(logger, tracer, repository, nil, nil)
 }
 
 func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {
@@ -221,4 +221,19 @@ func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 	})
 
 	assert.Equal(t, repositories.ErrCodeNotFound, stacktrace.GetCode(err))
+}
+
+func TestShouldCheckUnarchive(t *testing.T) {
+	service := &MessageThreadService{}
+
+	archived := &entities.MessageThread{IsArchived: true}
+	notArchived := &entities.MessageThread{IsArchived: false}
+
+	received := MessageThreadUpdateParams{Status: entities.MessageStatusReceived}
+	sent := MessageThreadUpdateParams{Status: entities.MessageStatusSent}
+
+	assert.True(t, service.shouldCheckUnarchive(archived, received), "archived + inbound -> consult phone setting")
+	assert.False(t, service.shouldCheckUnarchive(archived, sent), "outbound status -> no check")
+	assert.False(t, service.shouldCheckUnarchive(notArchived, received), "already unarchived -> no check")
+	assert.False(t, service.shouldCheckUnarchive(notArchived, sent), "not archived + outbound -> no check")
 }

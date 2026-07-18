@@ -346,11 +346,13 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 	}
 
+	owner := phonenumbers.Format(&params.Owner, phonenumbers.E164)
+
 	eventPayload := events.MessagePhoneReceivedPayload{
 		MessageID:   messageID,
 		UserID:      params.UserID,
 		Encrypted:   params.Encrypted,
-		Owner:       phonenumbers.Format(&params.Owner, phonenumbers.E164),
+		Owner:       owner,
 		Contact:     params.Contact,
 		Timestamp:   params.Timestamp,
 		Content:     params.Content,

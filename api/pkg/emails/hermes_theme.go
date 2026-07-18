@@ -327,7 +327,7 @@ func (dt *hermesTheme) HTMLTemplate() string {
                           <dl class="body-dictionary">
                             {{ range $entry := . }}
                               <dt>{{ $entry.Key }}:</dt>
-                              <dd>{{ $entry.Value }}</dd>
+                              <dd>{{ if $entry.UnsafeValue }}{{ $entry.UnsafeValue }}{{ else }}{{ $entry.Value }}{{ end }}</dd>
                             {{ end }}
                           </dl>
                         {{ end }}

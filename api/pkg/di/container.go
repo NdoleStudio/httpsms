@@ -1111,6 +1111,7 @@ func (container *Container) MessageThreadService() (service *services.MessageThr
 		container.Logger(),
 		container.Tracer(),
 		container.MessageThreadRepository(),
+		container.PhoneRepository(),
 		container.EventDispatcher(),
 	)
 }

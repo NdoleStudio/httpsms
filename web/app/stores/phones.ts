@@ -60,6 +60,7 @@ export const usePhonesStore = defineStore('phones', () => {
           max_send_attempts: parseInt(phone.max_send_attempts.toString()),
           messages_per_minute: parseInt(phone.messages_per_minute.toString()),
           message_send_schedule_id: phone.message_send_schedule_id ?? null,
+          unarchive_thread: phone.unarchive_thread ?? false,
         },
       })
       notificationsStore.addNotification({

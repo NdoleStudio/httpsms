@@ -94,6 +94,7 @@ function onInstallApp() {
       <v-list-item
         v-for="thread in threadsStore.threads"
         :key="thread.id"
+        color="primary"
         :to="{ name: 'threads-id', params: { id: thread.id } }"
         :active="threadsStore.threadId === thread.id"
         :class="{ 'message-thread--unread': !thread.is_read }"

@@ -265,7 +265,7 @@ func (h *MessageHandler) Index(c fiber.Ctx) error {
 
 	messages, err := h.service.GetMessages(ctx, request.ToGetParams(h.userIDFomContext(c)))
 	if err != nil {
-		msg := fmt.Sprintf("cannot get messgaes with params [%+#v]", request)
+		msg := fmt.Sprintf("cannot get messages with params [%+#v]", request)
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}
@@ -383,7 +383,7 @@ func (h *MessageHandler) PostReceive(c fiber.Ctx) error {
 
 	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
-		msg := fmt.Sprintf("cannot receive message with paylod [%s]", c.Body())
+		msg := fmt.Sprintf("cannot receive message with payload [%s]", c.Body())
 		ctxLogger.Error(stacktrace.Propagate(err, msg))
 		return h.responseInternalServerError(c)
 	}

@@ -21,6 +21,7 @@ type MessageThreadService struct {
 	logger          telemetry.Logger
 	tracer          telemetry.Tracer
 	repository      repositories.MessageThreadRepository
+	phoneRepository repositories.PhoneRepository
 	eventDispatcher *EventDispatcher
 }
 
@@ -29,6 +30,7 @@ func NewMessageThreadService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	repository repositories.MessageThreadRepository,
+	phoneRepository repositories.PhoneRepository,
 	eventDispatcher *EventDispatcher,
 ) (s *MessageThreadService) {
 	return &MessageThreadService{
@@ -36,6 +38,7 @@ func NewMessageThreadService(
 		tracer:          tracer,
 		eventDispatcher: eventDispatcher,
 		repository:      repository,
+		phoneRepository: phoneRepository,
 	}
 }
 
@@ -50,6 +53,14 @@ type MessageThreadUpdateParams struct {
 	Timestamp      time.Time
 	MarksUnread    bool
 	EventTimestamp time.Time
+}
+
+// shouldCheckUnarchive reports whether a thread update is a new inbound message
+// landing on an archived thread. Only in that case is the phone's
+// UnarchiveThread setting consulted, so the phone is not loaded on the common
+// path where the thread is not archived.
+func (service *MessageThreadService) shouldCheckUnarchive(thread *entities.MessageThread, params MessageThreadUpdateParams) bool {
+	return thread.IsArchived && params.Status == entities.MessageStatusReceived
 }
 
 // DeleteAllForUser deletes all entities.MessageThread for an entities.UserID.
@@ -94,7 +105,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return nil
 	}
 
-	if err = service.repository.UpdateActivity(ctx, repositories.MessageThreadActivityUpdate{
+	activity := repositories.MessageThreadActivityUpdate{
 		MessageThreadID: thread.ID,
 		UserID:          params.UserID,
 		Timestamp:       params.Timestamp,
@@ -103,7 +114,19 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		Status:          params.Status,
 		MarksUnread:     params.MarksUnread,
 		EventTimestamp:  params.EventTimestamp,
-	}); err != nil {
+	}
+
+	if service.shouldCheckUnarchive(thread, params) {
+		phone, phoneErr := service.phoneRepository.Load(ctx, params.UserID, params.Owner)
+		if phoneErr != nil {
+			ctxLogger.Warn(stacktrace.Propagate(phoneErr, fmt.Sprintf("cannot load phone [%s] for user [%s] to resolve UnarchiveThread; leaving thread [%s] archived", params.Owner, params.UserID, thread.ID)))
+		} else if phone.UnarchiveThread {
+			activity.Unarchive = true
+			ctxLogger.Info(fmt.Sprintf("unarchiving thread [%s] after inbound message [%s]", thread.ID, params.MessageID))
+		}
+	}
+
+	if err = service.repository.UpdateActivity(ctx, activity); err != nil {
 		msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
 		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 	}

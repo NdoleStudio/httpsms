@@ -3771,6 +3771,7 @@ const docTemplate = `{
                 "messages_per_minute",
                 "phone_number",
                 "sim",
+                "unarchive_thread",
                 "updated_at",
                 "user_id"
             ],
@@ -3814,6 +3815,11 @@ const docTemplate = `{
                 },
                 "sim": {
                     "$ref": "#/definitions/entities.SIM"
+                },
+                "unarchive_thread": {
+                    "description": "UnarchiveThread moves an archived message thread back to the inbox when a new message is received on this phone.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "updated_at": {
                     "type": "string",
@@ -4448,7 +4454,8 @@ const docTemplate = `{
                 "messages_per_minute",
                 "missed_call_auto_reply",
                 "phone_number",
-                "sim"
+                "sim",
+                "unarchive_thread"
             ],
             "properties": {
                 "fcm_token": {
@@ -4485,6 +4492,11 @@ const docTemplate = `{
                     "description": "SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot",
                     "type": "string",
                     "example": "SIM1"
+                },
+                "unarchive_thread": {
+                    "description": "UnarchiveThread moves an archived thread back to the inbox when a new message is received on this phone.",
+                    "type": "boolean",
+                    "example": false
                 }
             }
         },

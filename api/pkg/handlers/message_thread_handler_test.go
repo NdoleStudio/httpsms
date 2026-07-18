@@ -64,7 +64,7 @@ func (stub *messageThreadHandlerRepositoryStub) DeleteAllForUser(context.Context
 func TestMessageThreadHandlerUpdate_ReturnsNotFoundWhenThreadIsMissing(t *testing.T) {
 	logger := &messageThreadHandlerNoopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	service := services.NewMessageThreadService(logger, tracer, &messageThreadHandlerRepositoryStub{}, nil)
+	service := services.NewMessageThreadService(logger, tracer, &messageThreadHandlerRepositoryStub{}, nil, nil)
 	handler := NewMessageThreadHandler(logger, tracer, validators.NewMessageThreadHandlerValidator(logger, tracer), service)
 
 	app := fiber.New()
@@ -94,7 +94,7 @@ type messageThreadHandlerNoopLogger struct{}
 
 var _ telemetry.Logger = (*messageThreadHandlerNoopLogger)(nil)
 
-func (logger *messageThreadHandlerNoopLogger) Error(_ error) {}
+func (logger *messageThreadHandlerNoopLogger) Error(_ error)                         {}
 func (logger *messageThreadHandlerNoopLogger) WithService(_ string) telemetry.Logger { return logger }
 
 func (logger *messageThreadHandlerNoopLogger) WithString(_, _ string) telemetry.Logger { return logger }
