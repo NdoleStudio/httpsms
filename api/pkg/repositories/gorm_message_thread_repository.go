@@ -35,6 +35,29 @@ func NewGormMessageThreadRepository(
 	}
 }
 
+func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string]any {
+	return map[string]any{
+		"order_timestamp":      params.Timestamp,
+		"last_message_id":      params.MessageID,
+		"last_message_content": params.Content,
+		"status":               string(params.Status),
+	}
+}
+
+func messageThreadStatusUpdates(params MessageThreadStatusUpdate) map[string]any {
+	updates := make(map[string]any)
+	if params.IsArchived != nil {
+		updates["is_archived"] = *params.IsArchived
+	}
+	if params.IsRead != nil {
+		updates["is_read"] = *params.IsRead
+		if *params.IsRead {
+			updates["last_read_at"] = params.ReadAt
+		}
+	}
+	return updates
+}
+
 func (repository *gormMessageThreadRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
@@ -62,21 +85,22 @@ func (repository *gormMessageThreadRepository) Delete(ctx context.Context, userI
 }
 
 // UpdateAfterDeletedMessage updates a thread after the original message has been deleted
-func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx context.Context, params MessageThreadDeletedUpdate) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := repository.db.WithContext(ctx).Model(&entities.MessageThread{}).
-		Where("user_id = ?", userID).
-		Where("last_message_id = ?", messageID).
+	result := repository.db.WithContext(ctx).
+		Model(&entities.MessageThread{}).
+		Where("user_id = ?", params.UserID).
+		Where("id = ?", params.MessageThreadID).
 		Updates(map[string]any{
-			"last_message_id":      nil,
-			"last_message_content": nil,
-			"status":               entities.MessageStatusDeleted,
-		}).Error
-	if err != nil {
-		msg := fmt.Sprintf("cannot update thread after message is deleted with userID [%s] and messageID [%s]", userID, messageID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+			"last_message_id":      params.LastMessageID,
+			"last_message_content": params.LastMessageContent,
+			"status":               string(params.LastMessageStatus),
+		})
+	if result.Error != nil {
+		msg := fmt.Sprintf("cannot update deleted-message metadata for thread [%s]", params.MessageThreadID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, msg))
 	}
 
 	return nil
@@ -95,14 +119,69 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 	return nil
 }
 
-// Update a new entities.MessageThread
-func (repository *gormMessageThreadRepository) Update(ctx context.Context, thread *entities.MessageThread) error {
+// UpdateActivity persists the last-message activity fields for a thread
+func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Context, params MessageThreadActivityUpdate) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.WithContext(ctx).Save(thread).Error; err != nil {
-		msg := fmt.Sprintf("cannot update message thread thread with ID [%s]", thread.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		query := tx.Model(&entities.MessageThread{}).
+			Where("user_id = ?", params.UserID).
+			Where("id = ?", params.MessageThreadID)
+
+		result := query.Updates(messageThreadActivityUpdates(params))
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stacktrace.PropagateWithCode(
+				gorm.ErrRecordNotFound,
+				ErrCodeNotFound,
+				fmt.Sprintf("thread with id [%s] not found", params.MessageThreadID),
+			)
+		}
+
+		if !params.MarksUnread {
+			return nil
+		}
+
+		return tx.Model(&entities.MessageThread{}).
+			Where("user_id = ?", params.UserID).
+			Where("id = ?", params.MessageThreadID).
+			Where("last_read_at < ?", params.EventTimestamp).
+			Update("is_read", false).
+			Error
+	})
+	if err != nil {
+		msg := fmt.Sprintf("cannot update message activity for thread [%s]", params.MessageThreadID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+	}
+
+	return nil
+}
+
+// UpdateStatus persists archive/read status fields for a thread
+func (repository *gormMessageThreadRepository) UpdateStatus(
+	ctx context.Context,
+	userID entities.UserID,
+	messageThreadID uuid.UUID,
+	params MessageThreadStatusUpdate,
+) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	result := repository.db.WithContext(ctx).
+		Model(&entities.MessageThread{}).
+		Where("user_id = ?", userID).
+		Where("id = ?", messageThreadID).
+		Updates(messageThreadStatusUpdates(params))
+	if result.Error != nil {
+		msg := fmt.Sprintf("cannot update status for thread [%s]", messageThreadID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, msg))
+	}
+	if result.RowsAffected == 0 {
+		msg := fmt.Sprintf("thread with id [%s] not found", messageThreadID)
+		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, msg))
 	}
 
 	return nil
