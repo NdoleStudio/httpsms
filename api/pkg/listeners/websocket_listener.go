@@ -36,7 +36,25 @@ func NewWebsocketListener(
 		events.EventTypeMessagePhoneSent:     l.onMessagePhoneSent,
 		events.EventTypeMessageSendFailed:    l.onMessagePhoneFailed,
 		events.EventTypeMessagePhoneReceived: l.onMessagePhoneReceived,
+		events.MessageCallMissed:             l.onMessageCallMissed,
 	}
+}
+
+func (listener *WebsocketListener) onMessageCallMissed(ctx context.Context, event cloudevents.Event) error {
+	ctx, span, _ := listener.tracer.StartWithLogger(ctx, listener.logger)
+	defer span.End()
+
+	var payload events.MessageCallMissedPayload
+	if err := event.DataAs(&payload); err != nil {
+		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+
+	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
+		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+	}
+	return nil
 }
 
 // onMessagePhoneSent handles the events.EventTypeMessagePhoneSent event
