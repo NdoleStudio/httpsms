@@ -54,7 +54,7 @@ WHERE user_id = ? AND array_position(phone_ids, ?) IS NOT NULL;
 		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot remove phone with ID [%s] and number [%s] for user with ID [%s] ", phoneID, phoneNumber, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	repository.cache.Clear()
@@ -87,12 +87,12 @@ func (repository *gormPhoneAPIKeyRepository) Load(ctx context.Context, userID en
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", phoneAPIKeyID).First(&phoneAPIKey).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("[%T] with ID [%s] for user with ID [%s] does not exist", phoneAPIKey, phoneAPIKeyID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load [%T] with ID [%s] for user with ID [%s]", phoneAPIKey, phoneAPIKeyID, userID)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return phoneAPIKey, nil
@@ -104,7 +104,7 @@ func (repository *gormPhoneAPIKeyRepository) Create(ctx context.Context, phoneAP
 
 	if err := repository.db.WithContext(ctx).Create(phoneAPIKey).Error; err != nil {
 		msg := fmt.Sprintf("cannot save phone API key with ID [%s] for user with ID [%s]", phoneAPIKey.ID, phoneAPIKey.UserID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -122,12 +122,12 @@ func (repository *gormPhoneAPIKeyRepository) LoadAuthContext(ctx context.Context
 	err := repository.db.WithContext(ctx).Where("api_key = ?", apiKey).First(phoneAPIKey).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("phone api key [%s] does not exist", apiKey)
-		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load phone api key [%s]", apiKey)
-		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return entities.AuthContext{}, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	authUser := entities.AuthContext{
@@ -139,7 +139,7 @@ func (repository *gormPhoneAPIKeyRepository) LoadAuthContext(ctx context.Context
 
 	if result := repository.cache.SetWithTTL(apiKey, authUser, 1, 15*time.Second); !result {
 		msg := fmt.Sprintf("cannot cache [%T] with ID [%s] and result [%t]", authUser, phoneAPIKey.ID, result)
-		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError(msg)))
+		ctxLogger.Error(repository.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", msg)))
 	}
 
 	return authUser, nil
@@ -158,7 +158,7 @@ func (repository *gormPhoneAPIKeyRepository) Index(ctx context.Context, userID e
 	phoneAPIKeys := new([]*entities.PhoneAPIKey)
 	if err := query.Order("created_at DESC").Limit(params.Limit).Offset(params.Skip).Find(phoneAPIKeys).Error; err != nil {
 		msg := fmt.Sprintf("cannot fetch phone API Keys with userID [%s] and params [%+#v]", userID, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return *phoneAPIKeys, nil
@@ -171,7 +171,7 @@ func (repository *gormPhoneAPIKeyRepository) Delete(ctx context.Context, phoneAP
 	err := repository.db.WithContext(ctx).Delete(phoneAPIKey).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete phone API key with ID [%s] and userID [%s]", phoneAPIKey.ID, phoneAPIKey.UserID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	repository.cache.Del(phoneAPIKey.APIKey)
 
@@ -194,7 +194,7 @@ WHERE  user_id  = ?;
 			Error
 		if err != nil {
 			msg := fmt.Sprintf("cannot remove phone with ID [%s] from API Key with ID [%s] for user with ID [%s]", phone.ID, phoneAPIKey.ID, phone.UserID)
-			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 		}
 
 		query = `
@@ -208,14 +208,14 @@ WHERE array_position(phone_ids, ?) IS NULL AND id = ?;
 			Error
 		if err != nil {
 			msg := fmt.Sprintf("cannot add [%T] with ID [%s] from API Key with ID [%s] for user with ID [%s]", phone, phone.ID, phoneAPIKey.ID, phone.UserID)
-			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 		}
 
 		return nil
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot add [%T] with ID [%s] from API Key with ID [%s] for user with ID [%s]", phone, phone.ID, phoneAPIKey.ID, phone.UserID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	repository.cache.Clear()
 	return nil
@@ -236,7 +236,7 @@ WHERE id = ?;
 		Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot remove phone with ID [%s] from phone API key with ID [%s]", phone.ID, phoneAPIKey.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -248,7 +248,7 @@ func (repository *gormPhoneAPIKeyRepository) DeleteAllForUser(ctx context.Contex
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.PhoneAPIKey{}).Error; err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.PhoneAPIKey{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil

@@ -67,7 +67,7 @@ func (service *UserService) GetSubscriptionPayments(ctx context.Context, userID 
 	user, err := service.repository.Load(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, userID)
-		return invoices, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return invoices, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if user.SubscriptionID == nil {
@@ -79,7 +79,7 @@ func (service *UserService) GetSubscriptionPayments(ctx context.Context, userID 
 	invoicesResponse, _, err := service.lemonsqueezyClient.SubscriptionInvoices.List(ctx, map[string]string{"filter[subscription_id]": *user.SubscriptionID})
 	if err != nil {
 		msg := fmt.Sprintf("could not get invoices for subscription [%s] for [%T] with with ID [%s]", *user.SubscriptionID, user, user.ID)
-		return invoices, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return invoices, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] payments for [%T] with ID [%s] and subscription ID [%s]", len(invoicesResponse.Data), user, user.ID, *user.SubscriptionID))
@@ -118,13 +118,13 @@ func (service *UserService) GenerateReceipt(ctx context.Context, params *UserInv
 	invoice, _, err := service.lemonsqueezyClient.SubscriptionInvoices.Generate(ctx, params.SubscriptionInvoiceID, payload)
 	if err != nil {
 		msg := fmt.Sprintf("could not generate subscription payment invoice user with ID [%s] and subscription invoice ID [%s]", params.UserID, params.SubscriptionInvoiceID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	response, err := service.httpClient.Get(invoice.Meta.Urls.DownloadInvoice)
 	if err != nil {
 		msg := fmt.Sprintf("could not download subscription payment invoice for user with ID [%s] and subscription invoice ID [%s]", params.UserID, params.SubscriptionInvoiceID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("generated subscription payment invoice for user with ID [%s] and subscription invoice ID [%s]", params.UserID, params.SubscriptionInvoiceID))
@@ -139,7 +139,7 @@ func (service *UserService) Get(ctx context.Context, source string, authUser ent
 	user, isNew, err := service.repository.LoadOrStore(ctx, authUser)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with from [%+#v]", user, authUser)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if isNew {
@@ -159,13 +159,13 @@ func (service *UserService) dispatchUserCreatedEvent(ctx context.Context, source
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for user [%s]", events.UserAccountCreated, user.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), user.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return
 	}
 }
@@ -178,7 +178,7 @@ func (service *UserService) GetByID(ctx context.Context, userID entities.UserID)
 	user, err := service.repository.Load(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with ID [%s]", user, userID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return user, nil
@@ -200,7 +200,7 @@ func (service *UserService) Update(ctx context.Context, source string, authUser 
 	user, isNew, err := service.repository.LoadOrStore(ctx, authUser)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with from [%+#v]", user, authUser)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if isNew {
@@ -212,7 +212,7 @@ func (service *UserService) Update(ctx context.Context, source string, authUser 
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("cannot save user with id [%s]", user.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("user saved with id [%s] in the userRepository", user.ID))
@@ -235,7 +235,7 @@ func (service *UserService) UpdateNotificationSettings(ctx context.Context, user
 	user, err := service.repository.Load(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("could not load [%T] with ID [%s]", user, userID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	user.NotificationWebhookEnabled = params.WebhookEnabled
@@ -245,7 +245,7 @@ func (service *UserService) UpdateNotificationSettings(ctx context.Context, user
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("cannot save user with id [%s] in [%T]", user.ID, service.repository)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("updated notification settings for [%T] with ID [%s] in the [%T]", user, user.ID, service.repository))
@@ -260,7 +260,7 @@ func (service *UserService) RotateAPIKey(ctx context.Context, source string, use
 	user, err := service.repository.RotateAPIKey(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("could not rotate API key for [%T] with ID [%s]", user, userID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("rotated the api key for [%T] with ID [%s] in the [%T]", user, user.ID, service.repository))
@@ -273,13 +273,13 @@ func (service *UserService) RotateAPIKey(ctx context.Context, source string, use
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for user [%s]", events.UserAPIKeyRotated, user.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return user, nil
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), user.ID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return user, nil
 	}
 
@@ -294,17 +294,17 @@ func (service *UserService) Delete(ctx context.Context, source string, userID en
 	user, err := service.repository.Load(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load user with ID [%s] from the [%T]", userID, service.repository)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !user.IsOnFreePlan() && user.SubscriptionRenewsAt != nil && user.SubscriptionRenewsAt.After(time.Now()) {
 		msg := fmt.Sprintf("cannot delete user with ID [%s] because they are have an active [%s] subscription which renews at [%s]", userID, user.SubscriptionName, user.SubscriptionRenewsAt)
-		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", msg))
 	}
 
 	if err = service.repository.Delete(ctx, user); err != nil {
 		msg := fmt.Sprintf("could not delete user with ID [%s] from the [%T]", userID, service.repository)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("sucessfully deleted user with ID [%s] in the [%T]", userID, service.repository))
@@ -316,12 +316,12 @@ func (service *UserService) Delete(ctx context.Context, source string, userID en
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for user [%s]", events.UserAccountDeleted, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch [%s] event for user [%s]", event.Type(), userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -337,12 +337,12 @@ func (service *UserService) SendAPIKeyRotatedEmail(ctx context.Context, payload 
 	email, err := service.emailFactory.APIKeyRotated(payload.Email, payload.Timestamp, payload.Timezone)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create api key rotated email for user [%s]", payload.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
 		msg := fmt.Sprintf("canot create api key rotated email to user [%s]", payload.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("api key rotated email sent successfully to [%s] with user ID  [%s]", payload.Email, payload.UserID))
@@ -367,7 +367,7 @@ func (service *UserService) SendPhoneDeadEmail(ctx context.Context, params *User
 	user, err := service.repository.Load(ctx, params.UserID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with ID [%s]", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !user.NotificationHeartbeatEnabled {
@@ -378,12 +378,12 @@ func (service *UserService) SendPhoneDeadEmail(ctx context.Context, params *User
 	email, err := service.emailFactory.PhoneDead(user, params.LastHeartbeatTimestamp, params.Owner)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create phone dead email for user [%s]", params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
 		msg := fmt.Sprintf("canot send phone dead notification to user [%s]", params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone dead notification sent successfully to [%s] about [%s]", user.Email, params.Owner))
@@ -398,7 +398,7 @@ func (service *UserService) StartSubscription(ctx context.Context, params *event
 	user, err := service.repository.Load(ctx, params.UserID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	user.SubscriptionID = &params.SubscriptionID
@@ -409,7 +409,7 @@ func (service *UserService) StartSubscription(ctx context.Context, params *event
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after update", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -423,12 +423,12 @@ func (service *UserService) InitiateSubscriptionCancel(ctx context.Context, user
 	user, err := service.repository.Load(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if _, _, err = service.lemonsqueezyClient.Subscriptions.Cancel(ctx, *user.SubscriptionID); err != nil {
 		msg := fmt.Sprintf("could not cancel subscription [%s] for [%T] with with ID [%s]", *user.SubscriptionID, user, user.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("cancelled subscription [%s] for user [%s]", *user.SubscriptionID, user.ID))
@@ -443,13 +443,13 @@ func (service *UserService) GetSubscriptionUpdateURL(ctx context.Context, userID
 	user, err := service.repository.Load(ctx, userID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, userID)
-		return "", service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return "", service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	subscription, _, err := service.lemonsqueezyClient.Subscriptions.Get(ctx, *user.SubscriptionID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get subscription [%s] for [%T] with with ID [%s]", *user.SubscriptionID, user, user.ID)
-		return url, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return url, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return subscription.Data.Attributes.Urls.CustomerPortal, nil
@@ -463,7 +463,7 @@ func (service *UserService) CancelSubscription(ctx context.Context, params *even
 	user, err := service.repository.Load(ctx, params.UserID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	user.SubscriptionID = &params.SubscriptionID
@@ -474,7 +474,7 @@ func (service *UserService) CancelSubscription(ctx context.Context, params *even
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after update", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -488,7 +488,7 @@ func (service *UserService) ExpireSubscription(ctx context.Context, params *even
 	user, err := service.repository.Load(ctx, params.UserID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	user.SubscriptionID = nil
@@ -499,7 +499,7 @@ func (service *UserService) ExpireSubscription(ctx context.Context, params *even
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after expired subscription update", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -513,7 +513,7 @@ func (service *UserService) UpdateSubscription(ctx context.Context, params *even
 	user, err := service.repository.Load(ctx, params.UserID)
 	if err != nil {
 		msg := fmt.Sprintf("could not get [%T] with with ID [%s]", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if params.SubscriptionStatus != "active" {
@@ -530,7 +530,7 @@ func (service *UserService) UpdateSubscription(ctx context.Context, params *even
 
 	if err = service.repository.Update(ctx, user); err != nil {
 		msg := fmt.Sprintf("could not update [%T] with with ID [%s] after subscription update", user, params.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -543,7 +543,7 @@ func (service *UserService) DeleteAuthUser(ctx context.Context, userID entities.
 
 	if err := service.authClient.DeleteUser(ctx, userID.String()); err != nil {
 		msg := fmt.Sprintf("could not delete [entities.AuthContext] from firebase with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted [entities.AuthContext] from firebase for user with ID [%s]", userID))

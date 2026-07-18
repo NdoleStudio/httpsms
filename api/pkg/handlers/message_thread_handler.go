@@ -74,20 +74,20 @@ func (h *MessageThreadHandler) Index(c fiber.Ctx) error {
 	var request requests.MessageThreadIndex
 	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateMessageThreadIndex(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while fetching message threads [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching message threads")
 	}
 
 	threads, err := h.service.GetThreads(ctx, request.ToGetParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get message threads with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -116,21 +116,21 @@ func (h *MessageThreadHandler) Update(c fiber.Ctx) error {
 	var request requests.MessageThreadUpdate
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	request.MessageThreadID = c.Params("messageThreadID")
 	if errors := h.validator.ValidateUpdate(ctx, request); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating message thread [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating message thread")
 	}
 
 	thread, err := h.service.UpdateStatus(ctx, request.ToUpdateParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot update message thread with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -159,7 +159,7 @@ func (h *MessageThreadHandler) Delete(c fiber.Ctx) error {
 	messageThreadID := c.Params("messageThreadID")
 	if errors := h.validator.ValidateUUID(messageThreadID, "messageThreadID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a thread thread with ID [%s]", spew.Sdump(errors), messageThreadID)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting a thread thread")
 	}
 
@@ -170,13 +170,13 @@ func (h *MessageThreadHandler) Delete(c fiber.Ctx) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot find thread thread with id [%s]", messageThreadID)
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
 	if err = h.service.DeleteThread(ctx, c.OriginalURL(), thread); err != nil {
 		msg := fmt.Sprintf("cannot delete thread thread with ID [%s] for user with ID [%s]", messageThreadID, thread.UserID)
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 

@@ -43,11 +43,11 @@ func (s *GoogleCloudStorageAttachmentRepository) Upload(ctx context.Context, pat
 	writer.ContentType = contentType
 
 	if _, err := writer.Write(data); err != nil {
-		return s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot write attachment to GCS path [%s]", path)))
+		return s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot write attachment to GCS path [%s]", path)))
 	}
 
 	if err := writer.Close(); err != nil {
-		return s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot close GCS writer for path [%s]", path)))
+		return s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot close GCS writer for path [%s]", path)))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("uploaded attachment to GCS path [%s/%s] with size [%d]", s.bucket, path, len(data)))
@@ -63,15 +63,15 @@ func (s *GoogleCloudStorageAttachmentRepository) Download(ctx context.Context, p
 	if err != nil {
 		msg := fmt.Sprintf("cannot open GCS reader for path [%s]", path)
 		if errors.Is(err, storage.ErrObjectNotExist) {
-			return nil, s.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+			return nil, s.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 		}
-		return nil, s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	defer reader.Close()
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot read attachment from GCS path [%s]", path)))
+		return nil, s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot read attachment from GCS path [%s]", path)))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("downloaded attachment from GCS path [%s/%s] with size [%d]", s.bucket, path, len(data)))
@@ -84,7 +84,7 @@ func (s *GoogleCloudStorageAttachmentRepository) Delete(ctx context.Context, pat
 	defer span.End()
 
 	if err := s.client.Bucket(s.bucket).Object(path).Delete(ctx); err != nil {
-		return s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, fmt.Sprintf("cannot delete GCS object at path [%s]", path)))
+		return s.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot delete GCS object at path [%s]", path)))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted attachment from GCS path [%s/%s]", s.bucket, path))

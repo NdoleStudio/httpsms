@@ -73,20 +73,20 @@ func (h *PhoneAPIKeyHandler) index(c fiber.Ctx) error {
 	var request requests.PhoneAPIKeyIndex
 	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateIndex(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while fetching phone API keys [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching phone API keys")
 	}
 
 	apiKeys, err := h.service.Index(ctx, h.userIDFomContext(c), request.ToIndexParams())
 	if err != nil {
 		msg := fmt.Sprintf("cannot index phone API keys with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -117,7 +117,7 @@ func (h *PhoneAPIKeyHandler) store(c fiber.Ctx) error {
 		return h.service.CountByUser(ctx, userID)
 	})
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, fmt.Sprintf("cannot check entitlement for phone API keys for user [%s]", userID)))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot check entitlement for phone API keys for user [%s]", userID)))
 		return h.responseInternalServerError(c)
 	}
 	if !result.Allowed {
@@ -127,20 +127,20 @@ func (h *PhoneAPIKeyHandler) store(c fiber.Ctx) error {
 	var request requests.PhoneAPIKeyStoreRequest
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateStore(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
 	phoneAPIKey, err := h.service.Create(ctx, h.userFromContext(c), request.Name)
 	if err != nil {
 		msg := fmt.Sprintf("cannot update phones with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -168,7 +168,7 @@ func (h *PhoneAPIKeyHandler) delete(c fiber.Ctx) error {
 	phoneAPIKeyID := c.Params("phoneAPIKeyID")
 	if errors := h.validator.ValidateUUID(phoneAPIKeyID, "phoneAPIKeyID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a phone API key with ID [%s]", spew.Sdump(errors), phoneAPIKeyID)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
@@ -179,7 +179,7 @@ func (h *PhoneAPIKeyHandler) delete(c fiber.Ctx) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete phone API key with ID [%s] for user with ID [%s]", phoneAPIKeyID, h.userIDFomContext(c))
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -209,7 +209,7 @@ func (h *PhoneAPIKeyHandler) deletePhone(c fiber.Ctx) error {
 	phoneID := c.Params("phoneID")
 	if errors := h.mergeErrors(h.validator.ValidateUUID(phoneAPIKeyID, "phoneAPIKeyID"), h.validator.ValidateUUID(phoneID, "phoneID")); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a phone API key with ID [%s]", spew.Sdump(errors), phoneAPIKeyID)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
@@ -220,7 +220,7 @@ func (h *PhoneAPIKeyHandler) deletePhone(c fiber.Ctx) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot remove phone with ID [%s] from phone API key with ID [%s] for user with ID [%s]", phoneID, phoneAPIKeyID, h.userIDFomContext(c))
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 

@@ -49,7 +49,7 @@ func (service *PhoneService) DeleteAllForUser(ctx context.Context, userID entiti
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
 		msg := fmt.Sprintf("could not delete all [entities.Phone] for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Phone] for user with ID [%s]", userID))
@@ -63,7 +63,7 @@ func (service *PhoneService) NullifyScheduleID(ctx context.Context, userID entit
 
 	if err := service.repository.NullifyScheduleID(ctx, userID, scheduleID); err != nil {
 		msg := fmt.Sprintf("cannot nullify schedule ID [%s] for user [%s]", scheduleID, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	service.tracer.CtxLogger(service.logger, span).Info(fmt.Sprintf("nullified schedule ID [%s] on phones for user [%s]", scheduleID, userID))
@@ -80,7 +80,7 @@ func (service *PhoneService) Index(ctx context.Context, authUser entities.AuthCo
 	phones, err := service.repository.Index(ctx, authUser.ID, params)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch phones with parms [%+#v]", params)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] phones with prams [%+#v]", len(*phones), params))
@@ -132,12 +132,12 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot upsert phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.repository.Save(ctx, service.update(phone, params)); err != nil {
 		msg := fmt.Sprintf("cannot update phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
@@ -166,12 +166,12 @@ func (service *PhoneService) dispatchPhoneUpdatedEvent(ctx context.Context, phon
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event when phone [%s] is updated for user [%s]", phone.ID, phone.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for phone with id [%s]", event.Type(), phone.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -186,12 +186,12 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 	phone, err := service.repository.LoadByID(ctx, userID, phoneID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load phone with userID [%s] and phoneID [%s]", userID, phoneID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.repository.Delete(ctx, userID, phoneID); err != nil {
 		msg := fmt.Sprintf("cannot delete phone with id [%s] and user id [%s]", phoneID, userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted phone with id [%s] and user id [%s]", phoneID, userID))
@@ -205,12 +205,12 @@ func (service *PhoneService) Delete(ctx context.Context, source string, userID e
 	})
 	if err != nil {
 		msg := "cannot create event when phone is deleted"
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for phone with id [%s]", event.Type(), phone.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -239,7 +239,7 @@ func (service *PhoneService) UpsertFCMToken(ctx context.Context, params *PhoneFC
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot upsert FCM token for user with id [%s] and number [%s]", params.UserID, params.PhoneNumber)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	phone.FcmToken = params.FcmToken
@@ -247,7 +247,7 @@ func (service *PhoneService) UpsertFCMToken(ctx context.Context, params *PhoneFC
 
 	if err = service.repository.Save(ctx, phone); err != nil {
 		msg := fmt.Sprintf("cannot update phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))
@@ -277,7 +277,7 @@ func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTo
 
 	if err := service.repository.Save(ctx, phone); err != nil {
 		msg := fmt.Sprintf("cannot create phone with id [%s] and number [%s]", phone.ID, phone.PhoneNumber)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("phone updated with id [%s] in the phone repository for user [%s]", phone.ID, phone.UserID))

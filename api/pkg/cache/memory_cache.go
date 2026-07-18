@@ -31,7 +31,7 @@ func (cache *memoryCache) Get(ctx context.Context, key string) (value string, er
 
 	response, ok := cache.store.Get(key)
 	if !ok {
-		return "", stacktrace.NewError(fmt.Sprintf("no item found in cache with key [%s]", key))
+		return "", stacktrace.NewError("%s", fmt.Sprintf("no item found in cache with key [%s]", key))
 	}
 
 	return response.(string), nil

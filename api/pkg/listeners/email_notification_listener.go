@@ -46,12 +46,12 @@ func (listener *EmailNotificationListener) OnMessageSendExpired(ctx context.Cont
 	payload := new(events.MessageSendExpiredPayload)
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.NotifyMessageExpired(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -65,12 +65,12 @@ func (listener *EmailNotificationListener) OnMessageSendFailed(ctx context.Conte
 	payload := new(events.MessageSendFailedPayload)
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.NotifyMessageFailed(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -84,12 +84,12 @@ func (listener *EmailNotificationListener) OnWebhookSendFailed(ctx context.Conte
 	payload := new(events.WebhookSendFailedPayload)
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.NotifyWebhookSendFailed(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -103,12 +103,12 @@ func (listener *EmailNotificationListener) OnDiscordSendFailed(ctx context.Conte
 	payload := new(events.DiscordSendFailedPayload)
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.NotifyDiscordSendFailed(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot process [%s] event with ID [%s]", event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil

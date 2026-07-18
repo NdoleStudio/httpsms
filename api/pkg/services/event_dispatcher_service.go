@@ -54,7 +54,7 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 
 	if err := event.Validate(); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type())
-		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	dispatcher.Publish(ctx, event)
@@ -68,18 +68,18 @@ func (dispatcher *EventDispatcher) DispatchWithTimeout(ctx context.Context, even
 
 	if err = event.Validate(); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type())
-		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	task, err := dispatcher.createCloudTask(event)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create cloud task for event [%s] with id [%s]", event.Type(), event.ID())
-		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if queueID, err = dispatcher.enqueue(ctx, event, task, timeout); err != nil {
 		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s]", event.ID(), event.Type())
-		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return queueID, dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return queueID, nil
@@ -92,7 +92,7 @@ func (dispatcher *EventDispatcher) enqueue(ctx context.Context, event cloudevent
 	queueID, err := dispatcher.queue.Enqueue(ctx, task, timeout)
 	if errors.Is(err, context.DeadlineExceeded) {
 		msg := fmt.Sprintf("cannot enqueue event with ID [%s] and type [%s] to [%T]", event.ID(), event.Type(), dispatcher.queue)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
 		time.AfterFunc(timeout, func() {
 			dispatcher.Publish(ctx, event)
@@ -139,7 +139,7 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 		go func(ctx context.Context, sub events.EventListener) {
 			if err := sub(ctx, event); err != nil {
 				msg := fmt.Sprintf("subscriber [%T] cannot handle event [%s]", sub, event.Type())
-				ctxLogger.Error(stacktrace.Propagate(err, msg))
+				ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 			}
 			wg.Done()
 		}(ctx, sub)
@@ -169,7 +169,7 @@ func (dispatcher *EventDispatcher) addCloudEventAttributes(span trace.Span, even
 func (dispatcher *EventDispatcher) createCloudTask(event cloudevents.Event) (*PushQueueTask, error) {
 	eventContent, err := json.Marshal(event)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, fmt.Sprintf("cannot marshall [%T] with ID [%s]", event, event.ID()))
+		return nil, stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot marshall [%T] with ID [%s]", event, event.ID()))
 	}
 
 	return &PushQueueTask{

@@ -89,25 +89,25 @@ func (h *MessageHandler) PostSend(c fiber.Ctx) error {
 	var request requests.MessageSend
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateMessageSend(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending message")
 	}
 
 	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't send a message", h.userIDFomContext(c))))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] can't send a message", h.userIDFomContext(c))))
 		return h.responsePaymentRequired(c, *msg)
 	}
 
 	message, err := h.service.SendMessage(ctx, request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot send message with paylod [%s]", c.Body())
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -137,18 +137,18 @@ func (h *MessageHandler) BulkSend(c fiber.Ctx) error {
 	var request requests.MessageBulkSend
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateMessageBulkSend(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while sending messages")
 	}
 
 	if msg := h.billingService.IsEntitledWithCount(ctx, h.userIDFomContext(c), uint(len(request.To))); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not entitled to send [%d] messages", h.userIDFomContext(c), len(request.To))))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] is not entitled to send [%d] messages", h.userIDFomContext(c), len(request.To))))
 		return h.responsePaymentRequired(c, *msg)
 	}
 
@@ -165,7 +165,7 @@ func (h *MessageHandler) BulkSend(c fiber.Ctx) error {
 			if err != nil {
 				count.Add(-1)
 				msg := fmt.Sprintf("cannot send message with paylod [%s] at index [%d]", spew.Sdump(message), index)
-				ctxLogger.Error(stacktrace.Propagate(err, msg))
+				ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 			}
 			responses[index] = response
 			wg.Done()
@@ -200,26 +200,26 @@ func (h *MessageHandler) GetOutstanding(c fiber.Ctx) error {
 	var request requests.MessageOutstanding
 	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateMessageOutstanding(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while fetching outstanding messages [%s]", spew.Sdump(errors), c.OriginalURL())
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching outstanding messages")
 	}
 
 	message, err := h.service.GetOutstanding(ctx, request.ToGetOutstandingParams(c.Path(), h.userFromContext(c), timestamp))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		msg := fmt.Sprintf("Cannot find outstanding message with ID [%s]", request.MessageID)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseNotFound(c, msg)
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot get outstanding messgage with ID [%s]", request.MessageID)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -253,20 +253,20 @@ func (h *MessageHandler) Index(c fiber.Ctx) error {
 	var request requests.MessageIndex
 	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params [%s] into %T", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateMessageIndex(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while fetching messages [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching messages")
 	}
 
 	messages, err := h.service.GetMessages(ctx, request.ToGetParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot get messgaes with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -298,7 +298,7 @@ func (h *MessageHandler) PostEvent(c fiber.Ctx) error {
 	var request requests.MessageEvent
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
@@ -309,7 +309,7 @@ func (h *MessageHandler) PostEvent(c fiber.Ctx) error {
 
 	if errors := h.validator.ValidateMessageEvent(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while storing event [%s] for message [%s]", spew.Sdump(errors), c.Body(), request.MessageID)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
@@ -320,19 +320,19 @@ func (h *MessageHandler) PostEvent(c fiber.Ctx) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", request.MessageID)
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
 	if !h.authorizePhoneAPIKey(c, message.Owner) {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not authorized to send event for message with ID [%s]", h.userIDFomContext(c), request.MessageID)))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] is not authorized to send event for message with ID [%s]", h.userIDFomContext(c), request.MessageID)))
 		return h.responsePhoneAPIKeyUnauthorized(c, message.Owner, h.userFromContext(c))
 	}
 
 	message, err = h.service.StoreEvent(ctx, message, request.ToMessageStoreEventParams(c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store event for message [%s] with paylod [%s]", request.MessageID, c.Body())
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -361,30 +361,30 @@ func (h *MessageHandler) PostReceive(c fiber.Ctx) error {
 	var request requests.MessageReceive
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateMessageReceive(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body())
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while receiving message")
 	}
 
 	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] can't receive a message becasuse they have exceeded the limit", h.userIDFomContext(c))))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] can't receive a message becasuse they have exceeded the limit", h.userIDFomContext(c))))
 		return h.responsePaymentRequired(c, *msg)
 	}
 
 	if !h.authorizePhoneAPIKey(c, request.To) {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not authorized to receive message to phone number [%s]", h.userIDFomContext(c), request.To)))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] is not authorized to receive message to phone number [%s]", h.userIDFomContext(c), request.To)))
 		return h.responsePhoneAPIKeyUnauthorized(c, request.To, h.userFromContext(c))
 	}
 
 	message, err := h.service.ReceiveMessage(ctx, request.ToMessageReceiveParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot receive message with paylod [%s]", c.Body())
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 
@@ -415,7 +415,7 @@ func (h *MessageHandler) Delete(c fiber.Ctx) error {
 	messageID := c.Params("messageID")
 	if errors := h.validator.ValidateUUID(messageID, "messageID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a message with ID [%s]", spew.Sdump(errors), messageID)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
@@ -426,13 +426,13 @@ func (h *MessageHandler) Delete(c fiber.Ctx) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", messageID)
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
 	if err = h.service.DeleteMessage(ctx, c.OriginalURL(), message); err != nil {
 		msg := fmt.Sprintf("cannot delete message with ID [%s] for user with ID [%s]", messageID, message.UserID)
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -463,7 +463,7 @@ func (h *MessageHandler) Get(c fiber.Ctx) error {
 	messageID := c.Params("messageID")
 	if errors := h.validator.ValidateUUID(messageID, "messageID"); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while deleting a message with ID [%s]", spew.Sdump(errors), messageID)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing event")
 	}
 
@@ -474,7 +474,7 @@ func (h *MessageHandler) Get(c fiber.Ctx) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", messageID)
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -505,25 +505,25 @@ func (h *MessageHandler) PostCallMissed(c fiber.Ctx) error {
 	var request requests.MessageCallMissed
 	if err := c.Bind().Body(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall [%s] into %T", c.Body(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateCallMissed(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], for missed call event [%s]", spew.Sdump(errors), c.Body())
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing missed call event")
 	}
 
 	if !h.authorizePhoneAPIKey(c, request.To) {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("user with ID [%s] is not authorized to register missed phone call for phone number [%s]", h.userIDFomContext(c), request.To)))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("user with ID [%s] is not authorized to register missed phone call for phone number [%s]", h.userIDFomContext(c), request.To)))
 		return h.responsePhoneAPIKeyUnauthorized(c, request.To, h.userFromContext(c))
 	}
 
 	message, err := h.service.RegisterMissedCall(ctx, request.ToCallMissedParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
 		msg := fmt.Sprintf("cannot store missed call event for user [%s] with paylod [%s]", h.userIDFomContext(c), c.Body())
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg)))
 		return h.responseInternalServerError(c)
 	}
 
@@ -555,7 +555,7 @@ func (h *MessageHandler) Search(c fiber.Ctx) error {
 	var request requests.MessageSearch
 	if err := c.Bind().Query(&request); err != nil {
 		msg := fmt.Sprintf("cannot marshall params in [%s] into [%T]", c.OriginalURL(), request)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		return h.responseBadRequest(c, err)
 	}
 
@@ -564,14 +564,14 @@ func (h *MessageHandler) Search(c fiber.Ctx) error {
 
 	if errors := h.validator.ValidateMessageSearch(ctx, request.Sanitize()); len(errors) != 0 {
 		msg := fmt.Sprintf("validation errors [%s], while searching messages [%+#v]", spew.Sdump(errors), request)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while searching messages")
 	}
 
 	messages, err := h.service.SearchMessages(ctx, request.ToSearchParams(h.userIDFomContext(c)))
 	if err != nil {
 		msg := fmt.Sprintf("cannot search messages with params [%+#v]", request)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return h.responseInternalServerError(c)
 	}
 

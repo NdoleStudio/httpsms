@@ -44,7 +44,7 @@ func (s *MemoryAttachmentRepository) Download(ctx context.Context, path string) 
 
 	value, ok := s.data.Load(path)
 	if !ok {
-		return nil, s.tracer.WrapErrorSpan(span, stacktrace.NewErrorWithCode(ErrCodeNotFound, fmt.Sprintf("attachment not found at path [%s]", path)))
+		return nil, s.tracer.WrapErrorSpan(span, stacktrace.NewErrorWithCode(ErrCodeNotFound, "%s", fmt.Sprintf("attachment not found at path [%s]", path)))
 	}
 	return value.([]byte), nil
 }

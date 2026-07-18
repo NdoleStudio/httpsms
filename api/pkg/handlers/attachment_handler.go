@@ -67,7 +67,7 @@ func (h *AttachmentHandler) GetAttachment(c fiber.Ctx) error {
 	data, err := h.storage.Download(ctx, path)
 	if err != nil {
 		msg := fmt.Sprintf("cannot download attachment from path [%s]", path)
-		ctxLogger.Warn(stacktrace.Propagate(err, msg))
+		ctxLogger.Warn(stacktrace.Propagate(err, "%s", msg))
 		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			return h.responseNotFound(c, "attachment not found")
 		}

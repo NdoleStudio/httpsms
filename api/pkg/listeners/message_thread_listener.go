@@ -54,7 +54,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 	var payload events.MessageAPISentPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -69,7 +69,7 @@ func (listener *MessageThreadListener) OnMessageAPISent(ctx context.Context, eve
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -83,12 +83,12 @@ func (listener *MessageThreadListener) onMessageDeleted(ctx context.Context, eve
 	payload := new(events.MessageAPIDeletedPayload)
 	if err := event.DataAs(payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.UpdateAfterDeletedMessage(ctx, payload); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", payload.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -102,7 +102,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSending(ctx context.Context
 	var payload events.MessagePhoneSendingPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -117,7 +117,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSending(ctx context.Context
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -131,7 +131,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 	var payload events.MessagePhoneSentPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -146,7 +146,7 @@ func (listener *MessageThreadListener) OnMessagePhoneSent(ctx context.Context, e
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -160,7 +160,7 @@ func (listener *MessageThreadListener) OnMessagePhoneDelivered(ctx context.Conte
 	var payload events.MessagePhoneDeliveredPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -175,7 +175,7 @@ func (listener *MessageThreadListener) OnMessagePhoneDelivered(ctx context.Conte
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -189,7 +189,7 @@ func (listener *MessageThreadListener) OnMessagePhoneFailed(ctx context.Context,
 	var payload events.MessageSendFailedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T] for event [%s]", event.Data(), payload, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -204,7 +204,7 @@ func (listener *MessageThreadListener) OnMessagePhoneFailed(ctx context.Context,
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -218,7 +218,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 	var payload events.MessagePhoneReceivedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -233,7 +233,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -247,7 +247,7 @@ func (listener *MessageThreadListener) onMessageNotificationScheduled(ctx contex
 	var payload events.MessageNotificationScheduledPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -262,7 +262,7 @@ func (listener *MessageThreadListener) onMessageNotificationScheduled(ctx contex
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -276,7 +276,7 @@ func (listener *MessageThreadListener) onMessageExpired(ctx context.Context, eve
 	var payload events.MessageSendExpiredPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
@@ -291,7 +291,7 @@ func (listener *MessageThreadListener) onMessageExpired(ctx context.Context, eve
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
 		msg := fmt.Sprintf("cannot update thread for message with ID [%s] for event with ID [%s]", updateParams.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -304,12 +304,12 @@ func (listener *MessageThreadListener) onUserAccountDeleted(ctx context.Context,
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
 		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
 		msg := fmt.Sprintf("cannot delete [entities.MessageThread] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil

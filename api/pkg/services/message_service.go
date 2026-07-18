@@ -80,7 +80,7 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 	message, err := service.repository.GetOutstanding(ctx, params.UserID, params.MessageID, params.PhoneNumbers)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch outstanding messages with params [%s]", spew.Sdump(params))
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
 	}
 
 	event, err := service.createMessagePhoneSendingEvent(params.Source, events.MessagePhoneSendingPayload{
@@ -95,14 +95,14 @@ func (service *MessageService) GetOutstanding(ctx context.Context, params Messag
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
@@ -116,7 +116,7 @@ func (service *MessageService) DeleteAllForUser(ctx context.Context, userID enti
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
 		msg := fmt.Sprintf("could not delete [entities.Message] for user with ID [%s]", userID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Message] for user with ID [%s]", userID))
@@ -131,7 +131,7 @@ func (service *MessageService) GetBulkMessages(ctx context.Context, userID entit
 	orders, err := service.repository.GetBulkMessages(ctx, userID, 10)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch bulk messages for user [%s]", userID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] bulk messages for user [%s]", len(orders), userID))
@@ -147,7 +147,7 @@ func (service *MessageService) DeleteMessage(ctx context.Context, source string,
 
 	if err := service.repository.Delete(ctx, message.UserID, message.ID); err != nil {
 		msg := fmt.Sprintf("could not delete message with ID [%s] for user wit ID [%s]", message.ID, message.UserID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
 	}
 
 	var prevID *uuid.UUID
@@ -176,13 +176,13 @@ func (service *MessageService) DeleteMessage(ctx context.Context, source string,
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%T] for message with ID [%s]", event, message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("dispatched event [%s] with id [%s] for message [%s]", event.Type(), event.ID(), message.ID))
@@ -198,7 +198,7 @@ func (service *MessageService) DeleteByOwnerAndContact(ctx context.Context, user
 
 	if err := service.repository.DeleteByOwnerAndContact(ctx, userID, owner, contact); err != nil {
 		msg := fmt.Sprintf("could not all delete messages for user with ID [%s] between owner [%s] and contact [%s] ", userID, owner, contact)
-		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all messages for user with ID [%s] between owner [%s] and contact [%s] ", userID, owner, contact))
@@ -213,7 +213,7 @@ func (service *MessageService) RespondToMissedCall(ctx context.Context, source s
 	phone, err := service.phoneService.Load(ctx, payload.UserID, payload.Owner)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find phone with owner [%s] for user with ID [%s] when handling missed phone call message [%s]", payload.Owner, payload.UserID, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if phone.MissedCallAutoReply == nil || strings.TrimSpace(*phone.MissedCallAutoReply) == "" {
@@ -236,7 +236,7 @@ func (service *MessageService) RespondToMissedCall(ctx context.Context, source s
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot send auto response message for owner [%s] for user with ID [%s] when handling missed phone call message [%s]", payload.Owner, payload.UserID, payload.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("created response message with ID [%s] for missed call event [%s] for user [%s]", message.ID, payload.MessageID, message.UserID))
@@ -261,7 +261,7 @@ func (service *MessageService) GetMessages(ctx context.Context, params MessageGe
 	messages, err := service.repository.Index(ctx, params.UserID, params.Owner, params.Contact, params.IndexParams)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages with parms [%+#v]", params)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(*messages), params))
@@ -276,7 +276,7 @@ func (service *MessageService) GetMessage(ctx context.Context, userID entities.U
 	message, err := service.repository.Load(ctx, userID, messageID)
 	if err != nil {
 		msg := fmt.Sprintf("could not fetch messages with ID [%s]", messageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "%s", msg))
 	}
 
 	return message, nil
@@ -306,12 +306,12 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 	case entities.MessageEventNameFailed:
 		err = service.handleMessageFailedEvent(ctx, params, message)
 	default:
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.NewError(fmt.Sprintf("cannot handle message event [%s]", params.EventName)))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", fmt.Sprintf("cannot handle message event [%s]", params.EventName)))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("could not handle phone event [%s] for message with id [%s]", params.EventName, message.ID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return service.repository.Load(ctx, message.UserID, params.MessageID)
@@ -321,7 +321,7 @@ func (service *MessageService) StoreEvent(ctx context.Context, message *entities
 type MessageReceiveParams struct {
 	Contact     string
 	UserID      entities.UserID
-	Owner       phonenumbers.PhoneNumber
+	Owner       *phonenumbers.PhoneNumber
 	Content     string
 	SIM         entities.SIM
 	Timestamp   time.Time
@@ -343,14 +343,14 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 	attachmentURLs, err := service.uploadAttachments(ctx, params.UserID, messageID, params.Attachments)
 	if err != nil {
 		msg := fmt.Sprintf("cannot upload attachments for user [%s] message [%s]", params.UserID, messageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	eventPayload := events.MessagePhoneReceivedPayload{
 		MessageID:   messageID,
 		UserID:      params.UserID,
 		Encrypted:   params.Encrypted,
-		Owner:       phonenumbers.Format(&params.Owner, phonenumbers.E164),
+		Owner:       phonenumbers.Format(params.Owner, phonenumbers.E164),
 		Contact:     params.Contact,
 		Timestamp:   params.Timestamp,
 		Content:     params.Content,
@@ -363,14 +363,14 @@ func (service *MessageService) ReceiveMessage(ctx context.Context, params *Messa
 	event, err := service.createMessagePhoneReceivedEvent(params.Source, eventPayload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s]", event.Type(), event.ID(), eventPayload.MessageID))
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	ctxLogger.Info(fmt.Sprintf("event [%s] dispatched successfully", event.ID()))
 
@@ -394,12 +394,12 @@ func (service *MessageService) handleMessageSentEvent(ctx context.Context, param
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -421,12 +421,12 @@ func (service *MessageService) handleMessageDeliveredEvent(ctx context.Context, 
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessagePhoneSent, message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, time.Second); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s] for message [%s]", event.Type(), event.ID(), message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -454,12 +454,12 @@ func (service *MessageService) handleMessageFailedEvent(ctx context.Context, par
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message [%s]", events.EventTypeMessageSendFailed, message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -507,20 +507,20 @@ func (service *MessageService) SendMessage(ctx context.Context, params MessageSe
 	event, err := service.createMessageAPISentEvent(params.Source, eventPayload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create %T from payload with message id [%s]", event, eventPayload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s] and user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
 
 	message, err := service.storeSentMessage(ctx, eventPayload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot store message with id [%s]", eventPayload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	timeout := service.getSendDelay(ctxLogger, eventPayload, params, messagesPerMinute)
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, timeout); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] event with ID [%s] dispatched succesfully for message [%s] with user [%s] and delay [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID, timeout))
@@ -556,7 +556,7 @@ func (service *MessageService) RegisterMissedCall(ctx context.Context, params *M
 	event, err := service.createEvent(events.MessageCallMissed, params.Source, eventPayload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%T] from payload with message id [%s]", event, eventPayload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("created event [%s] with id [%s] and message id [%s] and user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
@@ -564,12 +564,12 @@ func (service *MessageService) RegisterMissedCall(ctx context.Context, params *M
 	message, err := service.storeMissedCallMessage(ctx, eventPayload)
 	if err != nil {
 		msg := fmt.Sprintf("cannot store missed call message message with id [%s]", eventPayload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event type [%s] and id [%s]", event.Type(), event.ID())
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("[%s] event with ID [%s] dispatched succesfully for message [%s] with user [%s]", event.Type(), event.ID(), eventPayload.MessageID, eventPayload.UserID))
@@ -623,7 +623,7 @@ func (service *MessageService) storeReceivedMessage(ctx context.Context, params 
 
 	if err := service.repository.Store(ctx, message); err != nil {
 		msg := fmt.Sprintf("cannot save message with id [%s]", params.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", message.ID))
@@ -647,7 +647,7 @@ func (service *MessageService) uploadAttachments(ctx context.Context, userID ent
 		g.Go(func() error {
 			decoded, err := base64.StdEncoding.DecodeString(attachment.Content)
 			if err != nil {
-				return stacktrace.Propagate(err, fmt.Sprintf("cannot decode base64 content for attachment [%d]", i))
+				return stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot decode base64 content for attachment [%d]", i))
 			}
 
 			sanitizedName := repositories.SanitizeFilename(attachment.Name, i)
@@ -658,7 +658,7 @@ func (service *MessageService) uploadAttachments(ctx context.Context, userID ent
 			paths[i] = path
 
 			if err = service.attachmentRepository.Upload(gCtx, path, decoded, attachment.ContentType); err != nil {
-				return stacktrace.Propagate(err, fmt.Sprintf("cannot upload attachment [%d] to path [%s]", i, path))
+				return stacktrace.Propagate(err, "%s", fmt.Sprintf("cannot upload attachment [%d] to path [%s]", i, path))
 			}
 
 			urls[i] = fmt.Sprintf("%s/v1/attachments/%s/%s/%d/%s", service.apiBaseURL, userID, messageID, i, filename)
@@ -697,17 +697,17 @@ func (service *MessageService) HandleMessageSending(ctx context.Context, params 
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !message.IsSending() {
 		msg := fmt.Sprintf("message has wrong status [%s]. expected %s", message.Status, entities.MessageStatusSending)
-		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", msg))
 	}
 
 	if err = service.repository.Update(ctx, message.AddSendAttempt(params.Timestamp)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] after sending", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] updated after adding send attempt", message.ID))
@@ -724,7 +724,7 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if message.IsSent() || message.IsDelivered() {
@@ -734,12 +734,12 @@ func (service *MessageService) HandleMessageSent(ctx context.Context, params Han
 
 	if !message.IsSending() && !message.IsExpired() && !message.IsScheduled() {
 		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSending, entities.MessageStatusExpired, entities.MessageStatusScheduled)
-		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", msg))
 	}
 
 	if err = service.repository.Update(ctx, message.Sent(params.Timestamp)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as sent", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
@@ -764,17 +764,17 @@ func (service *MessageService) HandleMessageFailed(ctx context.Context, params H
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if message.IsDelivered() {
 		msg := fmt.Sprintf("message has already been delivered with status [%s]", message.Status)
-		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", msg))
 	}
 
 	if err = service.repository.Update(ctx, message.Failed(params.Timestamp, params.ErrorMessage)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as sent", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
@@ -791,18 +791,18 @@ func (service *MessageService) HandleMessageDelivered(ctx context.Context, param
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !message.IsSent() && !message.IsSending() && !message.IsExpired() && !message.IsScheduled() {
 		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s, %s]", message.Status, entities.MessageStatusSent, entities.MessageStatusScheduled, entities.MessageStatusSending, entities.MessageStatusExpired)
-		ctxLogger.Warn(stacktrace.NewError(msg))
+		ctxLogger.Warn(stacktrace.NewError("%s", msg))
 		return nil
 	}
 
 	if err = service.repository.Update(ctx, message.Delivered(params.Timestamp)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as delivered", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
@@ -819,16 +819,16 @@ func (service *MessageService) HandleMessageNotificationScheduled(ctx context.Co
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !message.IsPending() && !message.IsExpired() && !message.IsSending() {
-		ctxLogger.Warn(stacktrace.NewError(fmt.Sprintf("received scheduled event for message with id [%s] message has status [%s]", message.ID, message.Status)))
+		ctxLogger.Warn(stacktrace.NewError("%s", fmt.Sprintf("received scheduled event for message with id [%s] message has status [%s]", message.ID, message.Status)))
 	}
 
 	if err = service.repository.Update(ctx, message.NotificationScheduled(params.Timestamp)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as expired", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been scheduled to send at [%s]", message.ID, message.NotificationScheduledAt.String()))
@@ -845,12 +845,12 @@ func (service *MessageService) HandleMessageNotificationSent(ctx context.Context
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.repository.Update(ctx, message.AddSendAttemptCount()); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as expired", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("notification for message with id [%s] has been sent at [%s]", message.ID, params.Timestamp.String()))
@@ -867,17 +867,17 @@ func (service *MessageService) HandleMessageExpired(ctx context.Context, params 
 	message, err := service.repository.Load(ctx, params.UserID, params.ID)
 	if err != nil {
 		msg := fmt.Sprintf("cannot find message with id [%s]", params.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !message.IsSending() && !message.IsScheduled() && !message.IsPending() {
 		msg := fmt.Sprintf("message has wrong status [%s]. expected [%s, %s, %s]", message.Status, entities.MessageStatusSending, entities.MessageStatusScheduled, entities.MessageStatusPending)
-		return service.tracer.WrapErrorSpan(span, stacktrace.NewError(msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewError("%s", msg))
 	}
 
 	if err = service.repository.Update(ctx, message.Expired(params.Timestamp)); err != nil {
 		msg := fmt.Sprintf("cannot update message with id [%s] as expired", message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message with id [%s] has been updated to status [%s]", message.ID, message.Status))
@@ -898,12 +898,12 @@ func (service *MessageService) HandleMessageExpired(ctx context.Context, params 
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create [%s] event for expired message with ID [%s]", events.EventTypeMessageSendRetry, message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch [%s] event for message with ID [%s]", event.Type(), message.ID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("retried sending message with ID [%s]", message.ID))
@@ -939,12 +939,12 @@ func (service *MessageService) ScheduleExpirationCheck(ctx context.Context, para
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message with id [%s]", events.EventTypeMessageSendExpiredCheck, params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, params.MessageExpirationDuration); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for message with ID [%s]", event.Type(), params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("scheduled message id [%s] to expire at [%s]", params.MessageID, params.NotificationSentAt.Add(params.MessageExpirationDuration)))
@@ -973,7 +973,7 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load message with userID [%s] and messageID [%s]", params.UserID, params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if !message.IsPending() && !message.IsSending() && !message.IsScheduled() {
@@ -996,12 +996,12 @@ func (service *MessageService) CheckExpired(ctx context.Context, params MessageC
 	})
 	if err != nil {
 		msg := fmt.Sprintf("cannot create event [%s] for message with id [%s]", events.EventTypeMessageSendExpired, params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
 		msg := fmt.Sprintf("cannot dispatch event [%s] for message with ID [%s]", event.Type(), params.MessageID)
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message [%s] has expired with status [%s]", params.MessageID, message.Status))
@@ -1027,7 +1027,7 @@ func (service *MessageService) SearchMessages(ctx context.Context, params *Messa
 	messages, err := service.repository.Search(ctx, params.UserID, params.Owners, params.Types, params.Statuses, params.IndexParams)
 	if err != nil {
 		msg := fmt.Sprintf("could not search messages with parms [%+#v]", params)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(messages), params))
@@ -1043,7 +1043,7 @@ func (service *MessageService) phoneSettings(ctx context.Context, userID entitie
 	phone, err := service.phoneService.Load(ctx, userID, owner)
 	if err != nil {
 		msg := fmt.Sprintf("cannot load phone for userID [%s] and owner [%s]. using default max send attempt of 2", userID, owner)
-		ctxLogger.Error(stacktrace.Propagate(err, msg))
+		ctxLogger.Error(stacktrace.Propagate(err, "%s", msg))
 		return 2, entities.SIM1, 0
 	}
 
@@ -1084,7 +1084,7 @@ func (service *MessageService) storeSentMessage(ctx context.Context, payload eve
 
 	if err := service.repository.Store(ctx, message); err != nil {
 		msg := fmt.Sprintf("cannot save message with id [%s]", payload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("message saved with id [%s]", payload.MessageID))
@@ -1114,7 +1114,7 @@ func (service *MessageService) storeMissedCallMessage(ctx context.Context, paylo
 
 	if err := service.repository.Store(ctx, message); err != nil {
 		msg := fmt.Sprintf("cannot save missed call message with id [%s]", payload.MessageID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("missed call message saved with id [%s]", payload.MessageID))

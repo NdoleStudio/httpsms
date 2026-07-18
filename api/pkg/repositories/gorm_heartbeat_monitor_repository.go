@@ -41,7 +41,7 @@ func (repository *gormHeartbeatMonitorRepository) DeleteAllForUser(ctx context.C
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.HeartbeatMonitor{}).Error; err != nil {
 		msg := fmt.Sprintf("cannot delete all [%T] for user with ID [%s]", &entities.HeartbeatMonitor{}, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.
 		}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot update heartbeat monitor ID [%s] for user [%s]", monitorID, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -86,7 +86,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 		}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot update heartbeat monitor ID [%s]", monitorID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, us
 		Delete(&entities.HeartbeatMonitor{}).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot delete heartbeat monitor with owner [%s] and userID [%s]", owner, userID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -122,7 +122,7 @@ func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, use
 	heartbeats := new([]entities.Heartbeat)
 	if err := query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error; err != nil {
 		msg := fmt.Sprintf("cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return heartbeats, nil
@@ -138,7 +138,7 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 
 	if err := repository.db.WithContext(ctx).Create(heartbeatMonitor).Error; err != nil {
 		msg := fmt.Sprintf("cannot save heartbeatMonitor monitor with ID [%s]", heartbeatMonitor.ID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return nil
@@ -159,12 +159,12 @@ func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, user
 		First(&phone).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("heartbeat monitor with userID [%s] and owner [%s] does not exist", userID, owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "%s", msg))
 	}
 
 	if err != nil {
 		msg := fmt.Sprintf("cannot load heartbeat monitor with userID [%s] and owner [%s]", userID, owner)
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return phone, nil
@@ -187,7 +187,7 @@ func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, us
 		Find(&exists).Error
 	if err != nil {
 		msg := fmt.Sprintf("cannot check if heartbeat monitor exists with userID [%s] and montior ID [%s]", userID, monitorID)
-		return exists, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+		return exists, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "%s", msg))
 	}
 
 	return exists, nil
