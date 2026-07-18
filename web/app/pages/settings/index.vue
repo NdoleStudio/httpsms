@@ -1694,7 +1694,7 @@ onMounted(async () => {
                   color="primary"
                   density="compact"
                   label="Unarchive Threads Automatically"
-                  hint="When a new message is received, on an archived conversation change it back to the unarchived state"
+                  hint="When a new message is received on an archived conversation, change it back to the unarchived state"
                   persistent-hint
                 />
               </VCol>
