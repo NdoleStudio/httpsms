@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,8 +19,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/palantir/stacktrace"
 	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 	"go.opentelemetry.io/otel/trace"
+	"gorm.io/gorm"
 )
 
 type messageThreadHandlerRepositoryStub struct{}
@@ -94,13 +94,15 @@ type messageThreadHandlerNoopLogger struct{}
 
 var _ telemetry.Logger = (*messageThreadHandlerNoopLogger)(nil)
 
-func (logger *messageThreadHandlerNoopLogger) Error(_ error)                                 {}
-func (logger *messageThreadHandlerNoopLogger) WithService(_ string) telemetry.Logger         { return logger }
-func (logger *messageThreadHandlerNoopLogger) WithString(_, _ string) telemetry.Logger       { return logger }
-func (logger *messageThreadHandlerNoopLogger) WithSpan(_ trace.SpanContext) telemetry.Logger { return logger }
-func (logger *messageThreadHandlerNoopLogger) Trace(_ string)                                {}
-func (logger *messageThreadHandlerNoopLogger) Info(_ string)                                 {}
-func (logger *messageThreadHandlerNoopLogger) Warn(_ error)                                  {}
-func (logger *messageThreadHandlerNoopLogger) Debug(_ string)                                {}
-func (logger *messageThreadHandlerNoopLogger) Fatal(_ error)                                 {}
-func (logger *messageThreadHandlerNoopLogger) Printf(_ string, _ ...interface{})             {}
+func (logger *messageThreadHandlerNoopLogger) Error(_ error)                           {}
+func (logger *messageThreadHandlerNoopLogger) WithService(_ string) telemetry.Logger   { return logger }
+func (logger *messageThreadHandlerNoopLogger) WithString(_, _ string) telemetry.Logger { return logger }
+func (logger *messageThreadHandlerNoopLogger) WithSpan(_ trace.SpanContext) telemetry.Logger {
+	return logger
+}
+func (logger *messageThreadHandlerNoopLogger) Trace(_ string)                    {}
+func (logger *messageThreadHandlerNoopLogger) Info(_ string)                     {}
+func (logger *messageThreadHandlerNoopLogger) Warn(_ error)                      {}
+func (logger *messageThreadHandlerNoopLogger) Debug(_ string)                    {}
+func (logger *messageThreadHandlerNoopLogger) Fatal(_ error)                     {}
+func (logger *messageThreadHandlerNoopLogger) Printf(_ string, _ ...interface{}) {}
