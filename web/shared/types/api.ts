@@ -61,7 +61,7 @@ export interface EntitiesBulkMessage {
   failed_count: number;
   /** @example 30 */
   pending_count: number;
-  /** @example "bulk-csv-a1B2c3D4e5" */
+  /** @example "bulk-httpsms-file.csv" */
   request_id: string;
   /** @example 50 */
   scheduled_count: number;
@@ -205,6 +205,8 @@ export interface EntitiesMessageThread {
   id: string;
   /** @example false */
   is_archived: boolean;
+  /** @example true */
+  is_read: boolean;
   /** @example "This is a sample message content" */
   last_message_content: string;
   /** @example "32343a19-da5e-4b1b-a767-3298a73703ca" */
@@ -479,7 +481,9 @@ export interface RequestsMessageSendScheduleWindow {
 
 export interface RequestsMessageThreadUpdate {
   /** @example true */
-  is_archived: boolean;
+  is_archived?: boolean;
+  /** @example true */
+  is_read?: boolean;
 }
 
 export interface RequestsPhoneAPIKeyStoreRequest {
@@ -668,6 +672,14 @@ export interface ResponsesMessageSendScheduleResponse {
 
 export interface ResponsesMessageSendSchedulesResponse {
   data: EntitiesMessageSendSchedule[];
+  /** @example "Request handled successfully" */
+  message: string;
+  /** @example "success" */
+  status: string;
+}
+
+export interface ResponsesMessageThreadResponse {
+  data: EntitiesMessageThread;
   /** @example "Request handled successfully" */
   message: string;
   /** @example "success" */

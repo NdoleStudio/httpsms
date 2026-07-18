@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "baseUrl": "..",
+    "paths": {
+      "~/*": ["./app/*"],
+      "~~/*": ["./*"]
+    },
+    "types": ["node"],
+    "skipLibCheck": true,
+    "noEmit": false,
+    "outDir": "./.test-build"
+  },
+  "include": [
+    "./globals.d.ts",
+    "./threads.store.test.ts",
+    "../app/stores/threads.ts",
+    "../shared/types/api.ts"
+  ]
+}
