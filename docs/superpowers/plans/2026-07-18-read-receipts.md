@@ -87,27 +87,27 @@ Create `api/pkg/entities/message_thread_test.go`:
 package entities
 
 import (
-	"reflect"
-	"testing"
+    "reflect"
+    "testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
 )
 
 func TestMessageThreadReadFieldsHaveBackwardCompatibleDefaults(t *testing.T) {
-	threadType := reflect.TypeOf(MessageThread{})
+    threadType := reflect.TypeOf(MessageThread{})
 
-	isRead, ok := threadType.FieldByName("IsRead")
-	require.True(t, ok)
-	assert.Contains(t, isRead.Tag.Get("gorm"), "not null")
-	assert.Contains(t, isRead.Tag.Get("gorm"), "default:true")
-	assert.Equal(t, "is_read", isRead.Tag.Get("json"))
+    isRead, ok := threadType.FieldByName("IsRead")
+    require.True(t, ok)
+    assert.Contains(t, isRead.Tag.Get("gorm"), "not null")
+    assert.Contains(t, isRead.Tag.Get("gorm"), "default:true")
+    assert.Equal(t, "is_read", isRead.Tag.Get("json"))
 
-	lastReadAt, ok := threadType.FieldByName("LastReadAt")
-	require.True(t, ok)
-	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "not null")
-	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "default:CURRENT_TIMESTAMP")
-	assert.Equal(t, "-", lastReadAt.Tag.Get("json"))
+    lastReadAt, ok := threadType.FieldByName("LastReadAt")
+    require.True(t, ok)
+    assert.Contains(t, lastReadAt.Tag.Get("gorm"), "not null")
+    assert.Contains(t, lastReadAt.Tag.Get("gorm"), "default:CURRENT_TIMESTAMP")
+    assert.Equal(t, "-", lastReadAt.Tag.Get("json"))
 }
 ```
 
@@ -119,27 +119,27 @@ Create `api/pkg/requests/message_thread_update_request_test.go`:
 package requests
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+    "github.com/NdoleStudio/httpsms/pkg/entities"
+    "github.com/google/uuid"
+    "github.com/stretchr/testify/assert"
 )
 
 func TestMessageThreadUpdateToUpdateParamsPreservesOptionalFields(t *testing.T) {
-	threadID := uuid.New()
-	isRead := true
-	input := MessageThreadUpdate{
-		MessageThreadID: threadID.String(),
-		IsRead:          &isRead,
-	}
+    threadID := uuid.New()
+    isRead := true
+    input := MessageThreadUpdate{
+        MessageThreadID: threadID.String(),
+        IsRead:          &isRead,
+    }
 
-	params := input.ToUpdateParams(entities.UserID("user-id"))
+    params := input.ToUpdateParams(entities.UserID("user-id"))
 
-	assert.Equal(t, threadID, params.MessageThreadID)
-	assert.Equal(t, entities.UserID("user-id"), params.UserID)
-	assert.Nil(t, params.IsArchived)
-	assert.Same(t, &isRead, params.IsRead)
+    assert.Equal(t, threadID, params.MessageThreadID)
+    assert.Equal(t, entities.UserID("user-id"), params.UserID)
+    assert.Nil(t, params.IsArchived)
+    assert.Same(t, &isRead, params.IsRead)
 }
 ```
 
@@ -149,36 +149,36 @@ Create `api/pkg/validators/message_thread_handler_validator_test.go`:
 package validators
 
 import (
-	"context"
-	"testing"
+    "context"
+    "testing"
 
-	"github.com/NdoleStudio/httpsms/pkg/requests"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+    "github.com/NdoleStudio/httpsms/pkg/requests"
+    "github.com/google/uuid"
+    "github.com/stretchr/testify/assert"
 )
 
 func TestValidateUpdateRequiresAtLeastOneStatusField(t *testing.T) {
-	validator := &MessageThreadHandlerValidator{}
-	request := requests.MessageThreadUpdate{
-		MessageThreadID: uuid.NewString(),
-	}
+    validator := &MessageThreadHandlerValidator{}
+    request := requests.MessageThreadUpdate{
+        MessageThreadID: uuid.NewString(),
+    }
 
-	errors := validator.ValidateUpdate(context.Background(), request)
+    errors := validator.ValidateUpdate(context.Background(), request)
 
-	assert.NotEmpty(t, errors.Get("payload"))
+    assert.NotEmpty(t, errors.Get("payload"))
 }
 
 func TestValidateUpdateAcceptsReadOnlyUpdate(t *testing.T) {
-	validator := &MessageThreadHandlerValidator{}
-	isRead := true
-	request := requests.MessageThreadUpdate{
-		MessageThreadID: uuid.NewString(),
-		IsRead:          &isRead,
-	}
+    validator := &MessageThreadHandlerValidator{}
+    isRead := true
+    request := requests.MessageThreadUpdate{
+        MessageThreadID: uuid.NewString(),
+        IsRead:          &isRead,
+    }
 
-	errors := validator.ValidateUpdate(context.Background(), request)
+    errors := validator.ValidateUpdate(context.Background(), request)
 
-	assert.Empty(t, errors)
+    assert.Empty(t, errors)
 }
 ```
 
@@ -206,20 +206,20 @@ Change `requests.MessageThreadUpdate` and its conversion:
 
 ```go
 type MessageThreadUpdate struct {
-	request
-	IsArchived *bool `json:"is_archived,omitempty" example:"true"`
-	IsRead     *bool `json:"is_read,omitempty" example:"true"`
+    request
+    IsArchived *bool `json:"is_archived,omitempty" example:"true"`
+    IsRead     *bool `json:"is_read,omitempty" example:"true"`
 
-	MessageThreadID string `json:"messageThreadID" swaggerignore:"true"`
+    MessageThreadID string `json:"messageThreadID" swaggerignore:"true"`
 }
 
 func (input *MessageThreadUpdate) ToUpdateParams(userID entities.UserID) services.MessageThreadStatusParams {
-	return services.MessageThreadStatusParams{
-		UserID:          userID,
-		MessageThreadID: uuid.MustParse(input.MessageThreadID),
-		IsArchived:      input.IsArchived,
-		IsRead:          input.IsRead,
-	}
+    return services.MessageThreadStatusParams{
+        UserID:          userID,
+        MessageThreadID: uuid.MustParse(input.MessageThreadID),
+        IsArchived:      input.IsArchived,
+        IsRead:          input.IsRead,
+    }
 }
 ```
 
@@ -227,10 +227,10 @@ Change the service parameter type:
 
 ```go
 type MessageThreadStatusParams struct {
-	IsArchived      *bool
-	IsRead          *bool
-	UserID          entities.UserID
-	MessageThreadID uuid.UUID
+    IsArchived      *bool
+    IsRead          *bool
+    UserID          entities.UserID
+    MessageThreadID uuid.UUID
 }
 ```
 
@@ -239,7 +239,7 @@ After `v.ValidateStruct()` in `ValidateUpdate`, add an explicit payload check:
 ```go
 errors := v.ValidateStruct()
 if request.IsArchived == nil && request.IsRead == nil {
-	errors.Add("payload", "at least one of is_archived or is_read is required")
+    errors.Add("payload", "at least one of is_archived or is_read is required")
 }
 return errors
 ```
@@ -249,8 +249,8 @@ Add a single-thread response beside `MessageThreadsResponse`:
 ```go
 // MessageThreadResponse is the payload containing entities.MessageThread
 type MessageThreadResponse struct {
-	response
-	Data entities.MessageThread `json:"data"`
+    response
+    Data entities.MessageThread `json:"data"`
 }
 ```
 
@@ -300,60 +300,60 @@ Create `api/pkg/repositories/gorm_message_thread_repository_test.go`:
 package repositories
 
 import (
-	"testing"
-	"time"
+    "testing"
+    "time"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+    "github.com/NdoleStudio/httpsms/pkg/entities"
+    "github.com/google/uuid"
+    "github.com/stretchr/testify/assert"
 )
 
 func TestMessageThreadActivityUpdatesOwnOnlyMessageColumns(t *testing.T) {
-	messageID := uuid.New()
-	updates := messageThreadActivityUpdates(MessageThreadActivityUpdate{
-		Timestamp: time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC),
-		MessageID: messageID,
-		Content:   "hello",
-		Status:    entities.MessageStatusReceived,
-	})
+    messageID := uuid.New()
+    updates := messageThreadActivityUpdates(MessageThreadActivityUpdate{
+        Timestamp: time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC),
+        MessageID: messageID,
+        Content:   "hello",
+        Status:    entities.MessageStatusReceived,
+    })
 
-	assert.Equal(t, map[string]any{
-		"order_timestamp":     time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC),
-		"last_message_id":     messageID,
-		"last_message_content": "hello",
-		"status":              entities.MessageStatusReceived,
-	}, updates)
-	assert.NotContains(t, updates, "is_read")
-	assert.NotContains(t, updates, "is_archived")
-	assert.NotContains(t, updates, "last_read_at")
+    assert.Equal(t, map[string]any{
+        "order_timestamp":     time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC),
+        "last_message_id":     messageID,
+        "last_message_content": "hello",
+        "status":              entities.MessageStatusReceived,
+    }, updates)
+    assert.NotContains(t, updates, "is_read")
+    assert.NotContains(t, updates, "is_archived")
+    assert.NotContains(t, updates, "last_read_at")
 }
 
 func TestMessageThreadStatusUpdatesReadOnly(t *testing.T) {
-	isRead := true
-	readAt := time.Date(2026, 7, 18, 7, 1, 0, 0, time.UTC)
+    isRead := true
+    readAt := time.Date(2026, 7, 18, 7, 1, 0, 0, time.UTC)
 
-	updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
-		IsRead: &isRead,
-		ReadAt: readAt,
-	})
+    updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
+        IsRead: &isRead,
+        ReadAt: readAt,
+    })
 
-	assert.Equal(t, map[string]any{
-		"is_read":      true,
-		"last_read_at": readAt,
-	}, updates)
-	assert.NotContains(t, updates, "is_archived")
+    assert.Equal(t, map[string]any{
+        "is_read":      true,
+        "last_read_at": readAt,
+    }, updates)
+    assert.NotContains(t, updates, "is_archived")
 }
 
 func TestMessageThreadStatusUpdatesArchiveOnly(t *testing.T) {
-	isArchived := true
+    isArchived := true
 
-	updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
-		IsArchived: &isArchived,
-	})
+    updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
+        IsArchived: &isArchived,
+    })
 
-	assert.Equal(t, map[string]any{"is_archived": true}, updates)
-	assert.NotContains(t, updates, "is_read")
-	assert.NotContains(t, updates, "last_read_at")
+    assert.Equal(t, map[string]any{"is_archived": true}, updates)
+    assert.NotContains(t, updates, "is_read")
+    assert.NotContains(t, updates, "last_read_at")
 }
 ```
 
@@ -373,28 +373,28 @@ In `message_thread_repository.go`, add:
 
 ```go
 type MessageThreadActivityUpdate struct {
-	MessageThreadID uuid.UUID
-	UserID          entities.UserID
-	Timestamp       time.Time
-	MessageID       uuid.UUID
-	Content         string
-	Status          entities.MessageStatus
-	MarksUnread     bool
-	EventTimestamp  time.Time
+    MessageThreadID uuid.UUID
+    UserID          entities.UserID
+    Timestamp       time.Time
+    MessageID       uuid.UUID
+    Content         string
+    Status          entities.MessageStatus
+    MarksUnread     bool
+    EventTimestamp  time.Time
 }
 
 type MessageThreadStatusUpdate struct {
-	IsArchived *bool
-	IsRead     *bool
-	ReadAt     time.Time
+    IsArchived *bool
+    IsRead     *bool
+    ReadAt     time.Time
 }
 
 type MessageThreadDeletedUpdate struct {
-	MessageThreadID         uuid.UUID
-	UserID                  entities.UserID
-	LastMessageID           *uuid.UUID
-	LastMessageContent      *string
-	LastMessageStatus       entities.MessageStatus
+    MessageThreadID         uuid.UUID
+    UserID                  entities.UserID
+    LastMessageID           *uuid.UUID
+    LastMessageContent      *string
+    LastMessageStatus       entities.MessageStatus
 }
 ```
 
@@ -412,26 +412,26 @@ Add these helpers to `gorm_message_thread_repository.go`:
 
 ```go
 func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string]any {
-	return map[string]any{
-		"order_timestamp":      params.Timestamp,
-		"last_message_id":      params.MessageID,
-		"last_message_content": params.Content,
-		"status":               params.Status,
-	}
+    return map[string]any{
+        "order_timestamp":      params.Timestamp,
+        "last_message_id":      params.MessageID,
+        "last_message_content": params.Content,
+        "status":               params.Status,
+    }
 }
 
 func messageThreadStatusUpdates(params MessageThreadStatusUpdate) map[string]any {
-	updates := make(map[string]any)
-	if params.IsArchived != nil {
-		updates["is_archived"] = *params.IsArchived
-	}
-	if params.IsRead != nil {
-		updates["is_read"] = *params.IsRead
-		if *params.IsRead {
-			updates["last_read_at"] = params.ReadAt
-		}
-	}
-	return updates
+    updates := make(map[string]any)
+    if params.IsArchived != nil {
+        updates["is_archived"] = *params.IsArchived
+    }
+    if params.IsRead != nil {
+        updates["is_read"] = *params.IsRead
+        if *params.IsRead {
+            updates["last_read_at"] = params.ReadAt
+        }
+    }
+    return updates
 }
 ```
 
@@ -439,87 +439,87 @@ Replace the full-row `Update` implementation with:
 
 ```go
 func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Context, params MessageThreadActivityUpdate) error {
-	ctx, span := repository.tracer.Start(ctx)
-	defer span.End()
+    ctx, span := repository.tracer.Start(ctx)
+    defer span.End()
 
-	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		query := tx.Model(&entities.MessageThread{}).
-			Where("user_id = ?", params.UserID).
-			Where("id = ?", params.MessageThreadID)
+    err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+        query := tx.Model(&entities.MessageThread{}).
+            Where("user_id = ?", params.UserID).
+            Where("id = ?", params.MessageThreadID)
 
-		result := query.Updates(messageThreadActivityUpdates(params))
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return stacktrace.PropagateWithCode(
-				gorm.ErrRecordNotFound,
-				ErrCodeNotFound,
-				fmt.Sprintf("thread with id [%s] not found", params.MessageThreadID),
-			)
-		}
+        result := query.Updates(messageThreadActivityUpdates(params))
+        if result.Error != nil {
+            return result.Error
+        }
+        if result.RowsAffected == 0 {
+            return stacktrace.PropagateWithCode(
+                gorm.ErrRecordNotFound,
+                ErrCodeNotFound,
+                fmt.Sprintf("thread with id [%s] not found", params.MessageThreadID),
+            )
+        }
 
-		if !params.MarksUnread {
-			return nil
-		}
+        if !params.MarksUnread {
+            return nil
+        }
 
-		return tx.Model(&entities.MessageThread{}).
-			Where("user_id = ?", params.UserID).
-			Where("id = ?", params.MessageThreadID).
-			Where("last_read_at < ?", params.EventTimestamp).
-			Update("is_read", false).
-			Error
-	})
-	if err != nil {
-		msg := fmt.Sprintf("cannot update message activity for thread [%s]", params.MessageThreadID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
-	}
-	return nil
+        return tx.Model(&entities.MessageThread{}).
+            Where("user_id = ?", params.UserID).
+            Where("id = ?", params.MessageThreadID).
+            Where("last_read_at < ?", params.EventTimestamp).
+            Update("is_read", false).
+            Error
+    })
+    if err != nil {
+        msg := fmt.Sprintf("cannot update message activity for thread [%s]", params.MessageThreadID)
+        return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+    }
+    return nil
 }
 
 func (repository *gormMessageThreadRepository) UpdateStatus(
-	ctx context.Context,
-	userID entities.UserID,
-	messageThreadID uuid.UUID,
-	params MessageThreadStatusUpdate,
+    ctx context.Context,
+    userID entities.UserID,
+    messageThreadID uuid.UUID,
+    params MessageThreadStatusUpdate,
 ) error {
-	ctx, span := repository.tracer.Start(ctx)
-	defer span.End()
+    ctx, span := repository.tracer.Start(ctx)
+    defer span.End()
 
-	result := repository.db.WithContext(ctx).
-		Model(&entities.MessageThread{}).
-		Where("user_id = ?", userID).
-		Where("id = ?", messageThreadID).
-		Updates(messageThreadStatusUpdates(params))
-	if result.Error != nil {
-		msg := fmt.Sprintf("cannot update status for thread [%s]", messageThreadID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, msg))
-	}
-	if result.RowsAffected == 0 {
-		msg := fmt.Sprintf("thread with id [%s] not found", messageThreadID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, msg))
-	}
-	return nil
+    result := repository.db.WithContext(ctx).
+        Model(&entities.MessageThread{}).
+        Where("user_id = ?", userID).
+        Where("id = ?", messageThreadID).
+        Updates(messageThreadStatusUpdates(params))
+    if result.Error != nil {
+        msg := fmt.Sprintf("cannot update status for thread [%s]", messageThreadID)
+        return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, msg))
+    }
+    if result.RowsAffected == 0 {
+        msg := fmt.Sprintf("thread with id [%s] not found", messageThreadID)
+        return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, msg))
+    }
+    return nil
 }
 
 func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx context.Context, params MessageThreadDeletedUpdate) error {
-	ctx, span := repository.tracer.Start(ctx)
-	defer span.End()
+    ctx, span := repository.tracer.Start(ctx)
+    defer span.End()
 
-	result := repository.db.WithContext(ctx).
-		Model(&entities.MessageThread{}).
-		Where("user_id = ?", params.UserID).
-		Where("id = ?", params.MessageThreadID).
-		Updates(map[string]any{
-			"last_message_id":      params.LastMessageID,
-			"last_message_content": params.LastMessageContent,
-			"status":               params.LastMessageStatus,
-		})
-	if result.Error != nil {
-		msg := fmt.Sprintf("cannot update deleted-message metadata for thread [%s]", params.MessageThreadID)
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, msg))
-	}
-	return nil
+    result := repository.db.WithContext(ctx).
+        Model(&entities.MessageThread{}).
+        Where("user_id = ?", params.UserID).
+        Where("id = ?", params.MessageThreadID).
+        Updates(map[string]any{
+            "last_message_id":      params.LastMessageID,
+            "last_message_content": params.LastMessageContent,
+            "status":               params.LastMessageStatus,
+        })
+    if result.Error != nil {
+        msg := fmt.Sprintf("cannot update deleted-message metadata for thread [%s]", params.MessageThreadID)
+        return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, msg))
+    }
+    return nil
 }
 ```
 
@@ -574,78 +574,78 @@ Create `api/pkg/services/message_thread_service_test.go`. Implement a repository
 package services
 
 import (
-	"context"
-	"testing"
-	"time"
+    "context"
+    "testing"
+    "time"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/NdoleStudio/httpsms/pkg/repositories"
-	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
+    "github.com/NdoleStudio/httpsms/pkg/entities"
+    "github.com/NdoleStudio/httpsms/pkg/repositories"
+    "github.com/NdoleStudio/httpsms/pkg/telemetry"
+    "github.com/google/uuid"
+    "github.com/palantir/stacktrace"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
+    "gorm.io/gorm"
 )
 
 type messageThreadRepositoryStub struct {
-	loadByOwnerContact func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error)
-	load               func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error)
-	store              func(context.Context, *entities.MessageThread) error
-	updateActivity     func(context.Context, repositories.MessageThreadActivityUpdate) error
-	updateStatus       func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error
+    loadByOwnerContact func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error)
+    load               func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error)
+    store              func(context.Context, *entities.MessageThread) error
+    updateActivity     func(context.Context, repositories.MessageThreadActivityUpdate) error
+    updateStatus       func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error
 }
 
 func (stub *messageThreadRepositoryStub) Store(ctx context.Context, thread *entities.MessageThread) error {
-	if stub.store != nil {
-		return stub.store(ctx, thread)
-	}
-	return nil
+    if stub.store != nil {
+        return stub.store(ctx, thread)
+    }
+    return nil
 }
 
 func (stub *messageThreadRepositoryStub) UpdateActivity(ctx context.Context, params repositories.MessageThreadActivityUpdate) error {
-	if stub.updateActivity != nil {
-		return stub.updateActivity(ctx, params)
-	}
-	return nil
+    if stub.updateActivity != nil {
+        return stub.updateActivity(ctx, params)
+    }
+    return nil
 }
 
 func (stub *messageThreadRepositoryStub) UpdateStatus(ctx context.Context, userID entities.UserID, threadID uuid.UUID, params repositories.MessageThreadStatusUpdate) error {
-	if stub.updateStatus != nil {
-		return stub.updateStatus(ctx, userID, threadID, params)
-	}
-	return nil
+    if stub.updateStatus != nil {
+        return stub.updateStatus(ctx, userID, threadID, params)
+    }
+    return nil
 }
 
 func (stub *messageThreadRepositoryStub) UpdateAfterDeletedMessage(context.Context, repositories.MessageThreadDeletedUpdate) error {
-	return nil
+    return nil
 }
 
 func (stub *messageThreadRepositoryStub) LoadByOwnerContact(ctx context.Context, userID entities.UserID, owner string, contact string) (*entities.MessageThread, error) {
-	return stub.loadByOwnerContact(ctx, userID, owner, contact)
+    return stub.loadByOwnerContact(ctx, userID, owner, contact)
 }
 
 func (stub *messageThreadRepositoryStub) Load(ctx context.Context, userID entities.UserID, id uuid.UUID) (*entities.MessageThread, error) {
-	return stub.load(ctx, userID, id)
+    return stub.load(ctx, userID, id)
 }
 
 func (stub *messageThreadRepositoryStub) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
-	threads := []entities.MessageThread{}
-	return &threads, nil
+    threads := []entities.MessageThread{}
+    return &threads, nil
 }
 
 func (stub *messageThreadRepositoryStub) Delete(context.Context, entities.UserID, uuid.UUID) error {
-	return nil
+    return nil
 }
 
 func (stub *messageThreadRepositoryStub) DeleteAllForUser(context.Context, entities.UserID) error {
-	return nil
+    return nil
 }
 
 func newMessageThreadServiceForTest(repository repositories.MessageThreadRepository) *MessageThreadService {
-	logger := &noopLogger{}
-	tracer := telemetry.NewOtelLogger("test", logger)
-	return NewMessageThreadService(logger, tracer, repository, nil)
+    logger := &noopLogger{}
+    tracer := telemetry.NewOtelLogger("test", logger)
+    return NewMessageThreadService(logger, tracer, repository, nil)
 }
 ```
 
@@ -653,151 +653,151 @@ Add these tests below the stub:
 
 ```go
 func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {
-	threadID := uuid.New()
-	eventTimestamp := time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC)
-	var captured repositories.MessageThreadActivityUpdate
-	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{ID: threadID}, nil
-		},
-		updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
-			captured = params
-			return nil
-		},
-	}
+    threadID := uuid.New()
+    eventTimestamp := time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC)
+    var captured repositories.MessageThreadActivityUpdate
+    repository := &messageThreadRepositoryStub{
+        loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+            return &entities.MessageThread{ID: threadID}, nil
+        },
+        updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
+            captured = params
+            return nil
+        },
+    }
 
-	service := newMessageThreadServiceForTest(repository)
-	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-		UserID:         entities.UserID("user-id"),
-		Owner:          "+18005550199",
-		Contact:        "+18005550100",
-		MessageID:      uuid.New(),
-		Content:        "hello",
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      eventTimestamp,
-		MarksUnread:    true,
-		EventTimestamp: eventTimestamp,
-	})
+    service := newMessageThreadServiceForTest(repository)
+    err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+        UserID:         entities.UserID("user-id"),
+        Owner:          "+18005550199",
+        Contact:        "+18005550100",
+        MessageID:      uuid.New(),
+        Content:        "hello",
+        Status:         entities.MessageStatusReceived,
+        Timestamp:      eventTimestamp,
+        MarksUnread:    true,
+        EventTimestamp: eventTimestamp,
+    })
 
-	require.NoError(t, err)
-	assert.True(t, captured.MarksUnread)
-	assert.Equal(t, eventTimestamp, captured.EventTimestamp)
+    require.NoError(t, err)
+    assert.True(t, captured.MarksUnread)
+    assert.Equal(t, eventTimestamp, captured.EventTimestamp)
 }
 
 func TestUpdateThreadPreservesReadStateForOutboundActivity(t *testing.T) {
-	var captured repositories.MessageThreadActivityUpdate
-	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{ID: uuid.New(), IsRead: false}, nil
-		},
-		updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
-			captured = params
-			return nil
-		},
-	}
+    var captured repositories.MessageThreadActivityUpdate
+    repository := &messageThreadRepositoryStub{
+        loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+            return &entities.MessageThread{ID: uuid.New(), IsRead: false}, nil
+        },
+        updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
+            captured = params
+            return nil
+        },
+    }
 
-	service := newMessageThreadServiceForTest(repository)
-	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-		UserID:    entities.UserID("user-id"),
-		Owner:     "+18005550199",
-		Contact:   "+18005550100",
-		MessageID: uuid.New(),
-		Content:   "outbound",
-		Status:    entities.MessageStatusSent,
-		Timestamp: time.Now().UTC(),
-	})
+    service := newMessageThreadServiceForTest(repository)
+    err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+        UserID:    entities.UserID("user-id"),
+        Owner:     "+18005550199",
+        Contact:   "+18005550100",
+        MessageID: uuid.New(),
+        Content:   "outbound",
+        Status:    entities.MessageStatusSent,
+        Timestamp: time.Now().UTC(),
+    })
 
-	require.NoError(t, err)
-	assert.False(t, captured.MarksUnread)
+    require.NoError(t, err)
+    assert.False(t, captured.MarksUnread)
 }
 
 func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
-	tests := []struct {
-		name        string
-		marksUnread bool
-		wantRead    bool
-	}{
-		{name: "inbound", marksUnread: true, wantRead: false},
-		{name: "outbound", marksUnread: false, wantRead: true},
-	}
+    tests := []struct {
+        name        string
+        marksUnread bool
+        wantRead    bool
+    }{
+        {name: "inbound", marksUnread: true, wantRead: false},
+        {name: "outbound", marksUnread: false, wantRead: true},
+    }
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var stored *entities.MessageThread
-			repository := &messageThreadRepositoryStub{
-				loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-					return nil, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
-				},
-				store: func(_ context.Context, thread *entities.MessageThread) error {
-					stored = thread
-					return nil
-				},
-			}
+    for _, test := range tests {
+        t.Run(test.name, func(t *testing.T) {
+            var stored *entities.MessageThread
+            repository := &messageThreadRepositoryStub{
+                loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+                    return nil, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+                },
+                store: func(_ context.Context, thread *entities.MessageThread) error {
+                    stored = thread
+                    return nil
+                },
+            }
 
-			service := newMessageThreadServiceForTest(repository)
-			err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-				UserID:      entities.UserID("user-id"),
-				Owner:       "+18005550199",
-				Contact:     "+18005550100",
-				MessageID:   uuid.New(),
-				Content:     "hello",
-				Status:      entities.MessageStatusReceived,
-				Timestamp:   time.Now().UTC(),
-				MarksUnread: test.marksUnread,
-			})
+            service := newMessageThreadServiceForTest(repository)
+            err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+                UserID:      entities.UserID("user-id"),
+                Owner:       "+18005550199",
+                Contact:     "+18005550100",
+                MessageID:   uuid.New(),
+                Content:     "hello",
+                Status:      entities.MessageStatusReceived,
+                Timestamp:   time.Now().UTC(),
+                MarksUnread: test.marksUnread,
+            })
 
-			require.NoError(t, err)
-			require.NotNil(t, stored)
-			assert.Equal(t, test.wantRead, stored.IsRead)
-			assert.False(t, stored.LastReadAt.IsZero())
-		})
-	}
+            require.NoError(t, err)
+            require.NotNil(t, stored)
+            assert.Equal(t, test.wantRead, stored.IsRead)
+            assert.False(t, stored.LastReadAt.IsZero())
+        })
+    }
 }
 
 func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
-	threadID := uuid.New()
-	isRead := true
-	var captured repositories.MessageThreadStatusUpdate
-	repository := &messageThreadRepositoryStub{
-		updateStatus: func(_ context.Context, _ entities.UserID, _ uuid.UUID, params repositories.MessageThreadStatusUpdate) error {
-			captured = params
-			return nil
-		},
-		load: func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
-			return &entities.MessageThread{ID: threadID, IsArchived: true, IsRead: true}, nil
-		},
-	}
+    threadID := uuid.New()
+    isRead := true
+    var captured repositories.MessageThreadStatusUpdate
+    repository := &messageThreadRepositoryStub{
+        updateStatus: func(_ context.Context, _ entities.UserID, _ uuid.UUID, params repositories.MessageThreadStatusUpdate) error {
+            captured = params
+            return nil
+        },
+        load: func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
+            return &entities.MessageThread{ID: threadID, IsArchived: true, IsRead: true}, nil
+        },
+    }
 
-	service := newMessageThreadServiceForTest(repository)
-	thread, err := service.UpdateStatus(context.Background(), MessageThreadStatusParams{
-		UserID:          entities.UserID("user-id"),
-		MessageThreadID: threadID,
-		IsRead:          &isRead,
-	})
+    service := newMessageThreadServiceForTest(repository)
+    thread, err := service.UpdateStatus(context.Background(), MessageThreadStatusParams{
+        UserID:          entities.UserID("user-id"),
+        MessageThreadID: threadID,
+        IsRead:          &isRead,
+    })
 
-	require.NoError(t, err)
-	assert.Nil(t, captured.IsArchived)
-	assert.Same(t, &isRead, captured.IsRead)
-	assert.False(t, captured.ReadAt.IsZero())
-	assert.True(t, thread.IsArchived)
+    require.NoError(t, err)
+    assert.Nil(t, captured.IsArchived)
+    assert.Same(t, &isRead, captured.IsRead)
+    assert.False(t, captured.ReadAt.IsZero())
+    assert.True(t, thread.IsArchived)
 }
 
 func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
-	repository := &messageThreadRepositoryStub{
-		updateStatus: func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
-			return stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
-		},
-	}
+    repository := &messageThreadRepositoryStub{
+        updateStatus: func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
+            return stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+        },
+    }
 
-	service := newMessageThreadServiceForTest(repository)
-	isRead := true
-	_, err := service.UpdateStatus(context.Background(), MessageThreadStatusParams{
-		UserID:          entities.UserID("user-id"),
-		MessageThreadID: uuid.New(),
-		IsRead:          &isRead,
-	})
+    service := newMessageThreadServiceForTest(repository)
+    isRead := true
+    _, err := service.UpdateStatus(context.Background(), MessageThreadStatusParams{
+        UserID:          entities.UserID("user-id"),
+        MessageThreadID: uuid.New(),
+        IsRead:          &isRead,
+    })
 
-	assert.Equal(t, repositories.ErrCodeNotFound, stacktrace.GetCode(err))
+    assert.Equal(t, repositories.ErrCodeNotFound, stacktrace.GetCode(err))
 }
 ```
 
@@ -824,17 +824,17 @@ Replace the existing full-row update in `UpdateThread` with:
 
 ```go
 if err = service.repository.UpdateActivity(ctx, repositories.MessageThreadActivityUpdate{
-	MessageThreadID: thread.ID,
-	UserID:          params.UserID,
-	Timestamp:       params.Timestamp,
-	MessageID:       params.MessageID,
-	Content:         params.Content,
-	Status:          params.Status,
-	MarksUnread:     params.MarksUnread,
-	EventTimestamp:  params.EventTimestamp,
+    MessageThreadID: thread.ID,
+    UserID:          params.UserID,
+    Timestamp:       params.Timestamp,
+    MessageID:       params.MessageID,
+    Content:         params.Content,
+    Status:          params.Status,
+    MarksUnread:     params.MarksUnread,
+    EventTimestamp:  params.EventTimestamp,
 }); err != nil {
-	msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
-	return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+    msg := fmt.Sprintf("cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID)
+    return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
 }
 ```
 
@@ -851,25 +851,25 @@ Replace `UpdateStatus` with a partial repository update followed by a reload:
 
 ```go
 func (service *MessageThreadService) UpdateStatus(ctx context.Context, params MessageThreadStatusParams) (*entities.MessageThread, error) {
-	ctx, span := service.tracer.Start(ctx)
-	defer span.End()
+    ctx, span := service.tracer.Start(ctx)
+    defer span.End()
 
-	update := repositories.MessageThreadStatusUpdate{
-		IsArchived: params.IsArchived,
-		IsRead:     params.IsRead,
-		ReadAt:     time.Now().UTC(),
-	}
-	if err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update); err != nil {
-		msg := fmt.Sprintf("cannot update message thread with id [%s]", params.MessageThreadID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
-	}
+    update := repositories.MessageThreadStatusUpdate{
+        IsArchived: params.IsArchived,
+        IsRead:     params.IsRead,
+        ReadAt:     time.Now().UTC(),
+    }
+    if err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update); err != nil {
+        msg := fmt.Sprintf("cannot update message thread with id [%s]", params.MessageThreadID)
+        return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+    }
 
-	thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
-	if err != nil {
-		msg := fmt.Sprintf("cannot reload message thread with id [%s]", params.MessageThreadID)
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
-	}
-	return thread, nil
+    thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
+    if err != nil {
+        msg := fmt.Sprintf("cannot reload message thread with id [%s]", params.MessageThreadID)
+        return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), msg))
+    }
+    return thread, nil
 }
 ```
 
@@ -877,14 +877,14 @@ In `UpdateAfterDeletedMessage`, replace the full-row update with:
 
 ```go
 if err = service.repository.UpdateAfterDeletedMessage(ctx, repositories.MessageThreadDeletedUpdate{
-	MessageThreadID:    thread.ID,
-	UserID:             thread.UserID,
-	LastMessageID:      payload.PreviousMessageID,
-	LastMessageContent: payload.PreviousMessageContent,
-	LastMessageStatus:  *payload.PreviousMessageStatus,
+    MessageThreadID:    thread.ID,
+    UserID:             thread.UserID,
+    LastMessageID:      payload.PreviousMessageID,
+    LastMessageContent: payload.PreviousMessageContent,
+    LastMessageStatus:  *payload.PreviousMessageStatus,
 }); err != nil {
-	msg := fmt.Sprintf("cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID)
-	return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+    msg := fmt.Sprintf("cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID)
+    return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
 }
 ```
 
@@ -907,31 +907,31 @@ Add:
 
 ```go
 func (listener *MessageThreadListener) OnMessageCallMissed(ctx context.Context, event cloudevents.Event) error {
-	ctx, span := listener.tracer.Start(ctx)
-	defer span.End()
+    ctx, span := listener.tracer.Start(ctx)
+    defer span.End()
 
-	var payload events.MessageCallMissedPayload
-	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
+    var payload events.MessageCallMissedPayload
+    if err := event.DataAs(&payload); err != nil {
+        msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+        return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+    }
 
-	params := services.MessageThreadUpdateParams{
-		Owner:          payload.Owner,
-		Contact:        payload.Contact,
-		UserID:         payload.UserID,
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      payload.Timestamp,
-		Content:        "Missed phone call",
-		MessageID:      payload.MessageID,
-		MarksUnread:    true,
-		EventTimestamp: event.Time(),
-	}
-	if err := listener.service.UpdateThread(ctx, params); err != nil {
-		msg := fmt.Sprintf("cannot update thread for missed call [%s] on event [%s]", payload.MessageID, event.ID())
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-	return nil
+    params := services.MessageThreadUpdateParams{
+        Owner:          payload.Owner,
+        Contact:        payload.Contact,
+        UserID:         payload.UserID,
+        Status:         entities.MessageStatusReceived,
+        Timestamp:      payload.Timestamp,
+        Content:        "Missed phone call",
+        MessageID:      payload.MessageID,
+        MarksUnread:    true,
+        EventTimestamp: event.Time(),
+    }
+    if err := listener.service.UpdateThread(ctx, params); err != nil {
+        msg := fmt.Sprintf("cannot update thread for missed call [%s] on event [%s]", payload.MessageID, event.ID())
+        return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+    }
+    return nil
 }
 ```
 
@@ -945,20 +945,20 @@ Add:
 
 ```go
 func (listener *WebsocketListener) onMessageCallMissed(ctx context.Context, event cloudevents.Event) error {
-	ctx, span, _ := listener.tracer.StartWithLogger(ctx, listener.logger)
-	defer span.End()
+    ctx, span, _ := listener.tracer.StartWithLogger(ctx, listener.logger)
+    defer span.End()
 
-	var payload events.MessageCallMissedPayload
-	if err := event.DataAs(&payload); err != nil {
-		msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
+    var payload events.MessageCallMissedPayload
+    if err := event.DataAs(&payload); err != nil {
+        msg := fmt.Sprintf("cannot decode [%s] into [%T]", event.Data(), payload)
+        return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+    }
 
-	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
-		msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
-	}
-	return nil
+    if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
+        msg := fmt.Sprintf("cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID)
+        return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, msg))
+    }
+    return nil
 }
 ```
 
@@ -970,13 +970,13 @@ Create `api/pkg/listeners/read_receipts_test_helpers_test.go`:
 package listeners
 
 import (
-	"context"
+    "context"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/NdoleStudio/httpsms/pkg/repositories"
-	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
+    "github.com/NdoleStudio/httpsms/pkg/entities"
+    "github.com/NdoleStudio/httpsms/pkg/repositories"
+    "github.com/NdoleStudio/httpsms/pkg/telemetry"
+    "github.com/google/uuid"
+    "go.opentelemetry.io/otel/trace"
 )
 
 type noopListenerLogger struct{}
@@ -993,45 +993,45 @@ func (logger *noopListenerLogger) Fatal(error)                                 {
 func (logger *noopListenerLogger) Printf(string, ...interface{})               {}
 
 type listenerMessageThreadRepository struct {
-	activity repositories.MessageThreadActivityUpdate
+    activity repositories.MessageThreadActivityUpdate
 }
 
 func (repository *listenerMessageThreadRepository) Store(context.Context, *entities.MessageThread) error {
-	return nil
+    return nil
 }
 
 func (repository *listenerMessageThreadRepository) UpdateActivity(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
-	repository.activity = params
-	return nil
+    repository.activity = params
+    return nil
 }
 
 func (repository *listenerMessageThreadRepository) UpdateStatus(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) error {
-	return nil
+    return nil
 }
 
 func (repository *listenerMessageThreadRepository) UpdateAfterDeletedMessage(context.Context, repositories.MessageThreadDeletedUpdate) error {
-	return nil
+    return nil
 }
 
 func (repository *listenerMessageThreadRepository) LoadByOwnerContact(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-	return &entities.MessageThread{ID: uuid.New()}, nil
+    return &entities.MessageThread{ID: uuid.New()}, nil
 }
 
 func (repository *listenerMessageThreadRepository) Load(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
-	return &entities.MessageThread{}, nil
+    return &entities.MessageThread{}, nil
 }
 
 func (repository *listenerMessageThreadRepository) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
-	threads := []entities.MessageThread{}
-	return &threads, nil
+    threads := []entities.MessageThread{}
+    return &threads, nil
 }
 
 func (repository *listenerMessageThreadRepository) Delete(context.Context, entities.UserID, uuid.UUID) error {
-	return nil
+    return nil
 }
 
 func (repository *listenerMessageThreadRepository) DeleteAllForUser(context.Context, entities.UserID) error {
-	return nil
+    return nil
 }
 ```
 
@@ -1041,46 +1041,46 @@ Create `api/pkg/listeners/message_thread_listener_test.go`:
 package listeners
 
 import (
-	"context"
-	"testing"
-	"time"
+    "context"
+    "testing"
+    "time"
 
-	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/NdoleStudio/httpsms/pkg/events"
-	"github.com/NdoleStudio/httpsms/pkg/services"
-	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+    "github.com/NdoleStudio/httpsms/pkg/entities"
+    "github.com/NdoleStudio/httpsms/pkg/events"
+    "github.com/NdoleStudio/httpsms/pkg/services"
+    "github.com/NdoleStudio/httpsms/pkg/telemetry"
+    cloudevents "github.com/cloudevents/sdk-go/v2"
+    "github.com/google/uuid"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
 )
 
 func TestMessageThreadListenerMarksMissedCallUnread(t *testing.T) {
-	repository := &listenerMessageThreadRepository{}
-	logger := &noopListenerLogger{}
-	tracer := telemetry.NewOtelLogger("test", logger)
-	service := services.NewMessageThreadService(logger, tracer, repository, nil)
-	_, routes := NewMessageThreadListener(logger, tracer, service)
+    repository := &listenerMessageThreadRepository{}
+    logger := &noopListenerLogger{}
+    tracer := telemetry.NewOtelLogger("test", logger)
+    service := services.NewMessageThreadService(logger, tracer, repository, nil)
+    _, routes := NewMessageThreadListener(logger, tracer, service)
 
-	event := cloudevents.NewEvent()
-	event.SetID(uuid.NewString())
-	event.SetSource("/v1/messages/call-missed")
-	event.SetType(events.MessageCallMissed)
-	event.SetTime(time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC))
-	require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.MessageCallMissedPayload{
-		MessageID: uuid.New(),
-		UserID:    entities.UserID("user-id"),
-		Owner:     "+18005550199",
-		Contact:   "+18005550100",
-		Timestamp: time.Date(2026, 7, 18, 6, 59, 0, 0, time.UTC),
-	}))
+    event := cloudevents.NewEvent()
+    event.SetID(uuid.NewString())
+    event.SetSource("/v1/messages/call-missed")
+    event.SetType(events.MessageCallMissed)
+    event.SetTime(time.Date(2026, 7, 18, 7, 0, 0, 0, time.UTC))
+    require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.MessageCallMissedPayload{
+        MessageID: uuid.New(),
+        UserID:    entities.UserID("user-id"),
+        Owner:     "+18005550199",
+        Contact:   "+18005550100",
+        Timestamp: time.Date(2026, 7, 18, 6, 59, 0, 0, time.UTC),
+    }))
 
-	err := routes[events.MessageCallMissed](context.Background(), event)
+    err := routes[events.MessageCallMissed](context.Background(), event)
 
-	require.NoError(t, err)
-	assert.True(t, repository.activity.MarksUnread)
-	assert.Equal(t, "Missed phone call", repository.activity.Content)
-	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
+    require.NoError(t, err)
+    assert.True(t, repository.activity.MarksUnread)
+    assert.Equal(t, "Missed phone call", repository.activity.Content)
+    assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
 }
 ```
 
@@ -1090,20 +1090,20 @@ Create `api/pkg/listeners/websocket_listener_test.go`:
 package listeners
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/NdoleStudio/httpsms/pkg/events"
-	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/pusher/pusher-http-go/v5"
-	"github.com/stretchr/testify/assert"
+    "github.com/NdoleStudio/httpsms/pkg/events"
+    "github.com/NdoleStudio/httpsms/pkg/telemetry"
+    "github.com/pusher/pusher-http-go/v5"
+    "github.com/stretchr/testify/assert"
 )
 
 func TestWebsocketListenerRegistersMissedCalls(t *testing.T) {
-	logger := &noopListenerLogger{}
-	tracer := telemetry.NewOtelLogger("test", logger)
-	_, routes := NewWebsocketListener(logger, tracer, &pusher.Client{})
+    logger := &noopListenerLogger{}
+    tracer := telemetry.NewOtelLogger("test", logger)
+    _, routes := NewWebsocketListener(logger, tracer, &pusher.Client{})
 
-	assert.Contains(t, routes, events.MessageCallMissed)
+    assert.Contains(t, routes, events.MessageCallMissed)
 }
 ```
 
@@ -1149,8 +1149,8 @@ Copilot-Session: bf00a0ac-e11f-4015-b295-3cdd9b491229
 Change the update annotation:
 
 ```go
-// @Success      200 				{object}	responses.MessageThreadResponse
-// @Failure 	 404				{object}	responses.NotFound
+// @Success      200                 {object}    responses.MessageThreadResponse
+// @Failure      404                {object}    responses.NotFound
 ```
 
 Change the error block:
@@ -1158,12 +1158,12 @@ Change the error block:
 ```go
 thread, err := h.service.UpdateStatus(ctx, request.ToUpdateParams(h.userIDFomContext(c)))
 if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-	return h.responseNotFound(c, fmt.Sprintf("cannot find message thread with ID [%s]", request.MessageThreadID))
+    return h.responseNotFound(c, fmt.Sprintf("cannot find message thread with ID [%s]", request.MessageThreadID))
 }
 if err != nil {
-	msg := fmt.Sprintf("cannot update message thread with params [%+#v]", request)
-	ctxLogger.Error(stacktrace.Propagate(err, msg))
-	return h.responseInternalServerError(c)
+    msg := fmt.Sprintf("cannot update message thread with params [%+#v]", request)
+    ctxLogger.Error(stacktrace.Propagate(err, msg))
+    return h.responseInternalServerError(c)
 }
 ```
 
@@ -1442,194 +1442,194 @@ Create `tests/read_receipts_test.go`:
 package tests
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"testing"
-	"time"
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+    "net/url"
+    "testing"
+    "time"
 
-	httpsms "github.com/NdoleStudio/httpsms-go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+    httpsms "github.com/NdoleStudio/httpsms-go"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
 )
 
 type integrationMessageThread struct {
-	ID                 string  `json:"id"`
-	Contact            string  `json:"contact"`
-	IsRead             bool    `json:"is_read"`
-	LastMessageContent *string `json:"last_message_content"`
+    ID                 string  `json:"id"`
+    Contact            string  `json:"contact"`
+    IsRead             bool    `json:"is_read"`
+    LastMessageContent *string `json:"last_message_content"`
 }
 
 func requestJSON(
-	ctx context.Context,
-	t *testing.T,
-	method string,
-	path string,
-	apiKey string,
-	payload any,
-	expectedStatus int,
-	output any,
+    ctx context.Context,
+    t *testing.T,
+    method string,
+    path string,
+    apiKey string,
+    payload any,
+    expectedStatus int,
+    output any,
 ) {
-	t.Helper()
+    t.Helper()
 
-	var body io.Reader
-	if payload != nil {
-		encoded, err := json.Marshal(payload)
-		require.NoError(t, err)
-		body = bytes.NewReader(encoded)
-	}
+    var body io.Reader
+    if payload != nil {
+        encoded, err := json.Marshal(payload)
+        require.NoError(t, err)
+        body = bytes.NewReader(encoded)
+    }
 
-	request, err := http.NewRequestWithContext(ctx, method, apiBaseURL+path, body)
-	require.NoError(t, err)
-	request.Header.Set("x-api-key", apiKey)
-	request.Header.Set("Content-Type", "application/json")
+    request, err := http.NewRequestWithContext(ctx, method, apiBaseURL+path, body)
+    require.NoError(t, err)
+    request.Header.Set("x-api-key", apiKey)
+    request.Header.Set("Content-Type", "application/json")
 
-	response, err := http.DefaultClient.Do(request)
-	require.NoError(t, err)
-	defer response.Body.Close()
+    response, err := http.DefaultClient.Do(request)
+    require.NoError(t, err)
+    defer response.Body.Close()
 
-	responseBody, err := io.ReadAll(response.Body)
-	require.NoError(t, err)
-	require.Equal(t, expectedStatus, response.StatusCode, "response: %s", string(responseBody))
+    responseBody, err := io.ReadAll(response.Body)
+    require.NoError(t, err)
+    require.Equal(t, expectedStatus, response.StatusCode, "response: %s", string(responseBody))
 
-	if output != nil {
-		require.NoError(t, json.Unmarshal(responseBody, output))
-	}
+    if output != nil {
+        require.NoError(t, json.Unmarshal(responseBody, output))
+    }
 }
 
 func fetchMessageThreads(ctx context.Context, t *testing.T, owner string) []integrationMessageThread {
-	t.Helper()
+    t.Helper()
 
-	var response struct {
-		Data []integrationMessageThread `json:"data"`
-	}
-	path := fmt.Sprintf(
-		"/v1/message-threads?owner=%s&skip=0&limit=20&is_archived=false",
-		url.QueryEscape(owner),
-	)
-	requestJSON(ctx, t, http.MethodGet, path, userAPIKey, nil, http.StatusOK, &response)
-	return response.Data
+    var response struct {
+        Data []integrationMessageThread `json:"data"`
+    }
+    path := fmt.Sprintf(
+        "/v1/message-threads?owner=%s&skip=0&limit=20&is_archived=false",
+        url.QueryEscape(owner),
+    )
+    requestJSON(ctx, t, http.MethodGet, path, userAPIKey, nil, http.StatusOK, &response)
+    return response.Data
 }
 
 func waitForMessageThread(
-	ctx context.Context,
-	t *testing.T,
-	owner string,
-	contact string,
-	timeout time.Duration,
-	matches func(integrationMessageThread) bool,
+    ctx context.Context,
+    t *testing.T,
+    owner string,
+    contact string,
+    timeout time.Duration,
+    matches func(integrationMessageThread) bool,
 ) integrationMessageThread {
-	t.Helper()
+    t.Helper()
 
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		for _, thread := range fetchMessageThreads(ctx, t, owner) {
-			if thread.Contact == contact && matches(thread) {
-				return thread
-			}
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
+    deadline := time.Now().Add(timeout)
+    for time.Now().Before(deadline) {
+        for _, thread := range fetchMessageThreads(ctx, t, owner) {
+            if thread.Contact == contact && matches(thread) {
+                return thread
+            }
+        }
+        time.Sleep(500 * time.Millisecond)
+    }
 
-	t.Fatalf("thread %s -> %s did not reach the expected state within %v", owner, contact, timeout)
-	return integrationMessageThread{}
+    t.Fatalf("thread %s -> %s did not reach the expected state within %v", owner, contact, timeout)
+    return integrationMessageThread{}
 }
 
 func markMessageThreadRead(ctx context.Context, t *testing.T, threadID string) integrationMessageThread {
-	t.Helper()
+    t.Helper()
 
-	var response struct {
-		Data integrationMessageThread `json:"data"`
-	}
-	requestJSON(
-		ctx,
-		t,
-		http.MethodPut,
-		"/v1/message-threads/"+threadID,
-		userAPIKey,
-		map[string]any{"is_read": true},
-		http.StatusOK,
-		&response,
-	)
-	return response.Data
+    var response struct {
+        Data integrationMessageThread `json:"data"`
+    }
+    requestJSON(
+        ctx,
+        t,
+        http.MethodPut,
+        "/v1/message-threads/"+threadID,
+        userAPIKey,
+        map[string]any{"is_read": true},
+        http.StatusOK,
+        &response,
+    )
+    return response.Data
 }
 
 func TestMessageThreadReadReceipts(t *testing.T) {
-	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
-	contact := randomPhoneNumber()
+    ctx := context.Background()
+    phone := setupPhone(ctx, t, 60)
+    contact := randomPhoneNumber()
 
-	requestJSON(
-		ctx,
-		t,
-		http.MethodPost,
-		"/v1/messages/receive",
-		phone.PhoneAPIKey,
-		map[string]any{
-			"from":      contact,
-			"to":        phone.PhoneNumber,
-			"content":   "Unread inbound message",
-			"encrypted": false,
-			"sim":       "SIM1",
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-		},
-		http.StatusOK,
-		nil,
-	)
+    requestJSON(
+        ctx,
+        t,
+        http.MethodPost,
+        "/v1/messages/receive",
+        phone.PhoneAPIKey,
+        map[string]any{
+            "from":      contact,
+            "to":        phone.PhoneNumber,
+            "content":   "Unread inbound message",
+            "encrypted": false,
+            "sim":       "SIM1",
+            "timestamp": time.Now().UTC().Format(time.RFC3339),
+        },
+        http.StatusOK,
+        nil,
+    )
 
-	thread := waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
-		return !thread.IsRead
-	})
-	assert.False(t, thread.IsRead)
+    thread := waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+        return !thread.IsRead
+    })
+    assert.False(t, thread.IsRead)
 
-	updated := markMessageThreadRead(ctx, t, thread.ID)
-	assert.True(t, updated.IsRead)
-	waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 10*time.Second, func(thread integrationMessageThread) bool {
-		return thread.IsRead
-	})
+    updated := markMessageThreadRead(ctx, t, thread.ID)
+    assert.True(t, updated.IsRead)
+    waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 10*time.Second, func(thread integrationMessageThread) bool {
+        return thread.IsRead
+    })
 
-	requestJSON(
-		ctx,
-		t,
-		http.MethodPost,
-		"/v1/messages/calls/missed",
-		phone.PhoneAPIKey,
-		map[string]any{
-			"from":      contact,
-			"to":        phone.PhoneNumber,
-			"sim":       "SIM1",
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-		},
-		http.StatusOK,
-		nil,
-	)
+    requestJSON(
+        ctx,
+        t,
+        http.MethodPost,
+        "/v1/messages/calls/missed",
+        phone.PhoneAPIKey,
+        map[string]any{
+            "from":      contact,
+            "to":        phone.PhoneNumber,
+            "sim":       "SIM1",
+            "timestamp": time.Now().UTC().Format(time.RFC3339),
+        },
+        http.StatusOK,
+        nil,
+    )
 
-	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
-		return !thread.IsRead &&
-			thread.LastMessageContent != nil &&
-			*thread.LastMessageContent == "Missed phone call"
-	})
-	assert.False(t, thread.IsRead)
+    thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+        return !thread.IsRead &&
+            thread.LastMessageContent != nil &&
+            *thread.LastMessageContent == "Missed phone call"
+    })
+    assert.False(t, thread.IsRead)
 
-	outboundContent := "Outbound activity preserves unread"
-	client := newAPIClient()
-	_, response, err := client.Messages.Send(ctx, &httpsms.MessageSendParams{
-		From:    phone.PhoneNumber,
-		To:      contact,
-		Content: outboundContent,
-	})
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode)
+    outboundContent := "Outbound activity preserves unread"
+    client := newAPIClient()
+    _, response, err := client.Messages.Send(ctx, &httpsms.MessageSendParams{
+        From:    phone.PhoneNumber,
+        To:      contact,
+        Content: outboundContent,
+    })
+    require.NoError(t, err)
+    require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode)
 
-	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
-		return thread.LastMessageContent != nil &&
-			*thread.LastMessageContent == outboundContent
-	})
-	assert.False(t, thread.IsRead, "outbound activity must not clear unread state")
+    thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+        return thread.LastMessageContent != nil &&
+            *thread.LastMessageContent == outboundContent
+    })
+    assert.False(t, thread.IsRead, "outbound activity must not clear unread state")
 }
 ```
 
