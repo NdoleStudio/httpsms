@@ -113,7 +113,15 @@ export const useThreadsStore = defineStore('threads', () => {
         message: 'The message thread could not be marked as read',
         type: 'error',
       })
-      await loadThreads()
+      try {
+        await loadThreads()
+      } catch (reloadError) {
+        throw new AggregateError(
+          [error, reloadError],
+          'Could not mark the message thread as read or reload threads',
+          { cause: reloadError },
+        )
+      }
       throw error
     }
   }
