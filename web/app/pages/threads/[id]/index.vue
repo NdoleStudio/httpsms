@@ -148,9 +148,7 @@ async function archiveThread() {
     threadId: threadsStore.currentThread!.id,
     isArchived: true,
   })
-  setTimeout(() => {
-    selectedMenuItem.value = -1
-  }, 1000)
+  await router.push('/threads')
 }
 
 async function unArchiveThread() {
@@ -158,9 +156,7 @@ async function unArchiveThread() {
     threadId: threadsStore.currentThread!.id,
     isArchived: false,
   })
-  setTimeout(() => {
-    selectedMenuItem.value = -1
-  }, 1000)
+  await router.push('/threads')
 }
 
 async function resendMessage(message: EntitiesMessage) {
