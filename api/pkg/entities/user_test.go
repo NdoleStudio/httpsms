@@ -51,3 +51,19 @@ func TestUser_GetBillingAnchorDay_PaidUserDay31(t *testing.T) {
 	}
 	assert.Equal(t, 31, user.GetBillingAnchorDay())
 }
+
+func TestSubscriptionName_RateLimit_Free(t *testing.T) {
+	assert.Equal(t, uint(400), SubscriptionNameFree.RateLimit())
+}
+
+func TestSubscriptionName_RateLimit_Pro(t *testing.T) {
+	assert.Equal(t, uint(10000), SubscriptionNameProMonthly.RateLimit())
+}
+
+func TestSubscriptionName_RateLimit_Ultra(t *testing.T) {
+	assert.Equal(t, uint(20000), SubscriptionNameUltraMonthly.RateLimit())
+}
+
+func TestSubscriptionName_RateLimit_200K(t *testing.T) {
+	assert.Equal(t, uint(400000), SubscriptionName200KMonthly.RateLimit())
+}

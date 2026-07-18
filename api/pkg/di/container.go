@@ -96,12 +96,21 @@ type Container struct {
 	userRistrettoCache   *ristretto.Cache[string, entities.AuthContext]
 	phoneRistrettoCache  *ristretto.Cache[string, *entities.Phone]
 	inMemoryCache        cache.Cache
+	rateLimitService     *services.RateLimitService
+	redisClient          *redis.Client
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
 func NewLiteContainer() (container *Container) {
 	return &Container{
 		logger: logger(3).WithService(fmt.Sprintf("%T", container)),
+	}
+}
+
+// Close gracefully shuts down container resources
+func (container *Container) Close() {
+	if container.rateLimitService != nil {
+		container.rateLimitService.Close()
 	}
 }
 
@@ -203,6 +212,20 @@ func (container *Container) App() (app *fiber.App) {
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
+
+	if os.Getenv("RATE_LIMIT_ENABLED") == "true" {
+		app.Use(middlewares.RateLimit(
+			container.Tracer(),
+			container.Logger(),
+			container.RateLimitService(),
+			container.UserRepository(),
+			[]string{"/v1/events"},
+		))
+		app.Hooks().OnPreShutdown(func() error {
+			container.RateLimitService().Close()
+			return nil
+		})
+	}
 
 	container.app = app
 	return app
@@ -442,6 +465,16 @@ func (container *Container) InMemoryCache() cache.Cache {
 // Cache creates a new instance of cache.Cache
 func (container *Container) Cache() cache.Cache {
 	container.logger.Debug("creating cache.Cache")
+	return cache.NewRedisCache(container.Tracer(), container.RedisClient())
+}
+
+// RedisClient creates or returns the shared *redis.Client
+func (container *Container) RedisClient() *redis.Client {
+	if container.redisClient != nil {
+		return container.redisClient
+	}
+
+	container.logger.Debug("creating *redis.Client")
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot parse redis url [%s]", os.Getenv("REDIS_URL")))
@@ -452,19 +485,32 @@ func (container *Container) Cache() cache.Cache {
 		}
 	}
 
-	redisClient := redis.NewClient(opt)
+	container.redisClient = redis.NewClient(opt)
 
-	// Enable tracing instrumentation.
-	if err = redisotel.InstrumentTracing(redisClient); err != nil {
+	if err = redisotel.InstrumentTracing(container.redisClient); err != nil {
 		container.logger.Error(stacktrace.Propagate(err, "cannot instrument redis tracing"))
 	}
-
-	// Enable metrics instrumentation.
-	if err = redisotel.InstrumentMetrics(redisClient); err != nil {
+	if err = redisotel.InstrumentMetrics(container.redisClient); err != nil {
 		container.logger.Fatal(stacktrace.Propagate(err, "cannot instrument redis metrics"))
 	}
 
-	return cache.NewRedisCache(container.Tracer(), redisClient)
+	return container.redisClient
+}
+
+// RateLimitService creates or returns the shared *services.RateLimitService
+func (container *Container) RateLimitService() *services.RateLimitService {
+	if container.rateLimitService != nil {
+		return container.rateLimitService
+	}
+
+	container.logger.Debug("creating services.RateLimitService")
+	container.rateLimitService = services.NewRateLimitService(
+		container.Tracer(),
+		container.Logger(),
+		container.RedisClient(),
+		container.EventDispatcher(),
+	)
+	return container.rateLimitService
 }
 
 // FirebaseAuthClient creates a new instance of auth.Client
