@@ -41,12 +41,15 @@ type contactHandlerFakeRepo struct {
 	updated     []*entities.Contact
 	deleted     []deletedContact
 	indexParams []repositories.IndexParams
+	countParams []repositories.IndexParams
 	loadCalls   []loadedContact
 
 	loadResult  *entities.Contact
 	loadErr     error
 	indexResult []entities.Contact
 	indexErr    error
+	countResult int64
+	countErr    error
 	storeErr    error
 	updateErr   error
 	deleteErr   error
@@ -109,6 +112,16 @@ func (r *contactHandlerFakeRepo) Index(_ context.Context, _ entities.UserID, par
 	return &out, nil
 }
 
+func (r *contactHandlerFakeRepo) Count(_ context.Context, _ entities.UserID, params repositories.IndexParams) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.countParams = append(r.countParams, params)
+	if r.countErr != nil {
+		return 0, r.countErr
+	}
+	return r.countResult, nil
+}
+
 func (r *contactHandlerFakeRepo) FetchAll(context.Context, entities.UserID) (*[]entities.Contact, error) {
 	out := []entities.Contact{}
 	return &out, nil
@@ -157,6 +170,7 @@ type contactHandlerPayload struct {
 	Status  string          `json:"status"`
 	Message string          `json:"message"`
 	Data    json.RawMessage `json:"data"`
+	Total   int64           `json:"total"`
 }
 
 func decodeContactHandlerPayload(t *testing.T, resp *http.Response) contactHandlerPayload {
@@ -465,6 +479,54 @@ func TestContactHandler_Index_ConvertsQueryAndScopesToUser(t *testing.T) {
 	payload := decodeContactHandlerPayload(t, resp)
 	assert.Equal(t, "success", payload.Status)
 	assert.Contains(t, payload.Message, "1")
+}
+
+func TestContactHandler_Index_ReturnsServerTotalIndependentOfPageLength(t *testing.T) {
+	repo := &contactHandlerFakeRepo{
+		indexResult: []entities.Contact{
+			{ID: uuid.New(), UserID: contactHandlerTestUserID, Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}},
+			{ID: uuid.New(), UserID: contactHandlerTestUserID, Name: "Bob", PhoneNumbers: pq.StringArray{"+18005550100"}},
+		},
+		countResult: 57,
+	}
+	app := newContactHandlerTestApp(repo)
+
+	values := url.Values{}
+	values.Set("skip", "5")
+	values.Set("limit", "25")
+	values.Set("query", "ali")
+	req := httptest.NewRequest(http.MethodGet, "/v1/contacts?"+values.Encode(), nil)
+
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	payload := decodeContactHandlerPayload(t, resp)
+	assert.Equal(t, "success", payload.Status)
+	// total must be the server count, not the length of the returned page.
+	assert.Equal(t, int64(57), payload.Total)
+
+	var data []entities.Contact
+	require.NoError(t, json.Unmarshal(payload.Data, &data))
+	assert.Len(t, data, 2)
+
+	// Count must run with the exact same filter/pagination params as Index.
+	require.Len(t, repo.indexParams, 1)
+	require.Len(t, repo.countParams, 1)
+	assert.Equal(t, repo.indexParams[0], repo.countParams[0])
+	assert.Equal(t, 5, repo.countParams[0].Skip)
+	assert.Equal(t, 25, repo.countParams[0].Limit)
+	assert.Equal(t, "ali", repo.countParams[0].Query)
+}
+
+func TestContactHandler_Index_CountErrorReturnsInternalServerError(t *testing.T) {
+	repo := &contactHandlerFakeRepo{countErr: assert.AnError}
+	app := newContactHandlerTestApp(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/contacts", nil)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
 func TestContactHandler_Index_DefaultsAppliedWhenParamsMissing(t *testing.T) {

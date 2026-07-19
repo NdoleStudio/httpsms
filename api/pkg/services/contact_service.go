@@ -84,6 +84,20 @@ func (service *ContactService) Index(ctx context.Context, userID entities.UserID
 	return contacts, nil
 }
 
+// Count returns the total number of contacts for a user matching the same
+// search filter as Index, ignoring pagination. It lets callers report an
+// accurate total independent of the current page's skip/limit.
+func (service *ContactService) Count(ctx context.Context, userID entities.UserID, params repositories.IndexParams) (int64, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	total, err := service.repository.Count(ctx, userID, params)
+	if err != nil {
+		return 0, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot count contacts for user [%s]", userID))
+	}
+	return total, nil
+}
+
 // Update persists changes to a contact and invalidates the cached map.
 func (service *ContactService) Update(ctx context.Context, contact *entities.Contact) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)

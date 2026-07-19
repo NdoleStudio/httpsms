@@ -249,7 +249,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Returns the paginated list of contacts for the authenticated user.",
+                "description": "Returns the paginated list of contacts for the authenticated user. The top-level \"total\" field is the number of contacts matching the query filter, independent of skip/limit, so clients can drive server-side pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5257,7 +5257,8 @@ const docTemplate = `{
             "required": [
                 "data",
                 "message",
-                "status"
+                "status",
+                "total"
             ],
             "properties": {
                 "data": {
@@ -5273,6 +5274,11 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "success"
+                },
+                "total": {
+                    "description": "Total is the number of contacts matching the request filter for the\nuser, independent of the pagination skip/limit applied to Data.",
+                    "type": "integer",
+                    "example": 57
                 }
             }
         },

@@ -366,6 +366,25 @@ func TestContactValidator_ValidateUpload_ReturnsRowIndexedValidationErrors(t *te
 	assert.Contains(t, documentErrors, "not-a-number")
 }
 
+func TestContactValidator_ValidateUpload_SanitizesItemsLikeJSONBeforeValidation(t *testing.T) {
+	validator := newContactUploadValidator()
+	// The phone number lacks a leading "+" and the email has mixed case and
+	// surrounding whitespace. The JSON create path sanitizes these before
+	// validation, so the CSV path must accept and normalize them identically.
+	header := multipartFileHeader(t, "contacts.csv", "text/csv", strings.Join([]string{
+		"Name,Emails,PhoneNumbers",
+		"Alice, Alice@Example.com ,18005550199",
+	}, "\n"))
+
+	items, errs := validator.ValidateUpload(context.Background(), entities.UserID("user-1"), header)
+
+	require.Empty(t, errs, "sanitized CSV rows must pass validation like the JSON path")
+	require.Len(t, items, 1)
+	assert.Equal(t, "Alice", items[0].Name)
+	assert.Equal(t, []string{"+18005550199"}, items[0].PhoneNumbers)
+	assert.Equal(t, []string{"alice@example.com"}, items[0].Emails)
+}
+
 func multipartFileHeader(t *testing.T, filename string, contentType string, content string) *multipart.FileHeader {
 	t.Helper()
 

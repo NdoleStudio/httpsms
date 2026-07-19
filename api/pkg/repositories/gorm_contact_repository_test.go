@@ -218,6 +218,45 @@ func TestGormContactRepository_Load_ScopesByUserAndContactID(t *testing.T) {
 	assert.Equal(t, 1, statement.args[2])
 }
 
+func TestGormContactRepository_Count_ReusesIndexFilterWithoutPagination(t *testing.T) {
+	repository, recorder := newContactTestRepo(t)
+
+	total, err := repository.Count(context.Background(), entities.UserID("user-1"), IndexParams{
+		Query: "alice",
+		// Limit/Skip must be ignored by Count.
+		Limit: 20,
+		Skip:  40,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+
+	statement := lastContactStatement(t, recorder)
+	assert.True(t, strings.HasPrefix(statement.query, `SELECT count(*) FROM "contacts"`))
+	// Count must apply the exact same user + name/emails/phone_numbers filter as Index.
+	assert.Contains(t, statement.query, `WHERE user_id = $1 AND (name ILIKE $2 OR array_to_string(emails, ',') ILIKE $3 OR array_to_string(phone_numbers, ',') ILIKE $4)`)
+	// Count must ignore pagination.
+	assert.NotContains(t, statement.query, "LIMIT")
+	assert.NotContains(t, statement.query, "OFFSET")
+	require.Len(t, statement.args, 4)
+	assert.Equal(t, entities.UserID("user-1"), statement.args[0])
+	assert.Equal(t, "%alice%", statement.args[1])
+	assert.Equal(t, "%alice%", statement.args[2])
+	assert.Equal(t, "%alice%", statement.args[3])
+}
+
+func TestGormContactRepository_Count_ScopesByUserWithoutQuery(t *testing.T) {
+	repository, recorder := newContactTestRepo(t)
+
+	_, err := repository.Count(context.Background(), entities.UserID("user-1"), IndexParams{})
+
+	require.NoError(t, err)
+	statement := lastContactStatement(t, recorder)
+	assert.Equal(t, `SELECT count(*) FROM "contacts" WHERE user_id = $1`, statement.query)
+	require.Len(t, statement.args, 1)
+	assert.Equal(t, entities.UserID("user-1"), statement.args[0])
+}
+
 func TestGormContactRepository_Index_FiltersByUserAndQueryAcrossContactFields(t *testing.T) {
 	repository, recorder := newContactTestRepo(t)
 
