@@ -80,7 +80,11 @@ function goToPricing() {
               Blog
             </v-btn>
             <v-btn
-              v-show="lgAndUp && authStore.authUser === null"
+              v-show="
+                lgAndUp &&
+                authStore.authStateChanged &&
+                authStore.authUser === null
+              "
               size="large"
               variant="text"
               color="primary"
@@ -90,7 +94,7 @@ function goToPricing() {
               Login
             </v-btn>
             <v-btn
-              v-show="authStore.authUser === null"
+              v-show="authStore.authStateChanged && authStore.authUser === null"
               color="primary"
               variant="flat"
               :class="{ 'mt-5': mdAndUp, 'mt-1': !mdAndUp }"
@@ -101,7 +105,7 @@ function goToPricing() {
               <span v-show="lgAndUp">&nbsp;For Free</span>
             </v-btn>
             <div
-              v-show="authStore.authUser !== null"
+              v-show="authStore.authStateChanged && authStore.authUser !== null"
               class="position-relative d-inline-block"
             >
               <v-btn
