@@ -80,7 +80,11 @@ function goToPricing() {
               Blog
             </v-btn>
             <v-btn
-              v-show="lgAndUp && authStore.authUser === null"
+              v-show="
+                lgAndUp &&
+                authStore.authStateChanged &&
+                authStore.authUser === null
+              "
               size="large"
               variant="text"
               color="primary"
@@ -90,7 +94,7 @@ function goToPricing() {
               Login
             </v-btn>
             <v-btn
-              v-show="authStore.authUser === null"
+              v-show="authStore.authStateChanged && authStore.authUser === null"
               color="primary"
               variant="flat"
               :class="{ 'mt-5': mdAndUp, 'mt-1': !mdAndUp }"
@@ -100,16 +104,21 @@ function goToPricing() {
               Get Started
               <span v-show="lgAndUp">&nbsp;For Free</span>
             </v-btn>
-            <v-btn
-              v-show="authStore.authUser !== null"
-              color="primary"
-              variant="flat"
-              :class="{ 'mt-5': mdAndUp, 'mt-1': !mdAndUp }"
-              :size="lgAndUp ? 'large' : 'default'"
-              :to="{ name: 'threads' }"
+            <div
+              v-show="authStore.authStateChanged && authStore.authUser !== null"
+              class="position-relative d-inline-block"
             >
-              Dashboard
-            </v-btn>
+              <v-btn
+                color="primary"
+                variant="flat"
+                :class="{ 'mt-5': mdAndUp, 'mt-1': !mdAndUp }"
+                :size="lgAndUp ? 'large' : 'default'"
+                :to="{ name: 'threads' }"
+              >
+                Dashboard
+              </v-btn>
+              <RedirectPromptPopover />
+            </div>
           </v-col>
         </v-row>
       </v-container>

@@ -47,6 +47,7 @@ const authStore = useAuthStore()
 const phonesStore = usePhonesStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
+const redirectPreferenceStore = useRedirectPreferenceStore()
 
 const firebaseUser = ref<FirebaseUser | null>(null)
 const gravatarUrl = ref<string | null>(null)
@@ -773,6 +774,7 @@ async function deleteUserAccount() {
     await signOut(auth)
     authStore.resetState()
     phonesStore.resetState()
+    redirectPreferenceStore.resetState()
     notificationsStore.addNotification({
       type: 'info',
       message: 'You have successfully logged out',
