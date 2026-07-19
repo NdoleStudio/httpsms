@@ -31,6 +31,8 @@ const (
 	contactCSVColumnPhones   = "PhoneNumbers"
 	contactCSVContentType    = "text/csv"
 	contactCSVContentTypeAlt = "application/csv"
+	contactCSVContentTypeBin = "application/octet-stream"
+	contactCSVContentTypeXls = "application/vnd.ms-excel"
 )
 
 // ContactHandlerValidator validates models used in handlers.ContactHandler
@@ -317,8 +319,11 @@ func isContactCSVFile(header *multipart.FileHeader) bool {
 		contentType = strings.TrimSpace(contentType[:index])
 	}
 
-	return contentType == contactCSVContentType ||
-		contentType == contactCSVContentTypeAlt
+	return contentType == "" ||
+		contentType == contactCSVContentType ||
+		contentType == contactCSVContentTypeAlt ||
+		contentType == contactCSVContentTypeBin ||
+		contentType == contactCSVContentTypeXls
 }
 
 func splitContactMultiValue(value string) []string {
