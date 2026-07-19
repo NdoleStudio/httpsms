@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-const STORAGE_KEY = 'httpsms_redirect_to_threads'
+export const STORAGE_KEY = 'httpsms_redirect_to_threads'
 
 function readFlag(): boolean {
   try {
@@ -19,13 +19,13 @@ export const useRedirectPreferenceStore = defineStore(
     const dismissedThisSession = ref(false)
 
     function enable() {
-      enabled.value = true
       try {
         localStorage.setItem(STORAGE_KEY, 'true')
+        enabled.value = true
+        navigateTo('/threads', { replace: true })
       } catch (error) {
         console.error(error)
       }
-      navigateTo('/threads', { replace: true })
     }
 
     function dismiss() {
