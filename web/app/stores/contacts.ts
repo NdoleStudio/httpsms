@@ -66,22 +66,25 @@ export const useContactsStore = defineStore('contacts', () => {
 
     loading.value = true
     try {
-      await apiFetch('/v1/contacts', {
-        method: 'POST',
-        body: contactsToSave,
-      })
+      try {
+        await apiFetch('/v1/contacts', {
+          method: 'POST',
+          body: contactsToSave,
+        })
+      } catch (error: unknown) {
+        notificationsStore.addNotification({
+          message: getApiErrorMessage(error, 'Error while saving contacts'),
+          type: 'error',
+        })
+        throw error
+      }
+
       notificationsStore.addNotification({
         message:
           contactsToSave.length > 1 ? 'Contacts created' : 'Contact created',
         type: 'success',
       })
       await loadContacts(true)
-    } catch (error: unknown) {
-      notificationsStore.addNotification({
-        message: getApiErrorMessage(error, 'Error while saving contacts'),
-        type: 'error',
-      })
-      throw error
     } finally {
       loading.value = false
     }
@@ -93,21 +96,24 @@ export const useContactsStore = defineStore('contacts', () => {
   ): Promise<void> {
     loading.value = true
     try {
-      await apiFetch(`/v1/contacts/${id}`, {
-        method: 'PUT',
-        body: payload,
-      })
+      try {
+        await apiFetch(`/v1/contacts/${id}`, {
+          method: 'PUT',
+          body: payload,
+        })
+      } catch (error: unknown) {
+        notificationsStore.addNotification({
+          message: getApiErrorMessage(error, 'Error while updating contact'),
+          type: 'error',
+        })
+        throw error
+      }
+
       notificationsStore.addNotification({
         message: 'Contact updated',
         type: 'success',
       })
       await loadContacts(true)
-    } catch (error: unknown) {
-      notificationsStore.addNotification({
-        message: getApiErrorMessage(error, 'Error while updating contact'),
-        type: 'error',
-      })
-      throw error
     } finally {
       loading.value = false
     }
@@ -136,24 +142,27 @@ export const useContactsStore = defineStore('contacts', () => {
   async function uploadCsv(file: File): Promise<void> {
     loading.value = true
     try {
-      const formData = new FormData()
-      formData.append('document', file)
+      try {
+        const formData = new FormData()
+        formData.append('document', file)
 
-      await apiFetch('/v1/contacts/upload', {
-        method: 'POST',
-        body: formData,
-      })
+        await apiFetch('/v1/contacts/upload', {
+          method: 'POST',
+          body: formData,
+        })
+      } catch (error: unknown) {
+        notificationsStore.addNotification({
+          message: getApiErrorMessage(error, 'Error while importing contacts'),
+          type: 'error',
+        })
+        throw error
+      }
+
       notificationsStore.addNotification({
         message: 'Contacts imported successfully',
         type: 'success',
       })
       await loadContacts(true)
-    } catch (error: unknown) {
-      notificationsStore.addNotification({
-        message: getApiErrorMessage(error, 'Error while importing contacts'),
-        type: 'error',
-      })
-      throw error
     } finally {
       loading.value = false
     }
