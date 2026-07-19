@@ -91,6 +91,19 @@ func TestContactStoreRequest_ToContactsPreservesPropertiesAndOwnership(t *testin
 	assert.True(t, contacts[0].CreatedAt.Equal(contacts[0].UpdatedAt))
 }
 
+func TestContactStoreRequest_ToContactsInitializesNilProperties(t *testing.T) {
+	request := ContactStoreRequest{Contacts: []ContactItem{{
+		Name:         "Alice",
+		PhoneNumbers: []string{"+18005550199"},
+	}}}
+
+	contacts := request.ToContacts(entities.UserID("user-1"))
+
+	require.Len(t, contacts, 1)
+	assert.NotNil(t, contacts[0].Properties)
+	assert.Empty(t, contacts[0].Properties)
+}
+
 func TestContactUpdateRequest_SanitizeAndApplyTo(t *testing.T) {
 	request := ContactUpdateRequest{
 		Name:         "  Alice  ",
