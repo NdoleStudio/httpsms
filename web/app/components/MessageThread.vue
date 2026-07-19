@@ -97,10 +97,13 @@ function onInstallApp() {
         color="primary"
         :to="{ name: 'threads-id', params: { id: thread.id } }"
         :active="threadsStore.threadId === thread.id"
-        :class="{ 'message-thread--unread': !thread.is_read }"
       >
         <template #prepend>
-          <v-avatar :color="thread.color" size="40">
+          <v-avatar
+            :color="thread.color"
+            size="40"
+            :badge="thread.is_read ? false : { color: 'primary', dotSize: 12 }"
+          >
             <v-icon v-if="!startsWithLetter(thread.contact)" color="white">{{
               mdiAccount
             }}</v-icon>
@@ -114,7 +117,7 @@ function onInstallApp() {
         }}</v-list-item-title>
         <v-list-item-subtitle
           class="text-truncate mt-1"
-          :class="{ 'font-weight-bold': !thread.is_read }"
+          :class="{ 'font-weight-bold opacity-100': !thread.is_read }"
           style="max-width: 250px"
         >
           {{ thread.last_message_content }}
@@ -161,9 +164,3 @@ function onInstallApp() {
     </v-list>
   </div>
 </template>
-
-<style scoped lang="scss">
-.message-thread--unread {
-  background: rgba(var(--v-theme-primary), 0.1);
-}
-</style>
