@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 	ttlCache "github.com/patrickmn/go-cache"
 )
 

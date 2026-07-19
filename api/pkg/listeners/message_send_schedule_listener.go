@@ -7,8 +7,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/palantir/stacktrace"
 )
 
 // MessageSendScheduleListener handles cloud events related to message send schedules.

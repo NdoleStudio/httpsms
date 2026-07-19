@@ -10,8 +10,8 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/gofiber/fiber/v3"
-	"github.com/palantir/stacktrace"
 )
 
 // UserHandler handles user http requests.

@@ -9,8 +9,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	pluralize "github.com/gertd/go-pluralize"
-	"github.com/palantir/stacktrace"
 )
 
 // entityLimits maps entity name → subscription plan → max count.

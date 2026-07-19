@@ -8,8 +8,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/palantir/stacktrace"
 )
 
 // MessageListener handles cloud events which need to update entities.Message

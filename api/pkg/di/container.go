@@ -67,10 +67,10 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/listeners"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
+	"github.com/NdoleStudio/stacktrace"
 	swagger "github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
 	fiberLogger "github.com/gofiber/fiber/v3/middleware/logger"
-	"github.com/palantir/stacktrace"
 	ttlCache "github.com/patrickmn/go-cache"
 	"gorm.io/gorm"
 

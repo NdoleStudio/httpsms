@@ -12,7 +12,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/lemonsqueezy-go"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // LemonsqueezyService is responsible for managing lemonsqueezy events

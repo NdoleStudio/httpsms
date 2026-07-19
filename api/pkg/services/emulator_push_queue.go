@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/carlmjohnson/requests"
-	"github.com/palantir/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"

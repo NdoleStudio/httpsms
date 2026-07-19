@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NdoleStudio/stacktrace"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/palantir/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/services"

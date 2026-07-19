@@ -3,7 +3,7 @@ package repositories
 import (
 	"time"
 
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // IndexParams parameters for indexing a database table

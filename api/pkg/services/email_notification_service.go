@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/emails"

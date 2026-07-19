@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 	"gorm.io/gorm/logger"
 )
 

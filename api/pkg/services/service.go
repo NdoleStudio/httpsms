@@ -7,9 +7,9 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/nyaruka/phonenumbers"
 
+	"github.com/NdoleStudio/stacktrace"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
 )
 
 type service struct{}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // mongoHeartbeatRepository is responsible for persisting entities.Heartbeat in MongoDB

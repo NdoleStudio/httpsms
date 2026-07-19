@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // MemoryAttachmentRepository stores attachments in memory

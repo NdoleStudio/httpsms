@@ -9,7 +9,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/thedevsaddam/govalidator"
 )
 

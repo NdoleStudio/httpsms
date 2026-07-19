@@ -9,9 +9,9 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	lemonsqueezy "github.com/NdoleStudio/lemonsqueezy-go"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v3"
-	"github.com/palantir/stacktrace"
 )
 
 // LemonsqueezyHandler handles lemonsqueezy events

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // TurnstileTokenValidator validates the token used to validate captchas from cloudflare

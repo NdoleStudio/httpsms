@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/NdoleStudio/httpsms/pkg/discord"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 

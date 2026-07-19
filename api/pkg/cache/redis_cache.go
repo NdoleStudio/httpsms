@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/redis/go-redis/v9"
 )
 

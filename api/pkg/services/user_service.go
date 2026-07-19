@@ -13,8 +13,8 @@ import (
 	"github.com/NdoleStudio/lemonsqueezy-go"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"

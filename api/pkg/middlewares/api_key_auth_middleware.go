@@ -6,8 +6,8 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/gofiber/fiber/v3"
-	"github.com/palantir/stacktrace"
 )
 
 // APIKeyAuth authenticates a user from the X-API-Key header

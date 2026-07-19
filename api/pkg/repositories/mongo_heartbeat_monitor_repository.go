@@ -11,7 +11,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // mongoHeartbeatMonitorRepository is responsible for persisting entities.HeartbeatMonitor in MongoDB

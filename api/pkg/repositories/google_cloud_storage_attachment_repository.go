@@ -8,7 +8,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // GoogleCloudStorageAttachmentRepository stores attachments in Google Cloud Storage

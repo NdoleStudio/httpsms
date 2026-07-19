@@ -7,9 +7,9 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v3"
-	"github.com/palantir/stacktrace"
 )
 
 // EventsHandler handles heartbeat http requests.

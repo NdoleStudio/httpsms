@@ -12,7 +12,7 @@ import (
 	"github.com/nyaruka/phonenumbers"
 
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"

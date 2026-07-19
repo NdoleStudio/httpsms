@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"

@@ -7,8 +7,8 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
 	"gorm.io/gorm"
 )
 

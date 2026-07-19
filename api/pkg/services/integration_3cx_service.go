@@ -15,8 +15,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/palantir/stacktrace"
 )
 
 // Integration3CXService is responsible for handling webhooks

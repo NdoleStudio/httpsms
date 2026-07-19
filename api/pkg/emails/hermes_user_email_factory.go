@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/go-hermes/hermes/v2"
-	"github.com/palantir/stacktrace"
 )
 
 type hermesUserEmailFactory struct {

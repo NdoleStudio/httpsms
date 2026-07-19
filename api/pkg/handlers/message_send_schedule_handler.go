@@ -9,10 +9,10 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
 )
 
 // MessageSendScheduleHandler handles HTTP requests for message send schedules.

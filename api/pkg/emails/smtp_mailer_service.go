@@ -6,8 +6,8 @@ import (
 	"net/smtp"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	mail "github.com/jordan-wright/email"
-	"github.com/palantir/stacktrace"
 )
 
 // SMTPConfig is the config for setting up the smtpMailer

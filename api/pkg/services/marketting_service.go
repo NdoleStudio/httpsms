@@ -11,8 +11,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	plunk "github.com/NdoleStudio/plunk-go"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/gofiber/fiber/v3"
-	"github.com/palantir/stacktrace"
 )
 
 // MarketingService is handles marketing requests

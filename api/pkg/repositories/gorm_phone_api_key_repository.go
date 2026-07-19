@@ -10,9 +10,9 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/uuid"
-	"github.com/palantir/stacktrace"
 	"gorm.io/gorm"
 )
 

@@ -18,10 +18,10 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/dustin/go-humanize"
 	"github.com/jszwec/csvutil"
 	"github.com/nyaruka/phonenumbers"
-	"github.com/palantir/stacktrace"
 )
 
 // BulkMessageHandlerValidator validates models used in handlers.BillingHandler

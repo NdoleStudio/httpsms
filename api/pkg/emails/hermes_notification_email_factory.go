@@ -8,8 +8,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/events"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/go-hermes/hermes/v2"
-	"github.com/palantir/stacktrace"
 )
 
 type hermesNotificationEmailFactory struct {

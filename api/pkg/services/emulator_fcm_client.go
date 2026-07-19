@@ -10,7 +10,7 @@ import (
 
 	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/palantir/stacktrace"
+	"github.com/NdoleStudio/stacktrace"
 )
 
 // EmulatorFCMClient sends FCM messages to the phone emulator via HTTP.

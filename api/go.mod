@@ -12,6 +12,7 @@ require (
 	github.com/NdoleStudio/go-otelroundtripper v0.0.15
 	github.com/NdoleStudio/lemonsqueezy-go v1.3.1
 	github.com/NdoleStudio/plunk-go v0.0.2
+	github.com/NdoleStudio/stacktrace v1.0.0
 	github.com/avast/retry-go/v5 v5.0.0
 	github.com/axiomhq/axiom-go v0.32.0
 	github.com/carlmjohnson/requests v0.25.1
@@ -35,7 +36,6 @@ require (
 	github.com/jszwec/csvutil v1.10.0
 	github.com/lib/pq v1.12.3
 	github.com/nyaruka/phonenumbers v1.8.0
-	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pusher/pusher-http-go/v5 v5.1.1

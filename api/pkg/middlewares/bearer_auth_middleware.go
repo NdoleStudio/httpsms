@@ -8,8 +8,8 @@ import (
 	"firebase.google.com/go/auth"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/gofiber/fiber/v3"
-	"github.com/palantir/stacktrace"
 )
 
 // BearerAuth authenticates a user based on the bearer token
