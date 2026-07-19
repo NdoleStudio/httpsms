@@ -1114,6 +1114,7 @@ func (container *Container) MessageThreadService() (service *services.MessageThr
 		container.MessageThreadRepository(),
 		container.PhoneRepository(),
 		container.EventDispatcher(),
+		nil,
 	)
 }
 
