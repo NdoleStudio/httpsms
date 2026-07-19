@@ -14,9 +14,9 @@ import {
   mdiDotsVertical,
   mdiMagnify,
   mdiCommentTextMultipleOutline,
+  mdiAccountMultiple,
   mdiCircle,
 } from '@mdi/js'
-import { formatPhoneNumber, phoneCountry, humanizeTime } from '~/utils/filters'
 import type { EntitiesPhone } from '~~/shared/types/api'
 
 const router = useRouter()
@@ -28,6 +28,7 @@ const threadsStore = useThreadsStore()
 const appStore = useAppStore()
 const notificationsStore = useNotificationsStore()
 const redirectPreferenceStore = useRedirectPreferenceStore()
+const { formatPhoneNumber, phoneCountry, humanizeTime } = useFilters()
 
 const selectedMenuItem = ref(-1)
 
@@ -179,6 +180,10 @@ async function logout() {
         <v-list-item v-if="phonesStore.owner" :to="{ name: 'search-messages' }">
           <template #prepend><v-icon :icon="mdiMagnify" /></template>
           <v-list-item-title>Search Messages</v-list-item-title>
+        </v-list-item>
+        <v-list-item :to="{ name: 'contacts' }">
+          <template #prepend><v-icon :icon="mdiAccountMultiple" /></template>
+          <v-list-item-title>Contacts</v-list-item-title>
         </v-list-item>
         <v-list-item :to="{ name: 'settings' }">
           <template #prepend><v-icon :icon="mdiAccountCog" /></template>
