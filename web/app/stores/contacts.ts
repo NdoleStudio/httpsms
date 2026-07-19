@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { EntitiesContact } from '~~/shared/types/api'
 import { getApiErrorMessage } from '~/utils/api-error'
 
@@ -10,50 +10,71 @@ export interface ContactInput {
   properties?: Record<string, string>
 }
 
+export interface LoadContactsOptions {
+  force?: boolean
+  skip?: number
+  limit?: number
+}
+
+// DEFAULT_LIMIT mirrors the contacts page's initial items-per-page. It is only
+// used when a caller (e.g. a mutation refresh) does not specify its own limit.
+const DEFAULT_LIMIT = 10
+
 export const useContactsStore = defineStore('contacts', () => {
   const contacts = ref<EntitiesContact[]>([])
+  const total = ref(0)
   const loading = ref(false)
   const search = ref('')
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
   let loadContactsGeneration = 0
 
-  const total = computed(() => contacts.value.length)
+  // The pagination window last requested by the page. Mutation-triggered
+  // refreshes reuse it so the user stays on the page they were viewing.
+  let currentSkip = 0
+  let currentLimit = DEFAULT_LIMIT
 
-  const filteredContacts = computed<EntitiesContact[]>(() => {
-    const term = search.value.trim().toLowerCase()
-    if (!term) return contacts.value
+  function normalizeOptions(
+    options: LoadContactsOptions | boolean,
+  ): LoadContactsOptions {
+    if (typeof options === 'boolean') {
+      return { force: options }
+    }
+    return options
+  }
 
-    return contacts.value.filter((contact) => {
-      const name = contact.name.toLowerCase()
-      const emails = contact.emails.join(' ').toLowerCase()
-      const phoneNumbers = contact.phone_numbers.join(' ').toLowerCase()
+  async function loadContacts(
+    options: LoadContactsOptions | boolean = {},
+  ): Promise<void> {
+    const { force = false, skip, limit } = normalizeOptions(options)
 
-      return (
-        name.includes(term) ||
-        emails.includes(term) ||
-        phoneNumbers.includes(term)
-      )
-    })
-  })
+    if (skip !== undefined) {
+      currentSkip = skip
+    }
+    if (limit !== undefined) {
+      currentLimit = limit
+    }
 
-  async function loadContacts(force = false): Promise<void> {
     if (contacts.value.length > 0 && !force) return
 
     const generation = ++loadContactsGeneration
     loading.value = true
     try {
       const term = search.value.trim()
-      const params: Record<string, string | number> = { limit: 100 }
+      const params: Record<string, string | number> = {
+        skip: currentSkip,
+        limit: currentLimit,
+      }
       if (term) {
         params.query = term
       }
-      const response = await apiFetch<{ data: EntitiesContact[] }>(
-        '/v1/contacts',
-        { params },
-      )
+      const response = await apiFetch<{
+        data: EntitiesContact[]
+        total?: number
+      }>('/v1/contacts', { params })
       if (generation === loadContactsGeneration) {
         contacts.value = response.data ?? []
+        total.value = response.total ?? contacts.value.length
       }
     } catch (error: unknown) {
       if (generation !== loadContactsGeneration) {
@@ -135,7 +156,12 @@ export const useContactsStore = defineStore('contacts', () => {
     loading.value = true
     try {
       await apiFetch(`/v1/contacts/${id}`, { method: 'DELETE' })
+      // Invalidate any in-flight load so a stale response cannot resurrect the
+      // just-deleted contact. Bumping the generation makes loadContacts skip
+      // its assignment (and its finally toggling loading) for the older request.
+      loadContactsGeneration++
       contacts.value = contacts.value.filter((contact) => contact.id !== id)
+      total.value = Math.max(0, total.value - 1)
       notificationsStore.addNotification({
         message: 'Contact deleted',
         type: 'success',
@@ -183,16 +209,18 @@ export const useContactsStore = defineStore('contacts', () => {
   function resetState() {
     loadContactsGeneration++
     contacts.value = []
+    total.value = 0
     loading.value = false
     search.value = ''
+    currentSkip = 0
+    currentLimit = DEFAULT_LIMIT
   }
 
   return {
     contacts,
+    total,
     loading,
     search,
-    total,
-    filteredContacts,
     loadContacts,
     saveContacts,
     updateContact,

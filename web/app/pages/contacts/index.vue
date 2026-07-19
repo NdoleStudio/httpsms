@@ -69,6 +69,13 @@ const deleteDialog = ref(false)
 const importDialog = ref(false)
 const saving = ref(false)
 
+// Server-driven pagination state for VDataTableServer.
+const page = ref(1)
+const itemsPerPage = ref(10)
+// initialLoadComplete gates the table's initial @update:options emit so the
+// first fetch is driven by onMounted rather than firing twice on mount.
+const initialLoadComplete = ref(false)
+
 const editingId = ref<string | null>(null)
 const pendingDelete = ref<EntitiesContact | null>(null)
 
@@ -143,9 +150,10 @@ function openEdit(contact: EntitiesContact) {
   editingId.value = contact.id
   form.value = {
     name: contact.name ?? '',
-    phoneNumbers:
-      contact.phone_numbers.length > 0 ? [...contact.phone_numbers] : [''],
-    emails: contact.emails.length > 0 ? [...contact.emails] : [''],
+    phoneNumbers: contact.phone_numbers?.length
+      ? [...contact.phone_numbers]
+      : [''],
+    emails: contact.emails?.length ? [...contact.emails] : [''],
     properties: Object.entries(contact.properties ?? {}).map(
       ([key, value]) => ({ key, value }),
     ),
@@ -300,6 +308,27 @@ async function submitImport() {
   }
 }
 
+function fetchContacts() {
+  const skip = (page.value - 1) * itemsPerPage.value
+  return contactsStore
+    .loadContacts({ force: true, skip, limit: itemsPerPage.value })
+    .catch(() => {
+      // The store already surfaced the failure via a notification.
+    })
+}
+
+function onUpdateOptions(options: { page: number; itemsPerPage: number }) {
+  page.value = options.page
+  itemsPerPage.value = options.itemsPerPage
+
+  // Ignore the initial emit fired while the table mounts; onMounted owns the
+  // first fetch so the request is not duplicated.
+  if (!initialLoadComplete.value) {
+    return
+  }
+  fetchContacts()
+}
+
 watch(
   () => contactsStore.search,
   () => {
@@ -307,17 +336,22 @@ watch(
       clearTimeout(searchTimer)
     }
     searchTimer = setTimeout(() => {
-      contactsStore.loadContacts(true).catch(() => {
-        // The store already surfaced the failure via a notification.
-      })
+      // A new query always resets to the first page. If we are already on
+      // page 1 the page ref does not change, so no @update:options fires and
+      // we fetch directly; otherwise resetting the page drives the fetch via
+      // onUpdateOptions. Either way exactly one request is made.
+      if (page.value !== 1) {
+        page.value = 1
+      } else {
+        fetchContacts()
+      }
     }, 350)
   },
 )
 
 onMounted(() => {
-  contactsStore.loadContacts(true).catch(() => {
-    // The store already surfaced the failure via a notification.
-  })
+  initialLoadComplete.value = true
+  fetchContacts()
 })
 
 onBeforeUnmount(() => {
@@ -386,15 +420,18 @@ onBeforeUnmount(() => {
           />
 
           <VCard variant="outlined">
-            <VDataTable
+            <VDataTableServer
+              v-model:page="page"
+              v-model:items-per-page="itemsPerPage"
               :headers="headers"
               :items="contactsStore.contacts"
+              :items-length="contactsStore.total"
               :loading="contactsStore.loading"
-              :items-per-page="10"
               :items-per-page-options="itemsPerPageOptions"
               item-value="id"
               hover
               loading-text="Loading contacts…"
+              @update:options="onUpdateOptions"
             >
               <template #[`item.name`]="{ item }">
                 <div class="d-flex align-center py-2">
@@ -416,11 +453,11 @@ onBeforeUnmount(() => {
 
               <template #[`item.phone_numbers`]="{ item }">
                 <div
-                  v-if="item.phone_numbers.length"
+                  v-if="item.phone_numbers?.length"
                   class="d-flex flex-column ga-1 py-2"
                 >
                   <VChip
-                    v-for="phone in item.phone_numbers"
+                    v-for="phone in item.phone_numbers ?? []"
                     :key="phone"
                     size="small"
                     variant="tonal"
@@ -435,11 +472,11 @@ onBeforeUnmount(() => {
 
               <template #[`item.emails`]="{ item }">
                 <div
-                  v-if="item.emails.length"
+                  v-if="item.emails?.length"
                   class="d-flex flex-column ga-1 py-2"
                 >
                   <span
-                    v-for="email in item.emails"
+                    v-for="email in item.emails ?? []"
                     :key="email"
                     class="d-flex align-center text-body-2"
                   >
@@ -518,7 +555,7 @@ onBeforeUnmount(() => {
                   </VBtn>
                 </div>
               </template>
-            </VDataTable>
+            </VDataTableServer>
           </VCard>
         </VCol>
       </VRow>

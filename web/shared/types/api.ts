@@ -679,6 +679,12 @@ export interface ResponsesContactsResponse {
   message: string;
   /** @example "success" */
   status: string;
+  /**
+   * Total is the number of contacts matching the request filter for the
+   * user, independent of the pagination skip/limit applied to Data.
+   * @example 57
+   */
+  total: number;
 }
 
 export interface ResponsesDiscordResponse {
