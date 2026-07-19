@@ -310,7 +310,10 @@ onMounted(async () => {
                       }}</b>
                     </p>
                     <p v-else class="text-medium-emphasis mt-1">
-                      {{ totalMessages }}/{{ plan.messagesPerMonth }} messages
+                      {{ formatDecimal(totalMessages) }}/{{
+                        formatDecimal(plan.messagesPerMonth)
+                      }}
+                      messages
                     </p>
                   </div>
                   <div class="d-flex mb-1 mt-1">
