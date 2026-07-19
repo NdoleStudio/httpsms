@@ -49,11 +49,11 @@ const { formatPhoneNumber, humanizeTime, formatTimestamp } = useFilters()
 const avatarPalette = ['primary', 'secondary', 'info', 'success']
 
 const headers = [
-  { title: 'Name', key: 'name', sortable: true },
+  { title: 'Name', key: 'name', sortable: false },
   { title: 'Phone Numbers', key: 'phone_numbers', sortable: false },
   { title: 'Emails', key: 'emails', sortable: false },
-  { title: 'Created', key: 'created_at', sortable: true },
-  { title: 'Updated', key: 'updated_at', sortable: true },
+  { title: 'Created', key: 'created_at', sortable: false },
+  { title: 'Updated', key: 'updated_at', sortable: false },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
@@ -98,6 +98,8 @@ const searchTerm = computed({
     contactsStore.search = value ?? ''
   },
 })
+
+const trimmedSearchTerm = computed(() => contactsStore.search.trim())
 
 const dialogTitle = computed(() =>
   editingId.value ? 'Edit Contact' : 'Add Contact',
@@ -384,7 +386,12 @@ onBeforeUnmount(() => {
             <div>
               <h1 class="text-display-large mb-1">Contacts</h1>
               <p class="text-medium-emphasis mb-0">
-                Manage your contacts. {{ contactsStore.total }} total
+                Manage your contacts.
+                {{
+                  trimmedSearchTerm
+                    ? `${contactsStore.total} found`
+                    : `${contactsStore.total} total`
+                }}
               </p>
             </div>
             <VSpacer />
