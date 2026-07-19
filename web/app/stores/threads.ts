@@ -24,6 +24,13 @@ export const useThreadsStore = defineStore('threads', () => {
     return threads.value.find((x) => x.id === id) !== undefined
   }
 
+  function replaceThread(updatedThread: EntitiesMessageThread) {
+    const index = threads.value.findIndex(
+      (thread) => thread.id === updatedThread.id,
+    )
+    if (index !== -1) threads.value[index] = updatedThread
+  }
+
   async function loadThreads() {
     const phonesStore = usePhonesStore()
     if (phonesStore.owner === null && phonesStore.phones.length === 0) {
@@ -93,6 +100,38 @@ export const useThreadsStore = defineStore('threads', () => {
     })
   }
 
+  async function markThreadRead(threadId: string, force = false) {
+    const thread = threads.value.find((item) => item.id === threadId)
+    if (!thread) throw new Error(`Cannot find thread with id ${threadId}`)
+    if (!force && thread.is_read) return
+
+    try {
+      const response = await apiFetch<{ data: EntitiesMessageThread }>(
+        `/v1/message-threads/${threadId}`,
+        {
+          method: 'PUT',
+          body: { is_read: true },
+        },
+      )
+      replaceThread(response.data)
+    } catch (error) {
+      notificationsStore.addNotification({
+        message: 'The message thread could not be marked as read',
+        type: 'error',
+      })
+      try {
+        await loadThreads()
+      } catch (reloadError) {
+        throw new AggregateError(
+          [error, reloadError],
+          'Could not mark the message thread as read or reload threads',
+          { cause: reloadError },
+        )
+      }
+      throw error
+    }
+  }
+
   async function deleteThread(id: string) {
     await apiFetch(`/v1/message-threads/${id}`, { method: 'DELETE' })
     threadId.value = null
@@ -122,6 +161,7 @@ export const useThreadsStore = defineStore('threads', () => {
     setThreadId,
     toggleArchive,
     updateThread,
+    markThreadRead,
     deleteThread,
     resetState,
   }

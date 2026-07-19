@@ -871,7 +871,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/responses.PhoneResponse"
+                            "$ref": "#/definitions/responses.MessageThreadResponse"
                         }
                     },
                     "400": {
@@ -884,6 +884,12 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
                         }
                     },
                     "422": {
@@ -3691,6 +3697,7 @@ const docTemplate = `{
                 "created_at",
                 "id",
                 "is_archived",
+                "is_read",
                 "last_message_content",
                 "last_message_id",
                 "order_timestamp",
@@ -3719,6 +3726,10 @@ const docTemplate = `{
                 "is_archived": {
                     "type": "boolean",
                     "example": false
+                },
+                "is_read": {
+                    "type": "boolean",
+                    "example": true
                 },
                 "last_message_content": {
                     "type": "string",
@@ -4388,11 +4399,12 @@ const docTemplate = `{
         },
         "requests.MessageThreadUpdate": {
             "type": "object",
-            "required": [
-                "is_archived"
-            ],
             "properties": {
                 "is_archived": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_read": {
                     "type": "boolean",
                     "example": true
                 }
@@ -4893,6 +4905,27 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/entities.MessageSendSchedule"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.MessageThreadResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/entities.MessageThread"
                 },
                 "message": {
                     "type": "string",

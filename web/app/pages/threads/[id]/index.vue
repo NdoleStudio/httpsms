@@ -112,9 +112,19 @@ function scrollToElement() {
   hideMessages.value = false
 }
 
-function loadMessages(hide = true) {
+async function markCurrentThreadRead(force = false) {
+  const threadId = route.params.id as string
+  try {
+    await threadsStore.markThreadRead(threadId, force)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function loadMessages(hide = true, markRead = true) {
   loadingMessages.value = true
   const threadId = route.params.id as string
+  if (markRead) void markCurrentThreadRead()
   threadsStore
     .loadThreadMessages(threadId)
     .then((response: EntitiesMessage[]) => {
@@ -232,7 +242,16 @@ onMounted(async () => {
     if (!loadingMessages.value) loadMessages(false)
   })
   webhookChannel.bind('message.phone.received', () => {
-    if (!loadingMessages.value) loadMessages(false)
+    if (!loadingMessages.value) {
+      void markCurrentThreadRead(true)
+      loadMessages(false, false)
+    }
+  })
+  webhookChannel.bind('message.call.missed', () => {
+    if (!loadingMessages.value) {
+      void markCurrentThreadRead(true)
+      loadMessages(false, false)
+    }
   })
 })
 

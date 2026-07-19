@@ -99,7 +99,11 @@ function onInstallApp() {
         :active="threadsStore.threadId === thread.id"
       >
         <template #prepend>
-          <v-avatar :color="thread.color" size="40">
+          <v-avatar
+            :color="thread.color"
+            size="40"
+            :badge="thread.is_read ? false : { color: 'primary', dotSize: 12 }"
+          >
             <v-icon v-if="!startsWithLetter(thread.contact)" color="white">{{
               mdiAccount
             }}</v-icon>
@@ -108,11 +112,12 @@ function onInstallApp() {
             }}</span>
           </v-avatar>
         </template>
-        <v-list-item-title>{{
+        <v-list-item-title :class="{ 'font-weight-bold': !thread.is_read }">{{
           formatPhoneNumber(thread.contact)
         }}</v-list-item-title>
         <v-list-item-subtitle
           class="text-truncate mt-1"
+          :class="{ 'font-weight-bold opacity-100': !thread.is_read }"
           style="max-width: 250px"
         >
           {{ thread.last_message_content }}

@@ -7,3 +7,9 @@ type MessageThreadsResponse struct {
 	response
 	Data []entities.MessageThread `json:"data"`
 }
+
+// MessageThreadResponse is the payload containing entities.MessageThread
+type MessageThreadResponse struct {
+	response
+	Data entities.MessageThread `json:"data"`
+}

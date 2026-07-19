@@ -50,7 +50,10 @@ type MessageThreadUpdateParams struct {
 	Content   string
 	UserID    entities.UserID
 	MessageID uuid.UUID
-	Timestamp time.Time
+	// Timestamp controls thread activity ordering; EventTimestamp is the server-side unread watermark.
+	Timestamp      time.Time
+	MarkAsUnread   bool
+	EventTimestamp time.Time
 }
 
 // shouldCheckUnarchive reports whether a thread update is a new inbound message
@@ -101,27 +104,39 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return nil
 	}
 
+	activity := repositories.MessageThreadActivityUpdate{
+		MessageThreadID: thread.ID,
+		UserID:          params.UserID,
+		Timestamp:       params.Timestamp,
+		MessageID:       params.MessageID,
+		Content:         params.Content,
+		Status:          params.Status,
+		MarkAsUnread:    params.MarkAsUnread,
+		EventTimestamp:  params.EventTimestamp,
+	}
+
 	if service.shouldCheckUnarchive(thread, params) {
 		phone, phoneErr := service.phoneRepository.Load(ctx, params.UserID, params.Owner)
 		if phoneErr != nil {
 			ctxLogger.Warn(stacktrace.Propagate(phoneErr, "cannot load phone [%s] for user [%s] to resolve UnarchiveThread; leaving thread [%s] archived", params.Owner, params.UserID, thread.ID))
 		} else if phone.UnarchiveThread {
-			thread.UpdateArchive(false)
+			activity.Unarchive = true
 			ctxLogger.Info(fmt.Sprintf("unarchiving thread [%s] after inbound message [%s]", thread.ID, params.MessageID))
 		}
 	}
 
-	if err = service.repository.Update(ctx, thread.Update(params.Timestamp, params.MessageID, params.Content, params.Status)); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID))
+	if err = service.repository.UpdateActivity(ctx, activity); err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot update message thread with id [%s] after adding message [%s]", thread.ID, params.MessageID))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s] and status [%s]", thread.ID, thread.LastMessageID, thread.Status))
+	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with last message [%s] and status [%s]", thread.ID, params.MessageID, params.Status))
 	return nil
 }
 
 // MessageThreadStatusParams are parameters for updating a thread status
 type MessageThreadStatusParams struct {
-	IsArchived      bool
+	IsArchived      *bool
+	IsRead          *bool
 	UserID          entities.UserID
 	MessageThreadID uuid.UUID
 }
@@ -131,18 +146,16 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
-
-	thread, err := service.repository.Load(ctx, params.UserID, params.MessageThreadID)
+	update := repositories.MessageThreadStatusUpdate{
+		IsArchived: params.IsArchived,
+		IsRead:     params.IsRead,
+		ReadAt:     time.Now().UTC(),
+	}
+	thread, err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update)
 	if err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot find thread with id [%s]", params.MessageThreadID))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot update message thread with ID [%s] for user [%s]", params.MessageThreadID, params.UserID))
 	}
 
-	if err = service.repository.Update(ctx, thread.UpdateArchive(params.IsArchived)); err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update message thread with id [%s] with archive status [%t]", thread.ID, params.IsArchived))
-	}
-
-	ctxLogger.Info(fmt.Sprintf("thread with id [%s] updated with archive status [%t]", thread.ID, thread.IsArchived))
 	return thread, nil
 }
 
@@ -172,12 +185,13 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 		return nil
 	}
 
-	thread.LastMessageContent = payload.PreviousMessageContent
-	thread.LastMessageID = payload.PreviousMessageID
-	thread.Status = *payload.PreviousMessageStatus
-	thread.UpdatedAt = time.Now().UTC()
-
-	if err = service.repository.Update(ctx, thread); err != nil {
+	if err = service.repository.UpdateAfterDeletedMessage(ctx, repositories.MessageThreadDeletedUpdate{
+		MessageThreadID:    thread.ID,
+		UserID:             thread.UserID,
+		LastMessageID:      payload.PreviousMessageID,
+		LastMessageContent: payload.PreviousMessageContent,
+		LastMessageStatus:  *payload.PreviousMessageStatus,
+	}); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID))
 	}
 
@@ -191,18 +205,21 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
+	now := time.Now().UTC()
 	thread := &entities.MessageThread{
 		ID:                 uuid.New(),
 		Owner:              params.Owner,
 		Contact:            params.Contact,
 		UserID:             params.UserID,
 		IsArchived:         false,
+		IsRead:             !params.MarkAsUnread,
+		LastReadAt:         now,
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,
 		Status:             params.Status,
 		LastMessageID:      &params.MessageID,
-		CreatedAt:          time.Now().UTC(),
-		UpdatedAt:          time.Now().UTC(),
+		CreatedAt:          now,
+		UpdatedAt:          now,
 		OrderTimestamp:     params.Timestamp,
 	}
 

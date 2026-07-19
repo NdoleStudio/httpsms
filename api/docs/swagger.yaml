@@ -319,6 +319,9 @@ definitions:
       is_archived:
         example: false
         type: boolean
+      is_read:
+        example: true
+        type: boolean
       last_message_content:
         example: This is a sample message content
         type: string
@@ -346,6 +349,7 @@ definitions:
     - created_at
     - id
     - is_archived
+    - is_read
     - last_message_content
     - last_message_id
     - order_timestamp
@@ -853,8 +857,9 @@ definitions:
       is_archived:
         example: true
         type: boolean
-    required:
-    - is_archived
+      is_read:
+        example: true
+        type: boolean
     type: object
   requests.PhoneAPIKeyStoreRequest:
     properties:
@@ -1216,6 +1221,21 @@ definitions:
         items:
           $ref: '#/definitions/entities.MessageSendSchedule'
         type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+    - data
+    - message
+    - status
+    type: object
+  responses.MessageThreadResponse:
+    properties:
+      data:
+        $ref: '#/definitions/entities.MessageThread'
       message:
         example: Request handled successfully
         type: string
@@ -2182,7 +2202,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/responses.PhoneResponse'
+            $ref: '#/definitions/responses.MessageThreadResponse'
         "400":
           description: Bad Request
           schema:
@@ -2191,6 +2211,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/responses.Unauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.NotFound'
         "422":
           description: Unprocessable Entity
           schema:
