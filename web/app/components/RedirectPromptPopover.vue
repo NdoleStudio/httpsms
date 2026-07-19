@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { mdiClose, mdiArrowRight } from '@mdi/js'
 
 const route = useRoute()
@@ -12,45 +13,47 @@ const showPopover = computed(
     !redirectStore.enabled &&
     !redirectStore.dismissedThisSession,
 )
+
+const menuOpen = computed({
+  get: () => showPopover.value,
+  set: (value: boolean) => {
+    if (!value) redirectStore.dismiss()
+  },
+})
 </script>
 
 <template>
-  <v-card
-    v-if="showPopover"
-    class="redirect-prompt pa-4"
-    elevation="8"
-    rounded="lg"
-    max-width="280"
+  <v-menu
+    v-model="menuOpen"
+    activator="parent"
+    location="bottom end"
+    offset="8"
+    :open-on-click="false"
+    :close-on-content-click="false"
   >
-    <div class="d-flex align-center justify-space-between">
-      <span class="text-body-1">Skip this page next time?</span>
-      <v-btn
-        :icon="mdiClose"
-        variant="text"
-        size="small"
-        color="warning"
-        density="comfortable"
-        aria-label="Dismiss"
-        @click="redirectStore.dismiss()"
-      />
-    </div>
-    <a
-      class="text-primary text-decoration-none hover:text-decoration-underline d-inline-flex align-center mt-1"
-      href="#"
-      @click.prevent="redirectStore.enable()"
-    >
-      Always open dashboard
-      <v-icon :icon="mdiArrowRight" size="small" class="ml-1" />
-    </a>
-  </v-card>
+    <v-list width="280" class="py-0" rounded="lg" elevation="8">
+      <v-list-item>
+        <v-list-item-title class="text-body-1">
+          Skip this page next time?
+        </v-list-item-title>
+        <template #append>
+          <v-btn
+            :icon="mdiClose"
+            variant="text"
+            size="small"
+            color="warning"
+            density="comfortable"
+            aria-label="Dismiss"
+            @click="redirectStore.dismiss()"
+          />
+        </template>
+      </v-list-item>
+      <v-list-item class="text-primary" @click="redirectStore.enable()">
+        <v-list-item-title>Always open dashboard</v-list-item-title>
+        <template #append>
+          <v-icon :icon="mdiArrowRight" size="small" />
+        </template>
+      </v-list-item>
+    </v-list>
+  </v-menu>
 </template>
-
-<style scoped>
-.redirect-prompt {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 8px;
-  z-index: 10;
-}
-</style>
