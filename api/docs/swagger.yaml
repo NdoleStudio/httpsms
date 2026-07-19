@@ -653,6 +653,61 @@ definitions:
     - url
     - user_id
     type: object
+  requests.ContactItem:
+    properties:
+      emails:
+        items:
+          type: string
+        type: array
+      name:
+        example: Alice Smith
+        type: string
+      phone_numbers:
+        items:
+          type: string
+        type: array
+      properties:
+        additionalProperties:
+          type: string
+        type: object
+    required:
+    - emails
+    - name
+    - phone_numbers
+    - properties
+    type: object
+  requests.ContactStoreRequest:
+    properties:
+      contacts:
+        items:
+          $ref: '#/definitions/requests.ContactItem'
+        type: array
+    required:
+    - contacts
+    type: object
+  requests.ContactUpdateRequest:
+    properties:
+      emails:
+        items:
+          type: string
+        type: array
+      name:
+        example: Alice Smith
+        type: string
+      phone_numbers:
+        items:
+          type: string
+        type: array
+      properties:
+        additionalProperties:
+          type: string
+        type: object
+    required:
+    - emails
+    - name
+    - phone_numbers
+    - properties
+    type: object
   requests.DiscordStore:
     properties:
       incoming_channel_id:
@@ -1145,6 +1200,38 @@ definitions:
       data:
         items:
           $ref: '#/definitions/entities.BulkMessage'
+        type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+    - data
+    - message
+    - status
+    type: object
+  responses.ContactResponse:
+    properties:
+      data:
+        $ref: '#/definitions/entities.Contact'
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+    - data
+    - message
+    - status
+    type: object
+  responses.ContactsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entities.Contact'
         type: array
       message:
         example: Request handled successfully
@@ -1795,6 +1882,226 @@ paths:
       summary: Store bulk SMS file
       tags:
       - BulkSMS
+  /contacts:
+    get:
+      consumes:
+      - application/json
+      description: Returns the paginated list of contacts for the authenticated user.
+      parameters:
+      - description: number of contacts to skip
+        in: query
+        minimum: 0
+        name: skip
+        type: integer
+      - description: filter contacts containing query
+        in: query
+        name: query
+        type: string
+      - description: number of contacts to return
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.ContactsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.BadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Unauthorized'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/responses.UnprocessableEntity'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responses.InternalServerError'
+      security:
+      - ApiKeyAuth: []
+      summary: List contacts
+      tags:
+      - Contacts
+    post:
+      consumes:
+      - application/json
+      description: Creates a single contact or a batch of contacts. Accepts a JSON
+        array or an object with a "contacts" array.
+      parameters:
+      - description: Contact(s) to create
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ContactStoreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/responses.ContactsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.BadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Unauthorized'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/responses.UnprocessableEntity'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responses.InternalServerError'
+      security:
+      - ApiKeyAuth: []
+      summary: Create one or many contacts
+      tags:
+      - Contacts
+  /contacts/{contactID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a single contact from the database.
+      parameters:
+      - description: ID of the contact
+        in: path
+        name: contactID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/responses.NoContent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.BadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Unauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.NotFound'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/responses.UnprocessableEntity'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responses.InternalServerError'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a contact
+      tags:
+      - Contacts
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of a single contact.
+      parameters:
+      - description: ID of the contact
+        in: path
+        name: contactID
+        required: true
+        type: string
+      - description: Contact details to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ContactUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.ContactResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.BadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Unauthorized'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.NotFound'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/responses.UnprocessableEntity'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responses.InternalServerError'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a contact
+      tags:
+      - Contacts
+  /contacts/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Uploads a CSV file (multipart field "document") of contacts. Columns:
+        Name, Emails, PhoneNumbers (multi-values separated by ";").'
+      parameters:
+      - description: CSV file of contacts
+        in: formData
+        name: document
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/responses.ContactsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.BadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Unauthorized'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/responses.UnprocessableEntity'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responses.InternalServerError'
+      security:
+      - ApiKeyAuth: []
+      summary: Import contacts from CSV
+      tags:
+      - Contacts
   /discord-integrations:
     get:
       consumes:
