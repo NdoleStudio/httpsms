@@ -671,10 +671,8 @@ definitions:
           type: string
         type: object
     required:
-    - emails
     - name
     - phone_numbers
-    - properties
     type: object
   requests.ContactStoreRequest:
     properties:
@@ -703,10 +701,8 @@ definitions:
           type: string
         type: object
     required:
-    - emails
     - name
     - phone_numbers
-    - properties
     type: object
   requests.DiscordStore:
     properties:

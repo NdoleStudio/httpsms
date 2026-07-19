@@ -4495,10 +4495,8 @@ const docTemplate = `{
         "requests.ContactItem": {
             "type": "object",
             "required": [
-                "emails",
                 "name",
-                "phone_numbers",
-                "properties"
+                "phone_numbers"
             ],
             "properties": {
                 "emails": {
@@ -4542,10 +4540,8 @@ const docTemplate = `{
         "requests.ContactUpdateRequest": {
             "type": "object",
             "required": [
-                "emails",
                 "name",
-                "phone_numbers",
-                "properties"
+                "phone_numbers"
             ],
             "properties": {
                 "emails": {

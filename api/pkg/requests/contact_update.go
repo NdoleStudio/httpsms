@@ -12,9 +12,9 @@ import (
 type ContactUpdateRequest struct {
 	request
 	Name         string            `json:"name" example:"Alice Smith"`
-	Emails       []string          `json:"emails"`
+	Emails       []string          `json:"emails,omitempty"`
 	PhoneNumbers []string          `json:"phone_numbers"`
-	Properties   map[string]string `json:"properties"`
+	Properties   map[string]string `json:"properties,omitempty"`
 }
 
 // Sanitize trims and normalizes the update request.
