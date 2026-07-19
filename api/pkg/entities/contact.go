@@ -3,9 +3,9 @@ package entities
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"time"
 
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -21,7 +21,7 @@ func (p ContactProperties) Value() (driver.Value, error) {
 
 	data, err := json.Marshal(p)
 	if err != nil {
-		return nil, err
+		return nil, stacktrace.Propagatef(err, "cannot marshal ContactProperties")
 	}
 
 	return data, nil
@@ -41,7 +41,7 @@ func (p *ContactProperties) Scan(src any) error {
 	case string:
 		data = []byte(value)
 	default:
-		return fmt.Errorf("unsupported type [%T] for ContactProperties", src)
+		return stacktrace.NewErrorf("unsupported type [%T] for ContactProperties", src)
 	}
 
 	if len(data) == 0 {
@@ -51,7 +51,7 @@ func (p *ContactProperties) Scan(src any) error {
 
 	result := ContactProperties{}
 	if err := json.Unmarshal(data, &result); err != nil {
-		return err
+		return stacktrace.Propagatef(err, "cannot unmarshal ContactProperties")
 	}
 
 	*p = result
@@ -60,7 +60,7 @@ func (p *ContactProperties) Scan(src any) error {
 
 // Contact represents a saved contact belonging to a user.
 type Contact struct {
-	ID           uuid.UUID         `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	ID           uuid.UUID         `json:"id" gorm:"primaryKey;type:uuid" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
 	UserID       UserID            `json:"user_id" gorm:"index" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Name         string            `json:"name" example:"Alice Smith"`
 	Emails       pq.StringArray    `json:"emails" gorm:"type:text[]" swaggertype:"array,string" example:"alice@example.com"`
