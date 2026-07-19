@@ -120,6 +120,24 @@ func (input *request) removeEmptyStrings(values []string) []string {
 	return result
 }
 
+func sanitizeUniqueStrings(values []string, normalize func(string) string) []string {
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = normalize(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+
+	return result
+}
+
 func (input *request) sanitizeMessageID(value string) string {
 	id := strings.Builder{}
 	for _, char := range value {
