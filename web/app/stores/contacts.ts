@@ -41,11 +41,14 @@ export const useContactsStore = defineStore('contacts', () => {
 
     loading.value = true
     try {
+      const term = search.value.trim()
+      const params: Record<string, string | number> = { limit: 100 }
+      if (term) {
+        params.query = term
+      }
       const response = await apiFetch<{ data: EntitiesContact[] }>(
         '/v1/contacts',
-        {
-          params: { limit: 100 },
-        },
+        { params },
       )
       contacts.value = response.data ?? []
     } catch (error: unknown) {
