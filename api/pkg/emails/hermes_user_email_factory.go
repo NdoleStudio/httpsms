@@ -73,8 +73,8 @@ func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User, u
 	email := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
-				fmt.Sprintf("You've reached your limit of %d messages on the %s plan, so new messages will not be processed until your usage resets.", user.SubscriptionName.Limit(), user.SubscriptionName),
-				fmt.Sprintf("Between %s and %s you sent %d messages and received %d, for a total of %d.", formatBillingDate(usage.StartTimestamp, user.Location()), formatBillingDate(usage.EndTimestamp, user.Location()), usage.SentMessages, usage.ReceivedMessages, usage.TotalMessages()),
+				fmt.Sprintf("You've reached your limit of %s messages on the %s plan, so new messages will not be processed until your usage resets.", factory.formatQuantity(user.SubscriptionName.Limit()), user.SubscriptionName),
+				fmt.Sprintf("Between %s and %s you sent %s messages and received %s, for a total of %s.", formatBillingDate(usage.StartTimestamp, user.Location()), formatBillingDate(usage.EndTimestamp, user.Location()), factory.formatQuantity(usage.SentMessages), factory.formatQuantity(usage.ReceivedMessages), factory.formatQuantity(usage.TotalMessages())),
 			},
 			Actions: []hermes.Action{
 				{
@@ -120,7 +120,7 @@ func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usag
 		Body: hermes.Body{
 			Intros: []string{
 				fmt.Sprintf("This is a friendly heads-up that you've used %d%% of your monthly SMS limit on the %s plan.", percent, user.SubscriptionName),
-				fmt.Sprintf("Between %s and %s you sent %d messages and received %d, for a total of %d out of your %d message limit.", formatBillingDate(usage.StartTimestamp, user.Location()), formatBillingDate(usage.EndTimestamp, user.Location()), usage.SentMessages, usage.ReceivedMessages, usage.TotalMessages(), user.SubscriptionName.Limit()),
+				fmt.Sprintf("Between %s and %s you sent %s messages and received %s, for a total of %s out of your %s message limit.", formatBillingDate(usage.StartTimestamp, user.Location()), formatBillingDate(usage.EndTimestamp, user.Location()), factory.formatQuantity(usage.SentMessages), factory.formatQuantity(usage.ReceivedMessages), factory.formatQuantity(usage.TotalMessages()), factory.formatQuantity(user.SubscriptionName.Limit())),
 			},
 			Actions: []hermes.Action{
 				{

@@ -3,6 +3,7 @@ package emails
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/nyaruka/phonenumbers"
 )
@@ -19,6 +20,15 @@ func (factory *factory) formatBool(value bool) string {
 		return "Yes"
 	}
 	return "No"
+}
+
+func (factory *factory) formatQuantity(value uint) string {
+	formatted := strconv.FormatUint(uint64(value), 10)
+	for index := len(formatted) - 3; index > 0; index -= 3 {
+		formatted = formatted[:index] + "," + formatted[index:]
+	}
+
+	return formatted
 }
 
 func (factory *factory) formatHTTPResponseCode(code *int) string {
