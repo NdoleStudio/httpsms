@@ -243,6 +243,61 @@ func TestContactValidator_ValidateUpload_RejectsNonCSVExtensionAndMIME(t *testin
 	}
 }
 
+func TestContactValidator_ValidateUpload_AcceptsCSVWithOctetStreamMIME(t *testing.T) {
+	validator := newContactUploadValidator()
+	header := multipartFileHeader(t, "contacts.csv", "application/octet-stream", "Name,Emails,PhoneNumbers\nAlice,alice@example.com,+18005550199")
+
+	items, errs := validator.ValidateUpload(context.Background(), entities.UserID("user-1"), header)
+
+	require.Empty(t, errs)
+	require.Len(t, items, 1)
+	assert.Equal(t, "Alice", items[0].Name)
+}
+
+func TestContactValidator_ValidateUpload_AcceptsCSVWithVndMsExcelMIME(t *testing.T) {
+	validator := newContactUploadValidator()
+	header := multipartFileHeader(t, "contacts.csv", "application/vnd.ms-excel", "Name,Emails,PhoneNumbers\nAlice,alice@example.com,+18005550199")
+
+	items, errs := validator.ValidateUpload(context.Background(), entities.UserID("user-1"), header)
+
+	require.Empty(t, errs)
+	require.Len(t, items, 1)
+	assert.Equal(t, "Alice", items[0].Name)
+}
+
+func TestContactValidator_ValidateUpload_AcceptsCSVWithEmptyMIME(t *testing.T) {
+	validator := newContactUploadValidator()
+	header := multipartFileHeader(t, "contacts.csv", "", "Name,Emails,PhoneNumbers\nAlice,alice@example.com,+18005550199")
+
+	items, errs := validator.ValidateUpload(context.Background(), entities.UserID("user-1"), header)
+
+	require.Empty(t, errs)
+	require.Len(t, items, 1)
+	assert.Equal(t, "Alice", items[0].Name)
+}
+
+func TestContactValidator_ValidateUpload_RejectsXlsxDespiteSpreadsheetMIME(t *testing.T) {
+	validator := newContactUploadValidator()
+	header := multipartFileHeader(t, "contacts.xlsx", "application/vnd.ms-excel", "Name,Emails,PhoneNumbers\nAlice,alice@example.com,+18005550199")
+
+	items, errs := validator.ValidateUpload(context.Background(), entities.UserID("user-1"), header)
+
+	assert.Nil(t, items)
+	require.NotEmpty(t, errs.Get("document"))
+	assert.Contains(t, errs["document"][0], "not a valid CSV file")
+}
+
+func TestContactValidator_ValidateUpload_RejectsCSVWithUnrelatedMIME(t *testing.T) {
+	validator := newContactUploadValidator()
+	header := multipartFileHeader(t, "contacts.csv", "image/png", "Name,Emails,PhoneNumbers\nAlice,alice@example.com,+18005550199")
+
+	items, errs := validator.ValidateUpload(context.Background(), entities.UserID("user-1"), header)
+
+	assert.Nil(t, items)
+	require.NotEmpty(t, errs.Get("document"))
+	assert.Contains(t, errs["document"][0], "not a valid CSV file")
+}
+
 func TestContactValidator_ValidateUpload_RejectsOversizedFile(t *testing.T) {
 	validator := newContactUploadValidator()
 	header := multipartFileHeader(t, "contacts.csv", "text/csv", strings.Repeat("a", 500*1024+1))
