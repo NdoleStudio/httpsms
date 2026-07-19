@@ -62,19 +62,19 @@ func (h *Integration3CXHandler) Messages(c fiber.Ctx) error {
 
 	var request requests.Integration3CXMessage
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall [%s] into %T", c.Body(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall [%s] into %T", c.Body(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if msg := h.billingService.IsEntitled(ctx, h.userIDFomContext(c)); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError("user with ID [%s] can't send a [3cx] message", h.userIDFomContext(c)))
+		ctxLogger.Warn(stacktrace.NewErrorf("user with ID [%s] can't send a [3cx] message", h.userIDFomContext(c)))
 		return h.responsePaymentRequired(c, *msg)
 	}
 
 	request.Sanitize()
 	message, err := h.messageService.SendMessage(ctx, request.ToMessageSendParams(h.userIDFomContext(c), c.OriginalURL()))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot send [3cx] message with payload [%s]", c.Body()))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot send [3cx] message with payload [%s]", c.Body()))
 		return h.responseInternalServerError(c)
 	}
 

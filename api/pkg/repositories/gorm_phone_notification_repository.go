@@ -48,7 +48,7 @@ func (repository *gormPhoneNotificationRepository) DeleteAllForUser(
 		Delete(&entities.PhoneNotification{}).Error; err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot delete all [%T] for user with ID [%s]",
 				&entities.PhoneNotification{},
@@ -71,7 +71,7 @@ func (repository *gormPhoneNotificationRepository) DeleteByMessageID(ctx context
 	if err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(err, "cannot delete [%T] for user [%s] and message with ID [%s]", &entities.PhoneNotification{}, userID, messageID),
+			stacktrace.Propagatef(err, "cannot delete [%T] for user [%s] and message with ID [%s]", &entities.PhoneNotification{}, userID, messageID),
 		)
 	}
 
@@ -91,7 +91,7 @@ func (repository *gormPhoneNotificationRepository) UpdateStatus(ctx context.Cont
 	if err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot update notification [%s] with status [%s]",
 				notificationID,
@@ -132,7 +132,7 @@ func (repository *gormPhoneNotificationRepository) Schedule(
 			First(lastNotification).
 			Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return stacktrace.Propagate(
+			return stacktrace.Propagatef(
 				err,
 				"cannot fetch last notification with phone ID [%s]",
 				notification.PhoneID,
@@ -151,7 +151,7 @@ func (repository *gormPhoneNotificationRepository) Schedule(
 		}
 
 		if err = tx.WithContext(ctx).Create(notification).Error; err != nil {
-			return stacktrace.Propagate(
+			return stacktrace.Propagatef(
 				err,
 				"cannot create new notification with id [%s] and schedule [%s]",
 				notification.ID,
@@ -164,7 +164,7 @@ func (repository *gormPhoneNotificationRepository) Schedule(
 	if err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot schedule phone notification with ID [%s]",
 				notification.ID,
@@ -207,7 +207,7 @@ func (repository *gormPhoneNotificationRepository) insert(
 	if err := repository.db.WithContext(ctx).Create(notification).Error; err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot store notification with id [%s]",
 				notification.ID,
@@ -235,7 +235,7 @@ func (repository *gormPhoneNotificationRepository) ScheduleExact(
 		Count(&count).Error; err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(err, "cannot check for existing notification for message [%s]", notification.MessageID),
+			stacktrace.Propagatef(err, "cannot check for existing notification for message [%s]", notification.MessageID),
 		)
 	}
 
@@ -246,7 +246,7 @@ func (repository *gormPhoneNotificationRepository) ScheduleExact(
 	if err := repository.db.WithContext(ctx).Create(notification).Error; err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(err, "cannot create exact-time notification with id [%s]", notification.ID),
+			stacktrace.Propagatef(err, "cannot create exact-time notification with id [%s]", notification.ID),
 		)
 	}
 

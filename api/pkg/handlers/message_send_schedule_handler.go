@@ -69,7 +69,7 @@ func (h *MessageSendScheduleHandler) Index(c fiber.Ctx) error {
 
 	schedules, err := h.service.Index(ctx, userID)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot list send schedules for user [%s]", userID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot list send schedules for user [%s]", userID))
 		return h.responseInternalServerError(c)
 	}
 
@@ -102,7 +102,7 @@ func (h *MessageSendScheduleHandler) Store(c fiber.Ctx) error {
 		return h.service.CountByUser(ctx, userID)
 	})
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot check entitlement for send schedules for user [%s]", userID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check entitlement for send schedules for user [%s]", userID))
 		return h.responseInternalServerError(c)
 	}
 	if !result.Allowed {
@@ -116,7 +116,7 @@ func (h *MessageSendScheduleHandler) Store(c fiber.Ctx) error {
 
 	request = request.Sanitize()
 	if errors := h.validator.ValidateStore(ctx, request); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError(
+		ctxLogger.Warn(stacktrace.NewErrorf(
 			"validation errors [%s], while storing send schedule [%+#v]",
 			spew.Sdump(errors),
 			request,
@@ -126,7 +126,7 @@ func (h *MessageSendScheduleHandler) Store(c fiber.Ctx) error {
 
 	schedule, err := h.service.Store(ctx, request.ToParams(h.userFromContext(c)))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot create send schedule for user [%s]", userID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot create send schedule for user [%s]", userID))
 		return h.responseInternalServerError(c)
 	}
 
@@ -173,7 +173,7 @@ func (h *MessageSendScheduleHandler) Update(c fiber.Ctx) error {
 
 	schedule, err := h.service.Update(ctx, userID, scheduleID, request.ToParams(h.userFromContext(c)))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot update send schedule for user [%s] and schedule [%s]", userID, scheduleID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot update send schedule for user [%s] and schedule [%s]", userID, scheduleID))
 		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			return h.responseNotFound(c, err.Error())
 		}
@@ -209,7 +209,7 @@ func (h *MessageSendScheduleHandler) Delete(c fiber.Ctx) error {
 	userID := h.userIDFomContext(c)
 
 	if _, err = h.service.Load(ctx, userID, scheduleID); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot load send schedule for deletion for user [%s] and schedule [%s]", userID, scheduleID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot load send schedule for deletion for user [%s] and schedule [%s]", userID, scheduleID))
 		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 			return h.responseNotFound(c, err.Error())
 		}
@@ -217,7 +217,7 @@ func (h *MessageSendScheduleHandler) Delete(c fiber.Ctx) error {
 	}
 
 	if err = h.service.Delete(ctx, userID, scheduleID); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete send schedule for user [%s] and schedule [%s]", userID, scheduleID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot delete send schedule for user [%s] and schedule [%s]", userID, scheduleID))
 		return h.responseInternalServerError(c)
 	}
 

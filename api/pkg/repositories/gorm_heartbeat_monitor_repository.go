@@ -40,7 +40,7 @@ func (repository *gormHeartbeatMonitorRepository) DeleteAllForUser(ctx context.C
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.HeartbeatMonitor{}).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.HeartbeatMonitor{}, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all [%T] for user with ID [%s]", &entities.HeartbeatMonitor{}, userID))
 	}
 	return nil
 }
@@ -62,7 +62,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.
 			"updated_at":   time.Now().UTC(),
 		}).Error
 	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update heartbeat monitor ID [%s] for user [%s]", monitorID, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update heartbeat monitor ID [%s] for user [%s]", monitorID, userID))
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 			"updated_at": time.Now().UTC(),
 		}).Error
 	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update heartbeat monitor ID [%s]", monitorID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update heartbeat monitor ID [%s]", monitorID))
 	}
 	return nil
 }
@@ -100,7 +100,7 @@ func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, us
 		Where("owner = ?", owner).
 		Delete(&entities.HeartbeatMonitor{}).Error
 	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete heartbeat monitor with owner [%s] and userID [%s]", owner, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete heartbeat monitor with owner [%s] and userID [%s]", owner, userID))
 	}
 
 	return nil
@@ -117,7 +117,7 @@ func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, use
 	query := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("owner = ?", owner)
 	heartbeats := new([]entities.Heartbeat)
 	if err := query.Order("timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&heartbeats).Error; err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch heartbeats with owner [%s] and params [%+#v]", owner, params))
 	}
 
 	return heartbeats, nil
@@ -132,7 +132,7 @@ func (repository *gormHeartbeatMonitorRepository) Store(ctx context.Context, hea
 	defer cancel()
 
 	if err := repository.db.WithContext(ctx).Create(heartbeatMonitor).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save heartbeatMonitor monitor with ID [%s]", heartbeatMonitor.ID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save heartbeatMonitor monitor with ID [%s]", heartbeatMonitor.ID))
 	}
 
 	return nil
@@ -152,11 +152,11 @@ func (repository *gormHeartbeatMonitorRepository) Load(ctx context.Context, user
 		Where("owner = ?", owner).
 		First(&phone).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "heartbeat monitor with userID [%s] and owner [%s] does not exist", userID, owner))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "heartbeat monitor with userID [%s] and owner [%s] does not exist", userID, owner))
 	}
 
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load heartbeat monitor with userID [%s] and owner [%s]", userID, owner))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load heartbeat monitor with userID [%s] and owner [%s]", userID, owner))
 	}
 
 	return phone, nil
@@ -178,7 +178,7 @@ func (repository *gormHeartbeatMonitorRepository) Exists(ctx context.Context, us
 		Where("id = ?", monitorID).
 		Find(&exists).Error
 	if err != nil {
-		return exists, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot check if heartbeat monitor exists with userID [%s] and montior ID [%s]", userID, monitorID))
+		return exists, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check if heartbeat monitor exists with userID [%s] and montior ID [%s]", userID, monitorID))
 	}
 
 	return exists, nil

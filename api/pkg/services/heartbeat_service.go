@@ -55,11 +55,11 @@ func (service *HeartbeatService) DeleteAllForUser(ctx context.Context, userID en
 	defer span.End()
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete all [entities.Heartbeat] for user with ID [%s]", userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not delete all [entities.Heartbeat] for user with ID [%s]", userID))
 	}
 
 	if err := service.monitorRepository.DeleteAllForUser(ctx, userID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete all [entities.HeartbeatMonitor] for user with ID [%s]", userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not delete all [entities.HeartbeatMonitor] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.Heartbeat] and [entities.HeartbeatMonitor] for user with ID [%s]", userID))
@@ -75,7 +75,7 @@ func (service *HeartbeatService) Index(ctx context.Context, userID entities.User
 
 	heartbeats, err := service.repository.Index(ctx, userID, owner, params)
 	if err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not fetch heartbeats with parms [%+#v]", params))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not fetch heartbeats with parms [%+#v]", params))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(*heartbeats), params))
@@ -109,7 +109,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 	}
 
 	if err := service.repository.Store(ctx, heartbeat); err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save heartbeat with id [%s]", heartbeat.ID))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save heartbeat with id [%s]", heartbeat.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat saved with id [%s] for user [%s]", heartbeat.ID, heartbeat.UserID))
@@ -120,7 +120,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return heartbeat, nil
 	}
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot load heartbeat monitor for owner [%s] and user [%s]", params.Owner, params.UserID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot load heartbeat monitor for owner [%s] and user [%s]", params.Owner, params.UserID))
 		return heartbeat, nil
 	}
 
@@ -145,7 +145,7 @@ func (service *HeartbeatService) handleHeartbeatWhenPhoneWasOffline(ctx context.
 	defer span.End()
 
 	if err := service.UpdatePhoneOnline(ctx, monitor.UserID, monitor.ID, true); err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update phone online status for heartbeat monitor [%s]", monitor.ID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update phone online status for heartbeat monitor [%s]", monitor.ID)))
 	}
 
 	event, err := service.createEvent(events.EventTypePhoneHeartbeatOnline, source, &events.PhoneHeartbeatOnlinePayload{
@@ -157,12 +157,12 @@ func (service *HeartbeatService) handleHeartbeatWhenPhoneWasOffline(ctx context.
 		Owner:                  heartbeat.Owner,
 	})
 	if err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [%s] event for monitor with ID [%s]", events.EventTypePhoneHeartbeatOnline, monitor.ID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create [%s] event for monitor with ID [%s]", events.EventTypePhoneHeartbeatOnline, monitor.ID)))
 		return
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), monitor.PhoneID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), monitor.PhoneID)))
 		return
 	}
 
@@ -177,7 +177,7 @@ func (service *HeartbeatService) StoreMonitor(ctx context.Context, params *Heart
 
 	monitor, scheduleCheck, err := service.phoneMonitor(ctx, params)
 	if err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create monitor for with userID [%s] and owner [%s]", params.UserID, params.Owner))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create monitor for with userID [%s] and owner [%s]", params.UserID, params.Owner))
 	}
 
 	if !scheduleCheck {
@@ -195,7 +195,7 @@ func (service *HeartbeatService) StoreMonitor(ctx context.Context, params *Heart
 		Source:    params.Source,
 	}
 	if err = service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), monitorParams); err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule healthcheck for monitor [%s] with owner [%s] and userID [%s]", monitor.ID, params.Owner, params.UserID))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule healthcheck for monitor [%s] with owner [%s] and userID [%s]", monitor.ID, params.Owner, params.UserID))
 	}
 
 	return monitor, nil
@@ -218,7 +218,7 @@ func (service *HeartbeatService) phoneMonitor(ctx context.Context, params *Heart
 		}
 
 		if err = service.monitorRepository.Store(ctx, monitor); err != nil {
-			return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save heartbeat monitor for owner [%s] and user [%s]", monitor.Owner, monitor.UserID))
+			return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save heartbeat monitor for owner [%s] and user [%s]", monitor.Owner, monitor.UserID))
 		}
 
 		ctxLogger.Info(fmt.Sprintf("heartbeat monitor saved with id [%s] for owner [%s] and user [%s]", monitor.ID, monitor.Owner, monitor.UserID))
@@ -226,7 +226,7 @@ func (service *HeartbeatService) phoneMonitor(ctx context.Context, params *Heart
 	}
 
 	if err != nil {
-		return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
+		return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
 	}
 
 	return monitor, monitor.RequiresCheck(), nil
@@ -240,7 +240,7 @@ func (service *HeartbeatService) DeleteMonitor(ctx context.Context, userID entit
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if err := service.monitorRepository.Delete(ctx, userID, owner); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s]", userID, owner))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s]", userID, owner))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat monitor deleted for userID [%s] and owner [%s]", userID, owner))
@@ -255,7 +255,7 @@ func (service *HeartbeatService) UpdatePhoneOnline(ctx context.Context, userID e
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if err := service.monitorRepository.UpdatePhoneOnline(ctx, userID, monitorID, phoneOnline); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update heartbeat monitor [%s] with userID [%s] and status [%t]", monitorID, userID, phoneOnline))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update heartbeat monitor [%s] with userID [%s] and status [%t]", monitorID, userID, phoneOnline))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat monitor [%s] updated for userID [%s] and status [%t]", monitorID, userID, phoneOnline))
@@ -285,7 +285,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	}
 
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
 		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	}
 
@@ -295,7 +295,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID))
 		return nil
 	}
 
@@ -326,12 +326,12 @@ func (service *HeartbeatService) handleMissedMonitor(ctx context.Context, lastTi
 		Owner:                  params.Owner,
 	})
 	if err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create event when phone monitor [%s] missed heartbeat", params.MonitorID.String())))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create event when phone monitor [%s] missed heartbeat", params.MonitorID.String())))
 		return
 	}
 
 	if _, err = service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval); err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID)))
 	}
 }
 
@@ -341,7 +341,7 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 
 	err := service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID))
 	}
 
 	event, err := service.createPhoneHeartbeatOfflineEvent(params.Source, &events.PhoneHeartbeatOfflinePayload{
@@ -353,11 +353,11 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 		Owner:                  params.Owner,
 	})
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create event when phone monitor failed"))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create event when phone monitor failed"))
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat monitor with id [%s] and phone id [%s] failed for user [%s]", params.MonitorID, params.PhoneID, params.UserID))
@@ -376,16 +376,16 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 		Owner:       params.Owner,
 	})
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create event when phone monitor failed"))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create event when phone monitor failed"))
 	}
 
 	queueID, err := service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval)
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID))
 	}
 
 	if err = service.monitorRepository.UpdateQueueID(ctx, params.MonitorID, queueID); err != nil {
-		service.logger.Error(stacktrace.Propagate(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
+		service.logger.Error(stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", params.MonitorID, params.PhoneID, queueID, params.UserID))

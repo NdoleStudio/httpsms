@@ -49,24 +49,24 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 
 	var request cloudevents.Event
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if err := request.Validate(); err != nil {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while dispatching event [%+#v]", spew.Sdump(err.Error()), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while dispatching event [%+#v]", spew.Sdump(err.Error()), request))
 		return h.responseUnprocessableEntity(c, map[string][]string{"event": {err.Error()}}, "validation errors while dispatching event")
 	}
 
 	if h.userIDFomContext(c) != h.queueConfig.UserID {
-		ctxLogger.Error(stacktrace.NewError("user with ID [%s], cannot dispatch event [%+#v]", h.userIDFomContext(c), request))
+		ctxLogger.Error(stacktrace.NewErrorf("user with ID [%s], cannot dispatch event [%+#v]", h.userIDFomContext(c), request))
 		return h.responseForbidden(c)
 	}
 
 	ctxLogger.Info(fmt.Sprintf("handling [%s] event with ID [%s]", request.Type(), request.ID()))
 	err := h.service.DispatchSync(ctx, request)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot dispatch [%s] event with ID [%s]", request.Type(), request.ID()))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot dispatch [%s] event with ID [%s]", request.Type(), request.ID()))
 		return h.responseInternalServerError(c)
 	}
 

@@ -55,27 +55,27 @@ func (v *TurnstileTokenValidator) ValidateToken(ctx context.Context, ipAddress, 
 		"remoteip": ipAddress,
 	})
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "failed to marshal payload"))
+		ctxLogger.Error(stacktrace.Propagatef(err, "failed to marshal payload"))
 		return false
 	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://challenges.cloudflare.com/turnstile/v0/siteverify", bytes.NewBuffer(payload))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "failed to create http request request"))
+		ctxLogger.Error(stacktrace.Propagatef(err, "failed to create http request request"))
 		return false
 	}
 
 	request.Header.Set("Content-Type", "application/json")
 	response, err := v.httpClient.Do(request)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "failed to send http request to [%s]", request.URL.String()))
+		ctxLogger.Error(stacktrace.Propagatef(err, "failed to send http request to [%s]", request.URL.String()))
 		return false
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "failed to read response body from cloudflare turnstile"))
+		ctxLogger.Error(stacktrace.Propagatef(err, "failed to read response body from cloudflare turnstile"))
 		return false
 	}
 
@@ -83,7 +83,7 @@ func (v *TurnstileTokenValidator) ValidateToken(ctx context.Context, ipAddress, 
 
 	data := new(turnstileVerifyResponse)
 	if err = json.Unmarshal(body, data); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "failed to unmarshal response from cloudflare turnstile"))
+		ctxLogger.Error(stacktrace.Propagatef(err, "failed to unmarshal response from cloudflare turnstile"))
 		return false
 	}
 

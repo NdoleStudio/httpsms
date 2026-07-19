@@ -36,7 +36,7 @@ func (repository *gormIntegration3CxRepository) DeleteAllForUser(ctx context.Con
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Integration3CX{}).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.Integration3CX{}, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all [%T] for user with ID [%s]", &entities.Integration3CX{}, userID))
 	}
 
 	return nil
@@ -50,11 +50,11 @@ func (repository *gormIntegration3CxRepository) Load(ctx context.Context, userID
 	integration := new(entities.Integration3CX)
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).First(&integration).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "[3cx] integration for user [%s] does not exist", userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "[3cx] integration for user [%s] does not exist", userID))
 	}
 
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load [3cx] integration for user [%s]", userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load [3cx] integration for user [%s]", userID))
 	}
 
 	return integration, nil
@@ -66,7 +66,7 @@ func (repository *gormIntegration3CxRepository) Save(ctx context.Context, integr
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(integration).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save [%T] with ID [%s]", integration, integration.ID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save [%T] with ID [%s]", integration, integration.ID))
 	}
 
 	return nil

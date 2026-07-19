@@ -92,7 +92,7 @@ func (service *MessageSendScheduleService) Store(
 	if err := service.repository.Store(ctx, schedule); err != nil {
 		return nil, service.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot store message send schedule [%s]", schedule.ID,
 			),
@@ -125,7 +125,7 @@ func (service *MessageSendScheduleService) Update(
 	if err = service.repository.Update(ctx, schedule); err != nil {
 		return nil, service.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot update message send schedule [%s]", schedule.ID,
 			),
@@ -145,7 +145,7 @@ func (service *MessageSendScheduleService) Delete(
 	defer span.End()
 
 	if err := service.repository.Delete(ctx, userID, scheduleID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete message send schedule with ID [%s] for user [%s]", scheduleID, userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete message send schedule with ID [%s] for user [%s]", scheduleID, userID))
 	}
 
 	event, err := service.createEvent(events.EventTypeMessageSendScheduleDeleted, fmt.Sprintf("%T", service), events.MessageSendScheduleDeletedPayload{
@@ -154,11 +154,11 @@ func (service *MessageSendScheduleService) Delete(
 		Timestamp:  time.Now().UTC(),
 	})
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [%s] event for schedule [%s]", events.EventTypeMessageSendScheduleDeleted, scheduleID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create [%s] event for schedule [%s]", events.EventTypeMessageSendScheduleDeleted, scheduleID))
 	}
 
 	if err = service.dispatcher.Dispatch(ctx, event); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot dispatch [%s] event for schedule [%s]", event.Type(), scheduleID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch [%s] event for schedule [%s]", event.Type(), scheduleID))
 	}
 
 	return nil
@@ -199,7 +199,7 @@ func (service *MessageSendScheduleService) DeleteAllForUser(
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
 		return service.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(
+			stacktrace.Propagatef(
 				err,
 				"cannot delete message send schedules for user [%s]", userID,
 			),

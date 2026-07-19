@@ -268,7 +268,7 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 	}
 
 	if err = db.Use(tracing.NewPlugin()); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 
 	container.dedicatedDB = db
@@ -279,11 +279,11 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 
 	container.logger.Debug(fmt.Sprintf("Running migrations for dedicated [%T]", db))
 	if err = db.AutoMigrate(&entities.Heartbeat{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Heartbeat{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Heartbeat{}))
 	}
 
 	if err = db.AutoMigrate(&entities.HeartbeatMonitor{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.HeartbeatMonitor{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.HeartbeatMonitor{}))
 	}
 
 	return container.dedicatedDB
@@ -326,7 +326,7 @@ func (container *Container) DBWithoutMigration() (db *gorm.DB) {
 	container.db = db
 
 	if err = db.Use(tracing.NewPlugin()); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 	return container.db
 }
@@ -351,7 +351,7 @@ func (container *Container) DB() (db *gorm.DB) {
 	container.db = db
 
 	if err = db.Use(tracing.NewPlugin()); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot use GORM tracing plugin"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 
 	if os.Getenv("DATABASE_MIGRATION_SKIP") != "" {
@@ -371,47 +371,47 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 	}
 
 	if err = db.AutoMigrate(&entities.Message{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Message{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Message{}))
 	}
 
 	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.MessageThread{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.MessageThread{}))
 	}
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.User{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.User{}))
 	}
 
 	if err = db.AutoMigrate(&entities.MessageSendSchedule{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.MessageSendSchedule{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.MessageSendSchedule{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Phone{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Phone{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Phone{}))
 	}
 
 	if err = db.AutoMigrate(&entities.PhoneNotification{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.PhoneNotification{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.PhoneNotification{}))
 	}
 
 	if err = db.AutoMigrate(&entities.BillingUsage{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.BillingUsage{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.BillingUsage{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Webhook{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Webhook{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Webhook{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Discord{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Discord{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Discord{}))
 	}
 
 	if err = db.AutoMigrate(&entities.Integration3CX{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.Integration3CX{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Integration3CX{}))
 	}
 
 	if err = db.AutoMigrate(&entities.PhoneAPIKey{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate %T", &entities.PhoneAPIKey{}))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.PhoneAPIKey{}))
 	}
 
 	return container.db
@@ -423,7 +423,7 @@ func (container *Container) FirebaseApp() (app *firebase.App) {
 
 	app, err := firebase.NewApp(context.Background(), nil, option.WithCredentialsJSON(container.FirebaseCredentials()))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase application"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot initialize firebase application"))
 	}
 	return app
 }
@@ -444,7 +444,7 @@ func (container *Container) Cache() cache.Cache {
 	container.logger.Debug("creating cache.Cache")
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot parse redis url [%s]", os.Getenv("REDIS_URL")))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot parse redis url [%s]", os.Getenv("REDIS_URL")))
 	}
 	if strings.HasPrefix(os.Getenv("REDIS_URL"), "rediss://") {
 		opt.TLSConfig = &tls.Config{
@@ -456,12 +456,12 @@ func (container *Container) Cache() cache.Cache {
 
 	// Enable tracing instrumentation.
 	if err = redisotel.InstrumentTracing(redisClient); err != nil {
-		container.logger.Error(stacktrace.Propagate(err, "cannot instrument redis tracing"))
+		container.logger.Error(stacktrace.Propagatef(err, "cannot instrument redis tracing"))
 	}
 
 	// Enable metrics instrumentation.
 	if err = redisotel.InstrumentMetrics(redisClient); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot instrument redis metrics"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot instrument redis metrics"))
 	}
 
 	return cache.NewRedisCache(container.Tracer(), redisClient)
@@ -472,7 +472,7 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	authClient, err := container.FirebaseApp().Auth(context.Background())
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase auth client"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot initialize firebase auth client"))
 	}
 	return authClient
 }
@@ -483,7 +483,7 @@ func (container *Container) CloudTasksClient() (client *cloudtasks.Client) {
 
 	client, err := cloudtasks.NewClient(context.Background(), option.WithCredentialsJSON(container.FirebaseCredentials()))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize cloud tasks client"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot initialize cloud tasks client"))
 	}
 
 	return client
@@ -551,7 +551,7 @@ func (container *Container) FCMClient() services.FCMClient {
 	container.logger.Debug("creating FirebaseFCMClient")
 	messagingClient, err := container.FirebaseApp().Messaging(context.Background())
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot initialize firebase messaging client"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot initialize firebase messaging client"))
 	}
 	return services.NewFirebaseFCMClient(messagingClient)
 }
@@ -745,7 +745,7 @@ func (container *Container) Float64Histogram(name, unit, description string) ote
 	)
 	histogram, err := meter.Float64Histogram(name, otelMetric.WithUnit(unit), otelMetric.WithDescription(description))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create float64 histogram"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create float64 histogram"))
 	}
 	return histogram
 }
@@ -1525,7 +1525,7 @@ func (container *Container) RegisterWebsocketListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.WebsocketListener{}))
 
 	if os.Getenv("PUSHER_SECRET") == "" {
-		container.logger.Warn(stacktrace.NewError("skipping websocket listeners because the PUSHER_SECRET env variable is not set"))
+		container.logger.Warn(stacktrace.NewErrorf("skipping websocket listeners because the PUSHER_SECRET env variable is not set"))
 		return
 	}
 
@@ -1579,7 +1579,7 @@ func (container *Container) AttachmentRepository() repositories.AttachmentReposi
 		container.logger.Debug("creating GoogleCloudStorageAttachmentRepository")
 		client, err := storage.NewClient(context.Background(), option.WithAuthCredentialsJSON(option.ServiceAccount, container.FirebaseCredentials()))
 		if err != nil {
-			container.logger.Fatal(stacktrace.Propagate(err, "cannot create GCS client"))
+			container.logger.Fatal(stacktrace.Propagatef(err, "cannot create GCS client"))
 		}
 		container.attachmentRepository = repositories.NewGoogleCloudStorageAttachmentRepository(
 			container.Logger(),
@@ -1767,7 +1767,7 @@ func (container *Container) PhoneRistrettoCache() *ristretto.Cache[string, *enti
 		BufferItems: 64,
 	})
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create phone ristretto cache"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create phone ristretto cache"))
 	}
 	container.phoneRistrettoCache = ristrettoCache
 	return container.phoneRistrettoCache
@@ -1785,7 +1785,7 @@ func (container *Container) UserRistrettoCache() *ristretto.Cache[string, entiti
 		BufferItems: 64,
 	})
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create user ristretto cache"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create user ristretto cache"))
 	}
 	container.userRistrettoCache = ristrettoCache
 	return ristrettoCache
@@ -1801,7 +1801,7 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 
 	traceExporter, err := cloudtrace.New(cloudtrace.WithProjectID(os.Getenv("GCP_PROJECT_ID")))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create cloud trace traceExporter"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create cloud trace traceExporter"))
 	}
 
 	tp := trace.NewTracerProvider(
@@ -1813,7 +1813,7 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 
 	metricExporter, err := mexporter.New(mexporter.WithProjectID(os.Getenv("GCP_PROJECT_ID")))
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create cloud metric traceExporter"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create cloud metric traceExporter"))
 	}
 
 	meterProvider := metric.NewMeterProvider(
@@ -1824,10 +1824,10 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 
 	return func() {
 		if err = metricExporter.Shutdown(context.Background()); err != nil {
-			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown cloud metric metric exporter"))
+			container.logger.Error(stacktrace.Propagatef(err, "cannot shutdown cloud metric metric exporter"))
 		}
 		if err = traceExporter.Shutdown(context.Background()); err != nil {
-			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown cloud trace trace exporter"))
+			container.logger.Error(stacktrace.Propagatef(err, "cannot shutdown cloud trace trace exporter"))
 		}
 	}
 }
@@ -1846,7 +1846,7 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 		otlptracehttp.WithHeaders(traceHeaders),
 	)
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP trace exporter"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create axiom OTLP trace exporter"))
 	}
 
 	tp := trace.NewTracerProvider(
@@ -1872,7 +1872,7 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 		otlpmetrichttp.WithHeaders(metricHeaders),
 	)
 	if err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot create axiom OTLP metric exporter"))
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create axiom OTLP metric exporter"))
 	}
 
 	meterProvider := metric.NewMeterProvider(
@@ -1883,10 +1883,10 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 
 	return func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
-			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown axiom trace provider"))
+			container.logger.Error(stacktrace.Propagatef(err, "cannot shutdown axiom trace provider"))
 		}
 		if err := meterProvider.Shutdown(context.Background()); err != nil {
-			container.logger.Error(stacktrace.Propagate(err, "cannot shutdown axiom meter provider"))
+			container.logger.Error(stacktrace.Propagatef(err, "cannot shutdown axiom meter provider"))
 		}
 	}
 }
@@ -1937,7 +1937,7 @@ func axiomLogger(skipFrameCount int) *zerodriver.Logger {
 		axiomzerolog.SetDataset(os.Getenv("AXIOM_DATASET_EVENTS")),
 	)
 	if err != nil {
-		log.Fatal(stacktrace.Propagate(err, "cannot create axiom zerolog writer"))
+		log.Fatal(stacktrace.Propagatef(err, "cannot create axiom zerolog writer"))
 	}
 
 	zl := zerolog.New(axiomWriter).With().Timestamp().CallerWithSkipFrameCount(skipFrameCount).Logger()

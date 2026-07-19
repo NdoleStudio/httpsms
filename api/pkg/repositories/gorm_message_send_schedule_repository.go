@@ -41,7 +41,7 @@ func (r *gormMessageSendScheduleRepository) Store(
 	defer span.End()
 
 	if err := r.db.WithContext(ctx).Create(schedule).Error; err != nil {
-		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot store send schedule [%s]", schedule.ID))
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store send schedule [%s]", schedule.ID))
 	}
 
 	return nil
@@ -56,7 +56,7 @@ func (r *gormMessageSendScheduleRepository) Update(
 	defer span.End()
 
 	if err := r.db.WithContext(ctx).Save(schedule).Error; err != nil {
-		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update send schedule [%s]", schedule.ID))
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update send schedule [%s]", schedule.ID))
 	}
 
 	return nil
@@ -79,11 +79,11 @@ func (r *gormMessageSendScheduleRepository) Load(
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, r.tracer.WrapErrorSpan(
 			span,
-			stacktrace.PropagateWithCode(err, ErrCodeNotFound, "send schedule [%s] not found for user with ID [%s]", scheduleID, userID),
+			stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "send schedule [%s] not found for user with ID [%s]", scheduleID, userID),
 		)
 	}
 	if err != nil {
-		return nil, r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load send schedule [%s]", scheduleID))
+		return nil, r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load send schedule [%s]", scheduleID))
 	}
 
 	return item, nil
@@ -103,7 +103,7 @@ func (r *gormMessageSendScheduleRepository) Index(
 		Order("created_at DESC").
 		Find(&items).Error
 	if err != nil {
-		return nil, r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot index send schedules for user [%s]", userID))
+		return nil, r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot index send schedules for user [%s]", userID))
 	}
 
 	return items, nil
@@ -123,7 +123,7 @@ func (r *gormMessageSendScheduleRepository) Delete(
 		Where("id = ?", scheduleID).
 		Delete(&entities.MessageSendSchedule{}).Error
 	if err != nil {
-		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete send schedule [%s]", scheduleID))
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete send schedule [%s]", scheduleID))
 	}
 
 	return nil
@@ -141,7 +141,7 @@ func (r *gormMessageSendScheduleRepository) DeleteAllForUser(
 		Where("user_id = ?", userID).
 		Delete(&entities.MessageSendSchedule{}).Error
 	if err != nil {
-		return r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete send schedules for user [%s]", userID))
+		return r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete send schedules for user [%s]", userID))
 	}
 
 	return nil
@@ -161,7 +161,7 @@ func (r *gormMessageSendScheduleRepository) CountByUser(
 		Where("user_id = ?", userID).
 		Count(&count).Error
 	if err != nil {
-		return 0, r.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot count send schedules for user [%s]", userID))
+		return 0, r.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot count send schedules for user [%s]", userID))
 	}
 
 	return int(count), nil

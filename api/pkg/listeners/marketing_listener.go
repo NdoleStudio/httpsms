@@ -42,11 +42,11 @@ func (listener *MarketingListener) onUserAccountCreated(ctx context.Context, eve
 
 	var payload events.UserAccountCreatedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.CreateContact(ctx, payload.UserID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create [contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create [contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil
@@ -58,11 +58,11 @@ func (listener *MarketingListener) onUserAccountDeleted(ctx context.Context, eve
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteContact(ctx, payload.UserEmail); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete [contact] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

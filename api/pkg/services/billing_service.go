@@ -55,13 +55,13 @@ func (service *BillingService) IsEntitledWithCount(ctx context.Context, userID e
 
 	user, err := service.userRepository.Load(ctx, userID)
 	if err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with ID [%s], entitlement successful", userID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load user with ID [%s], entitlement successful", userID)))
 		return nil
 	}
 
 	usage, err := service.billingUsageRepository.GetCurrent(ctx, userID)
 	if err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load billing usage for user with ID [%s], entitlement successful", userID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load billing usage for user with ID [%s], entitlement successful", userID)))
 		return nil
 	}
 
@@ -102,18 +102,18 @@ func (service *BillingService) sendLimitExceededEmail(ctx context.Context, user 
 
 	email, err := service.emailFactory.UsageLimitExceeded(user, usage)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot create usage limit email for user [%s]", user.ID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot create usage limit email for user [%s]", user.ID))
 		return
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "canot send usage limit exceeded notification to user [%s]", user.ID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "canot send usage limit exceeded notification to user [%s]", user.ID))
 		return
 	}
 
 	ctxLogger.Info(fmt.Sprintf("usage limit exceeded email sent to user [%s]", user.ID))
 	if err = service.cache.Set(ctx, key, "", time.Hour*12); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot set item in redis with key [%s]", key))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot set item in redis with key [%s]", key))
 	}
 }
 
@@ -141,7 +141,7 @@ func (service *BillingService) RegisterSentMessage(ctx context.Context, messageI
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if err := service.billingUsageRepository.RegisterSentMessage(ctx, timestamp, userID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not register [sent] message with ID [%s] for user with ID [%s]", messageID, userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not register [sent] message with ID [%s] for user with ID [%s]", messageID, userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("registered [sent] message with ID [%s] for user [%s]", messageID, userID))
@@ -157,7 +157,7 @@ func (service *BillingService) RegisterReceivedMessage(ctx context.Context, mess
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	if err := service.billingUsageRepository.RegisterReceivedMessage(ctx, timestamp, userID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not register [received] message with ID [%s] for user with ID [%s]", messageID, userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not register [received] message with ID [%s] for user with ID [%s]", messageID, userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("registered [received] message with ID [%s] for user [%s]", messageID, userID))
@@ -171,7 +171,7 @@ func (service *BillingService) DeleteAllForUser(ctx context.Context, userID enti
 	defer span.End()
 
 	if err := service.billingUsageRepository.DeleteAllForUser(ctx, userID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete [entities.BillingUsage] for user with ID [%s]", userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not delete [entities.BillingUsage] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.BillingUsage] for user with ID [%s]", userID))
@@ -184,13 +184,13 @@ func (service *BillingService) sendUsageAlert(ctx context.Context, userID entiti
 
 	user, err := service.userRepository.Load(ctx, userID)
 	if err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load user with ID [%s]", userID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load user with ID [%s]", userID)))
 		return
 	}
 
 	billingUsage, err := service.billingUsageRepository.GetCurrent(ctx, userID)
 	if err != nil {
-		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load billing usage for user with ID [%s]", userID)))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load billing usage for user with ID [%s]", userID)))
 		return
 	}
 
@@ -200,12 +200,12 @@ func (service *BillingService) sendUsageAlert(ctx context.Context, userID entiti
 
 	email, err := service.emailFactory.UsageLimitAlert(user, billingUsage)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot create usage alert email for user [%s]", user.ID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot create usage alert email for user [%s]", user.ID))
 		return
 	}
 
 	if err = service.mailer.Send(ctx, email); err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "canot send usage alert notification to user [%s]", user.ID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "canot send usage alert notification to user [%s]", user.ID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("usage alert email sent to user [%s]", user.ID))

@@ -51,7 +51,7 @@ func (mailer *smtpMailer) Send(ctx context.Context, email *Email) (err error) {
 
 	err = e.Send(mailer.address, mailer.auth)
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot send email")
+		return stacktrace.Propagatef(err, "cannot send email")
 	}
 
 	return nil

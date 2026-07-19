@@ -45,11 +45,11 @@ func (listener *MessageSendScheduleListener) onUserAccountDeleted(
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.MessageSendSchedule] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete [entities.MessageSendSchedule] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

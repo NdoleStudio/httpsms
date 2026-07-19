@@ -54,7 +54,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 
 	var payload events.MessagePhoneSendingPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	handleParams := services.HandleMessageParams{
@@ -65,7 +65,7 @@ func (listener *MessageListener) OnMessagePhoneSending(ctx context.Context, even
 	}
 
 	if err := listener.service.HandleMessageSending(ctx, handleParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle sending for message with ID [%s] for event with ID [%s]", handleParams.ID, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle sending for message with ID [%s] for event with ID [%s]", handleParams.ID, event.ID()))
 	}
 
 	return nil
@@ -78,7 +78,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 
 	var payload events.MessagePhoneSentPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	handleParams := services.HandleMessageParams{
@@ -89,7 +89,7 @@ func (listener *MessageListener) OnMessagePhoneSent(ctx context.Context, event c
 	}
 
 	if err := listener.service.HandleMessageSent(ctx, handleParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID()))
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, ev
 
 	var payload events.MessagePhoneDeliveredPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	handleParams := services.HandleMessageParams{
@@ -111,7 +111,7 @@ func (listener *MessageListener) OnMessagePhoneDelivered(ctx context.Context, ev
 	}
 
 	if err := listener.service.HandleMessageDelivered(ctx, handleParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID()))
 	}
 
 	return nil
@@ -124,7 +124,7 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 
 	var payload events.MessageSendFailedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	handleParams := services.HandleMessageFailedParams{
@@ -135,7 +135,7 @@ func (listener *MessageListener) OnMessagePhoneFailed(ctx context.Context, event
 	}
 
 	if err := listener.service.HandleMessageFailed(ctx, handleParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle [%s] for message with ID [%s] for event with ID [%s]", event.Type(), handleParams.ID, event.ID()))
 	}
 
 	return nil
@@ -148,12 +148,12 @@ func (listener *MessageListener) onMessageNotificationFailed(ctx context.Context
 
 	var payload events.MessageNotificationFailedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	message, err := listener.service.GetMessage(ctx, payload.UserID, payload.MessageID)
 	if err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load message with id [%s] and user id [%s]", payload.MessageID, payload.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load message with id [%s] and user id [%s]", payload.MessageID, payload.UserID))
 	}
 
 	storeParams := services.MessageStoreEventParams{
@@ -164,7 +164,7 @@ func (listener *MessageListener) onMessageNotificationFailed(ctx context.Context
 		Source:       event.Source(),
 	}
 	if _, err = listener.service.StoreEvent(ctx, message, storeParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot store message event [%s] for message with ID [%s]", storeParams.EventName, storeParams.MessageID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store message event [%s] for message with ID [%s]", storeParams.EventName, storeParams.MessageID))
 	}
 
 	return nil
@@ -177,7 +177,7 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 
 	var payload events.MessageNotificationSentPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	checkParams := services.MessageScheduleExpirationParams{
@@ -189,7 +189,7 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 		MessageExpirationDuration: payload.MessageExpirationDuration,
 	}
 	if err := listener.service.ScheduleExpirationCheck(ctx, checkParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot exchedule expiration check for  ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot exchedule expiration check for  ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID))
 	}
 
 	handleParams := services.HandleMessageParams{
@@ -199,7 +199,7 @@ func (listener *MessageListener) onMessageNotificationSent(ctx context.Context, 
 		Timestamp: payload.NotificationSentAt,
 	}
 	if err := listener.service.HandleMessageNotificationSent(ctx, handleParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle event [%s] for message [%s] and userID [%s]", event.Type(), checkParams.MessageID, checkParams.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle event [%s] for message [%s] and userID [%s]", event.Type(), checkParams.MessageID, checkParams.UserID))
 	}
 
 	return nil
@@ -212,7 +212,7 @@ func (listener *MessageListener) onMessageSendExpiredCheck(ctx context.Context, 
 
 	var payload events.MessageSendExpiredCheckPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	checkParams := services.MessageCheckExpired{
@@ -221,7 +221,7 @@ func (listener *MessageListener) onMessageSendExpiredCheck(ctx context.Context, 
 		Source:    event.Source(),
 	}
 	if err := listener.service.CheckExpired(ctx, checkParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot check expiration for message with ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check expiration for message with ID [%s] and userID [%s]", checkParams.MessageID, checkParams.UserID))
 	}
 
 	return nil
@@ -234,7 +234,7 @@ func (listener *MessageListener) onMessageSendExpired(ctx context.Context, event
 
 	var payload events.MessageSendExpiredPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	expiredParams := services.HandleMessageParams{
@@ -244,7 +244,7 @@ func (listener *MessageListener) onMessageSendExpired(ctx context.Context, event
 		Timestamp: payload.Timestamp,
 	}
 	if err := listener.service.HandleMessageExpired(ctx, expiredParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID))
 	}
 
 	return nil
@@ -257,7 +257,7 @@ func (listener *MessageListener) onMessageNotificationScheduled(ctx context.Cont
 
 	var payload events.MessageNotificationScheduledPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	expiredParams := services.HandleMessageParams{
@@ -267,7 +267,7 @@ func (listener *MessageListener) onMessageNotificationScheduled(ctx context.Cont
 		Timestamp: payload.ScheduledAt,
 	}
 	if err := listener.service.HandleMessageNotificationScheduled(ctx, expiredParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle event [%s] for ID [%s] and userID [%s]", event.Type(), expiredParams.ID, expiredParams.UserID))
 	}
 
 	return nil
@@ -280,11 +280,11 @@ func (listener *MessageListener) onMessageThreadAPIDeleted(ctx context.Context, 
 
 	var payload events.MessageThreadAPIDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteByOwnerAndContact(ctx, payload.UserID, payload.Owner, payload.Contact); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
 	return nil
@@ -297,11 +297,11 @@ func (listener *MessageListener) onMessageCallMissed(ctx context.Context, event 
 
 	payload := new(events.MessageCallMissedPayload)
 	if err := event.DataAs(payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.RespondToMissedCall(ctx, event.Source(), payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot handle [%s] event with ID [%s] and userID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
 	return nil
@@ -313,11 +313,11 @@ func (listener *MessageListener) onUserAccountDeleted(ctx context.Context, event
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.Message] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete [entities.Message] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

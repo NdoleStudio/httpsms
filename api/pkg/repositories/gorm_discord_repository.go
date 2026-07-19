@@ -37,7 +37,7 @@ func (repository *gormDiscordRepository) DeleteAllForUser(ctx context.Context, u
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Discord{}).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.Discord{}, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all [%T] for user with ID [%s]", &entities.Discord{}, userID))
 	}
 
 	return nil
@@ -48,7 +48,7 @@ func (repository *gormDiscordRepository) Save(ctx context.Context, Discord *enti
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Save(Discord).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot update discord integration with ID [%s]", Discord.ID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update discord integration with ID [%s]", Discord.ID))
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func (repository *gormDiscordRepository) Index(ctx context.Context, userID entit
 
 	discords := make([]*entities.Discord, 0)
 	if err := query.Order("created_at DESC").Limit(params.Limit).Offset(params.Skip).Find(&discords).Error; err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot fetch discord integrations for user [%s] and params [%+#v]", userID, params))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch discord integrations for user [%s] and params [%+#v]", userID, params))
 	}
 
 	return discords, nil
@@ -85,7 +85,7 @@ func (repository *gormDiscordRepository) FetchHavingIncomingChannel(ctx context.
 		Where("incoming_channel_id != ?", "").
 		Find(&discords).Error
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load discord integrations for user with ID [%s] having a valid [incoming_channel_id]", userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load discord integrations for user with ID [%s] having a valid [incoming_channel_id]", userID))
 	}
 
 	return discords, nil
@@ -98,11 +98,11 @@ func (repository *gormDiscordRepository) Load(ctx context.Context, userID entiti
 	discord := new(entities.Discord)
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", discordID).First(&discord).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "discord integration with ID [%s] for user [%s] does not exist", discordID, userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "discord integration with ID [%s] for user [%s] does not exist", discordID, userID))
 	}
 
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load discord integration with ID [%s] for user [%s]", discordID, userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load discord integration with ID [%s] for user [%s]", discordID, userID))
 	}
 
 	return discord, nil
@@ -115,11 +115,11 @@ func (repository *gormDiscordRepository) FindByServerID(ctx context.Context, ser
 	discord := new(entities.Discord)
 	err := repository.db.WithContext(ctx).Where("server_id = ?", serverID).First(&discord).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "discord integration with server ID [%s] does not exist", serverID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "discord integration with server ID [%s] does not exist", serverID))
 	}
 
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load discord integration with serverID [%s]", serverID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load discord integration with serverID [%s]", serverID))
 	}
 
 	return discord, nil
@@ -134,7 +134,7 @@ func (repository *gormDiscordRepository) Delete(ctx context.Context, userID enti
 		Where("id = ?", discordID).
 		Delete(&entities.Discord{}).Error
 	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete discord integration with ID [%s] and userID [%s]", discordID, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete discord integration with ID [%s] and userID [%s]", discordID, userID))
 	}
 
 	return nil

@@ -88,18 +88,18 @@ func (h *DiscordHandler) Index(c fiber.Ctx) error {
 
 	var request requests.DiscordIndex
 	if err := c.Bind().Query(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall URL [%s] into %T", c.OriginalURL(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall URL [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateIndex(ctx, request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while fetching discord integrations [%+#v]", spew.Sdump(errors), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while fetching discord integrations [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching discord integrations")
 	}
 
 	discordIntegrations, err := h.service.Index(ctx, h.userIDFomContext(c), request.ToIndexParams())
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot get discord integrations with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get discord integrations with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -126,13 +126,13 @@ func (h *DiscordHandler) Delete(c fiber.Ctx) error {
 
 	discordID := c.Params("discordID")
 	if errors := h.validator.ValidateUUID(discordID, "discordID"); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while deleting discord integration with ID [%s]", spew.Sdump(errors), discordID))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while deleting discord integration with ID [%s]", spew.Sdump(errors), discordID))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting discord integration")
 	}
 
 	err := h.service.Delete(ctx, h.userIDFomContext(c), uuid.MustParse(discordID))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete discord integration with ID [%+#v]", discordID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot delete discord integration with ID [%+#v]", discordID))
 		return h.responseInternalServerError(c)
 	}
 
@@ -160,19 +160,19 @@ func (h *DiscordHandler) Update(c fiber.Ctx) error {
 
 	var request requests.DiscordUpdate
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall params [%s] into [%T]", c.Body(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall params [%s] into [%T]", c.Body(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	request.DiscordID = c.Params("discordID")
 	if errors := h.validator.ValidateUpdate(ctx, request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating discord integration")
 	}
 
 	user, err := h.service.Update(ctx, request.ToUpdateParams(h.userFromContext(c)))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot update discord integration with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot update discord integration with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -201,29 +201,29 @@ func (h *DiscordHandler) Store(c fiber.Ctx) error {
 
 	var request requests.DiscordStore
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall body [%s] into [%T]", c.Body(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall body [%s] into [%T]", c.Body(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateStore(ctx, request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while storing discord integration [%+#v]", spew.Sdump(errors), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while storing discord integration [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing discord integration")
 	}
 
 	discordIntegrations, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 1})
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot index discord integrations for user [%s]", h.userIDFomContext(c)))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot index discord integrations for user [%s]", h.userIDFomContext(c)))
 		return h.responseInternalServerError(c)
 	}
 
 	if len(discordIntegrations) > 0 {
-		ctxLogger.Warn(stacktrace.NewError("user with ID [%s] wants to create more than 1 discord integration", h.userIDFomContext(c)))
+		ctxLogger.Warn(stacktrace.NewErrorf("user with ID [%s] wants to create more than 1 discord integration", h.userIDFomContext(c)))
 		return h.responsePaymentRequired(c, "You can't create more than 1 discord integration contact us to upgrade your account.")
 	}
 
 	discordIntegration, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot store discord integration with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot store discord integration with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -252,7 +252,7 @@ func (h *DiscordHandler) Event(c fiber.Ctx) error {
 
 	var payload map[string]any
 	if err := json.Unmarshal(c.Body(), &payload); err != nil {
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot unmarshall [%s] to [%T]", string(c.Body()), payload)))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot unmarshall [%s] to [%T]", string(c.Body()), payload)))
 		return h.responseBadRequest(c, err)
 	}
 
@@ -266,7 +266,7 @@ func (h *DiscordHandler) Event(c fiber.Ctx) error {
 		return h.sendSMS(ctx, c, payload)
 	}
 
-	return h.responseBadRequest(c, stacktrace.NewError("unknown type [%d]", payload["type"]))
+	return h.responseBadRequest(c, stacktrace.NewErrorf("unknown type [%d]", payload["type"]))
 }
 
 func (h *DiscordHandler) createRequest(payload map[string]any) requests.MessageSend {
@@ -291,7 +291,7 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c fiber.Ctx, payload map[s
 
 	discord, err := h.service.GetByServerID(ctx, payload["guild_id"].(string))
 	if err != nil {
-		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot get discord integration by server ID [%s]", payload["guild_id"].(string))))
+		ctxLogger.Error(h.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot get discord integration by server ID [%s]", payload["guild_id"].(string))))
 		return c.JSON(
 			fiber.Map{
 				"type": 4,
@@ -329,7 +329,7 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c fiber.Ctx, payload map[s
 	}
 
 	if errors := h.messageValidator.ValidateMessageSend(ctx, discord.UserID, request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body()))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while sending payload [%s]", spew.Sdump(errors), c.Body()))
 
 		var embeds []fiber.Map
 		for _, value := range errors {
@@ -351,7 +351,7 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c fiber.Ctx, payload map[s
 	}
 
 	if msg := h.billingService.IsEntitled(ctx, discord.UserID); msg != nil {
-		ctxLogger.Warn(stacktrace.NewError("user with ID [%s] can't send a message", discord.UserID))
+		ctxLogger.Warn(stacktrace.NewErrorf("user with ID [%s] can't send a message", discord.UserID))
 		return c.JSON(
 			fiber.Map{
 				"type": 4,
@@ -370,7 +370,7 @@ func (h *DiscordHandler) sendSMS(ctx context.Context, c fiber.Ctx, payload map[s
 
 	message, err := h.messageService.SendMessage(ctx, request.ToMessageSendParams(discord.UserID, c.OriginalURL()))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot send message with paylod [%s] from discord server [%s]", c.Body(), discord.ServerID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot send message with paylod [%s] from discord server [%s]", c.Body(), discord.ServerID))
 		return c.JSON(
 			fiber.Map{
 				"type": 4,
@@ -436,7 +436,7 @@ func (h *DiscordHandler) verifyInteraction(ctxLogger telemetry.Logger, c fiber.C
 
 	key, err := hex.DecodeString(os.Getenv("DISCORD_PUBLIC_KEY"))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot decode DISCORD_PUBLIC_KEY env variable [%s]", os.Getenv("DISCORD_PUBLIC_KEY")))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot decode DISCORD_PUBLIC_KEY env variable [%s]", os.Getenv("DISCORD_PUBLIC_KEY")))
 		return false
 	}
 

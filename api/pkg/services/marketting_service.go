@@ -45,7 +45,7 @@ func (service *MarketingService) DeleteContact(ctx context.Context, email string
 
 	response, _, err := service.plunkClient.Contacts.List(ctx, map[string]string{"search": email})
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot search for contact with email [%s]", email))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot search for contact with email [%s]", email))
 	}
 
 	if len(response.Data) == 0 {
@@ -55,7 +55,7 @@ func (service *MarketingService) DeleteContact(ctx context.Context, email string
 
 	contact := response.Data[0]
 	if _, err = service.plunkClient.Contacts.Delete(ctx, contact.ID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete user with ID [%s] from contacts", contact.Data[string(semconv.EnduserIDKey)]))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete user with ID [%s] from contacts", contact.Data[string(semconv.EnduserIDKey)]))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted user with ID [%s] from as marketting contact with ID [%s]", contact.Data[string(semconv.EnduserIDKey)], contact.ID))
@@ -69,7 +69,7 @@ func (service *MarketingService) CreateContact(ctx context.Context, userID entit
 
 	userRecord, err := service.authClient.GetUser(ctx, userID.String())
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot get auth user with id [%s]", userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot get auth user with id [%s]", userID))
 	}
 
 	data := service.attributes(userRecord)
@@ -83,7 +83,7 @@ func (service *MarketingService) CreateContact(ctx context.Context, userID entit
 		Data:       data,
 	})
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot create contact for user with id [%s]", userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create contact for user with id [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("user [%s] added to marketting list with contact ID [%s] and event ID [%s]", userID, event.Data.Contact, event.Data.Event))

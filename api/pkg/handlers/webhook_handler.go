@@ -70,18 +70,18 @@ func (h *WebhookHandler) Index(c fiber.Ctx) error {
 
 	var request requests.WebhookIndex
 	if err := c.Bind().Query(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall URL [%s] into %T", c.OriginalURL(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall URL [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateIndex(ctx, request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while fetching webhooks [%+#v]", spew.Sdump(errors), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while fetching webhooks [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching webhooks")
 	}
 
 	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), request.ToIndexParams())
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot get webhooks with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get webhooks with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -108,13 +108,13 @@ func (h *WebhookHandler) Delete(c fiber.Ctx) error {
 
 	webhookID := c.Params("webhookID")
 	if errors := h.validator.ValidateUUID(webhookID, "webhookID"); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while deleting webhook with ID [%s]", spew.Sdump(errors), webhookID))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while deleting webhook with ID [%s]", spew.Sdump(errors), webhookID))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting webhook")
 	}
 
 	err := h.service.Delete(ctx, h.userIDFomContext(c), uuid.MustParse(webhookID))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot delete webhook with ID [%+#v]", webhookID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot delete webhook with ID [%+#v]", webhookID))
 		return h.responseInternalServerError(c)
 	}
 
@@ -143,29 +143,29 @@ func (h *WebhookHandler) Store(c fiber.Ctx) error {
 
 	var request requests.WebhookStore
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall body [%s] into [%T]", c.Body(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall body [%s] into [%T]", c.Body(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateStore(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while storing webhook [%+#v]", spew.Sdump(errors), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while storing webhook [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while storing webhook")
 	}
 
 	webhooks, err := h.service.Index(ctx, h.userIDFomContext(c), repositories.IndexParams{Skip: 0, Limit: 10})
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot index webhooks for user [%s]", h.userIDFomContext(c)))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot index webhooks for user [%s]", h.userIDFomContext(c)))
 		return h.responseInternalServerError(c)
 	}
 
 	if len(webhooks) == 10 {
-		ctxLogger.Warn(stacktrace.NewError("user with ID [%s] wants to create more than 10 webhooks", h.userIDFomContext(c)))
+		ctxLogger.Warn(stacktrace.NewErrorf("user with ID [%s] wants to create more than 10 webhooks", h.userIDFomContext(c)))
 		return h.responsePaymentRequired(c, "You can't create more than 10 webhooks contact us to upgrade to our enterprise plan.")
 	}
 
 	webhook, err := h.service.Store(ctx, request.ToStoreParams(h.userFromContext(c)))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot store webhoook with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot store webhoook with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -193,19 +193,19 @@ func (h *WebhookHandler) Update(c fiber.Ctx) error {
 
 	var request requests.WebhookUpdate
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot marshall params [%s] into [%T]", c.Body(), request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall params [%s] into [%T]", c.Body(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	request.WebhookID = c.Params("webhookID")
 	if errors := h.validator.ValidateUpdate(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewError("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while updating user [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating webhook")
 	}
 
 	user, err := h.service.Update(ctx, request.ToUpdateParams(h.userFromContext(c)))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot update user with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot update user with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 

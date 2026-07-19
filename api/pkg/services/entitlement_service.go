@@ -79,7 +79,7 @@ func (service *EntitlementService) Check(
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(err, "cannot load user [%s] for entitlement check", userID),
+			stacktrace.Propagatef(err, "cannot load user [%s] for entitlement check", userID),
 		)
 	}
 
@@ -92,7 +92,7 @@ func (service *EntitlementService) Check(
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(
 			span,
-			stacktrace.Propagate(err, "cannot count entities [%s] for user [%s]", entityName, userID),
+			stacktrace.Propagatef(err, "cannot count entities [%s] for user [%s]", entityName, userID),
 		)
 	}
 

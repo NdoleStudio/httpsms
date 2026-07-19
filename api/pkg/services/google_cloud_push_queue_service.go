@@ -81,8 +81,8 @@ func (queue *googlePushQueue) enqueueImpl(ctx context.Context, task *PushQueueTa
 
 	queueTask, err := queue.client.CreateTask(requestCtx, req)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL))
-		return queueID, queue.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL))
+		return queueID, queue.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL))
 	}
 
 	ctxLogger.Info(fmt.Sprintf(

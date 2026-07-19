@@ -49,7 +49,7 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 
 	var payload events.MessageAPISentPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	sendParams := &services.PhoneNotificationScheduleParams{
@@ -66,7 +66,7 @@ func (listener *PhoneNotificationListener) onMessageAPISent(ctx context.Context,
 	}
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID()))
 	}
 
 	return nil
@@ -79,7 +79,7 @@ func (listener *PhoneNotificationListener) onMessageSendRetry(ctx context.Contex
 
 	var payload events.MessageSendRetryPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	sendParams := &services.PhoneNotificationScheduleParams{
@@ -94,7 +94,7 @@ func (listener *PhoneNotificationListener) onMessageSendRetry(ctx context.Contex
 	}
 
 	if err := listener.service.Schedule(ctx, sendParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot send notification with params [%s] for event with ID [%s]", spew.Sdump(sendParams), event.ID()))
 	}
 
 	return nil
@@ -107,11 +107,11 @@ func (listener *PhoneNotificationListener) onPhoneHeartbeatMissed(ctx context.Co
 
 	payload := new(events.PhoneHeartbeatMissedPayload)
 	if err := event.DataAs(payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.SendHeartbeatFCM(ctx, payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule send heartbeat FCM with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule send heartbeat FCM with params [%s] for event with ID [%s]", spew.Sdump(payload), event.ID()))
 	}
 
 	return nil
@@ -124,7 +124,7 @@ func (listener *PhoneNotificationListener) onMessageNotificationSend(ctx context
 
 	var payload events.MessageNotificationSendPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	scheduleParams := &services.PhoneNotificationSendParams{
@@ -137,7 +137,7 @@ func (listener *PhoneNotificationListener) onMessageNotificationSend(ctx context
 	}
 
 	if err := listener.service.Send(ctx, scheduleParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule notification with params [%s] for event with ID [%s]", spew.Sdump(scheduleParams), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule notification with params [%s] for event with ID [%s]", spew.Sdump(scheduleParams), event.ID()))
 	}
 
 	return nil
@@ -149,11 +149,11 @@ func (listener *PhoneNotificationListener) onUserAccountDeleted(ctx context.Cont
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.Phone] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete [entities.Phone] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil
@@ -166,11 +166,11 @@ func (listener *PhoneNotificationListener) onMessageAPIDeleted(ctx context.Conte
 
 	var payload events.MessageAPIDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteByMessageID(ctx, payload.UserID, payload.MessageID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.PhoneNotification] for user [%s] and message [%s] on [%s] event with ID [%s]", payload.UserID, payload.MessageID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete [entities.PhoneNotification] for user [%s] and message [%s] on [%s] event with ID [%s]", payload.UserID, payload.MessageID, event.Type(), event.ID()))
 	}
 
 	return nil

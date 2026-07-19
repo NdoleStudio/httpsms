@@ -52,12 +52,12 @@ func (factory *hermesUserEmailFactory) APIKeyRotated(emailAddress string, timest
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{
@@ -97,12 +97,12 @@ func (factory *hermesUserEmailFactory) UsageLimitExceeded(user *entities.User, u
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{
@@ -143,12 +143,12 @@ func (factory *hermesUserEmailFactory) UsageLimitAlert(user *entities.User, usag
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{
@@ -201,12 +201,12 @@ func (factory *hermesUserEmailFactory) PhoneDead(user *entities.User, lastHeartb
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{

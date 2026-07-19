@@ -44,11 +44,11 @@ func (listener *PhoneListener) onMessageSendScheduleDeleted(ctx context.Context,
 
 	var payload events.MessageSendScheduleDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.NullifyScheduleID(ctx, payload.UserID, payload.ScheduleID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot nullify schedule ID [%s] for user [%s] on [%s] event with ID [%s]", payload.ScheduleID, payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot nullify schedule ID [%s] for user [%s] on [%s] event with ID [%s]", payload.ScheduleID, payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil
@@ -61,11 +61,11 @@ func (listener *PhoneListener) onUserAccountDeleted(ctx context.Context, event c
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [entities.Phone] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all [entities.Phone] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

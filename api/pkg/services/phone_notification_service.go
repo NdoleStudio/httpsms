@@ -57,7 +57,7 @@ func (service *PhoneNotificationService) DeleteAllForUser(ctx context.Context, u
 	defer span.End()
 
 	if err := service.phoneNotificationRepository.DeleteAllForUser(ctx, userID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete all [entities.PhoneNotification] for user with ID [%s]", userID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not delete all [entities.PhoneNotification] for user with ID [%s]", userID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted all [entities.PhoneNotification] for user with ID [%s]", userID))
@@ -70,7 +70,7 @@ func (service *PhoneNotificationService) DeleteByMessageID(ctx context.Context, 
 	defer span.End()
 
 	if err := service.phoneNotificationRepository.DeleteByMessageID(ctx, userID, messageID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "could not delete [entities.PhoneNotification] for user [%s] and message with ID [%s]", userID, messageID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not delete [entities.PhoneNotification] for user [%s] and message with ID [%s]", userID, messageID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("deleted [entities.PhoneNotification] for user [%s] and message with ID [%s]", userID, messageID))
@@ -84,11 +84,11 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 
 	phone, err := service.phoneRepository.LoadByID(ctx, payload.UserID, payload.PhoneID)
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load phone with userID [%s] and phoneID [%s]", payload.UserID, payload.PhoneID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load phone with userID [%s] and phoneID [%s]", payload.UserID, payload.PhoneID))
 	}
 
 	if phone.FcmToken == nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "phone with id [%s] has no FCM token", phone.ID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "phone with id [%s] has no FCM token", phone.ID))
 	}
 
 	result, err := service.messagingClient.Send(ctx, &messaging.Message{
@@ -101,7 +101,7 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(err, "cannot send heartbeat FCM to phone with id [%s] for user [%s]", phone.ID, phone.UserID))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot send heartbeat FCM to phone with id [%s] for user [%s]", phone.ID, phone.UserID))
 		return nil
 	}
 
@@ -153,7 +153,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		Token: *phone.FcmToken,
 	})
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagate(
+		ctxLogger.Warn(stacktrace.Propagatef(
 			err,
 
 			"cannot send FCM to phone with ID [%s] for user with ID [%s] and message [%s]",
@@ -191,7 +191,7 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 
 	phone, err := service.phoneRepository.Load(ctx, params.UserID, params.Owner)
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load phone with userID [%s] and phone [%s]", params.UserID, params.Owner))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load phone with userID [%s] and phone [%s]", params.UserID, params.Owner))
 	}
 
 	notification := &entities.PhoneNotification{
@@ -213,7 +213,7 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 	if phone.MessageSendScheduleID != nil {
 		schedule, err = service.messageSendScheduleRepository.Load(ctx, params.UserID, *phone.MessageSendScheduleID)
 		if err != nil && stacktrace.GetCode(err) != repositories.ErrCodeNotFound {
-			return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load send schedule [%s] for phone [%s]", *phone.MessageSendScheduleID, phone.ID))
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load send schedule [%s] for phone [%s]", *phone.MessageSendScheduleID, phone.ID))
 		}
 	}
 
@@ -222,7 +222,7 @@ func (service *PhoneNotificationService) Schedule(ctx context.Context, params *P
 	}
 
 	if err = service.phoneNotificationRepository.Schedule(ctx, phone.MessagesPerMinute, schedule, notification); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule notification for message [%s] to phone [%s]", params.MessageID, phone.ID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule notification for message [%s] to phone [%s]", params.MessageID, phone.ID))
 	}
 
 	if err = service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
@@ -258,7 +258,7 @@ func (service *PhoneNotificationService) scheduleExact(
 	notification.ScheduledAt = scheduledAt
 
 	if err := service.phoneNotificationRepository.ScheduleExact(ctx, notification); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot schedule exact notification for message [%s] to phone [%s]", params.MessageID, phone.ID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule exact notification for message [%s] to phone [%s]", params.MessageID, phone.ID))
 	}
 
 	if err := service.dispatchMessageNotificationScheduled(ctx, params, notification); err != nil {
@@ -291,11 +291,11 @@ func (service *PhoneNotificationService) dispatchMessageNotificationSend(
 		NotificationID: notification.ID,
 	})
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSend, notification.ID)
+		return stacktrace.Propagatef(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSend, notification.ID)
 	}
 
 	if _, err = service.eventDispatcher.DispatchWithTimeout(ctx, event, notification.ScheduledAt.Sub(time.Now())); err != nil {
-		return stacktrace.Propagate(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), notification.ID)
+		return stacktrace.Propagatef(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), notification.ID)
 	}
 	return nil
 }
@@ -318,11 +318,11 @@ func (service *PhoneNotificationService) dispatchMessageNotificationScheduled(
 		NotificationID: notification.ID,
 	})
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationScheduled, notification.ID)
+		return stacktrace.Propagatef(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationScheduled, notification.ID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		return stacktrace.Propagate(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), notification.ID)
+		return stacktrace.Propagatef(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), notification.ID)
 	}
 	return nil
 }
@@ -333,15 +333,15 @@ func (service *PhoneNotificationService) handleNotificationFailed(ctx context.Co
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	ctxLogger.Warn(stacktrace.Propagate(err, "cannot send notification for message [%s] to phone [%s]", params.MessageID, params.PhoneNotificationID))
+	ctxLogger.Warn(stacktrace.Propagatef(err, "cannot send notification for message [%s] to phone [%s]", params.MessageID, params.PhoneNotificationID))
 
 	event, err := service.createMessageNotificationFailedEvent(params.Source, err.Error(), params)
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationFailed, params.PhoneNotificationID)
+		return stacktrace.Propagatef(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationFailed, params.PhoneNotificationID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		return stacktrace.Propagate(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID)
+		return stacktrace.Propagatef(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID)
 	}
 
 	service.updateStatus(ctx, params.PhoneNotificationID, entities.PhoneNotificationStatusFailed)
@@ -363,11 +363,11 @@ func (service *PhoneNotificationService) handleNotificationSent(
 
 	event, err := service.createMessageNotificationSentEvent(params.Source, phone, result, params)
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSent, params.PhoneNotificationID)
+		return stacktrace.Propagatef(err, "cannot create [%s] event for notification [%s]", events.EventTypeMessageNotificationSent, params.PhoneNotificationID)
 	}
 
 	if err = service.eventDispatcher.Dispatch(ctx, event); err != nil {
-		return stacktrace.Propagate(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID)
+		return stacktrace.Propagatef(err, "cannot dispatch event [%s] for notification [%s]", event.Type(), params.PhoneNotificationID)
 	}
 
 	service.updateStatus(ctx, params.PhoneNotificationID, entities.PhoneNotificationStatusSent)
@@ -413,7 +413,7 @@ func (service *PhoneNotificationService) createMessageNotificationSentEvent(
 	}
 
 	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {
-		return event, stacktrace.Propagate(err, "cannot encode %T [%#+v] as JSON", payload, payload)
+		return event, stacktrace.Propagatef(err, "cannot encode %T [%#+v] as JSON", payload, payload)
 	}
 
 	return event, nil
@@ -441,7 +441,7 @@ func (service *PhoneNotificationService) createMessageNotificationFailedEvent(
 	}
 
 	if err := event.SetData(cloudevents.ApplicationJSON, payload); err != nil {
-		return event, stacktrace.Propagate(err, "cannot encode %T [%#+v] as JSON", payload, payload)
+		return event, stacktrace.Propagatef(err, "cannot encode %T [%#+v] as JSON", payload, payload)
 	}
 
 	return event, nil
@@ -459,7 +459,7 @@ func (service *PhoneNotificationService) updateStatus(
 
 	err := service.phoneNotificationRepository.UpdateStatus(ctx, notificationID, status)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagate(err, "cannot update status of notification with id [%s] to [%s]", notificationID, status))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot update status of notification with id [%s] to [%s]", notificationID, status))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("updated status of notification with id [%s] to [%s]", notificationID, status))

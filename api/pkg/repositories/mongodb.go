@@ -52,7 +52,7 @@ func newMongoRegistry() *bson.Registry {
 func NewMongoDB(uri string) (*mongo.Database, error) {
 	dbName, err := parseMongoDBName(uri)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot parse database name from MongoDB URI")
+		return nil, stacktrace.Propagatef(err, "cannot parse database name from MongoDB URI")
 	}
 
 	pingCtx, pingCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -68,11 +68,11 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 
 	client, err := mongo.Connect(opts)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot connect to MongoDB Atlas")
+		return nil, stacktrace.Propagatef(err, "cannot connect to MongoDB Atlas")
 	}
 
 	if err = client.Ping(pingCtx, nil); err != nil {
-		return nil, stacktrace.Propagate(err, "cannot ping MongoDB Atlas")
+		return nil, stacktrace.Propagatef(err, "cannot ping MongoDB Atlas")
 	}
 
 	db := client.Database(dbName)
@@ -81,7 +81,7 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 	defer indexCancel()
 
 	if err = createMongoIndexes(indexCtx, db); err != nil {
-		return nil, stacktrace.Propagate(err, "cannot create MongoDB indexes")
+		return nil, stacktrace.Propagatef(err, "cannot create MongoDB indexes")
 	}
 
 	return db, nil
@@ -91,12 +91,12 @@ func NewMongoDB(uri string) (*mongo.Database, error) {
 func parseMongoDBName(uri string) (string, error) {
 	parsed, err := url.Parse(uri)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "cannot parse MongoDB URI [%s]", uri)
+		return "", stacktrace.Propagatef(err, "cannot parse MongoDB URI [%s]", uri)
 	}
 
 	appName := parsed.Query().Get("appName")
 	if appName == "" {
-		return "", stacktrace.NewError("MongoDB URI is missing the 'appName' query parameter which is used as the database name")
+		return "", stacktrace.NewErrorf("MongoDB URI is missing the 'appName' query parameter which is used as the database name")
 	}
 
 	return appName, nil
@@ -110,7 +110,7 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "owner", Value: 1}, {Key: "timestamp", Value: -1}}},
 	})
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot create indexes on heartbeats collection")
+		return stacktrace.Propagatef(err, "cannot create indexes on heartbeats collection")
 	}
 
 	// Heartbeat monitors indexes
@@ -119,7 +119,7 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "owner", Value: 1}}},
 	})
 	if err != nil {
-		return stacktrace.Propagate(err, "cannot create indexes on heartbeat_monitors collection")
+		return stacktrace.Propagatef(err, "cannot create indexes on heartbeat_monitors collection")
 	}
 
 	return nil

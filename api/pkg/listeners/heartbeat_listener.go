@@ -48,7 +48,7 @@ func (listener *HeartbeatListener) onPhoneUpdated(ctx context.Context, event clo
 
 	var payload events.PhoneUpdatedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	storeParams := &services.HeartbeatMonitorStoreParams{
@@ -59,7 +59,7 @@ func (listener *HeartbeatListener) onPhoneUpdated(ctx context.Context, event clo
 	}
 
 	if _, err := listener.service.StoreMonitor(ctx, storeParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot store heartbeat monitor with params [%s] for event with ID [%s]", spew.Sdump(storeParams), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store heartbeat monitor with params [%s] for event with ID [%s]", spew.Sdump(storeParams), event.ID()))
 	}
 
 	return nil
@@ -72,11 +72,11 @@ func (listener *HeartbeatListener) onPhoneDeleted(ctx context.Context, event clo
 
 	var payload events.PhoneDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteMonitor(ctx, payload.UserID, payload.Owner); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
 	}
 
 	return nil
@@ -89,7 +89,7 @@ func (listener *HeartbeatListener) onPhoneHeartbeatCheck(ctx context.Context, ev
 
 	var payload events.PhoneHeartbeatCheckPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	monitorParams := &services.HeartbeatMonitorParams{
@@ -101,7 +101,7 @@ func (listener *HeartbeatListener) onPhoneHeartbeatCheck(ctx context.Context, ev
 	}
 
 	if err := listener.service.Monitor(ctx, monitorParams); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot monitor heartbeats for userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot monitor heartbeats for userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
 	}
 
 	return nil
@@ -114,11 +114,11 @@ func (listener *HeartbeatListener) onPhoneHeartbeatOffline(ctx context.Context, 
 
 	var payload events.PhoneHeartbeatOfflinePayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.UpdatePhoneOnline(ctx, payload.UserID, payload.MonitorID, false); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
 	}
 
 	return nil
@@ -130,11 +130,11 @@ func (listener *HeartbeatListener) onUserAccountDeleted(ctx context.Context, eve
 
 	var payload events.UserAccountDeletedPayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
 	if err := listener.service.DeleteAllForUser(ctx, payload.UserID); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete [entities.Heartbeat] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
+		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete [entities.Heartbeat] for user [%s] on [%s] event with ID [%s]", payload.UserID, event.Type(), event.ID()))
 	}
 
 	return nil

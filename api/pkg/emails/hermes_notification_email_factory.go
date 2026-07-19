@@ -62,12 +62,12 @@ func (factory *hermesNotificationEmailFactory) DiscordSendFailed(user *entities.
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{
@@ -120,7 +120,7 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	eventPayloadEntryIndex := len(email.Body.Dictionary) - 1
@@ -129,7 +129,7 @@ func (factory *hermesNotificationEmailFactory) WebhookSendFailed(user *entities.
 		return factory.generator.GeneratePlainText(email)
 	}, formattedPayload)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{
@@ -198,12 +198,12 @@ func (factory *hermesNotificationEmailFactory) MessageExpired(user *entities.Use
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{
@@ -249,12 +249,12 @@ func (factory *hermesNotificationEmailFactory) MessageFailed(user *entities.User
 
 	html, err := factory.generator.GenerateHTML(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate html email")
+		return nil, stacktrace.Propagatef(err, "cannot generate html email")
 	}
 
 	text, err := factory.generator.GeneratePlainText(email)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "cannot generate text email")
+		return nil, stacktrace.Propagatef(err, "cannot generate text email")
 	}
 
 	return &Email{

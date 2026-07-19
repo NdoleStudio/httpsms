@@ -82,7 +82,7 @@ func (repository *gormMessageThreadRepository) DeleteAllForUser(ctx context.Cont
 	defer span.End()
 
 	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.MessageThread{}).Error; err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete all [%T] for user with ID [%s]", &entities.MessageThread{}, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all [%T] for user with ID [%s]", &entities.MessageThread{}, userID))
 	}
 
 	return nil
@@ -95,7 +95,7 @@ func (repository *gormMessageThreadRepository) Delete(ctx context.Context, userI
 
 	err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Where("id = ?", messageThreadID).Delete(&entities.MessageThread{}).Error
 	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot delete message thread with ID [%s] for user with ID [%s]", messageThreadID, userID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete message thread with ID [%s] for user with ID [%s]", messageThreadID, userID))
 	}
 
 	return nil
@@ -112,7 +112,7 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 		Where("id = ?", params.MessageThreadID).
 		Updates(messageThreadDeletedUpdates(params))
 	if result.Error != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update deleted-message metadata for thread [%s]", params.MessageThreadID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot update deleted-message metadata for thread [%s]", params.MessageThreadID))
 	}
 
 	return nil
@@ -141,7 +141,7 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 			Error
 	})
 	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot save message thread with ID [%s]", thread.ID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save message thread with ID [%s]", thread.ID))
 	}
 
 	return nil
@@ -158,10 +158,10 @@ func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Contex
 		Where("id = ?", params.MessageThreadID).
 		Updates(messageThreadActivityUpdates(params))
 	if result.Error != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update message activity for thread [%s]", params.MessageThreadID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot update message activity for thread [%s]", params.MessageThreadID))
 	}
 	if result.RowsAffected == 0 {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found", params.MessageThreadID))
+		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found", params.MessageThreadID))
 	}
 
 	return nil
@@ -185,10 +185,10 @@ func (repository *gormMessageThreadRepository) UpdateStatus(
 		Where("id = ?", messageThreadID).
 		Updates(messageThreadStatusUpdates(params))
 	if result.Error != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update status for thread [%s] and user [%s]", messageThreadID, userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot update status for thread [%s] and user [%s]", messageThreadID, userID))
 	}
 	if result.RowsAffected == 0 {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found for user with ID [%s]", messageThreadID, userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found for user with ID [%s]", messageThreadID, userID))
 	}
 
 	return thread, nil
@@ -209,11 +209,11 @@ func (repository *gormMessageThreadRepository) LoadByOwnerContact(ctx context.Co
 		First(thread).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "thread with owner [%s] and contact [%s] does not exist", owner, contact))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "thread with owner [%s] and contact [%s] does not exist", owner, contact))
 	}
 
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot load thread with owner [%s] and contact [%s]", owner, contact))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load thread with owner [%s] and contact [%s]", owner, contact))
 	}
 
 	return thread, nil
@@ -233,11 +233,11 @@ func (repository *gormMessageThreadRepository) Load(ctx context.Context, userID 
 		First(thread).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, ErrCodeNotFound, "thread with id [%s] not found", ID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "thread with id [%s] not found", ID))
 	}
 
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "thread with id [%s]", ID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "thread with id [%s]", ID))
 	}
 
 	return thread, nil
@@ -270,7 +270,7 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID
 
 	threads := new([]entities.MessageThread)
 	if err := query.Order("order_timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&threads).Error; err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot fetch message threads with owner [%s] and params [%+#v]", owner, params))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch message threads with owner [%s] and params [%+#v]", owner, params))
 	}
 
 	return threads, nil

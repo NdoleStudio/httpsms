@@ -149,7 +149,7 @@ func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
 			var stored *entities.MessageThread
 			repository := &messageThreadRepositoryStub{
 				loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-					return nil, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+					return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 				},
 				store: func(_ context.Context, thread *entities.MessageThread) error {
 					stored = thread
@@ -206,7 +206,7 @@ func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 	repository := &messageThreadRepositoryStub{
 		updateStatus: func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
-			return nil, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+			return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 		},
 	}
 

@@ -31,10 +31,10 @@ func (cache *redisCache) Get(ctx context.Context, key string) (value string, err
 
 	response, err := cache.client.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
-		return "", stacktrace.Propagate(err, "no item found in redis with key [%s]", key)
+		return "", stacktrace.Propagatef(err, "no item found in redis with key [%s]", key)
 	}
 	if err != nil {
-		return "", stacktrace.Propagate(err, "cannot get item in redis with key [%s]", key)
+		return "", stacktrace.Propagatef(err, "cannot get item in redis with key [%s]", key)
 	}
 	return response, nil
 }
@@ -46,7 +46,7 @@ func (cache *redisCache) Set(ctx context.Context, key string, value string, ttl 
 
 	err := cache.client.Set(ctx, key, value, ttl).Err()
 	if err != nil {
-		return cache.tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "cannot set item in redis"))
+		return cache.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot set item in redis"))
 	}
 	return nil
 }

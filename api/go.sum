@@ -62,6 +62,8 @@ github.com/NdoleStudio/plunk-go v0.0.2 h1:afPW7MHK4Z3rsybpJBnmTmxKCLKF1M7sPI+BNG
 github.com/NdoleStudio/plunk-go v0.0.2/go.mod h1:pqG3zKhpn/A2bL1K+WsWzvfTpOeSkYgXhNk5H65uEc8=
 github.com/NdoleStudio/stacktrace v1.0.0 h1:YIDg0twM2BXRKIFjorX7v2dC0l8z4VEITurI+MNqvVQ=
 github.com/NdoleStudio/stacktrace v1.0.0/go.mod h1:WOBcbXShYu+v8JtjFEM+rRV9GJW50m+dwIvp4sLuVTg=
+github.com/NdoleStudio/stacktrace v1.1.0 h1:Ai0j//4tDo/So3nR8bZgS3pQ4NYmViHlarpIReiyb5k=
+github.com/NdoleStudio/stacktrace v1.1.0/go.mod h1:WOBcbXShYu+v8JtjFEM+rRV9GJW50m+dwIvp4sLuVTg=
 github.com/PuerkitoBio/goquery v1.12.0 h1:pAcL4g3WRXekcB9AU/y1mbKez2dbY2AajVhtkO8RIBo=
 github.com/PuerkitoBio/goquery v1.12.0/go.mod h1:802ej+gV2y7bbIhOIoPY5sT183ZW0YFofScC4q/hIpQ=
 github.com/andybalholm/brotli v1.2.1 h1:R+f5xP285VArJDRgowrfb9DqL18yVK0gKAW/F+eTWro=

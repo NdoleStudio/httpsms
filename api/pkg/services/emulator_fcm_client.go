@@ -65,34 +65,34 @@ func (c *EmulatorFCMClient) Send(ctx context.Context, message *messaging.Message
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "cannot marshal FCM request for emulator")
+		return "", stacktrace.Propagatef(err, "cannot marshal FCM request for emulator")
 	}
 
 	url := fmt.Sprintf("%s/v1/projects/httpsms-test/messages:send", c.endpoint)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return "", stacktrace.Propagate(err, "cannot create HTTP request for emulator FCM")
+		return "", stacktrace.Propagatef(err, "cannot create HTTP request for emulator FCM")
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "cannot send FCM to emulator at [%s]", url)
+		return "", stacktrace.Propagatef(err, "cannot send FCM to emulator at [%s]", url)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "cannot read emulator FCM response body")
+		return "", stacktrace.Propagatef(err, "cannot read emulator FCM response body")
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", stacktrace.NewError("emulator FCM returned status %d: %s", resp.StatusCode, string(respBody))
+		return "", stacktrace.NewErrorf("emulator FCM returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	var result emulatorFCMResponse
 	if err = json.Unmarshal(respBody, &result); err != nil {
-		return "", stacktrace.Propagate(err, "cannot decode emulator FCM response")
+		return "", stacktrace.Propagatef(err, "cannot decode emulator FCM response")
 	}
 
 	c.logger.Info(fmt.Sprintf("emulator FCM sent successfully: %s", result.Name))
