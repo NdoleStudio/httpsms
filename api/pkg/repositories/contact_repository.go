@@ -21,6 +21,10 @@ type ContactRepository interface {
 	// Index contacts for a user with optional search.
 	Index(ctx context.Context, userID entities.UserID, params IndexParams) (*[]entities.Contact, error)
 
+	// Count returns the number of contacts for a user matching the same
+	// name/emails/phone_numbers filter as Index, ignoring pagination.
+	Count(ctx context.Context, userID entities.UserID, params IndexParams) (int64, error)
+
 	// FetchAll returns every contact for a user ordered by updated_at ascending.
 	FetchAll(ctx context.Context, userID entities.UserID) (*[]entities.Contact, error)
 

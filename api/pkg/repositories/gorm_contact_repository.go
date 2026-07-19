@@ -78,26 +78,49 @@ func (repository *gormContactRepository) Load(ctx context.Context, userID entiti
 	return contact, nil
 }
 
-func (repository *gormContactRepository) Index(ctx context.Context, userID entities.UserID, params IndexParams) (*[]entities.Contact, error) {
-	ctx, span := repository.tracer.Start(ctx)
-	defer span.End()
-
-	query := repository.db.WithContext(ctx).Where("user_id = ?", userID)
-	if len(params.Query) > 0 {
-		queryPattern := "%" + params.Query + "%"
-		query = query.Where(
+// scopedContactQuery builds the shared query that scopes contacts to a user and
+// applies the optional name/emails/phone_numbers search filter. Index and Count
+// both build on it so their filters can never drift apart. It sets the model so
+// callers can chain Find or Count without repeating the table.
+func (repository *gormContactRepository) scopedContactQuery(ctx context.Context, userID entities.UserID, query string) *gorm.DB {
+	scoped := repository.db.WithContext(ctx).Model(&entities.Contact{}).Where("user_id = ?", userID)
+	if len(query) > 0 {
+		queryPattern := "%" + query + "%"
+		scoped = scoped.Where(
 			repository.db.WithContext(ctx).Where("name ILIKE ?", queryPattern).
 				Or("array_to_string(emails, ',') ILIKE ?", queryPattern).
 				Or("array_to_string(phone_numbers, ',') ILIKE ?", queryPattern),
 		)
 	}
+	return scoped
+}
+
+func (repository *gormContactRepository) Index(ctx context.Context, userID entities.UserID, params IndexParams) (*[]entities.Contact, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
 
 	contacts := new([]entities.Contact)
-	if err := query.Order("updated_at DESC").Limit(params.Limit).Offset(params.Skip).Find(contacts).Error; err != nil {
+	if err := repository.scopedContactQuery(ctx, userID, params.Query).
+		Order("updated_at DESC").
+		Limit(params.Limit).
+		Offset(params.Skip).
+		Find(contacts).Error; err != nil {
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot index contacts for user [%s] with params [%+#v]", userID, params))
 	}
 
 	return contacts, nil
+}
+
+func (repository *gormContactRepository) Count(ctx context.Context, userID entities.UserID, params IndexParams) (int64, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	var count int64
+	if err := repository.scopedContactQuery(ctx, userID, params.Query).Count(&count).Error; err != nil {
+		return 0, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot count contacts for user [%s] with query [%s]", userID, params.Query))
+	}
+
+	return count, nil
 }
 
 func (repository *gormContactRepository) FetchAll(ctx context.Context, userID entities.UserID) (*[]entities.Contact, error) {

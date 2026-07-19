@@ -146,11 +146,15 @@ func (validator *ContactHandlerValidator) ValidateUpload(ctx context.Context, us
 
 	items := make([]requests.ContactItem, 0, len(rows))
 	for _, row := range rows {
-		item := requests.ContactItem{
-			Name:         strings.TrimSpace(row.values[contactCSVColumnName]),
+		// Sanitize each row exactly like the JSON create path (SanitizeContactItem)
+		// before validating it, so both entry points accept and normalize the same
+		// phone/email formats. Row-indexed error messages are preserved because the
+		// row number is still passed to validateItem.
+		item := requests.SanitizeContactItem(requests.ContactItem{
+			Name:         row.values[contactCSVColumnName],
 			Emails:       splitContactMultiValue(row.values[contactCSVColumnEmails]),
 			PhoneNumbers: splitContactMultiValue(row.values[contactCSVColumnPhones]),
-		}
+		})
 		items = append(items, item)
 		validator.validateItem(result, contactUploadDocumentKey, "Row", row.number, item)
 	}

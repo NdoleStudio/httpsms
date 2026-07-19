@@ -90,6 +90,7 @@ type fakeContactRepo struct {
 	updateCalls []*entities.Contact
 	loadCalls   []loadCall
 	indexCalls  []indexCall
+	countCalls  []indexCall
 	deleteCalls []deleteCall
 	fetchAll    int
 
@@ -97,10 +98,12 @@ type fakeContactRepo struct {
 	updateErr error
 	loadErr   error
 	indexErr  error
+	countErr  error
 	deleteErr error
 	fetchErr  error
 
 	indexResult []entities.Contact
+	countResult int64
 }
 
 type loadCall struct {
@@ -167,6 +170,17 @@ func (r *fakeContactRepo) Index(_ context.Context, userID entities.UserID, param
 	}
 	out := append([]entities.Contact{}, r.indexResult...)
 	return &out, nil
+}
+
+func (r *fakeContactRepo) Count(_ context.Context, userID entities.UserID, params repositories.IndexParams) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.countCalls = append(r.countCalls, indexCall{userID: userID, params: params})
+	if r.countErr != nil {
+		return 0, r.countErr
+	}
+	return r.countResult, nil
 }
 
 func (r *fakeContactRepo) FetchAll(_ context.Context, _ entities.UserID) (*[]entities.Contact, error) {
@@ -581,6 +595,29 @@ func TestContactService_Index_RepositoryErrorIsWrapped(t *testing.T) {
 	_, err := service.Index(context.Background(), entities.UserID("u1"), repositories.IndexParams{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "index boom")
+}
+
+func TestContactService_Count_DelegatesParamsAndReturnsTotal(t *testing.T) {
+	repo := &fakeContactRepo{countResult: 57}
+	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+
+	params := repositories.IndexParams{Skip: 5, Limit: 10, Query: "Ali"}
+	total, err := service.Count(context.Background(), entities.UserID("u1"), params)
+	require.NoError(t, err)
+	assert.Equal(t, int64(57), total)
+
+	require.Len(t, repo.countCalls, 1)
+	assert.Equal(t, entities.UserID("u1"), repo.countCalls[0].userID)
+	assert.Equal(t, params, repo.countCalls[0].params)
+}
+
+func TestContactService_Count_RepositoryErrorIsWrapped(t *testing.T) {
+	repo := &fakeContactRepo{countErr: errors.New("count boom")}
+	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+
+	_, err := service.Count(context.Background(), entities.UserID("u1"), repositories.IndexParams{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "count boom")
 }
 
 func TestContactService_Update_RepositoryErrorIsWrappedAndSkipsInvalidation(t *testing.T) {

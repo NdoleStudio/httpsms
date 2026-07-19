@@ -49,7 +49,7 @@ func (h *ContactHandler) RegisterRoutes(router fiber.Router, middlewares ...fibe
 
 // Index lists contacts for the authenticated user.
 // @Summary      List contacts
-// @Description  Returns the paginated list of contacts for the authenticated user.
+// @Description  Returns the paginated list of contacts for the authenticated user. The top-level "total" field is the number of contacts matching the query filter, independent of skip/limit, so clients can drive server-side pagination.
 // @Security	 ApiKeyAuth
 // @Tags         Contacts
 // @Accept       json
@@ -80,13 +80,20 @@ func (h *ContactHandler) Index(c fiber.Ctx) error {
 	}
 
 	userID := h.userIDFomContext(c)
-	contacts, err := h.service.Index(ctx, userID, sanitized.ToIndexParams())
+	params := sanitized.ToIndexParams()
+	contacts, err := h.service.Index(ctx, userID, params)
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot list contacts for user [%s]", userID))
 		return h.responseInternalServerError(c)
 	}
 
-	return h.responseOK(c, fmt.Sprintf("fetched %d %s", len(*contacts), h.pluralize("contact", len(*contacts))), contacts)
+	total, err := h.service.Count(ctx, userID, params)
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot count contacts for user [%s]", userID))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOKWithTotal(c, fmt.Sprintf("fetched %d %s", len(*contacts), h.pluralize("contact", len(*contacts))), contacts, total)
 }
 
 // Store creates one or many contacts.
@@ -160,7 +167,9 @@ func (h *ContactHandler) Upload(c fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while importing contacts")
 	}
 
-	request := (requests.ContactStoreRequest{Contacts: items}).Sanitize()
+	// items are already sanitized by ValidateUpload (SanitizeContactItem), so
+	// build the persistable records directly without re-sanitizing.
+	request := requests.ContactStoreRequest{Contacts: items}
 	contacts := request.ToContacts(userID)
 	if err = h.service.CreateMany(ctx, userID, contacts); err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot import [%d] contacts for user [%s]", len(contacts), userID))

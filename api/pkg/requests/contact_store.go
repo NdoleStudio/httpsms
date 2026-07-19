@@ -49,7 +49,7 @@ func (input *ContactStoreRequest) UnmarshalJSON(data []byte) error {
 // Sanitize trims and normalizes each contact item.
 func (input ContactStoreRequest) Sanitize() ContactStoreRequest {
 	for index := range input.Contacts {
-		input.Contacts[index] = sanitizeContactItem(input.Contacts[index])
+		input.Contacts[index] = SanitizeContactItem(input.Contacts[index])
 	}
 	return input
 }
@@ -78,7 +78,10 @@ func (input *ContactStoreRequest) ToContacts(userID entities.UserID) []*entities
 	return contacts
 }
 
-func sanitizeContactItem(item ContactItem) ContactItem {
+// SanitizeContactItem trims and normalizes a single contact item so the CSV
+// upload and JSON create paths accept and normalize identical values (e.g. a
+// phone number without a leading "+" or an email with mixed case/whitespace).
+func SanitizeContactItem(item ContactItem) ContactItem {
 	item.Name = strings.TrimSpace(item.Name)
 	item.Emails = sanitizeUniqueStrings(item.Emails, func(value string) string {
 		return strings.ToLower(strings.TrimSpace(value))
