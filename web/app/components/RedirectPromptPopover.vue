@@ -31,7 +31,7 @@ const menuOpen = computed({
     :open-on-click="false"
     :close-on-content-click="false"
   >
-    <v-list width="280" class="py-0" rounded="lg" elevation="8">
+    <v-list width="280" class="py-0 mt-n4" rounded="lg" elevation="8">
       <v-list-item>
         <v-list-item-title class="text-body-1">
           Skip this page next time?
@@ -49,10 +49,9 @@ const menuOpen = computed({
         </template>
       </v-list-item>
       <v-list-item class="text-primary" @click="redirectStore.enable()">
-        <v-list-item-title>Always open dashboard</v-list-item-title>
-        <template #append>
-          <v-icon :icon="mdiArrowRight" size="small" />
-        </template>
+        <v-list-item-title
+          >Always open dashboard <v-icon end :icon="mdiArrowRight" size="small"
+        /></v-list-item-title>
       </v-list-item>
     </v-list>
   </v-menu>
