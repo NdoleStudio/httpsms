@@ -414,6 +414,10 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.PhoneAPIKey{}))
 	}
 
+	if err = db.AutoMigrate(&entities.Contact{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Contact{}))
+	}
+
 	return container.db
 }
 
