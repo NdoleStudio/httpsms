@@ -794,6 +794,12 @@ const docTemplate = `{
                         "description": "number of messages to return",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "include matching contact details",
+                        "name": "contacts",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3401,6 +3407,66 @@ const docTemplate = `{
                 }
             }
         },
+        "entities.Contact": {
+            "type": "object",
+            "required": [
+                "created_at",
+                "emails",
+                "id",
+                "name",
+                "phone_numbers",
+                "properties",
+                "updated_at",
+                "user_id"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "emails": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "alice@example.com"
+                    ]
+                },
+                "id": {
+                    "type": "string",
+                    "example": "32343a19-da5e-4b1b-a767-3298a73703cb"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Alice Smith"
+                },
+                "phone_numbers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "+18005550199",
+                        "+18005550100"
+                    ]
+                },
+                "properties": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2022-06-05T14:26:02.302718+03:00"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC"
+                }
+            }
+        },
         "entities.Discord": {
             "type": "object",
             "required": [
@@ -3714,6 +3780,14 @@ const docTemplate = `{
                 "contact": {
                     "type": "string",
                     "example": "+18005550100"
+                },
+                "contact_details": {
+                    "description": "ContactDetails is resolved at read time and never persisted.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entities.Contact"
+                        }
+                    ]
                 },
                 "created_at": {
                     "type": "string",

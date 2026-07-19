@@ -72,7 +72,7 @@ func (stub *messageThreadRepositoryStub) DeleteAllForUser(context.Context, entit
 func newMessageThreadServiceForTest(repository repositories.MessageThreadRepository) *MessageThreadService {
 	logger := &noopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	return NewMessageThreadService(logger, tracer, repository, nil, nil)
+	return NewMessageThreadService(logger, tracer, repository, nil, nil, nil)
 }
 
 func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {

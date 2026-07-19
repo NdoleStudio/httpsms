@@ -80,6 +80,50 @@ definitions:
     - sent_count
     - total
     type: object
+  entities.Contact:
+    properties:
+      created_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      emails:
+        example:
+        - alice@example.com
+        items:
+          type: string
+        type: array
+      id:
+        example: 32343a19-da5e-4b1b-a767-3298a73703cb
+        type: string
+      name:
+        example: Alice Smith
+        type: string
+      phone_numbers:
+        example:
+        - "+18005550199"
+        - "+18005550100"
+        items:
+          type: string
+        type: array
+      properties:
+        additionalProperties:
+          type: string
+        type: object
+      updated_at:
+        example: "2022-06-05T14:26:02.302718+03:00"
+        type: string
+      user_id:
+        example: WB7DRDWrJZRGbYrv2CKGkqbzvqdC
+        type: string
+    required:
+    - created_at
+    - emails
+    - id
+    - name
+    - phone_numbers
+    - properties
+    - updated_at
+    - user_id
+    type: object
   entities.Discord:
     properties:
       created_at:
@@ -310,6 +354,10 @@ definitions:
       contact:
         example: "+18005550100"
         type: string
+      contact_details:
+        allOf:
+        - $ref: '#/definitions/entities.Contact'
+        description: ContactDetails is resolved at read time and never persisted.
       created_at:
         example: "2022-06-05T14:26:09.527976+03:00"
         type: string
@@ -2106,6 +2154,10 @@ paths:
         minimum: 1
         name: limit
         type: integer
+      - description: include matching contact details
+        in: query
+        name: contacts
+        type: boolean
       produces:
       - application/json
       responses:
