@@ -45,6 +45,13 @@ func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string
 	if params.Unarchive {
 		updates["is_archived"] = false
 	}
+	if params.MarkAsUnread {
+		updates["is_read"] = gorm.Expr(
+			"CASE WHEN last_read_at < ? THEN ? ELSE is_read END",
+			params.EventTimestamp,
+			false,
+		)
+	}
 	return updates
 }
 
@@ -145,37 +152,16 @@ func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Contex
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		query := tx.Model(&entities.MessageThread{}).
-			Where("user_id = ?", params.UserID).
-			Where("id = ?", params.MessageThreadID)
-
-		result := query.Updates(messageThreadActivityUpdates(params))
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return stacktrace.PropagateWithCode(
-				gorm.ErrRecordNotFound,
-				ErrCodeNotFound,
-				"thread with id [%s] not found",
-				params.MessageThreadID,
-			)
-		}
-
-		if !params.MarksUnread {
-			return nil
-		}
-
-		return tx.Model(&entities.MessageThread{}).
-			Where("user_id = ?", params.UserID).
-			Where("id = ?", params.MessageThreadID).
-			Where("last_read_at < ?", params.EventTimestamp).
-			Update("is_read", false).
-			Error
-	})
-	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot update message activity for thread [%s]", params.MessageThreadID))
+	result := repository.db.WithContext(ctx).
+		Model(&entities.MessageThread{}).
+		Where("user_id = ?", params.UserID).
+		Where("id = ?", params.MessageThreadID).
+		Updates(messageThreadActivityUpdates(params))
+	if result.Error != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update message activity for thread [%s]", params.MessageThreadID))
+	}
+	if result.RowsAffected == 0 {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found", params.MessageThreadID))
 	}
 
 	return nil
@@ -199,10 +185,10 @@ func (repository *gormMessageThreadRepository) UpdateStatus(
 		Where("id = ?", messageThreadID).
 		Updates(messageThreadStatusUpdates(params))
 	if result.Error != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update status for thread [%s]", messageThreadID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagate(result.Error, "cannot update status for thread [%s] and user [%s]", messageThreadID, userID))
 	}
 	if result.RowsAffected == 0 {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found", messageThreadID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(gorm.ErrRecordNotFound, ErrCodeNotFound, "thread with id [%s] not found for user with ID [%s]", messageThreadID, userID))
 	}
 
 	return thread, nil

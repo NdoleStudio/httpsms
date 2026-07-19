@@ -12,13 +12,14 @@ import (
 type MessageThreadActivityUpdate struct {
 	MessageThreadID uuid.UUID
 	UserID          entities.UserID
-	Timestamp       time.Time
-	MessageID       uuid.UUID
-	Content         string
-	Status          entities.MessageStatus
-	MarksUnread     bool
-	EventTimestamp  time.Time
-	Unarchive       bool
+	// Timestamp controls thread activity ordering; EventTimestamp is the server-side unread watermark.
+	Timestamp      time.Time
+	MessageID      uuid.UUID
+	Content        string
+	Status         entities.MessageStatus
+	MarkAsUnread   bool
+	EventTimestamp time.Time
+	Unarchive      bool
 }
 
 type MessageThreadStatusUpdate struct {

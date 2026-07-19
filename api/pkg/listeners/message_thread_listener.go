@@ -217,7 +217,7 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 		Status:         entities.MessageStatusReceived,
 		Content:        payload.Content,
 		MessageID:      payload.MessageID,
-		MarksUnread:    true,
+		MarkAsUnread:   true,
 		EventTimestamp: event.Time(),
 	}
 
@@ -246,7 +246,7 @@ func (listener *MessageThreadListener) OnMessageCallMissed(ctx context.Context, 
 		Timestamp:      payload.Timestamp,
 		Content:        "Missed phone call",
 		MessageID:      payload.MessageID,
-		MarksUnread:    true,
+		MarkAsUnread:   true,
 		EventTimestamp: event.Time(),
 	}
 	if err := listener.service.UpdateThread(ctx, params); err != nil {

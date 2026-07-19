@@ -98,12 +98,12 @@ func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {
 		Content:        "hello",
 		Status:         entities.MessageStatusReceived,
 		Timestamp:      eventTimestamp,
-		MarksUnread:    true,
+		MarkAsUnread:   true,
 		EventTimestamp: eventTimestamp,
 	})
 
 	require.NoError(t, err)
-	assert.True(t, captured.MarksUnread)
+	assert.True(t, captured.MarkAsUnread)
 	assert.Equal(t, eventTimestamp, captured.EventTimestamp)
 }
 
@@ -131,7 +131,7 @@ func TestUpdateThreadPreservesReadStateForOutboundActivity(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.False(t, captured.MarksUnread)
+	assert.False(t, captured.MarkAsUnread)
 }
 
 func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
@@ -159,14 +159,14 @@ func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
 
 			service := newMessageThreadServiceForTest(repository)
 			err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-				UserID:      entities.UserID("user-id"),
-				Owner:       "+18005550199",
-				Contact:     "+18005550100",
-				MessageID:   uuid.New(),
-				Content:     "hello",
-				Status:      entities.MessageStatusReceived,
-				Timestamp:   time.Now().UTC(),
-				MarksUnread: test.marksUnread,
+				UserID:       entities.UserID("user-id"),
+				Owner:        "+18005550199",
+				Contact:      "+18005550100",
+				MessageID:    uuid.New(),
+				Content:      "hello",
+				Status:       entities.MessageStatusReceived,
+				Timestamp:    time.Now().UTC(),
+				MarkAsUnread: test.marksUnread,
 			})
 
 			require.NoError(t, err)

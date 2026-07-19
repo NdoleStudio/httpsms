@@ -44,14 +44,15 @@ func NewMessageThreadService(
 
 // MessageThreadUpdateParams are parameters for updating a thread
 type MessageThreadUpdateParams struct {
-	Owner          string
-	Status         entities.MessageStatus
-	Contact        string
-	Content        string
-	UserID         entities.UserID
-	MessageID      uuid.UUID
+	Owner     string
+	Status    entities.MessageStatus
+	Contact   string
+	Content   string
+	UserID    entities.UserID
+	MessageID uuid.UUID
+	// Timestamp controls thread activity ordering; EventTimestamp is the server-side unread watermark.
 	Timestamp      time.Time
-	MarksUnread    bool
+	MarkAsUnread   bool
 	EventTimestamp time.Time
 }
 
@@ -110,7 +111,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		MessageID:       params.MessageID,
 		Content:         params.Content,
 		Status:          params.Status,
-		MarksUnread:     params.MarksUnread,
+		MarkAsUnread:    params.MarkAsUnread,
 		EventTimestamp:  params.EventTimestamp,
 	}
 
@@ -152,7 +153,7 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	}
 	thread, err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update)
 	if err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot update message thread with id [%s]", params.MessageThreadID))
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCode(err, stacktrace.GetCode(err), "cannot update message thread with ID [%s] for user [%s]", params.MessageThreadID, params.UserID))
 	}
 
 	return thread, nil
@@ -211,7 +212,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		Contact:            params.Contact,
 		UserID:             params.UserID,
 		IsArchived:         false,
-		IsRead:             !params.MarksUnread,
+		IsRead:             !params.MarkAsUnread,
 		LastReadAt:         now,
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,

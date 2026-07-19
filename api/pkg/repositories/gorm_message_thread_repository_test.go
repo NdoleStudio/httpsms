@@ -123,6 +123,42 @@ func TestMessageThreadActivityUpdatesOwnOnlyMessageColumns(t *testing.T) {
 	assert.NotContains(t, updates, "last_read_at")
 }
 
+func TestUpdateActivityMarksUnreadWithOneQuery(t *testing.T) {
+	pool := &messageThreadTestConnPool{}
+	db, err := gorm.Open(
+		postgres.New(postgres.Config{
+			Conn:             pool,
+			WithoutReturning: true,
+		}),
+		&gorm.Config{DisableAutomaticPing: true},
+	)
+	require.NoError(t, err)
+
+	logger := &messageThreadTestLogger{}
+	repository := NewGormMessageThreadRepository(logger, telemetry.NewOtelLogger("test", logger), db)
+
+	err = repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+		MessageThreadID: uuid.New(),
+		UserID:          entities.UserID("user-id"),
+		Timestamp:       time.Date(2026, 7, 19, 10, 0, 0, 0, time.UTC),
+		MessageID:       uuid.New(),
+		Content:         "hello",
+		Status:          entities.MessageStatusReceived,
+		MarkAsUnread:    true,
+		EventTimestamp:  time.Date(2026, 7, 19, 10, 0, 1, 0, time.UTC),
+	})
+
+	require.NoError(t, err)
+	var updates []messageThreadTestStatement
+	for _, statement := range pool.statements {
+		if strings.HasPrefix(statement.query, `UPDATE "message_threads"`) {
+			updates = append(updates, statement)
+		}
+	}
+	require.Len(t, updates, 1)
+	assert.Contains(t, updates[0].query, `"is_read"=CASE WHEN last_read_at <`)
+}
+
 func TestMessageThreadDeletedUpdatesPreserveStatusType(t *testing.T) {
 	messageID := uuid.New()
 	content := "previous message"

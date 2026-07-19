@@ -34,7 +34,7 @@ func TestMessageThreadListenerMarksInboundMessageUnread(t *testing.T) {
 	err := routes[events.EventTypeMessagePhoneReceived](context.Background(), event)
 
 	require.NoError(t, err)
-	assert.True(t, repository.activity.MarksUnread)
+	assert.True(t, repository.activity.MarkAsUnread)
 	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
 }
 
@@ -57,7 +57,7 @@ func TestMessageThreadListenerMarksMissedCallUnread(t *testing.T) {
 	err := routes[events.MessageCallMissed](context.Background(), event)
 
 	require.NoError(t, err)
-	assert.True(t, repository.activity.MarksUnread)
+	assert.True(t, repository.activity.MarkAsUnread)
 	assert.Equal(t, "Missed phone call", repository.activity.Content)
 	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
 }
