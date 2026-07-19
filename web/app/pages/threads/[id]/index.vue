@@ -19,7 +19,6 @@ import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import type { EntitiesMessage } from '~~/shared/types/api'
-import { startsWithLetter } from '~/utils/filters'
 
 definePageMeta({
   middleware: ['auth'],
@@ -33,7 +32,7 @@ const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
 const { lgAndUp, mdAndDown, mdAndUp } = useDisplay()
-const { formatPhoneNumber } = useFilters()
+const { formatPhoneNumber, startsWithLetter } = useFilters()
 const notificationsStore = useNotificationsStore()
 const authStore = useAuthStore()
 const phonesStore = usePhonesStore()
@@ -102,6 +101,14 @@ function formatAttachmentName(url: string): string {
   const parts = url.split('/')
   if (parts.length >= 2) return '/' + parts.slice(-2).join('/')
   return url
+}
+
+function currentThreadContactTitle(): string {
+  const thread = threadsStore.currentThread
+  if (!thread) return ''
+  return (
+    thread.contact_details?.name?.trim() || formatPhoneNumber(thread.contact)
+  )
 }
 
 function scrollToElement() {
@@ -268,7 +275,7 @@ onBeforeUnmount(() => {
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
         <VToolbarTitle v-if="threadsStore.currentThread">
-          {{ formatPhoneNumber(threadsStore.currentThread.contact) }}
+          {{ currentThreadContactTitle() }}
         </VToolbarTitle>
         <VMenu>
           <template #activator="{ props }">
