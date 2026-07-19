@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,4 +39,14 @@ func TestContactProperties_ScanNil(t *testing.T) {
 	var scanned ContactProperties
 	assert.Nil(t, scanned.Scan(nil))
 	assert.Equal(t, 0, len(scanned))
+}
+
+func TestContactProperties_ScanUnsupportedType(t *testing.T) {
+	var scanned ContactProperties
+
+	err := scanned.Scan(123)
+
+	assert.Error(t, err)
+	assert.Equal(t, "*stacktrace.stacktrace", reflect.TypeOf(err).String())
+	assert.Contains(t, err.Error(), "unsupported type [int] for ContactProperties")
 }
