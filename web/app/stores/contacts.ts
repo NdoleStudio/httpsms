@@ -16,6 +16,7 @@ export const useContactsStore = defineStore('contacts', () => {
   const search = ref('')
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
+  let loadContactsGeneration = 0
 
   const total = computed(() => contacts.value.length)
 
@@ -39,6 +40,7 @@ export const useContactsStore = defineStore('contacts', () => {
   async function loadContacts(force = false): Promise<void> {
     if (contacts.value.length > 0 && !force) return
 
+    const generation = ++loadContactsGeneration
     loading.value = true
     try {
       const term = search.value.trim()
@@ -50,15 +52,22 @@ export const useContactsStore = defineStore('contacts', () => {
         '/v1/contacts',
         { params },
       )
-      contacts.value = response.data ?? []
+      if (generation === loadContactsGeneration) {
+        contacts.value = response.data ?? []
+      }
     } catch (error: unknown) {
+      if (generation !== loadContactsGeneration) {
+        return
+      }
       notificationsStore.addNotification({
         message: getApiErrorMessage(error, 'Error while loading contacts'),
         type: 'error',
       })
       throw error
     } finally {
-      loading.value = false
+      if (generation === loadContactsGeneration) {
+        loading.value = false
+      }
     }
   }
 
@@ -172,6 +181,7 @@ export const useContactsStore = defineStore('contacts', () => {
   }
 
   function resetState() {
+    loadContactsGeneration++
     contacts.value = []
     loading.value = false
     search.value = ''
