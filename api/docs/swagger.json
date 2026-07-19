@@ -239,6 +239,344 @@
                 }
             }
         },
+        "/contacts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the paginated list of contacts for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contacts"
+                ],
+                "summary": "List contacts",
+                "parameters": [
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "description": "number of contacts to skip",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter contacts containing query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "number of contacts to return",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ContactsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates a single contact or a batch of contacts. Accepts a JSON array or an object with a \"contacts\" array.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contacts"
+                ],
+                "summary": "Create one or many contacts",
+                "parameters": [
+                    {
+                        "description": "Contact(s) to create",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.ContactStoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ContactsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/contacts/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Uploads a CSV file (multipart field \"document\") of contacts. Columns: Name, Emails, PhoneNumbers (multi-values separated by \";\").",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contacts"
+                ],
+                "summary": "Import contacts from CSV",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "CSV file of contacts",
+                        "name": "document",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ContactsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/contacts/{contactID}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates the details of a single contact.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contacts"
+                ],
+                "summary": "Update a contact",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the contact",
+                        "name": "contactID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Contact details to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.ContactUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ContactResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a single contact from the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contacts"
+                ],
+                "summary": "Delete a contact",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the contact",
+                        "name": "contactID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NoContent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.BadRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/discord-integrations": {
             "get": {
                 "security": [
@@ -4151,6 +4489,86 @@
                 }
             }
         },
+        "requests.ContactItem": {
+            "type": "object",
+            "required": [
+                "emails",
+                "name",
+                "phone_numbers",
+                "properties"
+            ],
+            "properties": {
+                "emails": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Alice Smith"
+                },
+                "phone_numbers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "properties": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "requests.ContactStoreRequest": {
+            "type": "object",
+            "required": [
+                "contacts"
+            ],
+            "properties": {
+                "contacts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.ContactItem"
+                    }
+                }
+            }
+        },
+        "requests.ContactUpdateRequest": {
+            "type": "object",
+            "required": [
+                "emails",
+                "name",
+                "phone_numbers",
+                "properties"
+            ],
+            "properties": {
+                "emails": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Alice Smith"
+                },
+                "phone_numbers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "properties": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "requests.DiscordStore": {
             "type": "object",
             "required": [
@@ -4802,6 +5220,51 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/entities.BulkMessage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.ContactResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/entities.Contact"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.ContactsResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.Contact"
                     }
                 },
                 "message": {
