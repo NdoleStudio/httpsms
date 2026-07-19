@@ -13,9 +13,9 @@ import (
 // ContactItem is a single contact in a create request.
 type ContactItem struct {
 	Name         string            `json:"name" example:"Alice Smith"`
-	Emails       []string          `json:"emails"`
+	Emails       []string          `json:"emails,omitempty"`
 	PhoneNumbers []string          `json:"phone_numbers"`
-	Properties   map[string]string `json:"properties"`
+	Properties   map[string]string `json:"properties,omitempty"`
 }
 
 // ContactStoreRequest creates one or many contacts.

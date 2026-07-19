@@ -31,6 +31,21 @@ func TestContactStoreRequest_UnmarshalObjectForm(t *testing.T) {
 	assert.Equal(t, []string{"+18005550100"}, request.Contacts[0].PhoneNumbers)
 }
 
+func TestContactStoreRequest_UnmarshalMissingOptionalFields(t *testing.T) {
+	var request ContactStoreRequest
+
+	require.NoError(t, json.Unmarshal([]byte(`[{"name":"Alice","phone_numbers":["+18005550199"]}]`), &request))
+
+	require.Len(t, request.Contacts, 1)
+	assert.Nil(t, request.Contacts[0].Emails)
+	assert.Nil(t, request.Contacts[0].Properties)
+
+	sanitized := request.Sanitize()
+	require.Len(t, sanitized.Contacts, 1)
+	assert.NotNil(t, sanitized.Contacts[0].Properties)
+	assert.Empty(t, sanitized.Contacts[0].Properties)
+}
+
 func TestContactStoreRequest_UnmarshalMalformedJSON(t *testing.T) {
 	var request ContactStoreRequest
 
@@ -138,6 +153,19 @@ func TestContactUpdateRequest_InitializesNilProperties(t *testing.T) {
 
 	assert.NotNil(t, request.Properties)
 	assert.Empty(t, request.Properties)
+}
+
+func TestContactUpdateRequest_UnmarshalMissingOptionalFields(t *testing.T) {
+	var request ContactUpdateRequest
+
+	require.NoError(t, json.Unmarshal([]byte(`{"name":"Alice","phone_numbers":["+18005550199"]}`), &request))
+
+	assert.Nil(t, request.Emails)
+	assert.Nil(t, request.Properties)
+
+	sanitized := request.Sanitize()
+	assert.NotNil(t, sanitized.Properties)
+	assert.Empty(t, sanitized.Properties)
 }
 
 func TestContactIndex_SanitizeUsesDefaultsAndToIndexParams(t *testing.T) {
