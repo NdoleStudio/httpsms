@@ -10,9 +10,8 @@ import (
 	"firebase.google.com/go/auth"
 	"github.com/NdoleStudio/httpsms/pkg/emails"
 	"github.com/NdoleStudio/httpsms/pkg/events"
-	"github.com/NdoleStudio/lemonsqueezy-go"
-
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/lemonsqueezy-go"
 	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
 
@@ -406,7 +405,7 @@ func (service *UserService) InitiateSubscriptionCancel(ctx context.Context, user
 	return nil
 }
 
-// GetSubscriptionUpdateURL initiates the cancelling of a subscription on lemonsqueezy
+// GetSubscriptionUpdateURL fetches the LemonSqueezy page for updating a subscription.
 func (service *UserService) GetSubscriptionUpdateURL(ctx context.Context, userID entities.UserID) (url string, err error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()

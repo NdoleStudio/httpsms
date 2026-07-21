@@ -196,7 +196,7 @@ func (h *UserHandler) subscriptionUpdateURL(c fiber.Ctx) error {
 
 	url, err := h.service.GetSubscriptionUpdateURL(ctx, authUser.ID)
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get user with ID [%s]", authUser.ID))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get subscription update URL for user with ID [%s]", authUser.ID))
 		return h.responseInternalServerError(c)
 	}
 

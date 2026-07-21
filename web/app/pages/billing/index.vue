@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import {
-  mdiArrowLeft,
-  mdiCallReceived,
-  mdiCallMade,
-  mdiCheck,
   mdiAlert,
-  mdiInvoice,
+  mdiArrowLeft,
+  mdiCallMade,
+  mdiCallReceived,
+  mdiCheck,
   mdiDownloadOutline,
+  mdiInvoice,
 } from '@mdi/js'
 import type {
   RequestsUserPaymentInvoice,
@@ -188,9 +188,12 @@ async function loadSubscriptionInvoices() {
 async function updateDetails() {
   loading.value = true
   try {
-    const link = await billingStore.getSubscriptionUpdateLink()
-    window.location.href = link
+    window.location.href = await billingStore.getSubscriptionUpdateLink()
   } catch {
+    notificationsStore.addNotification({
+      message: 'We could not redirect you to the subscription update portal.',
+      type: 'error',
+    })
     loading.value = false
   }
 }
@@ -205,6 +208,10 @@ async function cancelPlan() {
     })
     navigateTo('/')
   } catch {
+    notificationsStore.addNotification({
+      message: 'We could not cancel your subscription.',
+      type: 'error',
+    })
     loading.value = false
   }
 }
@@ -358,10 +365,10 @@ onMounted(async () => {
                       </template>
                       <VCard>
                         <VCardText class="pt-4">
-                          <h2 class="text-headline-medium mb-2">
+                          <h2 class="text-headline-medium mt-0 mb-2">
                             Are you sure you want to cancel your subscription?
                           </h2>
-                          <p>
+                          <p class="text-medium-emphasis">
                             You will be downgraded to the free plan at the end
                             of the current billing period on
                             <b>{{
@@ -371,8 +378,12 @@ onMounted(async () => {
                             }}</b>
                           </p>
                         </VCardText>
-                        <VCardActions>
-                          <VBtn color="primary" @click="dialog = false">
+                        <VCardActions class="mt-n6 px-6 pb-6">
+                          <VBtn
+                            color="primary"
+                            variant="flat"
+                            @click="dialog = false"
+                          >
                             Keep Subscription
                           </VBtn>
                           <VSpacer />
@@ -408,10 +419,10 @@ onMounted(async () => {
                             Pro Plan
                           </h1>
                           <p class="text-medium-emphasis">
-                            Send and receive up to 20,000 messages per month
+                            Send and receive 5,000 to 20,000 messages per month
                           </p>
                         </VCol>
-                        <VCol class="flex-grow-0 flex-shrink-0">
+                        <VCol class="flex-grow-0 flex-shrink-0 text-center">
                           <span class="text-headline-medium">$10</span>/month
                         </VCol>
                       </VRow>
@@ -429,10 +440,11 @@ onMounted(async () => {
                             Enterprise Plan
                           </h1>
                           <p class="text-medium-emphasis">
-                            Send and receive up to 200,000 messages per month
+                            Send and receive 50,000 to 200,000 messages per
+                            month
                           </p>
                         </VCol>
-                        <VCol class="flex-grow-0 flex-shrink-0">
+                        <VCol class="flex-grow-0 flex-shrink-0 text-center">
                           <span class="text-headline-medium">$89</span>/month
                         </VCol>
                       </VRow>

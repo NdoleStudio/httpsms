@@ -56,12 +56,10 @@ github.com/Masterminds/sprig/v3 v3.3.0 h1:mQh0Yrg1XPo6vjYXgtf5OtijNAKJRNcTdOOGZe
 github.com/Masterminds/sprig/v3 v3.3.0/go.mod h1:Zy1iXRYNqNLUolqCpL4uhk6SHUMAOSCzdgBfDb35Lz0=
 github.com/NdoleStudio/go-otelroundtripper v0.0.15 h1:lClvnSNRKfdPejUcMaFa3vv9nkIdONJOzO/WSNBVY2w=
 github.com/NdoleStudio/go-otelroundtripper v0.0.15/go.mod h1:YkRryIMC2i4a/6S86isXH+bht3Qp4RRB0rOnnnHBPjU=
-github.com/NdoleStudio/lemonsqueezy-go v1.3.1 h1:lMUVgdAx2onbOUJIVPR05xAANYuCMXBRaGWpAdA4LiM=
-github.com/NdoleStudio/lemonsqueezy-go v1.3.1/go.mod h1:xKRsRX1jSI6mLrVXyWh2sF/1isxTioZrSjWy6HpA3xQ=
+github.com/NdoleStudio/lemonsqueezy-go v1.3.2 h1:XUNOzpMriXErxRQRW0dQT0OvkNBP6VAyZKlFWypyGrc=
+github.com/NdoleStudio/lemonsqueezy-go v1.3.2/go.mod h1:xKRsRX1jSI6mLrVXyWh2sF/1isxTioZrSjWy6HpA3xQ=
 github.com/NdoleStudio/plunk-go v0.0.2 h1:afPW7MHK4Z3rsybpJBnmTmxKCLKF1M7sPI+BNGPf35A=
 github.com/NdoleStudio/plunk-go v0.0.2/go.mod h1:pqG3zKhpn/A2bL1K+WsWzvfTpOeSkYgXhNk5H65uEc8=
-github.com/NdoleStudio/stacktrace v1.0.0 h1:YIDg0twM2BXRKIFjorX7v2dC0l8z4VEITurI+MNqvVQ=
-github.com/NdoleStudio/stacktrace v1.0.0/go.mod h1:WOBcbXShYu+v8JtjFEM+rRV9GJW50m+dwIvp4sLuVTg=
 github.com/NdoleStudio/stacktrace v1.1.0 h1:Ai0j//4tDo/So3nR8bZgS3pQ4NYmViHlarpIReiyb5k=
 github.com/NdoleStudio/stacktrace v1.1.0/go.mod h1:WOBcbXShYu+v8JtjFEM+rRV9GJW50m+dwIvp4sLuVTg=
 github.com/PuerkitoBio/goquery v1.12.0 h1:pAcL4g3WRXekcB9AU/y1mbKez2dbY2AajVhtkO8RIBo=
