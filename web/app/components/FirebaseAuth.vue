@@ -7,6 +7,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  updateProfile,
+  deleteUser,
 } from 'firebase/auth'
 import { mdiGoogle, mdiGithub, mdiEmail } from '@mdi/js'
 import type { User as FirebaseUser } from 'firebase/auth'
@@ -29,6 +31,7 @@ const showEmailForm = ref(false)
 const isSignUp = ref(false)
 const showForgotPassword = ref(false)
 const resetEmailSent = ref(false)
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const generalError = ref('')
@@ -71,6 +74,10 @@ function validateEmail(): boolean {
 function validateLoginForm(): boolean {
   clearErrors()
   let valid = true
+  if (isSignUp.value && !name.value.trim()) {
+    errorMessages.value.add('name', 'Please provide your name')
+    valid = false
+  }
   if (!email.value.trim()) {
     errorMessages.value.add('email', 'Please provide an email address')
     valid = false
@@ -126,6 +133,14 @@ async function submitEmail() {
         email.value.trim(),
         password.value,
       )
+      try {
+        await updateProfile(result.user, {
+          displayName: name.value.trim(),
+        })
+      } catch (error) {
+        await deleteUser(result.user)
+        throw error
+      }
     } else {
       result = await signInWithEmailAndPassword(
         auth,
@@ -165,6 +180,11 @@ function backToSignIn() {
   clearErrors()
   resetEmailSent.value = false
   showForgotPassword.value = false
+}
+
+function toggleAuthMode() {
+  clearErrors()
+  isSignUp.value = !isSignUp.value
 }
 
 function onSuccess(user: FirebaseUser, method: LoginMethod) {
@@ -406,6 +426,20 @@ function getGeneralErrorMessage(
       @submit.prevent="submitEmail"
     >
       <v-text-field
+        v-if="isSignUp"
+        v-model="name"
+        label="Name"
+        color="primary"
+        type="text"
+        variant="outlined"
+        density="comfortable"
+        class="mb-2"
+        persistent-hint
+        hint="e.g John Doe"
+        :error="errorMessages.has('name')"
+        :error-messages="errorMessages.get('name')"
+      />
+      <v-text-field
         v-model="email"
         label="Email Address"
         color="primary"
@@ -455,7 +489,7 @@ function getGeneralErrorMessage(
         size="small"
         color="primary"
         class="mt-2"
-        @click="isSignUp = !isSignUp"
+        @click="toggleAuthMode"
       >
         {{
           isSignUp ? 'Already have an account? Sign In' : 'No account? Sign Up'
