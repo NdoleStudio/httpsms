@@ -434,8 +434,8 @@ function getGeneralErrorMessage(
         variant="outlined"
         density="comfortable"
         class="mb-2"
-        persistent-hint
-        hint="e.g John Doe"
+        persistent-placeholder
+        placeholder="e.g John Doe"
         :error="errorMessages.has('name')"
         :error-messages="errorMessages.get('name')"
       />
@@ -444,6 +444,8 @@ function getGeneralErrorMessage(
         label="Email Address"
         color="primary"
         type="email"
+        persistent-placeholder
+        placeholder="e.g john@gmail.com"
         variant="outlined"
         density="comfortable"
         class="mb-2"
@@ -457,6 +459,7 @@ function getGeneralErrorMessage(
         color="primary"
         variant="outlined"
         density="comfortable"
+        persistent-placeholder
         class="mb-2"
         :error="errorMessages.has('password')"
         :error-messages="errorMessages.get('password')"
