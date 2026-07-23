@@ -439,7 +439,7 @@ function getGeneralErrorMessage(
         density="comfortable"
         class="mb-2"
         persistent-placeholder
-        placeholder="Enter your full name e.g. John Doe"
+        placeholder="Enter your full name (e.g. John Doe)"
         :error="errorMessages.has('name')"
         :error-messages="errorMessages.get('name')"
       />
@@ -449,7 +449,7 @@ function getGeneralErrorMessage(
         color="primary"
         type="email"
         persistent-placeholder
-        placeholder="Enter your email address e.g john@gmail.com"
+        placeholder="Enter your email address (e.g. john@gmail.com)"
         variant="outlined"
         density="comfortable"
         class="mb-2"
@@ -463,7 +463,7 @@ function getGeneralErrorMessage(
         color="primary"
         variant="outlined"
         density="comfortable"
-        placeholder="Create a password"
+        placeholder="Create a secure /password"
         persistent-placeholder
         class="mb-2"
         :error="errorMessages.has('password')"
