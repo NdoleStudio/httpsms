@@ -138,7 +138,11 @@ async function submitEmail() {
           displayName: name.value.trim(),
         })
       } catch (error) {
-        await deleteUser(result.user)
+        try {
+          await deleteUser(result.user)
+        } catch (deleteError) {
+          console.error(deleteError)
+        }
         throw error
       }
     } else {
@@ -435,7 +439,7 @@ function getGeneralErrorMessage(
         density="comfortable"
         class="mb-2"
         persistent-placeholder
-        placeholder="e.g John Doe"
+        placeholder="e.g. John Doe"
         :error="errorMessages.has('name')"
         :error-messages="errorMessages.get('name')"
       />
