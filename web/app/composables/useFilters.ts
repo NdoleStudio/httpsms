@@ -7,6 +7,7 @@ import {
   formatBillingPeriod,
   formatBillingPeriodDateOrdinal,
   humanizeTime,
+  startsWithLetter,
 } from '../utils/filters'
 import { capitalize } from '../utils/capitalize'
 
@@ -20,6 +21,7 @@ export function useFilters() {
     formatBillingPeriod,
     formatBillingPeriodDateOrdinal,
     humanizeTime,
+    startsWithLetter,
     capitalize,
   }
 }

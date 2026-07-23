@@ -123,6 +123,8 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterMessageThreadRoutes()
 	container.RegisterMessageThreadListeners()
 
+	container.RegisterContactRoutes()
+
 	container.RegisterHeartbeatRoutes()
 	container.RegisterHeartbeatListeners()
 
@@ -414,6 +416,10 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.PhoneAPIKey{}))
 	}
 
+	if err = db.AutoMigrate(&entities.Contact{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Contact{}))
+	}
+
 	return container.db
 }
 
@@ -697,6 +703,26 @@ func (container *Container) MessageThreadHandlerValidator() (validator *validato
 	)
 }
 
+// ContactHandlerValidator creates a new instance of validators.ContactHandlerValidator
+func (container *Container) ContactHandlerValidator() (validator *validators.ContactHandlerValidator) {
+	container.logger.Debug(fmt.Sprintf("creating %T", validator))
+	return validators.NewContactHandlerValidator(
+		container.Logger(),
+		container.Tracer(),
+	)
+}
+
+// ContactHandler creates a new instance of handlers.ContactHandler
+func (container *Container) ContactHandler() (h *handlers.ContactHandler) {
+	container.logger.Debug(fmt.Sprintf("creating %T", h))
+	return handlers.NewContactHandler(
+		container.Logger(),
+		container.Tracer(),
+		container.ContactHandlerValidator(),
+		container.ContactService(),
+	)
+}
+
 // PhoneHandlerValidator creates a new instance of validators.PhoneHandlerValidator
 func (container *Container) PhoneHandlerValidator() (validator *validators.PhoneHandlerValidator) {
 	container.logger.Debug(fmt.Sprintf("creating %T", validator))
@@ -889,6 +915,16 @@ func (container *Container) PhoneNotificationRepository() (repository repositori
 func (container *Container) MessageThreadRepository() (repository repositories.MessageThreadRepository) {
 	container.logger.Debug("creating GORM repositories.MessageThreadRepository")
 	return repositories.NewGormMessageThreadRepository(
+		container.Logger(),
+		container.Tracer(),
+		container.DB(),
+	)
+}
+
+// ContactRepository creates a new instance of repositories.ContactRepository
+func (container *Container) ContactRepository() (repository repositories.ContactRepository) {
+	container.logger.Debug("creating GORM repositories.ContactRepository")
+	return repositories.NewGormContactRepository(
 		container.Logger(),
 		container.Tracer(),
 		container.DB(),
@@ -1110,6 +1146,18 @@ func (container *Container) MessageThreadService() (service *services.MessageThr
 		container.MessageThreadRepository(),
 		container.PhoneRepository(),
 		container.EventDispatcher(),
+		container.ContactService(),
+	)
+}
+
+// ContactService creates a new instance of services.ContactService
+func (container *Container) ContactService() (service *services.ContactService) {
+	container.logger.Debug(fmt.Sprintf("creating %T", service))
+	return services.NewContactService(
+		container.Logger(),
+		container.Tracer(),
+		container.ContactRepository(),
+		container.Cache(),
 	)
 }
 
@@ -1662,6 +1710,12 @@ func (container *Container) RegisterBulkMessageRoutes() {
 func (container *Container) RegisterMessageThreadRoutes() {
 	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.MessageThreadHandler{}))
 	container.MessageThreadHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
+}
+
+// RegisterContactRoutes registers routes for the /contacts prefix
+func (container *Container) RegisterContactRoutes() {
+	container.logger.Debug(fmt.Sprintf("registering %T routes", &handlers.ContactHandler{}))
+	container.ContactHandler().RegisterRoutes(container.App(), container.AuthenticatedMiddleware())
 }
 
 // RegisterHeartbeatRoutes registers routes for the /heartbeats prefix

@@ -71,6 +71,24 @@ export interface EntitiesBulkMessage {
   total: number;
 }
 
+export interface EntitiesContact {
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  created_at: string;
+  /** @example ["alice@example.com"] */
+  emails: string[];
+  /** @example "32343a19-da5e-4b1b-a767-3298a73703cb" */
+  id: string;
+  /** @example "Alice Smith" */
+  name: string;
+  /** @example ["+18005550199","+18005550100"] */
+  phone_numbers: string[];
+  properties: Record<string, string>;
+  /** @example "2022-06-05T14:26:02.302718+03:00" */
+  updated_at: string;
+  /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
+  user_id: string;
+}
+
 export interface EntitiesDiscord {
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string;
@@ -199,6 +217,8 @@ export interface EntitiesMessageThread {
   color: string;
   /** @example "+18005550100" */
   contact: string;
+  /** ContactDetails is resolved at read time and never persisted. */
+  contact_details?: EntitiesContact;
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   created_at: string;
   /** @example "32343a19-da5e-4b1b-a767-3298a73703ca" */
@@ -330,6 +350,26 @@ export interface EntitiesWebhook {
   url: string;
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
   user_id: string;
+}
+
+export interface RequestsContactItem {
+  emails?: string[];
+  /** @example "Alice Smith" */
+  name: string;
+  phone_numbers: string[];
+  properties?: Record<string, string>;
+}
+
+export interface RequestsContactStoreRequest {
+  contacts: RequestsContactItem[];
+}
+
+export interface RequestsContactUpdateRequest {
+  emails?: string[];
+  /** @example "Alice Smith" */
+  name: string;
+  phone_numbers: string[];
+  properties?: Record<string, string>;
 }
 
 export interface RequestsDiscordStore {
@@ -623,6 +663,28 @@ export interface ResponsesBulkMessagesResponse {
   message: string;
   /** @example "success" */
   status: string;
+}
+
+export interface ResponsesContactResponse {
+  data: EntitiesContact;
+  /** @example "Request handled successfully" */
+  message: string;
+  /** @example "success" */
+  status: string;
+}
+
+export interface ResponsesContactsResponse {
+  data: EntitiesContact[];
+  /** @example "Request handled successfully" */
+  message: string;
+  /** @example "success" */
+  status: string;
+  /**
+   * Total is the number of contacts matching the request filter for the
+   * user, independent of the pagination skip/limit applied to Data.
+   * @example 57
+   */
+  total: number;
 }
 
 export interface ResponsesDiscordResponse {

@@ -64,7 +64,7 @@ func (stub *messageThreadHandlerRepositoryStub) DeleteAllForUser(context.Context
 func TestMessageThreadHandlerUpdate_ReturnsNotFoundWhenThreadIsMissing(t *testing.T) {
 	logger := &messageThreadHandlerNoopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	service := services.NewMessageThreadService(logger, tracer, &messageThreadHandlerRepositoryStub{}, nil, nil)
+	service := services.NewMessageThreadService(logger, tracer, &messageThreadHandlerRepositoryStub{}, nil, nil, nil)
 	handler := NewMessageThreadHandler(logger, tracer, validators.NewMessageThreadHandlerValidator(logger, tracer), service)
 
 	app := fiber.New()

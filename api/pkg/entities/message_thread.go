@@ -22,6 +22,8 @@ type MessageThread struct {
 	CreatedAt          time.Time     `json:"created_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	UpdatedAt          time.Time     `json:"updated_at" example:"2022-06-05T14:26:09.527976+03:00"`
 	OrderTimestamp     time.Time     `json:"order_timestamp" example:"2022-06-05T14:26:09.527976+03:00"`
+	// ContactDetails is resolved at read time and never persisted.
+	ContactDetails *Contact `json:"contact_details,omitempty" gorm:"-"`
 }
 
 // Update a message thread after a message event

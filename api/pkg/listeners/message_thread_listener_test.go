@@ -66,7 +66,7 @@ func newMessageThreadListenerForTest() (*listenerMessageThreadRepository, map[st
 	repository := &listenerMessageThreadRepository{}
 	logger := &noopListenerLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	service := services.NewMessageThreadService(logger, tracer, repository, nil, nil)
+	service := services.NewMessageThreadService(logger, tracer, repository, nil, nil, nil)
 	_, routes := NewMessageThreadListener(logger, tracer, service)
 	return repository, routes
 }

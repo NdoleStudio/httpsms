@@ -7,12 +7,13 @@ import {
   mdiAlert,
   mdiAccount,
 } from '@mdi/js'
-import { formatPhoneNumber, startsWithLetter } from '~/utils/filters'
+import type { EntitiesMessageThread } from '~~/shared/types/api'
 
 const threadsStore = useThreadsStore()
 const phonesStore = usePhonesStore()
 const appStore = useAppStore()
 const notificationsStore = useNotificationsStore()
+const { formatPhoneNumber, startsWithLetter } = useFilters()
 
 function threadDate(date: string): string {
   return new Date(date).toLocaleString(undefined, {
@@ -26,6 +27,21 @@ function onInstallApp() {
     type: 'info',
     message: 'Downloading the httpSMS Android App',
   })
+}
+
+function threadContactName(thread: EntitiesMessageThread): string {
+  return thread.contact_details?.name?.trim() ?? ''
+}
+
+function threadContactTitle(thread: EntitiesMessageThread): string {
+  return threadContactName(thread) || formatPhoneNumber(thread.contact)
+}
+
+function threadAvatarInitial(thread: EntitiesMessageThread): string {
+  const contactName = threadContactName(thread)
+  if (contactName) return contactName.substring(0, 1)
+
+  return startsWithLetter(thread.contact) ? thread.contact.substring(0, 1) : ''
 }
 </script>
 
@@ -104,16 +120,16 @@ function onInstallApp() {
             size="40"
             :badge="thread.is_read ? false : { color: 'primary', dotSize: 12 }"
           >
-            <v-icon v-if="!startsWithLetter(thread.contact)" color="white">{{
+            <v-icon v-if="!threadAvatarInitial(thread)" color="white">{{
               mdiAccount
             }}</v-icon>
             <span v-else class="text-white text-headline-small">{{
-              thread.contact.substring(0, 1)
+              threadAvatarInitial(thread)
             }}</span>
           </v-avatar>
         </template>
         <v-list-item-title :class="{ 'font-weight-bold': !thread.is_read }">{{
-          formatPhoneNumber(thread.contact)
+          threadContactTitle(thread)
         }}</v-list-item-title>
         <v-list-item-subtitle
           class="text-truncate mt-1"

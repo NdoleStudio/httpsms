@@ -28,7 +28,19 @@ export const useThreadsStore = defineStore('threads', () => {
     const index = threads.value.findIndex(
       (thread) => thread.id === updatedThread.id,
     )
-    if (index !== -1) threads.value[index] = updatedThread
+    if (index !== -1) {
+      const existingThread = threads.value[index]
+      threads.value[index] = {
+        ...updatedThread,
+        // Mark-read PUT responses are not contact-enriched; keep the resolved
+        // contact so display names do not disappear after the thread updates.
+        contact_details:
+          updatedThread.contact_details ??
+          (updatedThread.contact === existingThread.contact
+            ? existingThread.contact_details
+            : undefined),
+      }
+    }
   }
 
   async function loadThreads() {
@@ -45,6 +57,7 @@ export const useThreadsStore = defineStore('threads', () => {
           owner: phonesStore.owner ?? phonesStore.phones[0]?.phone_number,
           limit: 100,
           is_archived: archivedThreads.value,
+          contacts: true,
         },
       },
     )

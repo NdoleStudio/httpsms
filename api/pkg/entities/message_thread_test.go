@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -22,4 +23,21 @@ func TestMessageThreadReadFieldsHaveBackwardCompatibleDefaults(t *testing.T) {
 	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "not null")
 	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "default:CURRENT_TIMESTAMP")
 	assert.Equal(t, "-", lastReadAt.Tag.Get("json"))
+}
+
+func TestMessageThreadContactDetailsAreTransientAndOmittedWhenNil(t *testing.T) {
+	threadType := reflect.TypeOf(MessageThread{})
+
+	contactDetails, ok := threadType.FieldByName("ContactDetails")
+	require.True(t, ok)
+	assert.Equal(t, "*entities.Contact", contactDetails.Type.String())
+	assert.Equal(t, "contact_details,omitempty", contactDetails.Tag.Get("json"))
+	assert.Equal(t, "-", contactDetails.Tag.Get("gorm"))
+
+	data, err := json.Marshal(MessageThread{})
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(data, &payload))
+	assert.NotContains(t, payload, "contact_details")
 }
