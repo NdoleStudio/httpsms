@@ -148,8 +148,12 @@ const checkoutURL = computed(() => {
   const user = authStore.authUser
   if (user) {
     url.searchParams.append('checkout[custom][user_id]', user.id)
-    url.searchParams.append('checkout[email]', user.email || '')
-    url.searchParams.append('checkout[name]', user.displayName || '')
+    if (user.email) {
+      url.searchParams.append('checkout[email]', user.email)
+    }
+    if (user.displayName) {
+      url.searchParams.append('checkout[name]', user.displayName)
+    }
   }
   return url.toString()
 })
@@ -159,8 +163,12 @@ const enterpriseCheckoutURL = computed(() => {
   const user = authStore.authUser
   if (user) {
     url.searchParams.append('checkout[custom][user_id]', user.id)
-    url.searchParams.append('checkout[email]', user.email || '')
-    url.searchParams.append('checkout[name]', user.displayName || '')
+    if (user.email) {
+      url.searchParams.append('checkout[email]', user.email)
+    }
+    if (user.displayName) {
+      url.searchParams.append('checkout[name]', user.displayName)
+    }
   }
   return url.toString()
 })
