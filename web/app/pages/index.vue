@@ -138,11 +138,21 @@ const planYearlyMonthlyPrice = computed(
             style="max-width: 98%; width: 100%; aspect-ratio: 16/9"
           >
             <iframe
-              src="https://player.cloudinary.com/embed/?cloud_name=dnzklcz1h&public_id=httpsms.com"
+              src="https://www.youtube-nocookie.com/embed/XTj17RA5txQ?rel=0&modestbranding=1"
+              title="httpSMS demo video"
               width="100%"
               height="100%"
+              loading="lazy"
               style="border: none; border-radius: 8px"
-              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allow="
+                accelerometer;
+                autoplay;
+                clipboard-write;
+                encrypted-media;
+                gyroscope;
+                picture-in-picture;
+                web-share;
+              "
               allowfullscreen
             />
           </div>
