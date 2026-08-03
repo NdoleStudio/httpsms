@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0
 	cloud.google.com/go/storage v1.64.0
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.59.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.35.0
 	github.com/NdoleStudio/go-otelroundtripper v0.0.15
 	github.com/NdoleStudio/lemonsqueezy-go v1.3.2
