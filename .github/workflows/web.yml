@@ -37,7 +37,7 @@ jobs:
           version: 11.11.0
 
       - name: Install dependencies 📦
-        run: pnpm install
+        run: pnpm install --trust-lockfile
 
       - name: Run linter 👀
         run: pnpm lint
@@ -69,7 +69,7 @@ jobs:
           version: 11.11.0
 
       - name: Install dependencies 📦
-        run: pnpm install
+        run: pnpm install --trust-lockfile
 
       - name: Build 🏗️
         run: mv .env.production .env && echo "GITHUB_SHA=${GITHUB_SHA}" >> .env && pnpm run generate
