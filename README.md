@@ -64,7 +64,7 @@ It is hosted as a single page application on firebase. The source code is in the
 ## API
 
 The API https://api.httpsms.com is built using [Fiber](https://gofiber.io/), Go and [CockroachDB](https://www.cockroachlabs.com/) for the database.
-It runs as a server-less application on Google Cloud Run. The API documentation can be found here https://api.httpsms.com/index.html
+It runs as a serverless application on Google Cloud Run. The API documentation can be found here https://api.httpsms.com/index.html
 
 ```go
 // Sending an SMS Message using Go
