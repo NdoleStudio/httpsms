@@ -64,7 +64,7 @@ It is hosted as a single page application on firebase. The source code is in the
 ## API
 
 The API https://api.httpsms.com is built using [Fiber](https://gofiber.io/), Go and [CockroachDB](https://www.cockroachlabs.com/) for the database.
-It rus as a serverless application on Google Cloud Run. The API documentation can be found here https://api.httpsms.com/index.html
+It runs as a server-less application on Google Cloud Run. The API documentation can be found here https://api.httpsms.com/index.html
 
 ```go
 // Sending an SMS Message using Go
@@ -96,7 +96,7 @@ works best for you:
 
 ### End-to-end Encryption
 
-You can encrypt your messages end-to-end ysubg the military grade [AES-256 encryption](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
+You can encrypt your messages end-to-end using the military grade [AES-256 encryption](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
 algorithm. Your encryption key is stored only on our mobile phone so the even the server won't have any way to view the
 content of your SMS messages which are sent and received on your Android phone.
 
@@ -245,7 +245,7 @@ docker compose up --build
 
 ### 7. Create the System User
 
-- The application uses the concept of a system user to process events async. You should manually create this user in `users` table in your database. Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file.
+- The application uses the concept of a system user to process events asynchronously. You should manually create this user in `users` table in your database. Make sure you use the same `id` and `api_key` as the `EVENTS_QUEUE_USER_ID`, and `EVENTS_QUEUE_USER_API_KEY` in your `.env` file.
 
   ```SQL
   INSERT INTO users (id, api_key, email ) VALUES ('your-system-user-id', 'your-system-api-key', 'system@domain.com');
