@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -19,16 +21,16 @@ import (
 type messageThreadRepositoryStub struct {
 	loadByOwnerContact func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error)
 	load               func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error)
-	store              func(context.Context, *entities.MessageThread, *uuid.UUID) error
+	store              func(context.Context, repositories.MessageThreadStoreParams) error
 	updateActivity     func(context.Context, repositories.MessageThreadActivityUpdate) error
 	updateStatus       func(context.Context, entities.UserID, uuid.UUID, repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error)
 	updateAfterDelete  func(context.Context, repositories.MessageThreadDeletedUpdate) error
 	delete             func(context.Context, entities.UserID, uuid.UUID) error
 }
 
-func (stub *messageThreadRepositoryStub) Store(ctx context.Context, thread *entities.MessageThread, unreadMessageID *uuid.UUID) error {
+func (stub *messageThreadRepositoryStub) Store(ctx context.Context, params repositories.MessageThreadStoreParams) error {
 	if stub.store != nil {
-		return stub.store(ctx, thread, unreadMessageID)
+		return stub.store(ctx, params)
 	}
 	return nil
 }
@@ -267,41 +269,43 @@ func TestCreateThreadSetsUnreadCountFromActivityDirection(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var stored *entities.MessageThread
-			var unreadMessageID *uuid.UUID
+			var stored repositories.MessageThreadStoreParams
 			repository := &messageThreadRepositoryStub{
 				loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
 					return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 				},
-				store: func(_ context.Context, thread *entities.MessageThread, messageID *uuid.UUID) error {
-					stored = thread
-					unreadMessageID = messageID
+				store: func(_ context.Context, params repositories.MessageThreadStoreParams) error {
+					stored = params
 					return nil
 				},
 			}
 
 			messageID := uuid.New()
+			eventTimestamp := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
 			service := newMessageThreadServiceForTest(repository)
 			err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-				UserID:        entities.UserID("user-id"),
-				Owner:         "+18005550199",
-				Contact:       "+18005550100",
-				MessageID:     messageID,
-				Content:       "hello",
-				Status:        test.status,
-				Timestamp:     time.Now().UTC(),
-				CountAsUnread: test.countAsUnread,
+				UserID:         entities.UserID("user-id"),
+				Owner:          "+18005550199",
+				Contact:        "+18005550100",
+				MessageID:      messageID,
+				Content:        "hello",
+				Status:         test.status,
+				Timestamp:      time.Now().UTC(),
+				CountAsUnread:  test.countAsUnread,
+				EventTimestamp: eventTimestamp,
 			})
 
 			require.NoError(t, err)
-			require.NotNil(t, stored)
-			assert.Equal(t, test.wantUnreadCount, stored.UnreadCount)
-			assert.False(t, stored.LastReadAt.IsZero())
+			require.NotNil(t, stored.Thread)
+			assert.Equal(t, test.wantUnreadCount, stored.Thread.UnreadCount)
+			assert.Equal(t, time.Unix(0, 0).UTC(), stored.Thread.LastReadAt)
+			assert.Equal(t, test.countAsUnread, stored.CountAsUnread)
+			assert.Equal(t, eventTimestamp, stored.EventTimestamp)
 			if test.wantUnreadMessage {
-				require.NotNil(t, unreadMessageID)
-				assert.Equal(t, messageID, *unreadMessageID)
+				require.NotNil(t, stored.Thread.LastMessageID)
+				assert.Equal(t, messageID, *stored.Thread.LastMessageID)
 			} else {
-				assert.Nil(t, unreadMessageID)
+				assert.False(t, stored.CountAsUnread)
 			}
 		})
 	}
@@ -328,7 +332,8 @@ func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, captured.IsArchived)
 	assert.Same(t, &unreadCount, captured.UnreadCount)
-	assert.False(t, captured.ReadAt.IsZero())
+	_, hasReadAt := reflect.TypeOf(captured).FieldByName("ReadAt")
+	assert.False(t, hasReadAt)
 	assert.True(t, thread.IsArchived)
 	assert.Zero(t, thread.UnreadCount)
 }
@@ -478,6 +483,36 @@ func TestUpdateAfterDeletedMessageDeletesThreadWhenNoPreviousMessageExists(t *te
 
 	require.NoError(t, err)
 	assert.True(t, deleted)
+}
+
+func TestUpdateAfterDeletedMessagePropagatesFinalThreadDeleteError(t *testing.T) {
+	threadID := uuid.New()
+	deleteErr := errors.New("delete failed")
+	repository := &messageThreadRepositoryStub{
+		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+			return &entities.MessageThread{
+				ID:      threadID,
+				UserID:  entities.UserID("user-id"),
+				Owner:   "+18005550199",
+				Contact: "+18005550100",
+			}, nil
+		},
+		delete: func(context.Context, entities.UserID, uuid.UUID) error {
+			return deleteErr
+		},
+	}
+
+	service := newMessageThreadServiceForTest(repository)
+	err := service.UpdateAfterDeletedMessage(context.Background(), &events.MessageAPIDeletedPayload{
+		MessageID: uuid.New(),
+		UserID:    entities.UserID("user-id"),
+		Owner:     "+18005550199",
+		Contact:   "+18005550100",
+	})
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, deleteErr)
+	assert.Contains(t, err.Error(), threadID.String())
 }
 
 func TestShouldCheckUnarchive(t *testing.T) {

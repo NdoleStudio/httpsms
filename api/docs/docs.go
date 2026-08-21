@@ -4922,6 +4922,8 @@ const docTemplate = `{
                 },
                 "unread_count": {
                     "type": "integer",
+                    "maximum": 0,
+                    "minimum": 0,
                     "example": 0
                 }
             }

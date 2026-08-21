@@ -527,7 +527,11 @@ export interface RequestsMessageSendScheduleWindow {
 export interface RequestsMessageThreadUpdate {
   /** @example true */
   is_archived?: boolean;
-  /** @example 0 */
+  /**
+   * @min 0
+   * @max 0
+   * @example 0
+   */
   unread_count?: number;
 }
 

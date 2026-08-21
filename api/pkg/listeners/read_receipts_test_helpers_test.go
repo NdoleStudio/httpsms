@@ -29,7 +29,7 @@ type listenerMessageThreadRepository struct {
 	thread        *entities.MessageThread
 }
 
-func (repository *listenerMessageThreadRepository) Store(context.Context, *entities.MessageThread, *uuid.UUID) error {
+func (repository *listenerMessageThreadRepository) Store(context.Context, repositories.MessageThreadStoreParams) error {
 	return nil
 }
 

@@ -25,7 +25,7 @@ import (
 
 type messageThreadHandlerRepositoryStub struct{}
 
-func (stub *messageThreadHandlerRepositoryStub) Store(context.Context, *entities.MessageThread, *uuid.UUID) error {
+func (stub *messageThreadHandlerRepositoryStub) Store(context.Context, repositories.MessageThreadStoreParams) error {
 	return nil
 }
 

@@ -22,10 +22,15 @@ type MessageThreadActivityUpdate struct {
 	Unarchive      bool
 }
 
+type MessageThreadStoreParams struct {
+	Thread         *entities.MessageThread
+	CountAsUnread  bool
+	EventTimestamp time.Time
+}
+
 type MessageThreadStatusUpdate struct {
 	IsArchived  *bool
 	UnreadCount *uint
-	ReadAt      time.Time
 }
 
 type MessageThreadDeletedUpdate struct {
@@ -41,7 +46,7 @@ type MessageThreadDeletedUpdate struct {
 // MessageThreadRepository loads and persists an entities.MessageThread
 type MessageThreadRepository interface {
 	// Store a new entities.MessageThread
-	Store(ctx context.Context, thread *entities.MessageThread, unreadMessageID *uuid.UUID) error
+	Store(ctx context.Context, params MessageThreadStoreParams) error
 
 	// UpdateActivity persists the last-message activity fields for a thread
 	UpdateActivity(ctx context.Context, params MessageThreadActivityUpdate) error

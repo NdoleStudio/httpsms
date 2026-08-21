@@ -958,6 +958,8 @@ definitions:
         type: boolean
       unread_count:
         example: 0
+        maximum: 0
+        minimum: 0
         type: integer
     type: object
   requests.PhoneAPIKeyStoreRequest:

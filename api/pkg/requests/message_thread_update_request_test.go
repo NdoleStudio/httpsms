@@ -2,6 +2,7 @@ package requests
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -47,4 +48,11 @@ func TestMessageThreadUpdateToUpdateParamsPreservesOptionalFields(t *testing.T) 
 	assert.Equal(t, entities.UserID("user-id"), params.UserID)
 	assert.Same(t, &isArchived, params.IsArchived)
 	assert.Same(t, &unreadCount, params.UnreadCount)
+}
+
+func TestMessageThreadUpdateUnreadCountSwaggerAllowsExactlyZero(t *testing.T) {
+	field, ok := reflect.TypeOf(MessageThreadUpdate{}).FieldByName("UnreadCount")
+	require.True(t, ok)
+	assert.Equal(t, "0", field.Tag.Get("minimum"))
+	assert.Equal(t, "0", field.Tag.Get("maximum"))
 }

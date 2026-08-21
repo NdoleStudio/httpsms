@@ -30,6 +30,7 @@ type messageThreadTestConnPool struct {
 	statements   []messageThreadTestStatement
 	thread       *entities.MessageThread
 	rowsAffected func(query string) int64
+	execError    func(query string) error
 	queryDB      *sql.DB
 	begins       int
 	commits      int
@@ -45,6 +46,11 @@ func (pool *messageThreadTestConnPool) ExecContext(_ context.Context, query stri
 		query: query,
 		args:  append([]any(nil), args...),
 	})
+	if pool.execError != nil {
+		if err := pool.execError(query); err != nil {
+			return nil, err
+		}
+	}
 	if pool.rowsAffected != nil {
 		return driver.RowsAffected(pool.rowsAffected(query)), nil
 	}
@@ -185,7 +191,17 @@ func (logger *messageThreadTestLogger) Debug(string)                            
 func (logger *messageThreadTestLogger) Fatal(error)                                 {}
 func (logger *messageThreadTestLogger) Printf(string, ...interface{})               {}
 
-func newMessageThreadTestRepository(t *testing.T, pool *messageThreadTestConnPool) MessageThreadRepository {
+type messageThreadRetryableError struct{}
+
+func (messageThreadRetryableError) Error() string {
+	return "restart transaction"
+}
+
+func (messageThreadRetryableError) SQLState() string {
+	return "40001"
+}
+
+func newMessageThreadTestRepository(t *testing.T, pool *messageThreadTestConnPool) *gormMessageThreadRepository {
 	t.Helper()
 
 	pool.queryDB = sql.OpenDB(&messageThreadRowsConnector{pool: pool})
@@ -203,7 +219,9 @@ func newMessageThreadTestRepository(t *testing.T, pool *messageThreadTestConnPoo
 	require.NoError(t, err)
 
 	logger := &messageThreadTestLogger{}
-	return NewGormMessageThreadRepository(logger, telemetry.NewOtelLogger("test", logger), db)
+	repository, ok := NewGormMessageThreadRepository(logger, telemetry.NewOtelLogger("test", logger), db).(*gormMessageThreadRepository)
+	require.True(t, ok)
+	return repository
 }
 
 func messageThreadStatementIndex(pool *messageThreadTestConnPool, fragment string) int {
@@ -215,18 +233,165 @@ func messageThreadStatementIndex(pool *messageThreadTestConnPool, fragment strin
 	return -1
 }
 
+func messageThreadStatementCount(pool *messageThreadTestConnPool, fragment string) int {
+	count := 0
+	for _, statement := range pool.statements {
+		if strings.Contains(statement.query, fragment) {
+			count++
+		}
+	}
+	return count
+}
+
+func messageThreadStatementIndexAfter(pool *messageThreadTestConnPool, fragment string, after int) int {
+	for index := after + 1; index < len(pool.statements); index++ {
+		if strings.Contains(pool.statements[index].query, fragment) {
+			return index
+		}
+	}
+	return -1
+}
+
+func TestMessageThreadMutationsRetrySerializationFailures(t *testing.T) {
+	t.Run("store", func(t *testing.T) {
+		attempts := 0
+		pool := &messageThreadTestConnPool{
+			execError: func(query string) error {
+				if strings.Contains(query, `INSERT INTO "message_threads"`) {
+					attempts++
+					if attempts == 1 {
+						return messageThreadRetryableError{}
+					}
+				}
+				return nil
+			},
+		}
+		repository := newMessageThreadTestRepository(t, pool)
+
+		err := repository.Store(context.Background(), MessageThreadStoreParams{
+			Thread: &entities.MessageThread{
+				ID:      uuid.New(),
+				UserID:  entities.UserID("user-id"),
+				Owner:   "+18005550199",
+				Contact: "+18005550100",
+			},
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, attempts)
+	})
+
+	t.Run("activity", func(t *testing.T) {
+		attempts := 0
+		threadID := uuid.New()
+		pool := &messageThreadTestConnPool{
+			thread: &entities.MessageThread{ID: threadID, UserID: entities.UserID("user-id")},
+			execError: func(query string) error {
+				if strings.Contains(query, `UPDATE "message_threads"`) && strings.Contains(query, `"order_timestamp"`) {
+					attempts++
+					if attempts == 1 {
+						return messageThreadRetryableError{}
+					}
+				}
+				return nil
+			},
+		}
+		repository := newMessageThreadTestRepository(t, pool)
+
+		err := repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+			MessageThreadID: threadID,
+			UserID:          entities.UserID("user-id"),
+			Timestamp:       time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC),
+			MessageID:       uuid.New(),
+			Content:         "hello",
+			Status:          entities.MessageStatusReceived,
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, attempts)
+	})
+
+	t.Run("status", func(t *testing.T) {
+		attempts := 0
+		clockCalls := 0
+		threadID := uuid.New()
+		pool := &messageThreadTestConnPool{
+			thread: &entities.MessageThread{ID: threadID, UserID: entities.UserID("user-id"), UnreadCount: 1},
+			execError: func(query string) error {
+				if strings.Contains(query, `UPDATE "message_threads"`) && strings.Contains(query, `"unread_count"`) {
+					attempts++
+					if attempts == 1 {
+						return messageThreadRetryableError{}
+					}
+				}
+				return nil
+			},
+		}
+		repository := newMessageThreadTestRepository(t, pool)
+		repository.now = func() time.Time {
+			clockCalls++
+			return time.Date(2026, 8, 21, 10, 0, clockCalls, 0, time.UTC)
+		}
+		zero := uint(0)
+
+		thread, err := repository.UpdateStatus(
+			context.Background(),
+			entities.UserID("user-id"),
+			threadID,
+			MessageThreadStatusUpdate{UnreadCount: &zero},
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, thread)
+		assert.Equal(t, 2, attempts)
+		assert.Equal(t, 2, clockCalls)
+		assert.Equal(t, time.Date(2026, 8, 21, 10, 0, 2, 0, time.UTC), thread.LastReadAt)
+	})
+
+	t.Run("deleted message", func(t *testing.T) {
+		attempts := 0
+		threadID := uuid.New()
+		pool := &messageThreadTestConnPool{
+			thread: &entities.MessageThread{ID: threadID, UserID: entities.UserID("user-id"), UnreadCount: 1},
+			execError: func(query string) error {
+				if strings.Contains(query, `UPDATE "message_thread_unread_items"`) {
+					attempts++
+					if attempts == 1 {
+						return messageThreadRetryableError{}
+					}
+				}
+				return nil
+			},
+		}
+		repository := newMessageThreadTestRepository(t, pool)
+
+		err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+			MessageThreadID:  threadID,
+			UserID:           entities.UserID("user-id"),
+			DeletedMessageID: uuid.New(),
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, attempts)
+	})
+}
+
 func TestMessageThreadUnreadStoreCreatesInitialLedgerItem(t *testing.T) {
 	threadID := uuid.New()
 	messageID := uuid.New()
 	pool := &messageThreadTestConnPool{}
 	repository := newMessageThreadTestRepository(t, pool)
 	thread := &entities.MessageThread{
-		ID:          threadID,
-		UserID:      entities.UserID("user-id"),
-		UnreadCount: 1,
+		ID:            threadID,
+		UserID:        entities.UserID("user-id"),
+		UnreadCount:   1,
+		LastMessageID: &messageID,
 	}
 
-	require.NoError(t, repository.Store(context.Background(), thread, &messageID))
+	require.NoError(t, repository.Store(context.Background(), MessageThreadStoreParams{
+		Thread:        thread,
+		CountAsUnread: true,
+	}))
 	require.Equal(t, 1, pool.begins)
 	require.Equal(t, 1, pool.commits)
 	require.Zero(t, pool.rollbacks)
@@ -239,6 +404,65 @@ func TestMessageThreadUnreadStoreCreatesInitialLedgerItem(t *testing.T) {
 	assert.Contains(t, pool.statements[ledgerInsert].query, "ON CONFLICT DO NOTHING")
 	assert.Contains(t, pool.statements[ledgerInsert].query, `"message_id"`)
 	assert.Contains(t, pool.statements[ledgerInsert].query, `"message_thread_id"`)
+}
+
+func TestMessageThreadStoreConflictAppliesLosingActivity(t *testing.T) {
+	winnerThreadID := uuid.New()
+	losingThreadID := uuid.New()
+	messageID := uuid.New()
+	userID := entities.UserID("user-id")
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:          winnerThreadID,
+			UserID:      userID,
+			UnreadCount: 1,
+			LastReadAt:  time.Unix(0, 0).UTC(),
+		},
+		rowsAffected: func(query string) int64 {
+			if strings.Contains(query, `INSERT INTO "message_threads"`) {
+				return 0
+			}
+			return 1
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+	content := "losing message"
+	eventTimestamp := time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC)
+	thread := &entities.MessageThread{
+		ID:                 losingThreadID,
+		UserID:             userID,
+		Owner:              "+18005550199",
+		Contact:            "+18005550100",
+		UnreadCount:        1,
+		LastReadAt:         time.Unix(0, 0).UTC(),
+		LastMessageID:      &messageID,
+		LastMessageContent: &content,
+		Status:             entities.MessageStatusReceived,
+		OrderTimestamp:     eventTimestamp,
+	}
+
+	err := repository.Store(context.Background(), MessageThreadStoreParams{
+		Thread:         thread,
+		CountAsUnread:  true,
+		EventTimestamp: eventTimestamp,
+	})
+
+	require.NoError(t, err)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	activity := messageThreadStatementIndexAfter(pool, `"order_timestamp"`, lock)
+	ledger := messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`)
+	increment := messageThreadStatementIndex(pool, "unread_count +")
+	require.NotEqual(t, -1, lock)
+	require.NotEqual(t, -1, activity)
+	require.NotEqual(t, -1, ledger)
+	require.NotEqual(t, -1, increment)
+	assert.Less(t, lock, activity)
+	assert.Less(t, activity, ledger)
+	assert.Less(t, ledger, increment)
+	assert.Contains(t, pool.statements[lock].query, "user_id =")
+	assert.Contains(t, pool.statements[lock].query, "owner =")
+	assert.Contains(t, pool.statements[lock].query, "contact =")
+	assert.Contains(t, pool.statements[ledger].args, winnerThreadID)
 }
 
 func TestMessageThreadActivityUpdatesDoNotOwnUnreadColumns(t *testing.T) {
@@ -441,7 +665,7 @@ func TestMessageThreadDeletedMessageDecrementsWhenLedgerDeleted(t *testing.T) {
 	require.Equal(t, 1, pool.commits)
 	require.Zero(t, pool.rollbacks)
 	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
-	ledgerDelete := messageThreadStatementIndex(pool, `DELETE FROM "message_thread_unread_items"`)
+	ledgerDelete := messageThreadStatementIndex(pool, `UPDATE "message_thread_unread_items"`)
 	decrement := messageThreadStatementIndex(pool, "GREATEST(unread_count - 1, 0)")
 	metadata := messageThreadStatementIndex(pool, `"last_message_id"`)
 	require.NotEqual(t, -1, lock)
@@ -453,6 +677,7 @@ func TestMessageThreadDeletedMessageDecrementsWhenLedgerDeleted(t *testing.T) {
 	assert.Less(t, decrement, metadata)
 	assert.Contains(t, pool.statements[ledgerDelete].query, "message_id =")
 	assert.Contains(t, pool.statements[ledgerDelete].query, "message_thread_id =")
+	assert.Contains(t, pool.statements[ledgerDelete].query, "counted =")
 }
 
 func TestMessageThreadDeletedMessageWithoutLedgerDoesNotDecrement(t *testing.T) {
@@ -464,7 +689,7 @@ func TestMessageThreadDeletedMessageWithoutLedgerDoesNotDecrement(t *testing.T) 
 			UnreadCount: 0,
 		},
 		rowsAffected: func(query string) int64 {
-			if strings.Contains(query, `DELETE FROM "message_thread_unread_items"`) {
+			if strings.Contains(query, `UPDATE "message_thread_unread_items"`) {
 				return 0
 			}
 			return 1
@@ -479,9 +704,68 @@ func TestMessageThreadDeletedMessageWithoutLedgerDoesNotDecrement(t *testing.T) 
 	})
 
 	require.NoError(t, err)
-	assert.NotEqual(t, -1, messageThreadStatementIndex(pool, `DELETE FROM "message_thread_unread_items"`))
+	assert.NotEqual(t, -1, messageThreadStatementIndex(pool, `UPDATE "message_thread_unread_items"`))
 	assert.Equal(t, -1, messageThreadStatementIndex(pool, "GREATEST"))
 	assert.Equal(t, -1, messageThreadStatementIndex(pool, `"last_message_id"`))
+}
+
+func TestMessageThreadDeletedItemReplayDoesNotIncrement(t *testing.T) {
+	threadID := uuid.New()
+	messageID := uuid.New()
+	userID := entities.UserID("user-id")
+	tombstoned := false
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:          threadID,
+			UserID:      userID,
+			UnreadCount: 1,
+			LastReadAt:  time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC),
+		},
+		rowsAffected: func(query string) int64 {
+			switch {
+			case strings.Contains(query, `UPDATE "message_thread_unread_items"`) &&
+				strings.Contains(query, `"counted"`):
+				if tombstoned {
+					return 0
+				}
+				tombstoned = true
+				return 1
+			case strings.Contains(query, `INSERT INTO "message_thread_unread_items"`):
+				if tombstoned {
+					return 0
+				}
+				return 1
+			default:
+				return 1
+			}
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	require.NoError(t, repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		MessageThreadID:  threadID,
+		UserID:           userID,
+		DeletedMessageID: messageID,
+	}))
+	require.NoError(t, repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+		MessageThreadID: threadID,
+		UserID:          userID,
+		Timestamp:       time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+		MessageID:       messageID,
+		Content:         "replayed",
+		Status:          entities.MessageStatusReceived,
+		CountAsUnread:   true,
+		EventTimestamp:  time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+	}))
+
+	tombstone := messageThreadStatementIndex(pool, `UPDATE "message_thread_unread_items"`)
+	replay := messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`)
+	require.NotEqual(t, -1, tombstone)
+	require.NotEqual(t, -1, replay)
+	assert.Less(t, tombstone, replay)
+	assert.Contains(t, pool.statements[tombstone].query, `"counted"`)
+	assert.Zero(t, messageThreadStatementCount(pool, "unread_count +"))
+	assert.Equal(t, 1, messageThreadStatementCount(pool, "GREATEST(unread_count - 1, 0)"))
 }
 
 func TestMessageThreadStatusUpdatesResetUnreadCount(t *testing.T) {
@@ -490,8 +774,7 @@ func TestMessageThreadStatusUpdatesResetUnreadCount(t *testing.T) {
 
 	updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
 		UnreadCount: &zero,
-		ReadAt:      readAt,
-	})
+	}, readAt)
 
 	assert.Equal(t, map[string]any{
 		"unread_count": 0,
@@ -505,7 +788,7 @@ func TestMessageThreadStatusUpdatesArchiveOnly(t *testing.T) {
 
 	updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
 		IsArchived: &isArchived,
-	})
+	}, time.Time{})
 
 	assert.Equal(t, map[string]any{"is_archived": true}, updates)
 	assert.NotContains(t, updates, "unread_count")
@@ -514,7 +797,6 @@ func TestMessageThreadStatusUpdatesArchiveOnly(t *testing.T) {
 
 func TestMessageThreadStatusResetDeletesLedgerRows(t *testing.T) {
 	threadID := uuid.New()
-	readAt := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
 	zero := uint(0)
 	pool := &messageThreadTestConnPool{
 		thread: &entities.MessageThread{
@@ -531,14 +813,13 @@ func TestMessageThreadStatusResetDeletesLedgerRows(t *testing.T) {
 		threadID,
 		MessageThreadStatusUpdate{
 			UnreadCount: &zero,
-			ReadAt:      readAt,
 		},
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, thread)
 	assert.Zero(t, thread.UnreadCount)
-	assert.Equal(t, readAt, thread.LastReadAt)
+	assert.False(t, thread.LastReadAt.IsZero())
 	require.Equal(t, 1, pool.begins)
 	require.Equal(t, 1, pool.commits)
 	require.Zero(t, pool.rollbacks)
@@ -552,6 +833,38 @@ func TestMessageThreadStatusResetDeletesLedgerRows(t *testing.T) {
 	assert.Less(t, statusUpdate, ledgerDelete)
 	assert.Contains(t, pool.statements[statusUpdate].query, `"last_read_at"`)
 	assert.Contains(t, pool.statements[ledgerDelete].query, "message_thread_id =")
+}
+
+func TestMessageThreadStatusResetCreatesUTCWatermarkAfterLock(t *testing.T) {
+	threadID := uuid.New()
+	zero := uint(0)
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:          threadID,
+			UserID:      entities.UserID("user-id"),
+			UnreadCount: 2,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+	sourceWatermark := time.Date(2026, 8, 21, 12, 30, 0, 123, time.FixedZone("UTC+2", 2*60*60))
+	repository.now = func() time.Time {
+		assert.NotEqual(t, -1, messageThreadStatementIndex(pool, "FOR UPDATE"))
+		return sourceWatermark
+	}
+
+	thread, err := repository.UpdateStatus(
+		context.Background(),
+		entities.UserID("user-id"),
+		threadID,
+		MessageThreadStatusUpdate{UnreadCount: &zero},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, thread)
+	assert.Equal(t, sourceWatermark.UTC(), thread.LastReadAt)
+	statusUpdate := messageThreadStatementIndex(pool, `"last_read_at"`)
+	require.NotEqual(t, -1, statusUpdate)
+	assert.Contains(t, pool.statements[statusUpdate].args, sourceWatermark.UTC())
 }
 
 func TestMessageThreadStatusRejectsNonzeroUnreadCount(t *testing.T) {

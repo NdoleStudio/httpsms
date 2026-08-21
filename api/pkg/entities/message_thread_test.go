@@ -50,3 +50,12 @@ func TestMessageThreadUnreadItemUsesMessageIDAsPrimaryKey(t *testing.T) {
 	require.True(t, ok)
 	assert.Contains(t, messageID.Tag.Get("gorm"), "primaryKey")
 }
+
+func TestMessageThreadUnreadItemRetainsCountedState(t *testing.T) {
+	itemType := reflect.TypeOf(MessageThreadUnreadItem{})
+
+	counted, ok := itemType.FieldByName("Counted")
+	require.True(t, ok)
+	assert.Contains(t, counted.Tag.Get("gorm"), "not null")
+	assert.Contains(t, counted.Tag.Get("gorm"), "default:true")
+}

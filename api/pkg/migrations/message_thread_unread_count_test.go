@@ -25,6 +25,61 @@ func TestMigrateMessageThreadUnreadCountSkipsLegacyBackfillWhenIsReadColumnMissi
 	assert.NotEmpty(t, recorder.execs)
 	assert.NotContains(t, strings.Join(recorder.execs, "\n"), `UPDATE "message_threads" SET "unread_count"=$1 WHERE is_read = $2 AND unread_count = $3`)
 	assert.NotContains(t, strings.Join(recorder.execs, "\n"), `ALTER TABLE "message_threads" DROP COLUMN "is_read"`)
+	assert.Contains(t, strings.Join(recorder.execs, "\n"), `"counted" boolean NOT NULL DEFAULT true`)
+}
+
+func TestMigrateMessageThreadUnreadCountBackfillsBeforeDropAndSkipsOnSecondRun(t *testing.T) {
+	db, recorder := newMigrationTestDB(t, migrationTestDBOptions{hasLegacyIsRead: true})
+
+	require.NoError(t, MigrateMessageThreadUnreadCount(db))
+
+	backfill := migrationExecIndex(recorder, `UPDATE "message_threads" SET "unread_count"=$1 WHERE is_read = $2 AND unread_count = $3`)
+	drop := migrationExecIndex(recorder, `ALTER TABLE "message_threads" DROP COLUMN "is_read"`)
+	require.NotEqual(t, -1, backfill)
+	require.NotEqual(t, -1, drop)
+	assert.Less(t, backfill, drop)
+	assert.Equal(t, 1, migrationExecCount(recorder, `UPDATE "message_threads" SET "unread_count"=$1 WHERE is_read = $2 AND unread_count = $3`))
+	assert.Equal(t, 1, migrationExecCount(recorder, `ALTER TABLE "message_threads" DROP COLUMN "is_read"`))
+
+	require.NoError(t, MigrateMessageThreadUnreadCount(db))
+	assert.Equal(t, 1, migrationExecCount(recorder, `UPDATE "message_threads" SET "unread_count"=$1 WHERE is_read = $2 AND unread_count = $3`))
+	assert.Equal(t, 1, migrationExecCount(recorder, `ALTER TABLE "message_threads" DROP COLUMN "is_read"`))
+}
+
+func TestMigrateMessageThreadUnreadCountRejectsDuplicateConversationIdentity(t *testing.T) {
+	db, recorder := newMigrationTestDB(t, migrationTestDBOptions{hasDuplicateConversations: true})
+
+	err := MigrateMessageThreadUnreadCount(db)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "duplicate message thread conversations")
+	assert.Equal(t, 0, migrationExecCount(recorder, `CREATE UNIQUE INDEX IF NOT EXISTS "idx_message_threads_conversation"`))
+}
+
+func TestMigrateMessageThreadUnreadCountRejectsDuplicatesBeforeLegacyMutation(t *testing.T) {
+	db, recorder := newMigrationTestDB(t, migrationTestDBOptions{
+		hasLegacyIsRead:           true,
+		hasDuplicateConversations: true,
+	})
+
+	err := MigrateMessageThreadUnreadCount(db)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "duplicate message thread conversations")
+	assert.Equal(t, 0, migrationExecCount(recorder, `UPDATE "message_threads" SET "unread_count"`))
+	assert.Equal(t, 0, migrationExecCount(recorder, `ALTER TABLE "message_threads" DROP COLUMN "is_read"`))
+}
+
+func TestMigrateMessageThreadUnreadCountCreatesConversationIndexOnce(t *testing.T) {
+	db, recorder := newMigrationTestDB(t, migrationTestDBOptions{})
+
+	require.NoError(t, MigrateMessageThreadUnreadCount(db))
+	require.NoError(t, MigrateMessageThreadUnreadCount(db))
+
+	assert.Equal(t, 1, migrationExecCount(recorder, `CREATE UNIQUE INDEX IF NOT EXISTS "idx_message_threads_conversation"`))
+	index := migrationExecIndex(recorder, `CREATE UNIQUE INDEX IF NOT EXISTS "idx_message_threads_conversation"`)
+	require.NotEqual(t, -1, index)
+	assert.Contains(t, recorder.execs[index], `("user_id","owner","contact")`)
 }
 
 func TestMigrateMessageThreadUnreadCountPropagatesSchemaErrors(t *testing.T) {
@@ -40,12 +95,17 @@ func TestMigrateMessageThreadUnreadCountPropagatesSchemaErrors(t *testing.T) {
 }
 
 type migrationTestDBOptions struct {
-	failExecContains string
+	failExecContains          string
+	hasLegacyIsRead           bool
+	hasDuplicateConversations bool
 }
 
 type migrationTestRecorder struct {
-	execs            []string
-	failExecContains string
+	execs                     []string
+	failExecContains          string
+	hasLegacyIsRead           bool
+	hasDuplicateConversations bool
+	hasConversationIndex      bool
 }
 
 type migrationTestDriver struct {
@@ -81,10 +141,16 @@ func (conn *migrationTestConn) ExecContext(_ context.Context, query string, _ []
 	if conn.recorder.failExecContains != "" && strings.Contains(query, conn.recorder.failExecContains) {
 		return nil, errors.New("create table failed: " + query)
 	}
+	if strings.Contains(query, `ALTER TABLE "message_threads" DROP COLUMN "is_read"`) {
+		conn.recorder.hasLegacyIsRead = false
+	}
+	if strings.Contains(query, `CREATE UNIQUE INDEX IF NOT EXISTS "idx_message_threads_conversation"`) {
+		conn.recorder.hasConversationIndex = true
+	}
 	return driver.RowsAffected(1), nil
 }
 
-func (conn *migrationTestConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+func (conn *migrationTestConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	upperQuery := strings.ToUpper(query)
 	switch {
 	case strings.Contains(upperQuery, "SELECT CURRENT_DATABASE()"):
@@ -98,10 +164,33 @@ func (conn *migrationTestConn) QueryContext(_ context.Context, query string, _ [
 			values:  [][]driver.Value{{int64(0)}},
 		}, nil
 	case strings.Contains(upperQuery, "FROM INFORMATION_SCHEMA.COLUMNS"):
+		count := int64(0)
+		if migrationArgsContain(args, "is_read") && conn.recorder.hasLegacyIsRead {
+			count = 1
+		}
 		return &migrationTestRows{
 			columns: []string{"count"},
-			values:  [][]driver.Value{{int64(0)}},
+			values:  [][]driver.Value{{count}},
 		}, nil
+	case strings.Contains(upperQuery, "FROM PG_INDEXES"):
+		count := int64(0)
+		if conn.recorder.hasConversationIndex {
+			count = 1
+		}
+		return &migrationTestRows{
+			columns: []string{"count"},
+			values:  [][]driver.Value{{count}},
+		}, nil
+	case strings.Contains(upperQuery, `FROM "MESSAGE_THREADS"`) &&
+		strings.Contains(upperQuery, "GROUP BY") &&
+		strings.Contains(upperQuery, "HAVING"):
+		rows := &migrationTestRows{
+			columns: []string{"user_id", "owner", "contact"},
+		}
+		if conn.recorder.hasDuplicateConversations {
+			rows.values = [][]driver.Value{{"user-id", "+18005550199", "+18005550100"}}
+		}
+		return rows, nil
 	default:
 		return nil, errors.New("unexpected query: " + query)
 	}
@@ -173,11 +262,41 @@ func migrationNamedValues(values []driver.Value) []driver.NamedValue {
 	return namedValues
 }
 
+func migrationArgsContain(args []driver.NamedValue, value string) bool {
+	for _, arg := range args {
+		if arg.Value == value {
+			return true
+		}
+	}
+	return false
+}
+
+func migrationExecIndex(recorder *migrationTestRecorder, fragment string) int {
+	for index, query := range recorder.execs {
+		if strings.Contains(query, fragment) {
+			return index
+		}
+	}
+	return -1
+}
+
+func migrationExecCount(recorder *migrationTestRecorder, fragment string) int {
+	count := 0
+	for _, query := range recorder.execs {
+		if strings.Contains(query, fragment) {
+			count++
+		}
+	}
+	return count
+}
+
 func newMigrationTestDB(t *testing.T, options migrationTestDBOptions) (*gorm.DB, *migrationTestRecorder) {
 	t.Helper()
 
 	recorder := &migrationTestRecorder{
-		failExecContains: options.failExecContains,
+		failExecContains:          options.failExecContains,
+		hasLegacyIsRead:           options.hasLegacyIsRead,
+		hasDuplicateConversations: options.hasDuplicateConversations,
 	}
 	driverName := "migration-test-" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	sql.Register(driverName, &migrationTestDriver{recorder: recorder})

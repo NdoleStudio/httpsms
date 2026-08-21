@@ -156,7 +156,6 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	update := repositories.MessageThreadStatusUpdate{
 		IsArchived:  params.IsArchived,
 		UnreadCount: params.UnreadCount,
-		ReadAt:      time.Now().UTC(),
 	}
 	thread, err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update)
 	if err != nil {
@@ -178,8 +177,16 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 
 	if payload.PreviousMessageID == nil {
 		if err = service.repository.Delete(ctx, thread.UserID, thread.ID); err != nil {
-			ctxLogger.Error(stacktrace.Propagatef(err, "cannot delete thread with ID [%s] for user [%s] and owner [%s]", thread.ID, thread.UserID, thread.Owner))
-			return nil
+			return service.tracer.WrapErrorSpan(
+				span,
+				stacktrace.Propagatef(
+					err,
+					"cannot delete thread with ID [%s] for user [%s] and owner [%s]",
+					thread.ID,
+					thread.UserID,
+					thread.Owner,
+				),
+			)
 		}
 		msg := fmt.Sprintf("previous message ID is nil for thread with ID [%s] and user [%s]", thread.ID, thread.UserID)
 		ctxLogger.Info(msg)
@@ -217,7 +224,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		UserID:             params.UserID,
 		IsArchived:         false,
 		UnreadCount:        0,
-		LastReadAt:         now,
+		LastReadAt:         time.Unix(0, 0).UTC(),
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,
 		Status:             params.Status,
@@ -227,13 +234,15 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		OrderTimestamp:     params.Timestamp,
 	}
 
-	var unreadMessageID *uuid.UUID
 	if params.CountAsUnread {
 		thread.UnreadCount = 1
-		unreadMessageID = &params.MessageID
 	}
 
-	if err := service.repository.Store(ctx, thread, unreadMessageID); err != nil {
+	if err := service.repository.Store(ctx, repositories.MessageThreadStoreParams{
+		Thread:         thread,
+		CountAsUnread:  params.CountAsUnread,
+		EventTimestamp: params.EventTimestamp,
+	}); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID))
 	}
 

@@ -11,7 +11,7 @@ import (
 type MessageThreadUpdate struct {
 	request
 	IsArchived  *bool `json:"is_archived,omitempty" example:"true"`
-	UnreadCount *uint `json:"unread_count,omitempty" example:"0"`
+	UnreadCount *uint `json:"unread_count,omitempty" example:"0" minimum:"0" maximum:"0"`
 
 	MessageThreadID string `json:"messageThreadID" swaggerignore:"true"` // used internally for validation
 }
