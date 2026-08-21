@@ -102,8 +102,6 @@ const searchTerm = computed({
   },
 })
 
-const trimmedSearchTerm = computed(() => contactsStore.search.trim())
-
 const dialogTitle = computed(() =>
   editingId.value ? 'Edit Contact' : 'Add Contact',
 )
@@ -371,28 +369,20 @@ onBeforeUnmount(() => {
     <VContainer class="pt-0">
       <VRow>
         <VCol cols="12">
-          <div class="d-flex flex-column flex-md-row align-md-center mb-6 mt-3">
-            <div>
-              <h1 class="text-display-large mb-1">Contacts</h1>
-              <p class="text-medium-emphasis mb-0">
-                Manage your contacts.
-                {{
-                  trimmedSearchTerm
-                    ? `${contactsStore.total} found`
-                    : `${contactsStore.total} total`
-                }}
-              </p>
-            </div>
+          <div class="d-flex align-center">
+            <h1 class="text-display-large mb-1">Contacts</h1>
             <VSpacer />
-            <div class="d-flex flex-column flex-sm-row ga-3 mt-4 mt-md-0">
+            <div class="mt-12">
               <VBtn
                 variant="tonal"
+                class="ml-4 mb-4"
                 :prepend-icon="mdiFileUpload"
                 @click="openImport"
               >
                 Import CSV
               </VBtn>
               <VBtn
+                class="ml-4 mb-4"
                 color="primary"
                 variant="flat"
                 :prepend-icon="mdiAccountPlus"
@@ -402,6 +392,19 @@ onBeforeUnmount(() => {
               </VBtn>
             </div>
           </div>
+          <p class="text-medium-emphasis mb-6">
+            Use httpSMS as a lightweight CRM by adding your contacts here. Your
+            message threads will show contact names instead of phone numbers,
+            making conversations easier to recognize and manage. Add contacts
+            individually, or fill in our
+            <a
+              class="text-decoration-none hover:text-decoration-underline"
+              href="/templates/httpsms-contacts.csv"
+              download
+              >CSV template</a
+            >
+            and upload it to import your contact list in bulk.
+          </p>
 
           <VTextField
             v-model="searchTerm"
