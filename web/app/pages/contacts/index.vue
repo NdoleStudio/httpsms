@@ -10,7 +10,9 @@ import {
   mdiEmailOutline,
   mdiFileUpload,
   mdiMagnify,
-  mdiPencil,
+  mdiPhoneCheck,
+  mdiEmailCheckOutline,
+  mdiSquareEditOutline,
   mdiPhone,
   mdiPlus,
 } from '@mdi/js'
@@ -42,11 +44,7 @@ interface ContactForm {
 }
 
 const contactsStore = useContactsStore()
-const { formatPhoneNumber, humanizeTime, formatTimestamp } = useFilters()
-
-// Avatar backgrounds are picked deterministically from the Vuetify theme
-// palette so the table reads like an address book without inventing colors.
-const avatarPalette = ['primary', 'secondary', 'info', 'success']
+const { formatPhoneNumber, formatTimestamp, humanizeTimeShort } = useFilters()
 
 const headers = [
   { title: 'Name', key: 'name', sortable: false },
@@ -112,33 +110,6 @@ function emptyForm(): ContactForm {
     emails: [''],
     properties: [],
   }
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) {
-    return ''
-  }
-  const first = parts[0] ?? ''
-  const last = parts.length > 1 ? (parts[parts.length - 1] ?? '') : ''
-  return (first.charAt(0) + last.charAt(0)).toUpperCase()
-}
-
-function avatarColor(name: string): string {
-  const key = name.trim()
-  if (!key) {
-    return 'primary'
-  }
-  let hash = 0
-  for (let index = 0; index < key.length; index += 1) {
-    hash = (hash + key.charCodeAt(index)) % avatarPalette.length
-  }
-  return avatarPalette[hash] ?? 'primary'
-}
-
-function relativeTime(value: string): string {
-  const humanized = humanizeTime(value)
-  return humanized ? `${humanized} ago` : 'just now'
 }
 
 function openAdd() {
@@ -381,7 +352,7 @@ onBeforeUnmount(() => {
 
     <VContainer class="pt-0">
       <VRow>
-        <VCol cols="12" md="10" offset-md="1" xxl="8" offset-xxl="2">
+        <VCol cols="12">
           <div class="d-flex flex-column flex-md-row align-md-center mb-6 mt-3">
             <div>
               <h1 class="text-display-large mb-1">Contacts</h1>
@@ -397,8 +368,7 @@ onBeforeUnmount(() => {
             <VSpacer />
             <div class="d-flex flex-column flex-sm-row ga-3 mt-4 mt-md-0">
               <VBtn
-                variant="outlined"
-                color="primary"
+                variant="tonal"
                 :prepend-icon="mdiFileUpload"
                 @click="openImport"
               >
@@ -420,150 +390,148 @@ onBeforeUnmount(() => {
             :prepend-inner-icon="mdiMagnify"
             label="Search by name, phone number or email"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             clearable
             hide-details
             class="mb-4"
           />
 
-          <VCard variant="outlined">
-            <VDataTableServer
-              v-model:page="page"
-              v-model:items-per-page="itemsPerPage"
-              :headers="headers"
-              :items="contactsStore.contacts"
-              :items-length="contactsStore.total"
-              :loading="contactsStore.loading"
-              :items-per-page-options="itemsPerPageOptions"
-              item-value="id"
-              hover
-              loading-text="Loading contacts…"
-              @update:options="onUpdateOptions"
-            >
-              <template #[`item.name`]="{ item }">
-                <div class="d-flex align-center py-2">
-                  <VAvatar
-                    :color="avatarColor(item.name)"
-                    size="40"
-                    class="mr-3"
-                  >
-                    <span
-                      v-if="initials(item.name)"
-                      class="text-body-1 font-weight-medium"
-                      >{{ initials(item.name) }}</span
-                    >
-                    <VIcon v-else :icon="mdiAccount" />
-                  </VAvatar>
-                  <span class="font-weight-medium">{{ item.name }}</span>
-                </div>
-              </template>
+          <VDataTableServer
+            v-model:page="page"
+            v-model:items-per-page="itemsPerPage"
+            :headers="headers"
+            :header-props="{
+              class: 'text-uppercase text-medium-emphasis',
+            }"
+            :items="contactsStore.contacts"
+            :items-length="contactsStore.total"
+            :loading="contactsStore.loading"
+            :items-per-page-options="itemsPerPageOptions"
+            item-value="id"
+            hover
+            loading-text="Loading contacts…"
+            @update:options="onUpdateOptions"
+          >
+            <template #[`item.name`]="{ item }">
+              <div class="d-flex align-center py-2">
+                <span class="font-weight-medium">{{ item.name }}</span>
+              </div>
+            </template>
 
-              <template #[`item.phone_numbers`]="{ item }">
+            <template #[`item.phone_numbers`]="{ item }">
+              <div
+                v-if="item.phone_numbers?.length"
+                class="d-flex flex-column ga-1 py-2"
+              >
                 <div
-                  v-if="item.phone_numbers?.length"
-                  class="d-flex flex-column ga-1 py-2"
+                  v-for="phone in item.phone_numbers ?? []"
+                  :key="phone"
+                  class="d-flex"
                 >
-                  <VChip
-                    v-for="phone in item.phone_numbers ?? []"
-                    :key="phone"
-                    size="small"
-                    variant="tonal"
-                    color="primary"
-                    :prepend-icon="mdiPhone"
-                  >
-                    {{ formatPhoneNumber(phone) }}
-                  </VChip>
-                </div>
-                <span v-else class="text-medium-emphasis">—</span>
-              </template>
-
-              <template #[`item.emails`]="{ item }">
-                <div
-                  v-if="item.emails?.length"
-                  class="d-flex flex-column ga-1 py-2"
-                >
-                  <span
-                    v-for="email in item.emails ?? []"
-                    :key="email"
-                    class="d-flex align-center text-body-2"
-                  >
-                    <VIcon
-                      :icon="mdiEmailOutline"
-                      size="x-small"
-                      class="mr-1 text-medium-emphasis"
-                    />
-                    {{ email }}
-                  </span>
-                </div>
-                <span v-else class="text-medium-emphasis">—</span>
-              </template>
-
-              <template #[`item.created_at`]="{ item }">
-                <span :title="formatTimestamp(item.created_at)">{{
-                  relativeTime(item.created_at)
-                }}</span>
-              </template>
-
-              <template #[`item.updated_at`]="{ item }">
-                <span :title="formatTimestamp(item.updated_at)">{{
-                  relativeTime(item.updated_at)
-                }}</span>
-              </template>
-
-              <template #[`item.actions`]="{ item }">
-                <div class="d-flex justify-end">
-                  <VBtn
-                    :icon="mdiPencil"
-                    variant="text"
-                    size="small"
-                    aria-label="Edit contact"
-                    @click="openEdit(item)"
-                  />
-                  <VBtn
-                    :icon="mdiDelete"
-                    variant="text"
-                    size="small"
-                    color="error"
-                    aria-label="Delete contact"
-                    @click="openDelete(item)"
-                  />
-                </div>
-              </template>
-
-              <template #no-data>
-                <div class="text-center py-12">
                   <VIcon
-                    :icon="mdiAccountGroupOutline"
-                    size="64"
-                    class="text-medium-emphasis mb-3"
+                    :icon="mdiPhoneCheck"
+                    size="small"
+                    color="info"
+                    class="mr-1 text-medium-emphasis"
                   />
-                  <p class="text-title-medium mb-1">
-                    {{
-                      searchTerm
-                        ? 'No contacts match your search'
-                        : 'No contacts yet'
-                    }}
-                  </p>
-                  <p class="text-medium-emphasis mb-4">
-                    {{
-                      searchTerm
-                        ? 'Try a different name, phone number or email.'
-                        : 'Add your first contact or import them from a CSV file.'
-                    }}
-                  </p>
-                  <VBtn
-                    v-if="!searchTerm"
-                    color="primary"
-                    variant="flat"
-                    :prepend-icon="mdiAccountPlus"
-                    @click="openAdd"
-                  >
-                    Add Contact
-                  </VBtn>
+                  {{ formatPhoneNumber(phone) }}
                 </div>
-              </template>
-            </VDataTableServer>
-          </VCard>
+              </div>
+              <span v-else class="text-medium-emphasis">—</span>
+            </template>
+
+            <template #[`item.emails`]="{ item }">
+              <div
+                v-if="item.emails?.length"
+                class="d-flex flex-column ga-1 py-2"
+              >
+                <span
+                  v-for="email in item.emails ?? []"
+                  :key="email"
+                  class="d-flex align-center text-body-2"
+                >
+                  <VIcon
+                    :icon="mdiEmailCheckOutline"
+                    size="small"
+                    color="info"
+                    class="mr-1 text-medium-emphasis"
+                  />
+                  {{ email }}
+                </span>
+              </div>
+              <span v-else class="text-medium-emphasis">—</span>
+            </template>
+
+            <template #[`item.created_at`]="{ item }">
+              <span
+                class="text-medium-emphasis"
+                :title="formatTimestamp(item.created_at)"
+                >{{ humanizeTimeShort(item.created_at) }}</span
+              >
+            </template>
+
+            <template #[`item.updated_at`]="{ item }">
+              <span
+                class="text-medium-emphasis"
+                :title="formatTimestamp(item.updated_at)"
+                >{{ humanizeTimeShort(item.updated_at) }}</span
+              >
+            </template>
+
+            <template #[`item.actions`]="{ item }">
+              <div class="d-flex justify-end">
+                <VBtn
+                  :icon="mdiSquareEditOutline"
+                  variant="text"
+                  class="mr-2"
+                  density="comfortable"
+                  aria-label="Edit contact"
+                  @click="openEdit(item)"
+                />
+                <VBtn
+                  :icon="mdiDelete"
+                  variant="text"
+                  density="comfortable"
+                  color="error"
+                  aria-label="Delete contact"
+                  @click="openDelete(item)"
+                />
+              </div>
+            </template>
+
+            <template #no-data>
+              <div class="text-center py-12">
+                <VIcon
+                  :icon="mdiAccountGroupOutline"
+                  size="64"
+                  class="text-medium-emphasis mb-3"
+                />
+                <p class="text-title-medium mb-1">
+                  {{
+                    searchTerm
+                      ? 'No contacts match your search'
+                      : 'No contacts yet'
+                  }}
+                </p>
+                <p class="text-medium-emphasis mb-4">
+                  {{
+                    searchTerm
+                      ? 'Try a different name, phone number or email.'
+                      : 'Add your first contact or import them from a CSV file.'
+                  }}
+                </p>
+                <VBtn
+                  v-if="!searchTerm"
+                  color="primary"
+                  variant="flat"
+                  :prepend-icon="mdiAccountPlus"
+                  @click="openAdd"
+                >
+                  Add Contact
+                </VBtn>
+              </div>
+            </template>
+          </VDataTableServer>
         </VCol>
       </VRow>
     </VContainer>

@@ -19,6 +19,7 @@ export function useFilters() {
     formatMoney,
     formatDecimal,
     formatBillingPeriod,
+    humanizeTimeShort,
     formatBillingPeriodDateOrdinal,
     humanizeTime,
     startsWithLetter,

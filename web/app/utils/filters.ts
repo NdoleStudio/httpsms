@@ -1,4 +1,11 @@
-import { intervalToDuration, formatDuration } from 'date-fns'
+import {
+  intervalToDuration,
+  formatDuration,
+  differenceInSeconds,
+  differenceInMinutes,
+  differenceInDays,
+  differenceInHours,
+} from 'date-fns'
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js'
 
 export function formatPhoneNumber(value: string): string {
@@ -102,4 +109,17 @@ export function humanizeTime(value: string): string {
 
 export function startsWithLetter(value: string): boolean {
   return /^[a-zA-Z]/.test(value)
+}
+
+export function humanizeTimeShort(date: string) {
+  const now = new Date()
+  const seconds = differenceInSeconds(now, new Date(date))
+  const minutes = differenceInMinutes(now, new Date(date))
+  const hours = differenceInHours(now, new Date(date))
+  const days = differenceInDays(now, new Date(date))
+
+  if (seconds < 60) return 'just now'
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  return `${days} day${days !== 1 ? 's' : ''} ago`
 }
