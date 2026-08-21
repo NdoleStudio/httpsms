@@ -25,7 +25,7 @@ import (
 
 type messageThreadHandlerRepositoryStub struct{}
 
-func (stub *messageThreadHandlerRepositoryStub) Store(context.Context, *entities.MessageThread) error {
+func (stub *messageThreadHandlerRepositoryStub) Store(context.Context, *entities.MessageThread, *uuid.UUID) error {
 	return nil
 }
 
@@ -75,7 +75,7 @@ func TestMessageThreadHandlerUpdate_ReturnsNotFoundWhenThreadIsMissing(t *testin
 	handler.RegisterRoutes(app)
 
 	messageThreadID := uuid.New()
-	req := httptest.NewRequest(http.MethodPut, "/v1/message-threads/"+messageThreadID.String(), bytes.NewBufferString(`{"is_read":true}`))
+	req := httptest.NewRequest(http.MethodPut, "/v1/message-threads/"+messageThreadID.String(), bytes.NewBufferString(`{"unread_count":0}`))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
@@ -88,6 +88,36 @@ func TestMessageThreadHandlerUpdate_ReturnsNotFoundWhenThreadIsMissing(t *testin
 	}
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
 	require.Equal(t, "cannot find message thread with ID ["+messageThreadID.String()+"]", payload.Message)
+}
+
+func TestMessageThreadHandlerUpdate_RejectsLegacyIsReadPayload(t *testing.T) {
+	logger := &messageThreadHandlerNoopLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	service := services.NewMessageThreadService(logger, tracer, &messageThreadHandlerRepositoryStub{}, nil, nil)
+	handler := NewMessageThreadHandler(logger, tracer, validators.NewMessageThreadHandlerValidator(logger, tracer), service)
+
+	app := fiber.New()
+	app.Use(func(c fiber.Ctx) error {
+		c.Locals(middlewares.ContextKeyAuthUserID, entities.AuthContext{ID: entities.UserID("user-id"), Email: "user@example.com"})
+		return c.Next()
+	})
+	handler.RegisterRoutes(app)
+
+	req := httptest.NewRequest(http.MethodPut, "/v1/message-threads/"+uuid.NewString(), bytes.NewBufferString(`{"is_read":true}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+
+	var payload struct {
+		Message string              `json:"message"`
+		Data    map[string][]string `json:"data"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+	require.Equal(t, "validation errors while updating message thread", payload.Message)
+	require.Equal(t, []string{"at least one of is_archived or unread_count is required"}, payload.Data["payload"])
 }
 
 type messageThreadHandlerNoopLogger struct{}
