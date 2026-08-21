@@ -13,9 +13,9 @@ import {
   mdiPhoneCheck,
   mdiEmailCheckOutline,
   mdiSquareEditOutline,
-  mdiPhone,
   mdiPlus,
 } from '@mdi/js'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { EntitiesContact } from '~~/shared/types/api'
 import { useContactsStore, type ContactInput } from '~/stores/contacts'
@@ -36,9 +36,14 @@ interface PropertyRow {
   value: string
 }
 
+interface PhoneNumberRow {
+  value: string
+  country: string
+}
+
 interface ContactForm {
   name: string
-  phoneNumbers: string[]
+  phoneNumbers: PhoneNumberRow[]
   emails: string[]
   properties: PropertyRow[]
 }
@@ -79,9 +84,9 @@ const pendingDelete = ref<EntitiesContact | null>(null)
 
 const form = ref<ContactForm>({
   name: '',
-  phoneNumbers: [''],
+  phoneNumbers: [{ value: '', country: 'US' }],
   emails: [''],
-  properties: [],
+  properties: [{ key: '', value: '' }],
 })
 const formErrors = ref(new ErrorMessages())
 
@@ -106,9 +111,16 @@ const dialogTitle = computed(() =>
 function emptyForm(): ContactForm {
   return {
     name: '',
-    phoneNumbers: [''],
+    phoneNumbers: [{ value: '', country: 'US' }],
     emails: [''],
-    properties: [],
+    properties: [{ key: '', value: '' }],
+  }
+}
+
+function phoneNumberRow(value = ''): PhoneNumberRow {
+  return {
+    value,
+    country: parsePhoneNumberFromString(value)?.country ?? 'US',
   }
 }
 
@@ -121,15 +133,18 @@ function openAdd() {
 
 function openEdit(contact: EntitiesContact) {
   editingId.value = contact.id
+  const propertyEntries = Object.entries(contact.properties ?? {}).map(
+    ([key, value]) => ({ key, value }),
+  )
   form.value = {
     name: contact.name ?? '',
     phoneNumbers: contact.phone_numbers?.length
-      ? [...contact.phone_numbers]
-      : [''],
+      ? contact.phone_numbers.map((value) => phoneNumberRow(value))
+      : [phoneNumberRow()],
     emails: contact.emails?.length ? [...contact.emails] : [''],
-    properties: Object.entries(contact.properties ?? {}).map(
-      ([key, value]) => ({ key, value }),
-    ),
+    properties: propertyEntries.length
+      ? propertyEntries
+      : [{ key: '', value: '' }],
   }
   formErrors.value = new ErrorMessages()
   editDialog.value = true
@@ -147,13 +162,13 @@ function openImport() {
 }
 
 function addPhoneNumber() {
-  form.value.phoneNumbers.push('')
+  form.value.phoneNumbers.push(phoneNumberRow())
 }
 
 function removePhoneNumber(index: number) {
   form.value.phoneNumbers.splice(index, 1)
   if (form.value.phoneNumbers.length === 0) {
-    form.value.phoneNumbers.push('')
+    form.value.phoneNumbers.push(phoneNumberRow())
   }
 }
 
@@ -174,6 +189,9 @@ function addProperty() {
 
 function removeProperty(index: number) {
   form.value.properties.splice(index, 1)
+  if (form.value.properties.length === 0) {
+    form.value.properties.push({ key: '', value: '' })
+  }
 }
 
 function buildPayload(): ContactInput {
@@ -187,7 +205,7 @@ function buildPayload(): ContactInput {
   return {
     name: form.value.name.trim(),
     phone_numbers: form.value.phoneNumbers
-      .map((value) => value.trim())
+      .map(({ value }) => value.trim())
       .filter((value) => value.length > 0),
     emails: form.value.emails
       .map((value) => value.trim())
@@ -202,7 +220,7 @@ function validateForm(): boolean {
     bag.add('name', 'The name is required.')
   }
   const hasPhone = form.value.phoneNumbers.some(
-    (value) => value.trim().length > 0,
+    ({ value }) => value.trim().length > 0,
   )
   if (!hasPhone) {
     bag.add('phone_numbers', 'At least one phone number is required.')
@@ -401,7 +419,7 @@ onBeforeUnmount(() => {
             v-model:items-per-page="itemsPerPage"
             :headers="headers"
             :header-props="{
-              class: 'text-uppercase text-medium-emphasis',
+              class: 'text-uppercase text-medium-emphasis bg-black',
             }"
             :items="contactsStore.contacts"
             :items-length="contactsStore.total"
@@ -463,19 +481,23 @@ onBeforeUnmount(() => {
             </template>
 
             <template #[`item.created_at`]="{ item }">
-              <span
-                class="text-medium-emphasis"
-                :title="formatTimestamp(item.created_at)"
-                >{{ humanizeTimeShort(item.created_at) }}</span
-              >
+              <VTooltip :text="formatTimestamp(item.created_at)">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="text-medium-emphasis">
+                    {{ humanizeTimeShort(item.created_at) }}
+                  </span>
+                </template>
+              </VTooltip>
             </template>
 
             <template #[`item.updated_at`]="{ item }">
-              <span
-                class="text-medium-emphasis"
-                :title="formatTimestamp(item.updated_at)"
-                >{{ humanizeTimeShort(item.updated_at) }}</span
-              >
+              <VTooltip :text="formatTimestamp(item.updated_at)">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="text-medium-emphasis">
+                    {{ humanizeTimeShort(item.updated_at) }}
+                  </span>
+                </template>
+              </VTooltip>
             </template>
 
             <template #[`item.actions`]="{ item }">
@@ -596,13 +618,16 @@ onBeforeUnmount(() => {
             :key="`phone-${index}`"
             class="d-flex align-start ga-2"
           >
-            <VTextField
-              v-model="form.phoneNumbers[index]"
+            <v-phone-input
+              v-model="phone.value"
+              v-model:country="phone.country"
               :label="`Phone number ${index + 1}`"
-              placeholder="+18005550199"
+              country-label="Country"
+              placeholder="Phone number e.g 18005550199"
               variant="outlined"
               density="comfortable"
-              :prepend-inner-icon="mdiPhone"
+              color="primary"
+              persistent-placeholder
               :error="index === 0 && formErrors.has('phone_numbers')"
               :error-messages="
                 index === 0 ? formErrors.get('phone_numbers') : []
@@ -667,12 +692,6 @@ onBeforeUnmount(() => {
               Add
             </VBtn>
           </div>
-          <p
-            v-if="!form.properties.length"
-            class="text-medium-emphasis text-body-2 mb-2"
-          >
-            Add custom key/value details such as company or address.
-          </p>
           <div
             v-for="(property, index) in form.properties"
             :key="`property-${index}`"
