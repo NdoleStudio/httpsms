@@ -367,9 +367,6 @@ definitions:
       is_archived:
         example: false
         type: boolean
-      is_read:
-        example: true
-        type: boolean
       last_message_content:
         example: This is a sample message content
         type: string
@@ -385,6 +382,9 @@ definitions:
       status:
         example: PENDING
         type: string
+      unread_count:
+        example: 2
+        type: integer
       updated_at:
         example: "2022-06-05T14:26:09.527976+03:00"
         type: string
@@ -397,12 +397,12 @@ definitions:
     - created_at
     - id
     - is_archived
-    - is_read
     - last_message_content
     - last_message_id
     - order_timestamp
     - owner
     - status
+    - unread_count
     - updated_at
     - user_id
     type: object
@@ -956,9 +956,9 @@ definitions:
       is_archived:
         example: true
         type: boolean
-      is_read:
-        example: true
-        type: boolean
+      unread_count:
+        example: 0
+        type: integer
     type: object
   requests.PhoneAPIKeyStoreRequest:
     properties:

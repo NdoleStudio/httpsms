@@ -4129,12 +4129,12 @@ const docTemplate = `{
                 "created_at",
                 "id",
                 "is_archived",
-                "is_read",
                 "last_message_content",
                 "last_message_id",
                 "order_timestamp",
                 "owner",
                 "status",
+                "unread_count",
                 "updated_at",
                 "user_id"
             ],
@@ -4167,10 +4167,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
-                "is_read": {
-                    "type": "boolean",
-                    "example": true
-                },
                 "last_message_content": {
                     "type": "string",
                     "example": "This is a sample message content"
@@ -4190,6 +4186,10 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "PENDING"
+                },
+                "unread_count": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "updated_at": {
                     "type": "string",
@@ -4920,9 +4920,9 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "is_read": {
-                    "type": "boolean",
-                    "example": true
+                "unread_count": {
+                    "type": "integer",
+                    "example": 0
                 }
             }
         },
