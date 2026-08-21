@@ -65,6 +65,7 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/listeners"
+	"github.com/NdoleStudio/httpsms/pkg/migrations"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/stacktrace"
@@ -379,8 +380,8 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Message{}))
 	}
 
-	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
-		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.MessageThread{}))
+	if err = migrations.MigrateMessageThreadUnreadCount(db); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate message thread unread counts"))
 	}
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {

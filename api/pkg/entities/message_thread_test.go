@@ -9,19 +9,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMessageThreadReadFieldsHaveBackwardCompatibleDefaults(t *testing.T) {
+func TestMessageThreadUnreadFields(t *testing.T) {
 	threadType := reflect.TypeOf(MessageThread{})
 
-	isRead, ok := threadType.FieldByName("IsRead")
+	_, hasIsRead := threadType.FieldByName("IsRead")
+	assert.False(t, hasIsRead)
+
+	unreadCount, ok := threadType.FieldByName("UnreadCount")
 	require.True(t, ok)
-	assert.Contains(t, isRead.Tag.Get("gorm"), "not null")
-	assert.Contains(t, isRead.Tag.Get("gorm"), "default:true")
-	assert.Equal(t, "is_read", isRead.Tag.Get("json"))
+	assert.Equal(t, "unread_count", unreadCount.Tag.Get("json"))
+	assert.Contains(t, unreadCount.Tag.Get("gorm"), "not null")
+	assert.Contains(t, unreadCount.Tag.Get("gorm"), "default:0")
 
 	lastReadAt, ok := threadType.FieldByName("LastReadAt")
 	require.True(t, ok)
-	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "not null")
-	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "default:CURRENT_TIMESTAMP")
 	assert.Equal(t, "-", lastReadAt.Tag.Get("json"))
 }
 
@@ -40,4 +41,12 @@ func TestMessageThreadContactDetailsAreTransientAndOmittedWhenNil(t *testing.T) 
 	var payload map[string]any
 	require.NoError(t, json.Unmarshal(data, &payload))
 	assert.NotContains(t, payload, "contact_details")
+}
+
+func TestMessageThreadUnreadItemUsesMessageIDAsPrimaryKey(t *testing.T) {
+	itemType := reflect.TypeOf(MessageThreadUnreadItem{})
+
+	messageID, ok := itemType.FieldByName("MessageID")
+	require.True(t, ok)
+	assert.Contains(t, messageID.Tag.Get("gorm"), "primaryKey")
 }
