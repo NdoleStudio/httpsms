@@ -17,20 +17,22 @@ type MessageThreadActivityUpdate struct {
 	MessageID      uuid.UUID
 	Content        string
 	Status         entities.MessageStatus
-	MarkAsUnread   bool
+	CountAsUnread  bool
 	EventTimestamp time.Time
 	Unarchive      bool
 }
 
 type MessageThreadStatusUpdate struct {
-	IsArchived *bool
-	IsRead     *bool
-	ReadAt     time.Time
+	IsArchived  *bool
+	UnreadCount *uint
+	ReadAt      time.Time
 }
 
 type MessageThreadDeletedUpdate struct {
 	MessageThreadID    uuid.UUID
 	UserID             entities.UserID
+	DeletedMessageID   uuid.UUID
+	UpdateLastMessage  bool
 	LastMessageID      *uuid.UUID
 	LastMessageContent *string
 	LastMessageStatus  entities.MessageStatus
@@ -39,12 +41,12 @@ type MessageThreadDeletedUpdate struct {
 // MessageThreadRepository loads and persists an entities.MessageThread
 type MessageThreadRepository interface {
 	// Store a new entities.MessageThread
-	Store(ctx context.Context, thread *entities.MessageThread) error
+	Store(ctx context.Context, thread *entities.MessageThread, unreadMessageID *uuid.UUID) error
 
 	// UpdateActivity persists the last-message activity fields for a thread
 	UpdateActivity(ctx context.Context, params MessageThreadActivityUpdate) error
 
-	// UpdateStatus persists archive/read status fields for a thread
+	// UpdateStatus persists archive/unread status fields for a thread
 	UpdateStatus(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID, params MessageThreadStatusUpdate) (*entities.MessageThread, error)
 
 	// LoadByOwnerContact fetches a thread between owner and contact
