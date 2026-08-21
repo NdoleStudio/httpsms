@@ -59,3 +59,15 @@ func TestMessageThreadUnreadItemRetainsCountedState(t *testing.T) {
 	assert.Contains(t, counted.Tag.Get("gorm"), "not null")
 	assert.Contains(t, counted.Tag.Get("gorm"), "default:true")
 }
+
+func TestMessageThreadDeletedItemIsIndependentFromThreadLifecycle(t *testing.T) {
+	itemType := reflect.TypeOf(MessageThreadDeletedItem{})
+
+	require.Equal(t, 1, itemType.NumField())
+	messageID, ok := itemType.FieldByName("MessageID")
+	require.True(t, ok)
+	assert.Contains(t, messageID.Tag.Get("gorm"), "primaryKey")
+	assert.Contains(t, messageID.Tag.Get("gorm"), "type:uuid")
+	_, hasMessageThreadID := itemType.FieldByName("MessageThreadID")
+	assert.False(t, hasMessageThreadID)
+}

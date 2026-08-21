@@ -160,23 +160,32 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	thread, err := service.repository.LoadByOwnerContact(ctx, payload.UserID, payload.Owner, payload.Contact)
-	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot find thread for user [%s] with owner [%s], and contact [%s]", payload.UserID, payload.Owner, payload.Contact))
-	}
-
-	if err = service.repository.UpdateAfterDeletedMessage(ctx, repositories.MessageThreadDeletedUpdate{
-		MessageThreadID:    thread.ID,
-		UserID:             thread.UserID,
+	if err := service.repository.UpdateAfterDeletedMessage(ctx, repositories.MessageThreadDeletedUpdate{
+		UserID:             payload.UserID,
+		Owner:              payload.Owner,
+		Contact:            payload.Contact,
 		DeletedMessageID:   payload.MessageID,
 		LastMessageID:      payload.PreviousMessageID,
 		LastMessageContent: payload.PreviousMessageContent,
 		LastMessageStatus:  payload.PreviousMessageStatus,
 	}); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(
+			err,
+			"cannot apply deleted message [%s] to conversation [%s/%s] for user [%s]",
+			payload.MessageID,
+			payload.Owner,
+			payload.Contact,
+			payload.UserID,
+		))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("last message has been removed from thread with ID [%s] and userID [%s]", thread.ID, thread.UserID))
+	ctxLogger.Info(fmt.Sprintf(
+		"message [%s] has been removed from conversation [%s/%s] for user [%s]",
+		payload.MessageID,
+		payload.Owner,
+		payload.Contact,
+		payload.UserID,
+	))
 	return nil
 }
 

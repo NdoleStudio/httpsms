@@ -28,6 +28,19 @@ func TestMigrateMessageThreadUnreadCountSkipsLegacyBackfillWhenIsReadColumnMissi
 	assert.Contains(t, strings.Join(recorder.execs, "\n"), `"counted" boolean NOT NULL DEFAULT true`)
 }
 
+func TestMigrateMessageThreadUnreadCountCreatesIndependentDeletedItemSchema(t *testing.T) {
+	db, recorder := newMigrationTestDB(t, migrationTestDBOptions{})
+
+	require.NoError(t, MigrateMessageThreadUnreadCount(db))
+
+	deletedItems := migrationExecIndex(recorder, `CREATE TABLE "message_thread_deleted_items"`)
+	require.NotEqual(t, -1, deletedItems)
+	assert.Contains(t, recorder.execs[deletedItems], `"message_id" uuid`)
+	assert.Contains(t, recorder.execs[deletedItems], `PRIMARY KEY`)
+	assert.NotContains(t, recorder.execs[deletedItems], `"message_thread_id"`)
+	assert.NotContains(t, recorder.execs[deletedItems], `FOREIGN KEY`)
+}
+
 func TestMigrateMessageThreadUnreadCountBackfillsBeforeDropAndSkipsOnSecondRun(t *testing.T) {
 	db, recorder := newMigrationTestDB(t, migrationTestDBOptions{hasLegacyIsRead: true})
 

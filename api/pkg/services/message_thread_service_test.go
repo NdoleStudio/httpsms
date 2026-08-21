@@ -405,24 +405,13 @@ func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 }
 
 func TestUpdateAfterDeletedMessageDelegatesAllDecisionsToRepository(t *testing.T) {
-	threadID := uuid.New()
 	deletedMessageID := uuid.New()
-	currentLastMessageID := uuid.New()
 	previousMessageID := uuid.New()
 	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
 	previousContent := "previous"
 	var captured repositories.MessageThreadDeletedUpdate
 
 	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{
-				ID:            threadID,
-				UserID:        entities.UserID("user-id"),
-				Owner:         "+18005550199",
-				Contact:       "+18005550100",
-				LastMessageID: &currentLastMessageID,
-			}, nil
-		},
 		updateAfterDelete: func(_ context.Context, params repositories.MessageThreadDeletedUpdate) error {
 			captured = params
 			return nil
@@ -441,8 +430,9 @@ func TestUpdateAfterDeletedMessageDelegatesAllDecisionsToRepository(t *testing.T
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, threadID, captured.MessageThreadID)
 	assert.Equal(t, entities.UserID("user-id"), captured.UserID)
+	assert.Equal(t, "+18005550199", captured.Owner)
+	assert.Equal(t, "+18005550100", captured.Contact)
 	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
 	require.NotNil(t, captured.LastMessageID)
 	assert.Equal(t, previousMessageID, *captured.LastMessageID)
@@ -452,8 +442,40 @@ func TestUpdateAfterDeletedMessageDelegatesAllDecisionsToRepository(t *testing.T
 	assert.Equal(t, previousStatus, *captured.LastMessageStatus)
 }
 
-func TestUpdateAfterDeletedMessageDoesNotUseLoadedLastMessageSnapshot(t *testing.T) {
-	threadID := uuid.New()
+func TestUpdateAfterDeletedMessageDelegatesWithoutLoadingThread(t *testing.T) {
+	deletedMessageID := uuid.New()
+	loadCalled := false
+	var captured repositories.MessageThreadDeletedUpdate
+	repository := &messageThreadRepositoryStub{
+		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+			loadCalled = true
+			return &entities.MessageThread{
+				ID:     uuid.New(),
+				UserID: entities.UserID("user-id"),
+			}, nil
+		},
+		updateAfterDelete: func(_ context.Context, params repositories.MessageThreadDeletedUpdate) error {
+			captured = params
+			return nil
+		},
+	}
+
+	service := newMessageThreadServiceForTest(repository)
+	err := service.UpdateAfterDeletedMessage(context.Background(), &events.MessageAPIDeletedPayload{
+		MessageID: deletedMessageID,
+		UserID:    entities.UserID("user-id"),
+		Owner:     "+18005550199",
+		Contact:   "+18005550100",
+	})
+
+	require.NoError(t, err)
+	assert.False(t, loadCalled)
+	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
+	assert.Equal(t, "+18005550199", captured.Owner)
+	assert.Equal(t, "+18005550100", captured.Contact)
+}
+
+func TestUpdateAfterDeletedMessagePassesPreviousMessageMetadata(t *testing.T) {
 	deletedMessageID := uuid.New()
 	previousMessageID := uuid.New()
 	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
@@ -461,15 +483,6 @@ func TestUpdateAfterDeletedMessageDoesNotUseLoadedLastMessageSnapshot(t *testing
 	var captured repositories.MessageThreadDeletedUpdate
 
 	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{
-				ID:            threadID,
-				UserID:        entities.UserID("user-id"),
-				Owner:         "+18005550199",
-				Contact:       "+18005550100",
-				LastMessageID: &deletedMessageID,
-			}, nil
-		},
 		updateAfterDelete: func(_ context.Context, params repositories.MessageThreadDeletedUpdate) error {
 			captured = params
 			return nil
@@ -496,19 +509,10 @@ func TestUpdateAfterDeletedMessageDoesNotUseLoadedLastMessageSnapshot(t *testing
 }
 
 func TestUpdateAfterDeletedMessageDelegatesFinalMessageDeletion(t *testing.T) {
-	threadID := uuid.New()
 	deletedMessageID := uuid.New()
 	var captured repositories.MessageThreadDeletedUpdate
 
 	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{
-				ID:      threadID,
-				UserID:  entities.UserID("user-id"),
-				Owner:   "+18005550199",
-				Contact: "+18005550100",
-			}, nil
-		},
 		delete: func(context.Context, entities.UserID, uuid.UUID) error {
 			t.Fatal("service must not delete a thread outside the repository transaction")
 			return nil
@@ -528,24 +532,17 @@ func TestUpdateAfterDeletedMessageDelegatesFinalMessageDeletion(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, threadID, captured.MessageThreadID)
+	assert.Equal(t, "+18005550199", captured.Owner)
+	assert.Equal(t, "+18005550100", captured.Contact)
 	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
 	assert.Nil(t, captured.LastMessageID)
 	assert.Nil(t, captured.LastMessageContent)
 }
 
 func TestUpdateAfterDeletedMessagePropagatesRepositoryError(t *testing.T) {
-	threadID := uuid.New()
+	deletedMessageID := uuid.New()
 	updateErr := errors.New("update failed")
 	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{
-				ID:      threadID,
-				UserID:  entities.UserID("user-id"),
-				Owner:   "+18005550199",
-				Contact: "+18005550100",
-			}, nil
-		},
 		delete: func(context.Context, entities.UserID, uuid.UUID) error {
 			t.Fatal("service must not delete a thread outside the repository transaction")
 			return nil
@@ -557,7 +554,7 @@ func TestUpdateAfterDeletedMessagePropagatesRepositoryError(t *testing.T) {
 
 	service := newMessageThreadServiceForTest(repository)
 	err := service.UpdateAfterDeletedMessage(context.Background(), &events.MessageAPIDeletedPayload{
-		MessageID: uuid.New(),
+		MessageID: deletedMessageID,
 		UserID:    entities.UserID("user-id"),
 		Owner:     "+18005550199",
 		Contact:   "+18005550100",
@@ -565,23 +562,16 @@ func TestUpdateAfterDeletedMessagePropagatesRepositoryError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, updateErr)
-	assert.Contains(t, err.Error(), threadID.String())
+	assert.Contains(t, err.Error(), deletedMessageID.String())
+	assert.Contains(t, err.Error(), "+18005550199")
+	assert.Contains(t, err.Error(), "+18005550100")
 }
 
 func TestUpdateAfterDeletedMessagePassesNilPreviousStatusWithoutPanicking(t *testing.T) {
-	threadID := uuid.New()
 	previousMessageID := uuid.New()
 	previousContent := "previous"
 	updateErr := errors.New("missing previous status")
 	repository := &messageThreadRepositoryStub{
-		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{
-				ID:      threadID,
-				UserID:  entities.UserID("user-id"),
-				Owner:   "+18005550199",
-				Contact: "+18005550100",
-			}, nil
-		},
 		updateAfterDelete: func(context.Context, repositories.MessageThreadDeletedUpdate) error {
 			return updateErr
 		},

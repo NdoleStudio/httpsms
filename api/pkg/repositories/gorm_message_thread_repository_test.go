@@ -27,14 +27,15 @@ type messageThreadTestStatement struct {
 }
 
 type messageThreadTestConnPool struct {
-	statements   []messageThreadTestStatement
-	thread       *entities.MessageThread
-	rowsAffected func(query string) int64
-	execError    func(query string) error
-	queryDB      *sql.DB
-	begins       int
-	commits      int
-	rollbacks    int
+	statements       []messageThreadTestStatement
+	thread           *entities.MessageThread
+	deletedMessageID *uuid.UUID
+	rowsAffected     func(query string) int64
+	execError        func(query string) error
+	queryDB          *sql.DB
+	begins           int
+	commits          int
+	rollbacks        int
 }
 
 func (messageThreadTestConnPool) PrepareContext(context.Context, string) (*sql.Stmt, error) {
@@ -138,7 +139,17 @@ func (*messageThreadRowsConn) Begin() (driver.Tx, error) {
 	return nil, errors.New("unexpected Begin")
 }
 
-func (conn *messageThreadRowsConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
+func (conn *messageThreadRowsConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	if strings.Contains(query, `"message_thread_deleted_items"`) {
+		rows := &messageThreadDriverRows{
+			columns: []string{"message_id"},
+		}
+		if conn.pool.deletedMessageID != nil {
+			rows.values = []driver.Value{conn.pool.deletedMessageID.String()}
+		}
+		return rows, nil
+	}
+
 	rows := &messageThreadDriverRows{
 		columns: []string{
 			"id",
@@ -393,8 +404,9 @@ func TestMessageThreadMutationsRetrySerializationFailures(t *testing.T) {
 		repository := newMessageThreadTestRepository(t, pool)
 
 		err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-			MessageThreadID:  threadID,
 			UserID:           entities.UserID("user-id"),
+			Owner:            "+18005550199",
+			Contact:          "+18005550100",
 			DeletedMessageID: uuid.New(),
 		})
 
@@ -866,8 +878,9 @@ func TestMessageThreadDeletedMessageDecrementsWhenLedgerDeleted(t *testing.T) {
 	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:    threadID,
 		UserID:             entities.UserID("user-id"),
+		Owner:              "+18005550199",
+		Contact:            "+18005550100",
 		DeletedMessageID:   messageID,
 		LastMessageID:      &previousMessageID,
 		LastMessageContent: &previousContent,
@@ -912,8 +925,9 @@ func TestMessageThreadDeletedStaleReplacementPreservesNewerLastActivity(t *testi
 	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:    threadID,
 		UserID:             entities.UserID("user-id"),
+		Owner:              "+18005550199",
+		Contact:            "+18005550100",
 		DeletedMessageID:   deletedMessageID,
 		LastMessageID:      &previousMessageID,
 		LastMessageContent: &previousContent,
@@ -945,8 +959,9 @@ func TestMessageThreadDeletedStaleFinalMessagePreservesNewerLastActivity(t *test
 	repository := newMessageThreadTestRepository(t, pool)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:  threadID,
 		UserID:           entities.UserID("user-id"),
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
 		DeletedMessageID: deletedMessageID,
 	})
 
@@ -974,8 +989,9 @@ func TestMessageThreadDeletedCurrentFinalMessageDeletesThread(t *testing.T) {
 	repository := newMessageThreadTestRepository(t, pool)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:  threadID,
 		UserID:           entities.UserID("user-id"),
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
 		DeletedMessageID: deletedMessageID,
 	})
 
@@ -1017,8 +1033,9 @@ func TestMessageThreadDeletedCurrentMessageRequiresPreviousStatus(t *testing.T) 
 	repository := newMessageThreadTestRepository(t, pool)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:    threadID,
 		UserID:             entities.UserID("user-id"),
+		Owner:              "+18005550199",
+		Contact:            "+18005550100",
 		DeletedMessageID:   deletedMessageID,
 		LastMessageID:      &previousMessageID,
 		LastMessageContent: &previousContent,
@@ -1048,8 +1065,9 @@ func TestMessageThreadDeletedMessageWithoutLedgerDoesNotDecrement(t *testing.T) 
 	repository := newMessageThreadTestRepository(t, pool)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:  threadID,
 		UserID:           entities.UserID("user-id"),
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
 		DeletedMessageID: uuid.New(),
 	})
 
@@ -1093,8 +1111,9 @@ func TestMessageThreadDeletedItemReplayDoesNotIncrement(t *testing.T) {
 	repository := newMessageThreadTestRepository(t, pool)
 
 	require.NoError(t, repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
-		MessageThreadID:  threadID,
 		UserID:           userID,
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
 		DeletedMessageID: messageID,
 	}))
 	require.NoError(t, repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
@@ -1116,6 +1135,159 @@ func TestMessageThreadDeletedItemReplayDoesNotIncrement(t *testing.T) {
 	assert.Contains(t, pool.statements[tombstone].query, `"counted"`)
 	assert.Zero(t, messageThreadStatementCount(pool, "unread_count +"))
 	assert.Equal(t, 1, messageThreadStatementCount(pool, "GREATEST(unread_count - 1, 0)"))
+}
+
+func TestMessageThreadDeletionBeforeThreadBlocksLaterStore(t *testing.T) {
+	messageID := uuid.New()
+	threadID := uuid.New()
+	userID := entities.UserID("user-id")
+	pool := &messageThreadTestConnPool{}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		UserID:           userID,
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
+		DeletedMessageID: messageID,
+	})
+
+	require.NoError(t, err)
+	marker := messageThreadStatementIndex(pool, `INSERT INTO "message_thread_deleted_items"`)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	require.NotEqual(t, -1, marker)
+	require.NotEqual(t, -1, lock)
+	assert.Less(t, marker, lock)
+
+	pool.deletedMessageID = &messageID
+	pool.statements = nil
+	content := "deleted inbound"
+	err = repository.Store(context.Background(), MessageThreadStoreParams{
+		Thread: &entities.MessageThread{
+			ID:                 threadID,
+			UserID:             userID,
+			Owner:              "+18005550199",
+			Contact:            "+18005550100",
+			UnreadCount:        1,
+			LastMessageID:      &messageID,
+			LastMessageContent: &content,
+			Status:             entities.MessageStatusReceived,
+		},
+		CountAsUnread: true,
+	})
+
+	require.NoError(t, err)
+	assert.NotEqual(t, -1, messageThreadStatementIndex(pool, `FROM "message_thread_deleted_items"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `INSERT INTO "message_threads"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`))
+}
+
+func TestMessageThreadDeletedInboundReplayPreservesExistingThread(t *testing.T) {
+	messageID := uuid.New()
+	newerMessageID := uuid.New()
+	threadID := uuid.New()
+	userID := entities.UserID("user-id")
+	currentContent := "newer preview"
+	currentTimestamp := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:                 threadID,
+			UserID:             userID,
+			Owner:              "+18005550199",
+			Contact:            "+18005550100",
+			IsArchived:         true,
+			LastMessageID:      &newerMessageID,
+			LastMessageContent: &currentContent,
+			OrderTimestamp:     currentTimestamp,
+			LastReadAt:         time.Unix(0, 0).UTC(),
+		},
+		rowsAffected: func(query string) int64 {
+			if strings.Contains(query, `UPDATE "message_thread_unread_items"`) {
+				return 0
+			}
+			return 1
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	require.NoError(t, repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		UserID:           userID,
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
+		DeletedMessageID: messageID,
+	}))
+
+	pool.deletedMessageID = &messageID
+	pool.statements = nil
+	require.NoError(t, repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+		MessageThreadID: threadID,
+		UserID:          userID,
+		Timestamp:       currentTimestamp.Add(time.Second),
+		MessageID:       messageID,
+		Content:         "replayed deleted inbound",
+		Status:          entities.MessageStatusReceived,
+		CountAsUnread:   true,
+		EventTimestamp:  currentTimestamp.Add(time.Second),
+		Unarchive:       true,
+	}))
+
+	assert.NotEqual(t, -1, messageThreadStatementIndex(pool, `FROM "message_thread_deleted_items"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, "FOR UPDATE"))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `"order_timestamp"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `"is_archived"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, "unread_count +"))
+}
+
+func TestMessageThreadFinalDeletionBlocksStoreReplay(t *testing.T) {
+	messageID := uuid.New()
+	threadID := uuid.New()
+	userID := entities.UserID("user-id")
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:            threadID,
+			UserID:        userID,
+			Owner:         "+18005550199",
+			Contact:       "+18005550100",
+			LastMessageID: &messageID,
+		},
+		rowsAffected: func(query string) int64 {
+			if strings.Contains(query, `UPDATE "message_thread_unread_items"`) {
+				return 0
+			}
+			return 1
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	require.NoError(t, repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		UserID:           userID,
+		Owner:            "+18005550199",
+		Contact:          "+18005550100",
+		DeletedMessageID: messageID,
+	}))
+	assert.NotEqual(t, -1, messageThreadStatementIndex(pool, `DELETE FROM "message_threads"`))
+
+	pool.thread = nil
+	pool.deletedMessageID = &messageID
+	pool.statements = nil
+	content := "replayed final message"
+	require.NoError(t, repository.Store(context.Background(), MessageThreadStoreParams{
+		Thread: &entities.MessageThread{
+			ID:                 uuid.New(),
+			UserID:             userID,
+			Owner:              "+18005550199",
+			Contact:            "+18005550100",
+			UnreadCount:        1,
+			LastMessageID:      &messageID,
+			LastMessageContent: &content,
+			Status:             entities.MessageStatusReceived,
+		},
+		CountAsUnread: true,
+	}))
+
+	assert.NotEqual(t, -1, messageThreadStatementIndex(pool, `FROM "message_thread_deleted_items"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `INSERT INTO "message_threads"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`))
 }
 
 func TestMessageThreadStatusUpdatesResetUnreadCount(t *testing.T) {

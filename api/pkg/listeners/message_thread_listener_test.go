@@ -64,15 +64,6 @@ func TestMessageThreadListenerMarksMissedCallUnread(t *testing.T) {
 
 func TestMessageThreadListenerDeletesNonLastUnreadMessage(t *testing.T) {
 	repository, routes := newMessageThreadListenerForTest()
-	currentLastMessageID := uuid.New()
-	repository.thread = &entities.MessageThread{
-		ID:            uuid.New(),
-		UserID:        entities.UserID("user-id"),
-		Owner:         "+18005550199",
-		Contact:       "+18005550100",
-		LastMessageID: &currentLastMessageID,
-	}
-
 	deletedMessageID := uuid.New()
 	previousMessageID := uuid.New()
 	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
@@ -95,6 +86,8 @@ func TestMessageThreadListenerDeletesNonLastUnreadMessage(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, deletedMessageID, repository.deletedUpdate.DeletedMessageID)
+	assert.Equal(t, "+18005550199", repository.deletedUpdate.Owner)
+	assert.Equal(t, "+18005550100", repository.deletedUpdate.Contact)
 	require.NotNil(t, repository.deletedUpdate.LastMessageID)
 	assert.Equal(t, previousMessageID, *repository.deletedUpdate.LastMessageID)
 }

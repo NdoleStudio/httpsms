@@ -34,8 +34,9 @@ type MessageThreadStatusUpdate struct {
 }
 
 type MessageThreadDeletedUpdate struct {
-	MessageThreadID    uuid.UUID
 	UserID             entities.UserID
+	Owner              string
+	Contact            string
 	DeletedMessageID   uuid.UUID
 	LastMessageID      *uuid.UUID
 	LastMessageContent *string

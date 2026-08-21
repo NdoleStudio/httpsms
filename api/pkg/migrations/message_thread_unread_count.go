@@ -20,7 +20,11 @@ func (messageThreadConversationIndex) TableName() string {
 
 // MigrateMessageThreadUnreadCount migrates message thread unread count schema.
 func MigrateMessageThreadUnreadCount(db *gorm.DB) error {
-	if err := db.AutoMigrate(&entities.MessageThread{}, &entities.MessageThreadUnreadItem{}); err != nil {
+	if err := db.AutoMigrate(
+		&entities.MessageThread{},
+		&entities.MessageThreadUnreadItem{},
+		&entities.MessageThreadDeletedItem{},
+	); err != nil {
 		return stacktrace.Propagate(err, "cannot migrate message thread unread count schema")
 	}
 

@@ -148,6 +148,28 @@ func insertUnreadItem(tx *gorm.DB, item entities.MessageThreadUnreadItem) (bool,
 	return result.RowsAffected == 1, nil
 }
 
+func insertDeletedItem(tx *gorm.DB, messageID uuid.UUID) error {
+	if err := tx.
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&entities.MessageThreadDeletedItem{MessageID: messageID}).
+		Error; err != nil {
+		return stacktrace.Propagatef(err, "cannot insert deleted message marker for message [%s]", messageID)
+	}
+	return nil
+}
+
+func isDeletedItem(tx *gorm.DB, messageID uuid.UUID) (bool, error) {
+	item := new(entities.MessageThreadDeletedItem)
+	result := tx.
+		Where("message_id = ?", messageID).
+		Limit(1).
+		Find(item)
+	if result.Error != nil {
+		return false, stacktrace.Propagatef(result.Error, "cannot load deleted message marker for message [%s]", messageID)
+	}
+	return result.RowsAffected != 0, nil
+}
+
 func markUnreadItemDeleted(tx *gorm.DB, messageID uuid.UUID, threadID uuid.UUID) (bool, error) {
 	result := tx.
 		Model(&entities.MessageThreadUnreadItem{}).
@@ -251,12 +273,19 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
 		tx = tx.WithContext(ctx)
-		thread, err := lockMessageThread(tx, params.UserID, params.MessageThreadID)
+		if err := insertDeletedItem(tx, params.DeletedMessageID); err != nil {
+			return err
+		}
+
+		thread, err := lockMessageThreadByConversation(tx, params.UserID, params.Owner, params.Contact)
+		if stacktrace.GetCode(err) == ErrCodeNotFound {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
 
-		deleted, err := markUnreadItemDeleted(tx, params.DeletedMessageID, params.MessageThreadID)
+		deleted, err := markUnreadItemDeleted(tx, params.DeletedMessageID, thread.ID)
 		if err != nil {
 			return err
 		}
@@ -264,13 +293,13 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 			if err := tx.
 				Model(thread).
 				Where("user_id = ?", params.UserID).
-				Where("id = ?", params.MessageThreadID).
+				Where("id = ?", thread.ID).
 				UpdateColumn("unread_count", gorm.Expr("GREATEST(unread_count - 1, 0)")).
 				Error; err != nil {
 				return stacktrace.Propagatef(
 					err,
 					"cannot decrement unread count for thread [%s] and user [%s]",
-					params.MessageThreadID,
+					thread.ID,
 					params.UserID,
 				)
 			}
@@ -285,13 +314,13 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 		if params.LastMessageID == nil {
 			if err := tx.
 				Where("user_id = ?", params.UserID).
-				Where("id = ?", params.MessageThreadID).
+				Where("id = ?", thread.ID).
 				Delete(&entities.MessageThread{}).
 				Error; err != nil {
 				return stacktrace.Propagatef(
 					err,
 					"cannot delete message thread [%s] for user [%s] after deleting final message [%s]",
-					params.MessageThreadID,
+					thread.ID,
 					params.UserID,
 					params.DeletedMessageID,
 				)
@@ -306,13 +335,13 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 		if err := tx.
 			Model(thread).
 			Where("user_id = ?", params.UserID).
-			Where("id = ?", params.MessageThreadID).
+			Where("id = ?", thread.ID).
 			Updates(updates).
 			Error; err != nil {
 			return stacktrace.Propagatef(
 				err,
 				"cannot update deleted-message metadata for thread [%s] and user [%s]",
-				params.MessageThreadID,
+				thread.ID,
 				params.UserID,
 			)
 		}
@@ -323,9 +352,10 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 			span,
 			stacktrace.Propagatef(
 				err,
-				"cannot apply deleted message [%s] to thread [%s] for user [%s]",
+				"cannot apply deleted message [%s] to conversation [%s/%s] for user [%s]",
 				params.DeletedMessageID,
-				params.MessageThreadID,
+				params.Owner,
+				params.Contact,
 				params.UserID,
 			),
 		)
@@ -341,6 +371,13 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, params
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
 		tx = tx.WithContext(ctx)
+		if params.Thread.LastMessageID != nil {
+			deleted, err := isDeletedItem(tx, *params.Thread.LastMessageID)
+			if err != nil || deleted {
+				return err
+			}
+		}
+
 		candidate := *params.Thread
 		result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
 		if result.Error != nil {
@@ -417,6 +454,11 @@ func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Contex
 
 	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
 		tx = tx.WithContext(ctx)
+		deleted, err := isDeletedItem(tx, params.MessageID)
+		if err != nil || deleted {
+			return err
+		}
+
 		thread, err := lockMessageThread(tx, params.UserID, params.MessageThreadID)
 		if err != nil {
 			return err
