@@ -19,8 +19,12 @@ import (
 type integrationMessageThread struct {
 	ID                 string  `json:"id"`
 	Contact            string  `json:"contact"`
-	IsRead             bool    `json:"is_read"`
+	UnreadCount        uint    `json:"unread_count"`
 	LastMessageContent *string `json:"last_message_content"`
+}
+
+type integrationMessage struct {
+	ID string `json:"id"`
 }
 
 func requestJSON(
@@ -109,7 +113,7 @@ func waitForMessageThread(
 	return integrationMessageThread{}
 }
 
-func markMessageThreadRead(ctx context.Context, t *testing.T, threadID string) integrationMessageThread {
+func resetMessageThreadUnreadCount(ctx context.Context, t *testing.T, threadID string) integrationMessageThread {
 	t.Helper()
 
 	var response struct {
@@ -121,7 +125,7 @@ func markMessageThreadRead(ctx context.Context, t *testing.T, threadID string) i
 		http.MethodPut,
 		"/v1/message-threads/"+threadID,
 		userAPIKey,
-		map[string]any{"is_read": true},
+		map[string]any{"unread_count": 0},
 		http.StatusOK,
 		&response,
 	)
@@ -152,19 +156,45 @@ func TestMessageThreadReadReceipts(t *testing.T) {
 	)
 
 	thread := waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
-		return !thread.IsRead
+		return thread.UnreadCount == 1
 	})
-	assert.False(t, thread.IsRead)
+	assert.Equal(t, uint(1), thread.UnreadCount)
 
-	updated := markMessageThreadRead(ctx, t, thread.ID)
-	assert.True(t, updated.IsRead)
+	requestJSON(
+		ctx,
+		t,
+		http.MethodPost,
+		"/v1/messages/receive",
+		phone.PhoneAPIKey,
+		map[string]any{
+			"from":      contact,
+			"to":        phone.PhoneNumber,
+			"content":   "Second unread inbound message",
+			"encrypted": false,
+			"sim":       "SIM1",
+			"timestamp": time.Now().UTC().Format(time.RFC3339Nano),
+		},
+		http.StatusOK,
+		nil,
+	)
+
+	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+		return thread.UnreadCount == 2
+	})
+	assert.Equal(t, uint(2), thread.UnreadCount)
+
+	updated := resetMessageThreadUnreadCount(ctx, t, thread.ID)
+	assert.Zero(t, updated.UnreadCount)
 	assert.Equal(t, contact, updated.Contact)
 	require.NotNil(t, updated.LastMessageContent)
-	assert.Equal(t, "Unread inbound message", *updated.LastMessageContent)
+	assert.Equal(t, "Second unread inbound message", *updated.LastMessageContent)
 	waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 10*time.Second, func(thread integrationMessageThread) bool {
-		return thread.IsRead
+		return thread.UnreadCount == 0
 	})
 
+	var missedCallResponse struct {
+		Data integrationMessage `json:"data"`
+	}
 	requestJSON(
 		ctx,
 		t,
@@ -178,15 +208,16 @@ func TestMessageThreadReadReceipts(t *testing.T) {
 			"timestamp": time.Now().UTC().Format(time.RFC3339Nano),
 		},
 		http.StatusOK,
-		nil,
+		&missedCallResponse,
 	)
+	require.NotEmpty(t, missedCallResponse.Data.ID)
 
 	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
-		return !thread.IsRead &&
+		return thread.UnreadCount == 1 &&
 			thread.LastMessageContent != nil &&
 			*thread.LastMessageContent == "Missed phone call"
 	})
-	assert.False(t, thread.IsRead)
+	assert.Equal(t, uint(1), thread.UnreadCount)
 
 	outboundContent := "Outbound activity preserves unread"
 	client := newAPIClient()
@@ -199,8 +230,26 @@ func TestMessageThreadReadReceipts(t *testing.T) {
 	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode)
 
 	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
-		return thread.LastMessageContent != nil &&
+		return thread.UnreadCount == 1 &&
+			thread.LastMessageContent != nil &&
 			*thread.LastMessageContent == outboundContent
 	})
-	assert.False(t, thread.IsRead, "outbound activity must not clear unread state")
+	assert.Equal(t, uint(1), thread.UnreadCount, "outbound activity must preserve unread count")
+
+	requestJSON(
+		ctx,
+		t,
+		http.MethodDelete,
+		"/v1/messages/"+missedCallResponse.Data.ID,
+		userAPIKey,
+		nil,
+		http.StatusNoContent,
+		nil,
+	)
+	thread = waitForMessageThread(ctx, t, phone.PhoneNumber, contact, 20*time.Second, func(thread integrationMessageThread) bool {
+		return thread.UnreadCount == 0 &&
+			thread.LastMessageContent != nil &&
+			*thread.LastMessageContent == outboundContent
+	})
+	assert.Zero(t, thread.UnreadCount)
 }
