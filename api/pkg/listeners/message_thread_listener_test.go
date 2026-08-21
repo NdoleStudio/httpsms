@@ -34,7 +34,7 @@ func TestMessageThreadListenerMarksInboundMessageUnread(t *testing.T) {
 	err := routes[events.EventTypeMessagePhoneReceived](context.Background(), event)
 
 	require.NoError(t, err)
-	assert.True(t, repository.activity.MarkAsUnread)
+	assert.True(t, repository.activity.CountAsUnread)
 	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
 }
 
@@ -57,9 +57,47 @@ func TestMessageThreadListenerMarksMissedCallUnread(t *testing.T) {
 	err := routes[events.MessageCallMissed](context.Background(), event)
 
 	require.NoError(t, err)
-	assert.True(t, repository.activity.MarkAsUnread)
+	assert.True(t, repository.activity.CountAsUnread)
 	assert.Equal(t, "Missed phone call", repository.activity.Content)
 	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
+}
+
+func TestMessageThreadListenerDeletesNonLastUnreadMessage(t *testing.T) {
+	repository, routes := newMessageThreadListenerForTest()
+	currentLastMessageID := uuid.New()
+	repository.thread = &entities.MessageThread{
+		ID:            uuid.New(),
+		UserID:        entities.UserID("user-id"),
+		Owner:         "+18005550199",
+		Contact:       "+18005550100",
+		LastMessageID: &currentLastMessageID,
+	}
+
+	deletedMessageID := uuid.New()
+	previousMessageID := uuid.New()
+	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
+	previousContent := "previous"
+	event := cloudevents.NewEvent()
+	event.SetID(uuid.NewString())
+	event.SetSource("/v1/messages/deleted")
+	event.SetType(events.MessageAPIDeleted)
+	require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.MessageAPIDeletedPayload{
+		MessageID:              deletedMessageID,
+		UserID:                 entities.UserID("user-id"),
+		Owner:                  "+18005550199",
+		Contact:                "+18005550100",
+		PreviousMessageID:      &previousMessageID,
+		PreviousMessageStatus:  &previousStatus,
+		PreviousMessageContent: &previousContent,
+	}))
+
+	err := routes[events.MessageAPIDeleted](context.Background(), event)
+
+	require.NoError(t, err)
+	assert.Equal(t, deletedMessageID, repository.deletedUpdate.DeletedMessageID)
+	assert.False(t, repository.deletedUpdate.UpdateLastMessage)
+	require.NotNil(t, repository.deletedUpdate.LastMessageID)
+	assert.Equal(t, previousMessageID, *repository.deletedUpdate.LastMessageID)
 }
 
 func newMessageThreadListenerForTest() (*listenerMessageThreadRepository, map[string]events.EventListener) {

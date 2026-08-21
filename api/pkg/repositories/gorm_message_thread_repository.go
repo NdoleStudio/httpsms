@@ -319,7 +319,7 @@ func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Contex
 	return nil
 }
 
-// UpdateStatus persists archive/read status fields for a thread
+// UpdateStatus persists archive/unread status fields for a thread
 func (repository *gormMessageThreadRepository) UpdateStatus(
 	ctx context.Context,
 	userID entities.UserID,

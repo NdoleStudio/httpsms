@@ -24,10 +24,12 @@ func (logger *noopListenerLogger) Fatal(error)                                 {
 func (logger *noopListenerLogger) Printf(string, ...interface{})               {}
 
 type listenerMessageThreadRepository struct {
-	activity repositories.MessageThreadActivityUpdate
+	activity      repositories.MessageThreadActivityUpdate
+	deletedUpdate repositories.MessageThreadDeletedUpdate
+	thread        *entities.MessageThread
 }
 
-func (repository *listenerMessageThreadRepository) Store(context.Context, *entities.MessageThread) error {
+func (repository *listenerMessageThreadRepository) Store(context.Context, *entities.MessageThread, *uuid.UUID) error {
 	return nil
 }
 
@@ -40,12 +42,21 @@ func (repository *listenerMessageThreadRepository) UpdateStatus(_ context.Contex
 	return &entities.MessageThread{ID: threadID}, nil
 }
 
-func (repository *listenerMessageThreadRepository) UpdateAfterDeletedMessage(context.Context, repositories.MessageThreadDeletedUpdate) error {
+func (repository *listenerMessageThreadRepository) UpdateAfterDeletedMessage(_ context.Context, params repositories.MessageThreadDeletedUpdate) error {
+	repository.deletedUpdate = params
 	return nil
 }
 
 func (repository *listenerMessageThreadRepository) LoadByOwnerContact(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-	return &entities.MessageThread{ID: uuid.New()}, nil
+	if repository.thread != nil {
+		return repository.thread, nil
+	}
+	return &entities.MessageThread{
+		ID:      uuid.New(),
+		UserID:  entities.UserID("user-id"),
+		Owner:   "+18005550199",
+		Contact: "+18005550100",
+	}, nil
 }
 
 func (repository *listenerMessageThreadRepository) Load(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {

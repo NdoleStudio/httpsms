@@ -59,7 +59,7 @@ type MessageThreadUpdateParams struct {
 	MessageID uuid.UUID
 	// Timestamp controls thread activity ordering; EventTimestamp is the server-side unread watermark.
 	Timestamp      time.Time
-	MarkAsUnread   bool
+	CountAsUnread  bool
 	EventTimestamp time.Time
 }
 
@@ -118,7 +118,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		MessageID:       params.MessageID,
 		Content:         params.Content,
 		Status:          params.Status,
-		MarkAsUnread:    params.MarkAsUnread,
+		CountAsUnread:   params.CountAsUnread,
 		EventTimestamp:  params.EventTimestamp,
 	}
 
@@ -143,7 +143,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 // MessageThreadStatusParams are parameters for updating a thread status
 type MessageThreadStatusParams struct {
 	IsArchived      *bool
-	IsRead          *bool
+	UnreadCount     *uint
 	UserID          entities.UserID
 	MessageThreadID uuid.UUID
 }
@@ -154,9 +154,9 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	defer span.End()
 
 	update := repositories.MessageThreadStatusUpdate{
-		IsArchived: params.IsArchived,
-		IsRead:     params.IsRead,
-		ReadAt:     time.Now().UTC(),
+		IsArchived:  params.IsArchived,
+		UnreadCount: params.UnreadCount,
+		ReadAt:      time.Now().UTC(),
 	}
 	thread, err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update)
 	if err != nil {
@@ -186,15 +186,12 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 		return nil
 	}
 
-	if thread.LastMessageID != nil && *thread.LastMessageID != payload.MessageID {
-		msg := fmt.Sprintf("last message ID [%s] does not match message ID [%s] for thread with ID [%s]", *thread.LastMessageID, payload.MessageID, thread.ID)
-		ctxLogger.Info(msg)
-		return nil
-	}
-
+	updateLastMessage := thread.LastMessageID != nil && *thread.LastMessageID == payload.MessageID
 	if err = service.repository.UpdateAfterDeletedMessage(ctx, repositories.MessageThreadDeletedUpdate{
 		MessageThreadID:    thread.ID,
 		UserID:             thread.UserID,
+		DeletedMessageID:   payload.MessageID,
+		UpdateLastMessage:  updateLastMessage,
 		LastMessageID:      payload.PreviousMessageID,
 		LastMessageContent: payload.PreviousMessageContent,
 		LastMessageStatus:  *payload.PreviousMessageStatus,
@@ -219,7 +216,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		Contact:            params.Contact,
 		UserID:             params.UserID,
 		IsArchived:         false,
-		IsRead:             !params.MarkAsUnread,
+		UnreadCount:        0,
 		LastReadAt:         now,
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,
@@ -230,7 +227,13 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		OrderTimestamp:     params.Timestamp,
 	}
 
-	if err := service.repository.Store(ctx, thread); err != nil {
+	var unreadMessageID *uuid.UUID
+	if params.CountAsUnread {
+		thread.UnreadCount = 1
+		unreadMessageID = &params.MessageID
+	}
+
+	if err := service.repository.Store(ctx, thread, unreadMessageID); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID))
 	}
 
