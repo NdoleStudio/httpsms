@@ -16,7 +16,7 @@ useHead({
 })
 
 const config = useRuntimeConfig()
-const { lgAndUp } = useDisplay()
+const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const phonesStore = usePhonesStore()

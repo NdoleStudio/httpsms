@@ -42,7 +42,7 @@ useHead({
 const config = useRuntimeConfig()
 const route = useRoute()
 const router = useRouter()
-const { mdAndDown, mdAndUp, lgAndUp, xlAndUp, smAndUp } = useDisplay()
+const { mdAndDown, mdAndUp, lgAndUp, xlAndUp, smAndUp } = useVDisplay()
 const authStore = useAuthStore()
 const phonesStore = usePhonesStore()
 const billingStore = useBillingStore()

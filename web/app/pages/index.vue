@@ -43,7 +43,7 @@ useSeoMeta({
 })
 
 const config = useRuntimeConfig()
-const { lgAndUp, mdAndUp, mdAndDown, md, smAndDown, xl } = useDisplay()
+const { lgAndUp, mdAndUp, mdAndDown, md, smAndDown, xl } = useVDisplay()
 
 const selectedTab = ref('javascript')
 const yearlyPricing = ref(false)

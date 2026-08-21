@@ -97,6 +97,9 @@ export default defineNuxtConfig({
   },
 
   vuetify: {
+    moduleOptions: {
+      prefixComposables: true,
+    },
     vuetifyOptions: {
       theme: {
         defaultTheme: 'dark',

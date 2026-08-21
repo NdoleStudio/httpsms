@@ -27,7 +27,7 @@ useHead({
 })
 
 const config = useRuntimeConfig()
-const { lgAndUp } = useDisplay()
+const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
