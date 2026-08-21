@@ -95,7 +95,6 @@ func TestMessageThreadListenerDeletesNonLastUnreadMessage(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, deletedMessageID, repository.deletedUpdate.DeletedMessageID)
-	assert.False(t, repository.deletedUpdate.UpdateLastMessage)
 	require.NotNil(t, repository.deletedUpdate.LastMessageID)
 	assert.Equal(t, previousMessageID, *repository.deletedUpdate.LastMessageID)
 }

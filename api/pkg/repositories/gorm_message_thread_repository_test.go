@@ -140,14 +140,41 @@ func (*messageThreadRowsConn) Begin() (driver.Tx, error) {
 
 func (conn *messageThreadRowsConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
 	rows := &messageThreadDriverRows{
-		columns: []string{"id", "user_id", "last_read_at", "unread_count"},
+		columns: []string{
+			"id",
+			"user_id",
+			"owner",
+			"contact",
+			"is_archived",
+			"last_read_at",
+			"unread_count",
+			"last_message_id",
+			"last_message_content",
+			"status",
+			"order_timestamp",
+		},
 	}
 	if conn.pool.thread != nil {
+		var lastMessageID driver.Value
+		if conn.pool.thread.LastMessageID != nil {
+			lastMessageID = conn.pool.thread.LastMessageID.String()
+		}
+		var lastMessageContent driver.Value
+		if conn.pool.thread.LastMessageContent != nil {
+			lastMessageContent = *conn.pool.thread.LastMessageContent
+		}
 		rows.values = []driver.Value{
 			conn.pool.thread.ID.String(),
 			string(conn.pool.thread.UserID),
+			conn.pool.thread.Owner,
+			conn.pool.thread.Contact,
+			conn.pool.thread.IsArchived,
 			conn.pool.thread.LastReadAt,
 			int64(conn.pool.thread.UnreadCount),
+			lastMessageID,
+			lastMessageContent,
+			string(conn.pool.thread.Status),
+			conn.pool.thread.OrderTimestamp,
 		}
 	}
 	return rows, nil
@@ -465,6 +492,68 @@ func TestMessageThreadStoreConflictAppliesLosingActivity(t *testing.T) {
 	assert.Contains(t, pool.statements[ledger].args, winnerThreadID)
 }
 
+func TestMessageThreadStoreConflictStaleActivityPreservesWinnerMetadataAndCountsUnread(t *testing.T) {
+	winnerThreadID := uuid.New()
+	losingThreadID := uuid.New()
+	winnerMessageID := uuid.New()
+	losingMessageID := uuid.New()
+	userID := entities.UserID("user-id")
+	winnerContent := "winner"
+	winnerTimestamp := time.Date(2026, 8, 21, 10, 0, 2, 0, time.UTC)
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:                 winnerThreadID,
+			UserID:             userID,
+			UnreadCount:        1,
+			LastReadAt:         time.Unix(0, 0).UTC(),
+			LastMessageID:      &winnerMessageID,
+			LastMessageContent: &winnerContent,
+			Status:             entities.MessageStatusDelivered,
+			OrderTimestamp:     winnerTimestamp,
+		},
+		rowsAffected: func(query string) int64 {
+			if strings.Contains(query, `INSERT INTO "message_threads"`) {
+				return 0
+			}
+			return 1
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+	losingContent := "loser"
+	losingTimestamp := winnerTimestamp.Add(-time.Second)
+
+	err := repository.Store(context.Background(), MessageThreadStoreParams{
+		Thread: &entities.MessageThread{
+			ID:                 losingThreadID,
+			UserID:             userID,
+			Owner:              "+18005550199",
+			Contact:            "+18005550100",
+			UnreadCount:        1,
+			LastReadAt:         time.Unix(0, 0).UTC(),
+			LastMessageID:      &losingMessageID,
+			LastMessageContent: &losingContent,
+			Status:             entities.MessageStatusReceived,
+			OrderTimestamp:     losingTimestamp,
+		},
+		CountAsUnread:  true,
+		EventTimestamp: losingTimestamp,
+	})
+
+	require.NoError(t, err)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	metadata := messageThreadStatementIndexAfter(pool, `"order_timestamp"`, lock)
+	ledger := messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`)
+	increment := messageThreadStatementIndex(pool, "unread_count +")
+	require.NotEqual(t, -1, lock)
+	assert.Equal(t, -1, metadata)
+	require.NotEqual(t, -1, ledger)
+	require.NotEqual(t, -1, increment)
+	assert.Less(t, lock, ledger)
+	assert.Less(t, ledger, increment)
+	assert.Contains(t, pool.statements[ledger].args, losingMessageID)
+	assert.Contains(t, pool.statements[ledger].args, winnerThreadID)
+}
+
 func TestMessageThreadActivityUpdatesDoNotOwnUnreadColumns(t *testing.T) {
 	messageID := uuid.New()
 	updates := messageThreadActivityUpdates(MessageThreadActivityUpdate{
@@ -528,6 +617,121 @@ func TestMessageThreadActivityCountableItemInsertsLedgerAndIncrements(t *testing
 	assert.Contains(t, pool.statements[lock].query, "user_id =")
 	assert.Contains(t, pool.statements[lock].query, "id =")
 	assert.Contains(t, pool.statements[ledger].query, "ON CONFLICT DO NOTHING")
+}
+
+func TestMessageThreadStaleActivityPreservesPreviewAndCountsUnread(t *testing.T) {
+	threadID := uuid.New()
+	currentMessageID := uuid.New()
+	incomingMessageID := uuid.New()
+	userID := entities.UserID("user-id")
+	content := "current"
+	currentTimestamp := time.Date(2026, 8, 21, 10, 0, 2, 0, time.UTC)
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:                 threadID,
+			UserID:             userID,
+			LastReadAt:         time.Unix(0, 0).UTC(),
+			LastMessageID:      &currentMessageID,
+			LastMessageContent: &content,
+			Status:             entities.MessageStatusDelivered,
+			OrderTimestamp:     currentTimestamp,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+		MessageThreadID: threadID,
+		UserID:          userID,
+		Timestamp:       currentTimestamp.Add(-time.Second),
+		MessageID:       incomingMessageID,
+		Content:         "stale",
+		Status:          entities.MessageStatusReceived,
+		CountAsUnread:   true,
+		EventTimestamp:  currentTimestamp,
+	})
+
+	require.NoError(t, err)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	metadata := messageThreadStatementIndexAfter(pool, `"order_timestamp"`, lock)
+	ledger := messageThreadStatementIndex(pool, `INSERT INTO "message_thread_unread_items"`)
+	increment := messageThreadStatementIndex(pool, "unread_count +")
+	require.NotEqual(t, -1, lock)
+	assert.Equal(t, -1, metadata)
+	require.NotEqual(t, -1, ledger)
+	require.NotEqual(t, -1, increment)
+	assert.Less(t, lock, ledger)
+	assert.Less(t, ledger, increment)
+}
+
+func TestMessageThreadStaleActivityStillUnarchives(t *testing.T) {
+	threadID := uuid.New()
+	currentMessageID := uuid.New()
+	content := "current"
+	currentTimestamp := time.Date(2026, 8, 21, 10, 0, 2, 0, time.UTC)
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:                 threadID,
+			UserID:             entities.UserID("user-id"),
+			IsArchived:         true,
+			LastMessageID:      &currentMessageID,
+			LastMessageContent: &content,
+			Status:             entities.MessageStatusDelivered,
+			OrderTimestamp:     currentTimestamp,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+		MessageThreadID: threadID,
+		UserID:          entities.UserID("user-id"),
+		Timestamp:       currentTimestamp.Add(-time.Second),
+		MessageID:       uuid.New(),
+		Content:         "stale",
+		Status:          entities.MessageStatusReceived,
+		Unarchive:       true,
+	})
+
+	require.NoError(t, err)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	unarchive := messageThreadStatementIndexAfter(pool, `"is_archived"`, lock)
+	require.NotEqual(t, -1, lock)
+	require.NotEqual(t, -1, unarchive)
+	assert.NotContains(t, pool.statements[unarchive].query, `"order_timestamp"`)
+	assert.NotContains(t, pool.statements[unarchive].query, `"last_message_id"`)
+	assert.NotContains(t, pool.statements[unarchive].query, `"last_message_content"`)
+	assert.NotContains(t, pool.statements[unarchive].query, `"status"`)
+}
+
+func TestMessageThreadDeliveredActivityDoesNotRegressSameMessage(t *testing.T) {
+	threadID := uuid.New()
+	messageID := uuid.New()
+	content := "delivered"
+	timestamp := time.Date(2026, 8, 21, 10, 0, 2, 0, time.UTC)
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:                 threadID,
+			UserID:             entities.UserID("user-id"),
+			LastMessageID:      &messageID,
+			LastMessageContent: &content,
+			Status:             entities.MessageStatusDelivered,
+			OrderTimestamp:     timestamp,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateActivity(context.Background(), MessageThreadActivityUpdate{
+		MessageThreadID: threadID,
+		UserID:          entities.UserID("user-id"),
+		Timestamp:       timestamp.Add(time.Second),
+		MessageID:       messageID,
+		Content:         "regressed",
+		Status:          entities.MessageStatusSent,
+	})
+
+	require.NoError(t, err)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	require.NotEqual(t, -1, lock)
+	assert.Equal(t, -1, messageThreadStatementIndexAfter(pool, `"order_timestamp"`, lock))
 }
 
 func TestMessageThreadActivityDuplicateLedgerItemDoesNotIncrement(t *testing.T) {
@@ -618,13 +822,14 @@ func TestMessageThreadActivityMissingThreadReturnsScopedNotFound(t *testing.T) {
 func TestMessageThreadDeletedUpdatesPreserveStatusType(t *testing.T) {
 	messageID := uuid.New()
 	content := "previous message"
-	updates := messageThreadDeletedUpdates(MessageThreadDeletedUpdate{
+	status := entities.MessageStatus(entities.MessageStatusDelivered)
+	updates, err := messageThreadDeletedUpdates(MessageThreadDeletedUpdate{
 		LastMessageID:      &messageID,
 		LastMessageContent: &content,
-		LastMessageStatus:  entities.MessageStatusDelivered,
-		UpdateLastMessage:  true,
+		LastMessageStatus:  &status,
 	})
 
+	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"last_message_id":      &messageID,
 		"last_message_content": &content,
@@ -632,8 +837,16 @@ func TestMessageThreadDeletedUpdatesPreserveStatusType(t *testing.T) {
 	}, updates)
 }
 
-func TestMessageThreadDeletedUpdatesSkipLastMessageWhenNotRequested(t *testing.T) {
-	assert.Empty(t, messageThreadDeletedUpdates(MessageThreadDeletedUpdate{}))
+func TestMessageThreadDeletedUpdatesRequirePreviousContent(t *testing.T) {
+	status := entities.MessageStatus(entities.MessageStatusDelivered)
+	updates, err := messageThreadDeletedUpdates(MessageThreadDeletedUpdate{
+		DeletedMessageID:  uuid.New(),
+		LastMessageStatus: &status,
+	})
+
+	require.Error(t, err)
+	assert.Nil(t, updates)
+	assert.Contains(t, err.Error(), "content")
 }
 
 func TestMessageThreadDeletedMessageDecrementsWhenLedgerDeleted(t *testing.T) {
@@ -643,21 +856,22 @@ func TestMessageThreadDeletedMessageDecrementsWhenLedgerDeleted(t *testing.T) {
 	previousContent := "previous"
 	pool := &messageThreadTestConnPool{
 		thread: &entities.MessageThread{
-			ID:          threadID,
-			UserID:      entities.UserID("user-id"),
-			UnreadCount: 1,
+			ID:            threadID,
+			UserID:        entities.UserID("user-id"),
+			UnreadCount:   1,
+			LastMessageID: &messageID,
 		},
 	}
 	repository := newMessageThreadTestRepository(t, pool)
+	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
 
 	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
 		MessageThreadID:    threadID,
 		UserID:             entities.UserID("user-id"),
 		DeletedMessageID:   messageID,
-		UpdateLastMessage:  true,
 		LastMessageID:      &previousMessageID,
 		LastMessageContent: &previousContent,
-		LastMessageStatus:  entities.MessageStatusDelivered,
+		LastMessageStatus:  &previousStatus,
 	})
 
 	require.NoError(t, err)
@@ -678,6 +892,142 @@ func TestMessageThreadDeletedMessageDecrementsWhenLedgerDeleted(t *testing.T) {
 	assert.Contains(t, pool.statements[ledgerDelete].query, "message_id =")
 	assert.Contains(t, pool.statements[ledgerDelete].query, "message_thread_id =")
 	assert.Contains(t, pool.statements[ledgerDelete].query, "counted =")
+}
+
+func TestMessageThreadDeletedStaleReplacementPreservesNewerLastActivity(t *testing.T) {
+	threadID := uuid.New()
+	deletedMessageID := uuid.New()
+	newerMessageID := uuid.New()
+	previousMessageID := uuid.New()
+	previousContent := "previous"
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:            threadID,
+			UserID:        entities.UserID("user-id"),
+			UnreadCount:   1,
+			LastMessageID: &newerMessageID,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+	previousStatus := entities.MessageStatus(entities.MessageStatusDelivered)
+
+	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		MessageThreadID:    threadID,
+		UserID:             entities.UserID("user-id"),
+		DeletedMessageID:   deletedMessageID,
+		LastMessageID:      &previousMessageID,
+		LastMessageContent: &previousContent,
+		LastMessageStatus:  &previousStatus,
+	})
+
+	require.NoError(t, err)
+	tombstone := messageThreadStatementIndex(pool, `UPDATE "message_thread_unread_items"`)
+	decrement := messageThreadStatementIndex(pool, "GREATEST(unread_count - 1, 0)")
+	require.NotEqual(t, -1, tombstone)
+	require.NotEqual(t, -1, decrement)
+	assert.Less(t, tombstone, decrement)
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `"last_message_id"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `DELETE FROM "message_threads"`))
+}
+
+func TestMessageThreadDeletedStaleFinalMessagePreservesNewerLastActivity(t *testing.T) {
+	threadID := uuid.New()
+	deletedMessageID := uuid.New()
+	newerMessageID := uuid.New()
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:            threadID,
+			UserID:        entities.UserID("user-id"),
+			UnreadCount:   1,
+			LastMessageID: &newerMessageID,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		MessageThreadID:  threadID,
+		UserID:           entities.UserID("user-id"),
+		DeletedMessageID: deletedMessageID,
+	})
+
+	require.NoError(t, err)
+	tombstone := messageThreadStatementIndex(pool, `UPDATE "message_thread_unread_items"`)
+	decrement := messageThreadStatementIndex(pool, "GREATEST(unread_count - 1, 0)")
+	require.NotEqual(t, -1, tombstone)
+	require.NotEqual(t, -1, decrement)
+	assert.Less(t, tombstone, decrement)
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `"last_message_id"`))
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `DELETE FROM "message_threads"`))
+}
+
+func TestMessageThreadDeletedCurrentFinalMessageDeletesThread(t *testing.T) {
+	threadID := uuid.New()
+	deletedMessageID := uuid.New()
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:            threadID,
+			UserID:        entities.UserID("user-id"),
+			UnreadCount:   1,
+			LastMessageID: &deletedMessageID,
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		MessageThreadID:  threadID,
+		UserID:           entities.UserID("user-id"),
+		DeletedMessageID: deletedMessageID,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 1, pool.begins)
+	require.Equal(t, 1, pool.commits)
+	require.Zero(t, pool.rollbacks)
+	lock := messageThreadStatementIndex(pool, "FOR UPDATE")
+	tombstone := messageThreadStatementIndex(pool, `UPDATE "message_thread_unread_items"`)
+	decrement := messageThreadStatementIndex(pool, "GREATEST(unread_count - 1, 0)")
+	threadDelete := messageThreadStatementIndex(pool, `DELETE FROM "message_threads"`)
+	require.NotEqual(t, -1, lock)
+	require.NotEqual(t, -1, tombstone)
+	require.NotEqual(t, -1, decrement)
+	require.NotEqual(t, -1, threadDelete)
+	assert.Less(t, lock, tombstone)
+	assert.Less(t, tombstone, decrement)
+	assert.Less(t, decrement, threadDelete)
+}
+
+func TestMessageThreadDeletedCurrentMessageRequiresPreviousStatus(t *testing.T) {
+	threadID := uuid.New()
+	deletedMessageID := uuid.New()
+	previousMessageID := uuid.New()
+	previousContent := "previous"
+	pool := &messageThreadTestConnPool{
+		thread: &entities.MessageThread{
+			ID:            threadID,
+			UserID:        entities.UserID("user-id"),
+			LastMessageID: &deletedMessageID,
+		},
+		rowsAffected: func(query string) int64 {
+			if strings.Contains(query, `UPDATE "message_thread_unread_items"`) {
+				return 0
+			}
+			return 1
+		},
+	}
+	repository := newMessageThreadTestRepository(t, pool)
+
+	err := repository.UpdateAfterDeletedMessage(context.Background(), MessageThreadDeletedUpdate{
+		MessageThreadID:    threadID,
+		UserID:             entities.UserID("user-id"),
+		DeletedMessageID:   deletedMessageID,
+		LastMessageID:      &previousMessageID,
+		LastMessageContent: &previousContent,
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "status")
+	require.Equal(t, 1, pool.rollbacks)
+	assert.Equal(t, -1, messageThreadStatementIndex(pool, `"last_message_id"`))
 }
 
 func TestMessageThreadDeletedMessageWithoutLedgerDoesNotDecrement(t *testing.T) {

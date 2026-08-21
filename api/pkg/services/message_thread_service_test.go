@@ -255,6 +255,54 @@ func TestUpdateThreadIgnoresPhoneLookupErrorsWhenCheckingUnarchive(t *testing.T)
 	assert.False(t, captured.Unarchive)
 }
 
+func TestUpdateThreadDelegatesStaleDeliveredActivityAfterResolvingUnarchive(t *testing.T) {
+	threadID := uuid.New()
+	messageID := uuid.New()
+	phoneLoaded := false
+	var captured repositories.MessageThreadActivityUpdate
+	repository := &messageThreadRepositoryStub{
+		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+			return &entities.MessageThread{
+				ID:             threadID,
+				IsArchived:     true,
+				LastMessageID:  &messageID,
+				Status:         entities.MessageStatusDelivered,
+				OrderTimestamp: time.Date(2026, 8, 21, 10, 0, 2, 0, time.UTC),
+			}, nil
+		},
+		updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
+			captured = params
+			return nil
+		},
+	}
+	phoneRepository := &messageThreadPhoneRepositoryStub{
+		load: func(context.Context, entities.UserID, string) (*entities.Phone, error) {
+			phoneLoaded = true
+			return &entities.Phone{UnarchiveThread: true}, nil
+		},
+	}
+
+	service := newMessageThreadServiceWithPhoneForTest(repository, phoneRepository)
+	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+		UserID:         entities.UserID("user-id"),
+		Owner:          "+18005550199",
+		Contact:        "+18005550100",
+		MessageID:      messageID,
+		Content:        "stale",
+		Status:         entities.MessageStatusReceived,
+		Timestamp:      time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+		CountAsUnread:  true,
+		EventTimestamp: time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+	})
+
+	require.NoError(t, err)
+	assert.True(t, phoneLoaded)
+	assert.Equal(t, threadID, captured.MessageThreadID)
+	assert.Equal(t, messageID, captured.MessageID)
+	assert.True(t, captured.CountAsUnread)
+	assert.True(t, captured.Unarchive)
+}
+
 func TestCreateThreadSetsUnreadCountFromActivityDirection(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -356,7 +404,7 @@ func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 	assert.Equal(t, repositories.ErrCodeNotFound, stacktrace.GetCode(err))
 }
 
-func TestUpdateAfterDeletedMessageCleansUnreadLedgerForNonLastMessage(t *testing.T) {
+func TestUpdateAfterDeletedMessageDelegatesAllDecisionsToRepository(t *testing.T) {
 	threadID := uuid.New()
 	deletedMessageID := uuid.New()
 	currentLastMessageID := uuid.New()
@@ -396,15 +444,15 @@ func TestUpdateAfterDeletedMessageCleansUnreadLedgerForNonLastMessage(t *testing
 	assert.Equal(t, threadID, captured.MessageThreadID)
 	assert.Equal(t, entities.UserID("user-id"), captured.UserID)
 	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
-	assert.False(t, captured.UpdateLastMessage)
 	require.NotNil(t, captured.LastMessageID)
 	assert.Equal(t, previousMessageID, *captured.LastMessageID)
 	require.NotNil(t, captured.LastMessageContent)
 	assert.Equal(t, previousContent, *captured.LastMessageContent)
-	assert.Equal(t, previousStatus, captured.LastMessageStatus)
+	require.NotNil(t, captured.LastMessageStatus)
+	assert.Equal(t, previousStatus, *captured.LastMessageStatus)
 }
 
-func TestUpdateAfterDeletedMessageUpdatesLastMessageWhenDeletedMessageIsCurrent(t *testing.T) {
+func TestUpdateAfterDeletedMessageDoesNotUseLoadedLastMessageSnapshot(t *testing.T) {
 	threadID := uuid.New()
 	deletedMessageID := uuid.New()
 	previousMessageID := uuid.New()
@@ -438,19 +486,19 @@ func TestUpdateAfterDeletedMessageUpdatesLastMessageWhenDeletedMessageIsCurrent(
 		PreviousMessageStatus:  &previousStatus,
 		PreviousMessageContent: &previousContent,
 	})
-
 	require.NoError(t, err)
 	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
-	assert.True(t, captured.UpdateLastMessage)
+	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
 	require.NotNil(t, captured.LastMessageID)
 	assert.Equal(t, previousMessageID, *captured.LastMessageID)
-	assert.Equal(t, previousStatus, captured.LastMessageStatus)
+	require.NotNil(t, captured.LastMessageStatus)
+	assert.Equal(t, previousStatus, *captured.LastMessageStatus)
 }
 
-func TestUpdateAfterDeletedMessageDeletesThreadWhenNoPreviousMessageExists(t *testing.T) {
+func TestUpdateAfterDeletedMessageDelegatesFinalMessageDeletion(t *testing.T) {
 	threadID := uuid.New()
 	deletedMessageID := uuid.New()
-	deleted := false
+	var captured repositories.MessageThreadDeletedUpdate
 
 	repository := &messageThreadRepositoryStub{
 		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
@@ -461,14 +509,12 @@ func TestUpdateAfterDeletedMessageDeletesThreadWhenNoPreviousMessageExists(t *te
 				Contact: "+18005550100",
 			}, nil
 		},
-		delete: func(_ context.Context, userID entities.UserID, id uuid.UUID) error {
-			deleted = true
-			assert.Equal(t, entities.UserID("user-id"), userID)
-			assert.Equal(t, threadID, id)
+		delete: func(context.Context, entities.UserID, uuid.UUID) error {
+			t.Fatal("service must not delete a thread outside the repository transaction")
 			return nil
 		},
-		updateAfterDelete: func(context.Context, repositories.MessageThreadDeletedUpdate) error {
-			t.Fatal("expected whole-thread delete instead of metadata update")
+		updateAfterDelete: func(_ context.Context, params repositories.MessageThreadDeletedUpdate) error {
+			captured = params
 			return nil
 		},
 	}
@@ -482,12 +528,15 @@ func TestUpdateAfterDeletedMessageDeletesThreadWhenNoPreviousMessageExists(t *te
 	})
 
 	require.NoError(t, err)
-	assert.True(t, deleted)
+	assert.Equal(t, threadID, captured.MessageThreadID)
+	assert.Equal(t, deletedMessageID, captured.DeletedMessageID)
+	assert.Nil(t, captured.LastMessageID)
+	assert.Nil(t, captured.LastMessageContent)
 }
 
-func TestUpdateAfterDeletedMessagePropagatesFinalThreadDeleteError(t *testing.T) {
+func TestUpdateAfterDeletedMessagePropagatesRepositoryError(t *testing.T) {
 	threadID := uuid.New()
-	deleteErr := errors.New("delete failed")
+	updateErr := errors.New("update failed")
 	repository := &messageThreadRepositoryStub{
 		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
 			return &entities.MessageThread{
@@ -498,7 +547,11 @@ func TestUpdateAfterDeletedMessagePropagatesFinalThreadDeleteError(t *testing.T)
 			}, nil
 		},
 		delete: func(context.Context, entities.UserID, uuid.UUID) error {
-			return deleteErr
+			t.Fatal("service must not delete a thread outside the repository transaction")
+			return nil
+		},
+		updateAfterDelete: func(context.Context, repositories.MessageThreadDeletedUpdate) error {
+			return updateErr
 		},
 	}
 
@@ -511,8 +564,43 @@ func TestUpdateAfterDeletedMessagePropagatesFinalThreadDeleteError(t *testing.T)
 	})
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, deleteErr)
+	assert.ErrorIs(t, err, updateErr)
 	assert.Contains(t, err.Error(), threadID.String())
+}
+
+func TestUpdateAfterDeletedMessagePassesNilPreviousStatusWithoutPanicking(t *testing.T) {
+	threadID := uuid.New()
+	previousMessageID := uuid.New()
+	previousContent := "previous"
+	updateErr := errors.New("missing previous status")
+	repository := &messageThreadRepositoryStub{
+		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+			return &entities.MessageThread{
+				ID:      threadID,
+				UserID:  entities.UserID("user-id"),
+				Owner:   "+18005550199",
+				Contact: "+18005550100",
+			}, nil
+		},
+		updateAfterDelete: func(context.Context, repositories.MessageThreadDeletedUpdate) error {
+			return updateErr
+		},
+	}
+
+	service := newMessageThreadServiceForTest(repository)
+	var err error
+	require.NotPanics(t, func() {
+		err = service.UpdateAfterDeletedMessage(context.Background(), &events.MessageAPIDeletedPayload{
+			MessageID:              uuid.New(),
+			UserID:                 entities.UserID("user-id"),
+			Owner:                  "+18005550199",
+			Contact:                "+18005550100",
+			PreviousMessageID:      &previousMessageID,
+			PreviousMessageContent: &previousContent,
+		})
+	})
+	require.Error(t, err)
+	assert.ErrorIs(t, err, updateErr)
 }
 
 func TestShouldCheckUnarchive(t *testing.T) {

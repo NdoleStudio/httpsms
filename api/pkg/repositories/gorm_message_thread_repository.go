@@ -46,21 +46,27 @@ func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string
 		"last_message_content": params.Content,
 		"status":               params.Status,
 	}
-	if params.Unarchive {
-		updates["is_archived"] = false
-	}
 	return updates
 }
 
-func messageThreadDeletedUpdates(params MessageThreadDeletedUpdate) map[string]any {
-	if !params.UpdateLastMessage {
-		return map[string]any{}
+func messageThreadDeletedUpdates(params MessageThreadDeletedUpdate) (map[string]any, error) {
+	if params.LastMessageContent == nil {
+		return nil, stacktrace.NewErrorf(
+			"last message content is required when replacing deleted message [%s]",
+			params.DeletedMessageID,
+		)
+	}
+	if params.LastMessageStatus == nil {
+		return nil, stacktrace.NewErrorf(
+			"last message status is required when replacing deleted message [%s]",
+			params.DeletedMessageID,
+		)
 	}
 	return map[string]any{
 		"last_message_id":      params.LastMessageID,
 		"last_message_content": params.LastMessageContent,
-		"status":               params.LastMessageStatus,
-	}
+		"status":               *params.LastMessageStatus,
+	}, nil
 }
 
 func messageThreadStatusUpdates(params MessageThreadStatusUpdate, readAt time.Time) map[string]any {
@@ -161,18 +167,29 @@ func markUnreadItemDeleted(tx *gorm.DB, messageID uuid.UUID, threadID uuid.UUID)
 }
 
 func applyMessageThreadActivity(tx *gorm.DB, thread *entities.MessageThread, params MessageThreadActivityUpdate) error {
-	if err := tx.
-		Model(thread).
-		Where("user_id = ?", params.UserID).
-		Where("id = ?", thread.ID).
-		Updates(messageThreadActivityUpdates(params)).
-		Error; err != nil {
-		return stacktrace.Propagatef(
-			err,
-			"cannot update message activity for thread [%s] and user [%s]",
-			thread.ID,
-			params.UserID,
-		)
+	updates := make(map[string]any)
+	isStale := thread.OrderTimestamp.After(params.Timestamp)
+	isDeliveredMessage := thread.Status == entities.MessageStatusDelivered && thread.HasLastMessage(params.MessageID)
+	if !isStale && !isDeliveredMessage {
+		updates = messageThreadActivityUpdates(params)
+	}
+	if params.Unarchive {
+		updates["is_archived"] = false
+	}
+	if len(updates) != 0 {
+		if err := tx.
+			Model(thread).
+			Where("user_id = ?", params.UserID).
+			Where("id = ?", thread.ID).
+			Updates(updates).
+			Error; err != nil {
+			return stacktrace.Propagatef(
+				err,
+				"cannot update message activity for thread [%s] and user [%s]",
+				thread.ID,
+				params.UserID,
+			)
+		}
 	}
 	if !params.CountAsUnread || !params.EventTimestamp.After(thread.LastReadAt) {
 		return nil
@@ -262,14 +279,35 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 			}
 		}
 
-		if !params.UpdateLastMessage {
+		if !thread.HasLastMessage(params.DeletedMessageID) {
 			return nil
+		}
+		if params.LastMessageID == nil {
+			if err := tx.
+				Where("user_id = ?", params.UserID).
+				Where("id = ?", params.MessageThreadID).
+				Delete(&entities.MessageThread{}).
+				Error; err != nil {
+				return stacktrace.Propagatef(
+					err,
+					"cannot delete message thread [%s] for user [%s] after deleting final message [%s]",
+					params.MessageThreadID,
+					params.UserID,
+					params.DeletedMessageID,
+				)
+			}
+			return nil
+		}
+
+		updates, err := messageThreadDeletedUpdates(params)
+		if err != nil {
+			return err
 		}
 		if err := tx.
 			Model(thread).
 			Where("user_id = ?", params.UserID).
 			Where("id = ?", params.MessageThreadID).
-			Updates(messageThreadDeletedUpdates(params)).
+			Updates(updates).
 			Error; err != nil {
 			return stacktrace.Propagatef(
 				err,

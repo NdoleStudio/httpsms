@@ -101,16 +101,6 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot find thread with owner [%s], and contact [%s]. creating new thread", params.Owner, params.Contact))
 	}
 
-	if thread.OrderTimestamp.Unix() > params.Timestamp.Unix() && thread.Status != entities.MessageStatusSending && thread.HasLastMessage(params.MessageID) {
-		ctxLogger.Warn(stacktrace.NewErrorf("thread [%s] has timestamp [%s] and status [%s] which is greater than timestamp [%s] for message [%s] and status [%s]", thread.ID, thread.OrderTimestamp, thread.Status, params.Timestamp, params.MessageID, params.Status))
-		return nil
-	}
-
-	if thread.Status == entities.MessageStatusDelivered && thread.LastMessageID != nil && thread.HasLastMessage(params.MessageID) {
-		ctxLogger.Warn(stacktrace.NewErrorf("thread [%s] already has status [%s] not updating with status [%s] for message [%s]", thread.ID, thread.Status, params.Status, params.MessageID))
-		return nil
-	}
-
 	activity := repositories.MessageThreadActivityUpdate{
 		MessageThreadID: thread.ID,
 		UserID:          params.UserID,
@@ -175,33 +165,13 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot find thread for user [%s] with owner [%s], and contact [%s]", payload.UserID, payload.Owner, payload.Contact))
 	}
 
-	if payload.PreviousMessageID == nil {
-		if err = service.repository.Delete(ctx, thread.UserID, thread.ID); err != nil {
-			return service.tracer.WrapErrorSpan(
-				span,
-				stacktrace.Propagatef(
-					err,
-					"cannot delete thread with ID [%s] for user [%s] and owner [%s]",
-					thread.ID,
-					thread.UserID,
-					thread.Owner,
-				),
-			)
-		}
-		msg := fmt.Sprintf("previous message ID is nil for thread with ID [%s] and user [%s]", thread.ID, thread.UserID)
-		ctxLogger.Info(msg)
-		return nil
-	}
-
-	updateLastMessage := thread.LastMessageID != nil && *thread.LastMessageID == payload.MessageID
 	if err = service.repository.UpdateAfterDeletedMessage(ctx, repositories.MessageThreadDeletedUpdate{
 		MessageThreadID:    thread.ID,
 		UserID:             thread.UserID,
 		DeletedMessageID:   payload.MessageID,
-		UpdateLastMessage:  updateLastMessage,
 		LastMessageID:      payload.PreviousMessageID,
 		LastMessageContent: payload.PreviousMessageContent,
-		LastMessageStatus:  *payload.PreviousMessageStatus,
+		LastMessageStatus:  payload.PreviousMessageStatus,
 	}); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update thread with ID [%s] for user with ID [%s]", thread.ID, thread.UserID))
 	}

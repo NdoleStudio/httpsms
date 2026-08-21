@@ -37,10 +37,9 @@ type MessageThreadDeletedUpdate struct {
 	MessageThreadID    uuid.UUID
 	UserID             entities.UserID
 	DeletedMessageID   uuid.UUID
-	UpdateLastMessage  bool
 	LastMessageID      *uuid.UUID
 	LastMessageContent *string
-	LastMessageStatus  entities.MessageStatus
+	LastMessageStatus  *entities.MessageStatus
 }
 
 // MessageThreadRepository loads and persists an entities.MessageThread
