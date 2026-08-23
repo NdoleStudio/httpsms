@@ -145,6 +145,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
 
             val message = getMessage(applicationContext, messageID) ?: return Result.failure()
+
+            if (message.contact.isBlank()) {
+                Timber.w("message contact is blank, stopping processing")
+                handleFailed(applicationContext, messageID, "The contact phone number is empty.")
+                return Result.failure()
+            }
+
             if (!Settings.getActiveStatus(applicationContext, message.sim)) {
                 Timber.w("[${message.sim}] SIM is not active, stopping processing")
                 handleFailed(applicationContext, messageID, "Outgoing messages have been disabled on the mobile app")

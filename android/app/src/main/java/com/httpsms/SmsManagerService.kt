@@ -36,7 +36,7 @@ class SmsManagerService {
             } else {
                 context.getSystemService(SubscriptionManager::class.java)
             }
-            return localSubscriptionManager.activeSubscriptionInfoList!!.size > 1
+            return (localSubscriptionManager.activeSubscriptionInfoList?.size ?: 0) > 1
         }
     }
 
@@ -45,11 +45,38 @@ class SmsManagerService {
     }
 
     fun sendMultipartMessage(context: Context, contact: String, parts: ArrayList<String>, sim: String, sendIntents: ArrayList<PendingIntent>, deliveryIntents: ArrayList<PendingIntent>) {
-        getSmsManager(context, sim).sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+        try {
+            getSmsManager(context, sim).sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+        } catch (e: NullPointerException) {
+            if (e.message?.contains("EmergencyNumber.getNumber()") == true) {
+                Timber.w(e, "Caught EmergencyNumber NPE, falling back to default SmsManager")
+                getDefaultSmsManager(context).sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+            } else {
+                throw e
+            }
+        }
     }
 
     fun sendTextMessage(context: Context, contact: String, content: String, sim: String, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {
-        getSmsManager(context, sim).sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
+        try {
+            getSmsManager(context, sim).sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
+        } catch (e: NullPointerException) {
+            if (e.message?.contains("EmergencyNumber.getNumber()") == true) {
+                Timber.w(e, "Caught EmergencyNumber NPE, falling back to default SmsManager")
+                getDefaultSmsManager(context).sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
+            } else {
+                throw e
+            }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getDefaultSmsManager(context: Context): SmsManager {
+        return if (Build.VERSION.SDK_INT >= 31) {
+            context.getSystemService(SmsManager::class.java)
+        } else {
+            SmsManager.getDefault()
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -61,13 +88,19 @@ class SmsManagerService {
             context.getSystemService(SubscriptionManager::class.java)
         }
 
-        Timber.d("active subscription info size: [${localSubscriptionManager.activeSubscriptionInfoList!!.size}]")
-        val subscriptionId = if (sim == Constants.SIM1 && localSubscriptionManager.activeSubscriptionInfoList!!.isNotEmpty()) {
-            localSubscriptionManager.activeSubscriptionInfoList!![0].subscriptionId
-        } else if (sim == Constants.SIM2 && localSubscriptionManager.activeSubscriptionInfoList!!.size > 1) {
-            localSubscriptionManager.activeSubscriptionInfoList!![1].subscriptionId
+        val infoList = localSubscriptionManager.activeSubscriptionInfoList
+        Timber.d("active subscription info size: [${infoList?.size ?: 0}]")
+
+        val subscriptionId = if (sim == Constants.SIM1 && !infoList.isNullOrEmpty()) {
+            infoList[0].subscriptionId
+        } else if (sim == Constants.SIM2 && (infoList?.size ?: 0) > 1) {
+            infoList!![1].subscriptionId
         } else{
             SubscriptionManager.getDefaultSmsSubscriptionId()
+        }
+
+        if (subscriptionId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            return getDefaultSmsManager(context)
         }
 
         return if (Build.VERSION.SDK_INT < 31) {
