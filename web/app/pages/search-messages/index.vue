@@ -645,8 +645,7 @@ onBeforeUnmount(() => {
                     max-width: 300px;
                     word-break: break-all;
                   "
-                  >{{ item.content }}</pre
-                >
+                  >{{ item.content }}</pre>
               </template>
             </VDataTableServer>
           </VCol>
