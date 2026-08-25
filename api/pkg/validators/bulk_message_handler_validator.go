@@ -12,7 +12,6 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
@@ -31,7 +30,6 @@ type BulkMessageHandlerValidator struct {
 	userService  *services.UserService
 	logger       telemetry.Logger
 	tracer       telemetry.Tracer
-	cache        cache.Cache
 }
 
 // NewBulkMessageHandlerValidator creates a new handlers.BulkMessageHandlerValidator validator
@@ -40,14 +38,12 @@ func NewBulkMessageHandlerValidator(
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
 	userService *services.UserService,
-	appCache cache.Cache,
 ) (v *BulkMessageHandlerValidator) {
 	return &BulkMessageHandlerValidator{
 		logger:       logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:       tracer,
 		userService:  userService,
 		phoneService: phoneService,
-		cache:        appCache,
 	}
 }
 

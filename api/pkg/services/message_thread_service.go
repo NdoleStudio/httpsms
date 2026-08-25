@@ -280,17 +280,15 @@ type MessageThreadGetParams struct {
 
 // GetThreads fetches threads for an owner
 func (service *MessageThreadService) GetThreads(ctx context.Context, params MessageThreadGetParams) (*[]entities.MessageThread, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	threads, err := service.repository.Index(ctx, params.UserID, params.Owner, params.IsArchived, params.IndexParams)
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not fetch messages threads for params [%+#v]", params))
 	}
 
-	if params.WithContacts && service.contactService != nil && len(*threads) > 0 {
+	if params.WithContacts && len(*threads) > 0 {
 		contactMap, mapErr := service.contactService.GetContactMap(ctx, params.UserID)
 		if mapErr != nil {
 			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(mapErr, "cannot build contact map for user [%s]", params.UserID)))

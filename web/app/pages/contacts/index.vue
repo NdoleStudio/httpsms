@@ -14,6 +14,7 @@ import {
   mdiEmailCheckOutline,
   mdiSquareEditOutline,
   mdiPlus,
+  mdiContentSaveCheck,
 } from '@mdi/js'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -52,11 +53,11 @@ const contactsStore = useContactsStore()
 const { formatPhoneNumber, formatTimestamp, humanizeTimeShort } = useFilters()
 
 const headers = [
-  { title: 'Name', key: 'name', sortable: false },
+  { title: 'Name', key: 'name', sortable: true },
   { title: 'Phone Numbers', key: 'phone_numbers', sortable: false },
   { title: 'Emails', key: 'emails', sortable: false },
   { title: 'Created', key: 'created_at', sortable: false },
-  { title: 'Updated', key: 'updated_at', sortable: false },
+  { title: 'Updated', key: 'updated_at', sortable: true },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
@@ -75,6 +76,9 @@ const saving = ref(false)
 // Server-driven pagination state for VDataTableServer.
 const page = ref(1)
 const itemsPerPage = ref(10)
+const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([
+  { key: 'updated_at', order: 'desc' },
+])
 // initialLoadComplete gates the table's initial @update:options emit so the
 // first fetch is driven by onMounted rather than firing twice on mount.
 const initialLoadComplete = ref(false)
@@ -299,16 +303,30 @@ async function submitImport() {
 
 function fetchContacts() {
   const skip = (page.value - 1) * itemsPerPage.value
+  const sort = sortBy.value[0]
   return contactsStore
-    .loadContacts({ force: true, skip, limit: itemsPerPage.value })
+    .loadContacts({
+      force: true,
+      skip,
+      limit: itemsPerPage.value,
+      sortBy: sort?.key === 'name' ? 'name' : 'updated_at',
+      sortDescending: sort ? sort.order === 'desc' : true,
+    })
     .catch(() => {
       // The store already surfaced the failure via a notification.
     })
 }
 
-function onUpdateOptions(options: { page: number; itemsPerPage: number }) {
+function onUpdateOptions(options: {
+  page: number
+  itemsPerPage: number
+  sortBy: { key: string; order: 'asc' | 'desc' }[]
+}) {
   page.value = options.page
   itemsPerPage.value = options.itemsPerPage
+  sortBy.value = options.sortBy.length
+    ? options.sortBy
+    : [{ key: 'updated_at', order: 'desc' }]
 
   // Ignore the initial emit fired while the table mounts; onMounted owns the
   // first fetch so the request is not duplicated.
@@ -413,6 +431,7 @@ onBeforeUnmount(() => {
             variant="outlined"
             density="compact"
             clearable
+            color="primary"
             hide-details
             class="mb-4"
           />
@@ -420,9 +439,10 @@ onBeforeUnmount(() => {
           <VDataTableServer
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
+            v-model:sort-by="sortBy"
             :headers="headers"
             :header-props="{
-              class: 'text-uppercase text-medium-emphasis bg-black',
+              class: 'text-uppercase text-medium-emphasis',
             }"
             :items="contactsStore.contacts"
             :items-length="contactsStore.total"
@@ -597,6 +617,8 @@ onBeforeUnmount(() => {
             label="Name"
             variant="outlined"
             density="comfortable"
+            persistent-placeholder
+            placeholder="e.g John Doe"
             :prepend-inner-icon="mdiAccount"
             :error="formErrors.has('name')"
             :error-messages="formErrors.get('name')"
@@ -621,29 +643,33 @@ onBeforeUnmount(() => {
             :key="`phone-${index}`"
             class="d-flex align-start ga-2"
           >
-            <v-phone-input
-              v-model="phone.value"
-              v-model:country="phone.country"
-              :label="`Phone number ${index + 1}`"
-              country-label="Country"
-              placeholder="Phone number e.g 18005550199"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              persistent-placeholder
-              :error="index === 0 && formErrors.has('phone_numbers')"
-              :error-messages="
-                index === 0 ? formErrors.get('phone_numbers') : []
-              "
-            />
-            <VBtn
-              :icon="mdiClose"
-              variant="text"
-              size="small"
-              class="mt-1"
-              aria-label="Remove phone number"
-              @click="removePhoneNumber(index)"
-            />
+            <div class="mt-2" style="flex: 0 0 92%">
+              <v-phone-input
+                v-model="phone.value"
+                v-model:country="phone.country"
+                :label="`Phone number ${index + 1}`"
+                country-label="Country"
+                placeholder="Phone number e.g 18005550199"
+                variant="outlined"
+                density="comfortable"
+                color="primary"
+                persistent-placeholder
+                :error="index === 0 && formErrors.has('phone_numbers')"
+                :error-messages="
+                  index === 0 ? formErrors.get('phone_numbers') : []
+                "
+              />
+            </div>
+            <div style="flex: 0 0 8%">
+              <VBtn
+                :icon="mdiClose"
+                variant="text"
+                size="small"
+                class="mt-1"
+                aria-label="Remove phone number"
+                @click="removePhoneNumber(index)"
+              />
+            </div>
           </div>
 
           <div class="d-flex align-center mt-2 mb-1">
@@ -661,14 +687,15 @@ onBeforeUnmount(() => {
           </div>
           <div
             v-for="(email, index) in form.emails"
-            :key="`email-${index}`"
+            :key="`email-${email}-${index}`"
             class="d-flex align-start ga-2"
           >
             <VTextField
               v-model="form.emails[index]"
               :label="`Email ${index + 1}`"
-              placeholder="alice@example.com"
+              placeholder="e.g alice@example.com"
               variant="outlined"
+              persistent-placeholder
               density="comfortable"
               :prepend-inner-icon="mdiEmailOutline"
             />
@@ -722,19 +749,20 @@ onBeforeUnmount(() => {
             />
           </div>
         </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn color="warning" variant="text" @click="editDialog = false">
-            Close
-          </VBtn>
+        <VCardActions class="pb-4">
           <VBtn
             color="primary"
             variant="flat"
             :loading="saving"
             :disabled="saving"
+            :prepend-icon="mdiContentSaveCheck"
             @click="submitForm"
           >
-            Save
+            Save Contact
+          </VBtn>
+          <VSpacer />
+          <VBtn color="warning" variant="text" @click="editDialog = false">
+            Close
           </VBtn>
         </VCardActions>
       </VCard>
@@ -755,16 +783,12 @@ onBeforeUnmount(() => {
             @click="deleteDialog = false"
           />
         </VCardTitle>
-        <VCardText>
+        <VCardText class="mt-n2 text-medium-emphasis">
           Are you sure you want to delete
-          <strong>{{ pendingDelete?.name }}</strong
+          <v-code>{{ pendingDelete?.name }}</v-code
           >? This action cannot be undone.
         </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn color="warning" variant="text" @click="deleteDialog = false">
-            Close
-          </VBtn>
+        <VCardActions class="mb-2">
           <VBtn
             color="error"
             variant="flat"
@@ -773,7 +797,11 @@ onBeforeUnmount(() => {
             :disabled="saving"
             @click="confirmDelete"
           >
-            Delete
+            Delete Contact
+          </VBtn>
+          <VSpacer />
+          <VBtn color="warning" variant="text" @click="deleteDialog = false">
+            Close
           </VBtn>
         </VCardActions>
       </VCard>
@@ -795,7 +823,7 @@ onBeforeUnmount(() => {
           />
         </VCardTitle>
         <VCardText>
-          <p class="mb-4">
+          <p class="mb-4 mt-n2 text-medium-emphasis">
             Download the
             <a
               class="text-decoration-none hover:text-decoration-underline"
@@ -831,11 +859,7 @@ onBeforeUnmount(() => {
             </ul>
           </VAlert>
         </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn color="warning" variant="text" @click="importDialog = false">
-            Close
-          </VBtn>
+        <VCardActions class="pb-4">
           <VBtn
             color="primary"
             variant="flat"
@@ -845,6 +869,10 @@ onBeforeUnmount(() => {
             @click="submitImport"
           >
             Import
+          </VBtn>
+          <v-spacer />
+          <VBtn color="warning" variant="text" @click="importDialog = false">
+            Close
           </VBtn>
         </VCardActions>
       </VCard>

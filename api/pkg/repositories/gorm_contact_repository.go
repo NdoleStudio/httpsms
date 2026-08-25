@@ -101,7 +101,7 @@ func (repository *gormContactRepository) Index(ctx context.Context, userID entit
 
 	contacts := new([]entities.Contact)
 	if err := repository.scopedContactQuery(ctx, userID, params.Query).
-		Order("updated_at DESC").
+		Order(repository.contactOrder(params)).
 		Limit(params.Limit).
 		Offset(params.Skip).
 		Find(contacts).Error; err != nil {
@@ -109,6 +109,24 @@ func (repository *gormContactRepository) Index(ctx context.Context, userID entit
 	}
 
 	return contacts, nil
+}
+
+func (repository *gormContactRepository) contactOrder(params IndexParams) string {
+	if params.SortBy == "" {
+		return "updated_at DESC"
+	}
+
+	sortBy := "updated_at"
+	if params.SortBy == "name" {
+		sortBy = "name"
+	}
+
+	direction := "ASC"
+	if params.SortDescending {
+		direction = "DESC"
+	}
+
+	return fmt.Sprintf("%s %s", sortBy, direction)
 }
 
 func (repository *gormContactRepository) Count(ctx context.Context, userID entities.UserID, params IndexParams) (int64, error) {

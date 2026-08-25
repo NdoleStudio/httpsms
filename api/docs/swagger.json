@@ -272,6 +272,22 @@
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "name",
+                            "updated_at"
+                        ],
+                        "type": "string",
+                        "description": "field to sort contacts by",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "sort contacts in descending order",
+                        "name": "sort_descending",
+                        "in": "query"
+                    },
+                    {
                         "maximum": 100,
                         "minimum": 1,
                         "type": "integer",

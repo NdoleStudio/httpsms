@@ -1902,6 +1902,17 @@ paths:
         in: query
         name: query
         type: string
+      - description: field to sort contacts by
+        enum:
+        - name
+        - updated_at
+        in: query
+        name: sort_by
+        type: string
+      - description: sort contacts in descending order
+        in: query
+        name: sort_descending
+        type: boolean
       - description: number of contacts to return
         in: query
         maximum: 100

@@ -585,7 +585,6 @@ func (container *Container) MessageHandlerValidator() (validator *validators.Mes
 		container.Tracer(),
 		container.PhoneService(),
 		container.TurnstileTokenValidator(),
-		container.Cache(),
 	)
 }
 
@@ -608,7 +607,6 @@ func (container *Container) BulkMessageHandlerValidator() (validator *validators
 		container.Tracer(),
 		container.PhoneService(),
 		container.UserService(),
-		container.Cache(),
 	)
 }
 
@@ -1158,7 +1156,7 @@ func (container *Container) ContactService() (service *services.ContactService) 
 		container.Logger(),
 		container.Tracer(),
 		container.ContactRepository(),
-		container.Cache(),
+		container.InMemoryCache(),
 	)
 }
 

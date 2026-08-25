@@ -14,6 +14,8 @@ export interface LoadContactsOptions {
   force?: boolean
   skip?: number
   limit?: number
+  sortBy?: 'name' | 'updated_at'
+  sortDescending?: boolean
 }
 
 // DEFAULT_LIMIT mirrors the contacts page's initial items-per-page. It is only
@@ -33,6 +35,8 @@ export const useContactsStore = defineStore('contacts', () => {
   // refreshes reuse it so the user stays on the page they were viewing.
   let currentSkip = 0
   let currentLimit = DEFAULT_LIMIT
+  let currentSortBy: 'name' | 'updated_at' = 'updated_at'
+  let currentSortDescending = true
 
   function normalizeOptions(
     options: LoadContactsOptions | boolean,
@@ -46,13 +50,25 @@ export const useContactsStore = defineStore('contacts', () => {
   async function loadContacts(
     options: LoadContactsOptions | boolean = {},
   ): Promise<void> {
-    const { force = false, skip, limit } = normalizeOptions(options)
+    const {
+      force = false,
+      skip,
+      limit,
+      sortBy,
+      sortDescending,
+    } = normalizeOptions(options)
 
     if (skip !== undefined) {
       currentSkip = skip
     }
     if (limit !== undefined) {
       currentLimit = limit
+    }
+    if (sortBy !== undefined) {
+      currentSortBy = sortBy
+    }
+    if (sortDescending !== undefined) {
+      currentSortDescending = sortDescending
     }
 
     if (contacts.value.length > 0 && !force) return
@@ -61,9 +77,11 @@ export const useContactsStore = defineStore('contacts', () => {
     loading.value = true
     try {
       const term = search.value.trim()
-      const params: Record<string, string | number> = {
+      const params: Record<string, string | number | boolean> = {
         skip: currentSkip,
         limit: currentLimit,
+        sort_by: currentSortBy,
+        sort_descending: currentSortDescending,
       }
       if (term) {
         params.query = term

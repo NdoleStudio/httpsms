@@ -91,9 +91,10 @@ func (validator *ContactHandlerValidator) ValidateIndex(_ context.Context, reque
 	result := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
-			"limit": []string{"required", "numeric"},
-			"skip":  []string{"required", "numeric"},
-			"query": []string{"max:100"},
+			"limit":   []string{"required", "numeric"},
+			"skip":    []string{"required", "numeric"},
+			"query":   []string{"max:100"},
+			"sort_by": []string{"in:name,updated_at"},
 		},
 	}).ValidateStruct()
 

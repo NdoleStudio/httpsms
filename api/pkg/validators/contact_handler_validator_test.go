@@ -173,10 +173,15 @@ func TestContactValidator_ValidateUpdate_ValidAndInvalid(t *testing.T) {
 	assert.NotEmpty(t, invalidErrs.Get("contacts"))
 }
 
-func TestContactValidator_ValidateIndex_Bounds(t *testing.T) {
+func TestContactValidator_ValidateIndex(t *testing.T) {
 	validator := newContactValidator()
 
-	validErrs := validator.ValidateIndex(context.Background(), requests.ContactIndex{Skip: "0", Limit: "100", Query: strings.Repeat("a", 100)})
+	validErrs := validator.ValidateIndex(context.Background(), requests.ContactIndex{
+		Skip:   "0",
+		Limit:  "100",
+		Query:  strings.Repeat("a", 100),
+		SortBy: "updated_at",
+	})
 	assert.Empty(t, validErrs)
 
 	tests := []struct {
@@ -188,6 +193,7 @@ func TestContactValidator_ValidateIndex_Bounds(t *testing.T) {
 		{name: "limit too high", request: requests.ContactIndex{Skip: "0", Limit: "101"}, key: "limit"},
 		{name: "skip negative", request: requests.ContactIndex{Skip: "-1", Limit: "20"}, key: "skip"},
 		{name: "query too long", request: requests.ContactIndex{Skip: "0", Limit: "20", Query: strings.Repeat("a", 101)}, key: "query"},
+		{name: "unsupported sort field", request: requests.ContactIndex{Skip: "0", Limit: "20", SortBy: "created_at"}, key: "sort_by"},
 	}
 
 	for _, tt := range tests {

@@ -539,6 +539,8 @@ func TestContactHandler_Index_ConvertsQueryAndScopesToUser(t *testing.T) {
 	values.Set("skip", "5")
 	values.Set("limit", "25")
 	values.Set("query", "ali")
+	values.Set("sort_by", "name")
+	values.Set("sort_descending", "true")
 	req := httptest.NewRequest(http.MethodGet, "/v1/contacts?"+values.Encode(), nil)
 
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
@@ -550,6 +552,8 @@ func TestContactHandler_Index_ConvertsQueryAndScopesToUser(t *testing.T) {
 	assert.Equal(t, 5, indexParams[0].Skip)
 	assert.Equal(t, 25, indexParams[0].Limit)
 	assert.Equal(t, "ali", indexParams[0].Query)
+	assert.Equal(t, "name", indexParams[0].SortBy)
+	assert.True(t, indexParams[0].SortDescending)
 
 	payload := decodeContactHandlerPayload(t, resp)
 	assert.Equal(t, "success", payload.Status)

@@ -180,10 +180,18 @@ func TestContactIndex_SanitizeUsesDefaultsAndToIndexParams(t *testing.T) {
 	assert.Equal(t, 0, params.Skip)
 	assert.Equal(t, 20, params.Limit)
 	assert.Equal(t, "", params.Query)
+	assert.Equal(t, "", params.SortBy)
+	assert.False(t, params.SortDescending)
 }
 
 func TestContactIndex_SanitizeTrimsAndConverts(t *testing.T) {
-	request := ContactIndex{Skip: " 15 ", Limit: " 50 ", Query: " alice "}
+	request := ContactIndex{
+		Skip:           " 15 ",
+		Limit:          " 50 ",
+		Query:          " alice ",
+		SortBy:         " name ",
+		SortDescending: true,
+	}
 
 	sanitized := request.Sanitize()
 	params := sanitized.ToIndexParams()
@@ -191,7 +199,10 @@ func TestContactIndex_SanitizeTrimsAndConverts(t *testing.T) {
 	assert.Equal(t, "15", sanitized.Skip)
 	assert.Equal(t, "50", sanitized.Limit)
 	assert.Equal(t, "alice", sanitized.Query)
+	assert.Equal(t, "name", sanitized.SortBy)
 	assert.Equal(t, 15, params.Skip)
 	assert.Equal(t, 50, params.Limit)
 	assert.Equal(t, "alice", params.Query)
+	assert.Equal(t, "name", params.SortBy)
+	assert.True(t, params.SortDescending)
 }

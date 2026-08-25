@@ -36,14 +36,12 @@ func NewMessageHandlerValidator(
 	tracer telemetry.Tracer,
 	phoneService *services.PhoneService,
 	tokenValidator *TurnstileTokenValidator,
-	appCache cache.Cache,
 ) (v *MessageHandlerValidator) {
 	return &MessageHandlerValidator{
 		logger:         logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:         tracer,
 		phoneService:   phoneService,
 		tokenValidator: tokenValidator,
-		cache:          appCache,
 	}
 }
 

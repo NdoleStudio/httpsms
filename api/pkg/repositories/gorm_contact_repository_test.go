@@ -280,6 +280,47 @@ func TestGormContactRepository_Index_FiltersByUserAndQueryAcrossContactFields(t 
 	assert.Equal(t, 40, statement.args[5])
 }
 
+func TestGormContactRepository_Index_OrdersByRequestedFieldAndDirection(t *testing.T) {
+	tests := []struct {
+		name            string
+		params          IndexParams
+		expectedOrderBy string
+	}{
+		{
+			name:            "name ascending",
+			params:          IndexParams{SortBy: "name"},
+			expectedOrderBy: "ORDER BY name ASC",
+		},
+		{
+			name:            "name descending",
+			params:          IndexParams{SortBy: "name", SortDescending: true},
+			expectedOrderBy: "ORDER BY name DESC",
+		},
+		{
+			name:            "updated descending",
+			params:          IndexParams{SortBy: "updated_at", SortDescending: true},
+			expectedOrderBy: "ORDER BY updated_at DESC",
+		},
+		{
+			name:            "default",
+			params:          IndexParams{},
+			expectedOrderBy: "ORDER BY updated_at DESC",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repository, recorder := newContactTestRepo(t)
+
+			_, err := repository.Index(context.Background(), entities.UserID("user-1"), tt.params)
+
+			require.NoError(t, err)
+			statement := lastContactStatement(t, recorder)
+			assert.Contains(t, statement.query, tt.expectedOrderBy)
+		})
+	}
+}
+
 func TestGormContactRepository_FetchAll_ScopesByUserAndOrdersUpdatedAtAsc(t *testing.T) {
 	repository, recorder := newContactTestRepo(t)
 

@@ -61,6 +61,8 @@ func (h *ContactHandler) RegisterRoutes(router fiber.Router, middlewares ...fibe
 // @Produce      json
 // @Param        skip	query  int  	false	"number of contacts to skip"	minimum(0)
 // @Param        query	query  string  	false 	"filter contacts containing query"
+// @Param        sort_by	query  string  	false 	"field to sort contacts by" Enums(name, updated_at)
+// @Param        sort_descending	query  bool  	false 	"sort contacts in descending order"
 // @Param        limit	query  int  	false	"number of contacts to return"	minimum(1)	maximum(100)
 // @Success      200 	{object}	responses.ContactsResponse
 // @Failure      400	{object}	responses.BadRequest
