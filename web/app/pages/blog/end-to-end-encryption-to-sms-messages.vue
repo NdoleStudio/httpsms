@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { useDisplay } from 'vuetify'
-
 import { mdiLanguageGo, mdiLanguageJavascript } from '@mdi/js'
 import { ref } from 'vue'
 
-const { mdAndUp } = useDisplay()
+const { mdAndUp } = useVDisplay()
 
 const encryptTab = ref('javascript')
 const sendTab = ref('javascript')

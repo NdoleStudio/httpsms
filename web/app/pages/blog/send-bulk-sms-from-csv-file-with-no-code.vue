@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { useDisplay } from 'vuetify'
-
 import { mdiCommentTextMultipleOutline } from '@mdi/js'
 
-const { mdAndUp } = useDisplay()
+const { mdAndUp } = useVDisplay()
 
 definePageMeta({ layout: 'website' })
 
