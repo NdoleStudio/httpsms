@@ -85,7 +85,8 @@ func (repository *gormContactRepository) Load(ctx context.Context, userID entiti
 func (repository *gormContactRepository) scopedContactQuery(ctx context.Context, userID entities.UserID, query string) *gorm.DB {
 	scoped := repository.db.WithContext(ctx).Model(&entities.Contact{}).Where("user_id = ?", userID)
 	if len(query) > 0 {
-		queryPattern := "%" + query + "%"
+		escaped := strings.NewReplacer(`%`, `\%`, `_`, `\_`).Replace(query)
+		queryPattern := "%" + escaped + "%"
 		scoped = scoped.Where(
 			repository.db.WithContext(ctx).Where("name ILIKE ?", queryPattern).
 				Or("array_to_string(emails, ',') ILIKE ?", queryPattern).
