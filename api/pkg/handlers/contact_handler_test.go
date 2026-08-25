@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/middlewares"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -22,10 +21,10 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/httpsms/pkg/validators"
 	"github.com/NdoleStudio/stacktrace"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	ttlCache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -122,7 +121,7 @@ func (r *contactHandlerFakeRepo) Count(_ context.Context, _ entities.UserID, par
 	return r.countResult, nil
 }
 
-func (r *contactHandlerFakeRepo) FetchAll(context.Context, entities.UserID) (*[]entities.Contact, error) {
+func (r *contactHandlerFakeRepo) FetchByPhoneNumbers(context.Context, entities.UserID, []string) (*[]entities.Contact, error) {
 	out := []entities.Contact{}
 	return &out, nil
 }
@@ -170,8 +169,13 @@ func newContactHandlerTestAppWithEntitlements(
 ) *fiber.App {
 	logger := &messageThreadHandlerNoopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	appCache := cache.NewMemoryCache(tracer, ttlCache.New(time.Minute, time.Minute))
-	service := services.NewContactService(logger, tracer, repo, appCache)
+	contactCache, err := ristretto.NewCache[string, services.ContactCacheEntry](&ristretto.Config[string, services.ContactCacheEntry]{
+		MaxCost: 100, NumCounters: 1_000, BufferItems: 64,
+	})
+	if err != nil {
+		panic(err)
+	}
+	service := services.NewContactService(logger, tracer, repo, contactCache)
 	entitlementService := services.NewEntitlementService(
 		logger,
 		tracer,
@@ -640,8 +644,12 @@ func TestContactHandler_Index_InvalidLimit_ReturnsUnprocessableEntity(t *testing
 func TestContactService_WiresIntoMessageThreadService(t *testing.T) {
 	logger := &messageThreadHandlerNoopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	appCache := cache.NewMemoryCache(tracer, ttlCache.New(time.Minute, time.Minute))
-	contactService := services.NewContactService(logger, tracer, &contactHandlerFakeRepo{}, appCache)
+	contactCache, err := ristretto.NewCache[string, services.ContactCacheEntry](&ristretto.Config[string, services.ContactCacheEntry]{
+		MaxCost: 100, NumCounters: 1_000, BufferItems: 64,
+	})
+	require.NoError(t, err)
+	t.Cleanup(contactCache.Close)
+	contactService := services.NewContactService(logger, tracer, &contactHandlerFakeRepo{}, contactCache)
 
 	// If this compiles and runs, the ContactService satisfies the
 	// contactMapProvider interface expected by NewMessageThreadService.

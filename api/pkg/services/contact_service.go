@@ -2,30 +2,46 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
-	"github.com/NdoleStudio/httpsms/pkg/cache"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/uuid"
 )
 
-// contactMapCacheTTL bounds staleness of the cached phone-number -> contact map.
-// A 24h ceiling lets self-healing kick in even if an invalidation write is ever lost.
-const contactMapCacheTTL = 24 * time.Hour
+// contactCacheTTL bounds staleness if an invalidation is ever missed.
+const (
+	contactMapCacheTTL               = 24 * time.Hour
+	contactGenerationCleanupInterval = time.Hour
+)
 
-// ContactService owns contact CRUD and the cached phone-number-to-contact map
-// used by higher-level services (e.g. GetThreads) to resolve display names.
+// ContactCacheEntry stores a contact together with its user's cache generation.
+type ContactCacheEntry struct {
+	contact    *entities.Contact
+	generation uint64
+}
+
+type contactGeneration struct {
+	value      uint64
+	lastAccess time.Time
+}
+
+// ContactService owns contact CRUD and phone-number contact lookups.
 type ContactService struct {
 	service
-	logger     telemetry.Logger
-	tracer     telemetry.Tracer
-	repository repositories.ContactRepository
-	cache      cache.Cache
+	logger                telemetry.Logger
+	tracer                telemetry.Tracer
+	repository            repositories.ContactRepository
+	cache                 *ristretto.Cache[string, ContactCacheEntry]
+	generationMu          sync.Mutex
+	generations           map[entities.UserID]contactGeneration
+	nextGeneration        uint64
+	lastGenerationCleanup time.Time
 }
 
 // NewContactService creates a new ContactService.
@@ -33,30 +49,87 @@ func NewContactService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	repository repositories.ContactRepository,
-	appCache cache.Cache,
+	contactCache *ristretto.Cache[string, ContactCacheEntry],
 ) (s *ContactService) {
 	return &ContactService{
-		logger:     logger.WithService(fmt.Sprintf("%T", s)),
-		tracer:     tracer,
-		repository: repository,
-		cache:      appCache,
+		logger:      logger.WithService(fmt.Sprintf("%T", s)),
+		tracer:      tracer,
+		repository:  repository,
+		cache:       contactCache,
+		generations: make(map[entities.UserID]contactGeneration),
 	}
 }
 
-func (service *ContactService) cacheKey(userID entities.UserID) string {
-	return fmt.Sprintf("contacts.map.%s", userID)
+func (service *ContactService) cacheKey(userID entities.UserID, phoneNumber string) string {
+	return fmt.Sprintf("%s|%s", userID, phoneNumber)
 }
 
-// CreateMany persists one or many contacts in a single batch and invalidates the cached map.
+func (service *ContactService) generation(userID entities.UserID) uint64 {
+	now := time.Now()
+	service.generationMu.Lock()
+	defer service.generationMu.Unlock()
+
+	service.expireGenerationsLocked(now)
+	if generation, ok := service.generations[userID]; ok {
+		generation.lastAccess = now
+		service.generations[userID] = generation
+		return generation.value
+	}
+
+	service.nextGeneration++
+	service.generations[userID] = contactGeneration{
+		value:      service.nextGeneration,
+		lastAccess: now,
+	}
+	return service.nextGeneration
+}
+
+func (service *ContactService) advanceGeneration(userID entities.UserID) {
+	now := time.Now()
+	service.generationMu.Lock()
+	defer service.generationMu.Unlock()
+
+	service.expireGenerationsLocked(now)
+	service.nextGeneration++
+	service.generations[userID] = contactGeneration{
+		value:      service.nextGeneration,
+		lastAccess: now,
+	}
+}
+
+func (service *ContactService) expireGenerations(now time.Time) {
+	service.generationMu.Lock()
+	defer service.generationMu.Unlock()
+	service.expireGenerationsLocked(now)
+}
+
+func (service *ContactService) expireGenerationsLocked(now time.Time) {
+	if !service.lastGenerationCleanup.IsZero() &&
+		now.Sub(service.lastGenerationCleanup) < contactGenerationCleanupInterval {
+		return
+	}
+	for userID, generation := range service.generations {
+		if now.Sub(generation.lastAccess) >= contactMapCacheTTL {
+			delete(service.generations, userID)
+		}
+	}
+	service.lastGenerationCleanup = now
+}
+
+// CreateMany persists one or many contacts in a single batch.
 func (service *ContactService) CreateMany(ctx context.Context, userID entities.UserID, contacts []*entities.Contact) error {
-	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	if err := service.repository.Store(ctx, contacts); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store [%d] contacts for user [%s]", len(contacts), userID))
 	}
 
-	service.invalidate(ctx, ctxLogger, userID)
+	phoneNumbers := make([]string, 0)
+	for _, contact := range contacts {
+		phoneNumbers = append(phoneNumbers, contact.PhoneNumbers...)
+	}
+	service.invalidate(userID, phoneNumbers)
 	return nil
 }
 
@@ -98,109 +171,118 @@ func (service *ContactService) Count(ctx context.Context, userID entities.UserID
 	return total, nil
 }
 
-// Update persists changes to a contact and invalidates the cached map.
-func (service *ContactService) Update(ctx context.Context, contact *entities.Contact) error {
-	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+// Update persists changes to a contact and invalidates its old and new numbers.
+func (service *ContactService) Update(ctx context.Context, contact *entities.Contact, previousPhoneNumbers []string) error {
+	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	if err := service.repository.Update(ctx, contact); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update contact [%s] for user [%s]", contact.ID, contact.UserID))
 	}
 
-	service.invalidate(ctx, ctxLogger, contact.UserID)
+	phoneNumbers := make([]string, 0, len(previousPhoneNumbers)+len(contact.PhoneNumbers))
+	phoneNumbers = append(phoneNumbers, previousPhoneNumbers...)
+	phoneNumbers = append(phoneNumbers, contact.PhoneNumbers...)
+	service.invalidate(contact.UserID, phoneNumbers)
 	return nil
 }
 
-// Delete removes a contact scoped to the user and invalidates the cached map.
+// Delete removes a contact scoped to the user and invalidates its phone numbers.
 func (service *ContactService) Delete(ctx context.Context, userID entities.UserID, contactID uuid.UUID) error {
-	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
+
+	contact, err := service.repository.Load(ctx, userID, contactID)
+	if err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, stacktrace.GetCode(err), "cannot load contact [%s] for user [%s] before delete", contactID, userID))
+	}
 
 	if err := service.repository.Delete(ctx, userID, contactID); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete contact [%s] for user [%s]", contactID, userID))
 	}
 
-	service.invalidate(ctx, ctxLogger, userID)
+	service.invalidate(userID, contact.PhoneNumbers)
 	return nil
 }
 
-// DeleteAllForUser removes every contact owned by a user and invalidates the cached map.
+// DeleteAllForUser removes every contact owned by a user and clears cached contacts.
 func (service *ContactService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
-	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
 	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all contacts for user [%s]", userID))
 	}
 
-	service.invalidate(ctx, ctxLogger, userID)
+	service.invalidate(userID, nil)
 	return nil
 }
 
-// GetContactMap returns a phone_number -> *Contact map for the given user, backed by a per-user cache.
-// FetchAll orders by updated_at ASC, so map construction naturally lets the most-recently-updated
-// contact win when two contacts share a phone number.
-func (service *ContactService) GetContactMap(ctx context.Context, userID entities.UserID) (map[string]*entities.Contact, error) {
+// GetContactMap resolves only the requested phone numbers. Each contact is
+// cached independently by user and phone number.
+func (service *ContactService) GetContactMap(ctx context.Context, userID entities.UserID, phoneNumbers []string) (map[string]*entities.Contact, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	key := service.cacheKey(userID)
-
-	raw, cacheErr := service.cache.Get(ctx, key)
-	switch {
-	case cacheErr != nil:
-		// The Cache interface has no typed miss signal, so a Get error is
-		// treated as "no cached value, rebuild from source". This is expected
-		// on cold starts, so log at Debug — a real fault surfaces via the
-		// subsequent repository/set calls or via cache-level metrics.
-		ctxLogger.Debug(fmt.Sprintf("contact map cache miss for user [%s]: %s", userID, cacheErr.Error()))
-	case raw == "":
-		// Empty string is the invalidation marker written by mutations.
-		ctxLogger.Debug(fmt.Sprintf("contact map cache invalidated for user [%s], rebuilding", userID))
-	default:
-		result := map[string]*entities.Contact{}
-		if err := json.Unmarshal([]byte(raw), &result); err != nil {
-			ctxLogger.Error(stacktrace.Propagatef(err, "cannot unmarshal contact map cache for user [%s], rebuilding", userID))
-		} else {
-			return result, nil
+	generation := service.generation(userID)
+	result := make(map[string]*entities.Contact, len(phoneNumbers))
+	missing := make([]string, 0, len(phoneNumbers))
+	missingSet := make(map[string]struct{}, len(phoneNumbers))
+	requested := make(map[string]struct{}, len(phoneNumbers))
+	for _, phoneNumber := range phoneNumbers {
+		if _, seen := requested[phoneNumber]; seen {
+			continue
 		}
-	}
-
-	contacts, err := service.repository.FetchAll(ctx, userID)
-	if err != nil {
-		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch contacts to build map for user [%s]", userID))
-	}
-
-	result := make(map[string]*entities.Contact, len(*contacts))
-	for index := range *contacts {
-		// Take a fresh copy of the slice element so the map holds a stable pointer
-		// that does not alias the underlying slice storage.
-		contact := (*contacts)[index]
-		for _, number := range contact.PhoneNumbers {
-			result[number] = &contact
+		requested[phoneNumber] = struct{}{}
+		key := service.cacheKey(userID, phoneNumber)
+		if entry, found := service.cache.Get(key); found {
+			if entry.generation == generation {
+				if entry.contact != nil {
+					result[phoneNumber] = entry.contact
+				}
+				continue
+			}
+			service.cache.Del(key)
 		}
+		missing = append(missing, phoneNumber)
+		missingSet[phoneNumber] = struct{}{}
 	}
 
-	encoded, err := json.Marshal(result)
-	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot marshal contact map cache payload for user [%s]", userID))
+	if len(missing) == 0 {
 		return result, nil
 	}
-	if err := service.cache.Set(ctx, key, string(encoded), contactMapCacheTTL); err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot populate contact map cache for user [%s]", userID))
+
+	contacts, err := service.repository.FetchByPhoneNumbers(ctx, userID, missing)
+	if err != nil {
+		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch contacts by phone numbers for user [%s]", userID))
+	}
+
+	for index := range *contacts {
+		contact := (*contacts)[index]
+		for _, phoneNumber := range contact.PhoneNumbers {
+			if _, requested := missingSet[phoneNumber]; requested {
+				result[phoneNumber] = &contact
+			}
+		}
+	}
+
+	if service.generation(userID) == generation {
+		for _, phoneNumber := range missing {
+			contact := result[phoneNumber]
+			entry := ContactCacheEntry{contact: contact, generation: generation}
+			if accepted := service.cache.SetWithTTL(service.cacheKey(userID, phoneNumber), entry, 1, contactMapCacheTTL); !accepted {
+				ctxLogger.Error(stacktrace.NewErrorf("cannot cache contact lookup for user [%s] and phone number [%s]", userID, phoneNumber))
+			}
+		}
 	}
 
 	return result, nil
 }
 
-// invalidate writes an empty marker under the user's cache key. The Cache
-// interface has no Delete; the marker is treated as a rebuild trigger by
-// GetContactMap. Failures are logged at Error but do not fail the calling
-// mutation: the DB write already succeeded, and the 24h TTL bounds staleness.
-// See docs in contact_service_test.go / task-6-report.md for the rationale.
-func (service *ContactService) invalidate(ctx context.Context, ctxLogger telemetry.Logger, userID entities.UserID) {
-	key := service.cacheKey(userID)
-	if err := service.cache.Set(ctx, key, "", contactMapCacheTTL); err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot invalidate contact map cache for user [%s] with key [%s]", userID, key))
+func (service *ContactService) invalidate(userID entities.UserID, phoneNumbers []string) {
+	service.advanceGeneration(userID)
+	service.cache.Wait()
+	for _, phoneNumber := range phoneNumbers {
+		service.cache.Del(service.cacheKey(userID, phoneNumber))
 	}
 }

@@ -16,7 +16,7 @@ import (
 )
 
 type contactMapProvider interface {
-	GetContactMap(ctx context.Context, userID entities.UserID) (map[string]*entities.Contact, error)
+	GetContactMap(ctx context.Context, userID entities.UserID, phoneNumbers []string) (map[string]*entities.Contact, error)
 }
 
 // MessageThreadService is handles message requests
@@ -289,7 +289,12 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 	}
 
 	if params.WithContacts && len(*threads) > 0 {
-		contactMap, mapErr := service.contactService.GetContactMap(ctx, params.UserID)
+		phoneNumbers := make([]string, 0, len(*threads))
+		for index := range *threads {
+			phoneNumbers = append(phoneNumbers, (*threads)[index].Contact)
+		}
+
+		contactMap, mapErr := service.contactService.GetContactMap(ctx, params.UserID, phoneNumbers)
 		if mapErr != nil {
 			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(mapErr, "cannot build contact map for user [%s]", params.UserID)))
 		} else {

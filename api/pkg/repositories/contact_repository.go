@@ -25,8 +25,9 @@ type ContactRepository interface {
 	// name/emails/phone_numbers filter as Index, ignoring pagination.
 	Count(ctx context.Context, userID entities.UserID, params IndexParams) (int64, error)
 
-	// FetchAll returns every contact for a user ordered by updated_at ascending.
-	FetchAll(ctx context.Context, userID entities.UserID) (*[]entities.Contact, error)
+	// FetchByPhoneNumbers returns contacts containing at least one requested
+	// phone number, ordered by updated_at ascending.
+	FetchByPhoneNumbers(ctx context.Context, userID entities.UserID, phoneNumbers []string) (*[]entities.Contact, error)
 
 	// Delete a contact by ID for a user.
 	Delete(ctx context.Context, userID entities.UserID, contactID uuid.UUID) error

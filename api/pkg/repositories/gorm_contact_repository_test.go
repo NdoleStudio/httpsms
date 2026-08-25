@@ -321,16 +321,21 @@ func TestGormContactRepository_Index_OrdersByRequestedFieldAndDirection(t *testi
 	}
 }
 
-func TestGormContactRepository_FetchAll_ScopesByUserAndOrdersUpdatedAtAsc(t *testing.T) {
+func TestGormContactRepository_FetchByPhoneNumbers_ScopesByUserAndRequestedNumbers(t *testing.T) {
 	repository, recorder := newContactTestRepo(t)
 
-	_, err := repository.FetchAll(context.Background(), entities.UserID("user-1"))
+	_, err := repository.FetchByPhoneNumbers(
+		context.Background(),
+		entities.UserID("user-1"),
+		[]string{"+18005550199", "+18005550100"},
+	)
 
 	require.NoError(t, err)
 	statement := lastContactStatement(t, recorder)
-	assert.Equal(t, `SELECT * FROM "contacts" WHERE user_id = $1 ORDER BY updated_at ASC`, statement.query)
-	require.Len(t, statement.args, 1)
+	assert.Equal(t, `SELECT * FROM "contacts" WHERE user_id = $1 AND phone_numbers && $2 ORDER BY updated_at ASC`, statement.query)
+	require.Len(t, statement.args, 2)
 	assert.Equal(t, entities.UserID("user-1"), statement.args[0])
+	assert.Equal(t, &pq.StringArray{"+18005550199", "+18005550100"}, statement.args[1])
 }
 
 func TestGormContactRepository_Delete_ScopesByUserAndContactID(t *testing.T) {

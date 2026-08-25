@@ -36,7 +36,7 @@ type messageThreadHandlerContactProviderStub struct {
 	calls    int
 }
 
-func (stub *messageThreadHandlerContactProviderStub) GetContactMap(context.Context, entities.UserID) (map[string]*entities.Contact, error) {
+func (stub *messageThreadHandlerContactProviderStub) GetContactMap(context.Context, entities.UserID, []string) (map[string]*entities.Contact, error) {
 	stub.calls++
 	return stub.contacts, nil
 }

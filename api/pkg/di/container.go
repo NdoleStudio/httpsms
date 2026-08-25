@@ -84,18 +84,20 @@ import (
 
 // Container is used to resolve services at runtime
 type Container struct {
-	projectID            string
-	db                   *gorm.DB
-	dedicatedDB          *gorm.DB
-	mongoDB              *mongoDriver.Database
-	version              string
-	app                  *fiber.App
-	eventDispatcher      *services.EventDispatcher
-	logger               telemetry.Logger
-	attachmentRepository repositories.AttachmentRepository
-	userRistrettoCache   *ristretto.Cache[string, entities.AuthContext]
-	phoneRistrettoCache  *ristretto.Cache[string, *entities.Phone]
-	inMemoryCache        cache.Cache
+	projectID             string
+	db                    *gorm.DB
+	dedicatedDB           *gorm.DB
+	mongoDB               *mongoDriver.Database
+	version               string
+	app                   *fiber.App
+	eventDispatcher       *services.EventDispatcher
+	logger                telemetry.Logger
+	attachmentRepository  repositories.AttachmentRepository
+	contactService        *services.ContactService
+	userRistrettoCache    *ristretto.Cache[string, entities.AuthContext]
+	phoneRistrettoCache   *ristretto.Cache[string, *entities.Phone]
+	contactRistrettoCache *ristretto.Cache[string, services.ContactCacheEntry]
+	inMemoryCache         cache.Cache
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -1152,13 +1154,17 @@ func (container *Container) MessageThreadService() (service *services.MessageThr
 
 // ContactService creates a new instance of services.ContactService
 func (container *Container) ContactService() (service *services.ContactService) {
+	if container.contactService != nil {
+		return container.contactService
+	}
 	container.logger.Debug(fmt.Sprintf("creating %T", service))
-	return services.NewContactService(
+	container.contactService = services.NewContactService(
 		container.Logger(),
 		container.Tracer(),
 		container.ContactRepository(),
-		container.InMemoryCache(),
+		container.ContactRistrettoCache(),
 	)
+	return container.contactService
 }
 
 // EmailNotificationService creates a new instance of services.EmailNotificationService
@@ -1839,6 +1845,24 @@ func (container *Container) PhoneRistrettoCache() *ristretto.Cache[string, *enti
 	}
 	container.phoneRistrettoCache = ristrettoCache
 	return container.phoneRistrettoCache
+}
+
+// ContactRistrettoCache creates an in-memory cache keyed by user and phone number.
+func (container *Container) ContactRistrettoCache() *ristretto.Cache[string, services.ContactCacheEntry] {
+	if container.contactRistrettoCache != nil {
+		return container.contactRistrettoCache
+	}
+	container.logger.Debug(fmt.Sprintf("creating %T", container.contactRistrettoCache))
+	ristrettoCache, err := ristretto.NewCache[string, services.ContactCacheEntry](&ristretto.Config[string, services.ContactCacheEntry]{
+		MaxCost:     5000,
+		NumCounters: 5000 * 10,
+		BufferItems: 64,
+	})
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagatef(err, "cannot create contact ristretto cache"))
+	}
+	container.contactRistrettoCache = ristrettoCache
+	return container.contactRistrettoCache
 }
 
 // UserRistrettoCache creates an in-memory *ristretto.Cache[string, entities.AuthContext]

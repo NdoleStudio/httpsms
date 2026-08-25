@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"sync"
 	"testing"
@@ -12,72 +11,13 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 )
-
-// --- fake cache -------------------------------------------------------------
-
-type fakeCache struct {
-	mu     sync.Mutex
-	store  map[string]string
-	getErr error
-	setErr error
-	sets   []cacheSetCall
-	gets   int
-}
-
-type cacheSetCall struct {
-	key   string
-	value string
-	ttl   time.Duration
-}
-
-func newFakeCache() *fakeCache { return &fakeCache{store: map[string]string{}} }
-
-func (c *fakeCache) Get(_ context.Context, key string) (string, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.gets++
-	if c.getErr != nil {
-		return "", c.getErr
-	}
-	value, ok := c.store[key]
-	if !ok {
-		return "", stacktrace.NewErrorf("no item found in cache with key [%s]", key)
-	}
-	return value, nil
-}
-
-func (c *fakeCache) Set(_ context.Context, key, value string, ttl time.Duration) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.sets = append(c.sets, cacheSetCall{key: key, value: value, ttl: ttl})
-	if c.setErr != nil {
-		return c.setErr
-	}
-	c.store[key] = value
-	return nil
-}
-
-// setsFor returns the recorded Set calls for a given key.
-func (c *fakeCache) setsFor(key string) []cacheSetCall {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	var out []cacheSetCall
-	for _, s := range c.sets {
-		if s.key == key {
-			out = append(out, s)
-		}
-	}
-	return out
-}
 
 // --- fake repository --------------------------------------------------------
 
@@ -93,7 +33,7 @@ type fakeContactRepo struct {
 	countCalls     []indexCall
 	deleteCalls    []deleteCall
 	deleteAllCalls []entities.UserID
-	fetchAll       int
+	fetchCalls     []fetchCall
 
 	storeErr     error
 	updateErr    error
@@ -123,6 +63,33 @@ type deleteCall struct {
 	id     uuid.UUID
 }
 
+type fetchCall struct {
+	userID       entities.UserID
+	phoneNumbers []string
+}
+
+type blockingContactRepo struct {
+	*fakeContactRepo
+	fetchStarted chan struct{}
+	releaseFetch chan struct{}
+	fetchOnce    sync.Once
+}
+
+func (r *blockingContactRepo) FetchByPhoneNumbers(ctx context.Context, userID entities.UserID, phoneNumbers []string) (*[]entities.Contact, error) {
+	var captured []entities.Contact
+	r.fetchOnce.Do(func() {
+		r.fakeContactRepo.mu.Lock()
+		captured = append(captured, *r.fakeContactRepo.contacts[0])
+		r.fakeContactRepo.mu.Unlock()
+		close(r.fetchStarted)
+		<-r.releaseFetch
+	})
+	if captured != nil {
+		return &captured, nil
+	}
+	return r.fakeContactRepo.FetchByPhoneNumbers(ctx, userID, phoneNumbers)
+}
+
 func (r *fakeContactRepo) Store(_ context.Context, contacts []*entities.Contact) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -142,6 +109,13 @@ func (r *fakeContactRepo) Update(_ context.Context, contact *entities.Contact) e
 	r.updateCalls = append(r.updateCalls, contact)
 	if r.updateErr != nil {
 		return r.updateErr
+	}
+	for index := range r.contacts {
+		if r.contacts[index].ID == contact.ID && r.contacts[index].UserID == contact.UserID {
+			clone := *contact
+			r.contacts[index] = &clone
+			break
+		}
 	}
 	return nil
 }
@@ -185,17 +159,33 @@ func (r *fakeContactRepo) Count(_ context.Context, userID entities.UserID, param
 	return r.countResult, nil
 }
 
-func (r *fakeContactRepo) FetchAll(_ context.Context, _ entities.UserID) (*[]entities.Contact, error) {
+func (r *fakeContactRepo) FetchByPhoneNumbers(_ context.Context, userID entities.UserID, phoneNumbers []string) (*[]entities.Contact, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.fetchAll++
+	r.fetchCalls = append(r.fetchCalls, fetchCall{
+		userID:       userID,
+		phoneNumbers: append([]string{}, phoneNumbers...),
+	})
 	if r.fetchErr != nil {
 		return nil, r.fetchErr
 	}
-	out := make([]entities.Contact, 0, len(r.contacts))
+	requested := make(map[string]struct{}, len(phoneNumbers))
+	for _, phoneNumber := range phoneNumbers {
+		requested[phoneNumber] = struct{}{}
+	}
+
+	out := make([]entities.Contact, 0)
 	for _, c := range r.contacts {
-		out = append(out, *c)
+		if c.UserID != userID {
+			continue
+		}
+		for _, phoneNumber := range c.PhoneNumbers {
+			if _, ok := requested[phoneNumber]; ok {
+				out = append(out, *c)
+				break
+			}
+		}
 	}
 	return &out, nil
 }
@@ -213,10 +203,18 @@ func (r *fakeContactRepo) DeleteAllForUser(_ context.Context, userID entities.Us
 	defer r.mu.Unlock()
 
 	r.deleteAllCalls = append(r.deleteAllCalls, userID)
-	return r.deleteAllErr
+	if r.deleteAllErr != nil {
+		return r.deleteAllErr
+	}
+	remaining := r.contacts[:0]
+	for _, contact := range r.contacts {
+		if contact.UserID != userID {
+			remaining = append(remaining, contact)
+		}
+	}
+	r.contacts = remaining
+	return nil
 }
-
-// --- recording logger -------------------------------------------------------
 
 type recordingLogger struct {
 	*noopLogger
@@ -261,309 +259,204 @@ func (l *recordingLogger) WithSpan(_ trace.SpanContext) telemetry.Logger {
 	return l
 }
 
-func (l *recordingLogger) errorCount() int {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	return len(l.errors)
-}
-
 // --- helpers ---------------------------------------------------------------
 
-func newContactServiceForTest(t *testing.T, repo repositories.ContactRepository, appCache *fakeCache, logger telemetry.Logger) *ContactService {
+func newContactCache(t *testing.T) *ristretto.Cache[string, ContactCacheEntry] {
+	t.Helper()
+
+	contactCache, err := ristretto.NewCache[string, ContactCacheEntry](&ristretto.Config[string, ContactCacheEntry]{
+		MaxCost:     100,
+		NumCounters: 1_000,
+		BufferItems: 64,
+	})
+	require.NoError(t, err)
+	t.Cleanup(contactCache.Close)
+	return contactCache
+}
+
+func newContactServiceForTest(t *testing.T, repo repositories.ContactRepository, logger telemetry.Logger) *ContactService {
 	t.Helper()
 	if logger == nil {
 		logger = &noopLogger{}
 	}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	return NewContactService(logger, tracer, repo, appCache)
+	return NewContactService(logger, tracer, repo, newContactCache(t))
 }
 
 // --- tests -----------------------------------------------------------------
 
-func TestContactService_GetContactMap_TieBreakMostRecentlyUpdatedWins(t *testing.T) {
-	older := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "Old", PhoneNumbers: pq.StringArray{"+18005550199"}, UpdatedAt: time.Now().Add(-time.Hour)}
-	newer := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "New", PhoneNumbers: pq.StringArray{"+18005550199"}, UpdatedAt: time.Now()}
-	repo := &fakeContactRepo{contacts: []*entities.Contact{older, newer}}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
-
-	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	require.NotNil(t, result["+18005550199"])
-	assert.Equal(t, "New", result["+18005550199"].Name)
-	assert.Equal(t, newer.ID, result["+18005550199"].ID)
-}
-
-func TestContactService_GetContactMap_AllPhoneNumbersMapToOneContact(t *testing.T) {
-	contact := &entities.Contact{
-		ID:           uuid.New(),
-		UserID:       "u1",
-		Name:         "Alice",
-		PhoneNumbers: pq.StringArray{"+18005550199", "+18005550100", "+18005550111"},
-	}
-	repo := &fakeContactRepo{contacts: []*entities.Contact{contact}}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
-
-	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	for _, num := range contact.PhoneNumbers {
-		got, ok := result[num]
-		require.True(t, ok, "missing entry for %s", num)
-		assert.Equal(t, contact.ID, got.ID)
-		assert.Equal(t, "Alice", got.Name)
-	}
-}
-
-func TestContactService_GetContactMap_NoCollisionDistinctPointersPerContact(t *testing.T) {
-	a := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}, UpdatedAt: time.Now().Add(-2 * time.Hour)}
-	b := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "Bob", PhoneNumbers: pq.StringArray{"+18005550100"}, UpdatedAt: time.Now().Add(-time.Hour)}
-	c := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "Carol", PhoneNumbers: pq.StringArray{"+18005550111"}, UpdatedAt: time.Now()}
-	repo := &fakeContactRepo{contacts: []*entities.Contact{a, b, c}}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
-
-	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	require.Len(t, result, 3)
-	assert.Equal(t, "Alice", result["+18005550199"].Name)
-	assert.Equal(t, "Bob", result["+18005550100"].Name)
-	assert.Equal(t, "Carol", result["+18005550111"].Name)
-
-	// Each entry must point to a stable, independent value.
-	assert.NotSame(t, result["+18005550199"], result["+18005550100"])
-	assert.NotSame(t, result["+18005550100"], result["+18005550111"])
-
-	// Mutating the returned pointer must not corrupt other entries.
-	result["+18005550199"].Name = "Mutated"
-	assert.Equal(t, "Bob", result["+18005550100"].Name)
-	assert.Equal(t, "Carol", result["+18005550111"].Name)
-}
-
-func TestContactService_GetContactMap_CacheHitAvoidsFetchAll(t *testing.T) {
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{
-		ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"},
-	}}}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
-
-	_, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-	_, err = service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, repo.fetchAll, "second call must hit cache")
-}
-
-func TestContactService_GetContactMap_EmptyMarkerTriggersRebuild(t *testing.T) {
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{
-		ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"},
-	}}}
-	appCache := newFakeCache()
-	// Pre-seed the invalidation marker.
-	require.NoError(t, appCache.Set(context.Background(), "contacts.map.u1", "", time.Hour))
-	logger := newRecordingLogger()
-	service := newContactServiceForTest(t, repo, appCache, logger)
-
-	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, repo.fetchAll, "empty marker must force rebuild")
-	assert.Equal(t, "Alice", result["+18005550199"].Name)
-	assert.Equal(t, 0, logger.errorCount(), "empty marker rebuild must not log an error")
-}
-
-func TestContactService_GetContactMap_CorruptCacheRebuildsAndLogs(t *testing.T) {
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{
-		ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"},
-	}}}
-	appCache := newFakeCache()
-	require.NoError(t, appCache.Set(context.Background(), "contacts.map.u1", "not-json{", time.Hour))
-	logger := newRecordingLogger()
-	service := newContactServiceForTest(t, repo, appCache, logger)
-
-	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, repo.fetchAll, "corrupt cache must force rebuild")
-	assert.Equal(t, "Alice", result["+18005550199"].Name)
-	assert.GreaterOrEqual(t, logger.errorCount(), 1, "corrupt cache must log an error")
-}
-
-func TestContactService_GetContactMap_CachePopulationErrorReturnsMapAndLogs(t *testing.T) {
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{
-		ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"},
-	}}}
-	appCache := newFakeCache()
-	appCache.setErr = errors.New("boom")
-	logger := newRecordingLogger()
-	service := newContactServiceForTest(t, repo, appCache, logger)
-
-	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err, "population failure must not fail the caller")
-	require.NotNil(t, result["+18005550199"])
-	assert.Equal(t, "Alice", result["+18005550199"].Name)
-	assert.GreaterOrEqual(t, logger.errorCount(), 1, "population failure must be logged")
-}
-
-func TestContactService_GetContactMap_CachedRoundTripPreservesData(t *testing.T) {
-	// After the first call populates the cache, verify the cached payload is well-formed JSON
-	// mapping phone numbers to contact objects and that a second call returns equivalent data.
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{
-		ID:           uuid.New(),
-		UserID:       "u1",
-		Name:         "Alice",
-		PhoneNumbers: pq.StringArray{"+18005550199", "+18005550100"},
-	}}}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
-
-	first, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-
-	raw, err := appCache.Get(context.Background(), "contacts.map.u1")
-	require.NoError(t, err)
-	require.NotEmpty(t, raw)
-
-	decoded := map[string]*entities.Contact{}
-	require.NoError(t, json.Unmarshal([]byte(raw), &decoded))
-	assert.Equal(t, first["+18005550199"].ID, decoded["+18005550199"].ID)
-
-	second, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-	assert.Equal(t, first["+18005550199"].ID, second["+18005550199"].ID)
-	assert.Equal(t, first["+18005550100"].ID, second["+18005550100"].ID)
-}
-
-// --- mutation invalidation tests ------------------------------------------
-
-func TestContactService_CreateMany_InvalidatesCacheExactlyOnce(t *testing.T) {
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{
-		ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"},
-	}}}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
-
-	// Warm the cache.
-	_, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-	require.Equal(t, 1, repo.fetchAll)
-
-	setsBefore := len(appCache.setsFor("contacts.map.u1"))
-
-	added := []*entities.Contact{
+func TestContactService_GetContactMap_FetchesOnlyUncachedPhoneNumbers(t *testing.T) {
+	repo := &fakeContactRepo{contacts: []*entities.Contact{
+		{ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}},
 		{ID: uuid.New(), UserID: "u1", Name: "Bob", PhoneNumbers: pq.StringArray{"+18005550100"}},
 		{ID: uuid.New(), UserID: "u1", Name: "Carol", PhoneNumbers: pq.StringArray{"+18005550111"}},
-	}
-	require.NoError(t, service.CreateMany(context.Background(), entities.UserID("u1"), added))
+	}}
+	service := newContactServiceForTest(t, repo, nil)
 
-	assert.Len(t, repo.storeCalls, 1, "batch must be persisted in a single Store call")
-	assert.Equal(t, added, repo.storeCalls[0])
-
-	afterInvalidation := appCache.setsFor("contacts.map.u1")
-	require.Len(t, afterInvalidation, setsBefore+1, "CreateMany must invalidate the cache exactly once")
-	assert.Equal(t, "", afterInvalidation[len(afterInvalidation)-1].value, "invalidation marker must be empty")
-
-	// Next GetContactMap rebuilds.
-	_, err = service.GetContactMap(context.Background(), entities.UserID("u1"))
+	first, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{"+18005550199"})
 	require.NoError(t, err)
-	assert.Equal(t, 2, repo.fetchAll)
+	service.cache.Wait()
+	require.Len(t, first, 1)
+
+	second, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{"+18005550199", "+18005550111"})
+	require.NoError(t, err)
+
+	require.Len(t, repo.fetchCalls, 2)
+	assert.Equal(t, []string{"+18005550199"}, repo.fetchCalls[0].phoneNumbers)
+	assert.Equal(t, []string{"+18005550111"}, repo.fetchCalls[1].phoneNumbers)
+	assert.Equal(t, "Carol", second["+18005550111"].Name)
 }
 
-func TestContactService_Update_InvalidatesCacheExactlyOnce(t *testing.T) {
-	c := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}}
-	repo := &fakeContactRepo{contacts: []*entities.Contact{c}}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
+func TestContactService_GetContactMap_CacheKeyIncludesUserAndPhoneNumber(t *testing.T) {
+	number := "+18005550199"
+	repo := &fakeContactRepo{contacts: []*entities.Contact{
+		{ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{number}},
+		{ID: uuid.New(), UserID: "u2", Name: "Bob", PhoneNumbers: pq.StringArray{number}},
+	}}
+	service := newContactServiceForTest(t, repo, nil)
 
-	_, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
+	first, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{number})
 	require.NoError(t, err)
-	setsBefore := len(appCache.setsFor("contacts.map.u1"))
+	service.cache.Wait()
+	second, err := service.GetContactMap(context.Background(), entities.UserID("u2"), []string{number})
+	require.NoError(t, err)
 
-	updated := *c
-	updated.Name = "Alicia"
-	require.NoError(t, service.Update(context.Background(), &updated))
-
-	require.Len(t, repo.updateCalls, 1)
-	assert.Equal(t, "Alicia", repo.updateCalls[0].Name)
-	assert.Equal(t, entities.UserID("u1"), repo.updateCalls[0].UserID)
-
-	afterInvalidation := appCache.setsFor("contacts.map.u1")
-	require.Len(t, afterInvalidation, setsBefore+1)
-	assert.Equal(t, "", afterInvalidation[len(afterInvalidation)-1].value)
+	assert.Equal(t, "Alice", first[number].Name)
+	assert.Equal(t, "Bob", second[number].Name)
+	require.Len(t, repo.fetchCalls, 2)
 }
 
-func TestContactService_Delete_InvalidatesCacheExactlyOnce(t *testing.T) {
-	id := uuid.New()
-	repo := &fakeContactRepo{contacts: []*entities.Contact{{ID: id, UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}}}}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
-
-	_, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
-	require.NoError(t, err)
-	setsBefore := len(appCache.setsFor("contacts.map.u1"))
-
-	require.NoError(t, service.Delete(context.Background(), entities.UserID("u1"), id))
-
-	require.Len(t, repo.deleteCalls, 1)
-	assert.Equal(t, deleteCall{userID: "u1", id: id}, repo.deleteCalls[0])
-
-	afterInvalidation := appCache.setsFor("contacts.map.u1")
-	require.Len(t, afterInvalidation, setsBefore+1)
-	assert.Equal(t, "", afterInvalidation[len(afterInvalidation)-1].value)
-}
-
-func TestContactService_DeleteAllForUser_InvalidatesCache(t *testing.T) {
+func TestContactService_GetContactMap_CachesMissingPhoneNumbers(t *testing.T) {
 	repo := &fakeContactRepo{}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
+	service := newContactServiceForTest(t, repo, nil)
+	number := "+18005550199"
+
+	first, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{number})
+	require.NoError(t, err)
+	service.cache.Wait()
+	second, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{number})
+	require.NoError(t, err)
+
+	assert.Empty(t, first)
+	assert.Empty(t, second)
+	require.Len(t, repo.fetchCalls, 1)
+}
+
+func TestContactService_ExpiresInactiveGenerationStateWithoutReusingEpoch(t *testing.T) {
+	service := newContactServiceForTest(t, &fakeContactRepo{}, nil)
+
+	first := service.generation(entities.UserID("u1"))
+	service.expireGenerations(time.Now().Add(contactMapCacheTTL + time.Hour))
+	second := service.generation(entities.UserID("u1"))
+
+	assert.NotEqual(t, first, second)
+}
+
+func TestContactService_GetContactMap_TieBreakMostRecentlyUpdatedWins(t *testing.T) {
+	number := "+18005550199"
+	older := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "Old", PhoneNumbers: pq.StringArray{number}, UpdatedAt: time.Now().Add(-time.Hour)}
+	newer := &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "New", PhoneNumbers: pq.StringArray{number}, UpdatedAt: time.Now()}
+	repo := &fakeContactRepo{contacts: []*entities.Contact{older, newer}}
+	service := newContactServiceForTest(t, repo, nil)
+
+	result, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{number})
+	require.NoError(t, err)
+
+	require.NotNil(t, result[number])
+	assert.Equal(t, newer.ID, result[number].ID)
+}
+
+func TestContactService_Update_InvalidatesOldAndNewPhoneNumbers(t *testing.T) {
+	oldNumber := "+18005550199"
+	newNumber := "+18005550100"
+	id := uuid.New()
+	repo := &fakeContactRepo{contacts: []*entities.Contact{{
+		ID: id, UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{oldNumber},
+	}}}
+	contactCache := newContactCache(t)
+	stale := &entities.Contact{ID: id, UserID: "u1", Name: "Stale"}
+	require.True(t, contactCache.Set("u1|"+oldNumber, ContactCacheEntry{contact: stale}, 1))
+	require.True(t, contactCache.Set("u1|"+newNumber, ContactCacheEntry{contact: stale}, 1))
+	contactCache.Wait()
+	logger := &noopLogger{}
+	service := NewContactService(logger, telemetry.NewOtelLogger("test", logger), repo, contactCache)
+
+	err := service.Update(context.Background(), &entities.Contact{
+		ID: id, UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{newNumber},
+	}, []string{oldNumber})
+	require.NoError(t, err)
+	contactCache.Wait()
+
+	_, oldFound := contactCache.Get("u1|" + oldNumber)
+	_, newFound := contactCache.Get("u1|" + newNumber)
+	assert.False(t, oldFound)
+	assert.False(t, newFound)
+}
+
+func TestContactService_GetContactMap_DoesNotReuseResultFetchedDuringUpdate(t *testing.T) {
+	number := "+18005550199"
+	id := uuid.New()
+	repo := &blockingContactRepo{
+		fakeContactRepo: &fakeContactRepo{contacts: []*entities.Contact{{
+			ID: id, UserID: "u1", Name: "Old", PhoneNumbers: pq.StringArray{number},
+		}}},
+		fetchStarted: make(chan struct{}),
+		releaseFetch: make(chan struct{}),
+	}
+	service := newContactServiceForTest(t, repo, nil)
+
+	firstResult := make(chan map[string]*entities.Contact, 1)
+	go func() {
+		result, _ := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{number})
+		firstResult <- result
+	}()
+	<-repo.fetchStarted
+
+	require.NoError(t, service.Update(context.Background(), &entities.Contact{
+		ID: id, UserID: "u1", Name: "New", PhoneNumbers: pq.StringArray{number},
+	}, []string{number}))
+	close(repo.releaseFetch)
+	assert.Equal(t, "Old", (<-firstResult)[number].Name)
+	service.cache.Wait()
+
+	second, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{number})
+	require.NoError(t, err)
+	assert.Equal(t, "New", second[number].Name)
+}
+
+func TestContactService_DeleteAllForUser_DoesNotEvictOtherUsers(t *testing.T) {
+	repo := &fakeContactRepo{contacts: []*entities.Contact{
+		{UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}},
+		{UserID: "u2", Name: "Bob", PhoneNumbers: pq.StringArray{"+18005550100"}},
+	}}
+	contactCache := newContactCache(t)
+	logger := &noopLogger{}
+	service := NewContactService(logger, telemetry.NewOtelLogger("test", logger), repo, contactCache)
+	require.True(t, contactCache.Set("u1|+18005550199", ContactCacheEntry{
+		contact: repo.contacts[0], generation: service.generation("u1"),
+	}, 1))
+	require.True(t, contactCache.Set("u2|+18005550100", ContactCacheEntry{
+		contact: repo.contacts[1], generation: service.generation("u2"),
+	}, 1))
+	contactCache.Wait()
 
 	require.NoError(t, service.DeleteAllForUser(context.Background(), entities.UserID("u1")))
 
-	assert.Equal(t, []entities.UserID{"u1"}, repo.deleteAllCalls)
-	sets := appCache.setsFor("contacts.map.u1")
-	require.Len(t, sets, 1)
-	assert.Equal(t, "", sets[0].value)
-}
-
-func TestContactService_DeleteAllForUser_RepositoryErrorSkipsInvalidation(t *testing.T) {
-	repo := &fakeContactRepo{deleteAllErr: errors.New("delete all boom")}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
-
-	err := service.DeleteAllForUser(context.Background(), entities.UserID("u1"))
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "delete all boom")
-	assert.Empty(t, appCache.setsFor("contacts.map.u1"))
-}
-
-func TestContactService_InvalidationFailure_LogsErrorButReturnsNil(t *testing.T) {
-	// Persistence succeeded but cache invalidation failed. The mutation itself
-	// must not return an error (see report: chosen contract), but MUST log the
-	// invalidation failure explicitly at Error level so operators are alerted.
-	repo := &fakeContactRepo{}
-	appCache := newFakeCache()
-	appCache.setErr = errors.New("cache down")
-	logger := newRecordingLogger()
-	service := newContactServiceForTest(t, repo, appCache, logger)
-
-	err := service.CreateMany(context.Background(), entities.UserID("u1"), []*entities.Contact{{
-		ID: uuid.New(), UserID: "u1", Name: "Bob", PhoneNumbers: pq.StringArray{"+18005550100"},
-	}})
-	require.NoError(t, err, "mutation must not surface invalidation failure to caller")
-
-	// Repository actually got the write.
-	require.Len(t, repo.storeCalls, 1)
-	// The invalidation attempt was logged as an error.
-	assert.GreaterOrEqual(t, logger.errorCount(), 1, "invalidation failure must be logged as error")
+	first, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{"+18005550199"})
+	require.NoError(t, err)
+	second, err := service.GetContactMap(context.Background(), entities.UserID("u2"), []string{"+18005550100"})
+	require.NoError(t, err)
+	assert.Empty(t, first)
+	assert.Equal(t, "Bob", second["+18005550100"].Name)
+	require.Len(t, repo.fetchCalls, 1)
+	assert.Equal(t, entities.UserID("u1"), repo.fetchCalls[0].userID)
 }
 
 // --- CRUD delegation and user scope tests ---------------------------------
 
 func TestContactService_CreateMany_PersistsBatchInSingleCall(t *testing.T) {
 	repo := &fakeContactRepo{}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	batch := []*entities.Contact{
 		{ID: uuid.New(), UserID: "u1", Name: "A", PhoneNumbers: pq.StringArray{"+18005550100"}},
@@ -577,7 +470,7 @@ func TestContactService_CreateMany_PersistsBatchInSingleCall(t *testing.T) {
 
 func TestContactService_CreateMany_RepositoryErrorIsWrapped(t *testing.T) {
 	repo := &fakeContactRepo{storeErr: errors.New("db down")}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	err := service.CreateMany(context.Background(), entities.UserID("u1"), []*entities.Contact{{
 		ID: uuid.New(), UserID: "u1", Name: "A", PhoneNumbers: pq.StringArray{"+18005550100"},
@@ -593,7 +486,7 @@ func TestContactService_Get_DelegatesWithUserScope(t *testing.T) {
 		{ID: id, UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}},
 		{ID: other, UserID: "u2", Name: "Bob", PhoneNumbers: pq.StringArray{"+18005550100"}},
 	}}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	got, err := service.Get(context.Background(), entities.UserID("u1"), id)
 	require.NoError(t, err)
@@ -608,7 +501,7 @@ func TestContactService_Get_DelegatesWithUserScope(t *testing.T) {
 func TestContactService_Index_DelegatesParams(t *testing.T) {
 	want := []entities.Contact{{ID: uuid.New(), UserID: "u1", Name: "Alice", PhoneNumbers: pq.StringArray{"+18005550199"}}}
 	repo := &fakeContactRepo{indexResult: want}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	params := repositories.IndexParams{Skip: 5, Limit: 10, SortBy: "name", Query: "Ali"}
 	got, err := service.Index(context.Background(), entities.UserID("u1"), params)
@@ -623,7 +516,7 @@ func TestContactService_Index_DelegatesParams(t *testing.T) {
 
 func TestContactService_Index_RepositoryErrorIsWrapped(t *testing.T) {
 	repo := &fakeContactRepo{indexErr: errors.New("index boom")}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	_, err := service.Index(context.Background(), entities.UserID("u1"), repositories.IndexParams{})
 	require.Error(t, err)
@@ -632,7 +525,7 @@ func TestContactService_Index_RepositoryErrorIsWrapped(t *testing.T) {
 
 func TestContactService_Count_DelegatesParamsAndReturnsTotal(t *testing.T) {
 	repo := &fakeContactRepo{countResult: 57}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	params := repositories.IndexParams{Skip: 5, Limit: 10, Query: "Ali"}
 	total, err := service.Count(context.Background(), entities.UserID("u1"), params)
@@ -646,7 +539,7 @@ func TestContactService_Count_DelegatesParamsAndReturnsTotal(t *testing.T) {
 
 func TestContactService_Count_RepositoryErrorIsWrapped(t *testing.T) {
 	repo := &fakeContactRepo{countErr: errors.New("count boom")}
-	service := newContactServiceForTest(t, repo, newFakeCache(), nil)
+	service := newContactServiceForTest(t, repo, nil)
 
 	_, err := service.Count(context.Background(), entities.UserID("u1"), repositories.IndexParams{})
 	require.Error(t, err)
@@ -654,33 +547,52 @@ func TestContactService_Count_RepositoryErrorIsWrapped(t *testing.T) {
 }
 
 func TestContactService_Update_RepositoryErrorIsWrappedAndSkipsInvalidation(t *testing.T) {
-	repo := &fakeContactRepo{updateErr: errors.New("update boom")}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
+	id := uuid.New()
+	repo := &fakeContactRepo{
+		contacts:  []*entities.Contact{{ID: id, UserID: "u1", PhoneNumbers: pq.StringArray{"+18005550100"}}},
+		updateErr: errors.New("update boom"),
+	}
+	contactCache := newContactCache(t)
+	require.True(t, contactCache.Set("u1|+18005550100", ContactCacheEntry{contact: &entities.Contact{Name: "Cached"}}, 1))
+	contactCache.Wait()
+	logger := &noopLogger{}
+	service := NewContactService(logger, telemetry.NewOtelLogger("test", logger), repo, contactCache)
 
-	err := service.Update(context.Background(), &entities.Contact{ID: uuid.New(), UserID: "u1", Name: "A", PhoneNumbers: pq.StringArray{"+18005550100"}})
+	err := service.Update(
+		context.Background(),
+		&entities.Contact{ID: id, UserID: "u1", Name: "A", PhoneNumbers: pq.StringArray{"+18005550100"}},
+		[]string{"+18005550100"},
+	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "update boom")
-	assert.Len(t, appCache.setsFor("contacts.map.u1"), 0, "invalidation must not run when the write fails")
+	_, found := contactCache.Get("u1|+18005550100")
+	assert.True(t, found, "invalidation must not run when the write fails")
 }
 
 func TestContactService_Delete_RepositoryErrorIsWrappedAndSkipsInvalidation(t *testing.T) {
-	repo := &fakeContactRepo{deleteErr: errors.New("delete boom")}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
+	id := uuid.New()
+	repo := &fakeContactRepo{
+		contacts:  []*entities.Contact{{ID: id, UserID: "u1", PhoneNumbers: pq.StringArray{"+18005550100"}}},
+		deleteErr: errors.New("delete boom"),
+	}
+	contactCache := newContactCache(t)
+	require.True(t, contactCache.Set("u1|+18005550100", ContactCacheEntry{contact: &entities.Contact{Name: "Cached"}}, 1))
+	contactCache.Wait()
+	logger := &noopLogger{}
+	service := NewContactService(logger, telemetry.NewOtelLogger("test", logger), repo, contactCache)
 
-	err := service.Delete(context.Background(), entities.UserID("u1"), uuid.New())
+	err := service.Delete(context.Background(), entities.UserID("u1"), id)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "delete boom")
-	assert.Len(t, appCache.setsFor("contacts.map.u1"), 0)
+	_, found := contactCache.Get("u1|+18005550100")
+	assert.True(t, found, "invalidation must not run when the write fails")
 }
 
-func TestContactService_GetContactMap_FetchAllErrorIsWrapped(t *testing.T) {
+func TestContactService_GetContactMap_FetchErrorIsWrapped(t *testing.T) {
 	repo := &fakeContactRepo{fetchErr: errors.New("fetch boom")}
-	appCache := newFakeCache()
-	service := newContactServiceForTest(t, repo, appCache, nil)
+	service := newContactServiceForTest(t, repo, nil)
 
-	_, err := service.GetContactMap(context.Background(), entities.UserID("u1"))
+	_, err := service.GetContactMap(context.Background(), entities.UserID("u1"), []string{"+18005550100"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "fetch boom")
 }

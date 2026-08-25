@@ -10,6 +10,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -143,16 +144,17 @@ func (repository *gormContactRepository) Count(ctx context.Context, userID entit
 	return count, nil
 }
 
-func (repository *gormContactRepository) FetchAll(ctx context.Context, userID entities.UserID) (*[]entities.Contact, error) {
+func (repository *gormContactRepository) FetchByPhoneNumbers(ctx context.Context, userID entities.UserID, phoneNumbers []string) (*[]entities.Contact, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
 	contacts := new([]entities.Contact)
 	if err := repository.db.WithContext(ctx).
 		Where("user_id = ?", userID).
+		Where("phone_numbers && ?", pq.Array(phoneNumbers)).
 		Order("updated_at ASC").
 		Find(contacts).Error; err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch all contacts for user [%s]", userID))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch contacts for user [%s] by phone numbers [%v]", userID, phoneNumbers))
 	}
 
 	return contacts, nil

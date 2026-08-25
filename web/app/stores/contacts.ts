@@ -132,7 +132,9 @@ export const useContactsStore = defineStore('contacts', () => {
 
       notificationsStore.addNotification({
         message:
-          contactsToSave.length > 1 ? 'Contacts created' : 'Contact created',
+          contactsToSave.length > 1
+            ? 'Contacts created successfully'
+            : 'Contact created successfully',
         type: 'success',
       })
       await loadContacts(true)
@@ -181,7 +183,7 @@ export const useContactsStore = defineStore('contacts', () => {
       contacts.value = contacts.value.filter((contact) => contact.id !== id)
       total.value = Math.max(0, total.value - 1)
       notificationsStore.addNotification({
-        message: 'Contact deleted',
+        message: 'Contact deleted successfully',
         type: 'success',
       })
     } catch (error: unknown) {

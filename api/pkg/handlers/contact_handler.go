@@ -254,8 +254,9 @@ func (h *ContactHandler) Update(c fiber.Ctx) error {
 		return h.responseInternalServerError(c)
 	}
 
+	previousPhoneNumbers := append([]string{}, contact.PhoneNumbers...)
 	sanitized.ApplyTo(contact)
-	if err = h.service.Update(ctx, contact); err != nil {
+	if err = h.service.Update(ctx, contact, previousPhoneNumbers); err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot update contact [%s] for user [%s]", contactID, userID))
 		return h.responseInternalServerError(c)
 	}

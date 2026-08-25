@@ -37,11 +37,13 @@ type messageThreadContactProviderStub struct {
 	err      error
 	calls    int
 	userID   entities.UserID
+	numbers  []string
 }
 
-func (stub *messageThreadContactProviderStub) GetContactMap(_ context.Context, userID entities.UserID) (map[string]*entities.Contact, error) {
+func (stub *messageThreadContactProviderStub) GetContactMap(_ context.Context, userID entities.UserID, phoneNumbers []string) (map[string]*entities.Contact, error) {
 	stub.calls++
 	stub.userID = userID
+	stub.numbers = append([]string{}, phoneNumbers...)
 	return stub.contacts, stub.err
 }
 
@@ -54,7 +56,9 @@ var _ telemetry.Logger = (*messageThreadContactLogger)(nil)
 func (logger *messageThreadContactLogger) Error(err error) {
 	logger.errors = append(logger.errors, err)
 }
+
 func (logger *messageThreadContactLogger) WithService(string) telemetry.Logger { return logger }
+
 func (logger *messageThreadContactLogger) WithString(string, string) telemetry.Logger { return logger }
 
 func (logger *messageThreadContactLogger) WithSpan(trace.SpanContext) telemetry.Logger { return logger }
@@ -105,6 +109,7 @@ func TestGetThreads_AttachesContactDetailsWhenFlagOn(t *testing.T) {
 	require.Len(t, *threads, 2)
 	assert.Equal(t, 1, provider.calls)
 	assert.Equal(t, entities.UserID("user-id"), provider.userID)
+	assert.Equal(t, []string{"+18005550199", "+18005550100"}, provider.numbers)
 	require.NotNil(t, (*threads)[0].ContactDetails)
 	assert.Same(t, alice, (*threads)[0].ContactDetails)
 	assert.Equal(t, "Alice", (*threads)[0].ContactDetails.Name)

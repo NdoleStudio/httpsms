@@ -430,6 +430,7 @@ onBeforeUnmount(() => {
             label="Search by name, phone number or email"
             variant="outlined"
             density="compact"
+            autocomplete="search-query"
             clearable
             color="primary"
             hide-details
@@ -695,6 +696,8 @@ onBeforeUnmount(() => {
               :label="`Email ${index + 1}`"
               placeholder="e.g alice@example.com"
               variant="outlined"
+              autocomplete="email"
+              type="email"
               persistent-placeholder
               density="comfortable"
               :prepend-inner-icon="mdiEmailOutline"
