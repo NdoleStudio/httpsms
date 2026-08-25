@@ -150,12 +150,35 @@ func (r *contactHandlerFakeRepo) snapshot() ([][]*entities.Contact, []*entities.
 
 const contactHandlerTestUserID = entities.UserID("user-id")
 
+type contactHandlerEntitlementUserRepo struct {
+	repositories.UserRepository
+	subscriptionName entities.SubscriptionName
+}
+
+func (repository *contactHandlerEntitlementUserRepo) Load(_ context.Context, userID entities.UserID) (*entities.User, error) {
+	return &entities.User{ID: userID, SubscriptionName: repository.subscriptionName}, nil
+}
+
 func newContactHandlerTestApp(repo repositories.ContactRepository) *fiber.App {
+	return newContactHandlerTestAppWithEntitlements(repo, false, entities.SubscriptionNameFree)
+}
+
+func newContactHandlerTestAppWithEntitlements(
+	repo repositories.ContactRepository,
+	entitlementsEnabled bool,
+	subscriptionName entities.SubscriptionName,
+) *fiber.App {
 	logger := &messageThreadHandlerNoopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
 	appCache := cache.NewMemoryCache(tracer, ttlCache.New(time.Minute, time.Minute))
 	service := services.NewContactService(logger, tracer, repo, appCache)
-	handler := NewContactHandler(logger, tracer, validators.NewContactHandlerValidator(logger, tracer), service)
+	entitlementService := services.NewEntitlementService(
+		logger,
+		tracer,
+		entitlementsEnabled,
+		&contactHandlerEntitlementUserRepo{subscriptionName: subscriptionName},
+	)
+	handler := NewContactHandler(logger, tracer, validators.NewContactHandlerValidator(logger, tracer), service, entitlementService)
 
 	app := fiber.New()
 	app.Use(func(c fiber.Ctx) error {
@@ -220,6 +243,41 @@ func TestContactHandler_Store_CreatesManyContactsFromObjectShape(t *testing.T) {
 	require.Len(t, stored[0], 2)
 	assert.Equal(t, "Alice", stored[0][0].Name)
 	assert.Equal(t, "Bob", stored[0][1].Name)
+}
+
+func TestContactHandler_Store_RejectsBatchExceedingContactLimit(t *testing.T) {
+	repo := &contactHandlerFakeRepo{countResult: 199}
+	app := newContactHandlerTestAppWithEntitlements(repo, true, entities.SubscriptionNameFree)
+
+	body := `{"contacts":[
+		{"name":"Alice","phone_numbers":["+18005550199"]},
+		{"name":"Bob","phone_numbers":["+18005550100"]}
+	]}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/contacts", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusPaymentRequired, resp.StatusCode)
+
+	stored, _, _, _ := repo.snapshot()
+	assert.Empty(t, stored)
+}
+
+func TestContactHandler_Store_DisabledEntitlementsDoNotLimitContacts(t *testing.T) {
+	repo := &contactHandlerFakeRepo{countResult: 200}
+	app := newContactHandlerTestAppWithEntitlements(repo, false, entities.SubscriptionNameFree)
+
+	body := `[{"name":"Alice","phone_numbers":["+18005550199"]}]`
+	req := httptest.NewRequest(http.MethodPost, "/v1/contacts", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	stored, _, _, _ := repo.snapshot()
+	require.Len(t, stored, 1)
 }
 
 func TestContactHandler_Store_ValidationError_ReturnsUnprocessableEntity(t *testing.T) {
@@ -287,6 +345,23 @@ func TestContactHandler_Upload_CSVSuccess(t *testing.T) {
 	for _, c := range stored[0] {
 		assert.Equal(t, contactHandlerTestUserID, c.UserID)
 	}
+}
+
+func TestContactHandler_Upload_RejectsBatchExceedingContactLimit(t *testing.T) {
+	repo := &contactHandlerFakeRepo{countResult: 199}
+	app := newContactHandlerTestAppWithEntitlements(repo, true, entities.SubscriptionNameFree)
+
+	csv := "Name,Emails,PhoneNumbers\nAlice,alice@example.com,+18005550199\nBob,,+18005550100\n"
+	body, contentType := buildContactCSVUpload(t, "contacts.csv", "text/csv", csv)
+	req := httptest.NewRequest(http.MethodPost, "/v1/contacts/upload", body)
+	req.Header.Set("Content-Type", contentType)
+
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusPaymentRequired, resp.StatusCode)
+
+	stored, _, _, _ := repo.snapshot()
+	assert.Empty(t, stored)
 }
 
 func TestContactHandler_Upload_NonCSVFile_ReturnsUnprocessableEntity(t *testing.T) {

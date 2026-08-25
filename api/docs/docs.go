@@ -363,6 +363,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/responses.Unauthorized"
                         }
                     },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PaymentRequired"
+                        }
+                    },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
@@ -422,6 +428,12 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "$ref": "#/definitions/responses.PaymentRequired"
                         }
                     },
                     "422": {

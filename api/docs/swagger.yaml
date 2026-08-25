@@ -1963,6 +1963,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/responses.Unauthorized'
+        "402":
+          description: Payment Required
+          schema:
+            $ref: '#/definitions/responses.PaymentRequired'
         "422":
           description: Unprocessable Entity
           schema:
@@ -2094,6 +2098,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/responses.Unauthorized'
+        "402":
+          description: Payment Required
+          schema:
+            $ref: '#/definitions/responses.PaymentRequired'
         "422":
           description: Unprocessable Entity
           schema:

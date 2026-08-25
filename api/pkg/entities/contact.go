@@ -10,6 +10,9 @@ import (
 	"github.com/lib/pq"
 )
 
+// EntityNameContact is the entitlement entity name for contacts.
+const EntityNameContact = "Contact"
+
 // ContactProperties is a free-form key/value map persisted as a jsonb column.
 type ContactProperties map[string]string
 

@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -17,10 +19,11 @@ import (
 // ContactHandler handles contact http requests.
 type ContactHandler struct {
 	handler
-	logger    telemetry.Logger
-	tracer    telemetry.Tracer
-	validator *validators.ContactHandlerValidator
-	service   *services.ContactService
+	logger             telemetry.Logger
+	tracer             telemetry.Tracer
+	validator          *validators.ContactHandlerValidator
+	service            *services.ContactService
+	entitlementService *services.EntitlementService
 }
 
 // NewContactHandler creates a new ContactHandler.
@@ -29,12 +32,14 @@ func NewContactHandler(
 	tracer telemetry.Tracer,
 	validator *validators.ContactHandlerValidator,
 	service *services.ContactService,
+	entitlementService *services.EntitlementService,
 ) (h *ContactHandler) {
 	return &ContactHandler{
-		logger:    logger.WithService(fmt.Sprintf("%T", h)),
-		tracer:    tracer,
-		validator: validator,
-		service:   service,
+		logger:             logger.WithService(fmt.Sprintf("%T", h)),
+		tracer:             tracer,
+		validator:          validator,
+		service:            service,
+		entitlementService: entitlementService,
 	}
 }
 
@@ -107,6 +112,7 @@ func (h *ContactHandler) Index(c fiber.Ctx) error {
 // @Success      201 	{object}	responses.ContactsResponse
 // @Failure      400	{object}	responses.BadRequest
 // @Failure 	 401    {object}	responses.Unauthorized
+// @Failure 	 402	{object}	responses.PaymentRequired
 // @Failure      422	{object}	responses.UnprocessableEntity
 // @Failure      500	{object}	responses.InternalServerError
 // @Router       /contacts [post]
@@ -128,6 +134,15 @@ func (h *ContactHandler) Store(c fiber.Ctx) error {
 
 	userID := h.userIDFomContext(c)
 	contacts := sanitized.ToContacts(userID)
+	result, err := h.checkCreateEntitlement(ctx, userID, len(contacts))
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check contact entitlement for user [%s]", userID))
+		return h.responseInternalServerError(c)
+	}
+	if !result.Allowed {
+		return h.responsePaymentRequired(c, result.Message)
+	}
+
 	if err := h.service.CreateMany(ctx, userID, contacts); err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot create [%d] contacts for user [%s]", len(contacts), userID))
 		return h.responseInternalServerError(c)
@@ -147,6 +162,7 @@ func (h *ContactHandler) Store(c fiber.Ctx) error {
 // @Success      201 	{object}	responses.ContactsResponse
 // @Failure      400	{object}	responses.BadRequest
 // @Failure 	 401    {object}	responses.Unauthorized
+// @Failure 	 402	{object}	responses.PaymentRequired
 // @Failure      422	{object}	responses.UnprocessableEntity
 // @Failure      500	{object}	responses.InternalServerError
 // @Router       /contacts/upload [post]
@@ -171,6 +187,15 @@ func (h *ContactHandler) Upload(c fiber.Ctx) error {
 	// build the persistable records directly without re-sanitizing.
 	request := requests.ContactStoreRequest{Contacts: items}
 	contacts := request.ToContacts(userID)
+	result, err := h.checkCreateEntitlement(ctx, userID, len(contacts))
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check contact entitlement for user [%s]", userID))
+		return h.responseInternalServerError(c)
+	}
+	if !result.Allowed {
+		return h.responsePaymentRequired(c, result.Message)
+	}
+
 	if err = h.service.CreateMany(ctx, userID, contacts); err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot import [%d] contacts for user [%s]", len(contacts), userID))
 		return h.responseInternalServerError(c)
@@ -280,4 +305,15 @@ func (h *ContactHandler) Delete(c fiber.Ctx) error {
 	}
 
 	return h.responseNoContent(c, "contact deleted successfully")
+}
+
+func (h *ContactHandler) checkCreateEntitlement(
+	ctx context.Context,
+	userID entities.UserID,
+	additionalCount int,
+) (*services.EntitlementCheckResult, error) {
+	return h.entitlementService.CheckAdditional(ctx, userID, entities.EntityNameContact, additionalCount, func() (int, error) {
+		count, err := h.service.Count(ctx, userID, repositories.IndexParams{})
+		return int(count), err
+	})
 }

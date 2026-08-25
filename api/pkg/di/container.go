@@ -720,6 +720,7 @@ func (container *Container) ContactHandler() (h *handlers.ContactHandler) {
 		container.Tracer(),
 		container.ContactHandlerValidator(),
 		container.ContactService(),
+		container.EntitlementService(),
 	)
 }
 

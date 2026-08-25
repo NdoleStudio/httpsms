@@ -63,6 +63,18 @@ func (service *EntitlementService) Check(
 	entityName string,
 	countFunc func() (int, error),
 ) (*EntitlementCheckResult, error) {
+	return service.CheckAdditional(ctx, userID, entityName, 1, countFunc)
+}
+
+// CheckAdditional verifies if the user can create additionalCount instances of
+// the given entity without exceeding their subscription plan limit.
+func (service *EntitlementService) CheckAdditional(
+	ctx context.Context,
+	userID entities.UserID,
+	entityName string,
+	additionalCount int,
+	countFunc func() (int, error),
+) (*EntitlementCheckResult, error) {
 	ctx, span := service.tracer.Start(ctx)
 	defer span.End()
 
@@ -70,8 +82,8 @@ func (service *EntitlementService) Check(
 		return &EntitlementCheckResult{Allowed: true}, nil
 	}
 
-	limits, exists := entityLimits[entityName]
-	if !exists {
+	limits, hasConfiguredLimits := entityLimits[entityName]
+	if !hasConfiguredLimits && entityName != entities.EntityNameContact {
 		return &EntitlementCheckResult{Allowed: true}, nil
 	}
 
@@ -83,9 +95,13 @@ func (service *EntitlementService) Check(
 		)
 	}
 
-	limit, hasLimit := limits[user.SubscriptionName]
-	if !hasLimit || limit == 0 {
-		return &EntitlementCheckResult{Allowed: true}, nil
+	limit := int(user.SubscriptionName.Limit())
+	if entityName != entities.EntityNameContact {
+		var hasLimit bool
+		limit, hasLimit = limits[user.SubscriptionName]
+		if !hasLimit || limit == 0 {
+			return &EntitlementCheckResult{Allowed: true}, nil
+		}
 	}
 
 	currentCount, err := countFunc()
@@ -96,11 +112,11 @@ func (service *EntitlementService) Check(
 		)
 	}
 
-	if currentCount >= limit {
+	if currentCount+additionalCount > limit {
 		return &EntitlementCheckResult{
 			Allowed: false,
 			Message: fmt.Sprintf(
-				"Upgrade to a paid plan to create more than [%d] %s. Visit https://httpsms.com/pricing for details.",
+				"Upgrade your plan to create more than [%d] %s. Visit https://httpsms.com/pricing for details.",
 				limit,
 				formatEntityName(entityName, true),
 			),
