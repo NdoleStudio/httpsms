@@ -111,7 +111,7 @@ func (h *ContactHandler) Index(c fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param        payload   body 		requests.ContactStoreRequest 	true 	"Contact(s) to create"
-// @Success      201 	{object}	responses.ContactsResponse
+// @Success      201 	{object}	responses.ContactsCreatedResponse
 // @Failure      400	{object}	responses.BadRequest
 // @Failure 	 401    {object}	responses.Unauthorized
 // @Failure 	 402	{object}	responses.PaymentRequired
@@ -161,7 +161,7 @@ func (h *ContactHandler) Store(c fiber.Ctx) error {
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        document	formData	file	true	"CSV file of contacts"
-// @Success      201 	{object}	responses.ContactsResponse
+// @Success      201 	{object}	responses.ContactsCreatedResponse
 // @Failure      400	{object}	responses.BadRequest
 // @Failure 	 401    {object}	responses.Unauthorized
 // @Failure 	 402	{object}	responses.PaymentRequired

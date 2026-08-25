@@ -8,6 +8,12 @@ type ContactResponse struct {
 	Data entities.Contact `json:"data"`
 }
 
+// ContactsCreatedResponse is the payload returned after creating contacts.
+type ContactsCreatedResponse struct {
+	response
+	Data []entities.Contact `json:"data"`
+}
+
 // ContactsResponse is the payload containing []entities.Contact.
 type ContactsResponse struct {
 	response

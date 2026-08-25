@@ -673,6 +673,14 @@ export interface ResponsesContactResponse {
   status: string;
 }
 
+export interface ResponsesContactsCreatedResponse {
+  data: EntitiesContact[];
+  /** @example "Request handled successfully" */
+  message: string;
+  /** @example "success" */
+  status: string;
+}
+
 export interface ResponsesContactsResponse {
   data: EntitiesContact[];
   /** @example "Request handled successfully" */

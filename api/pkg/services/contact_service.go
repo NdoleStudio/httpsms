@@ -14,9 +14,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// contactCacheTTL bounds staleness if an invalidation is ever missed.
+// contactMapCacheTTL bounds cross-instance staleness because invalidation is process-local.
 const (
-	contactMapCacheTTL               = 24 * time.Hour
+	contactMapCacheTTL               = 5 * time.Minute
 	contactGenerationCleanupInterval = time.Hour
 )
 

@@ -364,7 +364,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/responses.ContactsResponse"
+                            "$ref": "#/definitions/responses.ContactsCreatedResponse"
                         }
                     },
                     "400": {
@@ -431,7 +431,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/responses.ContactsResponse"
+                            "$ref": "#/definitions/responses.ContactsCreatedResponse"
                         }
                     },
                     "400": {
@@ -5269,6 +5269,30 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/entities.Contact"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Request handled successfully"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "responses.ContactsCreatedResponse": {
+            "type": "object",
+            "required": [
+                "data",
+                "message",
+                "status"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.Contact"
+                    }
                 },
                 "message": {
                     "type": "string",

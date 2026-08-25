@@ -1223,6 +1223,23 @@ definitions:
     - message
     - status
     type: object
+  responses.ContactsCreatedResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entities.Contact'
+        type: array
+      message:
+        example: Request handled successfully
+        type: string
+      status:
+        example: success
+        type: string
+    required:
+    - data
+    - message
+    - status
+    type: object
   responses.ContactsResponse:
     properties:
       data:
@@ -1965,7 +1982,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/responses.ContactsResponse'
+            $ref: '#/definitions/responses.ContactsCreatedResponse'
         "400":
           description: Bad Request
           schema:
@@ -2100,7 +2117,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/responses.ContactsResponse'
+            $ref: '#/definitions/responses.ContactsCreatedResponse'
         "400":
           description: Bad Request
           schema:

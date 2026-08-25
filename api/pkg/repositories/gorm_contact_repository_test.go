@@ -270,7 +270,7 @@ func TestGormContactRepository_Index_FiltersByUserAndQueryAcrossContactFields(t 
 	statement := lastContactStatement(t, recorder)
 	assert.True(t, strings.HasPrefix(statement.query, `SELECT * FROM "contacts"`))
 	assert.Contains(t, statement.query, `WHERE user_id = $1 AND (name ILIKE $2 OR array_to_string(emails, ',') ILIKE $3 OR array_to_string(phone_numbers, ',') ILIKE $4)`)
-	assert.Contains(t, statement.query, `ORDER BY updated_at DESC LIMIT $5 OFFSET $6`)
+	assert.Contains(t, statement.query, `ORDER BY updated_at DESC, id DESC LIMIT $5 OFFSET $6`)
 	require.Len(t, statement.args, 6)
 	assert.Equal(t, entities.UserID("user-1"), statement.args[0])
 	assert.Equal(t, "%alice%", statement.args[1])
@@ -289,22 +289,22 @@ func TestGormContactRepository_Index_OrdersByRequestedFieldAndDirection(t *testi
 		{
 			name:            "name ascending",
 			params:          IndexParams{SortBy: "name"},
-			expectedOrderBy: "ORDER BY name ASC",
+			expectedOrderBy: "ORDER BY name ASC, id ASC",
 		},
 		{
 			name:            "name descending",
 			params:          IndexParams{SortBy: "name", SortDescending: true},
-			expectedOrderBy: "ORDER BY name DESC",
+			expectedOrderBy: "ORDER BY name DESC, id DESC",
 		},
 		{
 			name:            "updated descending",
 			params:          IndexParams{SortBy: "updated_at", SortDescending: true},
-			expectedOrderBy: "ORDER BY updated_at DESC",
+			expectedOrderBy: "ORDER BY updated_at DESC, id DESC",
 		},
 		{
 			name:            "default",
 			params:          IndexParams{},
-			expectedOrderBy: "ORDER BY updated_at DESC",
+			expectedOrderBy: "ORDER BY updated_at DESC, id DESC",
 		},
 	}
 
@@ -332,7 +332,7 @@ func TestGormContactRepository_FetchByPhoneNumbers_ScopesByUserAndRequestedNumbe
 
 	require.NoError(t, err)
 	statement := lastContactStatement(t, recorder)
-	assert.Equal(t, `SELECT * FROM "contacts" WHERE user_id = $1 AND phone_numbers && $2 ORDER BY updated_at ASC`, statement.query)
+	assert.Equal(t, `SELECT * FROM "contacts" WHERE user_id = $1 AND phone_numbers && $2 ORDER BY updated_at ASC, id ASC`, statement.query)
 	require.Len(t, statement.args, 2)
 	assert.Equal(t, entities.UserID("user-1"), statement.args[0])
 	assert.Equal(t, &pq.StringArray{"+18005550199", "+18005550100"}, statement.args[1])

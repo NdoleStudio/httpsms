@@ -116,7 +116,7 @@ func (repository *gormContactRepository) Index(ctx context.Context, userID entit
 
 func (repository *gormContactRepository) contactOrder(params IndexParams) string {
 	if params.SortBy == "" {
-		return "updated_at DESC"
+		return "updated_at DESC, id DESC"
 	}
 
 	sortBy := "updated_at"
@@ -129,7 +129,7 @@ func (repository *gormContactRepository) contactOrder(params IndexParams) string
 		direction = "DESC"
 	}
 
-	return fmt.Sprintf("%s %s", sortBy, direction)
+	return fmt.Sprintf("%s %s, id %s", sortBy, direction, direction)
 }
 
 func (repository *gormContactRepository) Count(ctx context.Context, userID entities.UserID, params IndexParams) (int64, error) {
@@ -152,7 +152,7 @@ func (repository *gormContactRepository) FetchByPhoneNumbers(ctx context.Context
 	if err := repository.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Where("phone_numbers && ?", pq.Array(phoneNumbers)).
-		Order("updated_at ASC").
+		Order("updated_at ASC, id ASC").
 		Find(contacts).Error; err != nil {
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch contacts for user [%s] by phone numbers [%v]", userID, phoneNumbers))
 	}

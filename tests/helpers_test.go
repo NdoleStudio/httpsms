@@ -110,11 +110,62 @@ func setupPhone(ctx context.Context, t *testing.T, messagesPerMinute uint) testP
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode, "fcm token bind failed")
 
+	waitForPhoneAuthorization(ctx, t, phoneAPIKeyValue, phoneNumber, 20*time.Second)
+
 	return testPhone{
 		PhoneNumber: phoneNumber,
 		PhoneAPIKey: phoneAPIKeyValue,
 		FcmToken:    fcmToken,
 	}
+}
+
+func waitForPhoneAuthorization(
+	ctx context.Context,
+	t *testing.T,
+	phoneAPIKey string,
+	phoneNumber string,
+	timeout time.Duration,
+) {
+	t.Helper()
+
+	body, err := json.Marshal(map[string]interface{}{
+		"phone_numbers": []string{phoneNumber},
+		"charging":      true,
+	})
+	require.NoError(t, err)
+
+	var responseBody []byte
+	var statusCode int
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		request, requestErr := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			apiBaseURL+"/v1/heartbeats",
+			bytes.NewReader(body),
+		)
+		require.NoError(t, requestErr)
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("x-api-key", phoneAPIKey)
+
+		response, requestErr := http.DefaultClient.Do(request)
+		require.NoError(t, requestErr)
+		responseBody, requestErr = io.ReadAll(response.Body)
+		response.Body.Close()
+		require.NoError(t, requestErr)
+
+		statusCode = response.StatusCode
+		if statusCode == http.StatusCreated {
+			return
+		}
+		if statusCode != http.StatusUnauthorized {
+			require.Equal(t, http.StatusCreated, statusCode, "phone authorization check failed: %s", string(responseBody))
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.Equal(t, http.StatusCreated, statusCode, "phone authorization was not ready within %v: %s", timeout, string(responseBody))
 }
 
 func setupWebhook(ctx context.Context, t *testing.T, phoneNumber string, events []string) (signingKey string, webhookPath string) {
