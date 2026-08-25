@@ -124,6 +124,19 @@ func (service *ContactService) Delete(ctx context.Context, userID entities.UserI
 	return nil
 }
 
+// DeleteAllForUser removes every contact owned by a user and invalidates the cached map.
+func (service *ContactService) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	if err := service.repository.DeleteAllForUser(ctx, userID); err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all contacts for user [%s]", userID))
+	}
+
+	service.invalidate(ctx, ctxLogger, userID)
+	return nil
+}
+
 // GetContactMap returns a phone_number -> *Contact map for the given user, backed by a per-user cache.
 // FetchAll orders by updated_at ASC, so map construction naturally lets the most-recently-updated
 // contact win when two contacts share a phone number.

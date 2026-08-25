@@ -86,21 +86,23 @@ type fakeContactRepo struct {
 
 	contacts []*entities.Contact
 
-	storeCalls  [][]*entities.Contact
-	updateCalls []*entities.Contact
-	loadCalls   []loadCall
-	indexCalls  []indexCall
-	countCalls  []indexCall
-	deleteCalls []deleteCall
-	fetchAll    int
+	storeCalls     [][]*entities.Contact
+	updateCalls    []*entities.Contact
+	loadCalls      []loadCall
+	indexCalls     []indexCall
+	countCalls     []indexCall
+	deleteCalls    []deleteCall
+	deleteAllCalls []entities.UserID
+	fetchAll       int
 
-	storeErr  error
-	updateErr error
-	loadErr   error
-	indexErr  error
-	countErr  error
-	deleteErr error
-	fetchErr  error
+	storeErr     error
+	updateErr    error
+	loadErr      error
+	indexErr     error
+	countErr     error
+	deleteErr    error
+	deleteAllErr error
+	fetchErr     error
 
 	indexResult []entities.Contact
 	countResult int64
@@ -206,7 +208,13 @@ func (r *fakeContactRepo) Delete(_ context.Context, userID entities.UserID, id u
 	return r.deleteErr
 }
 
-func (r *fakeContactRepo) DeleteAllForUser(_ context.Context, _ entities.UserID) error { return nil }
+func (r *fakeContactRepo) DeleteAllForUser(_ context.Context, userID entities.UserID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.deleteAllCalls = append(r.deleteAllCalls, userID)
+	return r.deleteAllErr
+}
 
 // --- recording logger -------------------------------------------------------
 
@@ -503,6 +511,31 @@ func TestContactService_Delete_InvalidatesCacheExactlyOnce(t *testing.T) {
 	afterInvalidation := appCache.setsFor("contacts.map.u1")
 	require.Len(t, afterInvalidation, setsBefore+1)
 	assert.Equal(t, "", afterInvalidation[len(afterInvalidation)-1].value)
+}
+
+func TestContactService_DeleteAllForUser_InvalidatesCache(t *testing.T) {
+	repo := &fakeContactRepo{}
+	appCache := newFakeCache()
+	service := newContactServiceForTest(t, repo, appCache, nil)
+
+	require.NoError(t, service.DeleteAllForUser(context.Background(), entities.UserID("u1")))
+
+	assert.Equal(t, []entities.UserID{"u1"}, repo.deleteAllCalls)
+	sets := appCache.setsFor("contacts.map.u1")
+	require.Len(t, sets, 1)
+	assert.Equal(t, "", sets[0].value)
+}
+
+func TestContactService_DeleteAllForUser_RepositoryErrorSkipsInvalidation(t *testing.T) {
+	repo := &fakeContactRepo{deleteAllErr: errors.New("delete all boom")}
+	appCache := newFakeCache()
+	service := newContactServiceForTest(t, repo, appCache, nil)
+
+	err := service.DeleteAllForUser(context.Background(), entities.UserID("u1"))
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "delete all boom")
+	assert.Empty(t, appCache.setsFor("contacts.map.u1"))
 }
 
 func TestContactService_InvalidationFailure_LogsErrorButReturnsNil(t *testing.T) {

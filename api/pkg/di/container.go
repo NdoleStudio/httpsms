@@ -124,6 +124,7 @@ func NewContainer(projectID string, version string) (container *Container) {
 	container.RegisterMessageThreadListeners()
 
 	container.RegisterContactRoutes()
+	container.RegisterContactListeners()
 
 	container.RegisterHeartbeatRoutes()
 	container.RegisterHeartbeatListeners()
@@ -1414,6 +1415,20 @@ func (container *Container) RegisterMessageThreadListeners() {
 		container.Logger(),
 		container.Tracer(),
 		container.MessageThreadService(),
+	)
+
+	for event, handler := range routes {
+		container.EventDispatcher().Subscribe(event, handler)
+	}
+}
+
+// RegisterContactListeners registers event listeners for listeners.ContactListener.
+func (container *Container) RegisterContactListeners() {
+	container.logger.Debug(fmt.Sprintf("registering listeners for %T", listeners.ContactListener{}))
+	_, routes := listeners.NewContactListener(
+		container.Logger(),
+		container.Tracer(),
+		container.ContactService(),
 	)
 
 	for event, handler := range routes {
