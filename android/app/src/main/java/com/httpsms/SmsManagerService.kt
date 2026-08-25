@@ -45,29 +45,39 @@ class SmsManagerService {
     }
 
     fun sendMultipartMessage(context: Context, contact: String, parts: ArrayList<String>, sim: String, sendIntents: ArrayList<PendingIntent>, deliveryIntents: ArrayList<PendingIntent>) {
+        runSmsAction(context, sim) { smsManager ->
+            smsManager.sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+        }
+    }
+
+    fun sendTextMessage(context: Context, contact: String, content: String, sim: String, sentIntent: PendingIntent, deliveryIntent: PendingIntent) {
+        runSmsAction(context, sim) { smsManager ->
+            smsManager.sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
+        }
+    }
+
+    // Wrapper for the smsManager's sendMultimediaMessage
+    fun sendMultimediaMessage(context: Context, pduUri: android.net.Uri, sim: String, sentIntent: PendingIntent) {
+        runSmsAction(context, sim) { smsManager ->
+            smsManager.sendMultimediaMessage(context, pduUri, null, null, sentIntent)
+        }
+    }
+
+    private fun runSmsAction(context: Context, sim: String, action: (SmsManager) -> Unit) {
         try {
-            getSmsManager(context, sim).sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+            action(getSmsManager(context, sim))
         } catch (e: NullPointerException) {
-            if (e.message?.contains("EmergencyNumber.getNumber()") == true) {
+            if (e.isEmergencyNumberBug()) {
                 Timber.w(e, "Caught EmergencyNumber NPE, falling back to default SmsManager")
-                getDefaultSmsManager(context).sendMultipartTextMessage(contact, null, parts, sendIntents, deliveryIntents)
+                action(getDefaultSmsManager(context))
             } else {
                 throw e
             }
         }
     }
 
-    fun sendTextMessage(context: Context, contact: String, content: String, sim: String, sentIntent:PendingIntent, deliveryIntent: PendingIntent) {
-        try {
-            getSmsManager(context, sim).sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
-        } catch (e: NullPointerException) {
-            if (e.message?.contains("EmergencyNumber.getNumber()") == true) {
-                Timber.w(e, "Caught EmergencyNumber NPE, falling back to default SmsManager")
-                getDefaultSmsManager(context).sendTextMessage(contact, null, content, sentIntent, deliveryIntent)
-            } else {
-                throw e
-            }
-        }
+    private fun Throwable.isEmergencyNumberBug(): Boolean {
+        return this is NullPointerException && this.message?.contains("EmergencyNumber.getNumber()") == true
     }
 
     @Suppress("DEPRECATION")
@@ -108,11 +118,5 @@ class SmsManagerService {
         } else {
             context.getSystemService(SmsManager::class.java).createForSubscriptionId(subscriptionId)
         }
-    }
-
-    // Wrapper for the smsManager's sendMultimediaMessage
-    fun sendMultimediaMessage(context: Context, pduUri: android.net.Uri, sim: String, sentIntent: PendingIntent) {
-        val smsManager = getSmsManager(context, sim)
-        smsManager.sendMultimediaMessage(context, pduUri, null, null, sentIntent)
     }
 }
