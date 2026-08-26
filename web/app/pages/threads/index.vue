@@ -7,7 +7,7 @@ useHead({
   title: 'Threads - httpSMS',
 })
 
-const { lgAndUp } = useDisplay()
+const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
 const phonesStore = usePhonesStore()
 const threadsStore = useThreadsStore()

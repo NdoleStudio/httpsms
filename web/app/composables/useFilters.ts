@@ -7,6 +7,8 @@ import {
   formatBillingPeriod,
   formatBillingPeriodDateOrdinal,
   humanizeTime,
+  humanizeTimeShort,
+  startsWithLetter,
 } from '../utils/filters'
 import { capitalize } from '../utils/capitalize'
 
@@ -18,8 +20,10 @@ export function useFilters() {
     formatMoney,
     formatDecimal,
     formatBillingPeriod,
+    humanizeTimeShort,
     formatBillingPeriodDateOrdinal,
     humanizeTime,
+    startsWithLetter,
     capitalize,
   }
 }

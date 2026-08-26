@@ -56,7 +56,7 @@ func TestSendSMS_Encrypted(t *testing.T) {
 	assert.NotEqual(t, plaintext, outstanding["content"])
 
 	fireEvent(ctx, t, phone.PhoneAPIKey, messageID, "SENT")
-	time.Sleep(200 * time.Millisecond)
+	pollMessageStatus(ctx, t, messageID, "sent", 15*time.Second)
 	fireEvent(ctx, t, phone.PhoneAPIKey, messageID, "DELIVERED")
 
 	msg := pollMessageStatus(ctx, t, messageID, "delivered", 30*time.Second)
@@ -200,8 +200,10 @@ func TestSendSMS_RateLimit(t *testing.T) {
 	assert.GreaterOrEqual(t, gapMs, int64(5500), "rate limit gap should be >= 5500ms (6s minus timing tolerance), got %dms", gapMs)
 
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "SENT")
-	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "DELIVERED")
+	pollMessageStatus(ctx, t, msgID1, "sent", 15*time.Second)
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID2, "SENT")
+	pollMessageStatus(ctx, t, msgID2, "sent", 15*time.Second)
+	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "DELIVERED")
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID2, "DELIVERED")
 
 	msg1 := pollMessageStatus(ctx, t, msgID1, "delivered", 15*time.Second)
@@ -335,7 +337,7 @@ func TestSendSMS_OutstandingFlow(t *testing.T) {
 	assert.Equal(t, contactNumber, outstanding["contact"])
 
 	fireEvent(ctx, t, phone.PhoneAPIKey, messageID, "SENT")
-	time.Sleep(200 * time.Millisecond)
+	pollMessageStatus(ctx, t, messageID, "sent", 15*time.Second)
 	fireEvent(ctx, t, phone.PhoneAPIKey, messageID, "DELIVERED")
 
 	msg := pollMessageStatus(ctx, t, messageID, "delivered", 30*time.Second)
@@ -538,7 +540,7 @@ func TestBulkSMS_Excel(t *testing.T) {
 
 	// Fire SENT then DELIVERED on message 1, leave message 2 pending
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "SENT")
-	time.Sleep(200 * time.Millisecond)
+	pollMessageStatus(ctx, t, msgID1, "sent", 15*time.Second)
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "DELIVERED")
 
 	// Poll until message 1 reaches "delivered"

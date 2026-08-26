@@ -42,7 +42,7 @@ useHead({
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const { mdAndUp, smAndDown, lgAndUp } = useDisplay()
+const { mdAndUp, smAndDown, lgAndUp } = useVDisplay()
 const messagesStore = useMessagesStore()
 const phonesStore = usePhonesStore()
 const authStore = useAuthStore()

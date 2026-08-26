@@ -1,0 +1,187 @@
+package repositories
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/NdoleStudio/stacktrace"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+	"gorm.io/gorm"
+)
+
+// gormContactRepository is responsible for persisting entities.Contact.
+type gormContactRepository struct {
+	logger telemetry.Logger
+	tracer telemetry.Tracer
+	db     *gorm.DB
+}
+
+// NewGormContactRepository creates the GORM version of the ContactRepository.
+func NewGormContactRepository(
+	logger telemetry.Logger,
+	tracer telemetry.Tracer,
+	db *gorm.DB,
+) ContactRepository {
+	return &gormContactRepository{
+		logger: logger.WithService(fmt.Sprintf("%T", &gormContactRepository{})),
+		tracer: tracer,
+		db:     db,
+	}
+}
+
+func (repository *gormContactRepository) Store(ctx context.Context, contacts []*entities.Contact) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if len(contacts) == 0 {
+		return nil
+	}
+
+	if err := repository.db.WithContext(ctx).Create(&contacts).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store [%d] contacts", len(contacts)))
+	}
+
+	return nil
+}
+
+func (repository *gormContactRepository) Update(ctx context.Context, contact *entities.Contact) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Save(contact).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update contact with ID [%s]", contact.ID))
+	}
+
+	return nil
+}
+
+func (repository *gormContactRepository) Load(ctx context.Context, userID entities.UserID, contactID uuid.UUID) (*entities.Contact, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	contact := new(entities.Contact)
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("id = ?", contactID).
+		First(contact).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "contact with ID [%s] for user [%s] does not exist", contactID, userID))
+	}
+
+	if err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load contact with ID [%s] for user [%s]", contactID, userID))
+	}
+
+	return contact, nil
+}
+
+// scopedContactQuery builds the shared query that scopes contacts to a user and
+// applies the optional name/emails/phone_numbers search filter. Index and Count
+// both build on it so their filters can never drift apart. It sets the model so
+// callers can chain Find or Count without repeating the table.
+func (repository *gormContactRepository) scopedContactQuery(ctx context.Context, userID entities.UserID, query string) *gorm.DB {
+	scoped := repository.db.WithContext(ctx).Model(&entities.Contact{}).Where("user_id = ?", userID)
+	if len(query) > 0 {
+		escaped := strings.NewReplacer(`%`, `\%`, `_`, `\_`).Replace(query)
+		queryPattern := "%" + escaped + "%"
+		scoped = scoped.Where(
+			repository.db.WithContext(ctx).Where("name ILIKE ?", queryPattern).
+				Or("array_to_string(emails, ',') ILIKE ?", queryPattern).
+				Or("array_to_string(phone_numbers, ',') ILIKE ?", queryPattern),
+		)
+	}
+	return scoped
+}
+
+func (repository *gormContactRepository) Index(ctx context.Context, userID entities.UserID, params IndexParams) (*[]entities.Contact, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	contacts := new([]entities.Contact)
+	if err := repository.scopedContactQuery(ctx, userID, params.Query).
+		Order(repository.contactOrder(params)).
+		Limit(params.Limit).
+		Offset(params.Skip).
+		Find(contacts).Error; err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot index contacts for user [%s] with params [%+#v]", userID, params))
+	}
+
+	return contacts, nil
+}
+
+func (repository *gormContactRepository) contactOrder(params IndexParams) string {
+	if params.SortBy == "" {
+		return "updated_at DESC, id DESC"
+	}
+
+	sortBy := "updated_at"
+	if params.SortBy == "name" {
+		sortBy = "name"
+	}
+
+	direction := "ASC"
+	if params.SortDescending {
+		direction = "DESC"
+	}
+
+	return fmt.Sprintf("%s %s, id %s", sortBy, direction, direction)
+}
+
+func (repository *gormContactRepository) Count(ctx context.Context, userID entities.UserID, params IndexParams) (int64, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	var count int64
+	if err := repository.scopedContactQuery(ctx, userID, params.Query).Count(&count).Error; err != nil {
+		return 0, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot count contacts for user [%s] with query [%s]", userID, params.Query))
+	}
+
+	return count, nil
+}
+
+func (repository *gormContactRepository) FetchByPhoneNumbers(ctx context.Context, userID entities.UserID, phoneNumbers []string) (*[]entities.Contact, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	contacts := new([]entities.Contact)
+	if err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("phone_numbers && ?", pq.Array(phoneNumbers)).
+		Order("updated_at ASC, id ASC").
+		Find(contacts).Error; err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch contacts for user [%s] by phone numbers [%v]", userID, phoneNumbers))
+	}
+
+	return contacts, nil
+}
+
+func (repository *gormContactRepository) Delete(ctx context.Context, userID entities.UserID, contactID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	err := repository.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("id = ?", contactID).
+		Delete(&entities.Contact{}).Error
+	if err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete contact with ID [%s] for user [%s]", contactID, userID))
+	}
+
+	return nil
+}
+
+func (repository *gormContactRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	if err := repository.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entities.Contact{}).Error; err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete all contacts for user [%s]", userID))
+	}
+
+	return nil
+}

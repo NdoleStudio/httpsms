@@ -97,6 +97,15 @@ func (h *handler) responseOK(c fiber.Ctx, message string, data interface{}) erro
 	})
 }
 
+func (h *handler) responseOKWithTotal(c fiber.Ctx, message string, data interface{}, total int64) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  "success",
+		"message": message,
+		"data":    data,
+		"total":   total,
+	})
+}
+
 func (h *handler) responseCreated(c fiber.Ctx, message string, data interface{}) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"status":  "success",

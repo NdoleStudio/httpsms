@@ -17,7 +17,7 @@ useHead({
 })
 
 const router = useRouter()
-const { mdAndDown, mdAndUp } = useDisplay()
+const { mdAndDown, mdAndUp } = useVDisplay()
 const notificationsStore = useNotificationsStore()
 const phonesStore = usePhonesStore()
 const { useApi } = useApiComposable()

@@ -17,6 +17,7 @@ import (
 const (
 	collectionHeartbeats        = "heartbeats"
 	collectionHeartbeatMonitors = "heartbeat_monitors"
+	collectionContacts          = "contacts"
 )
 
 // uuidEncodeValue encodes uuid.UUID as a BSON string
@@ -122,5 +123,32 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 		return stacktrace.Propagatef(err, "cannot create indexes on heartbeat_monitors collection")
 	}
 
+	contactsCol := db.Collection(collectionContacts)
+	_, err = contactsCol.Indexes().CreateMany(ctx, contactMongoIndexModels())
+	if err != nil {
+		return stacktrace.Propagatef(err, "cannot create indexes on contacts collection")
+	}
+
 	return nil
+}
+
+func contactMongoIndexModels() []mongo.IndexModel {
+	return []mongo.IndexModel{
+		{Keys: bson.D{
+			{Key: "user_id", Value: 1},
+			{Key: "updated_at", Value: -1},
+			{Key: "_id", Value: -1},
+		}},
+		{Keys: bson.D{
+			{Key: "user_id", Value: 1},
+			{Key: "name", Value: 1},
+			{Key: "_id", Value: 1},
+		}},
+		{Keys: bson.D{
+			{Key: "user_id", Value: 1},
+			{Key: "phone_numbers", Value: 1},
+			{Key: "updated_at", Value: 1},
+			{Key: "_id", Value: 1},
+		}},
+	}
 }

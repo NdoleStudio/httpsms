@@ -18,6 +18,7 @@ type MessageThreadIndex struct {
 	Query      string `json:"query" query:"query"`
 	Limit      string `json:"limit" query:"limit"`
 	Owner      string `json:"owner" query:"owner"`
+	Contacts   string `json:"contacts" query:"contacts" example:"false"`
 }
 
 // Sanitize sets defaults to MessageOutstanding
@@ -30,7 +31,16 @@ func (input *MessageThreadIndex) Sanitize() MessageThreadIndex {
 		input.IsArchived = "false"
 	}
 
+	if strings.TrimSpace(input.Contacts) == "" {
+		input.Contacts = "false"
+	}
+
 	input.IsArchived = input.sanitizeBool(input.IsArchived)
+	input.Contacts = input.sanitizeBool(input.Contacts)
+	if input.Contacts != "true" && input.Contacts != "false" {
+		input.Contacts = "false"
+	}
+
 	input.Query = strings.TrimSpace(input.Query)
 	input.Owner = input.sanitizeAddress(input.Owner)
 
@@ -50,8 +60,9 @@ func (input *MessageThreadIndex) ToGetParams(userID entities.UserID) services.Me
 			Query: input.Query,
 			Limit: input.getInt(input.Limit),
 		},
-		UserID:     userID,
-		IsArchived: input.getBool(input.IsArchived),
-		Owner:      input.Owner,
+		UserID:       userID,
+		IsArchived:   input.getBool(input.IsArchived),
+		WithContacts: input.getBool(input.Contacts),
+		Owner:        input.Owner,
 	}
 }

@@ -55,6 +55,7 @@ The API's Firebase SDK is configured (via `FCM_ENDPOINT` env var) to redirect al
 - [x] **Receive SMS E2E** — Phone submits received message to API → message is stored and retrievable via GET endpoint
 - [x] **Message thread read receipts E2E** — Incoming SMS and missed calls mark a thread unread, the existing thread update endpoint marks it read, and outbound activity preserves unread state
 - [x] **Unarchive Thread on Receive E2E** — Archived thread returns to the inbox on inbound message when the phone's `unarchive_thread` setting is enabled, and stays archived when disabled
+- [x] **Contacts E2E** — JSON CRUD, search and pagination totals, CSV import normalization, and contact details attached to message threads
 
 ## Prerequisites
 

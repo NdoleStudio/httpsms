@@ -14,7 +14,7 @@ useHead({
 })
 
 const router = useRouter()
-const { mdAndUp } = useDisplay()
+const { mdAndUp } = useVDisplay()
 const authStore = useAuthStore()
 const notificationsStore = useNotificationsStore()
 const { formatTimestamp } = useFilters()

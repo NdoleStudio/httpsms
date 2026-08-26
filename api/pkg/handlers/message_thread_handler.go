@@ -57,6 +57,7 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares .
 // @Param        skip	query  int  	false	"number of messages to skip"				minimum(0)
 // @Param        query	query  string  	false 	"filter message threads containing query"
 // @Param        limit	query  int  	false	"number of messages to return"				minimum(1)	maximum(20)
+// @Param        contacts	query  bool  	false	"include matching contact details"
 // @Success      200 	{object}	responses.MessageThreadsResponse
 // @Failure      400	{object}	responses.BadRequest
 // @Failure 	 401    {object}	responses.Unauthorized

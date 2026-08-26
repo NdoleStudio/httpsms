@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { mdAndUp, smAndDown } = useDisplay()
+const { mdAndUp, smAndDown } = useVDisplay()
 
 definePageMeta({
   layout: 'website',

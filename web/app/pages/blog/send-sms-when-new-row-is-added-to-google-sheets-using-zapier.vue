@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useDisplay } from 'vuetify'
-
-const { mdAndUp } = useDisplay()
+const { mdAndUp } = useVDisplay()
 
 definePageMeta({ layout: 'website' })
 

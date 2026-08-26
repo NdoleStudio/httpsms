@@ -15,6 +15,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type contactMapProvider interface {
+	GetContactMap(ctx context.Context, userID entities.UserID, phoneNumbers []string) (map[string]*entities.Contact, error)
+}
+
 // MessageThreadService is handles message requests
 type MessageThreadService struct {
 	service
@@ -23,6 +27,7 @@ type MessageThreadService struct {
 	repository      repositories.MessageThreadRepository
 	phoneRepository repositories.PhoneRepository
 	eventDispatcher *EventDispatcher
+	contactService  contactMapProvider
 }
 
 // NewMessageThreadService creates a new MessageThreadService
@@ -32,6 +37,7 @@ func NewMessageThreadService(
 	repository repositories.MessageThreadRepository,
 	phoneRepository repositories.PhoneRepository,
 	eventDispatcher *EventDispatcher,
+	contactService contactMapProvider,
 ) (s *MessageThreadService) {
 	return &MessageThreadService{
 		logger:          logger.WithService(fmt.Sprintf("%T", s)),
@@ -39,6 +45,7 @@ func NewMessageThreadService(
 		eventDispatcher: eventDispatcher,
 		repository:      repository,
 		phoneRepository: phoneRepository,
+		contactService:  contactService,
 	}
 }
 
@@ -265,21 +272,38 @@ func (service *MessageThreadService) getColor() string {
 // MessageThreadGetParams parameters fetching threads
 type MessageThreadGetParams struct {
 	repositories.IndexParams
-	IsArchived bool
-	UserID     entities.UserID
-	Owner      string
+	IsArchived   bool
+	WithContacts bool
+	UserID       entities.UserID
+	Owner        string
 }
 
 // GetThreads fetches threads for an owner
 func (service *MessageThreadService) GetThreads(ctx context.Context, params MessageThreadGetParams) (*[]entities.MessageThread, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
-
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
 	threads, err := service.repository.Index(ctx, params.UserID, params.Owner, params.IsArchived, params.IndexParams)
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not fetch messages threads for params [%+#v]", params))
+	}
+
+	if params.WithContacts && len(*threads) > 0 {
+		phoneNumbers := make([]string, 0, len(*threads))
+		for index := range *threads {
+			phoneNumbers = append(phoneNumbers, (*threads)[index].Contact)
+		}
+
+		contactMap, mapErr := service.contactService.GetContactMap(ctx, params.UserID, phoneNumbers)
+		if mapErr != nil {
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(mapErr, "cannot build contact map for user [%s]", params.UserID)))
+		} else {
+			for index := range *threads {
+				if contact, ok := contactMap[(*threads)[index].Contact]; ok {
+					(*threads)[index].ContactDetails = contact
+				}
+			}
+		}
 	}
 
 	ctxLogger.Info(fmt.Sprintf("fetched [%d] threads with params [%+#v]", len(*threads), params))
