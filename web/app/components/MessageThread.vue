@@ -143,37 +143,42 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
             <span class="text-body-small text-medium-emphasis">
               {{ threadDate(thread.order_timestamp) }}
             </span>
-            <div class="mt-1">
-              <v-icon
-                v-if="thread.status === 'expired'"
-                color="warning"
-                size="x-small"
-                :icon="mdiAlert"
-              />
-              <v-icon
-                v-else-if="thread.status === 'delivered'"
-                color="primary"
-                size="x-small"
-                :icon="mdiCheckAll"
-              />
-              <v-icon
-                v-else-if="thread.status === 'received'"
-                color="success"
-                size="x-small"
-                :icon="mdiCheckAll"
-              />
-              <v-icon
-                v-else-if="thread.status === 'sent'"
-                size="x-small"
-                :icon="mdiCheck"
-              />
-              <v-icon
-                v-else-if="thread.status === 'failed'"
-                color="error"
-                size="x-small"
-                :icon="mdiAlert"
-              />
-            </div>
+            <VTooltip location="bottom">
+              <template #activator="{ props }">
+                <div v-bind="props" class="mt-1">
+                  <v-icon
+                    v-if="thread.status === 'expired'"
+                    color="warning"
+                    size="x-small"
+                    :icon="mdiAlert"
+                  />
+                  <v-icon
+                    v-else-if="thread.status === 'delivered'"
+                    color="primary"
+                    size="x-small"
+                    :icon="mdiCheckAll"
+                  />
+                  <v-icon
+                    v-else-if="thread.status === 'received'"
+                    color="success"
+                    size="x-small"
+                    :icon="mdiCheckAll"
+                  />
+                  <v-icon
+                    v-else-if="thread.status === 'sent'"
+                    size="x-small"
+                    :icon="mdiCheck"
+                  />
+                  <v-icon
+                    v-else-if="thread.status === 'failed'"
+                    color="error"
+                    size="x-small"
+                    :icon="mdiAlert"
+                  />
+                </div>
+              </template>
+              <span>{{ thread.status }}</span>
+            </VTooltip>
           </div>
         </template>
       </v-list-item>

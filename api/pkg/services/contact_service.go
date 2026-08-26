@@ -147,13 +147,15 @@ func (service *ContactService) Get(ctx context.Context, userID entities.UserID, 
 
 // Index lists contacts for a user with the provided search/pagination params.
 func (service *ContactService) Index(ctx context.Context, userID entities.UserID, params repositories.IndexParams) (*[]entities.Contact, error) {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	contacts, err := service.repository.Index(ctx, userID, params)
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot index contacts for user [%s]", userID))
 	}
+
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] contacts with params [%+#v]", len(*contacts), params))
 	return contacts, nil
 }
 
@@ -252,6 +254,7 @@ func (service *ContactService) GetContactMap(ctx context.Context, userID entitie
 		return result, nil
 	}
 
+	ctxLogger.Info(fmt.Sprintf("fetching [%d] missing contacts by phone numbers for user [%s]", len(missing), userID))
 	contacts, err := service.repository.FetchByPhoneNumbers(ctx, userID, missing)
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch contacts by phone numbers for user [%s]", userID))

@@ -17,7 +17,7 @@ const EntityNameContact = "Contact"
 type ContactProperties map[string]string
 
 // Value implements driver.Valuer, serializing the map to JSON bytes.
-func (p ContactProperties) Value() (driver.Value, error) {
+func (p *ContactProperties) Value() (driver.Value, error) {
 	if p == nil {
 		return []byte("{}"), nil
 	}

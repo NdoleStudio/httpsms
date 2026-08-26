@@ -85,7 +85,7 @@ func (h *HeartbeatHandler) Index(c fiber.Ctx) error {
 
 	heartbeats, err := h.service.Index(ctx, h.userIDFomContext(c), request.Owner, request.ToIndexParams())
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get messgaes with params [%+#v]", request))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get heartbeats with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 

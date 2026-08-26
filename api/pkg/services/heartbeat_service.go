@@ -78,7 +78,7 @@ func (service *HeartbeatService) Index(ctx context.Context, userID entities.User
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not fetch heartbeats with parms [%+#v]", params))
 	}
 
-	ctxLogger.Info(fmt.Sprintf("fetched [%d] messages with prams [%+#v]", len(*heartbeats), params))
+	ctxLogger.Info(fmt.Sprintf("fetched [%d] entities.Heartbeat with prams [%+#v]", len(*heartbeats), params))
 	return heartbeats, nil
 }
 
