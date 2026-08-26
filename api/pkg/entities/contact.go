@@ -16,8 +16,10 @@ const EntityNameContact = "Contact"
 // ContactProperties is a free-form key/value map persisted as a jsonb column.
 type ContactProperties map[string]string
 
+var _ driver.Valuer = ContactProperties{}
+
 // Value implements driver.Valuer, serializing the map to JSON bytes.
-func (p *ContactProperties) Value() (driver.Value, error) {
+func (p ContactProperties) Value() (driver.Value, error) {
 	if p == nil {
 		return []byte("{}"), nil
 	}
