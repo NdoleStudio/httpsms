@@ -1,10 +1,31 @@
 package entities
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestContact_BSONFieldNames(t *testing.T) {
+	contactType := reflect.TypeOf(Contact{})
+	expected := map[string]string{
+		"ID":           "_id",
+		"UserID":       "user_id",
+		"Name":         "name",
+		"Emails":       "emails",
+		"PhoneNumbers": "phone_numbers",
+		"Properties":   "properties",
+		"CreatedAt":    "created_at",
+		"UpdatedAt":    "updated_at",
+	}
+
+	for fieldName, bsonName := range expected {
+		field, found := contactType.FieldByName(fieldName)
+		assert.True(t, found)
+		assert.Equal(t, bsonName, field.Tag.Get("bson"))
+	}
+}
 
 func TestContactProperties_ValueScanRoundTrip(t *testing.T) {
 	cases := []ContactProperties{

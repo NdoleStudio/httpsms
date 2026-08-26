@@ -925,12 +925,22 @@ func (container *Container) MessageThreadRepository() (repository repositories.M
 
 // ContactRepository creates a new instance of repositories.ContactRepository
 func (container *Container) ContactRepository() (repository repositories.ContactRepository) {
-	container.logger.Debug("creating GORM repositories.ContactRepository")
-	return repositories.NewGormContactRepository(
-		container.Logger(),
-		container.Tracer(),
-		container.DB(),
-	)
+	switch os.Getenv("CONTACT_DB_BACKEND") {
+	case "mongodb":
+		container.logger.Debug("creating MongoDB repositories.ContactRepository")
+		return repositories.NewMongoContactRepository(
+			container.Logger(),
+			container.Tracer(),
+			container.MongoDB(),
+		)
+	default:
+		container.logger.Debug("creating GORM repositories.ContactRepository")
+		return repositories.NewGormContactRepository(
+			container.Logger(),
+			container.Tracer(),
+			container.DB(),
+		)
+	}
 }
 
 // HeartbeatMonitorRepository creates a new instance of repositories.HeartbeatMonitorRepository

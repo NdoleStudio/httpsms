@@ -63,14 +63,14 @@ func (p *ContactProperties) Scan(src any) error {
 
 // Contact represents a saved contact belonging to a user.
 type Contact struct {
-	ID           uuid.UUID         `json:"id" gorm:"primaryKey;type:uuid" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	UserID       UserID            `json:"user_id" gorm:"index" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
-	Name         string            `json:"name" example:"Alice Smith"`
-	Emails       pq.StringArray    `json:"emails" gorm:"type:text[]" swaggertype:"array,string" example:"alice@example.com"`
-	PhoneNumbers pq.StringArray    `json:"phone_numbers" gorm:"type:text[]" swaggertype:"array,string" example:"+18005550199,+18005550100"`
-	Properties   ContactProperties `json:"properties" gorm:"type:jsonb" swaggertype:"object,string"`
-	CreatedAt    time.Time         `json:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
-	UpdatedAt    time.Time         `json:"updated_at" example:"2022-06-05T14:26:02.302718+03:00"`
+	ID           uuid.UUID         `json:"id" gorm:"primaryKey;type:uuid" bson:"_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	UserID       UserID            `json:"user_id" gorm:"index" bson:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	Name         string            `json:"name" bson:"name" example:"Alice Smith"`
+	Emails       pq.StringArray    `json:"emails" gorm:"type:text[]" bson:"emails" swaggertype:"array,string" example:"alice@example.com"`
+	PhoneNumbers pq.StringArray    `json:"phone_numbers" gorm:"type:text[]" bson:"phone_numbers" swaggertype:"array,string" example:"+18005550199,+18005550100"`
+	Properties   ContactProperties `json:"properties" gorm:"type:jsonb" bson:"properties" swaggertype:"object,string"`
+	CreatedAt    time.Time         `json:"created_at" bson:"created_at" example:"2022-06-05T14:26:02.302718+03:00"`
+	UpdatedAt    time.Time         `json:"updated_at" bson:"updated_at" example:"2022-06-05T14:26:02.302718+03:00"`
 }
 
 // TableName overrides the table name used by Contact.
