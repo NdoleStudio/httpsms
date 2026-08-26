@@ -50,16 +50,7 @@ func (repository *mongoContactRepository) Store(ctx context.Context, contacts []
 		documents[index] = contact
 	}
 
-	session, err := repository.collection.Database().Client().StartSession()
-	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot start transaction to store [%d] contacts", len(contacts)))
-	}
-	defer session.EndSession(ctx)
-
-	_, err = session.WithTransaction(ctx, func(transactionCtx context.Context) (any, error) {
-		return repository.collection.InsertMany(transactionCtx, documents)
-	})
-	if err != nil {
+	if _, err := repository.collection.InsertMany(ctx, documents); err != nil {
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store [%d] contacts", len(contacts)))
 	}
 
