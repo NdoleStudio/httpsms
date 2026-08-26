@@ -18,6 +18,10 @@ export interface LoadContactsOptions {
   sortDescending?: boolean
 }
 
+export interface ContactMutationOptions {
+  refresh?: boolean
+}
+
 // DEFAULT_LIMIT mirrors the contacts page's initial items-per-page. It is only
 // used when a caller (e.g. a mutation refresh) does not specify its own limit.
 const DEFAULT_LIMIT = 10
@@ -112,8 +116,10 @@ export const useContactsStore = defineStore('contacts', () => {
 
   async function saveContacts(
     items: ContactInput | ContactInput[],
+    options: ContactMutationOptions = {},
   ): Promise<void> {
     const contactsToSave = Array.isArray(items) ? items : [items]
+    const { refresh = true } = options
 
     loading.value = true
     try {
@@ -137,7 +143,9 @@ export const useContactsStore = defineStore('contacts', () => {
             : 'Contact created successfully',
         type: 'success',
       })
-      await loadContacts(true)
+      if (refresh) {
+        await loadContacts(true)
+      }
     } finally {
       loading.value = false
     }
@@ -146,7 +154,9 @@ export const useContactsStore = defineStore('contacts', () => {
   async function updateContact(
     id: string,
     payload: ContactInput,
+    options: ContactMutationOptions = {},
   ): Promise<void> {
+    const { refresh = true } = options
     loading.value = true
     try {
       try {
@@ -166,7 +176,9 @@ export const useContactsStore = defineStore('contacts', () => {
         message: 'Contact updated',
         type: 'success',
       })
-      await loadContacts(true)
+      if (refresh) {
+        await loadContacts(true)
+      }
     } finally {
       loading.value = false
     }

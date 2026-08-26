@@ -1,27 +1,21 @@
 <script setup lang="ts">
 import {
-  mdiAccount,
   mdiAccountGroupOutline,
   mdiAccountPlus,
   mdiAlertCircleOutline,
   mdiArrowLeft,
   mdiClose,
   mdiDelete,
-  mdiEmailOutline,
   mdiFileUpload,
   mdiMagnify,
   mdiPhoneCheck,
   mdiEmailCheckOutline,
   mdiSquareEditOutline,
-  mdiPlus,
-  mdiContentSaveCheck,
 } from '@mdi/js'
-import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { EntitiesContact } from '~~/shared/types/api'
-import { useContactsStore, type ContactInput } from '~/stores/contacts'
+import { useContactsStore } from '~/stores/contacts'
 import { useFilters } from '~/composables/useFilters'
-import { ErrorMessages } from '~/utils/errors'
 import { toApiError } from '~/utils/api-error'
 
 definePageMeta({
@@ -31,23 +25,6 @@ definePageMeta({
 useHead({
   title: 'Contacts - httpSMS',
 })
-
-interface PropertyRow {
-  key: string
-  value: string
-}
-
-interface PhoneNumberRow {
-  value: string
-  country: string
-}
-
-interface ContactForm {
-  name: string
-  phoneNumbers: PhoneNumberRow[]
-  emails: string[]
-  properties: PropertyRow[]
-}
 
 const contactsStore = useContactsStore()
 const { formatPhoneNumber, formatTimestamp, humanizeTimeShort } = useFilters()
@@ -68,7 +45,7 @@ const itemsPerPageOptions = [
   { value: 100, title: '100' },
 ]
 
-const editDialog = ref(false)
+const contactDialog = ref(false)
 const deleteDialog = ref(false)
 const importDialog = ref(false)
 const saving = ref(false)
@@ -83,16 +60,8 @@ const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([
 // first fetch is driven by onMounted rather than firing twice on mount.
 const initialLoadComplete = ref(false)
 
-const editingId = ref<string | null>(null)
+const editingContact = ref<EntitiesContact | null>(null)
 const pendingDelete = ref<EntitiesContact | null>(null)
-
-const form = ref<ContactForm>({
-  name: '',
-  phoneNumbers: [{ value: '', country: 'US' }],
-  emails: [''],
-  properties: [{ key: '', value: '' }],
-})
-const formErrors = ref(new ErrorMessages())
 
 const importFile = ref<File | null>(null)
 const importErrors = ref<string[]>([])
@@ -106,50 +75,14 @@ const searchTerm = computed({
   },
 })
 
-const dialogTitle = computed(() =>
-  editingId.value ? 'Edit Contact' : 'Add Contact',
-)
-
-function emptyForm(): ContactForm {
-  return {
-    name: '',
-    phoneNumbers: [{ value: '', country: 'US' }],
-    emails: [''],
-    properties: [{ key: '', value: '' }],
-  }
-}
-
-function phoneNumberRow(value = ''): PhoneNumberRow {
-  return {
-    value,
-    country: parsePhoneNumberFromString(value)?.country ?? 'US',
-  }
-}
-
 function openAdd() {
-  editingId.value = null
-  form.value = emptyForm()
-  formErrors.value = new ErrorMessages()
-  editDialog.value = true
+  editingContact.value = null
+  contactDialog.value = true
 }
 
 function openEdit(contact: EntitiesContact) {
-  editingId.value = contact.id
-  const propertyEntries = Object.entries(contact.properties ?? {}).map(
-    ([key, value]) => ({ key, value }),
-  )
-  form.value = {
-    name: contact.name ?? '',
-    phoneNumbers: contact.phone_numbers?.length
-      ? contact.phone_numbers.map((value) => phoneNumberRow(value))
-      : [phoneNumberRow()],
-    emails: contact.emails?.length ? [...contact.emails] : [''],
-    properties: propertyEntries.length
-      ? propertyEntries
-      : [{ key: '', value: '' }],
-  }
-  formErrors.value = new ErrorMessages()
-  editDialog.value = true
+  editingContact.value = contact
+  contactDialog.value = true
 }
 
 function openDelete(contact: EntitiesContact) {
@@ -163,107 +96,12 @@ function openImport() {
   importDialog.value = true
 }
 
-function addPhoneNumber() {
-  form.value.phoneNumbers.push(phoneNumberRow())
-}
-
-function removePhoneNumber(index: number) {
-  form.value.phoneNumbers.splice(index, 1)
-  if (form.value.phoneNumbers.length === 0) {
-    form.value.phoneNumbers.push(phoneNumberRow())
-  }
-}
-
-function addEmail() {
-  form.value.emails.push('')
-}
-
-function removeEmail(index: number) {
-  form.value.emails.splice(index, 1)
-  if (form.value.emails.length === 0) {
-    form.value.emails.push('')
-  }
-}
-
-function addProperty() {
-  form.value.properties.push({ key: '', value: '' })
-}
-
-function removeProperty(index: number) {
-  form.value.properties.splice(index, 1)
-  if (form.value.properties.length === 0) {
-    form.value.properties.push({ key: '', value: '' })
-  }
-}
-
-function buildPayload(): ContactInput {
-  const properties: Record<string, string> = {}
-  form.value.properties.forEach((row) => {
-    const key = row.key.trim()
-    if (key) {
-      properties[key] = row.value
-    }
-  })
-  return {
-    name: form.value.name.trim(),
-    phone_numbers: form.value.phoneNumbers
-      .map(({ value }) => value.trim())
-      .filter((value) => value.length > 0),
-    emails: form.value.emails
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0),
-    properties,
-  }
-}
-
-function validateForm(): boolean {
-  const bag = new ErrorMessages()
-  if (form.value.name.trim() === '') {
-    bag.add('name', 'The name is required.')
-  }
-  const hasPhone = form.value.phoneNumbers.some(
-    ({ value }) => value.trim().length > 0,
-  )
-  if (!hasPhone) {
-    bag.add('phone_numbers', 'At least one phone number is required.')
-  }
-  formErrors.value = bag
-  return bag.size() === 0
-}
-
 function fieldErrorsFromApi(error: unknown): string[] {
   const data = toApiError(error).data?.data
   if (!data || typeof data !== 'object') {
     return []
   }
   return Object.values(data).flat()
-}
-
-async function submitForm() {
-  if (!validateForm()) {
-    return
-  }
-  const payload = buildPayload()
-  saving.value = true
-  try {
-    if (editingId.value) {
-      await contactsStore.updateContact(editingId.value, payload)
-    } else {
-      await contactsStore.saveContacts([payload])
-    }
-    editDialog.value = false
-  } catch (error: unknown) {
-    // The store already surfaced a toast; retain the API field messages so the
-    // user can correct them inline instead of only seeing a transient toast.
-    const bag = new ErrorMessages()
-    const messages = fieldErrorsFromApi(error)
-    if (messages.length > 0) {
-      bag.addMany('contacts', messages)
-    }
-    formErrors.value = bag
-  } finally {
-    saving.value = false
-  }
 }
 
 async function confirmDelete() {
@@ -582,194 +420,7 @@ onBeforeUnmount(() => {
       </VRow>
     </VContainer>
 
-    <!-- Add / Edit contact dialog -->
-    <VDialog v-model="editDialog" max-width="640" opacity="0.9">
-      <VCard>
-        <VCardTitle class="d-flex align-center">
-          <span>{{ dialogTitle }}</span>
-          <VSpacer />
-          <VBtn
-            :icon="mdiClose"
-            variant="text"
-            color="warning"
-            size="small"
-            aria-label="Close dialog"
-            @click="editDialog = false"
-          />
-        </VCardTitle>
-        <VCardText>
-          <VAlert
-            v-if="formErrors.get('contacts').length"
-            type="error"
-            variant="tonal"
-            density="comfortable"
-            class="mb-4"
-            :icon="mdiAlertCircleOutline"
-          >
-            <ul class="pl-4 mb-0">
-              <li v-for="message in formErrors.get('contacts')" :key="message">
-                {{ message }}
-              </li>
-            </ul>
-          </VAlert>
-
-          <VTextField
-            v-model="form.name"
-            label="Name"
-            variant="outlined"
-            density="comfortable"
-            persistent-placeholder
-            placeholder="e.g John Doe"
-            :prepend-inner-icon="mdiAccount"
-            :error="formErrors.has('name')"
-            :error-messages="formErrors.get('name')"
-            class="mb-2"
-          />
-
-          <div class="d-flex align-center mt-2 mb-1">
-            <span class="text-subtitle-2">Phone Numbers</span>
-            <VSpacer />
-            <VBtn
-              variant="text"
-              color="primary"
-              size="small"
-              :prepend-icon="mdiPlus"
-              @click="addPhoneNumber"
-            >
-              Add
-            </VBtn>
-          </div>
-          <div
-            v-for="(phone, index) in form.phoneNumbers"
-            :key="`phone-${index}`"
-            class="d-flex align-start ga-2"
-          >
-            <div class="mt-2" style="flex: 0 0 92%">
-              <v-phone-input
-                v-model="phone.value"
-                v-model:country="phone.country"
-                :label="`Phone number ${index + 1}`"
-                country-label="Country"
-                placeholder="Phone number e.g 18005550199"
-                variant="outlined"
-                density="comfortable"
-                color="primary"
-                persistent-placeholder
-                :error="index === 0 && formErrors.has('phone_numbers')"
-                :error-messages="
-                  index === 0 ? formErrors.get('phone_numbers') : []
-                "
-              />
-            </div>
-            <div style="flex: 0 0 8%">
-              <VBtn
-                :icon="mdiClose"
-                variant="text"
-                size="small"
-                class="mt-1"
-                aria-label="Remove phone number"
-                @click="removePhoneNumber(index)"
-              />
-            </div>
-          </div>
-
-          <div class="d-flex align-center mt-2 mb-1">
-            <span class="text-subtitle-2">Email Addresses</span>
-            <VSpacer />
-            <VBtn
-              variant="text"
-              color="primary"
-              size="small"
-              :prepend-icon="mdiPlus"
-              @click="addEmail"
-            >
-              Add
-            </VBtn>
-          </div>
-          <div
-            v-for="(email, index) in form.emails"
-            :key="`email-${email}-${index}`"
-            class="d-flex align-start ga-2"
-          >
-            <VTextField
-              v-model="form.emails[index]"
-              :label="`Email ${index + 1}`"
-              placeholder="e.g alice@example.com"
-              variant="outlined"
-              autocomplete="email"
-              type="email"
-              persistent-placeholder
-              density="comfortable"
-              :prepend-inner-icon="mdiEmailOutline"
-            />
-            <VBtn
-              :icon="mdiClose"
-              variant="text"
-              size="small"
-              class="mt-1"
-              aria-label="Remove email"
-              @click="removeEmail(index)"
-            />
-          </div>
-
-          <div class="d-flex align-center mt-2 mb-1">
-            <span class="text-subtitle-2">Properties</span>
-            <VSpacer />
-            <VBtn
-              variant="text"
-              color="primary"
-              size="small"
-              :prepend-icon="mdiPlus"
-              @click="addProperty"
-            >
-              Add
-            </VBtn>
-          </div>
-          <div
-            v-for="(property, index) in form.properties"
-            :key="`property-${index}`"
-            class="d-flex align-start ga-2"
-          >
-            <VTextField
-              v-model="property.key"
-              label="Key"
-              variant="outlined"
-              density="comfortable"
-            />
-            <VTextField
-              v-model="property.value"
-              label="Value"
-              variant="outlined"
-              density="comfortable"
-            />
-            <VBtn
-              :icon="mdiClose"
-              variant="text"
-              size="small"
-              class="mt-1"
-              aria-label="Remove property"
-              @click="removeProperty(index)"
-            />
-          </div>
-        </VCardText>
-        <VCardActions class="pb-4">
-          <VBtn
-            color="primary"
-            variant="flat"
-            :loading="saving"
-            :disabled="saving"
-            :prepend-icon="mdiContentSaveCheck"
-            @click="submitForm"
-          >
-            Save Contact
-          </VBtn>
-          <VSpacer />
-          <VBtn color="warning" variant="text" @click="editDialog = false">
-            Close
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+    <ContactDialog v-model="contactDialog" :contact="editingContact" />
 
     <!-- Delete contact dialog -->
     <VDialog v-model="deleteDialog" max-width="480" opacity="0.9">

@@ -14,6 +14,8 @@ import {
   mdiAccount,
   mdiRefresh,
   mdiContentCopy,
+  mdiAccountPlus,
+  mdiSquareEditOutline,
 } from '@mdi/js'
 import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
@@ -47,6 +49,7 @@ const loadingMessages = ref(false)
 const hideMessages = ref(true)
 const messages = ref<EntitiesMessage[]>([])
 const selectedMenuItem = ref(-1)
+const contactDialog = ref(false)
 const messageBody = ref<HTMLElement | null>(null)
 const form = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
 
@@ -111,6 +114,10 @@ function currentThreadContactTitle(): string {
   return (
     thread.contact_details?.name?.trim() || formatPhoneNumber(thread.contact)
   )
+}
+
+async function refreshThreadContact() {
+  await threadsStore.loadThreads()
 }
 
 function scrollToElement() {
@@ -277,7 +284,16 @@ onBeforeUnmount(() => {
           <VIcon :icon="mdiArrowLeft" />
         </VBtn>
         <VToolbarTitle v-if="currentThread">
-          {{ currentThreadContactTitle() }}
+          <VTooltip
+            v-if="currentThread.contact_details?.name?.trim()"
+            :text="formatPhoneNumber(currentThread.contact)"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <span v-bind="props">{{ currentThreadContactTitle() }}</span>
+            </template>
+          </VTooltip>
+          <template v-else>{{ currentThreadContactTitle() }}</template>
         </VToolbarTitle>
         <VMenu>
           <template #activator="{ props }">
@@ -290,6 +306,24 @@ onBeforeUnmount(() => {
             prepend-gap="24"
             :density="mdAndDown ? 'compact' : 'default'"
           >
+            <VListItem
+              v-if="currentThread?.contact_details"
+              @click="contactDialog = true"
+            >
+              <template #prepend>
+                <VIcon :icon="mdiSquareEditOutline" />
+              </template>
+              <VListItemTitle>Edit Contact</VListItemTitle>
+            </VListItem>
+            <VListItem
+              v-else-if="contactIsPhoneNumber"
+              @click="contactDialog = true"
+            >
+              <template #prepend>
+                <VIcon :icon="mdiAccountPlus" />
+              </template>
+              <VListItemTitle>Add Contact</VListItemTitle>
+            </VListItem>
             <VListItem
               v-if="currentThread && !currentThread.is_archived"
               @click.prevent="archiveThread"
@@ -571,6 +605,13 @@ onBeforeUnmount(() => {
         </VFooter>
       </VContainer>
     </div>
+    <ContactDialog
+      v-model="contactDialog"
+      :contact="currentThread?.contact_details"
+      :initial-phone-number="currentThread?.contact ?? ''"
+      :refresh-contacts="false"
+      @saved="refreshThreadContact"
+    />
   </VContainer>
 </template>
 
