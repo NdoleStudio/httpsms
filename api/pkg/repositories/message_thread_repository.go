@@ -12,20 +12,17 @@ import (
 type MessageThreadActivityUpdate struct {
 	MessageThreadID uuid.UUID
 	UserID          entities.UserID
-	// Timestamp controls thread activity ordering; EventTimestamp is the server-side unread watermark.
-	Timestamp      time.Time
-	MessageID      uuid.UUID
-	Content        string
-	Status         entities.MessageStatus
-	CountAsUnread  bool
-	EventTimestamp time.Time
-	Unarchive      bool
+	Timestamp       time.Time
+	MessageID       uuid.UUID
+	Content         string
+	Status          entities.MessageStatus
+	CountAsUnread   bool
+	Unarchive       bool
 }
 
 type MessageThreadStoreParams struct {
-	Thread         *entities.MessageThread
-	CountAsUnread  bool
-	EventTimestamp time.Time
+	Thread        *entities.MessageThread
+	CountAsUnread bool
 }
 
 type MessageThreadStatusUpdate struct {

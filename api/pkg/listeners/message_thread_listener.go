@@ -210,15 +210,14 @@ func (listener *MessageThreadListener) OnMessagePhoneReceived(ctx context.Contex
 	}
 
 	updateParams := services.MessageThreadUpdateParams{
-		Owner:          payload.Owner,
-		Contact:        payload.Contact,
-		Timestamp:      payload.Timestamp,
-		UserID:         payload.UserID,
-		Status:         entities.MessageStatusReceived,
-		Content:        payload.Content,
-		MessageID:      payload.MessageID,
-		CountAsUnread:  true,
-		EventTimestamp: event.Time(),
+		Owner:         payload.Owner,
+		Contact:       payload.Contact,
+		Timestamp:     payload.Timestamp,
+		UserID:        payload.UserID,
+		Status:        entities.MessageStatusReceived,
+		Content:       payload.Content,
+		MessageID:     payload.MessageID,
+		CountAsUnread: true,
 	}
 
 	if err := listener.service.UpdateThread(ctx, updateParams); err != nil {
@@ -239,15 +238,14 @@ func (listener *MessageThreadListener) OnMessageCallMissed(ctx context.Context, 
 	}
 
 	params := services.MessageThreadUpdateParams{
-		Owner:          payload.Owner,
-		Contact:        payload.Contact,
-		UserID:         payload.UserID,
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      payload.Timestamp,
-		Content:        "Missed phone call",
-		MessageID:      payload.MessageID,
-		CountAsUnread:  true,
-		EventTimestamp: event.Time(),
+		Owner:         payload.Owner,
+		Contact:       payload.Contact,
+		UserID:        payload.UserID,
+		Status:        entities.MessageStatusReceived,
+		Timestamp:     payload.Timestamp,
+		Content:       "Missed phone call",
+		MessageID:     payload.MessageID,
+		CountAsUnread: true,
 	}
 	if err := listener.service.UpdateThread(ctx, params); err != nil {
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update thread for missed call [%s] on event [%s]", payload.MessageID, event.ID()))

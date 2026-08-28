@@ -65,7 +65,6 @@ import (
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/listeners"
-	"github.com/NdoleStudio/httpsms/pkg/migrations"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/stacktrace"
@@ -380,8 +379,40 @@ ALTER TABLE discords ADD CONSTRAINT IF NOT EXISTS uni_discords_server_id CHECK (
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot migrate %T", &entities.Message{}))
 	}
 
-	if err = migrations.MigrateMessageThreadUnreadCount(db); err != nil {
-		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate message thread unread counts"))
+	if err = db.AutoMigrate(&entities.MessageThread{}); err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot migrate message thread schema"))
+	}
+
+	if db.Migrator().HasColumn(&entities.MessageThread{}, "is_read") {
+		if err = db.
+			Model(&entities.MessageThread{}).
+			Where("is_read = ?", false).
+			Where("unread_count = ?", 0).
+			Update("unread_count", 1).
+			Error; err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot backfill message thread unread counts"))
+		}
+		if err = db.Migrator().DropColumn(&entities.MessageThread{}, "is_read"); err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot drop legacy message thread read state"))
+		}
+	}
+
+	if db.Migrator().HasColumn(&entities.MessageThread{}, "last_read_at") {
+		if err = db.Migrator().DropColumn(&entities.MessageThread{}, "last_read_at"); err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot drop message thread read watermark"))
+		}
+	}
+
+	if db.Migrator().HasTable("message_thread_unread_items") {
+		if err = db.Migrator().DropTable("message_thread_unread_items"); err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot drop message thread unread item ledger"))
+		}
+	}
+
+	if db.Migrator().HasTable("message_thread_deleted_items") {
+		if err = db.Migrator().DropTable("message_thread_deleted_items"); err != nil {
+			container.logger.Fatal(stacktrace.Propagate(err, "cannot drop deleted message item ledger"))
+		}
 	}
 
 	if err = db.AutoMigrate(&entities.User{}); err != nil {

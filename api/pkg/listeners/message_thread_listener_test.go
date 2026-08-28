@@ -35,7 +35,6 @@ func TestMessageThreadListenerMarksInboundMessageUnread(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, repository.activity.CountAsUnread)
-	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
 }
 
 func TestMessageThreadListenerMarksMissedCallUnread(t *testing.T) {
@@ -59,7 +58,6 @@ func TestMessageThreadListenerMarksMissedCallUnread(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, repository.activity.CountAsUnread)
 	assert.Equal(t, "Missed phone call", repository.activity.Content)
-	assert.Equal(t, event.Time(), repository.activity.EventTimestamp)
 }
 
 func TestMessageThreadListenerDeletesNonLastUnreadMessage(t *testing.T) {

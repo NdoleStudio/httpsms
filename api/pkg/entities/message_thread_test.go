@@ -21,9 +21,8 @@ func TestMessageThreadUnreadFields(t *testing.T) {
 	assert.Contains(t, unreadCount.Tag.Get("gorm"), "not null")
 	assert.Contains(t, unreadCount.Tag.Get("gorm"), "default:0")
 
-	lastReadAt, ok := threadType.FieldByName("LastReadAt")
-	require.True(t, ok)
-	assert.Equal(t, "-", lastReadAt.Tag.Get("json"))
+	_, hasLastReadAt := threadType.FieldByName("LastReadAt")
+	assert.False(t, hasLastReadAt)
 }
 
 func TestMessageThreadContactDetailsAreTransientAndOmittedWhenNil(t *testing.T) {
@@ -43,31 +42,12 @@ func TestMessageThreadContactDetailsAreTransientAndOmittedWhenNil(t *testing.T) 
 	assert.NotContains(t, payload, "contact_details")
 }
 
-func TestMessageThreadUnreadItemUsesMessageIDAsPrimaryKey(t *testing.T) {
-	itemType := reflect.TypeOf(MessageThreadUnreadItem{})
+func TestMessageThreadConversationHasCompositeUniqueIndex(t *testing.T) {
+	threadType := reflect.TypeOf(MessageThread{})
 
-	messageID, ok := itemType.FieldByName("MessageID")
-	require.True(t, ok)
-	assert.Contains(t, messageID.Tag.Get("gorm"), "primaryKey")
-}
-
-func TestMessageThreadUnreadItemRetainsCountedState(t *testing.T) {
-	itemType := reflect.TypeOf(MessageThreadUnreadItem{})
-
-	counted, ok := itemType.FieldByName("Counted")
-	require.True(t, ok)
-	assert.Contains(t, counted.Tag.Get("gorm"), "not null")
-	assert.Contains(t, counted.Tag.Get("gorm"), "default:true")
-}
-
-func TestMessageThreadDeletedItemIsIndependentFromThreadLifecycle(t *testing.T) {
-	itemType := reflect.TypeOf(MessageThreadDeletedItem{})
-
-	require.Equal(t, 1, itemType.NumField())
-	messageID, ok := itemType.FieldByName("MessageID")
-	require.True(t, ok)
-	assert.Contains(t, messageID.Tag.Get("gorm"), "primaryKey")
-	assert.Contains(t, messageID.Tag.Get("gorm"), "type:uuid")
-	_, hasMessageThreadID := itemType.FieldByName("MessageThreadID")
-	assert.False(t, hasMessageThreadID)
+	for _, fieldName := range []string{"UserID", "Owner", "Contact"} {
+		field, ok := threadType.FieldByName(fieldName)
+		require.True(t, ok)
+		assert.Contains(t, field.Tag.Get("gorm"), "uniqueIndex:idx_message_threads_conversation")
+	}
 }

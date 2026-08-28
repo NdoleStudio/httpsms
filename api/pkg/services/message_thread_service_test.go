@@ -144,20 +144,18 @@ func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {
 
 	service := newMessageThreadServiceForTest(repository)
 	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-		UserID:         entities.UserID("user-id"),
-		Owner:          "+18005550199",
-		Contact:        "+18005550100",
-		MessageID:      uuid.New(),
-		Content:        "hello",
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      eventTimestamp,
-		CountAsUnread:  true,
-		EventTimestamp: eventTimestamp,
+		UserID:        entities.UserID("user-id"),
+		Owner:         "+18005550199",
+		Contact:       "+18005550100",
+		MessageID:     uuid.New(),
+		Content:       "hello",
+		Status:        entities.MessageStatusReceived,
+		Timestamp:     eventTimestamp,
+		CountAsUnread: true,
 	})
 
 	require.NoError(t, err)
 	assert.True(t, captured.CountAsUnread)
-	assert.Equal(t, eventTimestamp, captured.EventTimestamp)
 }
 
 func TestUpdateThreadPreservesReadStateForOutboundActivity(t *testing.T) {
@@ -206,15 +204,14 @@ func TestUpdateThreadUnarchivesArchivedInboundMessageWhenPhoneSettingEnabled(t *
 
 	service := newMessageThreadServiceWithPhoneForTest(repository, phoneRepository)
 	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-		UserID:         entities.UserID("user-id"),
-		Owner:          "+18005550199",
-		Contact:        "+18005550100",
-		MessageID:      uuid.New(),
-		Content:        "hello",
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      time.Now().UTC(),
-		CountAsUnread:  true,
-		EventTimestamp: time.Now().UTC(),
+		UserID:        entities.UserID("user-id"),
+		Owner:         "+18005550199",
+		Contact:       "+18005550100",
+		MessageID:     uuid.New(),
+		Content:       "hello",
+		Status:        entities.MessageStatusReceived,
+		Timestamp:     time.Now().UTC(),
+		CountAsUnread: true,
 	})
 
 	require.NoError(t, err)
@@ -240,15 +237,14 @@ func TestUpdateThreadIgnoresPhoneLookupErrorsWhenCheckingUnarchive(t *testing.T)
 
 	service := newMessageThreadServiceWithPhoneForTest(repository, phoneRepository)
 	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-		UserID:         entities.UserID("user-id"),
-		Owner:          "+18005550199",
-		Contact:        "+18005550100",
-		MessageID:      uuid.New(),
-		Content:        "hello",
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      time.Now().UTC(),
-		CountAsUnread:  true,
-		EventTimestamp: time.Now().UTC(),
+		UserID:        entities.UserID("user-id"),
+		Owner:         "+18005550199",
+		Contact:       "+18005550100",
+		MessageID:     uuid.New(),
+		Content:       "hello",
+		Status:        entities.MessageStatusReceived,
+		Timestamp:     time.Now().UTC(),
+		CountAsUnread: true,
 	})
 
 	require.NoError(t, err)
@@ -284,15 +280,14 @@ func TestUpdateThreadDelegatesStaleDeliveredActivityAfterResolvingUnarchive(t *t
 
 	service := newMessageThreadServiceWithPhoneForTest(repository, phoneRepository)
 	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-		UserID:         entities.UserID("user-id"),
-		Owner:          "+18005550199",
-		Contact:        "+18005550100",
-		MessageID:      messageID,
-		Content:        "stale",
-		Status:         entities.MessageStatusReceived,
-		Timestamp:      time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
-		CountAsUnread:  true,
-		EventTimestamp: time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+		UserID:        entities.UserID("user-id"),
+		Owner:         "+18005550199",
+		Contact:       "+18005550100",
+		MessageID:     messageID,
+		Content:       "stale",
+		Status:        entities.MessageStatusReceived,
+		Timestamp:     time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+		CountAsUnread: true,
 	})
 
 	require.NoError(t, err)
@@ -329,26 +324,22 @@ func TestCreateThreadSetsUnreadCountFromActivityDirection(t *testing.T) {
 			}
 
 			messageID := uuid.New()
-			eventTimestamp := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
 			service := newMessageThreadServiceForTest(repository)
 			err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
-				UserID:         entities.UserID("user-id"),
-				Owner:          "+18005550199",
-				Contact:        "+18005550100",
-				MessageID:      messageID,
-				Content:        "hello",
-				Status:         test.status,
-				Timestamp:      time.Now().UTC(),
-				CountAsUnread:  test.countAsUnread,
-				EventTimestamp: eventTimestamp,
+				UserID:        entities.UserID("user-id"),
+				Owner:         "+18005550199",
+				Contact:       "+18005550100",
+				MessageID:     messageID,
+				Content:       "hello",
+				Status:        test.status,
+				Timestamp:     time.Now().UTC(),
+				CountAsUnread: test.countAsUnread,
 			})
 
 			require.NoError(t, err)
 			require.NotNil(t, stored.Thread)
 			assert.Equal(t, test.wantUnreadCount, stored.Thread.UnreadCount)
-			assert.Equal(t, time.Unix(0, 0).UTC(), stored.Thread.LastReadAt)
 			assert.Equal(t, test.countAsUnread, stored.CountAsUnread)
-			assert.Equal(t, eventTimestamp, stored.EventTimestamp)
 			if test.wantUnreadMessage {
 				require.NotNil(t, stored.Thread.LastMessageID)
 				assert.Equal(t, messageID, *stored.Thread.LastMessageID)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
-	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbgorm"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +20,6 @@ type gormMessageThreadRepository struct {
 	logger telemetry.Logger
 	tracer telemetry.Tracer
 	db     *gorm.DB
-	now    func() time.Time
 }
 
 // NewGormMessageThreadRepository creates the GORM version of the MessageRepository
@@ -35,18 +32,7 @@ func NewGormMessageThreadRepository(
 		logger: logger.WithService(fmt.Sprintf("%T", &gormMessageThreadRepository{})),
 		tracer: tracer,
 		db:     db,
-		now:    time.Now,
 	}
-}
-
-func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string]any {
-	updates := map[string]any{
-		"order_timestamp":      params.Timestamp,
-		"last_message_id":      params.MessageID,
-		"last_message_content": params.Content,
-		"status":               params.Status,
-	}
-	return updates
 }
 
 func messageThreadDeletedUpdates(params MessageThreadDeletedUpdate) (map[string]any, error) {
@@ -69,177 +55,74 @@ func messageThreadDeletedUpdates(params MessageThreadDeletedUpdate) (map[string]
 	}, nil
 }
 
-func messageThreadStatusUpdates(params MessageThreadStatusUpdate, readAt time.Time) map[string]any {
+func messageThreadStatusUpdates(params MessageThreadStatusUpdate) map[string]any {
 	updates := make(map[string]any)
 	if params.IsArchived != nil {
 		updates["is_archived"] = *params.IsArchived
 	}
 	if params.UnreadCount != nil {
-		updates["unread_count"] = 0
-		updates["last_read_at"] = readAt
+		updates["unread_count"] = *params.UnreadCount
 	}
 	return updates
 }
 
-func lockMessageThread(tx *gorm.DB, userID entities.UserID, threadID uuid.UUID) (*entities.MessageThread, error) {
-	thread := new(entities.MessageThread)
-	err := tx.
-		Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("user_id = ?", userID).
-		Where("id = ?", threadID).
-		First(thread).
-		Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, stacktrace.PropagateWithCodef(
-			err,
-			ErrCodeNotFound,
-			"message thread with ID [%s] for user [%s] does not exist",
-			threadID,
-			userID,
-		)
-	}
-	if err != nil {
-		return nil, stacktrace.Propagatef(err, "cannot lock message thread with ID [%s] for user [%s]", threadID, userID)
-	}
-	return thread, nil
-}
+func applyMessageThreadActivity(db *gorm.DB, params MessageThreadActivityUpdate) (*entities.MessageThread, error) {
+	const activityCondition = "order_timestamp <= ? AND (status <> ? OR last_message_id IS DISTINCT FROM ?)"
 
-func lockMessageThreadByConversation(tx *gorm.DB, userID entities.UserID, owner string, contact string) (*entities.MessageThread, error) {
-	thread := new(entities.MessageThread)
-	err := tx.
-		Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("user_id = ?", userID).
-		Where("owner = ?", owner).
-		Where("contact = ?", contact).
-		First(thread).
-		Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, stacktrace.PropagateWithCodef(
-			err,
-			ErrCodeNotFound,
-			"message thread for user [%s], owner [%s], and contact [%s] does not exist",
-			userID,
-			owner,
-			contact,
-		)
+	conditionArgs := []any{
+		params.Timestamp,
+		entities.MessageStatusDelivered,
+		params.MessageID,
 	}
-	if err != nil {
-		return nil, stacktrace.Propagatef(
-			err,
-			"cannot lock message thread for user [%s], owner [%s], and contact [%s]",
-			userID,
-			owner,
-			contact,
-		)
-	}
-	return thread, nil
-}
-
-func insertUnreadItem(tx *gorm.DB, item entities.MessageThreadUnreadItem) (bool, error) {
-	result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&item)
-	if result.Error != nil {
-		return false, stacktrace.Propagatef(
-			result.Error,
-			"cannot insert unread ledger item for message [%s] in thread [%s]",
-			item.MessageID,
-			item.MessageThreadID,
-		)
-	}
-	return result.RowsAffected == 1, nil
-}
-
-func insertDeletedItem(tx *gorm.DB, messageID uuid.UUID) error {
-	if err := tx.
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(&entities.MessageThreadDeletedItem{MessageID: messageID}).
-		Error; err != nil {
-		return stacktrace.Propagatef(err, "cannot insert deleted message marker for message [%s]", messageID)
-	}
-	return nil
-}
-
-func isDeletedItem(tx *gorm.DB, messageID uuid.UUID) (bool, error) {
-	item := new(entities.MessageThreadDeletedItem)
-	result := tx.
-		Where("message_id = ?", messageID).
-		Limit(1).
-		Find(item)
-	if result.Error != nil {
-		return false, stacktrace.Propagatef(result.Error, "cannot load deleted message marker for message [%s]", messageID)
-	}
-	return result.RowsAffected != 0, nil
-}
-
-func markUnreadItemDeleted(tx *gorm.DB, messageID uuid.UUID, threadID uuid.UUID) (bool, error) {
-	result := tx.
-		Model(&entities.MessageThreadUnreadItem{}).
-		Where("message_id = ?", messageID).
-		Where("message_thread_id = ?", threadID).
-		Where("counted = ?", true).
-		Update("counted", false)
-	if result.Error != nil {
-		return false, stacktrace.Propagatef(
-			result.Error,
-			"cannot mark unread ledger item deleted for message [%s] in thread [%s]",
-			messageID,
-			threadID,
-		)
-	}
-	return result.RowsAffected == 1, nil
-}
-
-func applyMessageThreadActivity(tx *gorm.DB, thread *entities.MessageThread, params MessageThreadActivityUpdate) error {
-	updates := make(map[string]any)
-	isStale := thread.OrderTimestamp.After(params.Timestamp)
-	isDeliveredMessage := thread.Status == entities.MessageStatusDelivered && thread.HasLastMessage(params.MessageID)
-	if !isStale && !isDeliveredMessage {
-		updates = messageThreadActivityUpdates(params)
+	updates := map[string]any{
+		"order_timestamp": gorm.Expr(
+			"CASE WHEN "+activityCondition+" THEN ? ELSE order_timestamp END",
+			append(conditionArgs, params.Timestamp)...,
+		),
+		"last_message_id": gorm.Expr(
+			"CASE WHEN "+activityCondition+" THEN ? ELSE last_message_id END",
+			append(conditionArgs, params.MessageID)...,
+		),
+		"last_message_content": gorm.Expr(
+			"CASE WHEN "+activityCondition+" THEN ? ELSE last_message_content END",
+			append(conditionArgs, params.Content)...,
+		),
+		"status": gorm.Expr(
+			"CASE WHEN "+activityCondition+" THEN ? ELSE status END",
+			append(conditionArgs, params.Status)...,
+		),
 	}
 	if params.Unarchive {
 		updates["is_archived"] = false
 	}
-	if len(updates) != 0 {
-		if err := tx.
-			Model(thread).
-			Where("user_id = ?", params.UserID).
-			Where("id = ?", thread.ID).
-			Updates(updates).
-			Error; err != nil {
-			return stacktrace.Propagatef(
-				err,
-				"cannot update message activity for thread [%s] and user [%s]",
-				thread.ID,
-				params.UserID,
-			)
-		}
-	}
-	if !params.CountAsUnread || !params.EventTimestamp.After(thread.LastReadAt) {
-		return nil
+	if params.CountAsUnread {
+		updates["unread_count"] = gorm.Expr("unread_count + ?", 1)
 	}
 
-	inserted, err := insertUnreadItem(tx, entities.MessageThreadUnreadItem{
-		MessageID:       params.MessageID,
-		MessageThreadID: thread.ID,
-	})
-	if err != nil || !inserted {
-		return err
-	}
-
-	if err := tx.
+	thread := new(entities.MessageThread)
+	result := db.
 		Model(thread).
+		Clauses(clause.Returning{}).
 		Where("user_id = ?", params.UserID).
-		Where("id = ?", thread.ID).
-		UpdateColumn("unread_count", gorm.Expr("unread_count + ?", 1)).
-		Error; err != nil {
-		return stacktrace.Propagatef(
-			err,
-			"cannot increment unread count for thread [%s] and user [%s]",
-			thread.ID,
+		Where("id = ?", params.MessageThreadID).
+		Updates(updates)
+	if result.Error != nil {
+		return nil, stacktrace.Propagatef(
+			result.Error,
+			"cannot update message activity for thread [%s] and user [%s]",
+			params.MessageThreadID,
 			params.UserID,
 		)
 	}
-	thread.UnreadCount++
-	return nil
+	if result.RowsAffected == 0 {
+		return nil, stacktrace.PropagateWithCodef(
+			gorm.ErrRecordNotFound,
+			ErrCodeNotFound,
+			"thread with id [%s] not found",
+			params.MessageThreadID,
+		)
+	}
+	return thread, nil
 }
 
 func (repository *gormMessageThreadRepository) DeleteAllForUser(ctx context.Context, userID entities.UserID) error {
@@ -271,96 +154,50 @@ func (repository *gormMessageThreadRepository) UpdateAfterDeletedMessage(ctx con
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		tx = tx.WithContext(ctx)
-		if err := insertDeletedItem(tx, params.DeletedMessageID); err != nil {
-			return err
-		}
-
-		thread, err := lockMessageThreadByConversation(tx, params.UserID, params.Owner, params.Contact)
-		if stacktrace.GetCode(err) == ErrCodeNotFound {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-
-		deleted, err := markUnreadItemDeleted(tx, params.DeletedMessageID, thread.ID)
-		if err != nil {
-			return err
-		}
-		if deleted {
-			if err := tx.
-				Model(thread).
-				Where("user_id = ?", params.UserID).
-				Where("id = ?", thread.ID).
-				UpdateColumn("unread_count", gorm.Expr("GREATEST(unread_count - 1, 0)")).
-				Error; err != nil {
-				return stacktrace.Propagatef(
-					err,
-					"cannot decrement unread count for thread [%s] and user [%s]",
-					thread.ID,
-					params.UserID,
-				)
-			}
-			if thread.UnreadCount > 0 {
-				thread.UnreadCount--
-			}
-		}
-
-		if !thread.HasLastMessage(params.DeletedMessageID) {
-			return nil
-		}
-		if params.LastMessageID == nil {
-			if err := tx.
-				Where("user_id = ?", params.UserID).
-				Where("id = ?", thread.ID).
-				Delete(&entities.MessageThread{}).
-				Error; err != nil {
-				return stacktrace.Propagatef(
-					err,
-					"cannot delete message thread [%s] for user [%s] after deleting final message [%s]",
-					thread.ID,
-					params.UserID,
-					params.DeletedMessageID,
-				)
-			}
-			return nil
-		}
-
-		updates, err := messageThreadDeletedUpdates(params)
-		if err != nil {
-			return err
-		}
-		if err := tx.
-			Model(thread).
+	thread, err := repository.LoadByOwnerContact(ctx, params.UserID, params.Owner, params.Contact)
+	if stacktrace.GetCode(err) == ErrCodeNotFound {
+		return nil
+	}
+	if err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load thread after deleting message [%s]", params.DeletedMessageID))
+	}
+	if !thread.HasLastMessage(params.DeletedMessageID) {
+		return nil
+	}
+	if params.LastMessageID == nil {
+		if err := repository.db.WithContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).
 			Where("user_id = ?", params.UserID).
 			Where("id = ?", thread.ID).
-			Updates(updates).
+			Delete(&entities.MessageThread{}).
 			Error; err != nil {
-			return stacktrace.Propagatef(
+			return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(
 				err,
-				"cannot update deleted-message metadata for thread [%s] and user [%s]",
+				"cannot delete message thread [%s] for user [%s] after deleting final message [%s]",
 				thread.ID,
 				params.UserID,
-			)
+				params.DeletedMessageID,
+			))
 		}
 		return nil
-	})
-	if err != nil {
-		return repository.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagatef(
-				err,
-				"cannot apply deleted message [%s] to conversation [%s/%s] for user [%s]",
-				params.DeletedMessageID,
-				params.Owner,
-				params.Contact,
-				params.UserID,
-			),
-		)
 	}
 
+	updates, err := messageThreadDeletedUpdates(params)
+	if err != nil {
+		return repository.tracer.WrapErrorSpan(span, err)
+	}
+	if err := repository.db.WithContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).
+		Model(thread).
+		Where("user_id = ?", params.UserID).
+		Where("id = ?", thread.ID).
+		Updates(updates).
+		Error; err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(
+			err,
+			"cannot update deleted-message metadata for thread [%s] and user [%s]",
+			thread.ID,
+			params.UserID,
+		))
+	}
 	return nil
 }
 
@@ -369,81 +206,26 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, params
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		tx = tx.WithContext(ctx)
-		if params.Thread.LastMessageID != nil {
-			deleted, err := isDeletedItem(tx, *params.Thread.LastMessageID)
-			if err != nil || deleted {
-				return err
-			}
-		}
-
-		candidate := *params.Thread
-		result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
-		if result.Error != nil {
-			return stacktrace.Propagatef(result.Error, "cannot insert message thread with ID [%s]", params.Thread.ID)
-		}
-		if result.RowsAffected == 0 {
-			thread, err := lockMessageThreadByConversation(
-				tx,
-				params.Thread.UserID,
-				params.Thread.Owner,
-				params.Thread.Contact,
-			)
-			if err != nil {
-				return err
-			}
-			if params.Thread.LastMessageID == nil {
-				return stacktrace.NewErrorf(
-					"cannot apply conflicting thread [%s] without a last message ID",
-					params.Thread.ID,
-				)
-			}
-			content := ""
-			if params.Thread.LastMessageContent != nil {
-				content = *params.Thread.LastMessageContent
-			}
-			return applyMessageThreadActivity(tx, thread, MessageThreadActivityUpdate{
-				MessageThreadID: thread.ID,
-				UserID:          params.Thread.UserID,
-				Timestamp:       params.Thread.OrderTimestamp,
-				MessageID:       *params.Thread.LastMessageID,
-				Content:         content,
-				Status:          params.Thread.Status,
-				CountAsUnread:   params.CountAsUnread,
-				EventTimestamp:  params.EventTimestamp,
-			})
-		}
-		if !params.CountAsUnread {
-			return nil
-		}
-		if params.Thread.LastMessageID == nil {
-			return stacktrace.NewErrorf(
-				"cannot store unread ledger item for new thread [%s] without a last message ID",
-				params.Thread.ID,
-			)
-		}
-
-		inserted, err := insertUnreadItem(tx, entities.MessageThreadUnreadItem{
-			MessageID:       *params.Thread.LastMessageID,
-			MessageThreadID: params.Thread.ID,
+	candidate := *params.Thread
+	db := repository.db.WithContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true})
+	onConflict := clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "user_id"},
+			{Name: "owner"},
+			{Name: "contact"},
+		},
+		DoNothing: !params.CountAsUnread,
+	}
+	if params.CountAsUnread {
+		onConflict.DoUpdates = clause.Assignments(map[string]any{
+			"unread_count": gorm.Expr("unread_count + ?", 1),
 		})
-		if err != nil {
-			return err
-		}
-		if !inserted {
-			return stacktrace.NewErrorf(
-				"unread ledger item for message [%s] was not inserted for new thread [%s]",
-				*params.Thread.LastMessageID,
-				params.Thread.ID,
-			)
-		}
-		return nil
-	})
-	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save message thread with ID [%s]", params.Thread.ID))
 	}
 
+	result := db.Clauses(onConflict).Create(&candidate)
+	if result.Error != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot insert message thread with ID [%s]", params.Thread.ID))
+	}
 	return nil
 }
 
@@ -452,20 +234,10 @@ func (repository *gormMessageThreadRepository) UpdateActivity(ctx context.Contex
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		tx = tx.WithContext(ctx)
-		deleted, err := isDeletedItem(tx, params.MessageID)
-		if err != nil || deleted {
-			return err
-		}
-
-		thread, err := lockMessageThread(tx, params.UserID, params.MessageThreadID)
-		if err != nil {
-			return err
-		}
-
-		return applyMessageThreadActivity(tx, thread, params)
-	})
+	_, err := applyMessageThreadActivity(
+		repository.db.WithContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}),
+		params,
+	)
 	if err != nil {
 		return repository.tracer.WrapErrorSpan(
 			span,
@@ -492,76 +264,40 @@ func (repository *gormMessageThreadRepository) UpdateStatus(
 	defer span.End()
 
 	if params.UnreadCount != nil && *params.UnreadCount != 0 {
-		return nil, repository.tracer.WrapErrorSpan(
-			span,
-			stacktrace.NewErrorf(
-				"cannot set unread count to [%d] for thread [%s] and user [%s]: only zero is supported",
-				*params.UnreadCount,
-				messageThreadID,
-				userID,
-			),
-		)
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.NewErrorf(
+			"cannot set unread count to [%d] for thread [%s] and user [%s]: only zero is supported",
+			*params.UnreadCount,
+			messageThreadID,
+			userID,
+		))
 	}
 
-	var thread *entities.MessageThread
-	err := crdbgorm.ExecuteTx(ctx, repository.db, nil, func(tx *gorm.DB) error {
-		tx = tx.WithContext(ctx)
-		thread = nil
-		lockedThread, err := lockMessageThread(tx, userID, messageThreadID)
-		if err != nil {
-			return err
-		}
+	thread, err := repository.Load(ctx, userID, messageThreadID)
+	if err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, err)
+	}
 
-		var readAt time.Time
-		if params.UnreadCount != nil {
-			readAt = repository.now().UTC()
-		}
-		updates := messageThreadStatusUpdates(params, readAt)
-		if len(updates) > 0 {
-			if err := tx.
-				Model(lockedThread).
-				Clauses(clause.Returning{}).
-				Where("user_id = ?", userID).
-				Where("id = ?", messageThreadID).
-				Updates(updates).
-				Error; err != nil {
-				return stacktrace.Propagatef(
-					err,
-					"cannot update status for thread [%s] and user [%s]",
-					messageThreadID,
-					userID,
-				)
-			}
-		}
-		if params.IsArchived != nil {
-			lockedThread.IsArchived = *params.IsArchived
-		}
-		if params.UnreadCount == nil {
-			thread = lockedThread
-			return nil
-		}
-
-		lockedThread.UnreadCount = *params.UnreadCount
-		lockedThread.LastReadAt = readAt
-		if err := tx.
-			Where("message_thread_id = ?", messageThreadID).
-			Delete(&entities.MessageThreadUnreadItem{}).
+	updates := messageThreadStatusUpdates(params)
+	if len(updates) != 0 {
+		if err := repository.db.WithContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).
+			Model(thread).
+			Where("user_id = ?", userID).
+			Where("id = ?", messageThreadID).
+			Updates(updates).
 			Error; err != nil {
-			return stacktrace.Propagatef(
+			return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(
 				err,
-				"cannot clear unread ledger items for thread [%s] and user [%s]",
+				"cannot update status for thread [%s] and user [%s]",
 				messageThreadID,
 				userID,
-			)
+			))
 		}
-		thread = lockedThread
-		return nil
-	})
-	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(
-			span,
-			stacktrace.Propagatef(err, "cannot update status for thread [%s] and user [%s]", messageThreadID, userID),
-		)
+	}
+	if params.IsArchived != nil {
+		thread.IsArchived = *params.IsArchived
+	}
+	if params.UnreadCount != nil {
+		thread.UnreadCount = *params.UnreadCount
 	}
 
 	return thread, nil

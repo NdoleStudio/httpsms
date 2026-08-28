@@ -51,16 +51,14 @@ func NewMessageThreadService(
 
 // MessageThreadUpdateParams are parameters for updating a thread
 type MessageThreadUpdateParams struct {
-	Owner     string
-	Status    entities.MessageStatus
-	Contact   string
-	Content   string
-	UserID    entities.UserID
-	MessageID uuid.UUID
-	// Timestamp controls thread activity ordering; EventTimestamp is the server-side unread watermark.
-	Timestamp      time.Time
-	CountAsUnread  bool
-	EventTimestamp time.Time
+	Owner         string
+	Status        entities.MessageStatus
+	Contact       string
+	Content       string
+	UserID        entities.UserID
+	MessageID     uuid.UUID
+	Timestamp     time.Time
+	CountAsUnread bool
 }
 
 // shouldCheckUnarchive reports whether a thread update is a new inbound message
@@ -109,7 +107,6 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 		Content:         params.Content,
 		Status:          params.Status,
 		CountAsUnread:   params.CountAsUnread,
-		EventTimestamp:  params.EventTimestamp,
 	}
 
 	if service.shouldCheckUnarchive(thread, params) {
@@ -203,7 +200,6 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		UserID:             params.UserID,
 		IsArchived:         false,
 		UnreadCount:        0,
-		LastReadAt:         time.Unix(0, 0).UTC(),
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,
 		Status:             params.Status,
@@ -218,9 +214,8 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	}
 
 	if err := service.repository.Store(ctx, repositories.MessageThreadStoreParams{
-		Thread:         thread,
-		CountAsUnread:  params.CountAsUnread,
-		EventTimestamp: params.EventTimestamp,
+		Thread:        thread,
+		CountAsUnread: params.CountAsUnread,
 	}); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot store thread with id [%s] for message with ID [%s]", thread.ID, params.MessageID))
 	}
