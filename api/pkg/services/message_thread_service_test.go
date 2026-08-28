@@ -125,7 +125,7 @@ func newMessageThreadServiceForTest(repository repositories.MessageThreadReposit
 func newMessageThreadServiceWithPhoneForTest(repository repositories.MessageThreadRepository, phoneRepository repositories.PhoneRepository) *MessageThreadService {
 	logger := &noopLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
-	return NewMessageThreadService(logger, tracer, repository, phoneRepository, nil)
+	return NewMessageThreadService(logger, tracer, repository, phoneRepository, nil, nil)
 }
 
 func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {

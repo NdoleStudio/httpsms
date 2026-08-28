@@ -19,6 +19,10 @@ type WebsocketListener struct {
 	client *pusher.Client
 }
 
+type websocketMessagePayload struct {
+	MessageID string `json:"message_id"`
+}
+
 // NewWebsocketListener creates a new instance of WebsocketListener
 func NewWebsocketListener(
 	logger telemetry.Logger,
@@ -49,7 +53,9 @@ func (listener *WebsocketListener) onMessageCallMissed(ctx context.Context, even
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
-	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
+	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), websocketMessagePayload{
+		MessageID: payload.MessageID.String(),
+	}); err != nil {
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 	return nil
@@ -82,7 +88,9 @@ func (listener *WebsocketListener) onMessagePhoneReceived(ctx context.Context, e
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
-	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), event.ID()); err != nil {
+	if err := listener.client.Trigger(payload.UserID.String(), event.Type(), websocketMessagePayload{
+		MessageID: payload.MessageID.String(),
+	}); err != nil {
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot trigger websocket [%s] event with ID [%s] for user with ID [%s]", event.Type(), event.ID(), payload.UserID))
 	}
 
