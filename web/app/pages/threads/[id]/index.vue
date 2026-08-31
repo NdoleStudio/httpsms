@@ -62,10 +62,6 @@ const formMessageRules = [
 
 let webhookChannel: Channel | null = null
 
-interface WebsocketMessageEvent {
-  message_id: string
-}
-
 const contactIsPhoneNumber = computed(() => {
   const thread = currentThread.value
   if (!thread) return false
@@ -141,20 +137,13 @@ async function resetCurrentThreadUnreadCount(force = false) {
   }
 }
 
-async function handleInboundMessage(event: WebsocketMessageEvent) {
+async function handleInboundMessage() {
   if (loadingMessages.value) return
 
   try {
-    const message = await messagesStore.getMessage(event.message_id)
-    await threadsStore.loadThreads()
-
     const thread = currentThread.value
-    if (
-      !thread ||
-      message.owner !== thread.owner ||
-      message.contact !== thread.contact ||
-      loadingMessages.value
-    ) {
+    await threadsStore.loadThreads()
+    if (!thread || loadingMessages.value) {
       return
     }
 
@@ -285,14 +274,11 @@ onMounted(async () => {
   webhookChannel.bind('message.send.failed', () => {
     if (!loadingMessages.value) loadMessages(false)
   })
-  webhookChannel.bind(
-    'message.phone.received',
-    (event: WebsocketMessageEvent) => {
-      void handleInboundMessage(event)
-    },
-  )
-  webhookChannel.bind('message.call.missed', (event: WebsocketMessageEvent) => {
-    void handleInboundMessage(event)
+  webhookChannel.bind('message.phone.received', (_: never) => {
+    void handleInboundMessage()
+  })
+  webhookChannel.bind('message.call.missed', (_: never) => {
+    void handleInboundMessage()
   })
 })
 
