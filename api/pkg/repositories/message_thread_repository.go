@@ -23,9 +23,8 @@ type MessageThreadActivityUpdate struct {
 }
 
 type MessageThreadStatusUpdate struct {
-	IsArchived *bool
-	IsRead     *bool
-	ReadAt     time.Time
+	IsArchived  *bool
+	UnreadCount *uint
 }
 
 type MessageThreadDeletedUpdate struct {

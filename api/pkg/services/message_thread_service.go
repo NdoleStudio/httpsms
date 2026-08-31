@@ -143,7 +143,7 @@ func (service *MessageThreadService) UpdateThread(ctx context.Context, params Me
 // MessageThreadStatusParams are parameters for updating a thread status
 type MessageThreadStatusParams struct {
 	IsArchived      *bool
-	IsRead          *bool
+	UnreadCount     *uint
 	UserID          entities.UserID
 	MessageThreadID uuid.UUID
 }
@@ -154,9 +154,8 @@ func (service *MessageThreadService) UpdateStatus(ctx context.Context, params Me
 	defer span.End()
 
 	update := repositories.MessageThreadStatusUpdate{
-		IsArchived: params.IsArchived,
-		IsRead:     params.IsRead,
-		ReadAt:     time.Now().UTC(),
+		IsArchived:  params.IsArchived,
+		UnreadCount: params.UnreadCount,
 	}
 	thread, err := service.repository.UpdateStatus(ctx, params.UserID, params.MessageThreadID, update)
 	if err != nil {
@@ -207,10 +206,13 @@ func (service *MessageThreadService) UpdateAfterDeletedMessage(ctx context.Conte
 }
 
 func (service *MessageThreadService) createThread(ctx context.Context, params MessageThreadUpdateParams) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+	unreadCount := uint(0)
+	if params.MarkAsUnread {
+		unreadCount = 1
+	}
 
 	now := time.Now().UTC()
 	thread := &entities.MessageThread{
@@ -219,8 +221,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		Contact:            params.Contact,
 		UserID:             params.UserID,
 		IsArchived:         false,
-		IsRead:             !params.MarkAsUnread,
-		LastReadAt:         now,
+		UnreadCount:        unreadCount,
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,
 		Status:             params.Status,

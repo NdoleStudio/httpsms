@@ -48,6 +48,13 @@ export const useMessagesStore = defineStore('messages', () => {
     })
   }
 
+  async function getMessage(messageId: string): Promise<EntitiesMessage> {
+    const response = await apiFetch<{ data: EntitiesMessage }>(
+      `/v1/messages/${messageId}`,
+    )
+    return response.data
+  }
+
   async function searchMessages(
     payload: SearchMessagesRequest,
   ): Promise<EntitiesMessage[]> {
@@ -88,6 +95,7 @@ export const useMessagesStore = defineStore('messages', () => {
   return {
     sendMessage,
     deleteMessage,
+    getMessage,
     searchMessages,
     sendBulkMessages,
     fetchBulkMessageOrders,

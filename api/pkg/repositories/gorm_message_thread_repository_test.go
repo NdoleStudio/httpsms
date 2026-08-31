@@ -75,7 +75,7 @@ func (logger *messageThreadTestLogger) Debug(string)                            
 func (logger *messageThreadTestLogger) Fatal(error)                                 {}
 func (logger *messageThreadTestLogger) Printf(string, ...interface{})               {}
 
-func TestMessageThreadStorePreservesExplicitUnreadState(t *testing.T) {
+func TestMessageThreadStoreIncrementsUnreadCountOnConflict(t *testing.T) {
 	pool := &messageThreadTestConnPool{}
 	db, err := gorm.Open(
 		postgres.New(postgres.Config{
@@ -89,18 +89,17 @@ func TestMessageThreadStorePreservesExplicitUnreadState(t *testing.T) {
 	logger := &messageThreadTestLogger{}
 	repository := NewGormMessageThreadRepository(logger, telemetry.NewOtelLogger("test", logger), db)
 	thread := &entities.MessageThread{
-		ID:     uuid.New(),
-		IsRead: false,
+		ID:          uuid.New(),
+		UnreadCount: 1,
 	}
 
 	require.NoError(t, repository.Store(context.Background(), thread))
-	assert.False(t, thread.IsRead)
+	assert.Equal(t, uint(1), thread.UnreadCount)
 
 	require.NotEmpty(t, pool.statements)
-	update := pool.statements[len(pool.statements)-1]
-	assert.True(t, strings.HasPrefix(update.query, `UPDATE "message_threads"`))
-	assert.Contains(t, update.query, `"is_read"=$1`)
-	assert.Contains(t, update.args, false)
+	insert := pool.statements[len(pool.statements)-1]
+	assert.True(t, strings.HasPrefix(insert.query, `INSERT INTO "message_threads"`))
+	assert.Contains(t, insert.query, `ON CONFLICT ("user_id","owner","contact") DO UPDATE SET "unread_count"=unread_count + $`)
 }
 
 func TestMessageThreadActivityUpdatesOwnOnlyMessageColumns(t *testing.T) {
@@ -118,9 +117,8 @@ func TestMessageThreadActivityUpdatesOwnOnlyMessageColumns(t *testing.T) {
 		"last_message_content": "hello",
 		"status":               entities.MessageStatus(entities.MessageStatusReceived),
 	}, updates)
-	assert.NotContains(t, updates, "is_read")
+	assert.NotContains(t, updates, "unread_count")
 	assert.NotContains(t, updates, "is_archived")
-	assert.NotContains(t, updates, "last_read_at")
 }
 
 func TestUpdateActivityMarksUnreadWithOneQuery(t *testing.T) {
@@ -156,7 +154,7 @@ func TestUpdateActivityMarksUnreadWithOneQuery(t *testing.T) {
 		}
 	}
 	require.Len(t, updates, 1)
-	assert.Contains(t, updates[0].query, `"is_read"=CASE WHEN last_read_at <`)
+	assert.Contains(t, updates[0].query, `"unread_count"=unread_count + $`)
 }
 
 func TestMessageThreadDeletedUpdatesPreserveStatusType(t *testing.T) {
@@ -175,19 +173,14 @@ func TestMessageThreadDeletedUpdatesPreserveStatusType(t *testing.T) {
 	}, updates)
 }
 
-func TestMessageThreadStatusUpdatesReadOnly(t *testing.T) {
-	isRead := true
-	readAt := time.Date(2026, 7, 18, 7, 1, 0, 0, time.UTC)
+func TestMessageThreadStatusUpdatesUnreadCountOnly(t *testing.T) {
+	unreadCount := uint(0)
 
 	updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
-		IsRead: &isRead,
-		ReadAt: readAt,
+		UnreadCount: &unreadCount,
 	})
 
-	assert.Equal(t, map[string]any{
-		"is_read":      true,
-		"last_read_at": readAt,
-	}, updates)
+	assert.Equal(t, map[string]any{"unread_count": uint(0)}, updates)
 	assert.NotContains(t, updates, "is_archived")
 }
 
@@ -197,8 +190,7 @@ func TestMessageThreadStatusUpdatesArchiveOnly(t *testing.T) {
 	updates := messageThreadStatusUpdates(MessageThreadStatusUpdate{
 		IsArchived: &isArchived,
 	})
-
 	assert.Equal(t, map[string]any{"is_archived": true}, updates)
-	assert.NotContains(t, updates, "is_read")
-	assert.NotContains(t, updates, "last_read_at")
+	assert.Equal(t, map[string]any{"is_archived": true}, updates)
+	assert.NotContains(t, updates, "unread_count")
 }

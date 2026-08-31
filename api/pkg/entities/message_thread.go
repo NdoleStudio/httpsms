@@ -12,8 +12,7 @@ type MessageThread struct {
 	Owner              string        `json:"owner" example:"+18005550199"`
 	Contact            string        `json:"contact" example:"+18005550100"`
 	IsArchived         bool          `json:"is_archived" example:"false"`
-	IsRead             bool          `json:"is_read" gorm:"not null;default:true" example:"true"`
-	LastReadAt         time.Time     `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UnreadCount        uint          `json:"unread_count" gorm:"not null;default:0" example:"0"`
 	UserID             UserID        `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Color              string        `json:"color" example:"indigo"`
 	Status             MessageStatus `json:"status" example:"PENDING"`

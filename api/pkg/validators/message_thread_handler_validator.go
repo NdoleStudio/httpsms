@@ -73,11 +73,11 @@ func (validator *MessageThreadHandlerValidator) ValidateUpdate(_ context.Context
 	})
 
 	errors := v.ValidateStruct()
-	if request.IsArchived == nil && request.IsRead == nil {
+	if request.IsArchived == nil && request.UnreadCount == nil {
 		if errors == nil {
 			errors = url.Values{}
 		}
-		errors.Add("payload", "at least one of is_archived or is_read is required")
+		errors.Add("payload", "at least one of is_archived or unread_count is required")
 	}
 
 	return errors

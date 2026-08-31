@@ -9,20 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMessageThreadReadFieldsHaveBackwardCompatibleDefaults(t *testing.T) {
+func TestMessageThreadUnreadCountHasDefault(t *testing.T) {
 	threadType := reflect.TypeOf(MessageThread{})
 
-	isRead, ok := threadType.FieldByName("IsRead")
+	unreadCount, ok := threadType.FieldByName("UnreadCount")
 	require.True(t, ok)
-	assert.Contains(t, isRead.Tag.Get("gorm"), "not null")
-	assert.Contains(t, isRead.Tag.Get("gorm"), "default:true")
-	assert.Equal(t, "is_read", isRead.Tag.Get("json"))
-
-	lastReadAt, ok := threadType.FieldByName("LastReadAt")
-	require.True(t, ok)
-	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "not null")
-	assert.Contains(t, lastReadAt.Tag.Get("gorm"), "default:CURRENT_TIMESTAMP")
-	assert.Equal(t, "-", lastReadAt.Tag.Get("json"))
+	assert.Contains(t, unreadCount.Tag.Get("gorm"), "not null")
+	assert.Contains(t, unreadCount.Tag.Get("gorm"), "default:0")
+	assert.Equal(t, "unread_count", unreadCount.Tag.Get("json"))
 }
 
 func TestMessageThreadContactDetailsAreTransientAndOmittedWhenNil(t *testing.T) {

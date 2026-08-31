@@ -29,7 +29,7 @@ export const useThreadsStore = defineStore('threads', () => {
       (thread) => thread.id === updatedThread.id,
     )
     if (index !== -1) {
-      const existingThread = threads.value[index]
+      const existingThread = threads.value[index]!
       threads.value[index] = {
         ...updatedThread,
         // Mark-read PUT responses are not contact-enriched; keep the resolved
@@ -113,17 +113,17 @@ export const useThreadsStore = defineStore('threads', () => {
     })
   }
 
-  async function markThreadRead(threadId: string, force = false) {
+  async function resetThreadUnreadCount(threadId: string, force = false) {
     const thread = threads.value.find((item) => item.id === threadId)
     if (!thread) throw new Error(`Cannot find thread with id ${threadId}`)
-    if (!force && thread.is_read) return
+    if (!force && thread.unread_count === 0) return
 
     try {
       const response = await apiFetch<{ data: EntitiesMessageThread }>(
         `/v1/message-threads/${threadId}`,
         {
           method: 'PUT',
-          body: { is_read: true },
+          body: { unread_count: 0 },
         },
       )
       replaceThread(response.data)
@@ -174,7 +174,7 @@ export const useThreadsStore = defineStore('threads', () => {
     setThreadId,
     toggleArchive,
     updateThread,
-    markThreadRead,
+    resetThreadUnreadCount,
     deleteThread,
     resetState,
   }

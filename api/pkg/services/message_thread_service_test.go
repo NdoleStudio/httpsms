@@ -107,11 +107,11 @@ func TestUpdateThreadPassesUnreadWatermarkForInboundActivity(t *testing.T) {
 	assert.Equal(t, eventTimestamp, captured.EventTimestamp)
 }
 
-func TestUpdateThreadPreservesReadStateForOutboundActivity(t *testing.T) {
+func TestUpdateThreadDoesNotIncrementUnreadCountForOutboundActivity(t *testing.T) {
 	var captured repositories.MessageThreadActivityUpdate
 	repository := &messageThreadRepositoryStub{
 		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
-			return &entities.MessageThread{ID: uuid.New(), IsRead: false}, nil
+			return &entities.MessageThread{ID: uuid.New(), UnreadCount: 2}, nil
 		},
 		updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
 			captured = params
@@ -134,14 +134,14 @@ func TestUpdateThreadPreservesReadStateForOutboundActivity(t *testing.T) {
 	assert.False(t, captured.MarkAsUnread)
 }
 
-func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
+func TestCreateThreadSetsUnreadCountFromActivityDirection(t *testing.T) {
 	tests := []struct {
 		name        string
 		marksUnread bool
-		wantRead    bool
+		wantUnread  uint
 	}{
-		{name: "inbound", marksUnread: true, wantRead: false},
-		{name: "outbound", marksUnread: false, wantRead: true},
+		{name: "inbound", marksUnread: true, wantUnread: 1},
+		{name: "outbound", marksUnread: false, wantUnread: 0},
 	}
 
 	for _, test := range tests {
@@ -171,20 +171,19 @@ func TestCreateThreadSetsReadStateFromActivityDirection(t *testing.T) {
 
 			require.NoError(t, err)
 			require.NotNil(t, stored)
-			assert.Equal(t, test.wantRead, stored.IsRead)
-			assert.False(t, stored.LastReadAt.IsZero())
+			assert.Equal(t, test.wantUnread, stored.UnreadCount)
 		})
 	}
 }
 
 func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	threadID := uuid.New()
-	isRead := false
+	unreadCount := uint(0)
 	var captured repositories.MessageThreadStatusUpdate
 	repository := &messageThreadRepositoryStub{
 		updateStatus: func(_ context.Context, _ entities.UserID, _ uuid.UUID, params repositories.MessageThreadStatusUpdate) (*entities.MessageThread, error) {
 			captured = params
-			return &entities.MessageThread{ID: threadID, IsArchived: true, IsRead: false}, nil
+			return &entities.MessageThread{ID: threadID, IsArchived: true, UnreadCount: 0}, nil
 		},
 	}
 
@@ -192,15 +191,14 @@ func TestUpdateStatusChangesOnlyRequestedState(t *testing.T) {
 	thread, err := service.UpdateStatus(context.Background(), MessageThreadStatusParams{
 		UserID:          entities.UserID("user-id"),
 		MessageThreadID: threadID,
-		IsRead:          &isRead,
+		UnreadCount:     &unreadCount,
 	})
 
 	require.NoError(t, err)
 	assert.Nil(t, captured.IsArchived)
-	assert.Same(t, &isRead, captured.IsRead)
-	assert.False(t, captured.ReadAt.IsZero())
+	assert.Same(t, &unreadCount, captured.UnreadCount)
 	assert.True(t, thread.IsArchived)
-	assert.False(t, thread.IsRead)
+	assert.Zero(t, thread.UnreadCount)
 }
 
 func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
@@ -211,11 +209,11 @@ func TestUpdateStatusPreservesNotFoundCode(t *testing.T) {
 	}
 
 	service := newMessageThreadServiceForTest(repository)
-	isRead := true
+	unreadCount := uint(0)
 	_, err := service.UpdateStatus(context.Background(), MessageThreadStatusParams{
 		UserID:          entities.UserID("user-id"),
 		MessageThreadID: uuid.New(),
-		IsRead:          &isRead,
+		UnreadCount:     &unreadCount,
 	})
 
 	assert.Equal(t, repositories.ErrCodeNotFound, stacktrace.GetCode(err))

@@ -10,10 +10,10 @@ import (
 
 func TestMessageThreadUpdateToUpdateParamsPreservesOptionalFields(t *testing.T) {
 	threadID := uuid.New()
-	isRead := true
+	unreadCount := uint(0)
 	input := MessageThreadUpdate{
 		MessageThreadID: threadID.String(),
-		IsRead:          &isRead,
+		UnreadCount:     &unreadCount,
 	}
 
 	params := input.ToUpdateParams(entities.UserID("user-id"))
@@ -21,5 +21,5 @@ func TestMessageThreadUpdateToUpdateParamsPreservesOptionalFields(t *testing.T) 
 	assert.Equal(t, threadID, params.MessageThreadID)
 	assert.Equal(t, entities.UserID("user-id"), params.UserID)
 	assert.Nil(t, params.IsArchived)
-	assert.Same(t, &isRead, params.IsRead)
+	assert.Same(t, &unreadCount, params.UnreadCount)
 }
