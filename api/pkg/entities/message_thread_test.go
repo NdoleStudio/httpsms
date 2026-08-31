@@ -19,6 +19,21 @@ func TestMessageThreadUnreadCountHasDefault(t *testing.T) {
 	assert.Equal(t, "unread_count", unreadCount.Tag.Get("json"))
 }
 
+func TestMessageThreadHasUniqueOwnerContactPerUser(t *testing.T) {
+	threadType := reflect.TypeOf(MessageThread{})
+
+	expectedTags := map[string]string{
+		"UserID":  "uniqueIndex:idx_message_threads_user_owner_contact,priority:1",
+		"Owner":   "uniqueIndex:idx_message_threads_user_owner_contact,priority:2",
+		"Contact": "uniqueIndex:idx_message_threads_user_owner_contact,priority:3",
+	}
+	for fieldName, expectedTag := range expectedTags {
+		field, ok := threadType.FieldByName(fieldName)
+		require.True(t, ok)
+		assert.Contains(t, field.Tag.Get("gorm"), expectedTag)
+	}
+}
+
 func TestMessageThreadContactDetailsAreTransientAndOmittedWhenNil(t *testing.T) {
 	threadType := reflect.TypeOf(MessageThread{})
 

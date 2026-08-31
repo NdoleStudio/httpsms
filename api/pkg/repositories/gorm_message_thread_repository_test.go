@@ -191,6 +191,5 @@ func TestMessageThreadStatusUpdatesArchiveOnly(t *testing.T) {
 		IsArchived: &isArchived,
 	})
 	assert.Equal(t, map[string]any{"is_archived": true}, updates)
-	assert.Equal(t, map[string]any{"is_archived": true}, updates)
 	assert.NotContains(t, updates, "unread_count")
 }
