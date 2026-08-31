@@ -131,7 +131,7 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 		})
 	}
 
-	if result := db.Clauses(onConflict).Create(&thread); result.Error != nil {
+	if result := db.Clauses(onConflict).Create(thread); result.Error != nil {
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot insert message thread with ID [%s]", thread.ID))
 	}
 	return nil
