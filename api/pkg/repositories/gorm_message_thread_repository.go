@@ -46,11 +46,7 @@ func messageThreadActivityUpdates(params MessageThreadActivityUpdate) map[string
 		updates["is_archived"] = false
 	}
 	if params.MarkAsUnread {
-		updates["is_read"] = gorm.Expr(
-			"CASE WHEN last_read_at < ? THEN ? ELSE is_read END",
-			params.EventTimestamp,
-			false,
-		)
+		updates["unread_count"] = gorm.Expr("unread_count + ?", 1)
 	}
 	return updates
 }
@@ -68,11 +64,8 @@ func messageThreadStatusUpdates(params MessageThreadStatusUpdate) map[string]any
 	if params.IsArchived != nil {
 		updates["is_archived"] = *params.IsArchived
 	}
-	if params.IsRead != nil {
-		updates["is_read"] = *params.IsRead
-		if *params.IsRead {
-			updates["last_read_at"] = params.ReadAt
-		}
+	if params.UnreadCount != nil {
+		updates["unread_count"] = *params.UnreadCount
 	}
 	return updates
 }
@@ -123,27 +116,24 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	isRead := thread.IsRead
-	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(thread)
-		thread.IsRead = isRead
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 || isRead {
-			return nil
-		}
-
-		return tx.Model(&entities.MessageThread{}).
-			Where("user_id = ?", thread.UserID).
-			Where("id = ?", thread.ID).
-			UpdateColumn("is_read", false).
-			Error
-	})
-	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot save message thread with ID [%s]", thread.ID))
+	db := repository.db.WithContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true})
+	onConflict := clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "user_id"},
+			{Name: "owner"},
+			{Name: "contact"},
+		},
+		DoNothing: thread.UnreadCount == 0,
+	}
+	if thread.UnreadCount > 0 {
+		onConflict.DoUpdates = clause.Assignments(map[string]any{
+			"unread_count": gorm.Expr("unread_count + ?", 1),
+		})
 	}
 
+	if result := db.Clauses(onConflict).Create(thread); result.Error != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot insert message thread with ID [%s]", thread.ID))
+	}
 	return nil
 }
 

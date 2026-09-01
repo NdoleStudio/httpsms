@@ -225,8 +225,6 @@ export interface EntitiesMessageThread {
   id: string;
   /** @example false */
   is_archived: boolean;
-  /** @example true */
-  is_read: boolean;
   /** @example "This is a sample message content" */
   last_message_content: string;
   /** @example "32343a19-da5e-4b1b-a767-3298a73703ca" */
@@ -237,6 +235,8 @@ export interface EntitiesMessageThread {
   owner: string;
   /** @example "PENDING" */
   status: string;
+  /** @example 0 */
+  unread_count: number;
   /** @example "2022-06-05T14:26:09.527976+03:00" */
   updated_at: string;
   /** @example "WB7DRDWrJZRGbYrv2CKGkqbzvqdC" */
@@ -527,8 +527,8 @@ export interface RequestsMessageSendScheduleWindow {
 export interface RequestsMessageThreadUpdate {
   /** @example true */
   is_archived?: boolean;
-  /** @example true */
-  is_read?: boolean;
+  /** @example 0 */
+  unread_count?: number;
 }
 
 export interface RequestsPhoneAPIKeyStoreRequest {

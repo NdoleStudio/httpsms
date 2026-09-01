@@ -20,12 +20,12 @@ func TestValidateUpdateRequiresAtLeastOneStatusField(t *testing.T) {
 	assert.NotEmpty(t, errors.Get("payload"))
 }
 
-func TestValidateUpdateAcceptsReadOnlyUpdate(t *testing.T) {
+func TestValidateUpdateAcceptsUnreadCountOnlyUpdate(t *testing.T) {
 	validator := &MessageThreadHandlerValidator{}
-	isRead := true
+	unreadCount := uint(0)
 	request := requests.MessageThreadUpdate{
 		MessageThreadID: uuid.NewString(),
-		IsRead:          &isRead,
+		UnreadCount:     &unreadCount,
 	}
 
 	errors := validator.ValidateUpdate(context.Background(), request)

@@ -128,19 +128,36 @@ function scrollToElement() {
   hideMessages.value = false
 }
 
-async function markCurrentThreadRead(force = false) {
+async function resetCurrentThreadUnreadCount(force = false) {
   const threadId = route.params.id as string
   try {
-    await threadsStore.markThreadRead(threadId, force)
+    await threadsStore.resetThreadUnreadCount(threadId, force)
   } catch (error) {
     console.error(error)
   }
 }
 
-function loadMessages(hide = true, markRead = true) {
+async function handleInboundMessage() {
+  if (loadingMessages.value) return
+
+  try {
+    const thread = currentThread.value
+    await threadsStore.loadThreads()
+    if (!thread || loadingMessages.value) {
+      return
+    }
+
+    await resetCurrentThreadUnreadCount(true)
+    loadMessages(false, false)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function loadMessages(hide = true, resetUnreadCount = true) {
   loadingMessages.value = true
   const threadId = route.params.id as string
-  if (markRead) void markCurrentThreadRead()
+  if (resetUnreadCount) void resetCurrentThreadUnreadCount()
   threadsStore
     .loadThreadMessages(threadId)
     .then((response: EntitiesMessage[]) => {
@@ -257,17 +274,11 @@ onMounted(async () => {
   webhookChannel.bind('message.send.failed', () => {
     if (!loadingMessages.value) loadMessages(false)
   })
-  webhookChannel.bind('message.phone.received', () => {
-    if (!loadingMessages.value) {
-      void markCurrentThreadRead(true)
-      loadMessages(false, false)
-    }
+  webhookChannel.bind('message.phone.received', (_: never) => {
+    void handleInboundMessage()
   })
-  webhookChannel.bind('message.call.missed', () => {
-    if (!loadingMessages.value) {
-      void markCurrentThreadRead(true)
-      loadMessages(false, false)
-    }
+  webhookChannel.bind('message.call.missed', (_: never) => {
+    void handleInboundMessage()
   })
 })
 

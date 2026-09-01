@@ -22,6 +22,22 @@ function threadDate(date: string): string {
   })
 }
 
+function hasUnreadMessages(unreadCount: number): boolean {
+  return unreadCount > 0
+}
+
+function unreadBadge(
+  unreadCount: number,
+): false | { color: string; content: string; dot: false } {
+  if (unreadCount === 0) return false
+
+  return {
+    color: 'primary',
+    content: unreadCount > 99 ? '99+' : String(unreadCount),
+    dot: false,
+  }
+}
+
 function onInstallApp() {
   notificationsStore.addNotification({
     type: 'info',
@@ -118,7 +134,7 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
           <v-avatar
             :color="thread.color"
             size="40"
-            :badge="thread.is_read ? false : { color: 'primary', dotSize: 12 }"
+            :badge="unreadBadge(thread.unread_count)"
           >
             <v-icon v-if="!threadAvatarInitial(thread)" color="white">{{
               mdiAccount
@@ -128,12 +144,20 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
             }}</span>
           </v-avatar>
         </template>
-        <v-list-item-title :class="{ 'font-weight-bold': !thread.is_read }">{{
-          threadContactTitle(thread)
-        }}</v-list-item-title>
+        <v-list-item-title
+          :class="{
+            'font-weight-bold': hasUnreadMessages(thread.unread_count),
+          }"
+        >
+          {{ threadContactTitle(thread) }}
+        </v-list-item-title>
         <v-list-item-subtitle
           class="text-truncate mt-1"
-          :class="{ 'font-weight-bold opacity-100': !thread.is_read }"
+          :class="{
+            'font-weight-bold opacity-100': hasUnreadMessages(
+              thread.unread_count,
+            ),
+          }"
           style="max-width: 250px"
         >
           {{ thread.last_message_content }}

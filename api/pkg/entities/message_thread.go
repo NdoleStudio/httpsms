@@ -9,12 +9,11 @@ import (
 // MessageThread represents a message thread between 2 phone numbers
 type MessageThread struct {
 	ID                 uuid.UUID     `json:"id" gorm:"primaryKey;type:uuid;" example:"32343a19-da5e-4b1b-a767-3298a73703ca"`
-	Owner              string        `json:"owner" example:"+18005550199"`
-	Contact            string        `json:"contact" example:"+18005550100"`
+	Owner              string        `json:"owner" gorm:"uniqueIndex:idx_message_threads_user_owner_contact,priority:2" example:"+18005550199"`
+	Contact            string        `json:"contact" gorm:"uniqueIndex:idx_message_threads_user_owner_contact,priority:3" example:"+18005550100"`
 	IsArchived         bool          `json:"is_archived" example:"false"`
-	IsRead             bool          `json:"is_read" gorm:"not null;default:true" example:"true"`
-	LastReadAt         time.Time     `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UserID             UserID        `json:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	UnreadCount        uint          `json:"unread_count" gorm:"not null;default:0" example:"0"`
+	UserID             UserID        `json:"user_id" gorm:"uniqueIndex:idx_message_threads_user_owner_contact,priority:1" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
 	Color              string        `json:"color" example:"indigo"`
 	Status             MessageStatus `json:"status" example:"PENDING"`
 	LastMessageContent *string       `json:"last_message_content" example:"This is a sample message content"`
