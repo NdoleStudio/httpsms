@@ -127,7 +127,7 @@ func (repository *gormMessageThreadRepository) Store(ctx context.Context, thread
 	}
 	if thread.UnreadCount > 0 {
 		onConflict.DoUpdates = clause.Assignments(map[string]any{
-			"unread_count": gorm.Expr("unread_count + ?", 1),
+			"unread_count": gorm.Expr("message_threads.unread_count + ?", 1),
 		})
 	}
 

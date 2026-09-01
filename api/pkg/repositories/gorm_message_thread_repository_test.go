@@ -99,7 +99,7 @@ func TestMessageThreadStoreIncrementsUnreadCountOnConflict(t *testing.T) {
 	require.NotEmpty(t, pool.statements)
 	insert := pool.statements[len(pool.statements)-1]
 	assert.True(t, strings.HasPrefix(insert.query, `INSERT INTO "message_threads"`))
-	assert.Contains(t, insert.query, `ON CONFLICT ("user_id","owner","contact") DO UPDATE SET "unread_count"=unread_count + $`)
+	assert.Contains(t, insert.query, `ON CONFLICT ("user_id","owner","contact") DO UPDATE SET "unread_count"=message_threads.unread_count + $`)
 }
 
 func TestMessageThreadActivityUpdatesOwnOnlyMessageColumns(t *testing.T) {
