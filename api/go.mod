@@ -15,7 +15,7 @@ require (
 	github.com/NdoleStudio/stacktrace v1.1.0
 	github.com/avast/retry-go/v5 v5.0.0
 	github.com/axiomhq/axiom-go v0.32.0
-	github.com/carlmjohnson/requests v0.25.1
+	github.com/carlmjohnson/requests v0.26.1
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
