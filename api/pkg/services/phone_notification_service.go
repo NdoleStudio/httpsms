@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
-	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -26,24 +26,30 @@ type PhoneNotificationService struct {
 	phoneNotificationRepository   repositories.PhoneNotificationRepository
 	phoneRepository               repositories.PhoneRepository
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository
-	messagingClient               FCMClient
-	eventDispatcher               *EventDispatcher
+	notificationDispatcher        *NotificationDispatcher
+	eventDispatcher               NotificationEventDispatcher
+}
+
+// NotificationEventDispatcher dispatches phone gateway notification events.
+type NotificationEventDispatcher interface {
+	Dispatch(ctx context.Context, event cloudevents.Event) error
+	DispatchWithTimeout(ctx context.Context, event cloudevents.Event, timeout time.Duration) (string, error)
 }
 
 // NewNotificationService creates a new PhoneNotificationService
 func NewNotificationService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	messagingClient FCMClient,
+	notificationDispatcher *NotificationDispatcher,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository,
-	dispatcher *EventDispatcher,
+	dispatcher NotificationEventDispatcher,
 ) (s *PhoneNotificationService) {
 	return &PhoneNotificationService{
 		logger:                        logger.WithService(fmt.Sprintf("%T", &PhoneNotificationService{})),
 		tracer:                        tracer,
-		messagingClient:               messagingClient,
+		notificationDispatcher:        notificationDispatcher,
 		phoneNotificationRepository:   phoneNotificationRepository,
 		phoneRepository:               phoneRepository,
 		messageSendScheduleRepository: messageSendScheduleRepository,
@@ -77,7 +83,7 @@ func (service *PhoneNotificationService) DeleteByMessageID(ctx context.Context, 
 	return nil
 }
 
-// SendHeartbeatFCM sends a heartbeat message so the phone can request a heartbeat
+// SendHeartbeatFCM sends a heartbeat notification so the phone gateway can request a heartbeat.
 func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, payload *events.PhoneHeartbeatMissedPayload) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
@@ -88,25 +94,28 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 	}
 
 	if phone.FcmToken == nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "phone with id [%s] has no FCM token", phone.ID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("phone with id [%s] has no notification token", phone.ID))
 	}
 
-	result, err := service.messagingClient.Send(ctx, &messaging.Message{
+	result, err := service.notificationDispatcher.Send(ctx, phone, GatewayNotification{
 		Data: map[string]string{
 			"KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
 		},
-		Android: &messaging.AndroidConfig{
-			Priority: "high",
-		},
-		Token: *phone.FcmToken,
+		Priority:       "high",
+		NotificationID: uuid.New(),
 	})
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot send heartbeat FCM to phone with id [%s] for user [%s]", phone.ID, phone.UserID))
+		ctxLogger.Warn(stacktrace.Propagatef(
+			redactNotificationToken(err, *phone.FcmToken),
+			"cannot send heartbeat notification to phone with id [%s] for user [%s]",
+			phone.ID,
+			phone.UserID,
+		))
 		return nil
 	}
 
 	ctxLogger.Info(fmt.Sprintf(
-		"successfully sent heartbeat FCM [%s] to phone with ID [%s] for user [%s] and monitor [%s]",
+		"successfully sent heartbeat notification [%s] to phone with ID [%s] for user [%s] and monitor [%s]",
 		result,
 		payload.PhoneID,
 		payload.UserID,
@@ -125,7 +134,7 @@ type PhoneNotificationSendParams struct {
 	MessageID           uuid.UUID
 }
 
-// Send sends a message when a message is sent
+// Send sends a phone gateway notification when a message is sent.
 func (service *PhoneNotificationService) Send(ctx context.Context, params *PhoneNotificationSendParams) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
@@ -142,30 +151,55 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	}
 
 	ttl := phone.MessageExpirationDuration()
-	result, err := service.messagingClient.Send(ctx, &messaging.Message{
+	result, err := service.notificationDispatcher.Send(ctx, phone, GatewayNotification{
 		Data: map[string]string{
 			"KEY_MESSAGE_ID": params.MessageID.String(),
 		},
-		Android: &messaging.AndroidConfig{
-			Priority: "normal",
-			TTL:      &ttl,
-		},
-		Token: *phone.FcmToken,
+		Priority:       "normal",
+		TTL:            &ttl,
+		NotificationID: params.PhoneNotificationID,
 	})
 	if err != nil {
-		ctxLogger.Warn(stacktrace.Propagatef(
-			err,
+		transport, transportErr := phone.NotificationTransport()
+		if transportErr != nil {
+			ctxLogger.Warn(stacktrace.Propagatef(
+				redactNotificationToken(transportErr, *phone.FcmToken),
+				"cannot determine notification transport for phone with ID [%s] for user with ID [%s] and message [%s]",
+				phone.ID,
+				phone.UserID,
+				params.MessageID,
+			))
+			msg := fmt.Sprintf("cannot send notification to phone [%s]. Check the notification configuration.", phone.PhoneNumber)
+			return service.handleNotificationFailed(ctx, errors.New(msg), params)
+		}
 
-			"cannot send FCM to phone with ID [%s] for user with ID [%s] and message [%s]",
+		ctxLogger.Warn(stacktrace.Propagatef(
+			redactNotificationToken(err, *phone.FcmToken),
+			"cannot send %s notification to phone with ID [%s] for user with ID [%s] and message [%s]",
+			transport,
 			phone.ID,
 			phone.UserID,
 			params.MessageID,
 		))
 		msg := fmt.Sprintf("cannot send notification to your phone [%s]. Reinstall the httpSMS app on your Android phone.", phone.PhoneNumber)
+		if transport == entities.NotificationTransportHTTP {
+			msg = fmt.Sprintf(
+				"cannot notify the configured adapter for phone [%s]. Check the adapter URL and availability.",
+				phone.PhoneNumber,
+			)
+		}
 		return service.handleNotificationFailed(ctx, errors.New(msg), params)
 	}
 
 	return service.handleNotificationSent(ctx, phone, result, params)
+}
+
+func redactNotificationToken(err error, token string) error {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return err
+	}
+	return errors.New(strings.ReplaceAll(err.Error(), token, "[redacted]"))
 }
 
 // PhoneNotificationScheduleParams are parameters for sending a notification

@@ -18,7 +18,7 @@ const (
 // PhoneNotificationStatus is the status of a phone notification
 type PhoneNotificationStatus string
 
-// PhoneNotification represents an FCM notification to a mobile phone
+// PhoneNotification represents a scheduled wake-up notification for a phone gateway.
 type PhoneNotification struct {
 	ID          uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;"`
 	MessageID   uuid.UUID `json:"message_id"`
