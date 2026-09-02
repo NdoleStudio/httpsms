@@ -17,6 +17,21 @@ import (
 
 const maxNotificationResponseDiscardBytes = 4 * 1024
 
+type trustedNotificationHTTPTransport interface {
+	http.RoundTripper
+	trustedNotificationHTTPTransport()
+}
+
+type notificationHTTPTransport struct {
+	roundTripper http.RoundTripper
+}
+
+func (transport *notificationHTTPTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	return transport.roundTripper.RoundTrip(request)
+}
+
+func (*notificationHTTPTransport) trustedNotificationHTTPTransport() {}
+
 type httpNotificationRequest struct {
 	Message httpNotificationMessage `json:"message"`
 }
@@ -68,6 +83,22 @@ func NewHTTPNotificationSender(
 			}
 		},
 	}
+}
+
+// NewNotificationHTTPTransport secures a base transport before applying optional middleware.
+func NewNotificationHTTPTransport(
+	policy *NotificationEndpointPolicy,
+	transport *http.Transport,
+	dialer *net.Dialer,
+	wrap func(http.RoundTripper) http.RoundTripper,
+) http.RoundTripper {
+	secured := secureNotificationHTTPTransport(transport, policy, dialer)
+	var roundTripper http.RoundTripper = secured
+	if wrap != nil {
+		roundTripper = wrap(secured)
+	}
+
+	return &notificationHTTPTransport{roundTripper: roundTripper}
 }
 
 // Send delivers a notification to an HTTPS adapter. A successful response only accepts wake-up delivery.
@@ -181,12 +212,25 @@ func newNotificationHTTPClient(client *http.Client, policy *NotificationEndpoint
 		return http.ErrUseLastResponse
 	}
 
+	if _, ok := configured.Transport.(trustedNotificationHTTPTransport); ok {
+		return &configured
+	}
+
 	transport, ok := configured.Transport.(*http.Transport)
 	if !ok {
-		if configured.Transport != nil {
-			// Preserve middleware around a transport secured before wrapping.
-			return &configured
-		}
+		transport = http.DefaultTransport.(*http.Transport)
+	}
+	configured.Transport = secureNotificationHTTPTransport(transport, policy, &net.Dialer{})
+
+	return &configured
+}
+
+func secureNotificationHTTPTransport(
+	transport *http.Transport,
+	policy *NotificationEndpointPolicy,
+	dialer *net.Dialer,
+) *http.Transport {
+	if transport == nil {
 		transport = http.DefaultTransport.(*http.Transport)
 	}
 	transport = transport.Clone()
@@ -200,12 +244,21 @@ func newNotificationHTTPClient(client *http.Client, policy *NotificationEndpoint
 	}
 	transport.TLSClientConfig.InsecureSkipVerify = false
 	transport.TLSClientConfig.ServerName = ""
-	if policy != nil {
-		transport.DialContext = policy.DialContext(&net.Dialer{})
+	if transport.TLSClientConfig.MinVersion < tls.VersionTLS12 {
+		transport.TLSClientConfig.MinVersion = tls.VersionTLS12
 	}
-	configured.Transport = transport
+	if transport.TLSClientConfig.MaxVersion != 0 && transport.TLSClientConfig.MaxVersion < tls.VersionTLS12 {
+		transport.TLSClientConfig.MaxVersion = tls.VersionTLS12
+	}
+	if policy != nil {
+		if dialer == nil {
+			dialer = &net.Dialer{}
+		}
+		configuredDialer := *dialer
+		transport.DialContext = policy.DialContext(&configuredDialer)
+	}
 
-	return &configured
+	return transport
 }
 
 func isRetryableNotificationStatus(statusCode int) bool {

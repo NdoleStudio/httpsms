@@ -261,13 +261,76 @@ func TestHTTPNotificationSenderClearsCustomTLSDialersAndServerName(t *testing.T)
 	assert.Empty(t, transport.TLSClientConfig.ServerName)
 }
 
-func TestHTTPNotificationSenderPreservesWrappedTransport(t *testing.T) {
-	transport := &wrappedNotificationRoundTripper{}
+func TestHTTPNotificationSenderRejectsOpaqueTransportAndUsesPolicyDialer(t *testing.T) {
+	opaque := &wrappedNotificationRoundTripper{}
+	policy := NewNotificationEndpointPolicy(&staticHostResolver{
+		addresses: map[string][]netip.Addr{
+			"private.example.com": {netip.MustParseAddr("127.0.0.1")},
+		},
+	}, nil)
 	sender := NewHTTPNotificationSender(nil, nil, &http.Client{
-		Transport: transport,
-	}, newHTTPNotificationPolicy())
+		Transport: opaque,
+	}, policy)
+
+	transport, ok := sender.client.Transport.(*http.Transport)
+	require.True(t, ok)
+
+	_, err := transport.DialContext(context.Background(), "tcp", "private.example.com:443")
+
+	require.Error(t, err)
+	assert.Zero(t, opaque.calls)
+}
+
+func TestHTTPNotificationSenderTrustsServiceCreatedWrapperWithSecuredParent(t *testing.T) {
+	policy := NewNotificationEndpointPolicy(&staticHostResolver{
+		addresses: map[string][]netip.Addr{
+			"private.example.com": {netip.MustParseAddr("127.0.0.1")},
+		},
+	}, nil)
+	unsafeDialCalls := 0
+	var parent http.RoundTripper
+	transport := NewNotificationHTTPTransport(
+		policy,
+		&http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: func(context.Context, string, string) (net.Conn, error) {
+				unsafeDialCalls++
+				return nil, errors.New("unsafe dialer must not be used")
+			},
+			DialTLS: func(string, string) (net.Conn, error) {
+				return nil, errors.New("unsafe TLS dialer must not be used")
+			},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS10,
+				ServerName:         "attacker.example.com",
+			},
+		},
+		&net.Dialer{Timeout: time.Second},
+		func(securedParent http.RoundTripper) http.RoundTripper {
+			parent = securedParent
+			return &wrappedNotificationRoundTripper{}
+		},
+	)
+
+	sender := NewHTTPNotificationSender(nil, nil, &http.Client{Transport: transport}, policy)
 
 	assert.Same(t, transport, sender.client.Transport)
+	securedParent, ok := parent.(*http.Transport)
+	require.True(t, ok)
+	assert.Nil(t, securedParent.Proxy)
+	assert.NotNil(t, securedParent.DialContext)
+	assert.Nil(t, securedParent.DialTLS)
+	assert.Nil(t, securedParent.DialTLSContext)
+	require.NotNil(t, securedParent.TLSClientConfig)
+	assert.False(t, securedParent.TLSClientConfig.InsecureSkipVerify)
+	assert.Empty(t, securedParent.TLSClientConfig.ServerName)
+	assert.Equal(t, uint16(tls.VersionTLS12), securedParent.TLSClientConfig.MinVersion)
+
+	_, err := securedParent.DialContext(context.Background(), "tcp", "private.example.com:443")
+
+	require.Error(t, err)
+	assert.Zero(t, unsafeDialCalls)
 }
 
 type roundTripOutcome struct {
@@ -281,9 +344,12 @@ type boundedReadCloser struct {
 	closed    bool
 }
 
-type wrappedNotificationRoundTripper struct{}
+type wrappedNotificationRoundTripper struct {
+	calls int
+}
 
-func (*wrappedNotificationRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+func (transport *wrappedNotificationRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	transport.calls++
 	return nil, errors.New("must not be used")
 }
 

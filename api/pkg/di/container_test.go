@@ -9,15 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNotificationDispatcherRetainsTelemetryWrappedSecureHTTPTransport(t *testing.T) {
+func TestNotificationDispatcherTrustsServiceCreatedTelemetryWrapperWithSecuredParent(t *testing.T) {
 	t.Setenv("ENV", "local")
 	t.Setenv("FCM_ENDPOINT", "http://localhost")
 
 	dispatcher := NewLiteContainer().NotificationDispatcher()
 	httpSender := reflect.ValueOf(dispatcher).Elem().FieldByName("httpSender").Elem().Elem()
 	client := httpSender.FieldByName("client").Elem()
-	roundTripper := client.FieldByName("Transport").Elem()
+	trustedTransport := client.FieldByName("Transport").Elem()
 
+	require.Equal(t, "*services.notificationHTTPTransport", trustedTransport.Type().String())
+
+	roundTripper := trustedTransport.Elem().FieldByName("roundTripper").Elem()
 	require.Equal(t, "*otelroundtripper.otelRoundTripper", roundTripper.Type().String())
 
 	parent := roundTripper.Elem().FieldByName("parent").Elem()

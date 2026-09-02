@@ -588,11 +588,6 @@ func (container *Container) NotificationEndpointPolicy() *services.NotificationE
 func (container *Container) NotificationHTTPClient() *http.Client {
 	policy := container.NotificationEndpointPolicy()
 	transport := &http.Transport{
-		Proxy: nil,
-		DialContext: policy.DialContext(&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}),
 		ForceAttemptHTTP2: true,
 		TLSClientConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
@@ -600,10 +595,20 @@ func (container *Container) NotificationHTTPClient() *http.Client {
 	}
 
 	return &http.Client{
-		Transport: otelroundtripper.New(
-			otelroundtripper.WithName("phone_notification_http"),
-			otelroundtripper.WithParent(transport),
-			otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
+		Transport: services.NewNotificationHTTPTransport(
+			policy,
+			transport,
+			&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 30 * time.Second,
+			},
+			func(parent http.RoundTripper) http.RoundTripper {
+				return otelroundtripper.New(
+					otelroundtripper.WithName("phone_notification_http"),
+					otelroundtripper.WithParent(parent),
+					otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
+				)
+			},
 		),
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
