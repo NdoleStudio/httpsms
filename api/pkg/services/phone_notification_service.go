@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// PhoneNotificationService sends out notifications to mobile phones
+// PhoneNotificationService sends wake-up notifications to phone gateways.
 type PhoneNotificationService struct {
 	service
 	logger                        telemetry.Logger

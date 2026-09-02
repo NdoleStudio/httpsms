@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -84,20 +85,21 @@ import (
 
 // Container is used to resolve services at runtime
 type Container struct {
-	projectID             string
-	db                    *gorm.DB
-	dedicatedDB           *gorm.DB
-	mongoDB               *mongoDriver.Database
-	version               string
-	app                   *fiber.App
-	eventDispatcher       *services.EventDispatcher
-	logger                telemetry.Logger
-	attachmentRepository  repositories.AttachmentRepository
-	contactService        *services.ContactService
-	userRistrettoCache    *ristretto.Cache[string, entities.AuthContext]
-	phoneRistrettoCache   *ristretto.Cache[string, *entities.Phone]
-	contactRistrettoCache *ristretto.Cache[string, services.ContactCacheEntry]
-	inMemoryCache         cache.Cache
+	projectID                  string
+	db                         *gorm.DB
+	dedicatedDB                *gorm.DB
+	mongoDB                    *mongoDriver.Database
+	version                    string
+	app                        *fiber.App
+	eventDispatcher            *services.EventDispatcher
+	logger                     telemetry.Logger
+	attachmentRepository       repositories.AttachmentRepository
+	contactService             *services.ContactService
+	userRistrettoCache         *ristretto.Cache[string, entities.AuthContext]
+	phoneRistrettoCache        *ristretto.Cache[string, *entities.Phone]
+	contactRistrettoCache      *ristretto.Cache[string, services.ContactCacheEntry]
+	inMemoryCache              cache.Cache
+	notificationEndpointPolicy *services.NotificationEndpointPolicy
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -565,6 +567,63 @@ func (container *Container) FCMClient() services.FCMClient {
 	return services.NewFirebaseFCMClient(messagingClient)
 }
 
+// NotificationEndpointPolicy creates the shared notification endpoint validation policy.
+func (container *Container) NotificationEndpointPolicy() *services.NotificationEndpointPolicy {
+	if container.notificationEndpointPolicy != nil {
+		return container.notificationEndpointPolicy
+	}
+
+	allowedPrivateHosts := []string{}
+	if isLocal() {
+		allowedPrivateHosts = splitCommaEnv("NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST", "")
+	}
+	container.notificationEndpointPolicy = services.NewNotificationEndpointPolicy(
+		net.DefaultResolver,
+		allowedPrivateHosts,
+	)
+	return container.notificationEndpointPolicy
+}
+
+// NotificationHTTPClient creates the SSRF-safe HTTP client for phone notification adapters.
+func (container *Container) NotificationHTTPClient() *http.Client {
+	policy := container.NotificationEndpointPolicy()
+	transport := &http.Transport{
+		Proxy: nil,
+		DialContext: policy.DialContext(&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}),
+		ForceAttemptHTTP2: true,
+		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
+
+	return &http.Client{
+		Transport: otelroundtripper.New(
+			otelroundtripper.WithName("phone_notification_http"),
+			otelroundtripper.WithParent(transport),
+			otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
+		),
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
+// NotificationDispatcher creates notification senders for Firebase and HTTP gateways.
+func (container *Container) NotificationDispatcher() *services.NotificationDispatcher {
+	return services.NewNotificationDispatcher(
+		services.NewFCMNotificationSender(container.FCMClient()),
+		services.NewHTTPNotificationSender(
+			container.Logger(),
+			container.Tracer(),
+			container.NotificationHTTPClient(),
+			container.NotificationEndpointPolicy(),
+		),
+	)
+}
+
 // FirebaseCredentials returns firebase credentials as bytes.
 func (container *Container) FirebaseCredentials() []byte {
 	container.logger.Debug("creating firebase credentials")
@@ -732,6 +791,7 @@ func (container *Container) PhoneHandlerValidator() (validator *validators.Phone
 		container.Logger(),
 		container.Tracer(),
 		container.MessageSendScheduleService(),
+		container.NotificationEndpointPolicy(),
 	)
 }
 
@@ -1715,7 +1775,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 	return services.NewNotificationService(
 		container.Logger(),
 		container.Tracer(),
-		container.FCMClient(),
+		container.NotificationDispatcher(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
 		container.MessageSendScheduleRepository(),

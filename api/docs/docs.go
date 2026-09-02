@@ -2420,7 +2420,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates properties of a user's phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'",
+                "description": "Updates properties of a user's phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible HTTP wake-ups.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2483,7 +2483,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates the FCM token of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'",
+                "description": "Updates the FCM token or adapter callback URL of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible HTTP wake-ups.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4947,8 +4947,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "fcm_token": {
+                    "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
+                    "example": "https://adapter.example.com/notifications"
                 },
                 "phone_number": {
                     "type": "string",
@@ -4975,8 +4976,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "fcm_token": {
+                    "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
+                    "example": "https://adapter.example.com/notifications"
                 },
                 "max_send_attempts": {
                     "description": "MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.",
