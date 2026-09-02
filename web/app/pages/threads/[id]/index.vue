@@ -52,6 +52,9 @@ const selectedMenuItem = ref(-1)
 const contactDialog = ref(false)
 const messageBody = ref<HTMLElement | null>(null)
 const form = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
+let messageRequestId = 0
+
+threadsStore.setThreadId(route.params.id as string)
 
 const formMessageRules = [
   (v: string) =>
@@ -128,8 +131,10 @@ function scrollToElement() {
   hideMessages.value = false
 }
 
-async function resetCurrentThreadUnreadCount(force = false) {
-  const threadId = route.params.id as string
+async function resetCurrentThreadUnreadCount(
+  force = false,
+  threadId = route.params.id as string,
+) {
   try {
     await threadsStore.resetThreadUnreadCount(threadId, force)
   } catch (error) {
@@ -154,36 +159,46 @@ async function handleInboundMessage() {
   }
 }
 
-function loadMessages(hide = true, resetUnreadCount = true) {
+async function loadMessages(hide = true, resetUnreadCount = true) {
+  const requestId = ++messageRequestId
   loadingMessages.value = true
   const threadId = route.params.id as string
-  if (resetUnreadCount) void resetCurrentThreadUnreadCount()
-  threadsStore
-    .loadThreadMessages(threadId)
-    .then((response: EntitiesMessage[]) => {
-      messages.value = [...response].reverse()
-    })
-    .finally(() => {
-      setTimeout(() => {
-        loadingMessages.value = false
-      }, 1100)
-    })
   hideMessages.value = hide
-  setTimeout(() => {
+
+  if (resetUnreadCount) {
+    void resetCurrentThreadUnreadCount(false, threadId)
+  }
+
+  try {
+    const response = await threadsStore.loadThreadMessages(threadId)
+    if (requestId !== messageRequestId) return
+
+    messages.value = [...response].reverse()
+    await nextTick()
+    if (requestId !== messageRequestId) return
+
     scrollToElement()
-  }, 950)
+  } finally {
+    if (requestId === messageRequestId) {
+      loadingMessages.value = false
+    }
+  }
 }
 
 async function loadData() {
-  await authStore.loadUser()
-  await phonesStore.loadPhones()
-  await threadsStore.loadThreads()
+  const threadId = route.params.id as string
 
-  if (!threadsStore.hasThreadId(route.params.id as string)) {
+  if (!threadsStore.hasThreadId(threadId)) {
+    if (!authStore.user) await authStore.loadUser()
+    await phonesStore.loadPhones()
+    await threadsStore.loadThreads()
+  }
+
+  if (!threadsStore.hasThreadId(threadId)) {
     await router.push('/threads')
     return
   }
-  loadMessages()
+  await loadMessages()
 }
 
 async function archiveThread() {
@@ -281,6 +296,16 @@ onMounted(async () => {
     void handleInboundMessage()
   })
 })
+
+watch(
+  () => route.params.id as string,
+  (threadId, previousThreadId) => {
+    if (!previousThreadId || threadId === previousThreadId) return
+
+    threadsStore.setThreadId(threadId)
+    void loadMessages()
+  },
+)
 
 onBeforeUnmount(() => {
   if (webhookChannel) webhookChannel.unsubscribe()
