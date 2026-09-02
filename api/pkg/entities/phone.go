@@ -44,6 +44,15 @@ const (
 	NotificationTransportHTTP NotificationTransport = "http"
 )
 
+func isNotificationURLCandidate(token string) bool {
+	lower := strings.ToLower(token)
+
+	return strings.Contains(token, "://") ||
+		strings.HasPrefix(lower, "http:") ||
+		strings.HasPrefix(lower, "https:") ||
+		strings.HasPrefix(lower, "ftp:")
+}
+
 // MessageExpirationDuration returns the message expiration as time.Duration
 func (phone *Phone) MessageExpirationDuration() time.Duration {
 	return time.Duration(int(phone.MessageExpirationSecondsSanitized())) * time.Second
@@ -76,16 +85,16 @@ func (phone *Phone) NotificationTransport() (NotificationTransport, error) {
 		return "", stacktrace.NewErrorf("phone has no notification token")
 	}
 
+	if !isNotificationURLCandidate(token) {
+		return NotificationTransportFCM, nil
+	}
+
 	endpoint, err := url.Parse(token)
 	if err != nil {
 		return "", stacktrace.Propagatef(err, "invalid notification URL [%s]", token)
 	}
 
-	if endpoint.Scheme == "" {
-		return NotificationTransportFCM, nil
-	}
-
-	if endpoint.Scheme != "https" {
+	if !strings.EqualFold(endpoint.Scheme, "https") {
 		return "", stacktrace.NewErrorf("notification URL must use https")
 	}
 	if endpoint.Hostname() == "" {
