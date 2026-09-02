@@ -2,7 +2,8 @@
 
 - Date: 2026-09-02
 - Status: Approved (design)
-- Scope: `api/` Go backend. Web and Android clients are unchanged.
+- Scope: `api/` Go backend plus `tests/` integration infrastructure and API CI.
+  Web and Android clients are unchanged.
 
 ## Problem
 
@@ -49,6 +50,9 @@ requirements:
 - Do not sign or authenticate callback requests. The payload contains no
   message content or API credentials.
 - Restrict production callback destinations to public HTTPS endpoints.
+- Permit private callback resolution only for exact hostnames on an explicit
+  allowlist that the DI container reads when `ENV=local`. This exists for the
+  Docker integration emulator and is never enabled implicitly.
 - Preserve all existing phone API-key authorization and message-processing
   behavior.
 
@@ -335,9 +339,12 @@ The HTTP client:
 - uses the approved per-attempt timeout;
 - retains OpenTelemetry instrumentation around the SSRF-safe transport.
 
-Private or insecure local-development callback exceptions are out of scope.
-Tests use injected resolvers, dialers, and HTTP transports rather than weakening
-the production endpoint policy.
+The endpoint policy accepts an optional exact-host private-destination
+allowlist. The DI container passes configured values only when `ENV=local`;
+production ignores the setting. Allowlisting a hostname permits its private
+DNS answers but does not permit HTTP, embedded credentials, redirects, proxy
+use, or a different hostname. Unit tests use injected resolvers and dialers.
+The Docker integration stack allowlists only `adapter-emulator`.
 
 ### 9. Validation and API compatibility
 
@@ -407,6 +414,11 @@ Implementation is expected to touch:
 - `api/pkg/di/container.go` for dispatcher, HTTP client, resolver, and sender
   construction;
 - phone request annotations and generated Swagger files.
+- `tests/adapter-emulator/` for an HTTPS gateway emulator that consumes
+  callbacks and exercises existing phone API routes;
+- `tests/adapter_integration_test.go`, `tests/docker-compose.yml`, test
+  certificate generation, CI setup, and `tests/README.md` for end-to-end
+  coverage.
 
 The implementation must not move scheduling, message expiration, message event
 handling, or phone API-key authorization into the new transport code.
@@ -465,6 +477,52 @@ Cover:
 - scheduling, exact-send time, per-minute limits, and send schedules remaining
   independent of transport.
 
+### Adapter integration emulator
+
+Add a dedicated Go service under `tests/adapter-emulator/`. It exposes:
+
+- an HTTPS callback listener used by the API;
+- an HTTP-only test control listener exposed to the host test runner;
+- an in-memory gateway registry mapping a unique callback path to a phone
+  number and phone API key;
+- callback records keyed by `X-httpSMS-Notification-ID`.
+
+For `KEY_MESSAGE_ID`, the emulator:
+
+1. deduplicates the notification ID;
+2. fetches `/v1/messages/outstanding` using the registered phone API key;
+3. posts the existing `SENT` event;
+4. posts the existing `DELIVERED` event;
+5. records the fetched message and final adapter action for test assertions.
+
+For `KEY_HEARTBEAT_ID`, the emulator posts `/v1/heartbeats` for the registered
+phone and records the heartbeat wake-up. A control endpoint also instructs the
+emulator to submit an incoming message through `/v1/messages/receive`.
+
+The integration stack generates a throwaway CA and server certificate whose SAN
+contains `adapter-emulator`, mounts the server certificate into the emulator,
+and makes the CA available to the API's Go trust store. The API runs with:
+
+```text
+NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST=adapter-emulator
+```
+
+Because `.env.test` uses `ENV=local`, the exact hostname can resolve to the
+Docker-private emulator address while the full HTTPS, TLS verification,
+payload, dispatch, and API callback paths remain exercised. No insecure HTTP
+callback exception is added.
+
+Add end-to-end tests for:
+
+- **Outgoing:** URL-backed phone callback -> outstanding fetch -> sent event ->
+  delivered event -> final delivered API status.
+- **Incoming:** emulator control request -> existing receive-message API ->
+  final received API status and matching owner/contact/content.
+- **Heartbeat:** internal `phone.heartbeat.missed` CloudEvent -> URL callback ->
+  emulator heartbeat POST -> heartbeat visible through the user API.
+- Callback payload keys, notification ID header, unique callback handling, and
+  phone API-key scoping.
+
 Run:
 
 ```bash
@@ -477,6 +535,18 @@ After annotation changes, regenerate Swagger:
 ```bash
 cd api
 swag init --requiredByDefault --parseDependency --parseInternal
+```
+
+Run the Docker integration suite:
+
+```bash
+cd tests
+bash generate-firebase-credentials.sh
+bash generate-adapter-certificates.sh
+docker compose up -d --build --wait
+docker compose wait seed
+go test -v -timeout 300s ./...
+docker compose down -v
 ```
 
 ## Rollout
@@ -510,3 +580,5 @@ URL-backed phones stop receiving wake-ups if the feature is rolled back.
 - Web UI for configuring adapters.
 - Android application changes.
 - General-purpose outbound webhook refactoring.
+- Private callback destinations outside the exact local-only integration-test
+  allowlist.
