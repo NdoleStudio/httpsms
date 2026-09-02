@@ -450,7 +450,7 @@ onBeforeUnmount(() => {
                   </VListItem>
                 </VList>
               </VMenu>
-              <div>
+              <div style="max-width: 50%">
                 <VCard
                   rounded="shaped"
                   :variant="isMT(message) ? 'flat' : 'tonal'"
