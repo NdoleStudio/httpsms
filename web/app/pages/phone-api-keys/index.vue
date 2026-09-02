@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
 import { ErrorMessages } from '~/utils/errors'
-import { toApiError } from '~/utils/api-error'
+import { getApiErrorMessage, toApiError } from '~/utils/api-error'
 import type { EntitiesPhoneAPIKey } from '~~/shared/types/api'
 
 definePageMeta({
@@ -58,9 +58,9 @@ async function loadPhoneApiKeys() {
       { query: { limit: 100 } },
     )
     phoneApiKeys.value = response.data ?? []
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to load Phone API Keys',
+      message: getApiErrorMessage(error, 'Failed to load Phone API Keys'),
       type: 'error',
     })
   } finally {
@@ -88,7 +88,7 @@ async function createPhoneApiKey() {
     errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        message: 'Failed to create Phone API Key',
+        message: getApiErrorMessage(error, 'Failed to create Phone API Key'),
         type: 'error',
       })
     }
@@ -155,9 +155,9 @@ async function deleteApiKey() {
     })
     deleteApiKeyDialog.value = false
     await loadPhoneApiKeys()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to delete Phone API Key',
+      message: getApiErrorMessage(error, 'Failed to delete Phone API Key'),
       type: 'error',
     })
     loading.value = false
@@ -191,9 +191,12 @@ async function removePhoneFromPhoneKey() {
     })
     removePhoneFromApiKeyDialog.value = false
     await loadPhoneApiKeys()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to remove the phone from the Phone API Key',
+      message: getApiErrorMessage(
+        error,
+        'Failed to remove the phone from the Phone API Key',
+      ),
       type: 'error',
     })
     loading.value = false

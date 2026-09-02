@@ -23,7 +23,7 @@ import {
 } from 'firebase/auth'
 import QRCode from 'qrcode'
 import { ErrorMessages } from '~/utils/errors'
-import { toApiError } from '~/utils/api-error'
+import { getApiErrorMessage, toApiError } from '~/utils/api-error'
 import type {
   EntitiesPhone,
   EntitiesWebhook,
@@ -157,9 +157,9 @@ async function rotateApiKey() {
       message: 'API Key rotated successfully',
       type: 'success',
     })
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to rotate API Key',
+      message: getApiErrorMessage(error, 'Failed to rotate API Key'),
       type: 'error',
     })
   } finally {
@@ -198,9 +198,9 @@ async function updateTimezone(timezone: string) {
       message: 'Timezone updated successfully',
       type: 'success',
     })
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to update timezone',
+      message: getApiErrorMessage(error, 'Failed to update timezone'),
       type: 'error',
     })
   }
@@ -298,7 +298,7 @@ async function saveWebhook() {
     errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        message: 'Failed to save webhook',
+        message: getApiErrorMessage(error, 'Failed to save webhook'),
         type: 'error',
       })
     }
@@ -317,9 +317,9 @@ async function deleteWebhook(id: string) {
     })
     showWebhookEdit.value = false
     await loadWebhooks()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to delete webhook',
+      message: getApiErrorMessage(error, 'Failed to delete webhook'),
       type: 'error',
     })
   } finally {
@@ -406,7 +406,10 @@ async function saveDiscord() {
     errorMessages.value = parseErrors(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
-        message: 'Failed to save discord integration',
+        message: getApiErrorMessage(
+          error,
+          'Failed to save discord integration',
+        ),
         type: 'error',
       })
     }
@@ -425,9 +428,12 @@ async function deleteDiscord(id: string) {
     })
     showDiscordEdit.value = false
     await loadDiscordIntegrations()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to delete discord integration',
+      message: getApiErrorMessage(
+        error,
+        'Failed to delete discord integration',
+      ),
       type: 'error',
     })
   } finally {
@@ -472,9 +478,9 @@ async function deletePhone(phoneId: string) {
     })
     showPhoneEdit.value = false
     activePhone.value = null
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to delete phone',
+      message: getApiErrorMessage(error, 'Failed to delete phone'),
       type: 'error',
     })
   } finally {
@@ -675,10 +681,10 @@ async function saveSchedule() {
     await loadSendSchedules()
   } catch (error: unknown) {
     errorMessages.value = parseErrors(error)
-    if (errorMessages.value.size() != 0) {
+    if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
         type: 'error',
-        message: 'Failed to save send schedule',
+        message: getApiErrorMessage(error, 'Failed to save send schedule'),
       })
     }
   } finally {
@@ -702,10 +708,10 @@ async function deleteSchedule() {
     showScheduleDelete.value = false
     showScheduleEdit.value = false
     await loadSendSchedules()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
       type: 'error',
-      message: 'Failed to delete send schedule',
+      message: getApiErrorMessage(error, 'Failed to delete send schedule'),
     })
   } finally {
     savingSchedule.value = false
@@ -746,9 +752,9 @@ async function saveEmailNotifications() {
       type: 'success',
     })
     syncEmailNotifications()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Failed to save email notifications',
+      message: getApiErrorMessage(error, 'Failed to save email notifications'),
       type: 'error',
     })
   } finally {
@@ -780,10 +786,12 @@ async function deleteUserAccount() {
       message: 'You have successfully logged out',
     })
     await router.push({ name: 'index' })
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message:
-        'We ran into an internal error while deleteing your account please contact us.',
+      message: getApiErrorMessage(
+        error,
+        'We ran into an internal error while deleting your account. Please contact us.',
+      ),
       type: 'error',
     })
   } finally {

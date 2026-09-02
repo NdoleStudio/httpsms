@@ -14,6 +14,7 @@ import type {
 } from '~~/shared/types/api'
 
 import { countries, getStateOptions } from '~/utils/countries'
+import { getApiErrorMessage } from '~/utils/api-error'
 
 type SubscriptionPayment =
   ResponsesUserSubscriptionPaymentsResponse['data'][number]
@@ -197,9 +198,12 @@ async function updateDetails() {
   loading.value = true
   try {
     window.location.href = await billingStore.getSubscriptionUpdateLink()
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'We could not redirect you to the subscription update portal.',
+      message: getApiErrorMessage(
+        error,
+        'We could not redirect you to the subscription update portal.',
+      ),
       type: 'error',
     })
     loading.value = false
@@ -215,9 +219,12 @@ async function cancelPlan() {
       type: 'success',
     })
     navigateTo('/')
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'We could not cancel your subscription.',
+      message: getApiErrorMessage(
+        error,
+        'We could not cancel your subscription.',
+      ),
       type: 'error',
     })
     loading.value = false

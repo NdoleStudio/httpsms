@@ -16,7 +16,7 @@ import {
 import type { EntitiesMessage, EntitiesPhone } from '~~/shared/types/api'
 import type { SearchMessagesRequest } from '~~/shared/types/message'
 import { ErrorMessages } from '~/utils/errors'
-import { toApiError } from '~/utils/api-error'
+import { getApiErrorMessage, toApiError } from '~/utils/api-error'
 
 interface Turnstile {
   ready(callback: () => void): void
@@ -261,9 +261,12 @@ async function deleteMessages() {
       type: 'success',
     })
     selectedIds.value = []
-  } catch {
+  } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: 'Error while deleting the selected messages',
+      message: getApiErrorMessage(
+        error,
+        'Error while deleting the selected messages',
+      ),
       type: 'error',
     })
   } finally {
@@ -300,8 +303,15 @@ async function resendMessages() {
       })
       selectedIds.value = []
     } else if (failed.length === results.length) {
+      const firstFailure = failed[0]
       notificationsStore.addNotification({
-        message: 'Error while resending the selected messages',
+        message:
+          firstFailure?.status === 'rejected'
+            ? getApiErrorMessage(
+                firstFailure.reason,
+                'Error while resending the selected messages',
+              )
+            : 'Error while resending the selected messages',
         type: 'error',
       })
     } else {

@@ -17,6 +17,7 @@ const notificationActive = computed({
     variant="tonal"
     :color="notificationsStore.notification.type"
     :timeout="notificationsStore.notification.timeout"
+    :z-index="10000"
   >
     <v-icon
       v-if="notificationsStore.notification.type === 'success'"

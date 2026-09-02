@@ -6,7 +6,7 @@ import {
   parsePhoneNumber,
   type CountryCode,
 } from 'libphonenumber-js'
-import { toApiError } from '~/utils/api-error'
+import { getApiErrorMessage, toApiError } from '~/utils/api-error'
 
 definePageMeta({
   middleware: ['auth'],
@@ -91,6 +91,11 @@ async function sendMessage() {
         })
       }
       errors.value = newErrors
+    } else {
+      notificationsStore.addNotification({
+        message: getApiErrorMessage(err, 'Failed to send message'),
+        type: 'error',
+      })
     }
   } finally {
     sending.value = false
