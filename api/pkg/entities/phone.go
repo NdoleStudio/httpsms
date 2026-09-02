@@ -1,8 +1,11 @@
 package entities
 
 import (
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/NdoleStudio/stacktrace"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +34,16 @@ type Phone struct {
 	UpdatedAt time.Time `json:"updated_at" example:"2022-06-05T14:26:10.303278+03:00"`
 }
 
+// NotificationTransport identifies how a phone receives wake-up notifications.
+type NotificationTransport string
+
+const (
+	// NotificationTransportFCM sends notifications through Firebase.
+	NotificationTransportFCM NotificationTransport = "fcm"
+	// NotificationTransportHTTP sends notifications to a public HTTPS endpoint.
+	NotificationTransportHTTP NotificationTransport = "http"
+)
+
 // MessageExpirationDuration returns the message expiration as time.Duration
 func (phone *Phone) MessageExpirationDuration() time.Duration {
 	return time.Duration(int(phone.MessageExpirationSecondsSanitized())) * time.Second
@@ -50,4 +63,59 @@ func (phone *Phone) MaxSendAttemptsSanitized() uint {
 		return 2
 	}
 	return phone.MaxSendAttempts
+}
+
+// NotificationTransport returns the transport encoded by FcmToken.
+func (phone *Phone) NotificationTransport() (NotificationTransport, error) {
+	if phone == nil || phone.FcmToken == nil {
+		return "", stacktrace.NewErrorf("phone has no notification token")
+	}
+
+	token := strings.TrimSpace(*phone.FcmToken)
+	if token == "" {
+		return "", stacktrace.NewErrorf("phone has no notification token")
+	}
+
+	if !strings.Contains(token, "://") {
+		if strings.Contains(token, "/") {
+			return "", stacktrace.NewErrorf("invalid notification token [%s]", token)
+		}
+		return NotificationTransportFCM, nil
+	}
+
+	endpoint, err := url.Parse(token)
+	if err != nil {
+		return "", stacktrace.Propagatef(err, "invalid notification URL [%s]", token)
+	}
+
+	if endpoint.Scheme != "https" {
+		return "", stacktrace.NewErrorf("notification URL must use https")
+	}
+	if endpoint.Hostname() == "" {
+		return "", stacktrace.NewErrorf("notification URL must include a hostname")
+	}
+	if endpoint.User != nil {
+		return "", stacktrace.NewErrorf("notification URL must not contain user information")
+	}
+
+	return NotificationTransportHTTP, nil
+}
+
+// NotificationURL returns the parsed endpoint for an HTTP notification token.
+func (phone *Phone) NotificationURL() (*url.URL, error) {
+	transport, err := phone.NotificationTransport()
+	if err != nil {
+		return nil, err
+	}
+
+	if transport != NotificationTransportHTTP {
+		return nil, stacktrace.NewErrorf("phone notification transport is [%s], not HTTP", transport)
+	}
+
+	endpoint, err := url.Parse(strings.TrimSpace(*phone.FcmToken))
+	if err != nil {
+		return nil, stacktrace.Propagatef(err, "cannot parse notification URL")
+	}
+
+	return endpoint, nil
 }
