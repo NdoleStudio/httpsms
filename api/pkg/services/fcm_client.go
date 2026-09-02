@@ -6,7 +6,7 @@ import (
 	"firebase.google.com/go/messaging"
 )
 
-// FCMClient is the interface for sending Firebase Cloud Messaging notifications.
+// FCMClient is the low-level Firebase SDK boundary used by FCMNotificationSender.
 type FCMClient interface {
 	// Send sends a message via FCM and returns the message name on success.
 	Send(ctx context.Context, message *messaging.Message) (string, error)
