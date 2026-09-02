@@ -183,6 +183,10 @@ func newNotificationHTTPClient(client *http.Client, policy *NotificationEndpoint
 
 	transport, ok := configured.Transport.(*http.Transport)
 	if !ok {
+		if configured.Transport != nil {
+			// Preserve middleware around a transport secured before wrapping.
+			return &configured
+		}
 		transport = http.DefaultTransport.(*http.Transport)
 	}
 	transport = transport.Clone()

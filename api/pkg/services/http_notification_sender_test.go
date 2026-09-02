@@ -261,16 +261,13 @@ func TestHTTPNotificationSenderClearsCustomTLSDialersAndServerName(t *testing.T)
 	assert.Empty(t, transport.TLSClientConfig.ServerName)
 }
 
-func TestHTTPNotificationSenderReplacesCustomTransportWithSafeTransport(t *testing.T) {
+func TestHTTPNotificationSenderPreservesWrappedTransport(t *testing.T) {
+	transport := &wrappedNotificationRoundTripper{}
 	sender := NewHTTPNotificationSender(nil, nil, &http.Client{
-		Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
-			return nil, errors.New("must not be used")
-		}),
+		Transport: transport,
 	}, newHTTPNotificationPolicy())
 
-	_, ok := sender.client.Transport.(*http.Transport)
-
-	assert.True(t, ok)
+	assert.Same(t, transport, sender.client.Transport)
 }
 
 type roundTripOutcome struct {
@@ -282,6 +279,12 @@ type boundedReadCloser struct {
 	remaining int64
 	read      int64
 	closed    bool
+}
+
+type wrappedNotificationRoundTripper struct{}
+
+func (*wrappedNotificationRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("must not be used")
 }
 
 func (reader *boundedReadCloser) Read(buffer []byte) (int, error) {
