@@ -76,16 +76,13 @@ func (phone *Phone) NotificationTransport() (NotificationTransport, error) {
 		return "", stacktrace.NewErrorf("phone has no notification token")
 	}
 
-	if !strings.Contains(token, "://") {
-		if strings.Contains(token, "/") {
-			return "", stacktrace.NewErrorf("invalid notification token [%s]", token)
-		}
-		return NotificationTransportFCM, nil
-	}
-
 	endpoint, err := url.Parse(token)
 	if err != nil {
 		return "", stacktrace.Propagatef(err, "invalid notification URL [%s]", token)
+	}
+
+	if endpoint.Scheme == "" {
+		return NotificationTransportFCM, nil
 	}
 
 	if endpoint.Scheme != "https" {

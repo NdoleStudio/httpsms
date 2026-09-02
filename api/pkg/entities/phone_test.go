@@ -18,14 +18,19 @@ func TestPhoneNotificationTransport(t *testing.T) {
 		transport NotificationTransport
 		hasError  bool
 	}{
-		{name: "firebase token", token: stringPointer("fcm-token:value"), transport: NotificationTransportFCM},
+		{name: "firebase token", token: stringPointer("fcm-token-value"), transport: NotificationTransportFCM},
+		{name: "opaque token with slash", token: stringPointer("projects/alpha/messages/123"), transport: NotificationTransportFCM},
 		{name: "public https url", token: stringPointer("https://adapter.example.com/notify"), transport: NotificationTransportHTTP},
 		{name: "missing token", token: nil, hasError: true},
 		{name: "empty token", token: stringPointer("  "), hasError: true},
 		{name: "http url", token: stringPointer("http://adapter.example.com/notify"), hasError: true},
 		{name: "ftp url", token: stringPointer("ftp://adapter.example.com/notify"), hasError: true},
+		{name: "scheme-like fcm token", token: stringPointer("fcm-token:value"), hasError: true},
+		{name: "scheme-like https token", token: stringPointer("https:adapter.example.com"), hasError: true},
+		{name: "scheme-like http token", token: stringPointer("http:foo"), hasError: true},
+		{name: "scheme-like ftp token", token: stringPointer("ftp:foo"), hasError: true},
 		{name: "missing host", token: stringPointer("https:///notify"), hasError: true},
-		{name: "embedded credentials", token: stringPointer("******adapter.example.com/notify"), hasError: true},
+		{name: "embedded credentials", token: stringPointer("https://user@adapter.example.com/notify"), hasError: true},
 		{name: "malformed url", token: stringPointer("https://[::1"), hasError: true},
 	}
 
