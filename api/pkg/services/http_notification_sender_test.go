@@ -3,9 +3,11 @@ package services
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/netip"
 	"strings"
@@ -129,6 +131,12 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 			wantCalls: 1,
 			wantErr:   true,
 		},
+		{
+			name:      "nonstandard 6xx response fails immediately",
+			outcomes:  []roundTripOutcome{{statusCode: 600}},
+			wantCalls: 1,
+			wantErr:   true,
+		},
 	}
 
 	for _, test := range tests {
@@ -224,6 +232,33 @@ func TestHTTPNotificationSenderConfiguresSecureHTTPClient(t *testing.T) {
 	assert.NotNil(t, sender.client.CheckRedirect)
 	require.NotNil(t, transport.TLSClientConfig)
 	assert.False(t, transport.TLSClientConfig.InsecureSkipVerify)
+}
+
+func TestHTTPNotificationSenderClearsCustomTLSDialersAndServerName(t *testing.T) {
+	sender := NewHTTPNotificationSender(nil, nil, &http.Client{
+		Transport: &http.Transport{
+			DialTLS: func(string, string) (net.Conn, error) {
+				return nil, errors.New("unsafe TLS dialer must not be used")
+			},
+			DialTLSContext: func(context.Context, string, string) (net.Conn, error) {
+				return nil, errors.New("unsafe TLS context dialer must not be used")
+			},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+				ServerName:         "attacker.example.com",
+			},
+		},
+	}, newHTTPNotificationPolicy())
+
+	transport, ok := sender.client.Transport.(*http.Transport)
+
+	require.True(t, ok)
+	assert.Nil(t, transport.DialTLS)
+	assert.Nil(t, transport.DialTLSContext)
+	require.NotNil(t, transport.DialContext)
+	require.NotNil(t, transport.TLSClientConfig)
+	assert.False(t, transport.TLSClientConfig.InsecureSkipVerify)
+	assert.Empty(t, transport.TLSClientConfig.ServerName)
 }
 
 func TestHTTPNotificationSenderReplacesCustomTransportWithSafeTransport(t *testing.T) {

@@ -187,12 +187,15 @@ func newNotificationHTTPClient(client *http.Client, policy *NotificationEndpoint
 	}
 	transport = transport.Clone()
 	transport.Proxy = nil
+	transport.DialTLS = nil
+	transport.DialTLSContext = nil
 	if transport.TLSClientConfig == nil {
 		transport.TLSClientConfig = &tls.Config{}
 	} else {
 		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
 	}
 	transport.TLSClientConfig.InsecureSkipVerify = false
+	transport.TLSClientConfig.ServerName = ""
 	if policy != nil {
 		transport.DialContext = policy.DialContext(&net.Dialer{})
 	}
@@ -204,7 +207,7 @@ func newNotificationHTTPClient(client *http.Client, policy *NotificationEndpoint
 func isRetryableNotificationStatus(statusCode int) bool {
 	return statusCode == http.StatusRequestTimeout ||
 		statusCode == http.StatusTooManyRequests ||
-		statusCode >= http.StatusInternalServerError
+		(statusCode >= http.StatusInternalServerError && statusCode < 600)
 }
 
 func notificationRetryDelay(attempt uint) time.Duration {
