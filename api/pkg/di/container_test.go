@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNotificationDispatcherTrustsServiceCreatedTelemetryWrapperWithSecuredParent(t *testing.T) {
+func TestNotificationDispatcherUsesSecuredTransportAndSafeTelemetry(t *testing.T) {
 	t.Setenv("ENV", "local")
 	t.Setenv("FCM_ENDPOINT", "http://localhost")
 
@@ -20,10 +20,7 @@ func TestNotificationDispatcherTrustsServiceCreatedTelemetryWrapperWithSecuredPa
 
 	require.Equal(t, "*services.notificationHTTPTransport", trustedTransport.Type().String())
 
-	roundTripper := trustedTransport.Elem().FieldByName("roundTripper").Elem()
-	require.Equal(t, "*otelroundtripper.otelRoundTripper", roundTripper.Type().String())
-
-	parent := roundTripper.Elem().FieldByName("parent").Elem()
+	parent := trustedTransport.Elem().FieldByName("secured")
 	require.Equal(t, "*http.Transport", parent.Type().String())
 
 	transport := parent.Elem()
@@ -36,4 +33,7 @@ func TestNotificationDispatcherTrustsServiceCreatedTelemetryWrapperWithSecuredPa
 	assert.False(t, tlsConfig.FieldByName("InsecureSkipVerify").Bool())
 	assert.Empty(t, tlsConfig.FieldByName("ServerName").String())
 	assert.Equal(t, uint64(tls.VersionTLS12), tlsConfig.FieldByName("MinVersion").Uint())
+
+	attemptRecorder := httpSender.FieldByName("attemptRecorder").Elem()
+	assert.Equal(t, "*services.otelNotificationHTTPAttemptRecorder", attemptRecorder.Type().String())
 }

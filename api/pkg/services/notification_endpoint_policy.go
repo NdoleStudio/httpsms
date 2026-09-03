@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/netip"
 	"net/url"
@@ -28,10 +29,27 @@ var blockedNotificationPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("::/128"),
 	netip.MustParsePrefix("::1/128"),
 	netip.MustParsePrefix("100::/64"),
+	netip.MustParsePrefix("100:0:0:1::/64"),
+	netip.MustParsePrefix("64:ff9b:1::/48"),
+	netip.MustParsePrefix("2001::/23"),
+	netip.MustParsePrefix("2001:2::/48"),
 	netip.MustParsePrefix("2001:db8::/32"),
+	netip.MustParsePrefix("3fff::/20"),
+	netip.MustParsePrefix("5f00::/16"),
 	netip.MustParsePrefix("fc00::/7"),
 	netip.MustParsePrefix("fe80::/10"),
 	netip.MustParsePrefix("ff00::/8"),
+}
+
+var globallyReachableNotificationPrefixExceptions = []netip.Prefix{
+	netip.MustParsePrefix("2001::/32"),
+	netip.MustParsePrefix("2001:1::1/128"),
+	netip.MustParsePrefix("2001:1::2/128"),
+	netip.MustParsePrefix("2001:1::3/128"),
+	netip.MustParsePrefix("2001:3::/32"),
+	netip.MustParsePrefix("2001:4:112::/48"),
+	netip.MustParsePrefix("2001:20::/28"),
+	netip.MustParsePrefix("2001:30::/28"),
 }
 
 type HostResolver interface {
@@ -56,30 +74,35 @@ func NewNotificationEndpointPolicy(resolver HostResolver, allowedPrivateHosts []
 }
 
 func (policy *NotificationEndpointPolicy) Validate(ctx context.Context, endpoint *url.URL) ([]netip.Addr, error) {
+	if policy == nil || policy.resolver == nil {
+		return nil, newNotificationEndpointPolicyViolation("notification endpoint policy is required")
+	}
 	if endpoint == nil {
-		return nil, stacktrace.NewError("notification endpoint is required")
+		return nil, newNotificationEndpointPolicyViolation("notification endpoint is required")
 	}
 	if !strings.EqualFold(endpoint.Scheme, "https") {
-		return nil, stacktrace.NewError("notification endpoint must use HTTPS")
+		return nil, newNotificationEndpointPolicyViolation("notification endpoint must use HTTPS")
 	}
 	if endpoint.User != nil {
-		return nil, stacktrace.NewError("notification endpoint must not contain user information")
+		return nil, newNotificationEndpointPolicyViolation("notification endpoint must not contain user information")
 	}
 
 	host := strings.ToLower(endpoint.Hostname())
 	if host == "" {
-		return nil, stacktrace.NewError("notification endpoint must contain a hostname")
+		return nil, newNotificationEndpointPolicyViolation("notification endpoint must contain a hostname")
 	}
 	if literal, err := netip.ParseAddr(host); err == nil && !isPublicNotificationAddress(literal) {
-		return nil, stacktrace.NewError("notification endpoint must not use a private IP literal")
+		return nil, newNotificationEndpointPolicyViolation("notification endpoint must not use a non-public IP literal")
 	}
 
 	addresses, err := policy.resolver.LookupNetIP(ctx, "ip", host)
 	if err != nil {
-		return nil, stacktrace.Propagatef(err, "cannot resolve notification endpoint hostname")
+		return nil, newNotificationEndpointResolutionFailure(err)
 	}
 	if len(addresses) == 0 {
-		return nil, stacktrace.NewError("notification endpoint hostname did not resolve")
+		return nil, newNotificationEndpointResolutionFailure(
+			stacktrace.NewError("notification endpoint hostname did not resolve"),
+		)
 	}
 
 	_, privateHostAllowed := policy.allowedPrivateHosts[host]
@@ -90,7 +113,9 @@ func (policy *NotificationEndpointPolicy) Validate(ctx context.Context, endpoint
 		if privateHostAllowed && address.Unmap().IsPrivate() {
 			continue
 		}
-		return nil, stacktrace.NewError("notification endpoint hostname resolved to a non-public address")
+		return nil, newNotificationEndpointPolicyViolation(
+			"notification endpoint hostname resolved to a non-public address",
+		)
 	}
 
 	return addresses, nil
@@ -136,10 +161,54 @@ func isPublicNotificationAddress(address netip.Addr) bool {
 	if !address.IsValid() || !address.IsGlobalUnicast() {
 		return false
 	}
+	for _, prefix := range globallyReachableNotificationPrefixExceptions {
+		if prefix.Contains(address) {
+			return true
+		}
+	}
 	for _, prefix := range blockedNotificationPrefixes {
 		if prefix.Contains(address) {
 			return false
 		}
 	}
 	return true
+}
+
+type notificationEndpointPolicyViolation struct {
+	message string
+}
+
+func (violation *notificationEndpointPolicyViolation) Error() string {
+	return violation.message
+}
+
+func newNotificationEndpointPolicyViolation(message string) error {
+	return stacktrace.Propagatef(
+		&notificationEndpointPolicyViolation{message: message},
+		"notification endpoint policy rejected destination",
+	)
+}
+
+func isNotificationEndpointPolicyViolation(err error) bool {
+	var violation *notificationEndpointPolicyViolation
+	return errors.As(err, &violation)
+}
+
+type notificationEndpointResolutionFailure struct {
+	cause error
+}
+
+func (failure *notificationEndpointResolutionFailure) Error() string {
+	return failure.cause.Error()
+}
+
+func (failure *notificationEndpointResolutionFailure) Unwrap() error {
+	return failure.cause
+}
+
+func newNotificationEndpointResolutionFailure(cause error) error {
+	return stacktrace.Propagatef(
+		&notificationEndpointResolutionFailure{cause: cause},
+		"cannot resolve notification endpoint hostname",
+	)
 }

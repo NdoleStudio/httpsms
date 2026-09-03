@@ -68,3 +68,14 @@ func TestPhoneNotificationURLRejectsFCMToken(t *testing.T) {
 
 	require.Error(t, err)
 }
+
+func TestPhoneNotificationTransportDoesNotExposeMalformedToken(t *testing.T) {
+	token := "https://[::1/secret?token=customer-secret"
+	phone := &Phone{FcmToken: &token}
+
+	_, err := phone.NotificationTransport()
+
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), token)
+	assert.NotContains(t, err.Error(), "customer-secret")
+}

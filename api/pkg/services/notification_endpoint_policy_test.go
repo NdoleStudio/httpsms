@@ -64,6 +64,65 @@ func TestNotificationEndpointPolicyValidate(t *testing.T) {
 	}
 }
 
+func TestNotificationEndpointPolicyRejectsNonPublicSpecialPurposeIPv6(t *testing.T) {
+	tests := []string{
+		"64:ff9b:1::1",
+		"100:0:0:1::1",
+		"2001:2::1",
+		"2001:5::1",
+		"2001:10::1",
+		"3fff::1",
+		"5f00::1",
+	}
+
+	for _, address := range tests {
+		t.Run(address, func(t *testing.T) {
+			endpoint, err := url.Parse("https://adapter.example.com/notify")
+			require.NoError(t, err)
+			policy := NewNotificationEndpointPolicy(&staticHostResolver{
+				addresses: map[string][]netip.Addr{
+					endpoint.Hostname(): {netip.MustParseAddr(address)},
+				},
+			}, nil)
+
+			_, err = policy.Validate(context.Background(), endpoint)
+
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestNotificationEndpointPolicyAllowsGloballyReachableSpecialPurposeIPv6(t *testing.T) {
+	tests := []string{
+		"64:ff9b::0808:0808",
+		"2001::1",
+		"2001:1::1",
+		"2001:1::2",
+		"2001:1::3",
+		"2001:3::1",
+		"2001:4:112::1",
+		"2001:20::1",
+		"2001:30::1",
+	}
+
+	for _, address := range tests {
+		t.Run(address, func(t *testing.T) {
+			endpoint, err := url.Parse("https://adapter.example.com/notify")
+			require.NoError(t, err)
+			policy := NewNotificationEndpointPolicy(&staticHostResolver{
+				addresses: map[string][]netip.Addr{
+					endpoint.Hostname(): {netip.MustParseAddr(address)},
+				},
+			}, nil)
+
+			addresses, err := policy.Validate(context.Background(), endpoint)
+
+			require.NoError(t, err)
+			assert.Equal(t, []netip.Addr{netip.MustParseAddr(address)}, addresses)
+		})
+	}
+}
+
 func TestNotificationEndpointPolicyRejectsRebindingBeforeDial(t *testing.T) {
 	endpoint, err := url.Parse("https://adapter.example.com:9091/notify")
 	require.NoError(t, err)

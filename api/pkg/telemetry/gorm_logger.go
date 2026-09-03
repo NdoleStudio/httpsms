@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/NdoleStudio/stacktrace"
+	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
@@ -13,6 +14,8 @@ type gormLogger struct {
 	tracer Tracer
 	logger Logger
 }
+
+var _ gorm.ParamsFilter = (*gormLogger)(nil)
 
 // NewGormLogger creates a new instance of gormLogger
 func NewGormLogger(tracer Tracer, logger Logger) logger.Interface {
@@ -37,6 +40,11 @@ func (gorm *gormLogger) Warn(ctx context.Context, s string, i ...any) {
 
 func (gorm *gormLogger) Error(ctx context.Context, s string, i ...any) {
 	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Error(fmt.Errorf(s, i...))
+}
+
+// ParamsFilter keeps SQL telemetry parameterized so bound values never enter logs.
+func (gorm *gormLogger) ParamsFilter(_ context.Context, sql string, _ ...any) (string, []any) {
+	return sql, nil
 }
 
 func (gorm *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {

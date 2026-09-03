@@ -274,7 +274,7 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		container.logger.Fatal(err)
 	}
 
-	if err = db.Use(tracing.NewPlugin()); err != nil {
+	if err = db.Use(tracing.NewPlugin(tracing.WithoutQueryVariables())); err != nil {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 
@@ -332,7 +332,7 @@ func (container *Container) DBWithoutMigration() (db *gorm.DB) {
 	}
 	container.db = db
 
-	if err = db.Use(tracing.NewPlugin()); err != nil {
+	if err = db.Use(tracing.NewPlugin(tracing.WithoutQueryVariables())); err != nil {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 	return container.db
@@ -357,7 +357,7 @@ func (container *Container) DB() (db *gorm.DB) {
 	}
 	container.db = db
 
-	if err = db.Use(tracing.NewPlugin()); err != nil {
+	if err = db.Use(tracing.NewPlugin(tracing.WithoutQueryVariables())); err != nil {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 
@@ -601,13 +601,6 @@ func (container *Container) NotificationHTTPClient() *http.Client {
 			&net.Dialer{
 				Timeout:   5 * time.Second,
 				KeepAlive: 30 * time.Second,
-			},
-			func(parent http.RoundTripper) http.RoundTripper {
-				return otelroundtripper.New(
-					otelroundtripper.WithName("phone_notification_http"),
-					otelroundtripper.WithParent(parent),
-					otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
-				)
 			},
 		),
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {

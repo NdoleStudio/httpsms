@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -40,7 +43,7 @@ type httpNotificationPayload struct {
 
 func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 	notificationID := uuid.New()
-	ttl := 5 * time.Minute
+	ttl := 10 * time.Minute
 	notification := GatewayNotification{
 		Data:           map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		Priority:       "high",
@@ -58,7 +61,7 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 		assert.Equal(t, "https://adapter.example.com/notify", payload.Message.Token)
 		assert.Equal(t, map[string]string{"KEY_MESSAGE_ID": "message-1"}, payload.Message.Data)
 		assert.Equal(t, "high", payload.Message.Android.Priority)
-		assert.Equal(t, "5m0s", payload.Message.Android.TTL)
+		assert.Equal(t, "600s", payload.Message.Android.TTL)
 
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
@@ -67,6 +70,26 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "http/"+notificationID.String(), result)
+}
+
+func TestFormatProtobufDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		expected string
+	}{
+		{name: "whole seconds", duration: 10 * time.Minute, expected: "600s"},
+		{name: "milliseconds", duration: 1500 * time.Millisecond, expected: "1.500s"},
+		{name: "microseconds", duration: time.Second + 234567*time.Microsecond, expected: "1.234567s"},
+		{name: "nanoseconds", duration: time.Second + 234567890*time.Nanosecond, expected: "1.234567890s"},
+		{name: "negative subsecond", duration: -500 * time.Millisecond, expected: "-0.500s"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, formatProtobufDuration(test.duration))
+		})
+	}
 }
 
 func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
@@ -234,6 +257,131 @@ func TestHTTPNotificationSenderConfiguresSecureHTTPClient(t *testing.T) {
 	assert.False(t, transport.TLSClientConfig.InsecureSkipVerify)
 }
 
+func TestHTTPNotificationSenderRetriesTransientDNSFailures(t *testing.T) {
+	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
+		{err: errors.New("temporary resolver failure")},
+		{addresses: []netip.Addr{netip.MustParseAddr("8.8.8.8")}},
+	}}
+	httpCalls := 0
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		httpCalls++
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
+
+	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
+		NotificationID: uuid.New(),
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, resolver.callCount())
+	assert.Equal(t, 1, httpCalls)
+}
+
+func TestHTTPNotificationSenderExhaustsTransientDNSFailures(t *testing.T) {
+	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
+		{err: errors.New("temporary resolver failure 1")},
+		{err: errors.New("temporary resolver failure 2")},
+		{err: errors.New("temporary resolver failure 3")},
+	}}
+	httpCalls := 0
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		httpCalls++
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
+
+	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
+		NotificationID: uuid.New(),
+	})
+
+	require.Error(t, err)
+	assert.Equal(t, 3, resolver.callCount())
+	assert.Zero(t, httpCalls)
+}
+
+func TestHTTPNotificationSenderBoundsDNSResolutionByAttemptTimeout(t *testing.T) {
+	resolver := &blockingHostResolver{}
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
+	sender.timeout = 10 * time.Millisecond
+
+	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
+		NotificationID: uuid.New(),
+	})
+
+	require.Error(t, err)
+	assert.Equal(t, 3, resolver.callCount())
+}
+
+func TestHTTPNotificationSenderStopsDNSRetriesWhenParentContextIsCancelled(t *testing.T) {
+	resolver := &blockingHostResolver{}
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := sender.Send(ctx, "https://adapter.example.com/notify", GatewayNotification{
+		NotificationID: uuid.New(),
+	})
+
+	require.Error(t, err)
+	assert.Equal(t, 1, resolver.callCount())
+}
+
+func TestHTTPNotificationSenderDoesNotRetryTerminalEndpointPolicyFailures(t *testing.T) {
+	tests := []struct {
+		name      string
+		endpoint  string
+		addresses []netip.Addr
+	}{
+		{name: "insecure scheme", endpoint: "http://adapter.example.com/notify"},
+		{name: "embedded user information", endpoint: "https://user@adapter.example.com/notify"},
+		{name: "private resolution", endpoint: "https://adapter.example.com/notify", addresses: []netip.Addr{netip.MustParseAddr("127.0.0.1")}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resolver := &countingHostResolver{addresses: test.addresses}
+			httpCalls := 0
+			sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+				httpCalls++
+				return response(http.StatusNoContent, http.NoBody), nil
+			}))
+			sender.policy = NewNotificationEndpointPolicy(resolver, nil)
+
+			_, err := sender.Send(context.Background(), test.endpoint, GatewayNotification{
+				NotificationID: uuid.New(),
+			})
+
+			require.Error(t, err)
+			assert.LessOrEqual(t, resolver.callCount(), 1)
+			assert.Zero(t, httpCalls)
+		})
+	}
+}
+
+func TestHTTPNotificationSenderDoesNotRetryDialTimePolicyViolation(t *testing.T) {
+	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
+		{addresses: []netip.Addr{netip.MustParseAddr("8.8.8.8")}},
+		{addresses: []netip.Addr{netip.MustParseAddr("127.0.0.1")}},
+	}}
+	policy := NewNotificationEndpointPolicy(resolver, nil)
+	sender := NewHTTPNotificationSender(nil, nil, &http.Client{}, policy)
+	sender.retryDelay = func(context.Context, time.Duration) error { return nil }
+
+	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
+		NotificationID: uuid.New(),
+	})
+
+	require.Error(t, err)
+	assert.Equal(t, 2, resolver.callCount())
+}
+
 func TestHTTPNotificationSenderClearsCustomTLSDialersAndServerName(t *testing.T) {
 	sender := NewHTTPNotificationSender(nil, nil, &http.Client{
 		Transport: &http.Transport{
@@ -281,14 +429,13 @@ func TestHTTPNotificationSenderRejectsOpaqueTransportAndUsesPolicyDialer(t *test
 	assert.Zero(t, opaque.calls)
 }
 
-func TestHTTPNotificationSenderTrustsServiceCreatedWrapperWithSecuredParent(t *testing.T) {
+func TestHTTPNotificationSenderTrustsServiceCreatedTransportWithSamePolicy(t *testing.T) {
 	policy := NewNotificationEndpointPolicy(&staticHostResolver{
 		addresses: map[string][]netip.Addr{
 			"private.example.com": {netip.MustParseAddr("127.0.0.1")},
 		},
 	}, nil)
 	unsafeDialCalls := 0
-	var parent http.RoundTripper
 	transport := NewNotificationHTTPTransport(
 		policy,
 		&http.Transport{
@@ -307,17 +454,15 @@ func TestHTTPNotificationSenderTrustsServiceCreatedWrapperWithSecuredParent(t *t
 			},
 		},
 		&net.Dialer{Timeout: time.Second},
-		func(securedParent http.RoundTripper) http.RoundTripper {
-			parent = securedParent
-			return &wrappedNotificationRoundTripper{}
-		},
 	)
 
 	sender := NewHTTPNotificationSender(nil, nil, &http.Client{Transport: transport}, policy)
 
 	assert.Same(t, transport, sender.client.Transport)
-	securedParent, ok := parent.(*http.Transport)
+	trustedTransport, ok := transport.(*notificationHTTPTransport)
 	require.True(t, ok)
+	assert.Same(t, policy, trustedTransport.policy)
+	securedParent := trustedTransport.secured
 	assert.Nil(t, securedParent.Proxy)
 	assert.NotNil(t, securedParent.DialContext)
 	assert.Nil(t, securedParent.DialTLS)
@@ -331,6 +476,71 @@ func TestHTTPNotificationSenderTrustsServiceCreatedWrapperWithSecuredParent(t *t
 
 	require.Error(t, err)
 	assert.Zero(t, unsafeDialCalls)
+}
+
+func TestNewNotificationHTTPTransportRejectsNilPolicy(t *testing.T) {
+	assert.Panics(t, func() {
+		NewNotificationHTTPTransport(nil, &http.Transport{}, &net.Dialer{})
+	})
+}
+
+func TestHTTPNotificationSenderRejectsTransportCreatedForDifferentPolicy(t *testing.T) {
+	firstPolicy := NewNotificationEndpointPolicy(&staticHostResolver{
+		addresses: map[string][]netip.Addr{
+			"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
+		},
+	}, nil)
+	secondPolicy := NewNotificationEndpointPolicy(&staticHostResolver{
+		addresses: map[string][]netip.Addr{
+			"adapter.example.com": {netip.MustParseAddr("1.1.1.1")},
+		},
+	}, nil)
+	transport := NewNotificationHTTPTransport(firstPolicy, &http.Transport{}, &net.Dialer{})
+
+	sender := NewHTTPNotificationSender(nil, nil, &http.Client{Transport: transport}, secondPolicy)
+
+	assert.NotSame(t, transport, sender.client.Transport)
+	_, ok := sender.client.Transport.(*http.Transport)
+	assert.True(t, ok)
+}
+
+func TestHTTPNotificationSenderTelemetryDoesNotExportCallbackURL(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	t.Cleanup(func() {
+		require.NoError(t, provider.Shutdown(context.Background()))
+	})
+	ctx, parent := provider.Tracer("test").Start(context.Background(), "parent")
+	logger := &httpNotificationRecordingLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+	sender.attemptRecorder = newNotificationHTTPAttemptRecorder(tracer)
+	destination := "https://adapter.example.com/secret/path?token=customer-secret"
+
+	_, err := sender.Send(ctx, destination, GatewayNotification{NotificationID: uuid.New()})
+	parent.End()
+
+	require.NoError(t, err)
+	var exported string
+	for _, span := range spanRecorder.Ended() {
+		exported += span.Name() + span.Status().Description
+		for _, attribute := range span.Attributes() {
+			exported += string(attribute.Key) + attribute.Value.Emit()
+		}
+		for _, event := range span.Events() {
+			exported += event.Name
+			for _, attribute := range event.Attributes {
+				exported += string(attribute.Key) + attribute.Value.Emit()
+			}
+		}
+	}
+	assert.Contains(t, exported, "notification.transporthttp")
+	assert.Contains(t, exported, "notification.status_class2xx")
+	for _, secret := range []string{destination, "secret/path", "customer-secret"} {
+		assert.NotContains(t, exported, secret)
+	}
 }
 
 type roundTripOutcome struct {
@@ -351,6 +561,69 @@ type wrappedNotificationRoundTripper struct {
 func (transport *wrappedNotificationRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	transport.calls++
 	return nil, errors.New("must not be used")
+}
+
+type hostResolverOutcome struct {
+	addresses []netip.Addr
+	err       error
+}
+
+type sequenceHostResolver struct {
+	mu       sync.Mutex
+	outcomes []hostResolverOutcome
+	calls    int
+}
+
+func (resolver *sequenceHostResolver) LookupNetIP(_ context.Context, _ string, _ string) ([]netip.Addr, error) {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	outcome := resolver.outcomes[resolver.calls]
+	resolver.calls++
+	return outcome.addresses, outcome.err
+}
+
+func (resolver *sequenceHostResolver) callCount() int {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	return resolver.calls
+}
+
+type blockingHostResolver struct {
+	mu    sync.Mutex
+	calls int
+}
+
+func (resolver *blockingHostResolver) LookupNetIP(ctx context.Context, _ string, _ string) ([]netip.Addr, error) {
+	resolver.mu.Lock()
+	resolver.calls++
+	resolver.mu.Unlock()
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func (resolver *blockingHostResolver) callCount() int {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	return resolver.calls
+}
+
+type countingHostResolver struct {
+	mu        sync.Mutex
+	addresses []netip.Addr
+	calls     int
+}
+
+func (resolver *countingHostResolver) LookupNetIP(_ context.Context, _ string, _ string) ([]netip.Addr, error) {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	resolver.calls++
+	return resolver.addresses, nil
+}
+
+func (resolver *countingHostResolver) callCount() int {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	return resolver.calls
 }
 
 func (reader *boundedReadCloser) Read(buffer []byte) (int, error) {

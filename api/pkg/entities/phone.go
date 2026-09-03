@@ -91,7 +91,7 @@ func (phone *Phone) NotificationTransport() (NotificationTransport, error) {
 
 	endpoint, err := url.Parse(token)
 	if err != nil {
-		return "", stacktrace.Propagatef(err, "invalid notification URL [%s]", token)
+		return "", stacktrace.NewError("invalid notification URL")
 	}
 
 	if !strings.EqualFold(endpoint.Scheme, "https") {
@@ -120,7 +120,7 @@ func (phone *Phone) NotificationURL() (*url.URL, error) {
 
 	endpoint, err := url.Parse(strings.TrimSpace(*phone.FcmToken))
 	if err != nil {
-		return nil, stacktrace.Propagatef(err, "cannot parse notification URL")
+		return nil, stacktrace.NewError("cannot parse notification URL")
 	}
 
 	return endpoint, nil

@@ -5,32 +5,35 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 const maxNotificationResponseDiscardBytes = 4 * 1024
 
-type trustedNotificationHTTPTransport interface {
-	http.RoundTripper
-	trustedNotificationHTTPTransport()
-}
-
 type notificationHTTPTransport struct {
-	roundTripper http.RoundTripper
+	secured *http.Transport
+	policy  *NotificationEndpointPolicy
 }
 
 func (transport *notificationHTTPTransport) RoundTrip(request *http.Request) (*http.Response, error) {
-	return transport.roundTripper.RoundTrip(request)
+	return transport.secured.RoundTrip(request)
 }
-
-func (*notificationHTTPTransport) trustedNotificationHTTPTransport() {}
 
 type httpNotificationRequest struct {
 	Message httpNotificationMessage `json:"message"`
@@ -49,13 +52,14 @@ type httpNotificationAndroid struct {
 
 // HTTPNotificationSender sends FCM-compatible gateway notifications to HTTPS adapters.
 type HTTPNotificationSender struct {
-	logger     telemetry.Logger
-	tracer     telemetry.Tracer
-	client     *http.Client
-	policy     *NotificationEndpointPolicy
-	attempts   uint
-	timeout    time.Duration
-	retryDelay func(context.Context, time.Duration) error
+	logger          telemetry.Logger
+	tracer          telemetry.Tracer
+	client          *http.Client
+	policy          *NotificationEndpointPolicy
+	attempts        uint
+	timeout         time.Duration
+	retryDelay      func(context.Context, time.Duration) error
+	attemptRecorder notificationHTTPAttemptRecorder
 }
 
 // NewHTTPNotificationSender creates an SSRF-safe HTTP notification sender.
@@ -66,12 +70,13 @@ func NewHTTPNotificationSender(
 	policy *NotificationEndpointPolicy,
 ) *HTTPNotificationSender {
 	return &HTTPNotificationSender{
-		logger:   logger,
-		tracer:   tracer,
-		client:   newNotificationHTTPClient(client, policy),
-		policy:   policy,
-		attempts: 3,
-		timeout:  5 * time.Second,
+		logger:          logger,
+		tracer:          tracer,
+		client:          newNotificationHTTPClient(client, policy),
+		policy:          policy,
+		attempts:        3,
+		timeout:         5 * time.Second,
+		attemptRecorder: newNotificationHTTPAttemptRecorder(tracer),
 		retryDelay: func(ctx context.Context, delay time.Duration) error {
 			timer := time.NewTimer(delay)
 			defer timer.Stop()
@@ -85,20 +90,21 @@ func NewHTTPNotificationSender(
 	}
 }
 
-// NewNotificationHTTPTransport secures a base transport before applying optional middleware.
+// NewNotificationHTTPTransport creates a transport that always routes through a policy-secured parent.
 func NewNotificationHTTPTransport(
 	policy *NotificationEndpointPolicy,
 	transport *http.Transport,
 	dialer *net.Dialer,
-	wrap func(http.RoundTripper) http.RoundTripper,
 ) http.RoundTripper {
-	secured := secureNotificationHTTPTransport(transport, policy, dialer)
-	var roundTripper http.RoundTripper = secured
-	if wrap != nil {
-		roundTripper = wrap(secured)
+	if policy == nil {
+		panic("notification endpoint policy is required")
 	}
+	secured := secureNotificationHTTPTransport(transport, policy, dialer)
 
-	return &notificationHTTPTransport{roundTripper: roundTripper}
+	return &notificationHTTPTransport{
+		secured: secured,
+		policy:  policy,
+	}
 }
 
 // Send delivers a notification to an HTTPS adapter. A successful response only accepts wake-up delivery.
@@ -115,9 +121,6 @@ func (sender *HTTPNotificationSender) Send(
 	if sender.policy == nil {
 		return "", sender.notificationError(hostname, "notification endpoint policy is required")
 	}
-	if _, err = sender.policy.Validate(ctx, endpoint); err != nil {
-		return "", sender.notificationError(hostname, "cannot validate notification endpoint")
-	}
 
 	payload := httpNotificationRequest{
 		Message: httpNotificationMessage{
@@ -129,7 +132,7 @@ func (sender *HTTPNotificationSender) Send(
 		},
 	}
 	if notification.TTL != nil {
-		payload.Message.Android.TTL = notification.TTL.String()
+		payload.Message.Android.TTL = formatProtobufDuration(*notification.TTL)
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -142,17 +145,32 @@ func (sender *HTTPNotificationSender) Send(
 
 	for attempt := uint(1); attempt <= sender.attempts; attempt++ {
 		requestCtx, cancel := context.WithTimeout(ctx, sender.timeout)
-		request, requestErr := http.NewRequestWithContext(
-			requestCtx,
-			http.MethodPost,
-			endpoint.String(),
-			bytes.NewReader(body),
-		)
+		attemptCtx := requestCtx
+		finishAttempt := func(int, error) {}
+		if sender.attemptRecorder != nil {
+			attemptCtx, finishAttempt = sender.attemptRecorder.Start(attemptCtx, attempt)
+		}
+
+		_, requestErr := sender.policy.Validate(attemptCtx, endpoint)
+		statusCode := 0
 		if requestErr == nil {
+			var request *http.Request
+			request, requestErr = http.NewRequestWithContext(
+				attemptCtx,
+				http.MethodPost,
+				endpoint.String(),
+				bytes.NewReader(body),
+			)
+			if requestErr != nil {
+				finishAttempt(statusCode, requestErr)
+				cancel()
+				return "", sender.notificationError(hostname, "cannot create notification request")
+			}
 			request.Header.Set("Content-Type", "application/json")
 			request.Header.Set("X-httpSMS-Notification-ID", notification.NotificationID.String())
-			requestErr = sender.sendAttempt(request)
+			statusCode, requestErr = sender.sendAttempt(request)
 		}
+		finishAttempt(statusCode, requestErr)
 		cancel()
 
 		if requestErr == nil {
@@ -172,22 +190,26 @@ func (sender *HTTPNotificationSender) Send(
 	return "", sender.notificationError(hostname, "notification request failed")
 }
 
-func (sender *HTTPNotificationSender) sendAttempt(request *http.Request) error {
+func (sender *HTTPNotificationSender) sendAttempt(request *http.Request) (int, error) {
+	otel.GetTextMapPropagator().Inject(request.Context(), propagation.HeaderCarrier(request.Header))
+
 	response, err := sender.client.Do(request)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if response.Body != nil {
 		_, _ = io.CopyN(io.Discard, response.Body, maxNotificationResponseDiscardBytes)
 		_ = response.Body.Close()
 	}
 	if response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices {
-		return nil
+		return response.StatusCode, nil
 	}
 	if isRetryableNotificationStatus(response.StatusCode) {
-		return retryableNotificationStatusError{statusCode: response.StatusCode}
+		err = retryableNotificationStatusError{statusCode: response.StatusCode}
+		return response.StatusCode, err
 	}
-	return terminalNotificationStatusError{statusCode: response.StatusCode}
+	err = terminalNotificationStatusError{statusCode: response.StatusCode}
+	return response.StatusCode, err
 }
 
 func (sender *HTTPNotificationSender) notificationError(hostname string, message string) error {
@@ -212,7 +234,10 @@ func newNotificationHTTPClient(client *http.Client, policy *NotificationEndpoint
 		return http.ErrUseLastResponse
 	}
 
-	if _, ok := configured.Transport.(trustedNotificationHTTPTransport); ok {
+	if trusted, ok := configured.Transport.(*notificationHTTPTransport); ok &&
+		policy != nil &&
+		trusted.policy == policy &&
+		trusted.secured != nil {
 		return &configured
 	}
 
@@ -256,6 +281,10 @@ func secureNotificationHTTPTransport(
 		}
 		configuredDialer := *dialer
 		transport.DialContext = policy.DialContext(&configuredDialer)
+	} else {
+		transport.DialContext = func(context.Context, string, string) (net.Conn, error) {
+			return nil, stacktrace.NewError("notification endpoint policy is required")
+		}
 	}
 
 	return transport
@@ -288,11 +317,112 @@ func (error terminalNotificationStatusError) Error() string {
 }
 
 func isRetryableNotificationError(err error) bool {
-	_, isRetryableStatus := err.(retryableNotificationStatusError)
-	return !isTerminalNotificationStatusError(err) && (isRetryableStatus || err != nil)
+	if err == nil || isTerminalNotificationStatusError(err) || isNotificationEndpointPolicyViolation(err) {
+		return false
+	}
+	return true
 }
 
 func isTerminalNotificationStatusError(err error) bool {
-	_, ok := err.(terminalNotificationStatusError)
-	return ok
+	var statusError terminalNotificationStatusError
+	return errors.As(err, &statusError)
+}
+
+func formatProtobufDuration(value time.Duration) string {
+	duration := durationpb.New(value)
+	seconds := duration.Seconds
+	nanoseconds := int64(duration.Nanos)
+	sign := ""
+	if seconds < 0 || nanoseconds < 0 {
+		sign = "-"
+		seconds = -seconds
+		nanoseconds = -nanoseconds
+	}
+
+	result := sign + strconv.FormatInt(seconds, 10)
+	if nanoseconds == 0 {
+		return result + "s"
+	}
+
+	fraction := fmt.Sprintf("%09d", nanoseconds)
+	switch {
+	case nanoseconds%1_000_000 == 0:
+		fraction = fraction[:3]
+	case nanoseconds%1_000 == 0:
+		fraction = fraction[:6]
+	}
+
+	return result + "." + fraction + "s"
+}
+
+type notificationHTTPAttemptRecorder interface {
+	Start(context.Context, uint) (context.Context, func(int, error))
+}
+
+type otelNotificationHTTPAttemptRecorder struct {
+	tracer          telemetry.Tracer
+	attemptCounter  metric.Int64Counter
+	durationSeconds metric.Float64Histogram
+}
+
+func newNotificationHTTPAttemptRecorder(tracer telemetry.Tracer) notificationHTTPAttemptRecorder {
+	if tracer == nil {
+		return nil
+	}
+
+	meter := otel.GetMeterProvider().Meter("github.com/NdoleStudio/httpsms/pkg/services")
+	attemptCounter, _ := meter.Int64Counter("httpsms.notification.http.attempts")
+	durationSeconds, _ := meter.Float64Histogram("httpsms.notification.http.attempt.duration")
+
+	return &otelNotificationHTTPAttemptRecorder{
+		tracer:          tracer,
+		attemptCounter:  attemptCounter,
+		durationSeconds: durationSeconds,
+	}
+}
+
+func (recorder *otelNotificationHTTPAttemptRecorder) Start(
+	ctx context.Context,
+	attempt uint,
+) (context.Context, func(int, error)) {
+	ctx, span := recorder.tracer.Start(ctx, "phone_notification_http")
+	span.SetAttributes(
+		attribute.String("notification.transport", "http"),
+		attribute.Int("notification.attempt", int(attempt)),
+	)
+	startedAt := time.Now()
+
+	return ctx, func(statusCode int, err error) {
+		statusClass := notificationHTTPStatusClass(statusCode, err)
+		attributes := []attribute.KeyValue{
+			attribute.String("notification.transport", "http"),
+			attribute.Int("notification.attempt", int(attempt)),
+			attribute.String("notification.status_class", statusClass),
+		}
+		span.SetAttributes(attributes...)
+		if err != nil {
+			span.SetStatus(codes.Error, "notification HTTP attempt failed")
+		} else {
+			span.SetStatus(codes.Ok, "")
+		}
+
+		options := metric.WithAttributes(attributes...)
+		if recorder.attemptCounter != nil {
+			recorder.attemptCounter.Add(ctx, 1, options)
+		}
+		if recorder.durationSeconds != nil {
+			recorder.durationSeconds.Record(ctx, time.Since(startedAt).Seconds(), options)
+		}
+		span.End()
+	}
+}
+
+func notificationHTTPStatusClass(statusCode int, err error) string {
+	if err != nil && statusCode == 0 {
+		return "transport_error"
+	}
+	if statusCode < 100 {
+		return "unknown"
+	}
+	return fmt.Sprintf("%dxx", statusCode/100)
 }
