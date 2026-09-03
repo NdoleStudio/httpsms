@@ -22,7 +22,8 @@ Customer-controlled callback URLs create additional security and delivery
 requirements:
 
 - callbacks are wake-up hints, not proof that a message was sent;
-- callback delivery is at least once and must have an idempotency identity;
+- callback delivery is at least once, so adapters must tolerate duplicate
+  wake-up hints;
 - transient endpoint failures need bounded retries;
 - existing Android registrations must retain their current behavior.
 
@@ -34,8 +35,9 @@ requirements:
   or parse `FcmToken` directly.
 - A valid `https://` URL with a hostname selects HTTP delivery. Non-URL tokens
   select Firebase. URL-like but malformed or unsupported values are rejected.
-- Use `PhoneNotificationDispatcher` with separate Firebase and HTTP senders;
-  domain events continue to use the existing `EventDispatcher`.
+- Inject phone notification clients as a map keyed by
+  `entities.NotificationTransport`; domain events continue to use the existing
+  `EventDispatcher`.
 - Send both outstanding-message and heartbeat notifications to URL-backed
   phones.
 - POST an FCM-compatible JSON envelope to adapter endpoints.
@@ -113,45 +115,36 @@ A token is considered URL-like when it declares a URI scheme. This prevents an
 invalid `http://`, `ftp://`, or malformed HTTPS endpoint from falling through
 to Firebase as if it were an FCM token. Ordinary FCM tokens remain opaque.
 
-### 2. Shared Firebase message contract
+### 2. Transport client map
 
-Use Firebase's `messaging.Message` as the notification contract for both
-transports instead of maintaining a duplicate DTO:
+Use the existing `FCMClient` contract for every phone notification transport:
 
 ```go
-type NotificationSender interface {
-    Send(
-        ctx context.Context,
-        message *messaging.Message,
-        notificationID uuid.UUID,
-    ) (string, error)
+type FCMClient interface {
+    Send(context.Context, *messaging.Message) (string, error)
 }
 ```
 
-`PhoneNotificationService` constructs `messaging.Message` directly with the
-data and Android configuration. The notification ID remains a separate
-argument: it is the persisted `PhoneNotification.ID` for outgoing messages,
-while heartbeats generate a request UUID for delivery identity.
+`PhoneNotificationService` receives
+`map[entities.NotificationTransport]FCMClient` and constructs
+`messaging.Message` directly. A focused private helper:
 
-Add a dispatcher that:
-
-1. uses the phone helper to determine the transport;
-2. rejects a nil message with a stacktrace error;
-3. trims the phone's configured token and assigns it to `message.Token`;
-4. delegates the same message pointer and notification ID to the selected
-   sender;
-5. returns a transport-neutral delivery result string or an error.
+1. rejects a nil message with a stacktrace error;
+2. determines the phone transport once;
+3. looks up the matching client in the map;
+4. trims the configured token into `message.Token`;
+5. passes the same message pointer to the client;
+6. returns the selected transport with the result or error for existing
+   Firebase-versus-HTTP failure guidance.
 
 The result string is used only by existing notification event bookkeeping.
 Firebase keeps the message name returned by the SDK. HTTP delivery uses a
 generated identifier that does not expose the callback URL.
 
-### 3. Firebase sender
+### 3. Firebase client
 
-Adapt the existing `FCMClient` behind the transport-neutral sender interface.
-`FCMNotificationSender` validates that the message is non-nil and passes the
-same `*messaging.Message` directly to `FCMClient.Send` without reconstructing
-the payload.
+The Firebase map entry is the existing production or emulator `FCMClient`
+directly. There is no wrapper sender and no separate dispatcher class.
 
 The production Firebase client and emulator client remain available. Android
 tokens follow the same SDK path, payload keys, priorities, TTL values, success
@@ -201,15 +194,12 @@ shape and protobuf duration formatting, including a ten-minute TTL as `600s`.
 Every request includes:
 
 ```text
-X-httpSMS-Notification-ID: <delivery UUID>
 Content-Type: application/json
 ```
 
-For an outgoing message, the header value is the persisted phone-notification
-ID. Retries of the same HTTP delivery reuse that ID. If the normal message
-expiration flow schedules another send attempt, it creates a new
-`PhoneNotification` and therefore a new ID. The adapter can distinguish a
-duplicate HTTP request from an intentional later send attempt.
+`HTTPNotificationSender` returns the stable result `http/success` after any
+successful callback response. The persisted `PhoneNotification.ID` remains in
+the existing repository and event flow but is not sent to the callback.
 
 The response contract is deliberately small:
 
@@ -260,17 +250,17 @@ The HTTP-specific error message tells the user that the configured adapter
 endpoint could not be notified. It must not reuse the current Android
 reinstallation guidance.
 
-### 6. At-least-once delivery and adapter idempotency
+### 6. At-least-once delivery
 
 HTTP wake-up delivery is at least once. A request may reach the adapter even if
 httpSMS observes a timeout or connection failure while receiving the response.
-The retry then delivers the same notification ID again.
+The retry can therefore deliver the same wake-up payload again.
 
 Adapters must:
 
-- deduplicate callback requests by `X-httpSMS-Notification-ID`;
 - treat callbacks as hints to fetch work, not as message content;
-- avoid sending the external message twice for the same notification ID;
+- tolerate repeated callbacks and use the outstanding message state and
+  message ID to avoid sending external messages twice;
 - retain their own provider-level idempotency and reconciliation where the
   external channel supports it.
 
@@ -362,13 +352,10 @@ Implementation is expected to touch:
 
 - `api/pkg/entities/phone.go` for transport and URL helpers;
 - `api/pkg/validators/phone_handler_validator.go` for URL-token validation;
-- `api/pkg/services/phone_notification_service.go` to build generic
-  notifications and preserve existing state transitions;
-- `api/pkg/services/fcm_client.go` to adapt Firebase to the neutral sender;
-- `api/pkg/services/notification_sender.go` for the neutral notification,
-  sender interface, and Firebase sender;
-- `api/pkg/services/phone_notification_dispatcher.go` for phone transport
-  routing;
+- `api/pkg/services/phone_notification_service.go` for transport-client lookup,
+  message construction, and existing state transitions;
+- `api/pkg/services/fcm_client.go` for the common transport-client contract and
+  Firebase implementation;
 - `api/pkg/services/http_notification_sender.go` for HTTP payload encoding and
   delivery;
 - `api/pkg/services/emulator_fcm_client.go` only as needed to preserve the
@@ -409,7 +396,7 @@ Use an HTTP test server or controlled transport to cover:
 
 - FCM-compatible message and heartbeat JSON;
 - message priority and TTL mapping;
-- stable `X-httpSMS-Notification-ID` across transport retries;
+- stable `http/success` result for successful delivery;
 - any `2xx` response succeeding with the body ignored;
 - retrying network errors, `408`, `429`, and `5xx`;
 - not retrying other `4xx` responses;
@@ -438,15 +425,14 @@ Add a dedicated Go service under `tests/adapter-emulator/`. It exposes:
 - an HTTP-only test control listener exposed to the host test runner;
 - an in-memory gateway registry mapping a unique callback path to a phone
   number and phone API key;
-- callback records keyed by `X-httpSMS-Notification-ID`.
+- callback records for integration assertions.
 
 For `KEY_MESSAGE_ID`, the emulator:
 
-1. deduplicates the notification ID;
-2. fetches `/v1/messages/outstanding` using the registered phone API key;
-3. posts the existing `SENT` event;
-4. posts the existing `DELIVERED` event;
-5. records the fetched message and final adapter action for test assertions.
+1. fetches `/v1/messages/outstanding` using the registered phone API key;
+2. posts the existing `SENT` event;
+3. posts the existing `DELIVERED` event;
+4. records the fetched message and final adapter action for test assertions.
 
 For `KEY_HEARTBEAT_ID`, the emulator posts `/v1/heartbeats` for the registered
 phone and records the heartbeat wake-up. A control endpoint also instructs the
@@ -466,8 +452,7 @@ Add end-to-end tests for:
   final received API status and matching owner/contact/content.
 - **Heartbeat:** internal `phone.heartbeat.missed` CloudEvent -> URL callback ->
   emulator heartbeat POST -> heartbeat visible through the user API.
-- Callback payload keys, notification ID header, unique callback handling, and
-  phone API-key scoping.
+- Callback payload keys, callback processing, and phone API-key scoping.
 
 Run:
 
@@ -508,7 +493,7 @@ delivery. Initial rollout should watch:
 - callback latency;
 - transport failures;
 - message expiration after a successful HTTP wake-up;
-- duplicate notification IDs observed by test adapters.
+- repeated callback processing observed by test adapters.
 
 Rollback is code-only: existing Android tokens continue to be valid, while
 URL-backed phones stop receiving wake-ups if the feature is rolled back.

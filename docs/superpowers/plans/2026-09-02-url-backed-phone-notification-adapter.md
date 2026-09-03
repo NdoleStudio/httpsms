@@ -4,7 +4,7 @@
 
 **Goal:** Allow a phone whose existing `fcm_token` is an HTTPS URL to receive message and heartbeat wake-ups over HTTP while preserving the current scheduling, backpressure, outstanding-message, and status-event flows.
 
-**Architecture:** Add transport helpers to `entities.Phone`, then route a shared Firebase `*messaging.Message` through Firebase and HTTP senders while passing the delivery UUID separately. The HTTP path uses a standard OpenTelemetry-wrapped `http.Client`, application retries with `github.com/avast/retry-go/v5`, FCM-compatible JSON, and the existing notification success/failure state transitions.
+**Architecture:** Add transport helpers to `entities.Phone`, inject a map of existing `FCMClient` implementations keyed by transport, and let `PhoneNotificationService` select the client through map lookup. The HTTP path uses a standard OpenTelemetry-wrapped `http.Client`, application retries with `github.com/avast/retry-go/v5`, FCM-compatible JSON, and the existing notification success/failure state transitions.
 
 **Tech Stack:** Go 1.25.8, Fiber v3, Firebase Admin Messaging, OpenTelemetry, `net/http`, `retry-go/v5`, Testify, Docker Compose.
 
@@ -33,12 +33,14 @@ private-host allowlist.
   or spans.
 - No endpoint DNS/IP/SSRF policy, custom notification transport, or private-host
   allowlist is part of the final implementation.
-- The transport router is `PhoneNotificationDispatcher`; domain events continue
-  to use the existing `EventDispatcher` directly.
-- `PhoneNotificationService` constructs `*messaging.Message` directly.
-  `PhoneNotificationDispatcher` sets the trimmed destination in `message.Token`
-  and passes the same pointer to either sender with the notification UUID as a
-  separate argument. Nil messages fail explicitly with stacktrace errors.
+- `PhoneNotificationService` receives
+  `map[entities.NotificationTransport]FCMClient`, determines transport once,
+  selects the client by map lookup, sets the trimmed destination in
+  `message.Token`, and passes the same pointer to `FCMClient.Send`. There is no
+  extra sender interface, Firebase wrapper, or dispatcher class.
+- `HTTPNotificationSender` implements `FCMClient` exactly and returns
+  `http/success` after a successful callback response.
+- Domain events continue to use the existing `EventDispatcher` directly.
 
 ## Global Constraints
 
@@ -67,12 +69,10 @@ private-host allowlist.
 - `api/pkg/entities/phone_test.go` - table-driven transport classification tests.
 - `api/pkg/services/notification_endpoint_policy.go` - public HTTPS URL validation, reserved-IP rejection, and validated dialing.
 - `api/pkg/services/notification_endpoint_policy_test.go` - deterministic resolver/dialer tests, including DNS rebinding protection.
-- `api/pkg/services/notification_sender.go` - shared sender interface and Firebase adapter.
-- `api/pkg/services/notification_sender_test.go` - Firebase payload mapping tests.
-- `api/pkg/services/phone_notification_dispatcher.go` - phone transport routing.
-- `api/pkg/services/phone_notification_dispatcher_test.go` - dispatcher routing tests and sender fake.
+- `api/pkg/services/fcm_client.go` - common phone notification client contract and Firebase client.
+- `api/pkg/services/phone_notification_service.go` - message construction and transport-client lookup.
 - `api/pkg/services/http_notification_sender.go` - HTTP request encoding, retry classification, and timeout.
-- `api/pkg/services/http_notification_sender_test.go` - payload, retry, idempotency, and response tests.
+- `api/pkg/services/http_notification_sender_test.go` - payload, retry, and response tests.
 - `api/pkg/services/phone_notification_service_test.go` - message and heartbeat integration tests with hand-written fakes.
 - `api/pkg/validators/phone_handler_validator_test.go` - URL token validation tests for both phone update routes.
 - `tests/adapter-emulator/Dockerfile` - container image for the HTTPS adapter emulator.
@@ -91,7 +91,8 @@ private-host allowlist.
 - `api/pkg/services/fcm_client.go` - keep the SDK wrapper; document its role as the low-level Firebase client.
 - `api/pkg/services/phone_notification_service.go` - replace direct Firebase messages with neutral notifications and transport-aware failure text.
 - `api/pkg/validators/phone_handler_validator.go` - inject and apply the endpoint policy for URL-like tokens.
-- `api/pkg/di/container.go` - construct the policy, SSRF-safe HTTP transport/client, senders, dispatcher, and updated validator/service dependencies.
+- `api/pkg/di/container.go` - construct the HTTP client, transport-client map,
+  and updated service dependencies.
 - `api/pkg/requests/phone_update_request.go` - document dual-purpose `fcm_token`.
 - `api/pkg/requests/phone_fcm_token_request.go` - document dual-purpose `fcm_token`.
 - `api/pkg/entities/phone_notification.go` - update FCM-specific comments to transport-neutral wording.
@@ -554,14 +555,12 @@ git commit -m "feat(api): validate adapter endpoints"
 
 ---
 
-### Task 3: Add the Notification Dispatcher and Firebase Adapter
+### Task 3: Add the Transport Client Map
 
 **Files:**
-- Create: `api/pkg/services/notification_sender.go`
-- Create: `api/pkg/services/notification_sender_test.go`
-- Create: `api/pkg/services/phone_notification_dispatcher.go`
-- Create: `api/pkg/services/phone_notification_dispatcher_test.go`
 - Modify: `api/pkg/services/fcm_client.go`
+- Modify: `api/pkg/services/phone_notification_service.go`
+- Modify: `api/pkg/services/phone_notification_service_test.go`
 
 **Interfaces:**
 - Consumes:
@@ -573,175 +572,83 @@ func (phone *entities.Phone) NotificationTransport() (entities.NotificationTrans
 - Produces:
 
 ```go
-type NotificationSender interface {
-    Send(ctx context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error)
+type FCMClient interface {
+    Send(context.Context, *messaging.Message) (string, error)
 }
-
-type PhoneNotificationDispatcher struct {
-    fcmSender  NotificationSender
-    httpSender NotificationSender
-}
-
-func NewPhoneNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *PhoneNotificationDispatcher
-func (dispatcher *PhoneNotificationDispatcher) Send(ctx context.Context, phone *entities.Phone, message *messaging.Message, notificationID uuid.UUID) (string, error)
-
-type FCMNotificationSender struct {
-    client FCMClient
-}
-
-func NewFCMNotificationSender(client FCMClient) *FCMNotificationSender
-func (sender *FCMNotificationSender) Send(ctx context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error)
 ```
 
-- [ ] **Step 1: Write failing dispatcher and Firebase mapping tests**
+- [ ] **Step 1: Write failing transport-client map tests**
 
-Create `api/pkg/services/phone_notification_dispatcher_test.go` with a recording sender:
+Create a recording client in `phone_notification_service_test.go`:
 
 ```go
-type recordingNotificationSender struct {
-    message        *messaging.Message
-    notificationID uuid.UUID
-    result         string
-    err            error
-    calls          int
+type recordingPhoneNotificationClient struct {
+    message *messaging.Message
+    result  string
+    err     error
+    calls   int
 }
 
-func (sender *recordingNotificationSender) Send(_ context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error) {
-    sender.calls++
-    sender.message = message
-    sender.notificationID = notificationID
-    return sender.result, sender.err
+func (client *recordingPhoneNotificationClient) Send(_ context.Context, message *messaging.Message) (string, error) {
+    client.calls++
+    client.message = message
+    return client.result, client.err
 }
 ```
 
-Add tests that assert:
+Add tests for map-based FCM and HTTP selection, the same message pointer,
+trimmed `message.Token`, absent transport entries, invalid tokens, and nil
+messages.
 
-```go
-func TestPhoneNotificationDispatcherRoutesFCMToken(t *testing.T) {
-    token := "fcm-token:value"
-    phone := &entities.Phone{FcmToken: &token}
-    fcmSender := &recordingNotificationSender{result: "projects/test/messages/1"}
-    httpSender := &recordingNotificationSender{}
-    dispatcher := NewPhoneNotificationDispatcher(fcmSender, httpSender)
-    message := &messaging.Message{Data: map[string]string{"KEY_MESSAGE_ID": uuid.NewString()}}
-    notificationID := uuid.New()
-
-    result, err := dispatcher.Send(context.Background(), phone, message, notificationID)
-
-    require.NoError(t, err)
-    assert.Equal(t, "projects/test/messages/1", result)
-    assert.Equal(t, 1, fcmSender.calls)
-    assert.Zero(t, httpSender.calls)
-    assert.Same(t, message, fcmSender.message)
-    assert.Equal(t, token, message.Token)
-    assert.Equal(t, notificationID, fcmSender.notificationID)
-}
-```
-
-Add the equivalent HTTPS routing test and an invalid URL-like token test that
-asserts neither sender is called.
-
-In `notification_sender_test.go`, create a recording `FCMClient` and assert
-`FCMNotificationSender.Send` passes the exact message pointer through without
-reconstruction. Add explicit nil-message tests for the dispatcher and sender.
-
-- [ ] **Step 2: Run the sender tests and confirm the API is missing**
+- [ ] **Step 2: Run the service tests and confirm the map dependency is missing**
 
 Run:
 
 ```bash
 cd api
-go test ./pkg/services -run 'TestPhoneNotificationDispatcher|TestFCMNotificationSender' -count=1
+go test ./pkg/services -run 'TestPhoneNotificationService' -count=1
 ```
 
-Expected: compilation fails because the shared sender contract does not exist.
+Expected: compilation fails because the service does not accept the client map.
 
-- [ ] **Step 3: Implement the neutral notification and dispatcher**
+- [ ] **Step 3: Implement focused map-based delivery**
 
-Keep the shared sender interface and Firebase sender in
-`api/pkg/services/notification_sender.go`. Implement dispatcher routing in
-`api/pkg/services/phone_notification_dispatcher.go`:
+Store `map[entities.NotificationTransport]FCMClient` on
+`PhoneNotificationService` and implement:
 
 ```go
-func (dispatcher *PhoneNotificationDispatcher) Send(
+func (service *PhoneNotificationService) sendPhoneNotification(
     ctx context.Context,
     phone *entities.Phone,
     message *messaging.Message,
-    notificationID uuid.UUID,
-) (string, error) {
-    transport, err := phone.NotificationTransport()
-    if err != nil {
-        return "", stacktrace.Propagatef(err, "cannot determine notification transport for phone [%s]", phone.ID)
-    }
-
-    if message == nil {
-        return "", stacktrace.Propagatef(
-            stacktrace.NewErrorf("notification message is nil"),
-            "cannot dispatch notification for phone [%s]",
-            phone.ID,
-        )
-    }
-
-    message.Token = strings.TrimSpace(*phone.FcmToken)
-    switch transport {
-    case entities.NotificationTransportFCM:
-        return dispatcher.fcmSender.Send(ctx, message, notificationID)
-    case entities.NotificationTransportHTTP:
-        return dispatcher.httpSender.Send(ctx, message, notificationID)
-    default:
-        return "", stacktrace.NewErrorf("unsupported notification transport [%s]", transport)
-    }
-}
-```
-
-- [ ] **Step 4: Implement the Firebase adapter**
-
-In the same file, implement:
-
-```go
-func (sender *FCMNotificationSender) Send(
-    ctx context.Context,
-    message *messaging.Message,
-    _ uuid.UUID,
-) (string, error) {
-    if message == nil {
-        return "", stacktrace.Propagatef(
-            stacktrace.NewErrorf("notification message is nil"),
-            "cannot send Firebase notification",
-        )
-    }
-
-    result, err := sender.client.Send(ctx, message)
-    if err != nil {
-        return "", stacktrace.Propagatef(err, "cannot send Firebase notification")
-    }
-    return result, nil
+) (string, entities.NotificationTransport, error) {
+    // Validate message, classify once, map lookup, set trimmed token, send.
 }
 ```
 
 Update comments in `api/pkg/services/fcm_client.go` to describe `FCMClient` as
-the low-level Firebase SDK boundary used by `FCMNotificationSender`. Do not
-change `FirebaseFCMClient.Send` or `EmulatorFCMClient.Send`.
+the common phone notification transport boundary. Use the Firebase client
+directly; do not add a wrapper or dispatcher.
 
-- [ ] **Step 5: Run focused tests**
+- [ ] **Step 4: Run focused tests**
 
 Run:
 
 ```bash
 cd api
-go test ./pkg/services -run 'TestPhoneNotificationDispatcher|TestFCMNotificationSender' -count=1
+go test ./pkg/services -run 'TestPhoneNotificationService' -count=1
 ```
 
 Expected: PASS.
 
-- [ ] **Step 6: Format and commit**
+- [ ] **Step 5: Format and commit**
 
 Run:
 
 ```bash
 cd api
-go-fumpt -w pkg/services/notification_sender.go pkg/services/notification_sender_test.go pkg/services/phone_notification_dispatcher.go pkg/services/phone_notification_dispatcher_test.go pkg/services/fcm_client.go
-git add pkg/services/notification_sender.go pkg/services/notification_sender_test.go pkg/services/phone_notification_dispatcher.go pkg/services/phone_notification_dispatcher_test.go pkg/services/fcm_client.go
+go-fumpt -w pkg/services/fcm_client.go pkg/services/phone_notification_service.go pkg/services/phone_notification_service_test.go
+git add pkg/services/fcm_client.go pkg/services/phone_notification_service.go pkg/services/phone_notification_service_test.go
 git commit -m "refactor(api): dispatch gateway notifications"
 ```
 
@@ -757,11 +664,9 @@ git commit -m "refactor(api): dispatch gateway notifications"
 - Consumes:
 
 ```go
-type NotificationSender interface {
-    Send(ctx context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error)
+type FCMClient interface {
+    Send(context.Context, *messaging.Message) (string, error)
 }
-
-func (policy *NotificationEndpointPolicy) Validate(ctx context.Context, endpoint *url.URL) ([]netip.Addr, error)
 ```
 
 - Produces:
@@ -782,7 +687,6 @@ func NewHTTPNotificationSender(
 func (sender *HTTPNotificationSender) Send(
     ctx context.Context,
     message *messaging.Message,
-    notificationID uuid.UUID,
 ) (string, error)
 ```
 
@@ -809,7 +713,6 @@ Assert the request:
 ```go
 assert.Equal(t, http.MethodPost, request.Method)
 assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
-assert.Equal(t, notificationID.String(), request.Header.Get("X-httpSMS-Notification-ID"))
 ```
 
 Keep a test-only decoding struct and assert this structure:
@@ -827,8 +730,7 @@ type httpNotificationRequest struct {
 }
 ```
 
-Return `204 No Content` and assert `Send` succeeds with result
-`http/<notification UUID>`.
+Return `204 No Content` and assert `Send` succeeds with result `http/success`.
 
 - [ ] **Step 2: Write failing retry-classification tests**
 
@@ -845,8 +747,7 @@ Add table-driven tests for:
 - response with a body larger than the discard limit: success without reading
   unbounded content.
 
-Record each request's notification ID and assert it does not change between
-attempts.
+Assert retry attempts receive fresh requests and bodies.
 
 - [ ] **Step 3: Run the HTTP sender tests and confirm the type is missing**
 
@@ -916,32 +817,24 @@ Focused sender methods must:
 1. parse `message.Token`;
 2. marshal the request body once, then create a fresh reader per request;
 3. create a child context with the configured timeout per attempt;
-4. set `Content-Type` and `X-httpSMS-Notification-ID`;
+4. set `Content-Type`;
 5. call `client.Do`;
 6. close each response body after copying at most 4 KiB to `io.Discard`;
-7. return `http/<notification UUID>` for any `2xx`;
+7. return `http/success` for any `2xx`;
 8. retry only network errors, `408`, `429`, and `5xx` while attempts remain;
 9. treat request construction, caller cancellation, and other statuses as
    terminal;
 10. return a stacktrace-wrapped error.
 
 Do not use the container's retrying HTTP client; retries belong in this sender
-so status classification, attempt count, and idempotency are explicit.
+so status classification and attempt count are explicit.
 
 - [ ] **Step 6: Add heartbeat tests**
 
-Add a test using:
-
-```text
-https://adapter.example.com/secret/path?token=customer-secret
-```
-
-Force a terminal error and assert neither `secret/path`,
-`customer-secret`, nor the full destination appears in the returned error or
-recording logger. Assert `adapter.example.com` may appear.
-
-Add a heartbeat payload test with `KEY_HEARTBEAT_ID`, high priority, nil TTL,
-and a generated notification ID; assert the `ttl` field is omitted.
+Add a heartbeat payload test with `KEY_HEARTBEAT_ID`, high priority, and nil
+TTL; assert the `ttl` field is omitted.
+Use the standard HTTP telemetry and logging path without feature-specific URL
+redaction.
 
 - [ ] **Step 7: Run focused tests**
 
@@ -978,12 +871,7 @@ git commit -m "feat(api): send notifications to adapters"
 - Consumes:
 
 ```go
-func (dispatcher *PhoneNotificationDispatcher) Send(
-    ctx context.Context,
-    phone *entities.Phone,
-    message *messaging.Message,
-    notificationID uuid.UUID,
-) (string, error)
+map[entities.NotificationTransport]FCMClient
 ```
 
 - Produces:
@@ -997,7 +885,7 @@ type NotificationEventDispatcher interface {
 func NewNotificationService(
     logger telemetry.Logger,
     tracer telemetry.Tracer,
-    phoneNotificationDispatcher *PhoneNotificationDispatcher,
+    phoneNotificationClients map[entities.NotificationTransport]FCMClient,
     phoneRepository repositories.PhoneRepository,
     phoneNotificationRepository repositories.PhoneNotificationRepository,
     messageSendScheduleRepository repositories.MessageSendScheduleRepository,
@@ -1044,15 +932,15 @@ func (repository *phoneNotificationRepository) UpdateStatus(
 }
 ```
 
-Add a fake event dispatcher that records CloudEvents and returns no error. Add a
-recording notification sender to a real `PhoneNotificationDispatcher`.
+Add a fake event dispatcher that records CloudEvents and returns no error. Add
+recording `FCMClient` implementations through a transport-keyed map.
 
 Test `Send` with an HTTPS token and assert:
 
 - `KEY_MESSAGE_ID` equals `params.MessageID.String()`;
 - priority is `normal`;
 - TTL equals `phone.MessageExpirationDuration()`;
-- `NotificationID` equals `params.PhoneNotificationID`;
+- the same `messaging.Message` pointer reaches the HTTP client;
 - a `message.notification.sent` event is dispatched;
 - phone-notification status becomes sent.
 
@@ -1071,9 +959,10 @@ Test `SendHeartbeatFCM` with an HTTPS token and assert:
 - `KEY_HEARTBEAT_ID` parses as RFC3339;
 - priority is `high`;
 - TTL is nil;
-- `NotificationID` is non-zero;
 - heartbeat sender errors are logged and return nil, preserving current
   heartbeat behavior.
+
+Also test explicit nil-message handling and a missing transport map entry.
 
 - [ ] **Step 2: Run the service tests and confirm the constructor mismatch**
 
@@ -1092,16 +981,20 @@ Expected: compilation fails because `PhoneNotificationService` still consumes
 In `api/pkg/services/phone_notification_service.go`:
 
 - construct Firebase `messaging.Message` values directly;
-- replace `messagingClient FCMClient` with
-  `phoneNotificationDispatcher *PhoneNotificationDispatcher`;
+- replace the direct client with
+  `phoneNotificationClients map[entities.NotificationTransport]FCMClient`;
 - change the constructor to the exact signature above;
 - change `eventDispatcher` to `NotificationEventDispatcher`.
 
-For message notifications, call:
+Add a private `sendPhoneNotification` helper that validates the message,
+classifies transport once, performs a map lookup, sets the trimmed token, calls
+the selected client, and returns the transport with the result or error.
+
+For message notifications, construct:
 
 ```go
 ttl := phone.MessageExpirationDuration()
-result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
+message := &messaging.Message{
     Data: map[string]string{
         "KEY_MESSAGE_ID": params.MessageID.String(),
     },
@@ -1109,25 +1002,24 @@ result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.M
         Priority: "normal",
         TTL:      &ttl,
     },
-}, params.PhoneNotificationID)
+}
 ```
 
 For heartbeat notifications, call:
 
 ```go
-notificationID := uuid.New()
-result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
+message := &messaging.Message{
     Data: map[string]string{
         "KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
     },
     Android: &messaging.AndroidConfig{Priority: "high"},
-}, notificationID)
+}
 ```
 
 - [ ] **Step 4: Add transport-aware failure text**
 
-After a dispatcher error, obtain the phone's transport through
-`phone.NotificationTransport()`.
+Use the transport returned by `sendPhoneNotification`; do not classify the
+phone a second time.
 
 For HTTP use:
 
@@ -1175,7 +1067,7 @@ Run:
 
 ```bash
 cd api
-go test ./pkg/services -run 'TestPhoneNotificationService|TestPhoneNotificationDispatcher|TestHTTPNotificationSender' -count=1
+go test ./pkg/services -run 'TestPhoneNotificationService|TestHTTPNotificationSender' -count=1
 ```
 
 Expected: PASS.
@@ -1209,18 +1101,15 @@ git commit -m "feat(api): route phone gateway wake-ups"
 - Consumes:
 
 ```go
-func NewNotificationEndpointPolicy(resolver HostResolver, allowedPrivateHosts []string) *NotificationEndpointPolicy
-func NewPhoneNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *PhoneNotificationDispatcher
-func NewFCMNotificationSender(client FCMClient) *FCMNotificationSender
+func (container *Container) FCMClient() services.FCMClient
 func NewHTTPNotificationSender(logger telemetry.Logger, client *http.Client) *HTTPNotificationSender
 ```
 
 - Produces container factories:
 
 ```go
-func (container *Container) NotificationEndpointPolicy() *services.NotificationEndpointPolicy
 func (container *Container) NotificationHTTPClient() *http.Client
-func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotificationDispatcher
+func (container *Container) PhoneNotificationClients() map[entities.NotificationTransport]services.FCMClient
 ```
 
 - Produces validator constructor:
@@ -1368,14 +1257,14 @@ context for each attempt.
 Add:
 
 ```go
-func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotificationDispatcher {
-    return services.NewPhoneNotificationDispatcher(
-        services.NewFCMNotificationSender(container.FCMClient()),
-        services.NewHTTPNotificationSender(
+func (container *Container) PhoneNotificationClients() map[entities.NotificationTransport]services.FCMClient {
+    return map[entities.NotificationTransport]services.FCMClient{
+        entities.NotificationTransportFCM: container.FCMClient(),
+        entities.NotificationTransportHTTP: services.NewHTTPNotificationSender(
             container.Logger(),
             container.NotificationHTTPClient(),
         ),
-    )
+    }
 }
 ```
 
@@ -1391,7 +1280,7 @@ allowlist. Do not cache per-request sender state.
 - [ ] **Step 5: Wire service and validator constructors**
 
 Change `container.NotificationService()` to pass
-`container.PhoneNotificationDispatcher()` instead of `container.FCMClient()`.
+`container.PhoneNotificationClients()`.
 
 Find `container.PhoneHandlerValidator()` and pass
 `container.NotificationEndpointPolicy()` as its fourth argument. Keep existing
@@ -1538,14 +1427,12 @@ type incomingMessageRequest struct {
 
 ```go
 type notificationRecord struct {
-    NotificationID string            `json:"notification_id"`
-    GatewayID      string            `json:"gateway_id"`
-    Data           map[string]string `json:"data"`
-    MessageID      string            `json:"message_id,omitempty"`
-    Kind           string            `json:"kind"`
-    Attempts       int               `json:"attempts"`
-    Processed      bool              `json:"processed"`
-    Error          string            `json:"error,omitempty"`
+    GatewayID string            `json:"gateway_id"`
+    Data      map[string]string `json:"data"`
+    MessageID string            `json:"message_id,omitempty"`
+    Kind      string            `json:"kind"`
+    Processed bool              `json:"processed"`
+    Error     string            `json:"error,omitempty"`
 }
 ```
 
@@ -1623,7 +1510,7 @@ type emulator struct {
     client     *http.Client
     mu         sync.RWMutex
     gateways   map[string]gateway
-    records    map[string]*notificationRecord
+    records    []*notificationRecord
 }
 
 func newEmulator(apiBaseURL string, client *http.Client) *emulator {
@@ -1631,15 +1518,12 @@ func newEmulator(apiBaseURL string, client *http.Client) *emulator {
         apiBaseURL: strings.TrimRight(apiBaseURL, "/"),
         client:     client,
         gateways:   make(map[string]gateway),
-        records:    make(map[string]*notificationRecord),
     }
 }
 ```
 
-Add locked methods to register a gateway, load a gateway, begin a notification,
+Add locked methods to register a gateway, load a gateway, record each callback,
 mark it processed/failed, and list copied records for one gateway.
-`beginNotification` increments `Attempts` for duplicate IDs and returns
-`firstDelivery=false` without processing the message again.
 
 - [ ] **Step 4: Implement existing phone API calls**
 
@@ -1702,17 +1586,14 @@ type callbackEnvelope struct {
 The handler must:
 
 1. load `gatewayID` from the route;
-2. require `X-httpSMS-Notification-ID`;
-3. return `404` for unknown gateways;
-4. return `400` for missing IDs or unsupported data;
-5. record every delivery attempt;
-6. return `204` immediately for a duplicate notification ID already being
-   processed or completed;
-7. for `KEY_MESSAGE_ID`, fetch outstanding, fire `SENT`, fire `DELIVERED`, and
+2. return `404` for unknown gateways;
+3. return `400` for unsupported data;
+4. record every callback;
+5. for `KEY_MESSAGE_ID`, fetch outstanding, fire `SENT`, fire `DELIVERED`, and
    mark the record processed with kind `message`;
-8. for `KEY_HEARTBEAT_ID`, store a heartbeat and mark the record processed with
+6. for `KEY_HEARTBEAT_ID`, store a heartbeat and mark the record processed with
    kind `heartbeat`;
-9. return `500` and retain the error string in the record when processing
+7. return `500` and retain the error string in the record when processing
    fails, allowing the API sender's retry behavior to be exercised.
 
 Processing may be synchronous because the API accepts any `2xx` and the
@@ -1853,13 +1734,11 @@ func TestAdapterGatewayOutgoingMessage(t *testing.T) {
     assert.Equal(t, "message", records[0].Kind)
     assert.True(t, records[0].Processed)
     assert.Equal(t, messageID, records[0].Data["KEY_MESSAGE_ID"])
-    assert.NotEmpty(t, records[0].NotificationID)
 }
 ```
 
-The record-list helper queries by message ID because the notification ID is
-generated inside the API. Assert one processed record to verify the emulator
-does not send the message twice.
+The record-list helper queries by message ID. Assert one processed record for
+the successful callback flow.
 
 - [ ] **Step 10: Write the incoming adapter integration test**
 
@@ -1929,7 +1808,7 @@ func TestAdapterGatewayHeartbeatWakeUp(t *testing.T) {
 
 The direct internal event avoids waiting for the production 16-minute monitor
 interval while still exercising `PhoneNotificationListener`,
-`PhoneNotificationService`, the HTTP dispatcher, the emulator callback, and the
+`PhoneNotificationService`, the HTTP client, the emulator callback, and the
 existing heartbeat API.
 
 - [ ] **Step 12: Update local and CI commands**

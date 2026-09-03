@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
@@ -87,6 +88,79 @@ func (logger *phoneNotificationLogger) Debug(string)                  {}
 func (logger *phoneNotificationLogger) Fatal(error)                   {}
 func (logger *phoneNotificationLogger) Printf(string, ...interface{}) {}
 
+type recordingPhoneNotificationClient struct {
+	message *messaging.Message
+	result  string
+	err     error
+	calls   int
+}
+
+func (client *recordingPhoneNotificationClient) Send(
+	_ context.Context,
+	message *messaging.Message,
+) (string, error) {
+	client.calls++
+	client.message = message
+	return client.result, client.err
+}
+
+func TestPhoneNotificationServiceSendPhoneNotificationUsesMappedClient(t *testing.T) {
+	endpoint := "  https://adapter.example.com/notify  "
+	phone := &entities.Phone{ID: uuid.New(), FcmToken: &endpoint}
+	httpClient := &recordingPhoneNotificationClient{result: "accepted"}
+	service := &PhoneNotificationService{
+		phoneNotificationClients: map[entities.NotificationTransport]FCMClient{
+			entities.NotificationTransportHTTP: httpClient,
+		},
+	}
+	message := &messaging.Message{Data: map[string]string{"KEY_MESSAGE_ID": uuid.NewString()}}
+
+	result, transport, err := service.sendPhoneNotification(context.Background(), phone, message)
+
+	require.NoError(t, err)
+	assert.Equal(t, "accepted", result)
+	assert.Equal(t, entities.NotificationTransportHTTP, transport)
+	assert.Equal(t, "https://adapter.example.com/notify", message.Token)
+	assert.Same(t, message, httpClient.message)
+	assert.Equal(t, 1, httpClient.calls)
+}
+
+func TestPhoneNotificationServiceSendPhoneNotificationRejectsMissingClient(t *testing.T) {
+	endpoint := "https://adapter.example.com/notify"
+	phone := &entities.Phone{ID: uuid.New(), FcmToken: &endpoint}
+	service := &PhoneNotificationService{
+		phoneNotificationClients: map[entities.NotificationTransport]FCMClient{},
+	}
+
+	_, transport, err := service.sendPhoneNotification(
+		context.Background(),
+		phone,
+		&messaging.Message{},
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, entities.NotificationTransportHTTP, transport)
+	assert.Contains(t, err.Error(), "notification client is not configured for transport [http]")
+}
+
+func TestPhoneNotificationServiceSendPhoneNotificationRejectsNilMessage(t *testing.T) {
+	token := "fcm-token"
+	phone := &entities.Phone{ID: uuid.New(), FcmToken: &token}
+	fcmClient := &recordingPhoneNotificationClient{}
+	service := &PhoneNotificationService{
+		phoneNotificationClients: map[entities.NotificationTransport]FCMClient{
+			entities.NotificationTransportFCM: fcmClient,
+		},
+	}
+
+	_, transport, err := service.sendPhoneNotification(context.Background(), phone, nil)
+
+	require.Error(t, err)
+	assert.Empty(t, transport)
+	assert.Contains(t, err.Error(), "notification message is nil")
+	assert.Zero(t, fcmClient.calls)
+}
+
 func TestPhoneNotificationServiceSendUsesHTTPSMessage(t *testing.T) {
 	endpoint := "https://adapter.example.com/notify"
 	phone := &entities.Phone{
@@ -96,10 +170,18 @@ func TestPhoneNotificationServiceSendUsesHTTPSMessage(t *testing.T) {
 		PhoneNumber:              "+18005550199",
 		MessageExpirationSeconds: 90,
 	}
-	httpSender := &recordingNotificationSender{result: "http/notification-1"}
+	httpClient := &recordingPhoneNotificationClient{result: "http/success"}
 	eventQueue := &phoneNotificationEventQueue{}
 	notificationRepository := &phoneNotificationRepository{}
-	service := newPhoneNotificationServiceForTest(phone, notificationRepository, eventQueue, &recordingNotificationSender{}, httpSender)
+	service := newPhoneNotificationServiceForTest(
+		phone,
+		notificationRepository,
+		eventQueue,
+		map[entities.NotificationTransport]FCMClient{
+			entities.NotificationTransportFCM:  &recordingPhoneNotificationClient{},
+			entities.NotificationTransportHTTP: httpClient,
+		},
+	)
 	params := &PhoneNotificationSendParams{
 		UserID:              phone.UserID,
 		PhoneID:             phone.ID,
@@ -111,14 +193,13 @@ func TestPhoneNotificationServiceSendUsesHTTPSMessage(t *testing.T) {
 
 	require.NoError(t, service.Send(context.Background(), params))
 
-	require.NotNil(t, httpSender.message)
-	assert.Equal(t, endpoint, httpSender.message.Token)
-	assert.Equal(t, params.MessageID.String(), httpSender.message.Data["KEY_MESSAGE_ID"])
-	require.NotNil(t, httpSender.message.Android)
-	assert.Equal(t, "normal", httpSender.message.Android.Priority)
-	require.NotNil(t, httpSender.message.Android.TTL)
-	assert.Equal(t, phone.MessageExpirationDuration(), *httpSender.message.Android.TTL)
-	assert.Equal(t, params.PhoneNotificationID, httpSender.notificationID)
+	require.NotNil(t, httpClient.message)
+	assert.Equal(t, endpoint, httpClient.message.Token)
+	assert.Equal(t, params.MessageID.String(), httpClient.message.Data["KEY_MESSAGE_ID"])
+	require.NotNil(t, httpClient.message.Android)
+	assert.Equal(t, "normal", httpClient.message.Android.Priority)
+	require.NotNil(t, httpClient.message.Android.TTL)
+	assert.Equal(t, phone.MessageExpirationDuration(), *httpClient.message.Android.TTL)
 	require.Len(t, eventQueue.events, 1)
 	assert.Equal(t, events.EventTypeMessageNotificationSent, eventQueue.events[0].Type())
 	assert.Equal(t, params.PhoneNotificationID, notificationRepository.notificationID)
@@ -134,8 +215,12 @@ func TestPhoneNotificationServiceSendHTTPFailureUsesAdapterGuidance(t *testing.T
 		phone,
 		notificationRepository,
 		eventQueue,
-		&recordingNotificationSender{},
-		&recordingNotificationSender{err: errors.New("adapter unavailable")},
+		map[entities.NotificationTransport]FCMClient{
+			entities.NotificationTransportFCM: &recordingPhoneNotificationClient{},
+			entities.NotificationTransportHTTP: &recordingPhoneNotificationClient{
+				err: errors.New("adapter unavailable"),
+			},
+		},
 	)
 	params := &PhoneNotificationSendParams{
 		UserID:              phone.UserID,
@@ -160,12 +245,15 @@ func TestPhoneNotificationServiceSendFCMFailurePreservesAndroidGuidance(t *testi
 	token := "fcm-token"
 	phone := &entities.Phone{ID: uuid.New(), UserID: "user-1", FcmToken: &token, PhoneNumber: "+18005550199"}
 	eventQueue := &phoneNotificationEventQueue{}
+	fcmClient := &recordingPhoneNotificationClient{err: errors.New("firebase unavailable")}
 	service := newPhoneNotificationServiceForTest(
 		phone,
 		&phoneNotificationRepository{},
 		eventQueue,
-		&recordingNotificationSender{err: errors.New("firebase unavailable")},
-		&recordingNotificationSender{},
+		map[entities.NotificationTransport]FCMClient{
+			entities.NotificationTransportFCM:  fcmClient,
+			entities.NotificationTransportHTTP: &recordingPhoneNotificationClient{},
+		},
 	)
 	params := &PhoneNotificationSendParams{
 		UserID:              phone.UserID,
@@ -178,6 +266,9 @@ func TestPhoneNotificationServiceSendFCMFailurePreservesAndroidGuidance(t *testi
 	require.NoError(t, service.Send(context.Background(), params))
 
 	require.Len(t, eventQueue.events, 1)
+	require.NotNil(t, fcmClient.message)
+	assert.Equal(t, token, fcmClient.message.Token)
+	assert.Equal(t, 1, fcmClient.calls)
 	var payload events.MessageNotificationFailedPayload
 	require.NoError(t, eventQueue.events[0].DataAs(&payload))
 	assert.Equal(t, "cannot send notification to your phone [+18005550199]. Reinstall the httpSMS app on your Android phone.", payload.ErrorMessage)
@@ -186,13 +277,15 @@ func TestPhoneNotificationServiceSendFCMFailurePreservesAndroidGuidance(t *testi
 func TestPhoneNotificationServiceSendHeartbeatFCMUsesHTTPSMessage(t *testing.T) {
 	endpoint := "https://adapter.example.com/notify"
 	phone := &entities.Phone{ID: uuid.New(), UserID: "user-1", FcmToken: &endpoint}
-	httpSender := &recordingNotificationSender{err: errors.New("adapter unavailable")}
+	httpClient := &recordingPhoneNotificationClient{err: errors.New("adapter unavailable")}
 	service := newPhoneNotificationServiceForTest(
 		phone,
 		&phoneNotificationRepository{},
 		&phoneNotificationEventQueue{},
-		&recordingNotificationSender{},
-		httpSender,
+		map[entities.NotificationTransport]FCMClient{
+			entities.NotificationTransportFCM:  &recordingPhoneNotificationClient{},
+			entities.NotificationTransportHTTP: httpClient,
+		},
 	)
 
 	err := service.SendHeartbeatFCM(context.Background(), &events.PhoneHeartbeatMissedPayload{
@@ -202,30 +295,28 @@ func TestPhoneNotificationServiceSendHeartbeatFCMUsesHTTPSMessage(t *testing.T) 
 	})
 
 	require.NoError(t, err)
-	require.NotNil(t, httpSender.message)
-	assert.Equal(t, endpoint, httpSender.message.Token)
-	heartbeatID := httpSender.message.Data["KEY_HEARTBEAT_ID"]
+	require.NotNil(t, httpClient.message)
+	assert.Equal(t, endpoint, httpClient.message.Token)
+	heartbeatID := httpClient.message.Data["KEY_HEARTBEAT_ID"]
 	_, err = time.Parse(time.RFC3339, heartbeatID)
 	require.NoError(t, err)
-	require.NotNil(t, httpSender.message.Android)
-	assert.Equal(t, "high", httpSender.message.Android.Priority)
-	assert.Nil(t, httpSender.message.Android.TTL)
-	assert.NotEqual(t, uuid.Nil, httpSender.notificationID)
+	require.NotNil(t, httpClient.message.Android)
+	assert.Equal(t, "high", httpClient.message.Android.Priority)
+	assert.Nil(t, httpClient.message.Android.TTL)
 }
 
 func newPhoneNotificationServiceForTest(
 	phone *entities.Phone,
 	notificationRepository repositories.PhoneNotificationRepository,
 	eventQueue *phoneNotificationEventQueue,
-	fcmSender NotificationSender,
-	httpSender NotificationSender,
+	clients map[entities.NotificationTransport]FCMClient,
 ) *PhoneNotificationService {
 	logger := &phoneNotificationLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
 	return NewNotificationService(
 		logger,
 		tracer,
-		NewPhoneNotificationDispatcher(fcmSender, httpSender),
+		clients,
 		&phoneNotificationPhoneRepository{phone: phone},
 		notificationRepository,
 		nil,

@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 )
@@ -13,14 +12,12 @@ type gateway struct {
 }
 
 type notificationRecord struct {
-	NotificationID string            `json:"notification_id"`
-	GatewayID      string            `json:"gateway_id"`
-	Data           map[string]string `json:"data"`
-	MessageID      string            `json:"message_id,omitempty"`
-	Kind           string            `json:"kind"`
-	Attempts       int               `json:"attempts"`
-	Processed      bool              `json:"processed"`
-	Error          string            `json:"error,omitempty"`
+	GatewayID string            `json:"gateway_id"`
+	Data      map[string]string `json:"data"`
+	MessageID string            `json:"message_id,omitempty"`
+	Kind      string            `json:"kind"`
+	Processed bool              `json:"processed"`
+	Error     string            `json:"error,omitempty"`
 }
 
 type emulator struct {
@@ -28,7 +25,7 @@ type emulator struct {
 	client     *http.Client
 	mu         sync.RWMutex
 	gateways   map[string]gateway
-	records    map[string]*notificationRecord
+	records    []*notificationRecord
 }
 
 func newEmulator(apiBaseURL string, client *http.Client) *emulator {
@@ -36,7 +33,6 @@ func newEmulator(apiBaseURL string, client *http.Client) *emulator {
 		apiBaseURL: strings.TrimRight(apiBaseURL, "/"),
 		client:     client,
 		gateways:   make(map[string]gateway),
-		records:    make(map[string]*notificationRecord),
 	}
 }
 
@@ -58,56 +54,40 @@ func (instance *emulator) loadGateway(gatewayID string) (gateway, bool) {
 	return registeredGateway, ok
 }
 
-func (instance *emulator) beginNotification(
-	notificationID string,
+func (instance *emulator) recordNotification(
 	gatewayID string,
 	data map[string]string,
 	kind string,
 	messageID string,
-) (*notificationRecord, bool) {
+) *notificationRecord {
 	instance.mu.Lock()
 	defer instance.mu.Unlock()
-
-	if record, ok := instance.records[notificationID]; ok {
-		record.Attempts++
-		if record.Processed || record.Error == "" {
-			return copyNotificationRecord(record), false
-		}
-		record.Error = ""
-		return copyNotificationRecord(record), true
-	}
 
 	record := &notificationRecord{
-		NotificationID: notificationID,
-		GatewayID:      gatewayID,
-		Data:           copyStringMap(data),
-		MessageID:      messageID,
-		Kind:           kind,
-		Attempts:       1,
+		GatewayID: gatewayID,
+		Data:      copyStringMap(data),
+		MessageID: messageID,
+		Kind:      kind,
 	}
-	instance.records[notificationID] = record
+	instance.records = append(instance.records, record)
 
-	return copyNotificationRecord(record), true
+	return record
 }
 
-func (instance *emulator) markNotificationProcessed(notificationID string) {
+func (instance *emulator) markNotificationProcessed(record *notificationRecord) {
 	instance.mu.Lock()
 	defer instance.mu.Unlock()
 
-	if record, ok := instance.records[notificationID]; ok {
-		record.Processed = true
-		record.Error = ""
-	}
+	record.Processed = true
+	record.Error = ""
 }
 
-func (instance *emulator) markNotificationFailed(notificationID string, err error) {
+func (instance *emulator) markNotificationFailed(record *notificationRecord, err error) {
 	instance.mu.Lock()
 	defer instance.mu.Unlock()
 
-	if record, ok := instance.records[notificationID]; ok {
-		record.Processed = false
-		record.Error = err.Error()
-	}
+	record.Processed = false
+	record.Error = err.Error()
 }
 
 func (instance *emulator) listGatewayRecords(gatewayID string) []notificationRecord {
@@ -120,9 +100,6 @@ func (instance *emulator) listGatewayRecords(gatewayID string) []notificationRec
 			records = append(records, *copyNotificationRecord(record))
 		}
 	}
-	sort.Slice(records, func(left int, right int) bool {
-		return records[left].NotificationID < records[right].NotificationID
-	})
 
 	return records
 }

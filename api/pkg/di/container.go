@@ -572,15 +572,15 @@ func (container *Container) NotificationHTTPClient() *http.Client {
 	}
 }
 
-// PhoneNotificationDispatcher creates notification senders for Firebase and HTTP gateways.
-func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotificationDispatcher {
-	return services.NewPhoneNotificationDispatcher(
-		services.NewFCMNotificationSender(container.FCMClient()),
-		services.NewHTTPNotificationSender(
+// PhoneNotificationClients creates notification clients keyed by phone transport.
+func (container *Container) PhoneNotificationClients() map[entities.NotificationTransport]services.FCMClient {
+	return map[entities.NotificationTransport]services.FCMClient{
+		entities.NotificationTransportFCM: container.FCMClient(),
+		entities.NotificationTransportHTTP: services.NewHTTPNotificationSender(
 			container.Logger(),
 			container.NotificationHTTPClient(),
 		),
-	)
+	}
 }
 
 // FirebaseCredentials returns firebase credentials as bytes.
@@ -1733,7 +1733,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 	return services.NewNotificationService(
 		container.Logger(),
 		container.Tracer(),
-		container.PhoneNotificationDispatcher(),
+		container.PhoneNotificationClients(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
 		container.MessageSendScheduleRepository(),

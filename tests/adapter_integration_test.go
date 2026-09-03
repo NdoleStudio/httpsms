@@ -37,7 +37,6 @@ func TestAdapterGatewayOutgoingMessage(t *testing.T) {
 	assert.Equal(t, "message", records[0].Kind)
 	assert.True(t, records[0].Processed)
 	assert.Equal(t, messageID, records[0].Data["KEY_MESSAGE_ID"])
-	assert.NotEmpty(t, records[0].NotificationID)
 }
 
 func TestAdapterGatewayIncomingMessage(t *testing.T) {

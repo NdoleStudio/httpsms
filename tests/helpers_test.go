@@ -45,14 +45,12 @@ type adapterTestPhone struct {
 }
 
 type notificationRecord struct {
-	NotificationID string            `json:"notification_id"`
-	GatewayID      string            `json:"gateway_id"`
-	Data           map[string]string `json:"data"`
-	MessageID      string            `json:"message_id,omitempty"`
-	Kind           string            `json:"kind"`
-	Attempts       int               `json:"attempts"`
-	Processed      bool              `json:"processed"`
-	Error          string            `json:"error,omitempty"`
+	GatewayID string            `json:"gateway_id"`
+	Data      map[string]string `json:"data"`
+	MessageID string            `json:"message_id,omitempty"`
+	Kind      string            `json:"kind"`
+	Processed bool              `json:"processed"`
+	Error     string            `json:"error,omitempty"`
 }
 
 func newAPIClient() *httpsms.Client {

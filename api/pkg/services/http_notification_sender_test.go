@@ -13,7 +13,6 @@ import (
 
 	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
@@ -37,7 +36,6 @@ type httpNotificationPayload struct {
 }
 
 func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
-	notificationID := uuid.New()
 	ttl := 10 * time.Minute
 	message := &messaging.Message{
 		Token: "https://adapter.example.com/notify",
@@ -50,7 +48,6 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		assert.Equal(t, http.MethodPost, request.Method)
 		assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
-		assert.Equal(t, notificationID.String(), request.Header.Get("X-httpSMS-Notification-ID"))
 
 		var payload httpNotificationPayload
 		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
@@ -63,10 +60,10 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	result, err := sender.Send(context.Background(), message, notificationID)
+	result, err := sender.Send(context.Background(), message)
 
 	require.NoError(t, err)
-	assert.Equal(t, "http/"+notificationID.String(), result)
+	assert.Equal(t, "http/success", result)
 }
 
 func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
@@ -141,10 +138,8 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var notificationIDs []string
 			calls := 0
-			sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
-				notificationIDs = append(notificationIDs, request.Header.Get("X-httpSMS-Notification-ID"))
+			sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 				outcome := test.outcomes[calls]
 				calls++
 				if outcome.err != nil {
@@ -152,12 +147,9 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 				}
 				return response(outcome.statusCode, http.NoBody), nil
 			}))
-			notificationID := uuid.New()
-
-			_, err := sender.Send(
+			result, err := sender.Send(
 				context.Background(),
 				&messaging.Message{Token: "https://adapter.example.com/notify"},
-				notificationID,
 			)
 
 			if test.wantErr {
@@ -166,7 +158,9 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, test.wantCalls, calls)
-			assert.Equal(t, makeNotificationIDs(notificationID.String(), test.wantCalls), notificationIDs)
+			if !test.wantErr {
+				assert.Equal(t, "http/success", result)
+			}
 		})
 	}
 }
@@ -185,7 +179,6 @@ func TestHTTPNotificationSenderReusesRetrierAcrossSends(t *testing.T) {
 		_, err := sender.Send(
 			context.Background(),
 			&messaging.Message{Token: "https://adapter.example.com/notify"},
-			uuid.New(),
 		)
 		require.NoError(t, err)
 	}
@@ -213,7 +206,6 @@ func TestHTTPNotificationSenderCreatesFreshRequestAndBodyForEveryAttempt(t *test
 			Token: "https://adapter.example.com/notify",
 			Data:  map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		},
-		uuid.New(),
 	)
 
 	require.NoError(t, err)
@@ -235,7 +227,6 @@ func TestHTTPNotificationSenderBoundsResponseBodyDiscard(t *testing.T) {
 	_, err := sender.Send(
 		context.Background(),
 		&messaging.Message{Token: "https://adapter.example.com/notify"},
-		uuid.New(),
 	)
 
 	require.NoError(t, err)
@@ -262,7 +253,6 @@ func TestHTTPNotificationSenderOmitsTTLForHeartbeat(t *testing.T) {
 				Priority: "high",
 			},
 		},
-		uuid.New(),
 	)
 
 	require.NoError(t, err)
@@ -302,7 +292,6 @@ func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
 	_, err := sender.Send(
 		context.Background(),
 		&messaging.Message{Token: endpoint.String()},
-		uuid.New(),
 	)
 
 	require.NoError(t, err)
@@ -320,7 +309,6 @@ func TestHTTPNotificationSenderBoundsEveryAttemptByTimeout(t *testing.T) {
 	_, err := sender.Send(
 		context.Background(),
 		&messaging.Message{Token: "https://adapter.example.com/notify"},
-		uuid.New(),
 	)
 
 	require.Error(t, err)
@@ -340,7 +328,6 @@ func TestHTTPNotificationSenderStopsRetriesWhenParentContextIsCancelled(t *testi
 	_, err := sender.Send(
 		ctx,
 		&messaging.Message{Token: "https://adapter.example.com/notify"},
-		uuid.New(),
 	)
 
 	require.Error(t, err)
@@ -352,7 +339,7 @@ func TestHTTPNotificationSenderRejectsNilMessage(t *testing.T) {
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	_, err := sender.Send(context.Background(), nil, uuid.New())
+	_, err := sender.Send(context.Background(), nil)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "notification message is nil")
@@ -436,12 +423,4 @@ func response(statusCode int, body io.ReadCloser) *http.Response {
 		Body:       body,
 		Header:     make(http.Header),
 	}
-}
-
-func makeNotificationIDs(notificationID string, length int) []string {
-	notificationIDs := make([]string, length)
-	for index := range notificationIDs {
-		notificationIDs[index] = notificationID
-	}
-	return notificationIDs
 }

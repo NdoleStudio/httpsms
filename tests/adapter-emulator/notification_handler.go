@@ -31,12 +31,6 @@ func (instance *emulator) handleNotification(writer http.ResponseWriter, request
 		return
 	}
 
-	notificationID := strings.TrimSpace(request.Header.Get("X-httpSMS-Notification-ID"))
-	if notificationID == "" {
-		http.Error(writer, "missing X-httpSMS-Notification-ID", http.StatusBadRequest)
-		return
-	}
-
 	request.Body = http.MaxBytesReader(writer, request.Body, maxCallbackBodyBytes)
 	var envelope callbackEnvelope
 	if err := json.NewDecoder(request.Body).Decode(&envelope); err != nil {
@@ -45,26 +39,19 @@ func (instance *emulator) handleNotification(writer http.ResponseWriter, request
 	}
 
 	kind, messageID, validationErr := notificationKind(envelope.Message.Data)
-	_, firstDelivery := instance.beginNotification(
-		notificationID,
+	record := instance.recordNotification(
 		gatewayID,
 		envelope.Message.Data,
 		kind,
 		messageID,
 	)
 	log.Printf(
-		"[ADAPTER] callback notification=%s gateway=%s data=%v should_process=%t",
-		notificationID,
+		"[ADAPTER] callback gateway=%s data=%v",
 		gatewayID,
 		envelope.Message.Data,
-		firstDelivery,
 	)
-	if !firstDelivery {
-		writer.WriteHeader(http.StatusNoContent)
-		return
-	}
 	if validationErr != nil {
-		instance.markNotificationFailed(notificationID, validationErr)
+		instance.markNotificationFailed(record, validationErr)
 		http.Error(writer, validationErr.Error(), http.StatusBadRequest)
 		return
 	}
@@ -83,14 +70,14 @@ func (instance *emulator) handleNotification(writer http.ResponseWriter, request
 		processingErr = instance.storeHeartbeat(request.Context(), registeredGateway)
 	}
 	if processingErr != nil {
-		instance.markNotificationFailed(notificationID, processingErr)
-		log.Printf("[ADAPTER] notification %s failed: %v", notificationID, processingErr)
+		instance.markNotificationFailed(record, processingErr)
+		log.Printf("[ADAPTER] notification failed: %v", processingErr)
 		http.Error(writer, "notification processing failed", http.StatusInternalServerError)
 		return
 	}
 
-	instance.markNotificationProcessed(notificationID)
-	log.Printf("[ADAPTER] notification %s processed as %s", notificationID, kind)
+	instance.markNotificationProcessed(record)
+	log.Printf("[ADAPTER] notification processed as %s", kind)
 	writer.WriteHeader(http.StatusNoContent)
 }
 

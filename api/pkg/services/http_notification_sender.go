@@ -14,7 +14,6 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
 	"github.com/avast/retry-go/v5"
-	"github.com/google/uuid"
 )
 
 const (
@@ -31,6 +30,8 @@ type HTTPNotificationSender struct {
 	retrier *retry.Retrier
 	timeout time.Duration
 }
+
+var _ FCMClient = (*HTTPNotificationSender)(nil)
 
 // NewHTTPNotificationSender creates an HTTP notification sender.
 func NewHTTPNotificationSender(
@@ -61,7 +62,6 @@ func newHTTPNotificationSenderWithRetrier(
 func (sender *HTTPNotificationSender) Send(
 	ctx context.Context,
 	message *messaging.Message,
-	notificationID uuid.UUID,
 ) (string, error) {
 	if message == nil {
 		return "", sender.notificationError("", "notification message is nil")
@@ -79,10 +79,10 @@ func (sender *HTTPNotificationSender) Send(
 	}
 
 	err = sender.retrier.Do(func() error {
-		return sender.deliver(ctx, endpoint, body, notificationID.String())
+		return sender.deliver(ctx, endpoint, body)
 	})
 	if err == nil {
-		return "http/" + notificationID.String(), nil
+		return "http/success", nil
 	}
 	if ctx.Err() != nil {
 		return "", sender.notificationError(hostname, "notification request cancelled")
@@ -101,7 +101,6 @@ func (sender *HTTPNotificationSender) deliver(
 	ctx context.Context,
 	endpoint *url.URL,
 	body []byte,
-	notificationID string,
 ) error {
 	if err := ctx.Err(); err != nil {
 		return terminalNotificationRequestError{cause: err}
@@ -110,7 +109,7 @@ func (sender *HTTPNotificationSender) deliver(
 	attemptCtx, cancel := context.WithTimeout(ctx, sender.timeout)
 	defer cancel()
 
-	request, err := createHTTPNotificationRequest(attemptCtx, endpoint, body, notificationID)
+	request, err := createHTTPNotificationRequest(attemptCtx, endpoint, body)
 	if err != nil {
 		return terminalNotificationRequestError{cause: err}
 	}
@@ -126,7 +125,6 @@ func createHTTPNotificationRequest(
 	ctx context.Context,
 	endpoint *url.URL,
 	body []byte,
-	notificationID string,
 ) (*http.Request, error) {
 	request, err := http.NewRequestWithContext(
 		ctx,
@@ -137,9 +135,7 @@ func createHTTPNotificationRequest(
 	if err != nil {
 		return nil, err
 	}
-
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("X-httpSMS-Notification-ID", notificationID)
 	return request, nil
 }
 

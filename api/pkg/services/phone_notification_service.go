@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"firebase.google.com/go/messaging"
@@ -26,7 +27,7 @@ type PhoneNotificationService struct {
 	phoneNotificationRepository   repositories.PhoneNotificationRepository
 	phoneRepository               repositories.PhoneRepository
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository
-	phoneNotificationDispatcher   *PhoneNotificationDispatcher
+	phoneNotificationClients      map[entities.NotificationTransport]FCMClient
 	eventDispatcher               *EventDispatcher
 }
 
@@ -34,7 +35,7 @@ type PhoneNotificationService struct {
 func NewNotificationService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	phoneNotificationDispatcher *PhoneNotificationDispatcher,
+	phoneNotificationClients map[entities.NotificationTransport]FCMClient,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository,
@@ -43,7 +44,7 @@ func NewNotificationService(
 	return &PhoneNotificationService{
 		logger:                        logger.WithService(fmt.Sprintf("%T", &PhoneNotificationService{})),
 		tracer:                        tracer,
-		phoneNotificationDispatcher:   phoneNotificationDispatcher,
+		phoneNotificationClients:      phoneNotificationClients,
 		phoneNotificationRepository:   phoneNotificationRepository,
 		phoneRepository:               phoneRepository,
 		messageSendScheduleRepository: messageSendScheduleRepository,
@@ -91,13 +92,12 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("phone with id [%s] has no notification token", phone.ID))
 	}
 
-	notificationID := uuid.New()
-	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
+	result, _, err := service.sendPhoneNotification(ctx, phone, &messaging.Message{
 		Data: map[string]string{
 			"KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
 		},
 		Android: &messaging.AndroidConfig{Priority: "high"},
-	}, notificationID)
+	})
 	if err != nil {
 		ctxLogger.Warn(stacktrace.Propagatef(
 			err,
@@ -145,7 +145,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	}
 
 	ttl := phone.MessageExpirationDuration()
-	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
+	result, transport, err := service.sendPhoneNotification(ctx, phone, &messaging.Message{
 		Data: map[string]string{
 			"KEY_MESSAGE_ID": params.MessageID.String(),
 		},
@@ -153,12 +153,11 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 			Priority: "normal",
 			TTL:      &ttl,
 		},
-	}, params.PhoneNotificationID)
+	})
 	if err != nil {
-		transport, transportErr := phone.NotificationTransport()
-		if transportErr != nil {
+		if transport == "" {
 			ctxLogger.Warn(stacktrace.Propagatef(
-				transportErr,
+				err,
 				"cannot determine notification transport for phone with ID [%s] for user with ID [%s] and message [%s]",
 				phone.ID,
 				phone.UserID,
@@ -187,6 +186,45 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	}
 
 	return service.handleNotificationSent(ctx, phone, result, params)
+}
+
+func (service *PhoneNotificationService) sendPhoneNotification(
+	ctx context.Context,
+	phone *entities.Phone,
+	message *messaging.Message,
+) (string, entities.NotificationTransport, error) {
+	if message == nil {
+		return "", "", stacktrace.NewErrorf("notification message is nil")
+	}
+
+	transport, err := phone.NotificationTransport()
+	if err != nil {
+		return "", "", stacktrace.Propagatef(
+			err,
+			"cannot determine notification transport for phone [%s]",
+			phone.ID,
+		)
+	}
+
+	client, ok := service.phoneNotificationClients[transport]
+	if !ok || client == nil {
+		return "", transport, stacktrace.NewErrorf(
+			"notification client is not configured for transport [%s]",
+			transport,
+		)
+	}
+
+	message.Token = strings.TrimSpace(*phone.FcmToken)
+	result, err := client.Send(ctx, message)
+	if err != nil {
+		return "", transport, stacktrace.Propagatef(
+			err,
+			"cannot send [%s] notification to phone [%s]",
+			transport,
+			phone.ID,
+		)
+	}
+	return result, transport, nil
 }
 
 // PhoneNotificationScheduleParams are parameters for sending a notification

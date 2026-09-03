@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestBeginNotificationDeduplicatesAndCopiesRecords(t *testing.T) {
+func TestRecordNotificationCopiesRecords(t *testing.T) {
 	t.Parallel()
 
 	instance := newEmulator("http://api.example", http.DefaultClient)
@@ -20,52 +20,30 @@ func TestBeginNotificationDeduplicatesAndCopiesRecords(t *testing.T) {
 		PhoneAPIKey: "phone-key",
 	})
 
-	record, firstDelivery := instance.beginNotification(
-		"notification-1",
+	record := instance.recordNotification(
 		"gateway-1",
 		map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		"message",
 		"message-1",
 	)
-	if !firstDelivery {
-		t.Fatal("first delivery was treated as a duplicate")
-	}
-	if record.Attempts != 1 {
-		t.Fatalf("first delivery attempts = %d, want 1", record.Attempts)
-	}
-
-	instance.markNotificationProcessed("notification-1")
-	_, firstDelivery = instance.beginNotification(
-		"notification-1",
-		"gateway-1",
-		map[string]string{"KEY_MESSAGE_ID": "message-1"},
-		"message",
-		"message-1",
-	)
-	if firstDelivery {
-		t.Fatal("duplicate delivery was treated as the first delivery")
-	}
+	instance.markNotificationProcessed(record)
 
 	records := instance.listGatewayRecords("gateway-1")
 	if len(records) != 1 {
 		t.Fatalf("record count = %d, want 1", len(records))
-	}
-	if records[0].Attempts != 2 {
-		t.Fatalf("duplicate attempts = %d, want 2", records[0].Attempts)
 	}
 	if !records[0].Processed {
 		t.Fatal("processed state was not retained")
 	}
 
 	records[0].Data["KEY_MESSAGE_ID"] = "mutated"
-	records[0].Attempts = 99
 	fresh := instance.listGatewayRecords("gateway-1")
-	if fresh[0].Data["KEY_MESSAGE_ID"] != "message-1" || fresh[0].Attempts != 2 {
+	if fresh[0].Data["KEY_MESSAGE_ID"] != "message-1" {
 		t.Fatalf("record list returned mutable state: %#v", fresh[0])
 	}
 }
 
-func TestNotificationHandlerProcessesMessageOnce(t *testing.T) {
+func TestNotificationHandlerProcessesMessage(t *testing.T) {
 	t.Parallel()
 
 	var mu sync.Mutex
@@ -115,18 +93,15 @@ func TestNotificationHandlerProcessesMessageOnce(t *testing.T) {
 	})
 
 	body := callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})
-	for range 2 {
-		request := httptest.NewRequest(
-			http.MethodPost,
-			"/notifications/gateway-1",
-			bytes.NewReader(body),
-		)
-		request.Header.Set("X-httpSMS-Notification-ID", "notification-1")
-		response := httptest.NewRecorder()
-		instance.notificationHandler().ServeHTTP(response, request)
-		if response.Code != http.StatusNoContent {
-			t.Fatalf("callback status = %d, want 204: %s", response.Code, response.Body.String())
-		}
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/notifications/gateway-1",
+		bytes.NewReader(body),
+	)
+	response := httptest.NewRecorder()
+	instance.notificationHandler().ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("callback status = %d, want 204: %s", response.Code, response.Body.String())
 	}
 
 	mu.Lock()
@@ -143,7 +118,7 @@ func TestNotificationHandlerProcessesMessageOnce(t *testing.T) {
 		t.Fatalf("record count = %d, want 1", len(records))
 	}
 	record := records[0]
-	if record.Kind != "message" || record.MessageID != "message-1" || !record.Processed || record.Attempts != 2 {
+	if record.Kind != "message" || record.MessageID != "message-1" || !record.Processed {
 		t.Fatalf("unexpected message record: %#v", record)
 	}
 }
@@ -178,7 +153,6 @@ func TestNotificationHandlerStoresHeartbeat(t *testing.T) {
 		"/notifications/gateway-1",
 		bytes.NewReader(callbackBody(t, map[string]string{"KEY_HEARTBEAT_ID": "heartbeat-1"})),
 	)
-	request.Header.Set("X-httpSMS-Notification-ID", "notification-1")
 	response := httptest.NewRecorder()
 	instance.notificationHandler().ServeHTTP(response, request)
 	if response.Code != http.StatusNoContent {
@@ -217,7 +191,6 @@ func TestNotificationHandlerRetainsProcessingFailure(t *testing.T) {
 		"/notifications/gateway-1",
 		bytes.NewReader(callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})),
 	)
-	request.Header.Set("X-httpSMS-Notification-ID", "notification-1")
 	response := httptest.NewRecorder()
 	instance.notificationHandler().ServeHTTP(response, request)
 	if response.Code != http.StatusInternalServerError {
@@ -236,7 +209,7 @@ func TestNotificationHandlerRetainsProcessingFailure(t *testing.T) {
 	}
 }
 
-func TestNotificationHandlerRetriesFailedDeliveryWithSameID(t *testing.T) {
+func TestNotificationHandlerProcessesRetryAfterFailure(t *testing.T) {
 	t.Parallel()
 
 	var mu sync.Mutex
@@ -282,15 +255,12 @@ func TestNotificationHandlerRetriesFailedDeliveryWithSameID(t *testing.T) {
 	body := callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})
 
 	firstRequest := httptest.NewRequest(http.MethodPost, "/notifications/gateway-1", bytes.NewReader(body))
-	firstRequest.Header.Set("X-httpSMS-Notification-ID", "notification-1")
 	firstResponse := httptest.NewRecorder()
 	handler.ServeHTTP(firstResponse, firstRequest)
 	if firstResponse.Code != http.StatusInternalServerError {
 		t.Fatalf("first callback status = %d, want 500: %s", firstResponse.Code, firstResponse.Body.String())
 	}
-
 	secondRequest := httptest.NewRequest(http.MethodPost, "/notifications/gateway-1", bytes.NewReader(body))
-	secondRequest.Header.Set("X-httpSMS-Notification-ID", "notification-1")
 	secondResponse := httptest.NewRecorder()
 	handler.ServeHTTP(secondResponse, secondRequest)
 	if secondResponse.Code != http.StatusNoContent {
@@ -307,11 +277,14 @@ func TestNotificationHandlerRetriesFailedDeliveryWithSameID(t *testing.T) {
 	}
 
 	records := instance.listGatewayRecords("gateway-1")
-	if len(records) != 1 {
-		t.Fatalf("record count = %d, want 1", len(records))
+	if len(records) != 2 {
+		t.Fatalf("record count = %d, want 2", len(records))
 	}
-	if records[0].Attempts != 2 || !records[0].Processed || records[0].Error != "" {
-		t.Fatalf("unexpected retried record: %#v", records[0])
+	if records[0].Processed || records[0].Error == "" {
+		t.Fatalf("unexpected failed record: %#v", records[0])
+	}
+	if !records[1].Processed || records[1].Error != "" {
+		t.Fatalf("unexpected successful retry record: %#v", records[1])
 	}
 }
 
@@ -396,15 +369,13 @@ func TestControlHandlerFiltersNotificationRecordsByMessageID(t *testing.T) {
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
 	})
-	instance.beginNotification(
-		"notification-1",
+	instance.recordNotification(
 		"gateway-1",
 		map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		"message",
 		"message-1",
 	)
-	instance.beginNotification(
-		"notification-2",
+	instance.recordNotification(
 		"gateway-1",
 		map[string]string{"KEY_MESSAGE_ID": "message-2"},
 		"message",
