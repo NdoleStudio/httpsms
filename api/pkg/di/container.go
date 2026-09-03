@@ -272,7 +272,7 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 		container.logger.Fatal(err)
 	}
 
-	if err = db.Use(tracing.NewPlugin(tracing.WithoutQueryVariables())); err != nil {
+	if err = db.Use(tracing.NewPlugin()); err != nil {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 
@@ -330,7 +330,7 @@ func (container *Container) DBWithoutMigration() (db *gorm.DB) {
 	}
 	container.db = db
 
-	if err = db.Use(tracing.NewPlugin(tracing.WithoutQueryVariables())); err != nil {
+	if err = db.Use(tracing.NewPlugin()); err != nil {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 	return container.db
@@ -355,7 +355,7 @@ func (container *Container) DB() (db *gorm.DB) {
 	}
 	container.db = db
 
-	if err = db.Use(tracing.NewPlugin(tracing.WithoutQueryVariables())); err != nil {
+	if err = db.Use(tracing.NewPlugin()); err != nil {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot use GORM tracing plugin"))
 	}
 
@@ -568,7 +568,7 @@ func (container *Container) FCMClient() services.FCMClient {
 // NotificationHTTPClient creates the OpenTelemetry-instrumented client for phone notification adapters.
 func (container *Container) NotificationHTTPClient() *http.Client {
 	return &http.Client{
-		Transport: container.notificationHTTPRoundTripper(http.DefaultTransport),
+		Transport: container.HTTPRoundTripperWithoutRetry("phone_notification_http"),
 	}
 }
 

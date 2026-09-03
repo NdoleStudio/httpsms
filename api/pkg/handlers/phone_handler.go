@@ -122,7 +122,7 @@ func (h *PhoneHandler) Upsert(c fiber.Ctx) error {
 		ctxLogger.Warn(stacktrace.NewErrorf(
 			"validation errors [%s], while updating phone request [%s]",
 			spew.Sdump(errors),
-			redactedPhoneRequestBody(c.Body()),
+			c.Body(),
 		))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
@@ -132,7 +132,7 @@ func (h *PhoneHandler) Upsert(c fiber.Ctx) error {
 		ctxLogger.Error(stacktrace.Propagatef(
 			err,
 			"cannot update phone with request [%s]",
-			redactedPhoneRequestBody(c.Body()),
+			c.Body(),
 		))
 		return h.responseInternalServerError(c)
 	}
@@ -208,7 +208,7 @@ func (h *PhoneHandler) UpsertFCMToken(c fiber.Ctx) error {
 		ctxLogger.Warn(stacktrace.NewErrorf(
 			"validation errors [%s], while updating phone token request [%s]",
 			spew.Sdump(errors),
-			redactedPhoneRequestBody(c.Body()),
+			c.Body(),
 		))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
@@ -218,14 +218,10 @@ func (h *PhoneHandler) UpsertFCMToken(c fiber.Ctx) error {
 		ctxLogger.Error(stacktrace.Propagatef(
 			err,
 			"cannot update phone token with request [%s]",
-			redactedPhoneRequestBody(c.Body()),
+			c.Body(),
 		))
 		return h.responseInternalServerError(c)
 	}
 
 	return h.responseOK(c, "FCM token updated successfully", phone)
-}
-
-func redactedPhoneRequestBody(body []byte) string {
-	return telemetry.RedactJSONFields(body, "fcm_token")
 }

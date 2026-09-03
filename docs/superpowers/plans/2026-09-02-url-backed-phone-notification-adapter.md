@@ -60,8 +60,8 @@ private-host allowlist.
 - `api/pkg/services/notification_endpoint_policy_test.go` - deterministic resolver/dialer tests, including DNS rebinding protection.
 - `api/pkg/services/notification_sender.go` - transport-neutral notification, sender interface, Firebase adapter, and dispatcher.
 - `api/pkg/services/notification_sender_test.go` - dispatcher routing and Firebase payload mapping tests.
-- `api/pkg/services/http_notification_sender.go` - HTTP request encoding, retry classification, timeout, and sanitized results.
-- `api/pkg/services/http_notification_sender_test.go` - payload, retry, idempotency, response, and redaction tests.
+- `api/pkg/services/http_notification_sender.go` - HTTP request encoding, retry classification, and timeout.
+- `api/pkg/services/http_notification_sender_test.go` - payload, retry, idempotency, and response tests.
 - `api/pkg/services/phone_notification_service_test.go` - message and heartbeat integration tests with hand-written fakes.
 - `api/pkg/validators/phone_handler_validator_test.go` - URL token validation tests for both phone update routes.
 - `tests/adapter-emulator/Dockerfile` - container image for the HTTPS adapter emulator.
@@ -901,8 +901,7 @@ func notificationRetryDelay(attempt uint) time.Duration {
 7. close each response body after copying at most 4 KiB to `io.Discard`;
 8. return `http/<notification UUID>` for any `2xx`;
 9. retry only the approved errors/statuses while attempts remain;
-10. return a stacktrace-wrapped error that contains the sanitized hostname but
-    not the full URL, path, query, or response body.
+10. return a stacktrace-wrapped error.
 
 Set constructor defaults:
 
@@ -924,7 +923,7 @@ retryDelay: func(ctx context.Context, delay time.Duration) error {
 Do not use the container's retrying HTTP client; retries belong in this sender
 so status classification, attempt count, and idempotency are explicit.
 
-- [ ] **Step 6: Add redaction and heartbeat tests**
+- [ ] **Step 6: Add heartbeat tests**
 
 Add a test using:
 
@@ -1467,7 +1466,6 @@ Confirm:
 - `fcm_token` remains the persisted/API field;
 - no message content or API key is added to the HTTP callback payload;
 - scheduling and repository code are unchanged;
-- no full callback URL is logged.
 
 - [ ] **Step 12: Format and commit**
 

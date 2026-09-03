@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
@@ -100,7 +99,7 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 	})
 	if err != nil {
 		ctxLogger.Warn(stacktrace.Propagatef(
-			redactNotificationToken(err, *phone.FcmToken),
+			err,
 			"cannot send heartbeat notification to phone with id [%s] for user [%s]",
 			phone.ID,
 			phone.UserID,
@@ -157,7 +156,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		transport, transportErr := phone.NotificationTransport()
 		if transportErr != nil {
 			ctxLogger.Warn(stacktrace.Propagatef(
-				redactNotificationToken(transportErr, *phone.FcmToken),
+				transportErr,
 				"cannot determine notification transport for phone with ID [%s] for user with ID [%s] and message [%s]",
 				phone.ID,
 				phone.UserID,
@@ -168,7 +167,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 		}
 
 		ctxLogger.Warn(stacktrace.Propagatef(
-			redactNotificationToken(err, *phone.FcmToken),
+			err,
 			"cannot send %s notification to phone with ID [%s] for user with ID [%s] and message [%s]",
 			transport,
 			phone.ID,
@@ -186,14 +185,6 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	}
 
 	return service.handleNotificationSent(ctx, phone, result, params)
-}
-
-func redactNotificationToken(err error, token string) error {
-	token = strings.TrimSpace(token)
-	if token == "" {
-		return err
-	}
-	return errors.New(strings.ReplaceAll(err.Error(), token, "[redacted]"))
 }
 
 // PhoneNotificationScheduleParams are parameters for sending a notification

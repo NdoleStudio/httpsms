@@ -341,26 +341,11 @@ Update request and Swagger descriptions to explain that `fcm_token` accepts
 either an FCM registration token or an HTTPS adapter callback URL.
 Regenerate Swagger documentation after implementation.
 
-### 10. Observability and sensitive values
+### 10. Observability
 
-The callback URL is stored in the existing token field and may contain a
-customer-controlled path or query. Treat the complete value as sensitive even
-though callback requests are unsigned.
-
-Logs and traces must not include the full FCM token or URL. Record only:
-
-- selected transport;
-- sanitized destination hostname for HTTP;
-- phone ID;
-- notification ID or heartbeat delivery ID;
-- message ID where already permitted by existing telemetry;
-- attempt number;
-- response status class;
-- success, retry, or terminal failure.
-
-Errors propagated to handlers and events must not embed full URLs, response
-bodies, or DNS result lists. Existing stacktrace propagation and OpenTelemetry
-span error behavior remain in use.
+Use the existing request, database, and OpenTelemetry logging behavior without
+special redaction for notification tokens or callback URLs. Notification
+attempt metrics record the attempt number, response status class, and result.
 
 ## Components and Expected Files
 

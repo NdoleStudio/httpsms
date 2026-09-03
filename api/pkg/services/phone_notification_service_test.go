@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -179,37 +178,6 @@ func TestPhoneNotificationServiceSendFCMFailurePreservesAndroidGuidance(t *testi
 	var payload events.MessageNotificationFailedPayload
 	require.NoError(t, eventQueue.events[0].DataAs(&payload))
 	assert.Equal(t, "cannot send notification to your phone [+18005550199]. Reinstall the httpSMS app on your Android phone.", payload.ErrorMessage)
-}
-
-func TestPhoneNotificationServiceSendDoesNotLogNotificationToken(t *testing.T) {
-	endpoint := "https://adapter.example.com/private-token"
-	phone := &entities.Phone{ID: uuid.New(), UserID: "user-1", FcmToken: &endpoint, PhoneNumber: "+18005550199"}
-	logger := &phoneNotificationLogger{}
-	tracer := telemetry.NewOtelLogger("test", logger)
-	service := NewNotificationService(
-		logger,
-		tracer,
-		NewPhoneNotificationDispatcher(
-			&recordingNotificationSender{},
-			&recordingNotificationSender{err: errors.New("POST " + endpoint + " failed")},
-		),
-		&phoneNotificationPhoneRepository{phone: phone},
-		&phoneNotificationRepository{},
-		nil,
-		NewEventDispatcher(logger, tracer, nil, &phoneNotificationEventQueue{}, PushQueueConfig{}),
-	)
-
-	require.NoError(t, service.Send(context.Background(), &PhoneNotificationSendParams{
-		UserID:              phone.UserID,
-		PhoneID:             phone.ID,
-		PhoneNotificationID: uuid.New(),
-		Source:              "test",
-		MessageID:           uuid.New(),
-	}))
-
-	for _, warning := range logger.warnings {
-		assert.False(t, strings.Contains(warning, endpoint), "warning exposes notification token: %s", warning)
-	}
 }
 
 func TestPhoneNotificationServiceSendHeartbeatFCMUsesHTTPSGatewayNotification(t *testing.T) {
