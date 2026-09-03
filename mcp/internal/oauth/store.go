@@ -155,12 +155,34 @@ return 1
 `)
 
 // RedisStore is the Redis-backed implementation of Store.
+//
+// RedisStore requires a standalone Redis deployment (a client created with
+// redis.NewClient), not a Redis Cluster or Ring client. The five key
+// namespaces above are an approved, fixed format that must not change, and
+// RotateRefreshToken's Lua script touches two keys derived from unrelated
+// hashes (the old and new refresh-token hashes) in a single atomic EVAL --
+// Redis Cluster requires all keys touched by one command to hash to the
+// same hash slot, and this key format gives no such guarantee, so the
+// script would fail against a cluster with a CROSSSLOT error. This is an
+// intentional constraint of this service, not an oversight: it is not
+// safe to point RedisStore at a Redis Cluster or Ring client.
 type RedisStore struct {
 	client redis.UniversalClient
 }
 
-// NewRedisStore returns a Store backed by client.
+// NewRedisStore returns a Store backed by client. client must be a
+// standalone Redis client (redis.NewClient); NewRedisStore panics if given
+// a *redis.ClusterClient or *redis.Ring, since RotateRefreshToken's
+// cross-slot Lua script cannot run against a cluster (see the RedisStore
+// doc comment). The constructor still accepts the redis.UniversalClient
+// interface so callers can pass through *redis.Client without an
+// unnecessary concrete-type dependency; only these two known-incompatible
+// concrete types are rejected.
 func NewRedisStore(client redis.UniversalClient) *RedisStore {
+	switch client.(type) {
+	case *redis.ClusterClient, *redis.Ring:
+		panic("oauth: NewRedisStore requires a standalone Redis client (redis.NewClient); a Redis Cluster or Ring client cannot run the cross-slot refresh-token rotation script")
+	}
 	return &RedisStore{client: client}
 }
 

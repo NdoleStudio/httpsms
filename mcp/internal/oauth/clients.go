@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -33,8 +34,17 @@ var (
 	ErrClientMetadataTooLarge = errors.New("oauth: client metadata document exceeds size limit")
 
 	// ErrClientMetadataInvalid is returned when a client metadata document
-	// is not valid JSON or is missing a required field.
+	// is not valid JSON, is missing a required field, or was not served
+	// with an application/json Content-Type.
 	ErrClientMetadataInvalid = errors.New("oauth: client metadata document is invalid")
+
+	// errTransportCannotBePinned is returned when the *http.Client given
+	// to NewClientResolver uses a RoundTripper this package cannot pin a
+	// validated IP address into (anything other than *http.Transport or
+	// nil). Resolution fails closed instead of silently fetching through
+	// an unpinned transport, which would let the transport's own DNS
+	// resolution re-resolve the hostname a second, unvalidated time.
+	errTransportCannotBePinned = errors.New("oauth: http client transport does not support IP pinning")
 
 	// ErrClientIDMismatch is returned when a CIMD document's own
 	// "client_id" field does not exactly equal the URL used to fetch it.
@@ -89,6 +99,13 @@ type ClientResolver struct {
 	// the actual document fetch is still served locally and deterministically.
 	lookupIP func(ctx context.Context, host string) ([]net.IP, error)
 
+	// canPinTransport reports whether httpClient's Transport was
+	// successfully wrapped to honor a pinned IP address (see
+	// withPinnedIP). fetch refuses to proceed when this is false rather
+	// than silently falling back to letting the transport re-resolve the
+	// hostname itself.
+	canPinTransport bool
+
 	cacheMu sync.Mutex
 	cache   map[string]cachedClient
 }
@@ -102,18 +119,92 @@ type cachedClient struct {
 // NewClientResolver returns a ClientResolver that fetches Client ID
 // Metadata Documents using httpClient (with redirects disabled) and falls
 // back to store for Dynamic Client Registration lookups.
+//
+// The document fetch resolves and validates the client_id's host exactly
+// once per Resolve call: httpClient's Transport is wrapped so the actual
+// TCP connection is pinned to the same IP address that was just validated
+// as public, instead of letting the transport's own dialer re-resolve the
+// hostname a second time (which a DNS-rebinding attacker could answer with
+// a private address after passing validation). The wrap preserves the
+// original hostname for the Host header and TLS SNI, since only the raw
+// dial address changes -- the request URL is never rewritten.
 func NewClientResolver(httpClient *http.Client, store Store) *ClientResolver {
 	safeClient := *httpClient
 	safeClient.CheckRedirect = func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 
+	pinnedTransport, canPin := newPinnedTransport(safeClient.Transport)
+	safeClient.Transport = pinnedTransport
+
 	return &ClientResolver{
-		httpClient: &safeClient,
-		store:      store,
-		lookupIP:   defaultLookupIP,
-		cache:      make(map[string]cachedClient),
+		httpClient:      &safeClient,
+		store:           store,
+		lookupIP:        defaultLookupIP,
+		canPinTransport: canPin,
+		cache:           make(map[string]cachedClient),
 	}
+}
+
+// pinnedIPContextKey is the context key under which fetch stashes the
+// validated IP address that the pinned transport returned by
+// newPinnedTransport must connect to.
+type pinnedIPContextKey struct{}
+
+// withPinnedIP returns a context carrying ip as the address the pinned
+// transport must dial for the request built from it, regardless of what
+// the request's hostname would otherwise resolve to.
+func withPinnedIP(ctx context.Context, ip net.IP) context.Context {
+	return context.WithValue(ctx, pinnedIPContextKey{}, ip)
+}
+
+// pinnedIPFromContext returns the IP address stashed by withPinnedIP, if
+// any.
+func pinnedIPFromContext(ctx context.Context) (net.IP, bool) {
+	ip, ok := ctx.Value(pinnedIPContextKey{}).(net.IP)
+	return ip, ok
+}
+
+// newPinnedTransport returns a RoundTripper that behaves exactly like base
+// (or a fresh clone of http.DefaultTransport when base is nil), except
+// that its dial address's host is replaced with the IP address stashed via
+// withPinnedIP on the request's context, when present. The port and every
+// other transport behavior (TLS config, proxies, timeouts, and -- in
+// tests -- a stubbed DialContext that redirects to a local test server)
+// are left untouched, so the request's Host header and TLS ServerName,
+// both driven by the unmodified request URL, keep the original hostname.
+//
+// It reports ok=false when base is a RoundTripper this package cannot
+// safely wrap (anything other than *http.Transport or nil); callers must
+// then refuse to fetch rather than silently using an unpinned connection.
+func newPinnedTransport(base http.RoundTripper) (transport http.RoundTripper, ok bool) {
+	var httpTransport *http.Transport
+	switch t := base.(type) {
+	case *http.Transport:
+		httpTransport = t.Clone()
+	case nil:
+		defaultTransport, isHTTPTransport := http.DefaultTransport.(*http.Transport)
+		if !isHTTPTransport {
+			return base, false
+		}
+		httpTransport = defaultTransport.Clone()
+	default:
+		return base, false
+	}
+
+	originalDial := httpTransport.DialContext
+	if originalDial == nil {
+		originalDial = (&net.Dialer{}).DialContext
+	}
+	httpTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if ip, hasPin := pinnedIPFromContext(ctx); hasPin {
+			if _, port, splitErr := net.SplitHostPort(addr); splitErr == nil {
+				addr = net.JoinHostPort(ip.String(), port)
+			}
+		}
+		return originalDial(ctx, network, addr)
+	}
+	return httpTransport, true
 }
 
 // defaultLookupIP resolves host through net.DefaultResolver.
@@ -148,7 +239,15 @@ func (r *ClientResolver) resolveCIMD(ctx context.Context, clientID string, parse
 		return Client{}, fmt.Errorf("%w: client metadata document must use https, got %q", ErrUnsafeClientMetadataURL, parsed.Scheme)
 	}
 
-	if err := r.validateHostIsPublic(ctx, parsed.Hostname()); err != nil {
+	// Resolve and validate the host exactly once. pinnedIP is the single
+	// address every subsequent step trusts: validateHostIsPublic already
+	// proved it (and, for a DNS name, every other address the name
+	// resolved to) is not private/loopback/link-local, and fetch pins the
+	// actual connection to this same address so the transport's own
+	// dialer never gets a chance to re-resolve the hostname and receive a
+	// different (rebound) answer.
+	pinnedIP, err := r.validateHostIsPublic(ctx, parsed.Hostname())
+	if err != nil {
 		return Client{}, err
 	}
 
@@ -156,7 +255,7 @@ func (r *ClientResolver) resolveCIMD(ctx context.Context, clientID string, parse
 		return client, nil
 	}
 
-	body, err := r.fetch(ctx, clientID)
+	body, err := r.fetch(ctx, clientID, pinnedIP)
 	if err != nil {
 		return Client{}, err
 	}
@@ -172,35 +271,48 @@ func (r *ClientResolver) resolveCIMD(ctx context.Context, clientID string, parse
 
 // validateHostIsPublic returns ErrUnsafeClientMetadataURL when host (a
 // literal IP or a DNS name) does not resolve exclusively to public
-// addresses.
-func (r *ClientResolver) validateHostIsPublic(ctx context.Context, host string) error {
+// addresses. On success it returns the single IP address the caller must
+// pin its connection to: host itself when host is already a literal IP, or
+// the first of host's resolved addresses (all of which were just proven
+// public) when host is a DNS name.
+func (r *ClientResolver) validateHostIsPublic(ctx context.Context, host string) (net.IP, error) {
 	if ip := net.ParseIP(host); ip != nil {
 		if !isPublicIP(ip) {
-			return fmt.Errorf("%w: %q is not a public address", ErrUnsafeClientMetadataURL, host)
+			return nil, fmt.Errorf("%w: %q is not a public address", ErrUnsafeClientMetadataURL, host)
 		}
-		return nil
+		return ip, nil
 	}
 
 	ips, err := r.lookupIP(ctx, host)
 	if err != nil {
-		return fmt.Errorf("oauth: cannot resolve client metadata document host %q: %w", host, err)
+		return nil, fmt.Errorf("oauth: cannot resolve client metadata document host %q: %w", host, err)
 	}
 	if len(ips) == 0 {
-		return fmt.Errorf("%w: %q did not resolve to any address", ErrUnsafeClientMetadataURL, host)
+		return nil, fmt.Errorf("%w: %q did not resolve to any address", ErrUnsafeClientMetadataURL, host)
 	}
-	for _, ip := range ips {
-		if !isPublicIP(ip) {
-			return fmt.Errorf("%w: %q resolves to a non-public address", ErrUnsafeClientMetadataURL, host)
+	for _, candidate := range ips {
+		if !isPublicIP(candidate) {
+			return nil, fmt.Errorf("%w: %q resolves to a non-public address", ErrUnsafeClientMetadataURL, host)
 		}
 	}
-	return nil
+	return ips[0], nil
 }
 
-// fetch retrieves clientID's document body, rejecting redirects and
-// limiting the response to maxClientMetadataBytes.
-func (r *ClientResolver) fetch(ctx context.Context, clientID string) ([]byte, error) {
+// fetch retrieves clientID's document body, rejecting redirects, requiring
+// an application/json response, and limiting the response to
+// maxClientMetadataBytes. The connection is pinned to pinnedIP: the
+// request's URL (and therefore its Host header and TLS ServerName) still
+// names clientID's original hostname, but the raw TCP dial address's host
+// is replaced with pinnedIP so the transport's dialer cannot resolve the
+// hostname a second, unvalidated time.
+func (r *ClientResolver) fetch(ctx context.Context, clientID string, pinnedIP net.IP) ([]byte, error) {
+	if !r.canPinTransport {
+		return nil, fmt.Errorf("%w: cannot safely fetch client metadata document", errTransportCannotBePinned)
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, cimdFetchTimeout)
 	defer cancel()
+	ctx = withPinnedIP(ctx, pinnedIP)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, clientID, nil)
 	if err != nil {
@@ -221,6 +333,10 @@ func (r *ClientResolver) fetch(ctx context.Context, clientID string) ([]byte, er
 		return nil, fmt.Errorf("%w: received status %d", ErrClientMetadataInvalid, resp.StatusCode)
 	}
 
+	if err := requireJSONContentType(resp.Header.Get("Content-Type")); err != nil {
+		return nil, err
+	}
+
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxClientMetadataBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("oauth: cannot read client metadata document: %w", err)
@@ -229,6 +345,20 @@ func (r *ClientResolver) fetch(ctx context.Context, clientID string) ([]byte, er
 		return nil, ErrClientMetadataTooLarge
 	}
 	return body, nil
+}
+
+// requireJSONContentType returns ErrClientMetadataInvalid when
+// contentType's media type is not exactly "application/json". Parameters
+// such as "; charset=utf-8" are permitted and ignored.
+func requireJSONContentType(contentType string) error {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return fmt.Errorf("%w: unparseable content-type %q, want \"application/json\"", ErrClientMetadataInvalid, contentType)
+	}
+	if mediaType != "application/json" {
+		return fmt.Errorf("%w: unexpected content-type %q, want \"application/json\"", ErrClientMetadataInvalid, mediaType)
+	}
+	return nil
 }
 
 // cached returns the still-valid cached Client for clientID, if any.

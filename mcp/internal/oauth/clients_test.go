@@ -112,6 +112,125 @@ func TestClientResolverRejectsLinkLocalDNSResult(t *testing.T) {
 	require.ErrorIs(t, err, ErrUnsafeClientMetadataURL)
 }
 
+// TestClientResolverPinsConnectionToValidatedIPPreventingDNSRebinding is a
+// regression test for a DNS-rebinding/TOCTOU gap: a naive implementation
+// validates a hostname's resolved IP once (via lookupIP) but then lets the
+// HTTP transport dial the request using its own, independent DNS
+// resolution of the same hostname. Between those two lookups an attacker
+// controlling the DNS answer for the client_id host can "rebind" it to a
+// private/internal address, so the connection that is actually made is
+// never the one that was validated.
+//
+// This test's stub transport records the host portion of every dial
+// address it is asked to connect to (before honoring the test-only
+// redirect-to-local-server behavior every other test in this file also
+// relies on) and asserts it is exactly the validation-time IP -- never a
+// live, second resolution of the hostname -- proving the resolver pins the
+// real connection to the address it already proved public.
+func TestClientResolverPinsConnectionToValidatedIPPreventingDNSRebinding(t *testing.T) {
+	const clientID = "https://client.example/client.json"
+	const validatedPublicIP = "203.0.113.10" // TEST-NET-3 (RFC 5737): public-looking, non-routable-in-practice.
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(validTestClient(clientID, []string{"https://client.example/callback"}))
+	}))
+	defer server.Close()
+
+	realServerAddr := server.Listener.Addr().String()
+	var dialedHost string
+	transport := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, _, err := net.SplitHostPort(addr)
+			require.NoError(t, err)
+			dialedHost = host
+
+			// Even though the real dial target below is the local test
+			// server (exactly like every other test in this file), the
+			// address this func was *asked* to dial is what matters here:
+			// it proves what host the resolver's own logic pinned,
+			// independent of however this stub chooses to actually
+			// satisfy the connection.
+			var dialer net.Dialer
+			return dialer.DialContext(ctx, network, realServerAddr)
+		},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // test-only: bypasses hostname check for a locally redirected dial
+	}
+	t.Cleanup(transport.CloseIdleConnections)
+
+	resolver := NewClientResolver(&http.Client{Transport: transport}, newClientsTestStore(t))
+	// Simulate the validation-time DNS answer for "client.example" being a
+	// safe public address. If the resolver later let the transport
+	// re-resolve "client.example" itself (the bug this test guards
+	// against), the dial address recorded above would be the literal
+	// hostname "client.example", not this IP -- and in a real
+	// DNS-rebinding attack, a second live lookup could answer with a
+	// private address instead.
+	resolver.lookupIP = func(context.Context, string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP(validatedPublicIP)}, nil
+	}
+
+	_, err := resolver.Resolve(context.Background(), clientID)
+	require.NoError(t, err)
+	assert.Equal(t, validatedPublicIP, dialedHost,
+		"the actual TCP connection must be pinned to the validated IP address, not a second, unvalidated resolution of the hostname")
+}
+
+// TestClientResolverFetchFailsWhenTransportCannotBePinned proves the
+// resolver fails closed -- rather than silently fetching through an
+// unpinned (and therefore DNS-rebindable) connection -- when it is given
+// an *http.Client whose Transport is not an *http.Transport it can wrap.
+func TestClientResolverFetchFailsWhenTransportCannotBePinned(t *testing.T) {
+	unpinnable := &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		t.Fatal("RoundTrip must not be called: fetch must fail before attempting to use an unpinnable transport")
+		return nil, nil
+	})}
+
+	resolver := NewClientResolver(unpinnable, newClientsTestStore(t))
+	resolver.lookupIP = publicLookupIP
+
+	_, err := resolver.Resolve(context.Background(), "https://client.example/client.json")
+	require.ErrorIs(t, err, errTransportCannotBePinned)
+}
+
+// roundTripperFunc adapts a function to http.RoundTripper.
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+func TestClientResolverRejectsNonJSONContentType(t *testing.T) {
+	const clientID = "https://client.example/client.json"
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_ = json.NewEncoder(w).Encode(validTestClient(clientID, []string{"https://client.example/callback"}))
+	}))
+	defer server.Close()
+
+	resolver := NewClientResolver(newLocalizedHTTPClient(t, server), newClientsTestStore(t))
+	resolver.lookupIP = publicLookupIP
+
+	_, err := resolver.Resolve(context.Background(), clientID)
+	require.ErrorIs(t, err, ErrClientMetadataInvalid)
+}
+
+func TestClientResolverAcceptsJSONContentTypeWithCharsetParameter(t *testing.T) {
+	const clientID = "https://client.example/client.json"
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(validTestClient(clientID, []string{"https://client.example/callback"}))
+	}))
+	defer server.Close()
+
+	resolver := NewClientResolver(newLocalizedHTTPClient(t, server), newClientsTestStore(t))
+	resolver.lookupIP = publicLookupIP
+
+	client, err := resolver.Resolve(context.Background(), clientID)
+	require.NoError(t, err)
+	assert.Equal(t, clientID, client.ID)
+}
+
 func TestClientResolverAcceptsValidClientMetadataDocument(t *testing.T) {
 	const clientID = "https://client.example/client.json"
 

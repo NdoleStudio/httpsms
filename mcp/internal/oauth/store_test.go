@@ -277,3 +277,38 @@ func TestRedisStoreRotateRefreshTokenRejectsNonPositiveTTL(t *testing.T) {
 	err := store.RotateRefreshToken(ctx, "token", oauth.RefreshGrant{Token: "new-token"}, 0)
 	require.Error(t, err)
 }
+
+// TestNewRedisStorePanicsOnClusterClient asserts NewRedisStore fails fast
+// for a *redis.ClusterClient: RotateRefreshToken's Lua script touches two
+// keys (the old and new refresh-token hashes) that this service's approved
+// key format gives no cross-key hash-slot guarantee for, so the script
+// would fail against a real cluster with a CROSSSLOT error. This service
+// is intentionally constrained to a standalone Redis deployment
+// (redis.NewClient); the key format itself must not change to work around
+// this, per the accepted design constraint.
+func TestNewRedisStorePanicsOnClusterClient(t *testing.T) {
+	clusterClient := redis.NewClusterClient(&redis.ClusterOptions{Addrs: []string{"127.0.0.1:0"}})
+	t.Cleanup(func() { _ = clusterClient.Close() })
+
+	assert.Panics(t, func() { oauth.NewRedisStore(clusterClient) })
+}
+
+// TestNewRedisStorePanicsOnRingClient is the Ring-client counterpart of
+// TestNewRedisStorePanicsOnClusterClient: a Ring client also shards keys
+// across independent Redis nodes by hash, so the same cross-slot rotation
+// script cannot safely run against it either.
+func TestNewRedisStorePanicsOnRingClient(t *testing.T) {
+	ringClient := redis.NewRing(&redis.RingOptions{Addrs: map[string]string{"shard0": "127.0.0.1:0"}})
+	t.Cleanup(func() { _ = ringClient.Close() })
+
+	assert.Panics(t, func() { oauth.NewRedisStore(ringClient) })
+}
+
+// TestNewRedisStoreAcceptsStandaloneClient documents the supported,
+// required configuration: a plain redis.NewClient must not panic.
+func TestNewRedisStoreAcceptsStandaloneClient(t *testing.T) {
+	standaloneClient := redis.NewClient(&redis.Options{Addr: "127.0.0.1:0"})
+	t.Cleanup(func() { _ = standaloneClient.Close() })
+
+	assert.NotPanics(t, func() { oauth.NewRedisStore(standaloneClient) })
+}
