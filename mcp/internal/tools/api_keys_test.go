@@ -226,11 +226,47 @@ func TestRotateUserAPIKeyMRTRAcceptedConfirmationRotatesExactlyOnce(t *testing.T
 	var out tools.RotateUserAPIKeyOutput
 	require.NoError(t, decodeStructuredContent(second, &out))
 	assert.Equal(t, "new-primary-api-key", out.User.APIKey)
+	assert.True(t, out.Sensitive, "the rotated key must be explicitly marked sensitive, like create_phone_api_key's output")
 	assert.NotEmpty(t, out.Warning)
 
 	require.Len(t, stub.rotateCalls, 1)
 	assert.Equal(t, testUserID, stub.rotateCalls[0].Params, "rotation must always target the authenticated principal's own user ID")
 	assertDelegationToken(t, keys, stub.rotateCalls[0].Token, http.MethodDelete, "/v1/users/"+testUserID+"/api-keys", []string{auth.ScopeUserAPIKeyRotate})
+}
+
+// TestRotateUserAPIKeyLegacyConfirmationHandleResultMarksNewKeySensitive
+// asserts a successful rotation's result -- both its structured output and
+// its human-readable text content -- explicitly identifies the brand-new
+// primary API key as a sensitive, one-time value, matching
+// create_phone_api_key's CreatePhoneAPIKeyOutput.Sensitive/text pairing:
+// callers must be told, in both channels, to store it now because it will
+// never be shown again.
+func TestRotateUserAPIKeyLegacyConfirmationHandleResultMarksNewKeySensitive(t *testing.T) {
+	keys := newTestKeySet(t)
+	ctx := contextWithPrincipal(t, keys, allScopes)
+	stub := &stubClient{rotateResult: httpsms.User{ID: testUserID, APIKey: "new-primary-api-key"}}
+	store, _ := newTestConfirmationStore(t)
+	session := newRotateSession(t, ctx, keys, stub, store, testConfirmationTTL)
+
+	first, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "rotate_user_api_key"})
+	require.NoError(t, err)
+	handle := first.RequestState
+	require.NotEmpty(t, handle)
+
+	second, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "rotate_user_api_key",
+		Arguments: map[string]any{"confirmation_handle": handle},
+	})
+	require.NoError(t, err)
+	require.False(t, second.IsError, resultText(second))
+
+	var out tools.RotateUserAPIKeyOutput
+	require.NoError(t, decodeStructuredContent(second, &out))
+	assert.True(t, out.Sensitive, "structured output must mark the new key sensitive")
+
+	text := resultText(second)
+	assert.Contains(t, text, "will not be shown again", "text content must warn the new key will not be shown again")
+	assert.Contains(t, text, "Store", "text content must instruct the caller to store the new key now")
 }
 
 // TestRotateUserAPIKeyIgnoresAnyUserIDSuppliedAsToolInput asserts that even
@@ -357,6 +393,73 @@ func TestRotateUserAPIKeyMRTRReplayIsRejected(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, third.IsError)
 	assert.Len(t, stub.rotateCalls, 1, "a replayed confirmation must never call the API a second time")
+}
+
+// TestRotateUserAPIKeyAmbiguousConfirmationBothHandleAndMRTRStateIsRejected
+// asserts that a call supplying both an explicit legacy
+// confirmation_handle argument and MRTR confirmation state
+// (RequestState/InputResponses) is rejected outright, rather than silently
+// preferring one confirmation method over the other. Critically, the
+// handle from the first call must remain unconsumed by this ambiguous
+// attempt: a follow-up call that echoes it back cleanly (only as a legacy
+// argument) must still succeed and rotate exactly once.
+func TestRotateUserAPIKeyAmbiguousConfirmationBothHandleAndMRTRStateIsRejected(t *testing.T) {
+	keys := newTestKeySet(t)
+	ctx := contextWithPrincipal(t, keys, allScopes)
+	stub := &stubClient{rotateResult: httpsms.User{ID: testUserID, APIKey: "new-key"}}
+	store, _ := newTestConfirmationStore(t)
+	session := newRotateSession(t, ctx, keys, stub, store, testConfirmationTTL)
+
+	first, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "rotate_user_api_key"})
+	require.NoError(t, err)
+	handle := first.RequestState
+	require.NotEmpty(t, handle)
+
+	ambiguous, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:           "rotate_user_api_key",
+		Arguments:      map[string]any{"confirmation_handle": handle},
+		InputResponses: mcp.InputResponseMap{"confirm_rotation": acceptedConfirmation()},
+		RequestState:   handle,
+	})
+	require.NoError(t, err, "tools/call must not be a protocol error")
+	require.True(t, ambiguous.IsError, "a call supplying both confirmation methods must be rejected")
+	assert.Equal(t, 0, stub.totalCalls(), "an ambiguous confirmation attempt must never call the API")
+
+	// The handle must still be unconsumed: a clean legacy retry with only
+	// the argument set (no MRTR state) must still succeed.
+	second, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "rotate_user_api_key",
+		Arguments: map[string]any{"confirmation_handle": handle},
+	})
+	require.NoError(t, err)
+	require.False(t, second.IsError, resultText(second))
+	assert.Len(t, stub.rotateCalls, 1, "the unconsumed handle must still authorize exactly one rotation")
+}
+
+// TestRotateUserAPIKeyAmbiguousConfirmationHandleWithInputResponsesOnlyIsRejected
+// covers the narrower ambiguous shape where MRTR state is signalled only
+// via InputResponses (no RequestState echoed back), alongside an explicit
+// legacy confirmation_handle argument.
+func TestRotateUserAPIKeyAmbiguousConfirmationHandleWithInputResponsesOnlyIsRejected(t *testing.T) {
+	keys := newTestKeySet(t)
+	ctx := contextWithPrincipal(t, keys, allScopes)
+	stub := &stubClient{rotateResult: httpsms.User{ID: testUserID, APIKey: "new-key"}}
+	store, _ := newTestConfirmationStore(t)
+	session := newRotateSession(t, ctx, keys, stub, store, testConfirmationTTL)
+
+	first, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "rotate_user_api_key"})
+	require.NoError(t, err)
+	handle := first.RequestState
+	require.NotEmpty(t, handle)
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:           "rotate_user_api_key",
+		Arguments:      map[string]any{"confirmation_handle": handle},
+		InputResponses: mcp.InputResponseMap{"confirm_rotation": acceptedConfirmation()},
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+	assert.Equal(t, 0, stub.totalCalls())
 }
 
 // --- rotate_user_api_key: legacy explicit confirmation_handle ---------------------------------------------------------

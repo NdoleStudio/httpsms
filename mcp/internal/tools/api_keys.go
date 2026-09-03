@@ -116,6 +116,10 @@ type RotateUserAPIKeyOutput struct {
 	// User is the authenticated user's record after rotation, carrying the
 	// brand-new primary API key.
 	User httpsms.User `json:"user"`
+	// Sensitive marks User.APIKey as a secret, one-time display value: it
+	// is shown here exactly once and can never be retrieved again,
+	// matching create_phone_api_key's CreatePhoneAPIKeyOutput.Sensitive.
+	Sensitive bool `json:"sensitive"`
 	// Warning restates that the previous primary API key has just stopped
 	// working and every device or integration using it must be updated.
 	Warning string `json:"warning"`
@@ -175,8 +179,18 @@ func newRotateUserAPIKeyHandler(keys *auth.KeySet, api httpsms.Client, apiTokenT
 			return toolError(err), nil, nil
 		}
 
-		return nil, &RotateUserAPIKeyOutput{
-			User: user,
+		result := &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{
+				Text: "Store this new API key now: it will not be shown again. " +
+					"The previous primary API key has been invalidated; update " +
+					"every device or integration (including the httpSMS Android " +
+					"app, if configured with the primary key) that used it with " +
+					"this new key.",
+			}},
+		}
+		return result, &RotateUserAPIKeyOutput{
+			User:      user,
+			Sensitive: true,
 			Warning: "The previous primary API key has been invalidated. Update " +
 				"every device or integration (including the httpSMS Android app, " +
 				"if configured with the primary key) that used it with this new key.",
@@ -252,11 +266,22 @@ func rotateConfirmationElicitParams() *mcp.ElicitParams {
 //
 // It returns (false, err) when a confirmation attempt was made but could
 // not be validated (unknown/expired/already-redeemed handle, a handle
-// bound to a different user/client/operation, or a declined/malformed
-// elicitation response). Every such handle is consumed exactly once by
-// ConsumeConfirmation before this function inspects it, so a caller can
-// never replay it, whether or not the attempt is ultimately accepted.
+// bound to a different user/client/operation, a declined/malformed
+// elicitation response, or -- checked first, before any handle is touched
+// -- an ambiguous call that supplies both an explicit legacy
+// ConfirmationHandle and MRTR confirmation state). Every handle that is
+// actually looked up is consumed exactly once by ConsumeConfirmation before
+// this function inspects it, so a caller can never replay it, whether or
+// not the attempt is ultimately accepted.
 func resolveRotationConfirmation(ctx context.Context, store oauth.Store, req *mcp.CallToolRequest, in RotateUserAPIKeyInput, principal auth.Principal, clientID string) (bool, error) {
+	hasExplicitHandle := in.ConfirmationHandle != ""
+	hasMRTRState := req.Params.RequestState != "" || len(req.Params.InputResponses) > 0
+	if hasExplicitHandle && hasMRTRState {
+		// Ambiguous: never silently prefer one confirmation method over
+		// the other. Reject before consuming anything or calling the API.
+		return false, errors.New("rotate_user_api_key received both a confirmation_handle argument and MRTR confirmation state (RequestState/InputResponses); use exactly one confirmation method, not both")
+	}
+
 	handle := in.ConfirmationHandle
 	viaMRTR := false
 	if handle == "" {
