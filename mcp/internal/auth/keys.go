@@ -208,6 +208,48 @@ func (keys *KeySet) SignAPIDelegationToken(principal Principal, scopes []string,
 	return keys.sign(claims)
 }
 
+// VerifyAccessToken validates raw as an MCP access token minted by this
+// same KeySet: signed RS256 with this KeySet's own key, issued by the
+// configured issuer, audienced to the configured MCP audience (never the
+// API audience -- this rejects a downstream API delegation token presented
+// as an MCP access token), unexpired, and carrying a non-empty subject. It
+// returns the token's claims on success.
+func (keys *KeySet) VerifyAccessToken(raw string) (*AccessClaims, error) {
+	cfg, err := keys.requireConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	claims := new(AccessClaims)
+	token, err := jwt.ParseWithClaims(
+		raw,
+		claims,
+		keys.verifyKeyfunc,
+		jwt.WithIssuer(cfg.issuer),
+		jwt.WithAudience(cfg.mcpAudience),
+		jwt.WithExpirationRequired(),
+		jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("auth: invalid MCP access token: %w", err)
+	}
+	if !token.Valid || claims.Subject == "" {
+		return nil, errors.New("auth: invalid MCP access token")
+	}
+
+	return claims, nil
+}
+
+// verifyKeyfunc resolves the RSA public key used to verify every token this
+// KeySet mints. Every minted token is signed by this same KeySet, so there
+// is exactly one verification key: the public half of keys.privateKey.
+func (keys *KeySet) verifyKeyfunc(token *jwt.Token) (any, error) {
+	if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+		return nil, fmt.Errorf("auth: unexpected token signing method %q", token.Header["alg"])
+	}
+	return keys.PublicKey(), nil
+}
+
 // requireConfig returns the KeySet's published configuration, or an error if
 // Configure has not yet been called successfully.
 func (keys *KeySet) requireConfig() (*keySetConfig, error) {

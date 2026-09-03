@@ -329,6 +329,72 @@ func TestKeySetJWKSPublishesOnlyThePublicKey(t *testing.T) {
 	assert.NotEmpty(t, key.E)
 }
 
+func TestKeySetVerifyAccessTokenAcceptsItsOwnMCPAccessToken(t *testing.T) {
+	keys := newTestKeySet(t)
+
+	raw, err := keys.SignMCPAccessToken(
+		auth.Principal{UserID: testFirebaseUserID, Email: testUserEmail},
+		"https://client.example/metadata.json",
+		[]string{"messages:read"},
+		15*time.Minute,
+	)
+	require.NoError(t, err)
+
+	claims, err := keys.VerifyAccessToken(raw)
+	require.NoError(t, err)
+	assert.Equal(t, testFirebaseUserID, claims.Subject)
+	assert.Equal(t, testUserEmail, claims.Email)
+	assert.Equal(t, []string{"messages:read"}, claims.Scopes)
+	assert.Equal(t, "https://client.example/metadata.json", claims.ClientID)
+}
+
+func TestKeySetVerifyAccessTokenRejectsAPIDelegationToken(t *testing.T) {
+	keys := newTestKeySet(t)
+
+	raw, err := keys.SignAPIDelegationToken(
+		auth.Principal{UserID: testFirebaseUserID},
+		[]string{"messages:send"},
+		"POST",
+		"/v1/messages/send",
+		time.Minute,
+	)
+	require.NoError(t, err)
+
+	_, err = keys.VerifyAccessToken(raw)
+	require.Error(t, err)
+}
+
+func TestKeySetVerifyAccessTokenRejectsExpiredToken(t *testing.T) {
+	keys := newTestKeySet(t)
+
+	raw, err := keys.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Nanosecond)
+	require.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+
+	_, err = keys.VerifyAccessToken(raw)
+	require.Error(t, err)
+}
+
+func TestKeySetVerifyAccessTokenRejectsWrongSigningKey(t *testing.T) {
+	keys := newTestKeySet(t)
+	other, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
+	require.NoError(t, err)
+	require.NoError(t, other.Configure(testMCPIssuer, testMCPAudience, testAPIAudience))
+
+	raw, err := other.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Minute)
+	require.NoError(t, err)
+
+	_, err = keys.VerifyAccessToken(raw)
+	require.Error(t, err)
+}
+
+func TestKeySetVerifyAccessTokenRejectsMalformedToken(t *testing.T) {
+	keys := newTestKeySet(t)
+
+	_, err := keys.VerifyAccessToken("not-a-jwt")
+	require.Error(t, err)
+}
+
 func TestKeySetJWKSRoundTripsToAWorkingVerificationKey(t *testing.T) {
 	keys := newTestKeySet(t)
 
