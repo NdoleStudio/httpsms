@@ -21,7 +21,6 @@ Firebase.
 Customer-controlled callback URLs create additional security and delivery
 requirements:
 
-- outbound requests must not provide an SSRF path into httpSMS infrastructure;
 - callbacks are wake-up hints, not proof that a message was sent;
 - callback delivery is at least once and must have an idempotency identity;
 - transient endpoint failures need bounded retries;
@@ -33,26 +32,25 @@ requirements:
   Do not add transport or callback URL columns.
 - Determine transport through helper methods on `Phone`; callers do not inspect
   or parse `FcmToken` directly.
-- A valid public `https://` URL selects HTTP delivery. Non-URL tokens select
-  Firebase. URL-like but malformed or unsupported values are rejected.
-- Use a transport-neutral notification dispatcher with separate Firebase and
-  HTTP senders.
+- A valid `https://` URL with a hostname selects HTTP delivery. Non-URL tokens
+  select Firebase. URL-like but malformed or unsupported values are rejected.
+- Use `PhoneNotificationDispatcher` with separate Firebase and HTTP senders;
+  domain events continue to use the existing `EventDispatcher`.
 - Send both outstanding-message and heartbeat notifications to URL-backed
   phones.
 - POST an FCM-compatible JSON envelope to adapter endpoints.
 - Treat any `2xx` response as successful wake-up acceptance and ignore its
   body.
-- Make up to three total HTTP attempts with a five-second timeout per attempt.
+- Make up to three total HTTP attempts with `retry-go/v5` and a five-second
+  timeout per attempt.
 - Retry network failures, HTTP `408`, HTTP `429`, and `5xx` responses. Other
   non-`2xx` responses fail immediately.
 - After callback retries are exhausted, use the current notification failure
   path and mark the message failed.
 - Do not sign or authenticate callback requests. The payload contains no
   message content or API credentials.
-- Restrict production callback destinations to public HTTPS endpoints.
-- Permit private callback resolution only for exact hostnames on an explicit
-  allowlist that the DI container reads when `ENV=local`. This exists for the
-  Docker integration emulator and is never enabled implicitly.
+- Use a standard OpenTelemetry-wrapped `http.Client` without endpoint DNS/IP
+  filtering, custom dialing, or a private-host allowlist.
 - Preserve all existing phone API-key authorization and message-processing
   behavior.
 
@@ -280,7 +278,7 @@ A URL-backed adapter uses the existing public API in the same way as the
 Android gateway:
 
 1. A user creates or updates a phone with an E.164 number and sets `fcm_token`
-   to the adapter's public HTTPS URL.
+   to the adapter's HTTPS URL.
 2. The user creates a phone API key assigned to that phone/number and configures
    the adapter with it.
 3. httpSMS schedules outgoing messages with the existing rate limit and send
@@ -303,47 +301,22 @@ Encrypted message content remains unchanged. If a user enables encryption, the
 adapter is responsible for implementing the same compatible encryption and
 decryption behavior expected of the Android gateway.
 
-### 8. SSRF protections
+### 8. HTTP client and retry ownership
 
-Because any customer can configure the URL, endpoint policy is part of the
-feature rather than optional hardening.
+Phone registration validates only URL syntax, the HTTPS scheme, and the
+presence of a hostname. URL user information remains valid. The feature does
+not perform endpoint DNS/IP classification, custom dialing, or private-host
+allowlisting.
 
-Accepted destinations must:
+`Container.NotificationHTTPClient` is a standard `http.Client` using the
+existing `go-otelroundtripper` pattern without transport-level retries. A
+telemetry-only seam presents scheme and host/port to OpenTelemetry while
+`http.DefaultTransport` receives the original request URL, headers, and body.
+The client preserves Go's default redirect behavior.
 
-- use `https`;
-- include a DNS hostname or public IP;
-- resolve only to public, globally routable IP addresses.
-
-Reject destinations resolving to loopback, private, link-local, multicast,
-unspecified, carrier-grade NAT, documentation, benchmarking, and other
-non-public reserved ranges for both IPv4 and IPv6.
-
-Apply policy at two points:
-
-1. **Registration/update validation:** provide an immediate validation error for
-   unsafe or unresolvable URL tokens.
-2. **Connection time:** resolve and validate again, then dial a validated IP
-   while preserving TLS Server Name Indication and hostname certificate
-   verification.
-
-The connection-time check prevents DNS rebinding between phone registration and
-notification delivery. A custom `DialContext` or equivalent must ensure the
-validated address is the address actually dialed; a check followed by a normal
-second DNS lookup is insufficient.
-
-The HTTP client:
-
-- does not inherit environment proxy settings;
-- refuses redirects rather than following them to an unchecked destination;
-- uses the approved per-attempt timeout;
-- retains OpenTelemetry instrumentation around the SSRF-safe transport.
-
-The endpoint policy accepts an optional exact-host private-destination
-allowlist. The DI container passes configured values only when `ENV=local`;
-production ignores the setting. Allowlisting a hostname permits its private
-DNS answers but does not permit HTTP, redirects, proxy use, or a different
-hostname. Unit tests use injected resolvers and dialers.
-The Docker integration stack allowlists only `adapter-emulator`.
+`HTTPNotificationSender` owns retries through `retry.New(...).Do`. It makes
+exactly three total attempts, creates a fresh request and body for each
+attempt, and applies a five-second context per attempt.
 
 ### 9. Validation and API compatibility
 
@@ -356,20 +329,16 @@ Keep these public fields and routes unchanged:
 
 Extend phone validation only when `fcm_token` is URL-like:
 
-- enforce valid public HTTPS endpoint policy;
+- enforce valid HTTPS syntax and require a hostname;
 - preserve the existing maximum token length;
-- return field-level `fcm_token` validation errors for malformed, unsafe, or
-  unresolvable destinations.
+- return field-level `fcm_token` validation errors for malformed or non-HTTPS
+  URL-like values.
 
 Opaque FCM token validation remains unchanged. Existing stored Android tokens
 require no migration.
 
-The URL policy should be a reusable component with an injectable resolver so
-request validation and connection-time checks apply the same address rules and
-remain deterministic in tests.
-
 Update request and Swagger descriptions to explain that `fcm_token` accepts
-either an FCM registration token or a public HTTPS adapter callback URL.
+either an FCM registration token or an HTTPS adapter callback URL.
 Regenerate Swagger documentation after implementation.
 
 ### 10. Observability and sensitive values
@@ -406,12 +375,10 @@ Implementation is expected to touch:
   sender interface, and dispatcher;
 - `api/pkg/services/http_notification_sender.go` for HTTP payload encoding and
   delivery;
-- `api/pkg/services/notification_endpoint_policy.go` for URL and resolved-IP
-  validation;
 - `api/pkg/services/emulator_fcm_client.go` only as needed to preserve the
   emulator behind the adapted interface;
-- `api/pkg/di/container.go` for dispatcher, HTTP client, resolver, and sender
-  construction;
+- `api/pkg/di/container.go` for dispatcher, OpenTelemetry HTTP client, and
+  sender construction;
 - phone request annotations and generated Swagger files.
 - `tests/adapter-emulator/` for an HTTPS gateway emulator that consumes
   callbacks and exercises existing phone API routes;
@@ -429,24 +396,16 @@ handling, or phone API-key authorization into the new transport code.
 Cover:
 
 - ordinary FCM tokens selecting Firebase;
-- valid public HTTPS URLs selecting HTTP;
+- valid HTTPS URLs selecting HTTP;
 - empty and nil tokens;
 - `http`, `ftp`, missing host, and malformed URLs being invalid;
 - URL-like invalid values never falling through to Firebase.
 
-### Endpoint policy tests
+### HTTP client wiring tests
 
-Use an injectable resolver and dialer to cover:
-
-- public IPv4 and IPv6 acceptance;
-- loopback, private, link-local, multicast, unspecified, carrier-grade NAT, and
-  reserved-range rejection;
-- mixed DNS answers being rejected if any candidate is unsafe;
-- validation-time and connection-time checks;
-- DNS rebinding attempts;
-- redirects being refused;
-- environment proxy settings being ignored;
-- TLS hostname verification remaining enabled.
+Cover the standard OpenTelemetry round-tripper wrapping
+`http.DefaultTransport` without retryable HTTP transport attempts. URL
+validation must not perform DNS or address checks.
 
 ### HTTP sender tests
 
@@ -499,16 +458,9 @@ emulator to submit an incoming message through `/v1/messages/receive`.
 
 The integration stack generates a throwaway CA and server certificate whose SAN
 contains `adapter-emulator`, mounts the server certificate into the emulator,
-and makes the CA available to the API's Go trust store. The API runs with:
-
-```text
-NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST=adapter-emulator
-```
-
-Because `.env.test` uses `ENV=local`, the exact hostname can resolve to the
-Docker-private emulator address while the full HTTPS, TLS verification,
-payload, dispatch, and API callback paths remain exercised. No insecure HTTP
-callback exception is added.
+and makes the CA available to the API's Go trust store through `SSL_CERT_FILE`.
+Docker DNS resolves the private emulator hostname through the standard Go HTTP
+transport; no private-host allowlist is configured.
 
 Add end-to-end tests for:
 
@@ -558,7 +510,7 @@ delivery. Initial rollout should watch:
 - HTTP callback success and retry rates;
 - terminal failures by status class;
 - callback latency;
-- endpoint-policy rejections;
+- transport failures;
 - message expiration after a successful HTTP wake-up;
 - duplicate notification IDs observed by test adapters.
 
@@ -578,5 +530,4 @@ URL-backed phones stop receiving wake-ups if the feature is rolled back.
 - Web UI for configuring adapters.
 - Android application changes.
 - General-purpose outbound webhook refactoring.
-- Private callback destinations outside the exact local-only integration-test
-  allowlist.
+- Destination-specific DNS/IP filtering or allowlists.

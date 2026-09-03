@@ -2,18 +2,39 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Allow a phone whose existing `fcm_token` is a public HTTPS URL to receive message and heartbeat wake-ups over HTTP while preserving the current scheduling, backpressure, outstanding-message, and status-event flows.
+**Goal:** Allow a phone whose existing `fcm_token` is an HTTPS URL to receive message and heartbeat wake-ups over HTTP while preserving the current scheduling, backpressure, outstanding-message, and status-event flows.
 
-**Architecture:** Add transport helpers to `entities.Phone`, then route a transport-neutral `GatewayNotification` through a dispatcher backed by Firebase and HTTP senders. The HTTP path uses a shared endpoint policy at validation and connection time, bounded retries, FCM-compatible JSON, and the existing notification success/failure state transitions.
+**Architecture:** Add transport helpers to `entities.Phone`, then route a transport-neutral `GatewayNotification` through Firebase and HTTP senders. The HTTP path uses a standard OpenTelemetry-wrapped `http.Client`, application retries with `github.com/avast/retry-go/v5`, FCM-compatible JSON, and the existing notification success/failure state transitions.
 
-**Tech Stack:** Go 1.25.8, Fiber v3, Firebase Admin Messaging, OpenTelemetry, `net/http`, `net/netip`, Testify, Docker Compose.
+**Tech Stack:** Go 1.25.8, Fiber v3, Firebase Admin Messaging, OpenTelemetry, `net/http`, `retry-go/v5`, Testify, Docker Compose.
 
 **Spec:** `docs/superpowers/specs/2026-09-02-url-backed-phone-notification-adapter-design.md`
+
+## Final Accepted Architecture
+
+This section supersedes later historical task text and code samples that
+introduce an endpoint policy, DNS/IP filtering, custom dialing, or a
+private-host allowlist.
+
+- `Phone.NotificationTransport` performs only URL syntax, HTTPS scheme, and
+  hostname classification; URL user information remains valid.
+- `Container.NotificationHTTPClient` uses the existing
+  `go-otelroundtripper` pattern with the `phone_notification_http` name and
+  `http.DefaultTransport` as the final parent.
+- A telemetry-only seam exposes only scheme and host/port to OTel while the
+  default transport receives the original URL, headers, and body.
+- `HTTPNotificationSender` owns exactly three application attempts through
+  `retry.New(...).Do`, with a fresh request/body and five-second context per
+  attempt.
+- No endpoint DNS/IP/SSRF policy, custom notification transport, or private-host
+  allowlist is part of the final implementation.
+- The transport router is `PhoneNotificationDispatcher`; domain events continue
+  to use the existing `EventDispatcher` directly.
 
 ## Global Constraints
 
 - Reuse the existing `Phone.FcmToken` database field and `fcm_token` API field; add no transport or endpoint columns.
-- A valid public `https://` URL selects HTTP; an opaque non-URL token selects Firebase.
+- A valid `https://` URL with a hostname selects HTTP; an opaque non-URL token selects Firebase.
 - URL-like malformed or unsupported tokens are invalid and must never fall through to Firebase.
 - Send both outstanding-message and heartbeat notifications through the selected transport.
 - HTTP callback requests are unsigned and contain no message content, user API key, phone API key, or other credentials.
@@ -21,10 +42,8 @@
 - Accept any HTTP `2xx`; ignore response content.
 - Make at most three HTTP attempts with a five-second timeout per attempt.
 - Retry network failures, `408`, `429`, and `5xx`; do not retry other non-`2xx` responses.
-- Reject redirects, proxies, private destinations, loopback destinations, link-local destinations, and reserved destinations.
-- Allow a private destination only when its exact hostname is explicitly
-  allowlisted by the DI container in `ENV=local`; production never reads the
-  allowlist.
+- Use the standard OpenTelemetry-wrapped HTTP transport without destination
+  DNS/IP filtering, custom dialing, or a private-host allowlist.
 - Preserve existing schedules, per-minute backpressure, message expiration, send-attempt counting, outstanding-message fetching, and message event routes.
 - Use `stacktrace.Propagate` or `stacktrace.Propagatef` for returned errors.
 - Use GORM query builders with context propagation; this feature requires no database query changes or migration.
@@ -811,7 +830,8 @@ Add table-driven tests for:
 - `500`, `502`, then `204`: three calls, success;
 - `400`: one call, error;
 - three `503` responses: three calls, error;
-- redirect `302`: one call, error;
+- redirects use Go's default client behavior; do not add terminal redirect
+  handling;
 - response with a body larger than the discard limit: success without reading
   unbounded content.
 
@@ -1300,10 +1320,7 @@ func (container *Container) NotificationEndpointPolicy() *services.NotificationE
         return container.notificationEndpointPolicy
     }
 
-    allowedPrivateHosts := []string{}
-    if isLocal() {
-        allowedPrivateHosts = splitCommaEnv("NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST", "")
-    }
+    allowedPrivateHosts := []string{} // Superseded: no private-host allowlist is configured.
     container.notificationEndpointPolicy = services.NewNotificationEndpointPolicy(
         net.DefaultResolver,
         allowedPrivateHosts,
@@ -1335,9 +1352,6 @@ func (container *Container) NotificationHTTPClient() *http.Client {
             otelroundtripper.WithParent(transport),
             otelroundtripper.WithMeter(otel.GetMeterProvider().Meter(container.projectID)),
         ),
-        CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-            return http.ErrUseLastResponse
-        },
     }
 }
 ```
@@ -1769,11 +1783,9 @@ container and set:
 SSL_CERT_FILE: /adapter-certs/ca.pem
 ```
 
-Add to `tests/.env.test`:
-
-```text
-NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST=adapter-emulator
-```
+Do not add a private-host allowlist; Docker DNS is used through the standard Go
+HTTP transport. Keep `SSL_CERT_FILE` so the emulator certificate remains
+trusted.
 
 - [ ] **Step 8: Add adapter test helpers**
 

@@ -26,34 +26,28 @@ type PhoneNotificationService struct {
 	phoneNotificationRepository   repositories.PhoneNotificationRepository
 	phoneRepository               repositories.PhoneRepository
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository
-	notificationDispatcher        *NotificationDispatcher
-	eventDispatcher               NotificationEventDispatcher
-}
-
-// NotificationEventDispatcher dispatches phone gateway notification events.
-type NotificationEventDispatcher interface {
-	Dispatch(ctx context.Context, event cloudevents.Event) error
-	DispatchWithTimeout(ctx context.Context, event cloudevents.Event, timeout time.Duration) (string, error)
+	phoneNotificationDispatcher   *PhoneNotificationDispatcher
+	eventDispatcher               *EventDispatcher
 }
 
 // NewNotificationService creates a new PhoneNotificationService
 func NewNotificationService(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
-	notificationDispatcher *NotificationDispatcher,
+	phoneNotificationDispatcher *PhoneNotificationDispatcher,
 	phoneRepository repositories.PhoneRepository,
 	phoneNotificationRepository repositories.PhoneNotificationRepository,
 	messageSendScheduleRepository repositories.MessageSendScheduleRepository,
-	dispatcher NotificationEventDispatcher,
+	eventDispatcher *EventDispatcher,
 ) (s *PhoneNotificationService) {
 	return &PhoneNotificationService{
 		logger:                        logger.WithService(fmt.Sprintf("%T", &PhoneNotificationService{})),
 		tracer:                        tracer,
-		notificationDispatcher:        notificationDispatcher,
+		phoneNotificationDispatcher:   phoneNotificationDispatcher,
 		phoneNotificationRepository:   phoneNotificationRepository,
 		phoneRepository:               phoneRepository,
 		messageSendScheduleRepository: messageSendScheduleRepository,
-		eventDispatcher:               dispatcher,
+		eventDispatcher:               eventDispatcher,
 	}
 }
 
@@ -97,7 +91,7 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("phone with id [%s] has no notification token", phone.ID))
 	}
 
-	result, err := service.notificationDispatcher.Send(ctx, phone, GatewayNotification{
+	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, GatewayNotification{
 		Data: map[string]string{
 			"KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
 		},
@@ -151,7 +145,7 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	}
 
 	ttl := phone.MessageExpirationDuration()
-	result, err := service.notificationDispatcher.Send(ctx, phone, GatewayNotification{
+	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, GatewayNotification{
 		Data: map[string]string{
 			"KEY_MESSAGE_ID": params.MessageID.String(),
 		},

@@ -3,15 +3,13 @@ package services
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
-	"net"
 	"net/http"
-	"net/netip"
+	"net/url"
+	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -192,6 +190,35 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 	}
 }
 
+func TestHTTPNotificationSenderCreatesFreshRequestAndBodyForEveryAttempt(t *testing.T) {
+	var requests []*http.Request
+	var bodies [][]byte
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		requests = append(requests, request)
+		body, err := io.ReadAll(request.Body)
+		require.NoError(t, err)
+		bodies = append(bodies, body)
+		if len(requests) < 3 {
+			return response(http.StatusServiceUnavailable, http.NoBody), nil
+		}
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+
+	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
+		Data:           map[string]string{"KEY_MESSAGE_ID": "message-1"},
+		NotificationID: uuid.New(),
+	})
+
+	require.NoError(t, err)
+	require.Len(t, requests, 3)
+	assert.NotSame(t, requests[0], requests[1])
+	assert.NotSame(t, requests[1], requests[2])
+	require.Len(t, bodies, 3)
+	assert.NotEmpty(t, bodies[0])
+	assert.Equal(t, bodies[0], bodies[1])
+	assert.Equal(t, bodies[1], bodies[2])
+}
+
 func TestHTTPNotificationSenderBoundsResponseBodyDiscard(t *testing.T) {
 	body := &boundedReadCloser{remaining: 8192}
 	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
@@ -243,18 +270,20 @@ func TestHTTPNotificationSenderOmitsTTLForHeartbeat(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestHTTPNotificationSenderConfiguresSecureHTTPClient(t *testing.T) {
-	policy := newHTTPNotificationPolicy()
-	sender := NewHTTPNotificationSender(nil, nil, &http.Client{Timeout: time.Minute}, policy)
+func TestHTTPNotificationSenderUsesInjectedHTTPClientUnchanged(t *testing.T) {
+	transport := roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		return response(http.StatusNoContent, http.NoBody), nil
+	})
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   time.Minute,
+	}
 
-	transport, ok := sender.client.Transport.(*http.Transport)
-	require.True(t, ok)
-	assert.Zero(t, sender.client.Timeout)
-	assert.Nil(t, transport.Proxy)
-	assert.NotNil(t, transport.DialContext)
-	assert.NotNil(t, sender.client.CheckRedirect)
-	require.NotNil(t, transport.TLSClientConfig)
-	assert.False(t, transport.TLSClientConfig.InsecureSkipVerify)
+	sender := NewHTTPNotificationSender(nil, nil, client)
+
+	assert.Same(t, client, sender.client)
+	assert.Equal(t, reflect.ValueOf(transport).Pointer(), reflect.ValueOf(sender.client.Transport).Pointer())
+	assert.Equal(t, time.Minute, sender.client.Timeout)
 }
 
 func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
@@ -265,65 +294,29 @@ func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
 		assert.Equal(t, "adapter-password", password)
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
+	endpoint := &url.URL{
+		Scheme: "https",
+		User:   url.UserPassword("adapter-user", "adapter-password"),
+		Host:   "adapter.example.com",
+		Path:   "/notify",
+	}
 
 	_, err := sender.Send(
 		context.Background(),
-		"https://adapter-user:adapter-password@adapter.example.com/notify",
+		endpoint.String(),
 		GatewayNotification{NotificationID: uuid.New()},
 	)
 
 	require.NoError(t, err)
 }
 
-func TestHTTPNotificationSenderRetriesTransientDNSFailures(t *testing.T) {
-	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
-		{err: errors.New("temporary resolver failure")},
-		{addresses: []netip.Addr{netip.MustParseAddr("8.8.8.8")}},
-	}}
-	httpCalls := 0
-	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-		httpCalls++
-		return response(http.StatusNoContent, http.NoBody), nil
+func TestHTTPNotificationSenderBoundsEveryAttemptByTimeout(t *testing.T) {
+	calls := 0
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		calls++
+		<-request.Context().Done()
+		return nil, request.Context().Err()
 	}))
-	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
-
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		NotificationID: uuid.New(),
-	})
-
-	require.NoError(t, err)
-	assert.Equal(t, 2, resolver.callCount())
-	assert.Equal(t, 1, httpCalls)
-}
-
-func TestHTTPNotificationSenderExhaustsTransientDNSFailures(t *testing.T) {
-	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
-		{err: errors.New("temporary resolver failure 1")},
-		{err: errors.New("temporary resolver failure 2")},
-		{err: errors.New("temporary resolver failure 3")},
-	}}
-	httpCalls := 0
-	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-		httpCalls++
-		return response(http.StatusNoContent, http.NoBody), nil
-	}))
-	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
-
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		NotificationID: uuid.New(),
-	})
-
-	require.Error(t, err)
-	assert.Equal(t, 3, resolver.callCount())
-	assert.Zero(t, httpCalls)
-}
-
-func TestHTTPNotificationSenderBoundsDNSResolutionByAttemptTimeout(t *testing.T) {
-	resolver := &blockingHostResolver{}
-	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-		return response(http.StatusNoContent, http.NoBody), nil
-	}))
-	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
 	sender.timeout = 10 * time.Millisecond
 
 	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
@@ -331,194 +324,25 @@ func TestHTTPNotificationSenderBoundsDNSResolutionByAttemptTimeout(t *testing.T)
 	})
 
 	require.Error(t, err)
-	assert.Equal(t, 3, resolver.callCount())
+	assert.Equal(t, 3, calls)
 }
 
-func TestHTTPNotificationSenderStopsDNSRetriesWhenParentContextIsCancelled(t *testing.T) {
-	resolver := &blockingHostResolver{}
-	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-		return response(http.StatusNoContent, http.NoBody), nil
-	}))
-	sender.policy = NewNotificationEndpointPolicy(resolver, nil)
+func TestHTTPNotificationSenderStopsRetriesWhenParentContextIsCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	calls := 0
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		calls++
+		cancel()
+		<-request.Context().Done()
+		return nil, request.Context().Err()
+	}))
 
 	_, err := sender.Send(ctx, "https://adapter.example.com/notify", GatewayNotification{
 		NotificationID: uuid.New(),
 	})
 
 	require.Error(t, err)
-	assert.Equal(t, 1, resolver.callCount())
-}
-
-func TestHTTPNotificationSenderDoesNotRetryTerminalEndpointPolicyFailures(t *testing.T) {
-	tests := []struct {
-		name      string
-		endpoint  string
-		addresses []netip.Addr
-	}{
-		{name: "insecure scheme", endpoint: "http://adapter.example.com/notify"},
-		{name: "private resolution", endpoint: "https://adapter.example.com/notify", addresses: []netip.Addr{netip.MustParseAddr("127.0.0.1")}},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			resolver := &countingHostResolver{addresses: test.addresses}
-			httpCalls := 0
-			sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-				httpCalls++
-				return response(http.StatusNoContent, http.NoBody), nil
-			}))
-			sender.policy = NewNotificationEndpointPolicy(resolver, nil)
-
-			_, err := sender.Send(context.Background(), test.endpoint, GatewayNotification{
-				NotificationID: uuid.New(),
-			})
-
-			require.Error(t, err)
-			assert.LessOrEqual(t, resolver.callCount(), 1)
-			assert.Zero(t, httpCalls)
-		})
-	}
-}
-
-func TestHTTPNotificationSenderDoesNotRetryDialTimePolicyViolation(t *testing.T) {
-	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
-		{addresses: []netip.Addr{netip.MustParseAddr("8.8.8.8")}},
-		{addresses: []netip.Addr{netip.MustParseAddr("127.0.0.1")}},
-	}}
-	policy := NewNotificationEndpointPolicy(resolver, nil)
-	sender := NewHTTPNotificationSender(nil, nil, &http.Client{}, policy)
-	sender.retryDelay = func(context.Context, time.Duration) error { return nil }
-
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		NotificationID: uuid.New(),
-	})
-
-	require.Error(t, err)
-	assert.Equal(t, 2, resolver.callCount())
-}
-
-func TestHTTPNotificationSenderClearsCustomTLSDialersAndServerName(t *testing.T) {
-	sender := NewHTTPNotificationSender(nil, nil, &http.Client{
-		Transport: &http.Transport{
-			DialTLS: func(string, string) (net.Conn, error) {
-				return nil, errors.New("unsafe TLS dialer must not be used")
-			},
-			DialTLSContext: func(context.Context, string, string) (net.Conn, error) {
-				return nil, errors.New("unsafe TLS context dialer must not be used")
-			},
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				ServerName:         "attacker.example.com",
-			},
-		},
-	}, newHTTPNotificationPolicy())
-
-	transport, ok := sender.client.Transport.(*http.Transport)
-
-	require.True(t, ok)
-	assert.Nil(t, transport.DialTLS)
-	assert.Nil(t, transport.DialTLSContext)
-	require.NotNil(t, transport.DialContext)
-	require.NotNil(t, transport.TLSClientConfig)
-	assert.False(t, transport.TLSClientConfig.InsecureSkipVerify)
-	assert.Empty(t, transport.TLSClientConfig.ServerName)
-}
-
-func TestHTTPNotificationSenderRejectsOpaqueTransportAndUsesPolicyDialer(t *testing.T) {
-	opaque := &wrappedNotificationRoundTripper{}
-	policy := NewNotificationEndpointPolicy(&staticHostResolver{
-		addresses: map[string][]netip.Addr{
-			"private.example.com": {netip.MustParseAddr("127.0.0.1")},
-		},
-	}, nil)
-	sender := NewHTTPNotificationSender(nil, nil, &http.Client{
-		Transport: opaque,
-	}, policy)
-
-	transport, ok := sender.client.Transport.(*http.Transport)
-	require.True(t, ok)
-
-	_, err := transport.DialContext(context.Background(), "tcp", "private.example.com:443")
-
-	require.Error(t, err)
-	assert.Zero(t, opaque.calls)
-}
-
-func TestHTTPNotificationSenderTrustsServiceCreatedTransportWithSamePolicy(t *testing.T) {
-	policy := NewNotificationEndpointPolicy(&staticHostResolver{
-		addresses: map[string][]netip.Addr{
-			"private.example.com": {netip.MustParseAddr("127.0.0.1")},
-		},
-	}, nil)
-	unsafeDialCalls := 0
-	transport := NewNotificationHTTPTransport(
-		policy,
-		&http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: func(context.Context, string, string) (net.Conn, error) {
-				unsafeDialCalls++
-				return nil, errors.New("unsafe dialer must not be used")
-			},
-			DialTLS: func(string, string) (net.Conn, error) {
-				return nil, errors.New("unsafe TLS dialer must not be used")
-			},
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				MinVersion:         tls.VersionTLS10,
-				ServerName:         "attacker.example.com",
-			},
-		},
-		&net.Dialer{Timeout: time.Second},
-	)
-
-	sender := NewHTTPNotificationSender(nil, nil, &http.Client{Transport: transport}, policy)
-
-	assert.Same(t, transport, sender.client.Transport)
-	trustedTransport, ok := transport.(*notificationHTTPTransport)
-	require.True(t, ok)
-	assert.Same(t, policy, trustedTransport.policy)
-	securedParent := trustedTransport.secured
-	assert.Nil(t, securedParent.Proxy)
-	assert.NotNil(t, securedParent.DialContext)
-	assert.Nil(t, securedParent.DialTLS)
-	assert.Nil(t, securedParent.DialTLSContext)
-	require.NotNil(t, securedParent.TLSClientConfig)
-	assert.False(t, securedParent.TLSClientConfig.InsecureSkipVerify)
-	assert.Empty(t, securedParent.TLSClientConfig.ServerName)
-	assert.Equal(t, uint16(tls.VersionTLS12), securedParent.TLSClientConfig.MinVersion)
-
-	_, err := securedParent.DialContext(context.Background(), "tcp", "private.example.com:443")
-
-	require.Error(t, err)
-	assert.Zero(t, unsafeDialCalls)
-}
-
-func TestNewNotificationHTTPTransportRejectsNilPolicy(t *testing.T) {
-	assert.Panics(t, func() {
-		NewNotificationHTTPTransport(nil, &http.Transport{}, &net.Dialer{})
-	})
-}
-
-func TestHTTPNotificationSenderRejectsTransportCreatedForDifferentPolicy(t *testing.T) {
-	firstPolicy := NewNotificationEndpointPolicy(&staticHostResolver{
-		addresses: map[string][]netip.Addr{
-			"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
-		},
-	}, nil)
-	secondPolicy := NewNotificationEndpointPolicy(&staticHostResolver{
-		addresses: map[string][]netip.Addr{
-			"adapter.example.com": {netip.MustParseAddr("1.1.1.1")},
-		},
-	}, nil)
-	transport := NewNotificationHTTPTransport(firstPolicy, &http.Transport{}, &net.Dialer{})
-
-	sender := NewHTTPNotificationSender(nil, nil, &http.Client{Transport: transport}, secondPolicy)
-
-	assert.NotSame(t, transport, sender.client.Transport)
-	_, ok := sender.client.Transport.(*http.Transport)
-	assert.True(t, ok)
+	assert.Equal(t, 1, calls)
 }
 
 func TestHTTPNotificationSenderTelemetryDoesNotExportCallbackURL(t *testing.T) {
@@ -571,78 +395,6 @@ type boundedReadCloser struct {
 	closed    bool
 }
 
-type wrappedNotificationRoundTripper struct {
-	calls int
-}
-
-func (transport *wrappedNotificationRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
-	transport.calls++
-	return nil, errors.New("must not be used")
-}
-
-type hostResolverOutcome struct {
-	addresses []netip.Addr
-	err       error
-}
-
-type sequenceHostResolver struct {
-	mu       sync.Mutex
-	outcomes []hostResolverOutcome
-	calls    int
-}
-
-func (resolver *sequenceHostResolver) LookupNetIP(_ context.Context, _ string, _ string) ([]netip.Addr, error) {
-	resolver.mu.Lock()
-	defer resolver.mu.Unlock()
-	outcome := resolver.outcomes[resolver.calls]
-	resolver.calls++
-	return outcome.addresses, outcome.err
-}
-
-func (resolver *sequenceHostResolver) callCount() int {
-	resolver.mu.Lock()
-	defer resolver.mu.Unlock()
-	return resolver.calls
-}
-
-type blockingHostResolver struct {
-	mu    sync.Mutex
-	calls int
-}
-
-func (resolver *blockingHostResolver) LookupNetIP(ctx context.Context, _ string, _ string) ([]netip.Addr, error) {
-	resolver.mu.Lock()
-	resolver.calls++
-	resolver.mu.Unlock()
-	<-ctx.Done()
-	return nil, ctx.Err()
-}
-
-func (resolver *blockingHostResolver) callCount() int {
-	resolver.mu.Lock()
-	defer resolver.mu.Unlock()
-	return resolver.calls
-}
-
-type countingHostResolver struct {
-	mu        sync.Mutex
-	addresses []netip.Addr
-	calls     int
-}
-
-func (resolver *countingHostResolver) LookupNetIP(_ context.Context, _ string, _ string) ([]netip.Addr, error) {
-	resolver.mu.Lock()
-	defer resolver.mu.Unlock()
-	resolver.calls++
-	return resolver.addresses, nil
-}
-
-func (resolver *countingHostResolver) callCount() int {
-	resolver.mu.Lock()
-	defer resolver.mu.Unlock()
-	return resolver.calls
-}
-
 func (reader *boundedReadCloser) Read(buffer []byte) (int, error) {
 	if reader.remaining == 0 {
 		return 0, io.EOF
@@ -678,6 +430,7 @@ func (logger *httpNotificationRecordingLogger) WithString(string, string) teleme
 func (logger *httpNotificationRecordingLogger) WithSpan(trace.SpanContext) telemetry.Logger {
 	return logger
 }
+
 func (logger *httpNotificationRecordingLogger) Trace(string)                  {}
 func (logger *httpNotificationRecordingLogger) Info(string)                   {}
 func (logger *httpNotificationRecordingLogger) Warn(error)                    {}
@@ -696,22 +449,9 @@ func newHTTPNotificationSenderWithLogger(
 	transport roundTripFunc,
 ) *HTTPNotificationSender {
 	t.Helper()
-	return &HTTPNotificationSender{
-		logger:     logger,
-		client:     &http.Client{Transport: transport},
-		policy:     newHTTPNotificationPolicy(),
-		attempts:   3,
-		timeout:    5 * time.Second,
-		retryDelay: func(context.Context, time.Duration) error { return nil },
-	}
-}
-
-func newHTTPNotificationPolicy() *NotificationEndpointPolicy {
-	return NewNotificationEndpointPolicy(&staticHostResolver{
-		addresses: map[string][]netip.Addr{
-			"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
-		},
-	}, nil)
+	sender := NewHTTPNotificationSender(logger, nil, &http.Client{Transport: transport})
+	sender.retryDelay = 0
+	return sender
 }
 
 func response(statusCode int, body io.ReadCloser) *http.Response {

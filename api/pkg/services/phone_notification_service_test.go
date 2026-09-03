@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -48,21 +49,20 @@ func (repository *phoneNotificationRepository) UpdateStatus(
 	return nil
 }
 
-type phoneNotificationEventDispatcher struct {
+type phoneNotificationEventQueue struct {
 	events []cloudevents.Event
 }
 
-func (dispatcher *phoneNotificationEventDispatcher) Dispatch(_ context.Context, event cloudevents.Event) error {
-	dispatcher.events = append(dispatcher.events, event)
-	return nil
-}
-
-func (dispatcher *phoneNotificationEventDispatcher) DispatchWithTimeout(
+func (queue *phoneNotificationEventQueue) Enqueue(
 	_ context.Context,
-	event cloudevents.Event,
+	task *PushQueueTask,
 	_ time.Duration,
 ) (string, error) {
-	dispatcher.events = append(dispatcher.events, event)
+	var event cloudevents.Event
+	if err := json.Unmarshal(task.Body, &event); err != nil {
+		return "", err
+	}
+	queue.events = append(queue.events, event)
 	return "", nil
 }
 
@@ -98,9 +98,9 @@ func TestPhoneNotificationServiceSendUsesHTTPSGatewayNotification(t *testing.T) 
 		MessageExpirationSeconds: 90,
 	}
 	httpSender := &recordingNotificationSender{result: "http/notification-1"}
-	eventDispatcher := &phoneNotificationEventDispatcher{}
+	eventQueue := &phoneNotificationEventQueue{}
 	notificationRepository := &phoneNotificationRepository{}
-	service := newPhoneNotificationServiceForTest(phone, notificationRepository, eventDispatcher, &recordingNotificationSender{}, httpSender)
+	service := newPhoneNotificationServiceForTest(phone, notificationRepository, eventQueue, &recordingNotificationSender{}, httpSender)
 	params := &PhoneNotificationSendParams{
 		UserID:              phone.UserID,
 		PhoneID:             phone.ID,
@@ -117,8 +117,8 @@ func TestPhoneNotificationServiceSendUsesHTTPSGatewayNotification(t *testing.T) 
 	require.NotNil(t, httpSender.notification.TTL)
 	assert.Equal(t, phone.MessageExpirationDuration(), *httpSender.notification.TTL)
 	assert.Equal(t, params.PhoneNotificationID, httpSender.notification.NotificationID)
-	require.Len(t, eventDispatcher.events, 1)
-	assert.Equal(t, events.EventTypeMessageNotificationSent, eventDispatcher.events[0].Type())
+	require.Len(t, eventQueue.events, 1)
+	assert.Equal(t, events.EventTypeMessageNotificationSent, eventQueue.events[0].Type())
 	assert.Equal(t, params.PhoneNotificationID, notificationRepository.notificationID)
 	assert.Equal(t, entities.PhoneNotificationStatus(entities.PhoneNotificationStatusSent), notificationRepository.status)
 }
@@ -126,12 +126,12 @@ func TestPhoneNotificationServiceSendUsesHTTPSGatewayNotification(t *testing.T) 
 func TestPhoneNotificationServiceSendHTTPFailureUsesAdapterGuidance(t *testing.T) {
 	endpoint := "https://adapter.example.com/notify"
 	phone := &entities.Phone{ID: uuid.New(), UserID: "user-1", FcmToken: &endpoint, PhoneNumber: "+18005550199"}
-	eventDispatcher := &phoneNotificationEventDispatcher{}
+	eventQueue := &phoneNotificationEventQueue{}
 	notificationRepository := &phoneNotificationRepository{}
 	service := newPhoneNotificationServiceForTest(
 		phone,
 		notificationRepository,
-		eventDispatcher,
+		eventQueue,
 		&recordingNotificationSender{},
 		&recordingNotificationSender{err: errors.New("adapter unavailable")},
 	)
@@ -145,10 +145,10 @@ func TestPhoneNotificationServiceSendHTTPFailureUsesAdapterGuidance(t *testing.T
 
 	require.NoError(t, service.Send(context.Background(), params))
 
-	require.Len(t, eventDispatcher.events, 1)
-	assert.Equal(t, events.EventTypeMessageNotificationFailed, eventDispatcher.events[0].Type())
+	require.Len(t, eventQueue.events, 1)
+	assert.Equal(t, events.EventTypeMessageNotificationFailed, eventQueue.events[0].Type())
 	var payload events.MessageNotificationFailedPayload
-	require.NoError(t, eventDispatcher.events[0].DataAs(&payload))
+	require.NoError(t, eventQueue.events[0].DataAs(&payload))
 	assert.Equal(t, "cannot notify the configured adapter for phone [+18005550199]. Check the adapter URL and availability.", payload.ErrorMessage)
 	assert.NotContains(t, payload.ErrorMessage, "Reinstall the httpSMS app")
 	assert.Equal(t, entities.PhoneNotificationStatus(entities.PhoneNotificationStatusFailed), notificationRepository.status)
@@ -157,11 +157,11 @@ func TestPhoneNotificationServiceSendHTTPFailureUsesAdapterGuidance(t *testing.T
 func TestPhoneNotificationServiceSendFCMFailurePreservesAndroidGuidance(t *testing.T) {
 	token := "fcm-token"
 	phone := &entities.Phone{ID: uuid.New(), UserID: "user-1", FcmToken: &token, PhoneNumber: "+18005550199"}
-	eventDispatcher := &phoneNotificationEventDispatcher{}
+	eventQueue := &phoneNotificationEventQueue{}
 	service := newPhoneNotificationServiceForTest(
 		phone,
 		&phoneNotificationRepository{},
-		eventDispatcher,
+		eventQueue,
 		&recordingNotificationSender{err: errors.New("firebase unavailable")},
 		&recordingNotificationSender{},
 	)
@@ -175,9 +175,9 @@ func TestPhoneNotificationServiceSendFCMFailurePreservesAndroidGuidance(t *testi
 
 	require.NoError(t, service.Send(context.Background(), params))
 
-	require.Len(t, eventDispatcher.events, 1)
+	require.Len(t, eventQueue.events, 1)
 	var payload events.MessageNotificationFailedPayload
-	require.NoError(t, eventDispatcher.events[0].DataAs(&payload))
+	require.NoError(t, eventQueue.events[0].DataAs(&payload))
 	assert.Equal(t, "cannot send notification to your phone [+18005550199]. Reinstall the httpSMS app on your Android phone.", payload.ErrorMessage)
 }
 
@@ -185,17 +185,18 @@ func TestPhoneNotificationServiceSendDoesNotLogNotificationToken(t *testing.T) {
 	endpoint := "https://adapter.example.com/private-token"
 	phone := &entities.Phone{ID: uuid.New(), UserID: "user-1", FcmToken: &endpoint, PhoneNumber: "+18005550199"}
 	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
 	service := NewNotificationService(
 		logger,
-		telemetry.NewOtelLogger("test", logger),
-		NewNotificationDispatcher(
+		tracer,
+		NewPhoneNotificationDispatcher(
 			&recordingNotificationSender{},
 			&recordingNotificationSender{err: errors.New("POST " + endpoint + " failed")},
 		),
 		&phoneNotificationPhoneRepository{phone: phone},
 		&phoneNotificationRepository{},
 		nil,
-		&phoneNotificationEventDispatcher{},
+		NewEventDispatcher(logger, tracer, nil, &phoneNotificationEventQueue{}, PushQueueConfig{}),
 	)
 
 	require.NoError(t, service.Send(context.Background(), &PhoneNotificationSendParams{
@@ -218,7 +219,7 @@ func TestPhoneNotificationServiceSendHeartbeatFCMUsesHTTPSGatewayNotification(t 
 	service := newPhoneNotificationServiceForTest(
 		phone,
 		&phoneNotificationRepository{},
-		&phoneNotificationEventDispatcher{},
+		&phoneNotificationEventQueue{},
 		&recordingNotificationSender{},
 		httpSender,
 	)
@@ -241,18 +242,19 @@ func TestPhoneNotificationServiceSendHeartbeatFCMUsesHTTPSGatewayNotification(t 
 func newPhoneNotificationServiceForTest(
 	phone *entities.Phone,
 	notificationRepository repositories.PhoneNotificationRepository,
-	eventDispatcher NotificationEventDispatcher,
+	eventQueue *phoneNotificationEventQueue,
 	fcmSender NotificationSender,
 	httpSender NotificationSender,
 ) *PhoneNotificationService {
 	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
 	return NewNotificationService(
 		logger,
-		telemetry.NewOtelLogger("test", logger),
-		NewNotificationDispatcher(fcmSender, httpSender),
+		tracer,
+		NewPhoneNotificationDispatcher(fcmSender, httpSender),
 		&phoneNotificationPhoneRepository{phone: phone},
 		notificationRepository,
 		nil,
-		eventDispatcher,
+		NewEventDispatcher(logger, tracer, nil, eventQueue, PushQueueConfig{}),
 	)
 }

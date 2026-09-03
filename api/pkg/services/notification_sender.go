@@ -24,22 +24,25 @@ type NotificationSender interface {
 	Send(ctx context.Context, destination string, notification GatewayNotification) (string, error)
 }
 
-// NotificationDispatcher routes gateway notifications to the phone's configured transport.
-type NotificationDispatcher struct {
+// PhoneNotificationDispatcher routes gateway notifications to the phone's configured transport.
+type PhoneNotificationDispatcher struct {
 	fcmSender  NotificationSender
 	httpSender NotificationSender
 }
 
-// NewNotificationDispatcher creates a dispatcher for FCM and HTTP notification transports.
-func NewNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *NotificationDispatcher {
-	return &NotificationDispatcher{
+// NewPhoneNotificationDispatcher creates a dispatcher for FCM and HTTP notification transports.
+func NewPhoneNotificationDispatcher(
+	fcmSender NotificationSender,
+	httpSender NotificationSender,
+) *PhoneNotificationDispatcher {
+	return &PhoneNotificationDispatcher{
 		fcmSender:  fcmSender,
 		httpSender: httpSender,
 	}
 }
 
 // Send delivers a notification using the phone's configured notification transport.
-func (dispatcher *NotificationDispatcher) Send(
+func (dispatcher *PhoneNotificationDispatcher) Send(
 	ctx context.Context,
 	phone *entities.Phone,
 	notification GatewayNotification,

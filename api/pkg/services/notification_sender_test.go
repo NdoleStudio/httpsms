@@ -27,12 +27,12 @@ func (sender *recordingNotificationSender) Send(_ context.Context, destination s
 	return sender.result, sender.err
 }
 
-func TestNotificationDispatcherRoutesFCMToken(t *testing.T) {
+func TestPhoneNotificationDispatcherRoutesFCMToken(t *testing.T) {
 	token := "fcm-token:value"
 	phone := &entities.Phone{FcmToken: &token}
 	fcmSender := &recordingNotificationSender{result: "projects/test/messages/1"}
 	httpSender := &recordingNotificationSender{}
-	dispatcher := NewNotificationDispatcher(fcmSender, httpSender)
+	dispatcher := NewPhoneNotificationDispatcher(fcmSender, httpSender)
 	notification := GatewayNotification{Data: map[string]string{"KEY_MESSAGE_ID": uuid.NewString()}}
 
 	result, err := dispatcher.Send(context.Background(), phone, notification)
@@ -44,12 +44,12 @@ func TestNotificationDispatcherRoutesFCMToken(t *testing.T) {
 	assert.Equal(t, token, fcmSender.destination)
 }
 
-func TestNotificationDispatcherRoutesHTTPSURL(t *testing.T) {
+func TestPhoneNotificationDispatcherRoutesHTTPSURL(t *testing.T) {
 	endpoint := "https://adapter.example.com/notifications/gateway-1"
 	phone := &entities.Phone{FcmToken: &endpoint}
 	fcmSender := &recordingNotificationSender{}
 	httpSender := &recordingNotificationSender{result: "accepted"}
-	dispatcher := NewNotificationDispatcher(fcmSender, httpSender)
+	dispatcher := NewPhoneNotificationDispatcher(fcmSender, httpSender)
 	notification := GatewayNotification{Data: map[string]string{"KEY_MESSAGE_ID": uuid.NewString()}}
 
 	result, err := dispatcher.Send(context.Background(), phone, notification)
@@ -61,12 +61,12 @@ func TestNotificationDispatcherRoutesHTTPSURL(t *testing.T) {
 	assert.Equal(t, endpoint, httpSender.destination)
 }
 
-func TestNotificationDispatcherRejectsInvalidURLLikeTokenWithoutSending(t *testing.T) {
+func TestPhoneNotificationDispatcherRejectsInvalidURLLikeTokenWithoutSending(t *testing.T) {
 	token := "https://"
 	phone := &entities.Phone{FcmToken: &token}
 	fcmSender := &recordingNotificationSender{}
 	httpSender := &recordingNotificationSender{}
-	dispatcher := NewNotificationDispatcher(fcmSender, httpSender)
+	dispatcher := NewPhoneNotificationDispatcher(fcmSender, httpSender)
 
 	_, err := dispatcher.Send(context.Background(), phone, GatewayNotification{})
 

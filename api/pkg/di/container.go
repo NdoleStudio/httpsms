@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -566,56 +565,21 @@ func (container *Container) FCMClient() services.FCMClient {
 	return services.NewFirebaseFCMClient(messagingClient)
 }
 
-// NotificationEndpointPolicy creates a notification endpoint validation policy.
-func (container *Container) NotificationEndpointPolicy() *services.NotificationEndpointPolicy {
-	allowedPrivateHosts := []string{}
-	if isLocal() {
-		allowedPrivateHosts = splitCommaEnv("NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST", "")
-	}
-	return services.NewNotificationEndpointPolicy(
-		net.DefaultResolver,
-		allowedPrivateHosts,
-	)
-}
-
-// NotificationHTTPClient creates the SSRF-safe HTTP client for phone notification adapters.
+// NotificationHTTPClient creates the OpenTelemetry-instrumented client for phone notification adapters.
 func (container *Container) NotificationHTTPClient() *http.Client {
-	return container.notificationHTTPClient(container.NotificationEndpointPolicy())
-}
-
-func (container *Container) notificationHTTPClient(policy *services.NotificationEndpointPolicy) *http.Client {
-	transport := &http.Transport{
-		ForceAttemptHTTP2: true,
-		TLSClientConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
-	}
-
 	return &http.Client{
-		Transport: services.NewNotificationHTTPTransport(
-			policy,
-			transport,
-			&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 30 * time.Second,
-			},
-		),
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+		Transport: container.notificationHTTPRoundTripper(http.DefaultTransport),
 	}
 }
 
-// NotificationDispatcher creates notification senders for Firebase and HTTP gateways.
-func (container *Container) NotificationDispatcher() *services.NotificationDispatcher {
-	policy := container.NotificationEndpointPolicy()
-	return services.NewNotificationDispatcher(
+// PhoneNotificationDispatcher creates notification senders for Firebase and HTTP gateways.
+func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotificationDispatcher {
+	return services.NewPhoneNotificationDispatcher(
 		services.NewFCMNotificationSender(container.FCMClient()),
 		services.NewHTTPNotificationSender(
 			container.Logger(),
 			container.Tracer(),
-			container.notificationHTTPClient(policy),
-			policy,
+			container.NotificationHTTPClient(),
 		),
 	)
 }
@@ -787,7 +751,6 @@ func (container *Container) PhoneHandlerValidator() (validator *validators.Phone
 		container.Logger(),
 		container.Tracer(),
 		container.MessageSendScheduleService(),
-		container.NotificationEndpointPolicy(),
 	)
 }
 
@@ -1771,7 +1734,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 	return services.NewNotificationService(
 		container.Logger(),
 		container.Tracer(),
-		container.NotificationDispatcher(),
+		container.PhoneNotificationDispatcher(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
 		container.MessageSendScheduleRepository(),

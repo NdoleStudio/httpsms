@@ -2,37 +2,17 @@ package validators
 
 import (
 	"context"
-	"errors"
-	"net/netip"
+	"net/url"
 	"testing"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/requests"
-	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 )
 
-type phoneValidatorStaticHostResolver struct {
-	addresses map[string][]netip.Addr
-	err       error
-}
-
-func (resolver *phoneValidatorStaticHostResolver) LookupNetIP(
-	_ context.Context,
-	_ string,
-	host string,
-) ([]netip.Addr, error) {
-	if resolver.err != nil {
-		return nil, resolver.err
-	}
-	return resolver.addresses[host], nil
-}
-
-func TestPhoneHandlerValidatorAcceptsPublicHTTPSNotificationURL(t *testing.T) {
-	validator := newPhoneHandlerValidatorWithAddresses(map[string][]netip.Addr{
-		"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
-	})
+func TestPhoneHandlerValidatorAcceptsHTTPSNotificationURL(t *testing.T) {
+	validator := newPhoneHandlerValidator()
 
 	errors := validator.ValidateFCMToken(context.Background(), requests.PhoneFCMToken{
 		PhoneNumber: "+18005550199",
@@ -43,10 +23,8 @@ func TestPhoneHandlerValidatorAcceptsPublicHTTPSNotificationURL(t *testing.T) {
 	assert.Empty(t, errors)
 }
 
-func TestPhoneHandlerValidatorAcceptsPublicHTTPSNotificationURLOnUpsert(t *testing.T) {
-	validator := newPhoneHandlerValidatorWithAddresses(map[string][]netip.Addr{
-		"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
-	})
+func TestPhoneHandlerValidatorAcceptsHTTPSNotificationURLOnUpsert(t *testing.T) {
+	validator := newPhoneHandlerValidator()
 
 	errors := validator.ValidateUpsert(context.Background(), "", requests.PhoneUpsert{
 		PhoneNumber:              "+18005550199",
@@ -58,39 +36,32 @@ func TestPhoneHandlerValidatorAcceptsPublicHTTPSNotificationURLOnUpsert(t *testi
 	assert.Empty(t, errors)
 }
 
-func TestPhoneHandlerValidatorRejectsUnsafeNotificationURLs(t *testing.T) {
+func TestPhoneHandlerValidatorAcceptsPrivateAndLoopbackNotificationHosts(t *testing.T) {
+	validator := newPhoneHandlerValidator()
+
+	for _, token := range []string{
+		"https://localhost/notify",
+		"https://127.0.0.1/notify",
+		"https://10.0.0.5/notify",
+	} {
+		errors := validator.ValidateFCMToken(context.Background(), requests.PhoneFCMToken{
+			PhoneNumber: "+18005550199",
+			FcmToken:    token,
+			SIM:         entities.SIM1.String(),
+		})
+
+		assert.Empty(t, errors, token)
+	}
+}
+
+func TestPhoneHandlerValidatorRejectsInvalidNotificationURLs(t *testing.T) {
 	tests := []struct {
-		name      string
-		token     string
-		addresses []netip.Addr
+		name  string
+		token string
 	}{
-		{
-			name:      "insecure HTTP",
-			token:     "http://adapter.example.com/notify",
-			addresses: []netip.Addr{netip.MustParseAddr("8.8.8.8")},
-		},
-		{
-			name:      "loopback resolution",
-			token:     "https://adapter.example.com/notify",
-			addresses: []netip.Addr{netip.MustParseAddr("127.0.0.1")},
-		},
-		{
-			name:      "private resolution",
-			token:     "https://adapter.example.com/notify",
-			addresses: []netip.Addr{netip.MustParseAddr("10.0.0.5")},
-		},
-		{
-			name:  "mixed public and private resolution",
-			token: "https://adapter.example.com/notify",
-			addresses: []netip.Addr{
-				netip.MustParseAddr("8.8.8.8"),
-				netip.MustParseAddr("10.0.0.5"),
-			},
-		},
-		{
-			name:  "malformed HTTPS",
-			token: "https://%",
-		},
+		{name: "insecure HTTP", token: "http://adapter.example.com/notify"},
+		{name: "missing host", token: "https:///notify"},
+		{name: "malformed HTTPS", token: "https://%"},
 	}
 
 	validationPaths := []struct {
@@ -124,11 +95,7 @@ func TestPhoneHandlerValidatorRejectsUnsafeNotificationURLs(t *testing.T) {
 		t.Run(validationPath.name, func(t *testing.T) {
 			for _, test := range tests {
 				t.Run(test.name, func(t *testing.T) {
-					validator := newPhoneHandlerValidatorWithAddresses(map[string][]netip.Addr{
-						"adapter.example.com": test.addresses,
-					})
-
-					validationErrors := validationPath.validate(validator, test.token)
+					validationErrors := validationPath.validate(newPhoneHandlerValidator(), test.token)
 
 					assert.NotEmpty(t, validationErrors["fcm_token"])
 				})
@@ -137,16 +104,8 @@ func TestPhoneHandlerValidatorRejectsUnsafeNotificationURLs(t *testing.T) {
 	}
 }
 
-func TestPhoneHandlerValidatorAcceptsOpaqueFirebaseNotificationTokenWithoutResolution(t *testing.T) {
-	logger := &contactValidatorNoopLogger{}
-	validator := NewPhoneHandlerValidator(
-		logger,
-		telemetry.NewOtelLogger("test", logger),
-		nil,
-		services.NewNotificationEndpointPolicy(&phoneValidatorStaticHostResolver{
-			err: errors.New("resolver must not be called for Firebase tokens"),
-		}, nil),
-	)
+func TestPhoneHandlerValidatorAcceptsOpaqueFirebaseNotificationToken(t *testing.T) {
+	validator := newPhoneHandlerValidator()
 
 	errors := validator.ValidateFCMToken(context.Background(), requests.PhoneFCMToken{
 		PhoneNumber: "+18005550199",
@@ -158,27 +117,28 @@ func TestPhoneHandlerValidatorAcceptsOpaqueFirebaseNotificationTokenWithoutResol
 }
 
 func TestPhoneHandlerValidatorAcceptsNotificationURLWithUserInformation(t *testing.T) {
-	validator := newPhoneHandlerValidatorWithAddresses(map[string][]netip.Addr{
-		"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
-	})
+	validator := newPhoneHandlerValidator()
+	endpoint := &url.URL{
+		Scheme: "https",
+		User:   url.UserPassword("adapter-user", "adapter-password"),
+		Host:   "adapter.example.com",
+		Path:   "/notify",
+	}
 
 	errors := validator.ValidateFCMToken(context.Background(), requests.PhoneFCMToken{
 		PhoneNumber: "+18005550199",
-		FcmToken:    "https://adapter-user:adapter-password@adapter.example.com/notify",
+		FcmToken:    endpoint.String(),
 		SIM:         entities.SIM1.String(),
 	})
 
 	assert.Empty(t, errors)
 }
 
-func newPhoneHandlerValidatorWithAddresses(addresses map[string][]netip.Addr) *PhoneHandlerValidator {
+func newPhoneHandlerValidator() *PhoneHandlerValidator {
 	logger := &contactValidatorNoopLogger{}
 	return NewPhoneHandlerValidator(
 		logger,
 		telemetry.NewOtelLogger("test", logger),
 		nil,
-		services.NewNotificationEndpointPolicy(&phoneValidatorStaticHostResolver{
-			addresses: addresses,
-		}, nil),
 	)
 }

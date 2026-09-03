@@ -40,7 +40,7 @@ type NotificationTransport string
 const (
 	// NotificationTransportFCM sends notifications through Firebase.
 	NotificationTransportFCM NotificationTransport = "fcm"
-	// NotificationTransportHTTP sends notifications to a public HTTPS endpoint.
+	// NotificationTransportHTTP sends notifications to an HTTPS endpoint.
 	NotificationTransportHTTP NotificationTransport = "http"
 )
 

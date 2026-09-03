@@ -60,8 +60,8 @@ Data stores: CockroachDB, Redis, and MongoDB.
 
 The HTTPS endpoint uses a two-day throwaway CA and server certificate with the
 DNS SAN `adapter-emulator`. The API container trusts only that generated CA via
-`SSL_CERT_FILE`; HTTPS verification is never bypassed. Local SSRF policy allows
-the exact private hostname `adapter-emulator`.
+`SSL_CERT_FILE`; HTTPS verification is never bypassed. The notification sender
+uses the standard OpenTelemetry-instrumented Go HTTP transport.
 
 ## Test Coverage
 
@@ -71,7 +71,7 @@ the exact private hostname `adapter-emulator`.
 - [x] URL-backed incoming message reaches `received`
 - [x] URL-backed heartbeat callback stores a heartbeat
 - [x] Adapter callback notification IDs are deduplicated in memory
-- [x] HTTPS certificate trust and exact private-host allowlist are exercised
+- [x] HTTPS certificate trust is exercised
 
 ## Prerequisites
 
@@ -198,9 +198,8 @@ docker compose logs --tail 200 api adapter-emulator
 ```
 
 Adapter logs should show callback receipt, the outstanding-message fetch,
-`SENT`, and `DELIVERED`. Confirm
-`NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST=adapter-emulator` and
-`SSL_CERT_FILE=/adapter-certs/ca.pem` are present in the API container.
+`SENT`, and `DELIVERED`. Confirm `SSL_CERT_FILE=/adapter-certs/ca.pem` is
+present in the API container.
 
 ### URL-backed incoming message times out
 

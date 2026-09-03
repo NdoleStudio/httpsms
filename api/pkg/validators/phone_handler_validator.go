@@ -20,7 +20,6 @@ type PhoneHandlerValidator struct {
 	logger          telemetry.Logger
 	tracer          telemetry.Tracer
 	scheduleService *services.MessageSendScheduleService
-	endpointPolicy  *services.NotificationEndpointPolicy
 }
 
 // NewPhoneHandlerValidator creates a new handlers.PhoneHandler validator
@@ -28,13 +27,11 @@ func NewPhoneHandlerValidator(
 	logger telemetry.Logger,
 	tracer telemetry.Tracer,
 	scheduleService *services.MessageSendScheduleService,
-	endpointPolicy *services.NotificationEndpointPolicy,
 ) (v *PhoneHandlerValidator) {
 	return &PhoneHandlerValidator{
 		logger:          logger.WithService(fmt.Sprintf("%T", v)),
 		tracer:          tracer,
 		scheduleService: scheduleService,
-		endpointPolicy:  endpointPolicy,
 	}
 }
 
@@ -106,7 +103,7 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(ctx context.Context, user
 		return result
 	}
 
-	validator.validateNotificationToken(ctx, request.FcmToken, result)
+	validator.validateNotificationToken(request.FcmToken, result)
 	if len(result) > 0 {
 		return result
 	}
@@ -122,7 +119,7 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(ctx context.Context, user
 }
 
 // ValidateFCMToken validates requests.PhoneFCMToken
-func (validator *PhoneHandlerValidator) ValidateFCMToken(ctx context.Context, request requests.PhoneFCMToken) url.Values {
+func (validator *PhoneHandlerValidator) ValidateFCMToken(_ context.Context, request requests.PhoneFCMToken) url.Values {
 	v := govalidator.New(govalidator.Options{
 		Data: &request,
 		Rules: govalidator.MapData{
@@ -146,12 +143,11 @@ func (validator *PhoneHandlerValidator) ValidateFCMToken(ctx context.Context, re
 		return result
 	}
 
-	validator.validateNotificationToken(ctx, request.FcmToken, result)
+	validator.validateNotificationToken(request.FcmToken, result)
 	return result
 }
 
 func (validator *PhoneHandlerValidator) validateNotificationToken(
-	ctx context.Context,
 	token string,
 	result url.Values,
 ) {
@@ -161,22 +157,9 @@ func (validator *PhoneHandlerValidator) validateNotificationToken(
 	}
 
 	phone := &entities.Phone{FcmToken: &token}
-	transport, err := phone.NotificationTransport()
+	_, err := phone.NotificationTransport()
 	if err != nil {
 		result.Add("fcm_token", err.Error())
-		return
-	}
-	if transport != entities.NotificationTransportHTTP {
-		return
-	}
-
-	endpoint, err := phone.NotificationURL()
-	if err != nil {
-		result.Add("fcm_token", err.Error())
-		return
-	}
-	if _, err = validator.endpointPolicy.Validate(ctx, endpoint); err != nil {
-		result.Add("fcm_token", "fcm_token must be a public HTTPS adapter URL")
 	}
 }
 
