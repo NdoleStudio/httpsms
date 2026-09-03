@@ -13,14 +13,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/golang-jwt/jwt/v5"
 	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/NdoleStudio/httpsms/mcp/internal/auth"
 	"github.com/NdoleStudio/httpsms/mcp/internal/httpsms"
+	"github.com/NdoleStudio/httpsms/mcp/internal/oauth"
 	"github.com/NdoleStudio/httpsms/mcp/internal/tools"
 )
 
@@ -37,7 +40,13 @@ const (
 // allScopes are every scope required by any tool registered by
 // tools.Register, used to build an authorized context for tests that are
 // not specifically exercising scope denial.
-var allScopes = []string{auth.ScopePhonesRead, auth.ScopeMessagesRead, auth.ScopeMessagesSend}
+var allScopes = []string{
+	auth.ScopePhonesRead,
+	auth.ScopeMessagesRead,
+	auth.ScopeMessagesSend,
+	auth.ScopePhoneAPIKeysWrite,
+	auth.ScopeUserAPIKeyRotate,
+}
 
 // --- test doubles -----------------------------------------------------
 
@@ -65,6 +74,14 @@ type stubClient struct {
 	listIncomingCalls  []stubCall[httpsms.ListIncomingMessagesParams]
 	listIncomingResult []httpsms.Message
 	listIncomingErr    error
+
+	createKeyCalls  []stubCall[httpsms.CreatePhoneAPIKeyParams]
+	createKeyResult httpsms.PhoneAPIKey
+	createKeyErr    error
+
+	rotateCalls  []stubCall[string]
+	rotateResult httpsms.User
+	rotateErr    error
 }
 
 // stubCall records one call's delegated token and parameters.
@@ -100,12 +117,14 @@ func (s *stubClient) ListIncomingMessages(_ context.Context, token string, param
 	return s.listIncomingResult, s.listIncomingErr
 }
 
-func (s *stubClient) CreatePhoneAPIKey(context.Context, string, httpsms.CreatePhoneAPIKeyParams) (httpsms.PhoneAPIKey, error) {
-	panic("CreatePhoneAPIKey is not part of the task-7 messaging tool catalog and must not be called")
+func (s *stubClient) CreatePhoneAPIKey(_ context.Context, token string, params httpsms.CreatePhoneAPIKeyParams) (httpsms.PhoneAPIKey, error) {
+	s.createKeyCalls = append(s.createKeyCalls, stubCall[httpsms.CreatePhoneAPIKeyParams]{Token: token, Params: params})
+	return s.createKeyResult, s.createKeyErr
 }
 
-func (s *stubClient) RotateUserAPIKey(context.Context, string, string) (httpsms.User, error) {
-	panic("RotateUserAPIKey is not part of the task-7 messaging tool catalog and must not be called")
+func (s *stubClient) RotateUserAPIKey(_ context.Context, token string, userID string) (httpsms.User, error) {
+	s.rotateCalls = append(s.rotateCalls, stubCall[string]{Token: token, Params: userID})
+	return s.rotateResult, s.rotateErr
 }
 
 // totalCalls reports how many downstream API calls s has recorded across
@@ -113,7 +132,8 @@ func (s *stubClient) RotateUserAPIKey(context.Context, string, string) (httpsms.
 // reached the httpSMS API.
 func (s *stubClient) totalCalls() int {
 	return len(s.listPhonesCalls) + len(s.sendSMSCalls) + len(s.listThreadsCalls) +
-		len(s.listThreadMessagesCalls) + len(s.listIncomingCalls)
+		len(s.listThreadMessagesCalls) + len(s.listIncomingCalls) +
+		len(s.createKeyCalls) + len(s.rotateCalls)
 }
 
 // --- test fixtures ------------------------------------------------------
@@ -176,15 +196,47 @@ func contextFromBearerToken(t *testing.T, keys *auth.KeySet, raw string) context
 	return captured
 }
 
-// newSession registers every messaging tool against api using keys and
-// apiTokenTTL, connects an in-memory client/server pair rooted at ctx (so
-// every tool call in the resulting session observes whatever principal/
-// scopes ctx carries), and returns the client session plus a cleanup func.
+// testConfirmationTTL is the rotation-confirmation-handle TTL used by
+// every test session; it must be short enough that
+// TestRotateUserAPIKeyConfirmationHandleExpires can advance past it with a
+// small, fast miniredis.FastForward call.
+const testConfirmationTTL = 5 * time.Minute
+
+// newSession registers every tool against api using keys and apiTokenTTL,
+// connects an in-memory client/server pair rooted at ctx (so every tool
+// call in the resulting session observes whatever principal/scopes ctx
+// carries), and returns the client session plus a cleanup func. It backs
+// rotate_user_api_key's confirmation handles with a fresh, throwaway
+// miniredis instance: tests that need to control or inspect that store
+// directly (expiry, replay) should use newSessionWithStore instead.
 func newSession(t *testing.T, ctx context.Context, keys *auth.KeySet, api httpsms.Client) *mcp.ClientSession {
 	t.Helper()
 
+	store, _ := newTestConfirmationStore(t)
+	return newSessionWithStore(t, ctx, keys, api, store, testConfirmationTTL)
+}
+
+// newTestConfirmationStore starts an in-memory miniredis server and returns
+// an oauth.Store backed by it along with the miniredis handle, for tests
+// that need to fast-forward time or otherwise inspect confirmation state
+// directly.
+func newTestConfirmationStore(t *testing.T) (oauth.Store, *miniredis.Miniredis) {
+	t.Helper()
+
+	server := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+
+	return oauth.NewRedisStore(client), server
+}
+
+// newSessionWithStore is newSession with an explicit confirmation store and
+// TTL, for tests that drive rotate_user_api_key's confirmation flow.
+func newSessionWithStore(t *testing.T, ctx context.Context, keys *auth.KeySet, api httpsms.Client, store oauth.Store, confirmationTTL time.Duration) *mcp.ClientSession {
+	t.Helper()
+
 	server := mcp.NewServer(&mcp.Implementation{Name: "httpsms-mcp-test", Version: "test"}, nil)
-	tools.Register(server, keys, api, testAPITokenTTL)
+	tools.Register(server, keys, api, testAPITokenTTL, store, confirmationTTL)
 
 	t1, t2 := mcp.NewInMemoryTransports()
 	_, err := server.Connect(ctx, t1, nil)
@@ -287,7 +339,7 @@ func schemaRequired(t *testing.T, schema any) []string {
 
 // --- registration ---------------------------------------------------------
 
-func TestRegisterRegistersExactlyTheFiveMessagingTools(t *testing.T) {
+func TestRegisterRegistersExactlySevenTools(t *testing.T) {
 	keys := newTestKeySet(t)
 	ctx := contextWithPrincipal(t, keys, allScopes)
 	session := newSession(t, ctx, keys, &stubClient{})
@@ -300,10 +352,12 @@ func TestRegisterRegistersExactlyTheFiveMessagingTools(t *testing.T) {
 	sort.Strings(names)
 
 	assert.Equal(t, []string{
+		"create_phone_api_key",
 		"list_incoming_messages",
 		"list_message_threads",
 		"list_phones",
 		"list_thread_messages",
+		"rotate_user_api_key",
 		"send_sms",
 	}, names)
 }

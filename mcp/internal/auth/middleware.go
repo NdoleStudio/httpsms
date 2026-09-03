@@ -87,6 +87,22 @@ func PrincipalFromContext(ctx context.Context) (Principal, bool) {
 	return principal, ok
 }
 
+// ClientIDFromContext returns the OAuth client ID carried by the MCP access
+// token that mcpauth.RequireBearerToken (configured with a Verifier's
+// VerifyMCPToken) has already validated for the current request, or false
+// if ctx carries no verified token. Tools use this to bind sensitive
+// confirmation state (see the rotate_user_api_key tool) to the exact OAuth
+// client that requested the operation, not just the authenticated user.
+func ClientIDFromContext(ctx context.Context) (string, bool) {
+	info := mcpauth.TokenInfoFromContext(ctx)
+	if info == nil {
+		return "", false
+	}
+
+	clientID, ok := info.Extra[tokenInfoClientIDKey].(string)
+	return clientID, ok
+}
+
 // RequireScope returns the Principal carried by ctx's already-validated MCP
 // access token, or an error if ctx carries no verified token or the token's
 // scopes do not include scope. It never calls the httpSMS API and never

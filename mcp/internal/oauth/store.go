@@ -326,6 +326,21 @@ func (s *RedisStore) ConsumeConfirmation(ctx context.Context, handle string) (Co
 	return record, err
 }
 
+// confirmationHandleBytes is the amount of crypto/rand entropy (see
+// newRandomToken) encoded into a rotation confirmation handle.
+const confirmationHandleBytes = 32
+
+// NewConfirmationHandle returns a new cryptographically random, one-time
+// confirmation handle for the primary-API-key-rotation confirmation flow
+// (see Confirmation, PutConfirmation, and ConsumeConfirmation). Callers
+// store it with PutConfirmation and hand it to the client -- as
+// mcp.CallToolResult.RequestState for MRTR-capable clients, or as plain
+// tool output text for legacy clients that must echo it back explicitly --
+// and later redeem it exactly once with ConsumeConfirmation.
+func NewConfirmationHandle() (string, error) {
+	return newRandomToken(confirmationHandleBytes)
+}
+
 // hashedKey returns the namespaced Redis key for publicValue under prefix:
 // prefix followed by the hex-encoded SHA-256 hash of publicValue. The raw
 // value is never used as key material.

@@ -267,6 +267,31 @@ func TestRedisStoreGetDynamicClientNotFound(t *testing.T) {
 	require.ErrorIs(t, err, oauth.ErrNotFound)
 }
 
+// TestNewConfirmationHandleIsRandomAndURLSafe asserts NewConfirmationHandle
+// returns a fresh, non-empty, URL-safe value on every call (never a fixed
+// or predictable value), and that the handle it returns actually works
+// end-to-end with PutConfirmation/ConsumeConfirmation.
+func TestNewConfirmationHandleIsRandomAndURLSafe(t *testing.T) {
+	first, err := oauth.NewConfirmationHandle()
+	require.NoError(t, err)
+	assert.NotEmpty(t, first)
+	assert.NotRegexp(t, `[^A-Za-z0-9_-]`, first, "confirmation handle must be URL-safe base64")
+
+	second, err := oauth.NewConfirmationHandle()
+	require.NoError(t, err)
+	assert.NotEqual(t, first, second, "two generated handles must never collide")
+
+	store, _ := newTestStore(t)
+	ctx := context.Background()
+
+	confirmation := oauth.Confirmation{Handle: first, UserID: "firebase-uid", ClientID: "client-id", Operation: "rotate_user_api_key"}
+	require.NoError(t, store.PutConfirmation(ctx, confirmation, time.Minute))
+
+	got, err := store.ConsumeConfirmation(ctx, first)
+	require.NoError(t, err)
+	assert.Equal(t, confirmation.UserID, got.UserID)
+}
+
 func TestRedisStoreConsumeConfirmationIsOneTimeUse(t *testing.T) {
 	store, _ := newTestStore(t)
 	ctx := context.Background()

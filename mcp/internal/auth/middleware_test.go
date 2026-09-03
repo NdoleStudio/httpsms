@@ -36,8 +36,12 @@ func newMiddlewareTestServer(t *testing.T, keys *auth.KeySet, requiredScopes []s
 		principal, ok := auth.PrincipalFromContext(r.Context())
 		require.True(t, ok, "auth.PrincipalFromContext must find the principal the middleware stored")
 
+		clientID, ok := auth.ClientIDFromContext(r.Context())
+		require.True(t, ok, "auth.ClientIDFromContext must find the client ID the middleware stored")
+
 		w.Header().Set("X-Test-User-ID", info.UserID)
 		w.Header().Set("X-Test-Principal-Email", principal.Email)
+		w.Header().Set("X-Test-Client-ID", clientID)
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -145,6 +149,7 @@ func TestRequireBearerTokenAcceptsValidTokenAndStoresTokenInfo(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, testFirebaseUserID, resp.Header.Get("X-Test-User-ID"))
 	assert.Equal(t, testUserEmail, resp.Header.Get("X-Test-Principal-Email"))
+	assert.Equal(t, "client", resp.Header.Get("X-Test-Client-ID"))
 }
 
 func doBearerRequest(t *testing.T, url string, token string) *http.Response {
@@ -161,6 +166,11 @@ func doBearerRequest(t *testing.T, url string, token string) *http.Response {
 
 func TestPrincipalFromContextReturnsFalseWithoutToken(t *testing.T) {
 	_, ok := auth.PrincipalFromContext(t.Context())
+	assert.False(t, ok)
+}
+
+func TestClientIDFromContextReturnsFalseWithoutToken(t *testing.T) {
+	_, ok := auth.ClientIDFromContext(t.Context())
 	assert.False(t, ok)
 }
 
