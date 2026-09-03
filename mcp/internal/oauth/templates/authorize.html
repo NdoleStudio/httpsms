@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authorize {{.ClientName}} - httpSMS</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <h1>{{.ClientName}} wants to access your httpSMS account</h1>
+  <p>Signing in will let {{.ClientName}} do the following:</p>
+  <ul>
+    {{range .Scopes}}<li>{{.Description}}</li>{{end}}
+  </ul>
+
+  <form id="httpsms-authorize-form" method="POST" action="/oauth/firebase/complete">
+    <input type="hidden" name="transaction_id" value="{{.TransactionID}}">
+    <input type="hidden" name="id_token" id="httpsms-id-token" value="">
+    {{range .Scopes}}<input type="hidden" name="approved_scopes" value="{{.Value}}">{{end}}
+    <button type="button" id="httpsms-allow-button">Sign in with Google to Allow</button>
+  </form>
+
+  <form method="POST" action="/oauth/firebase/complete">
+    <input type="hidden" name="transaction_id" value="{{.TransactionID}}">
+    <input type="hidden" name="denied" value="1">
+    <button type="submit" id="httpsms-deny-button">Deny</button>
+  </form>
+
+  <script>
+    // The Firebase Web API key and auth domain below are ordinary public
+    // browser-side configuration, not secrets: Firebase's security model
+    // relies on server-side ID-token verification (performed by this
+    // service's POST /oauth/firebase/complete handler), not on keeping
+    // this configuration confidential.
+    var firebaseConfig = {
+      apiKey: "{{.FirebaseAPIKey}}",
+      authDomain: "{{.FirebaseAuthDomain}}"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // The Firebase ID token is written only into a hidden form field and
+    // submitted via a normal POST body -- it must never be appended to a
+    // URL (query string, fragment, or otherwise), where it could leak
+    // through browser history, a Referer header, or server access logs.
+    document.getElementById("httpsms-allow-button").addEventListener("click", function () {
+      var provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider).then(function (result) {
+        return result.user.getIdToken();
+      }).then(function (idToken) {
+        document.getElementById("httpsms-id-token").value = idToken;
+        document.getElementById("httpsms-authorize-form").submit();
+      }).catch(function (error) {
+        alert("Sign-in failed: " + error.message);
+      });
+    });
+  </script>
+</body>
+</html>

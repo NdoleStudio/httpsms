@@ -161,6 +161,46 @@ func TestRedisStoreRotateRefreshTokenUnknownOldTokenFails(t *testing.T) {
 	require.ErrorIs(t, err, oauth.ErrNotFound)
 }
 
+// TestRedisStoreGetRefreshTokenReadsWithoutConsuming asserts GetRefreshToken
+// is a plain read: the token endpoint must be able to inspect a refresh
+// grant's bound user/client/scopes/resource before rotating it, and the
+// grant must still be present (and still rotatable) afterward.
+func TestRedisStoreGetRefreshTokenReadsWithoutConsuming(t *testing.T) {
+	store, _ := newTestStore(t)
+	ctx := context.Background()
+
+	grant := oauth.RefreshGrant{
+		Token:     "refresh-token",
+		UserID:    "firebase-uid",
+		Email:     "user@example.com",
+		ClientID:  "https://client.example/metadata.json",
+		Scopes:    []string{"phones:read", "messages:send"},
+		Resource:  "https://mcp.httpsms.com/mcp",
+		FamilyID:  "family-1",
+		CreatedAt: time.Now().UTC().Truncate(time.Second),
+	}
+	require.NoError(t, store.PutRefreshToken(ctx, grant, time.Hour))
+
+	got, err := store.GetRefreshToken(ctx, "refresh-token")
+	require.NoError(t, err)
+	assert.Equal(t, grant, got)
+
+	// Reading again must still succeed (not consumed).
+	got2, err := store.GetRefreshToken(ctx, "refresh-token")
+	require.NoError(t, err)
+	assert.Equal(t, grant, got2)
+
+	// The grant must still be rotatable, proving Get did not delete it.
+	require.NoError(t, store.RotateRefreshToken(ctx, "refresh-token", oauth.RefreshGrant{Token: "rotated-token"}, time.Hour))
+}
+
+func TestRedisStoreGetRefreshTokenNotFound(t *testing.T) {
+	store, _ := newTestStore(t)
+
+	_, err := store.GetRefreshToken(context.Background(), "never-issued")
+	require.ErrorIs(t, err, oauth.ErrNotFound)
+}
+
 func TestRedisStorePutGetDynamicClient(t *testing.T) {
 	store, _ := newTestStore(t)
 	ctx := context.Background()

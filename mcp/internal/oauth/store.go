@@ -51,6 +51,7 @@ type AuthorizationTransaction struct {
 	RedirectURI         string    `json:"redirect_uri"`
 	Scopes              []string  `json:"scopes"`
 	State               string    `json:"state"`
+	Resource            string    `json:"resource"`
 	CodeChallenge       string    `json:"code_challenge"`
 	CodeChallengeMethod string    `json:"code_challenge_method"`
 	ResponseType        string    `json:"response_type"`
@@ -69,6 +70,7 @@ type AuthorizationCode struct {
 	Scopes              []string  `json:"scopes"`
 	UserID              string    `json:"user_id"`
 	Email               string    `json:"email"`
+	Resource            string    `json:"resource"`
 	CodeChallenge       string    `json:"code_challenge"`
 	CodeChallengeMethod string    `json:"code_challenge_method"`
 	CreatedAt           time.Time `json:"created_at"`
@@ -85,6 +87,7 @@ type RefreshGrant struct {
 	Email     string    `json:"email"`
 	ClientID  string    `json:"client_id"`
 	Scopes    []string  `json:"scopes"`
+	Resource  string    `json:"resource"`
 	FamilyID  string    `json:"family_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -130,6 +133,7 @@ type Store interface {
 	PutAuthorizationCode(context.Context, AuthorizationCode, time.Duration) error
 	ConsumeAuthorizationCode(context.Context, string) (AuthorizationCode, error)
 	PutRefreshToken(context.Context, RefreshGrant, time.Duration) error
+	GetRefreshToken(context.Context, string) (RefreshGrant, error)
 	RotateRefreshToken(context.Context, string, RefreshGrant, time.Duration) error
 	PutDynamicClient(context.Context, Client, time.Duration) error
 	GetDynamicClient(context.Context, string) (Client, error)
@@ -225,6 +229,20 @@ func (s *RedisStore) PutRefreshToken(ctx context.Context, grant RefreshGrant, tt
 		return errors.New("oauth: refresh token value must not be empty")
 	}
 	return putRecord(ctx, s.client, keyPrefixRefresh, grant.Token, grant, ttl)
+}
+
+// GetRefreshToken implements Store. Unlike RotateRefreshToken it does not
+// consume the record: the token endpoint needs to read a refresh grant's
+// bound user/client/scopes/resource before it can validate a refresh
+// request and build the rotated replacement grant RotateRefreshToken then
+// atomically swaps in. A refresh token that has already been rotated or
+// has expired returns ErrNotFound, exactly as RotateRefreshToken's replay
+// check would.
+func (s *RedisStore) GetRefreshToken(ctx context.Context, token string) (RefreshGrant, error) {
+	var grant RefreshGrant
+	err := getRecord(ctx, s.client, keyPrefixRefresh, token, &grant)
+	grant.Token = token
+	return grant, err
 }
 
 // RotateRefreshToken implements Store. It atomically deletes oldToken's
