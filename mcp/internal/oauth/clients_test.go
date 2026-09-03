@@ -559,6 +559,55 @@ func TestRegistrationHandlerRejectsNonPOST(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
 
+// TestRegistrationHandlerResponsesAreNeverCached asserts every Dynamic
+// Client Registration response -- success or error -- forbids caching. A
+// registration response carries the freshly assigned client_id and the
+// metadata this server will honour for it, and must never be served from a
+// shared cache to a different registrant.
+func TestRegistrationHandlerResponsesAreNeverCached(t *testing.T) {
+	handler := NewRegistrationHandler(newClientsTestStore(t))
+
+	validBody := `{
+		"client_name": "Test Client",
+		"redirect_uris": ["https://client.example/callback"],
+		"grant_types": ["authorization_code"],
+		"response_types": ["code"],
+		"token_endpoint_auth_method": "none"
+	}`
+
+	tests := []struct {
+		name       string
+		request    *http.Request
+		wantStatus int
+	}{
+		{
+			name:       "created",
+			request:    httptest.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(validBody)),
+			wantStatus: http.StatusCreated,
+		},
+		{
+			name:       "invalid metadata",
+			request:    httptest.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(`{"client_name":"no redirects"}`)),
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "wrong method",
+			request:    httptest.NewRequest(http.MethodGet, "/oauth/register", nil),
+			wantStatus: http.StatusMethodNotAllowed,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			handler(rec, test.request)
+
+			require.Equal(t, test.wantStatus, rec.Code)
+			assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
+		})
+	}
+}
+
 func TestIsPublicIPRejectsNonPublicRanges(t *testing.T) {
 	testCases := []string{
 		"127.0.0.1",

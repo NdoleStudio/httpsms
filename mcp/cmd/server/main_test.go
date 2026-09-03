@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -116,4 +117,85 @@ func TestBuildFailsFastOnInvalidConfiguration(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, handler)
 	require.Nil(t, shutdown)
+}
+
+// TestServeReturnsAnErrorWhenTheListenerFails asserts a listener that can
+// never start (here: an unparseable address, standing in for a port already
+// in use or a PORT value Cloud Run could not bind) surfaces as a non-nil
+// error from serve -- which is what makes main exit non-zero instead of
+// logging and "shutting down" as if it had served successfully.
+func TestServeReturnsAnErrorWhenTheListenerFails(t *testing.T) {
+	shutdownCalls := 0
+	shutdown := func(context.Context) error {
+		shutdownCalls++
+		return nil
+	}
+
+	err := serve(context.Background(), "not-an-address", http.NewServeMux(), shutdown)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not-an-address")
+	// Dependencies opened before serving must still be released.
+	require.Equal(t, 1, shutdownCalls)
+}
+
+// TestServeReturnsNilOnGracefulShutdown asserts the normal Cloud Run path
+// -- SIGTERM cancels the context -- drains and returns nil, so main exits
+// zero.
+func TestServeReturnsNilOnGracefulShutdown(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	shutdownCalls := 0
+	shutdown := func(context.Context) error {
+		shutdownCalls++
+		return nil
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- serve(ctx, "127.0.0.1:0", mux, shutdown) }()
+
+	// Give the listener a moment to start, then ask for shutdown.
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(15 * time.Second):
+		t.Fatal("serve did not return after its context was cancelled")
+	}
+
+	require.Equal(t, 1, shutdownCalls)
+}
+
+// TestServeReportsShutdownFailures asserts a dependency that fails to close
+// is also a non-zero exit, not a silent log line.
+func TestServeReportsShutdownFailures(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := serve(ctx, "127.0.0.1:0", http.NewServeMux(), func(context.Context) error {
+		return errors.New("redis close failed")
+	})
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "redis close failed")
+}
+
+// TestRunFailsWhenConfigurationIsInvalid asserts run surfaces a
+// configuration error as an error return (a non-zero exit) rather than
+// exiting deep inside the call stack.
+func TestRunFailsWhenConfigurationIsInvalid(t *testing.T) {
+	t.Setenv("MCP_BASE_URL", "")
+	t.Setenv("REDIS_URL", "")
+
+	err := run(context.Background(), "test")
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "load configuration")
 }

@@ -538,3 +538,42 @@ func readAll(r *http.Request) ([]byte, error) {
 	}
 	return io.ReadAll(r.Body)
 }
+
+// TestWithTimeoutBoundsEveryCall asserts the configured HTTP timeout is
+// actually applied to calls the client makes: a server that never responds
+// must fail the call at roughly the configured timeout, not at the client's
+// much longer built-in default.
+func TestWithTimeoutBoundsEveryCall(t *testing.T) {
+	blocked := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		<-blocked
+	}))
+	defer server.Close()
+	defer close(blocked)
+
+	client := httpsms.NewClient(server.URL, httpsms.WithTimeout(150*time.Millisecond))
+
+	start := time.Now()
+	_, err := client.ListPhones(context.Background(), "token", httpsms.ListPhonesParams{})
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.Less(t, elapsed, 5*time.Second, "the configured timeout was not applied")
+}
+
+// TestWithTimeoutIgnoresNonPositiveValues asserts an option can never strip
+// the client's bound: a zero or negative timeout keeps the built-in
+// default, so a misconfigured environment cannot produce a client that
+// hangs forever.
+func TestWithTimeoutIgnoresNonPositiveValues(t *testing.T) {
+	for _, timeout := range []time.Duration{0, -time.Second} {
+		server := newTestServer(t, http.StatusOK, httpsms.Response[[]httpsms.Phone]{}, nil)
+		client := httpsms.NewClient(server.URL, httpsms.WithTimeout(timeout))
+
+		// The call still succeeds promptly against a responsive server:
+		// the option was ignored, not applied as "no timeout at all" or
+		// "already expired".
+		_, err := client.ListPhones(context.Background(), "token", httpsms.ListPhonesParams{})
+		require.NoError(t, err)
+	}
+}

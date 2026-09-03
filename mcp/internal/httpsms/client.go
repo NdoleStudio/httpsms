@@ -93,6 +93,36 @@ type HTTPClient struct {
 
 var _ Client = (*HTTPClient)(nil)
 
+// ClientOption customizes an *HTTPClient built by NewClient. Options exist
+// so a caller can override a bounded default (today: the overall per-call
+// timeout) without NewClient growing a parameter every deployment-specific
+// knob, and without any option being able to remove a bound entirely.
+type ClientOption func(*clientOptions)
+
+// clientOptions is the resolved set of NewClient overrides.
+type clientOptions struct {
+	// timeout overrides the overall per-call timeout. A non-positive
+	// value is ignored, so an option can never disable the timeout.
+	timeout time.Duration
+}
+
+// WithTimeout overrides the overall per-call timeout (dial, TLS, request,
+// and response) for every call the returned client makes. A non-positive
+// timeout is ignored and the built-in default (requestTimeout) is kept: a
+// client with no overall deadline could hang a tool call until the MCP
+// request itself times out, which is never what a caller wants.
+//
+// The response-header timeout is clamped to at most this value, so a
+// shorter overall timeout is actually enforced at the point a server stops
+// responding rather than only at the very end of the call.
+func WithTimeout(timeout time.Duration) ClientOption {
+	return func(options *clientOptions) {
+		if timeout > 0 {
+			options.timeout = timeout
+		}
+	}
+}
+
 // NewClient returns an *HTTPClient calling baseURL (for example
 // "https://api.httpsms.com"). The returned client is bounded and makes a
 // single attempt per call: an explicit overall request timeout plus
@@ -103,13 +133,21 @@ var _ Client = (*HTTPClient)(nil)
 // Retrying automatically would risk duplicating the side effect of a
 // non-idempotent call such as sending an SMS, creating a phone API key, or
 // rotating the user's primary API key.
-func NewClient(baseURL string) *HTTPClient {
+//
+// Called with no options, it keeps exactly the defaults it has always had;
+// see WithTimeout to override the overall per-call timeout.
+func NewClient(baseURL string, opts ...ClientOption) *HTTPClient {
+	options := clientOptions{timeout: requestTimeout}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	transport := &http.Transport{
 		MaxIdleConns:          maxIdleConns,
 		MaxIdleConnsPerHost:   maxIdleConnsPerHost,
 		IdleConnTimeout:       idleConnTimeout,
 		TLSHandshakeTimeout:   tlsHandshakeTimeout,
-		ResponseHeaderTimeout: responseHeaderTimeout,
+		ResponseHeaderTimeout: min(responseHeaderTimeout, options.timeout),
 		DialContext: (&net.Dialer{
 			Timeout: dialTimeout,
 		}).DialContext,
@@ -120,7 +158,7 @@ func NewClient(baseURL string) *HTTPClient {
 	return &HTTPClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{
-			Timeout:   requestTimeout,
+			Timeout:   options.timeout,
 			Transport: &queryRedactingTransport{next: instrumented},
 		},
 	}

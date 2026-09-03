@@ -412,17 +412,25 @@ func (s *Server) HandleFirebaseComplete(w http.ResponseWriter, r *http.Request) 
 // renderAuthorizePage writes the Firebase login/consent page for
 // transaction and client.
 func (s *Server) renderAuthorizePage(w http.ResponseWriter, transaction AuthorizationTransaction, client Client) {
+	nonce, err := newRandomToken(scriptNonceBytes)
+	if err != nil {
+		writeOAuthError(w, http.StatusInternalServerError, "server_error", "cannot render the consent page")
+		return
+	}
+
 	data := struct {
 		FirebaseAPIKey     string
 		FirebaseAuthDomain string
 		TransactionID      string
 		ClientName         string
+		ScriptNonce        string
 		Scopes             []struct{ Value, Description string }
 	}{
 		FirebaseAPIKey:     s.config.FirebaseAPIKey,
 		FirebaseAuthDomain: s.config.FirebaseAuthDomain,
 		TransactionID:      transaction.ID,
 		ClientName:         client.Name,
+		ScriptNonce:        nonce,
 	}
 	for _, scope := range transaction.Scopes {
 		description := scopeDescriptions[scope]
@@ -441,10 +449,82 @@ func (s *Server) renderAuthorizePage(w http.ResponseWriter, transaction Authoriz
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
+	w.Header().Set("Content-Security-Policy", s.consentPageCSP(nonce))
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.WriteHeader(http.StatusOK)
 	_ = s.templates.ExecuteTemplate(w, "authorize.html", data)
+}
+
+// scriptNonceBytes is the amount of crypto/rand entropy encoded into the
+// per-render CSP script nonce.
+const scriptNonceBytes = 16
+
+// firebaseScriptOrigin is where the consent page loads the Firebase Web SDK
+// from, and firebaseAPIOrigins are the endpoints that SDK calls to sign a
+// user in and mint an ID token. They are listed explicitly in the consent
+// page's CSP so no other origin can be scripted from, or exfiltrated to, if
+// the page's markup were ever influenced by attacker-controlled data.
+const firebaseScriptOrigin = "https://www.gstatic.com"
+
+var firebaseAPIOrigins = []string{
+	"https://identitytoolkit.googleapis.com",
+	"https://securetoken.googleapis.com",
+	"https://www.googleapis.com",
+}
+
+// firebaseProviderOrigins are the origins Firebase's signInWithPopup flow
+// loads its provider handoff UI from (Google's and GitHub's sign-in pages
+// are reached through the project's own auth domain, which is added
+// separately).
+var firebaseProviderOrigins = []string{
+	"https://apis.google.com",
+	"https://accounts.google.com",
+}
+
+// safeAuthDomain matches the only shape of FirebaseAuthDomain that may be
+// interpolated into a CSP source list: a bare hostname. Anything else
+// (a scheme, a path, a space, a semicolon) could terminate one directive
+// and inject another, turning a misconfigured environment variable into a
+// CSP bypass.
+var safeAuthDomain = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
+
+// consentPageCSP returns the consent page's Content-Security-Policy.
+//
+// The page is the one place in this service that runs script in a browser
+// and holds a Firebase ID token in its DOM, so its policy denies everything
+// by default and then re-admits exactly what the Firebase Web SDK needs:
+// the SDK bundles from gstatic, this render's own inline script (by nonce,
+// never 'unsafe-inline', so injected markup cannot execute), the Firebase
+// identity endpoints it calls, and the provider frames its sign-in popup
+// uses. form-action 'self' keeps the ID-token form from being retargeted at
+// another origin, and frame-ancestors 'none' preserves the previous
+// policy's clickjacking protection.
+func (s *Server) consentPageCSP(nonce string) string {
+	scriptSrc := []string{"'nonce-" + nonce + "'", firebaseScriptOrigin}
+	scriptSrc = append(scriptSrc, firebaseProviderOrigins...)
+
+	connectSrc := append([]string{"'self'"}, firebaseAPIOrigins...)
+	frameSrc := append([]string{}, firebaseProviderOrigins...)
+
+	if domain := s.config.FirebaseAuthDomain; safeAuthDomain.MatchString(domain) {
+		connectSrc = append(connectSrc, "https://"+domain)
+		frameSrc = append(frameSrc, "https://"+domain)
+	}
+
+	directives := []string{
+		"default-src 'none'",
+		"base-uri 'none'",
+		"object-src 'none'",
+		"frame-ancestors 'none'",
+		"form-action 'self'",
+		"img-src 'self' data:",
+		"style-src 'unsafe-inline'",
+		"script-src " + strings.Join(scriptSrc, " "),
+		"connect-src " + strings.Join(connectSrc, " "),
+		"frame-src " + strings.Join(frameSrc, " "),
+	}
+
+	return strings.Join(directives, "; ")
 }
 
 // redirect sends an authorization response (success or error) back to the

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>Authorize {{.ClientName}} - httpSMS</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script nonce="{{.ScriptNonce}}" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script nonce="{{.ScriptNonce}}" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
   <h1>{{.ClientName}} wants to access your httpSMS account</h1>
@@ -49,7 +49,7 @@
     <button type="submit" id="httpsms-deny-button">Deny</button>
   </form>
 
-  <script>
+  <script nonce="{{.ScriptNonce}}">
     // The Firebase Web API key and auth domain below are ordinary public
     // browser-side configuration, not secrets: Firebase's security model
     // relies on server-side ID-token verification (performed by this

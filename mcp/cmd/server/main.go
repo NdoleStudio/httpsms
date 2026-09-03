@@ -41,21 +41,48 @@ var Version = "dev"
 const shutdownTimeout = 10 * time.Second
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal().Err(err).Msg("load configuration")
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	handler, shutdown, err := build(ctx, cfg, Version)
+	if err := run(ctx, Version); err != nil {
+		log.Error().Err(err).Msg("httpSMS MCP server exited with an error")
+		stop()
+		os.Exit(1)
+	}
+}
+
+// run loads configuration, assembles every dependency, serves HTTP until
+// ctx is cancelled or the listener fails, and then shuts everything down.
+//
+// It returns an error instead of exiting the process itself, so every
+// failure path -- including a listener that never starts (a port already in
+// use, an invalid PORT value, a missing bind permission), which must be a
+// non-zero process exit rather than a log line followed by a "clean"
+// shutdown -- is reachable from a test.
+func run(ctx context.Context, version string) error {
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal().Err(err).Msg("build MCP server")
+		return fmt.Errorf("load configuration: %w", err)
 	}
 
+	handler, shutdown, err := build(ctx, cfg, version)
+	if err != nil {
+		return fmt.Errorf("build MCP server: %w", err)
+	}
+
+	return serve(ctx, ":"+cfg.Port, handler, shutdown)
+}
+
+// serve runs handler on addr until ctx is cancelled or ListenAndServe
+// fails, then drains in-flight requests and calls shutdown.
+//
+// It returns a non-nil error when the listener failed for any reason other
+// than a graceful http.ErrServerClosed, or when draining/shutdown itself
+// failed; a shutdown triggered by ctx being cancelled (SIGINT/SIGTERM, the
+// normal Cloud Run path) returns nil.
+func serve(ctx context.Context, addr string, handler http.Handler, shutdown func(context.Context) error) error {
 	httpServer := &http.Server{
-		Addr:              ":" + cfg.Port,
+		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -65,19 +92,20 @@ func main() {
 
 	serveErr := make(chan error, 1)
 	go func() {
-		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serveErr <- err
-			return
+		err := httpServer.ListenAndServe()
+		if errors.Is(err, http.ErrServerClosed) {
+			err = nil
 		}
-		serveErr <- nil
+		serveErr <- err
 	}()
 
+	var errs []error
 	select {
 	case <-ctx.Done():
 		log.Info().Msg("received shutdown signal")
 	case err := <-serveErr:
 		if err != nil {
-			log.Error().Err(err).Msg("HTTP server stopped unexpectedly")
+			errs = append(errs, fmt.Errorf("serve HTTP on %q: %w", addr, err))
 		}
 	}
 
@@ -85,11 +113,13 @@ func main() {
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Error().Err(err).Msg("shut down HTTP server")
+		errs = append(errs, fmt.Errorf("shut down HTTP server: %w", err))
 	}
 	if err := shutdown(shutdownCtx); err != nil {
-		log.Error().Err(err).Msg("shut down MCP server dependencies")
+		errs = append(errs, fmt.Errorf("shut down MCP server dependencies: %w", err))
 	}
+
+	return errors.Join(errs...)
 }
 
 // build loads and wires every dependency the httpSMS MCP service needs and
@@ -170,7 +200,11 @@ func build(ctx context.Context, cfg config.Config, version string) (http.Handler
 		return nil, nil, fmt.Errorf("build OAuth server: %w", err)
 	}
 
-	apiClient := httpsms.NewClient(cfg.APIURL.String())
+	// cfg.HTTPTimeout bounds every outbound call this service makes,
+	// including calls to the httpSMS API: without passing it here the API
+	// client would silently keep its own built-in default and the
+	// configured HTTP_TIMEOUT would apply only to CIMD fetches.
+	apiClient := httpsms.NewClient(cfg.APIURL.String(), httpsms.WithTimeout(cfg.HTTPTimeout))
 
 	handler, err := server.New(cfg, server.Dependencies{
 		Logger:                logger,

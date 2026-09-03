@@ -45,6 +45,26 @@ type Limits struct {
 	KeyRotationsPerHour int
 }
 
+// validate returns an error naming the first non-positive budget in l. A
+// zero or negative budget is never a valid configuration: Allow treats it
+// as "this tool is not rate limited at all", so a mis-wired or forgotten
+// budget would silently remove the limit on exactly the tools (sending
+// SMS, minting API keys, rotating the primary key) that most need one.
+func (l Limits) validate() error {
+	switch {
+	case l.ReadPerMinute <= 0:
+		return errors.New("server: Limits.ReadPerMinute must be positive")
+	case l.SendPerMinute <= 0:
+		return errors.New("server: Limits.SendPerMinute must be positive")
+	case l.KeyCreatesPerHour <= 0:
+		return errors.New("server: Limits.KeyCreatesPerHour must be positive")
+	case l.KeyRotationsPerHour <= 0:
+		return errors.New("server: Limits.KeyRotationsPerHour must be positive")
+	default:
+		return nil
+	}
+}
+
 // bucket is one rate-limit budget: how many calls tool may receive from a
 // single user within window.
 type bucket struct {

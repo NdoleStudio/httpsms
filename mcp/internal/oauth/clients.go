@@ -553,6 +553,7 @@ func NewRegistrationHandler(store Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", http.MethodPost)
+			w.Header().Set("Cache-Control", "no-store")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -602,6 +603,14 @@ func NewRegistrationHandler(store Store) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		// A registration response carries the newly assigned client_id
+		// and the exact metadata this server will honour for it. Like
+		// every other authorization-server response, it must never be
+		// stored by an intermediary or a browser cache (RFC 6749
+		// Section 5.1's no-store requirement applies to the whole
+		// authorization-server surface, not just token responses).
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Pragma", "no-cache")
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(validated)
 	}
@@ -618,9 +627,12 @@ func mustMarshal(v any) []byte {
 	return data
 }
 
-// writeRegistrationError writes an RFC 7591 error response.
+// writeRegistrationError writes an RFC 7591 error response. Like the
+// success response, it is never cacheable.
 func writeRegistrationError(w http.ResponseWriter, status int, code, description string) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(registrationError{Error: code, ErrorDescription: description})
 }

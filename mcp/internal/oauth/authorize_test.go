@@ -716,8 +716,79 @@ func TestHandleAuthorizeSetsConsentPageProtections(t *testing.T) {
 	assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
 	assert.Equal(t, "no-cache", rec.Header().Get("Pragma"))
 	assert.Equal(t, "DENY", rec.Header().Get("X-Frame-Options"))
-	assert.Equal(t, "frame-ancestors 'none'", rec.Header().Get("Content-Security-Policy"))
 	assert.Equal(t, "no-referrer", rec.Header().Get("Referrer-Policy"))
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	assert.Contains(t, csp, "frame-ancestors 'none'")
+	assert.Contains(t, csp, "default-src 'none'")
+	assert.Contains(t, csp, "form-action 'self'")
+	assert.Contains(t, csp, "base-uri 'none'")
+	assert.NotContains(t, csp, "'unsafe-eval'")
+
+	// Injected markup must never be able to execute: the page's own
+	// scripts are admitted by nonce, never by 'unsafe-inline'.
+	scriptSrc := cspDirective(t, csp, "script-src")
+	assert.Contains(t, scriptSrc, "'nonce-")
+	assert.NotContains(t, scriptSrc, "'unsafe-inline'")
+}
+
+// cspDirective returns the source list of the named directive in policy.
+func cspDirective(t *testing.T, policy string, name string) string {
+	t.Helper()
+
+	for _, directive := range strings.Split(policy, ";") {
+		directive = strings.TrimSpace(directive)
+		if after, found := strings.CutPrefix(directive, name+" "); found {
+			return after
+		}
+	}
+
+	t.Fatalf("policy %q has no %q directive", policy, name)
+	return ""
+}
+
+// TestHandleAuthorizeConsentPageCSPAdmitsEveryFirebaseDependency asserts
+// the consent page's CSP still allows every origin the Firebase Web SDK
+// needs (its bundles, its identity endpoints, and its sign-in popup
+// origins) and admits this render's own inline script by the exact nonce
+// the rendered markup carries -- a policy that blocked any of these would
+// break sign-in entirely.
+func TestHandleAuthorizeConsentPageCSPAdmitsEveryFirebaseDependency(t *testing.T) {
+	store := newClientsTestStore(t)
+	registerTestClient(t, store, testClientID, []string{testRedirect})
+	server := newTestOAuthServer(t, store, approvingVerifier())
+
+	req := httptest.NewRequest(http.MethodGet, "/oauth/authorize?"+validAuthorizeQuery(nil), nil)
+	rec := httptest.NewRecorder()
+
+	server.HandleAuthorize(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	for _, source := range []string{
+		"https://www.gstatic.com",
+		"https://identitytoolkit.googleapis.com",
+		"https://securetoken.googleapis.com",
+		"https://apis.google.com",
+		"https://accounts.google.com",
+		"https://httpsms-test.firebaseapp.com",
+	} {
+		assert.Containsf(t, csp, source, "CSP must admit %s", source)
+	}
+
+	nonceMatch := regexp.MustCompile(`'nonce-([A-Za-z0-9_-]+)'`).FindStringSubmatch(csp)
+	require.Lenf(t, nonceMatch, 2, "CSP must carry a script nonce: %s", csp)
+
+	body := rec.Body.String()
+	assert.Contains(t, body, `<script nonce="`+nonceMatch[1]+`">`)
+	assert.Contains(t, body, `<script nonce="`+nonceMatch[1]+`" src="https://www.gstatic.com/firebasejs/`)
+
+	// A second render must never reuse the first render's nonce, or the
+	// nonce would be as guessable as 'unsafe-inline'.
+	rec2 := httptest.NewRecorder()
+	server.HandleAuthorize(rec2, httptest.NewRequest(http.MethodGet, "/oauth/authorize?"+validAuthorizeQuery(nil), nil))
+	require.Equal(t, http.StatusOK, rec2.Code)
+	assert.NotContains(t, rec2.Header().Get("Content-Security-Policy"), nonceMatch[1])
 }
 
 // TestHandleAuthorizeRendersEveryFirebaseProvider asserts the consent page

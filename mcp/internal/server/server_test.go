@@ -137,6 +137,15 @@ type testHarness struct {
 func newTestHarness(t *testing.T, mutate ...func(*config.Config)) *testHarness {
 	t.Helper()
 
+	return newTestHarnessWithAPIClient(t, stubAPIClient{}, mutate...)
+}
+
+// newTestHarnessWithAPIClient is newTestHarness with an explicit
+// httpsms.Client, for tests that need the client to misbehave (see the
+// panic-recovery tests).
+func newTestHarnessWithAPIClient(t *testing.T, apiClient httpsms.Client, mutate ...func(*config.Config)) *testHarness {
+	t.Helper()
+
 	mr := miniredis.RunT(t)
 	cfg := newTestConfig(t, mr)
 	for _, m := range mutate {
@@ -170,7 +179,7 @@ func newTestHarness(t *testing.T, mutate ...func(*config.Config)) *testHarness {
 		OAuthServer:           oauthServer,
 		OAuthServerConfig:     oauthServerConfig,
 		OAuthStore:            store,
-		APIClient:             stubAPIClient{},
+		APIClient:             apiClient,
 		RedisClient:           redisClient,
 		APIDelegationTokenTTL: cfg.APIDelegationTokenTTL,
 		ConfirmationTTL:       cfg.ConfirmationTTL,
@@ -563,11 +572,23 @@ func TestNewRejectsMismatchedOAuthResourceAndConfigAudience(t *testing.T) {
 		RedisClient:           redisClient,
 		APIDelegationTokenTTL: cfg.APIDelegationTokenTTL,
 		ConfirmationTTL:       cfg.ConfirmationTTL,
+		RateLimits:            newTestLimits(cfg),
 		Version:               "test",
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "Resource")
 	require.Contains(t, err.Error(), "MCPAudience")
+}
+
+// newTestLimits returns the server.Limits matching cfg's configured
+// budgets.
+func newTestLimits(cfg config.Config) server.Limits {
+	return server.Limits{
+		ReadPerMinute:       cfg.ReadToolsPerMinute,
+		SendPerMinute:       cfg.SendToolsPerMinute,
+		KeyCreatesPerHour:   cfg.KeyCreatesPerHour,
+		KeyRotationsPerHour: cfg.KeyRotationsPerHour,
+	}
 }
 
 func TestNewRejectsIncompleteDependencies(t *testing.T) {
@@ -600,8 +621,14 @@ func TestNewRejectsIncompleteDependencies(t *testing.T) {
 		RedisClient:           redisClient,
 		APIDelegationTokenTTL: cfg.APIDelegationTokenTTL,
 		ConfirmationTTL:       cfg.ConfirmationTTL,
+		RateLimits:            newTestLimits(cfg),
 		Version:               "test",
 	}
+
+	// The complete set must itself be accepted, or every case below would
+	// pass for the wrong reason.
+	_, err = server.New(cfg, complete)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name   string
@@ -615,6 +642,15 @@ func TestNewRejectsIncompleteDependencies(t *testing.T) {
 		{"zero APIDelegationTokenTTL", func(d *server.Dependencies) { d.APIDelegationTokenTTL = 0 }},
 		{"zero ConfirmationTTL", func(d *server.Dependencies) { d.ConfirmationTTL = 0 }},
 		{"empty Version", func(d *server.Dependencies) { d.Version = "" }},
+		// Every rate-limit budget must be positive: ToolRateLimiter treats
+		// a non-positive budget as "this tool is not rate limited at all",
+		// so a forgotten or mis-wired budget would silently remove the
+		// limit instead of failing.
+		{"zero ReadPerMinute", func(d *server.Dependencies) { d.RateLimits.ReadPerMinute = 0 }},
+		{"negative ReadPerMinute", func(d *server.Dependencies) { d.RateLimits.ReadPerMinute = -1 }},
+		{"zero SendPerMinute", func(d *server.Dependencies) { d.RateLimits.SendPerMinute = 0 }},
+		{"zero KeyCreatesPerHour", func(d *server.Dependencies) { d.RateLimits.KeyCreatesPerHour = 0 }},
+		{"zero KeyRotationsPerHour", func(d *server.Dependencies) { d.RateLimits.KeyRotationsPerHour = 0 }},
 	}
 
 	for _, test := range tests {
@@ -625,4 +661,410 @@ func TestNewRejectsIncompleteDependencies(t *testing.T) {
 			require.Error(t, err)
 		})
 	}
+}
+
+// --- Fix round 1: hardened assembly ---------------------------------------
+
+// TestPublicMetadataRoutesAnswerCORSPreflight asserts a browser CORS
+// preflight against every public discovery document is actually answered by
+// the CORS wrapper -- not by the mux with a bare 405 -- and is permissive
+// enough for the request headers an MCP/OAuth client sends.
+func TestPublicMetadataRoutesAnswerCORSPreflight(t *testing.T) {
+	h := newTestHarness(t)
+
+	for _, path := range []string{
+		"/.well-known/oauth-protected-resource",
+		"/.well-known/oauth-protected-resource/mcp",
+		"/.well-known/oauth-authorization-server",
+		"/.well-known/jwks.json",
+	} {
+		req, err := http.NewRequest(http.MethodOptions, h.httpServer.URL+path, nil)
+		require.NoError(t, err)
+		req.Header.Set("Origin", "https://client.example")
+		req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+		req.Header.Set("Access-Control-Request-Headers", "content-type, mcp-protocol-version")
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equalf(t, http.StatusNoContent, resp.StatusCode, "OPTIONS %s", path)
+		require.Equalf(t, "*", resp.Header.Get("Access-Control-Allow-Origin"), "OPTIONS %s", path)
+		require.Emptyf(t, resp.Header.Get("Access-Control-Allow-Credentials"), "OPTIONS %s", path)
+
+		allowedMethods := resp.Header.Get("Access-Control-Allow-Methods")
+		require.Containsf(t, allowedMethods, http.MethodGet, "OPTIONS %s", path)
+		require.Containsf(t, allowedMethods, http.MethodOptions, "OPTIONS %s", path)
+
+		allowedHeaders := strings.ToLower(resp.Header.Get("Access-Control-Allow-Headers"))
+		require.Containsf(t, allowedHeaders, "content-type", "OPTIONS %s", path)
+		require.Containsf(t, allowedHeaders, "mcp-protocol-version", "OPTIONS %s", path)
+	}
+}
+
+// TestPublicMetadataRoutesStillServeGETAndHEAD asserts adding the preflight
+// path did not change the documents themselves: GET still serves the JSON,
+// and HEAD still succeeds with the same headers and no body.
+func TestPublicMetadataRoutesStillServeGETAndHEAD(t *testing.T) {
+	h := newTestHarness(t)
+
+	for _, path := range []string{
+		"/.well-known/oauth-protected-resource",
+		"/.well-known/oauth-protected-resource/mcp",
+		"/.well-known/oauth-authorization-server",
+		"/.well-known/jwks.json",
+	} {
+		resp, err := http.Get(h.httpServer.URL + path)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equalf(t, http.StatusOK, resp.StatusCode, "GET %s", path)
+		require.Equalf(t, "application/json", resp.Header.Get("Content-Type"), "GET %s", path)
+		require.Equalf(t, "*", resp.Header.Get("Access-Control-Allow-Origin"), "GET %s", path)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.NotEmptyf(t, body, "GET %s", path)
+
+		headResp, err := http.Head(h.httpServer.URL + path)
+		require.NoError(t, err)
+		defer headResp.Body.Close()
+		require.Equalf(t, http.StatusOK, headResp.StatusCode, "HEAD %s", path)
+		require.Equalf(t, "*", headResp.Header.Get("Access-Control-Allow-Origin"), "HEAD %s", path)
+	}
+}
+
+// TestPublicMetadataRoutesRejectUnsupportedMethods asserts a write method
+// against a read-only document is refused with an Allow header rather than
+// reaching the document handler.
+func TestPublicMetadataRoutesRejectUnsupportedMethods(t *testing.T) {
+	h := newTestHarness(t)
+
+	req, err := http.NewRequest(http.MethodPost, h.httpServer.URL+"/.well-known/oauth-protected-resource", strings.NewReader("{}"))
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+	require.Contains(t, resp.Header.Get("Allow"), http.MethodGet)
+}
+
+// TestProtectedResourceMetadataIsServedAtBothRFC9728Paths asserts the
+// path-suffixed alias RFC 9728 prescribes for a resource with a path
+// component ("/.well-known/oauth-protected-resource/mcp") serves the exact
+// same document as the root well-known path.
+func TestProtectedResourceMetadataIsServedAtBothRFC9728Paths(t *testing.T) {
+	h := newTestHarness(t)
+
+	read := func(path string) map[string]any {
+		resp, err := http.Get(h.httpServer.URL + path)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equalf(t, http.StatusOK, resp.StatusCode, "GET %s", path)
+
+		var document map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&document))
+		return document
+	}
+
+	root := read("/.well-known/oauth-protected-resource")
+	suffixed := read("/.well-known/oauth-protected-resource/mcp")
+
+	require.Equal(t, testIssuer+"/mcp", root["resource"])
+	require.Equal(t, root, suffixed)
+}
+
+// TestHSTSIsSetOnlyInProduction asserts Strict-Transport-Security is sent
+// in production (where every request is HTTPS and a downgraded request
+// could expose a bearer token) and never outside it (where a cached HSTS
+// entry for "localhost" would break unrelated local services).
+func TestHSTSIsSetOnlyInProduction(t *testing.T) {
+	local := newTestHarness(t)
+	resp, err := http.Get(local.httpServer.URL + "/healthz")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Empty(t, resp.Header.Get("Strict-Transport-Security"))
+
+	production := newTestHarness(t, func(cfg *config.Config) {
+		cfg.Environment = config.EnvironmentProduction
+	})
+	resp2, err := http.Get(production.httpServer.URL + "/healthz")
+	require.NoError(t, err)
+	defer resp2.Body.Close()
+
+	hsts := resp2.Header.Get("Strict-Transport-Security")
+	require.Contains(t, hsts, "max-age=")
+	require.Contains(t, hsts, "includeSubDomains")
+	require.NotContains(t, hsts, "max-age=0")
+}
+
+// TestInboundRequestIDIsBoundedAndValidated asserts a well-formed upstream
+// correlation ID is preserved, while an oversized or malformed one (which
+// would otherwise be echoed into a response header and every log line) is
+// replaced with a freshly generated ID.
+func TestInboundRequestIDIsBoundedAndValidated(t *testing.T) {
+	h := newTestHarness(t)
+
+	tests := []struct {
+		name      string
+		requestID string
+		preserved bool
+	}{
+		{"uuid is preserved", "6f1b7f3e-6d2a-4f0f-9f39-0f6c4c6f39ab", true},
+		{"trace-id shape is preserved", "trace-id:abc123/def-456_78=", true},
+		{"empty is generated", "", false},
+		{"oversized is replaced", strings.Repeat("a", 129), false},
+		{"control character is replaced", "abc\tdef", false},
+		{"whitespace is replaced", "abc def", false},
+		{"non-ascii is replaced", "abc\u00e9", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, h.httpServer.URL+"/healthz", nil)
+			require.NoError(t, err)
+			if test.requestID != "" {
+				// Set the raw value directly, bypassing the client's own
+				// header validation: the point of the test is what this
+				// service does with a hostile value, not what net/http
+				// refuses to send.
+				req.Header["X-Request-Id"] = []string{test.requestID}
+			}
+
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			echoed := resp.Header.Get("X-Request-Id")
+			require.NotEmpty(t, echoed)
+
+			if test.preserved {
+				require.Equal(t, test.requestID, echoed)
+				return
+			}
+
+			require.NotEqual(t, test.requestID, echoed)
+			require.LessOrEqual(t, len(echoed), 128)
+		})
+	}
+}
+
+// panickingAPIClient is an httpsms.Client whose every call panics, standing
+// in for a latent nil-dereference or index-out-of-range bug anywhere below
+// the MCP dispatcher.
+type panickingAPIClient struct{ stubAPIClient }
+
+func (panickingAPIClient) ListPhones(context.Context, string, httpsms.ListPhonesParams) ([]httpsms.Phone, error) {
+	panic("boom: simulated tool handler panic")
+}
+
+// TestToolHandlerPanicIsRecoveredAsJSONRPCInternalError asserts a panic
+// inside a tool handler is converted into a JSON-RPC internal error rather
+// than killing the process, and that the server keeps serving afterwards.
+func TestToolHandlerPanicIsRecoveredAsJSONRPCInternalError(t *testing.T) {
+	h := newTestHarnessWithAPIClient(t, panickingAPIClient{})
+	token := h.mintToken(t, allScopes...)
+
+	resp := postMCP(t, h, token, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_phones","arguments":{}}}`, nil)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var decoded struct {
+		Error *struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	require.NoError(t, json.Unmarshal(body, &decoded))
+	require.NotNilf(t, decoded.Error, "expected a JSON-RPC error, body: %s", body)
+	require.Equal(t, -32603, decoded.Error.Code)
+	// The client is told nothing about the panic itself.
+	require.NotContains(t, strings.ToLower(decoded.Error.Message), "boom")
+	require.NotContains(t, strings.ToLower(decoded.Error.Message), "panic")
+
+	// The process survived and the server still serves other requests.
+	resp2 := postMCP(t, h, token, `{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, nil)
+	defer resp2.Body.Close()
+	require.Equal(t, http.StatusOK, resp2.StatusCode)
+}
+
+// TestRotateUserAPIKeyConfirmationPromptIsNotRateLimited asserts a
+// rotate_user_api_key call that presents no confirmation -- which can only
+// mint a confirmation handle, never rotate anything -- does not consume the
+// hourly rotation budget, while a call presenting a confirmation handle
+// (which may execute) does.
+func TestRotateUserAPIKeyConfirmationPromptIsNotRateLimited(t *testing.T) {
+	h := newTestHarness(t, func(cfg *config.Config) {
+		cfg.KeyRotationsPerHour = 1
+	})
+	token := h.mintToken(t, allScopes...)
+
+	callError := func(t *testing.T, body string) string {
+		t.Helper()
+
+		resp := postMCP(t, h, token, body, nil)
+		defer resp.Body.Close()
+
+		raw, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var decoded struct {
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		require.NoError(t, json.Unmarshal(raw, &decoded))
+		if decoded.Error == nil {
+			return ""
+		}
+		return strings.ToLower(decoded.Error.Message)
+	}
+
+	unconfirmed := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rotate_user_api_key","arguments":{}}}`
+	withHandle := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rotate_user_api_key","arguments":{"confirmation_handle":"not-a-real-handle"}}}`
+
+	// Several confirmation-only calls in a row must never exhaust a budget
+	// of one rotation per hour.
+	for i := 0; i < 4; i++ {
+		require.NotContainsf(t, callError(t, unconfirmed), "rate limit", "confirmation-only call %d", i+1)
+	}
+
+	// The first call that presents a confirmation handle spends the single
+	// available rotation...
+	require.NotContains(t, callError(t, withHandle), "rate limit")
+	// ... so the next one is rejected by the limiter.
+	require.Contains(t, callError(t, withHandle), "rate limit")
+
+	// A confirmation-only call is still refused once the budget is spent
+	// only because it is charged -- it is not, so it still gets through.
+	require.NotContains(t, callError(t, unconfirmed), "rate limit")
+}
+
+// TestNewRejectsMCPAudienceThatIsNotTheCanonicalEndpointURL asserts an
+// MCP_AUDIENCE override that does not equal BaseURL + "/mcp" fails startup:
+// discovery metadata always publishes the canonical value, so any other
+// audience yields tokens no client could ever successfully present.
+func TestNewRejectsMCPAudienceThatIsNotTheCanonicalEndpointURL(t *testing.T) {
+	mr := miniredis.RunT(t)
+	cfg := newTestConfig(t, mr)
+	cfg.MCPAudience = testIssuer + "/not-mcp"
+
+	keys := newTestKeys(t, cfg)
+	redisClient := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer redisClient.Close()
+
+	store := oauth.NewRedisStore(redisClient)
+	resolver := oauth.NewClientResolver(http.DefaultClient, store)
+
+	// The OAuth server agrees with the (wrong) audience, so the only thing
+	// that can catch this is the canonical-URL check itself.
+	oauthServerConfig := oauth.ServerConfig{
+		Issuer:               testIssuer,
+		Resource:             cfg.MCPAudience,
+		FirebaseAPIKey:       "test-firebase-api-key",
+		FirebaseAuthDomain:   "httpsms-test.firebaseapp.com",
+		AuthorizationCodeTTL: cfg.AuthorizationCodeTTL,
+		AccessTokenTTL:       cfg.AccessTokenTTL,
+		RefreshTokenTTL:      cfg.RefreshTokenTTL,
+	}
+	oauthServer, err := oauth.NewServer(store, resolver, keys, approvingVerifier{}, oauthServerConfig)
+	require.NoError(t, err)
+
+	_, err = server.New(cfg, server.Dependencies{
+		Logger:                zerolog.Nop(),
+		Keys:                  keys,
+		OAuthServer:           oauthServer,
+		OAuthServerConfig:     oauthServerConfig,
+		OAuthStore:            store,
+		APIClient:             stubAPIClient{},
+		RedisClient:           redisClient,
+		APIDelegationTokenTTL: cfg.APIDelegationTokenTTL,
+		ConfirmationTTL:       cfg.ConfirmationTTL,
+		RateLimits:            newTestLimits(cfg),
+		Version:               "test",
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "MCPAudience")
+	require.Contains(t, err.Error(), testIssuer+"/mcp")
+}
+
+// panickingRedisClient is a redis.UniversalClient whose embedded interface
+// is nil: every command it does not override panics with a nil-pointer
+// dereference. It stands in for a Redis client that panics inside the rate
+// limiter, below the MCP dispatcher but above every tool handler.
+type panickingRedisClient struct{ redis.UniversalClient }
+
+// TestRateLimiterPanicIsRecoveredAsJSONRPCInternalError asserts a panic
+// raised inside the rate limiter -- before any tool handler runs -- is
+// recovered by the MCP receiving middleware and returned as a JSON-RPC
+// internal error, rather than unwinding through the SDK's dispatch and
+// killing the process.
+func TestRateLimiterPanicIsRecoveredAsJSONRPCInternalError(t *testing.T) {
+	mr := miniredis.RunT(t)
+	cfg := newTestConfig(t, mr)
+	keys := newTestKeys(t, cfg)
+
+	stateRedis := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = stateRedis.Close() })
+
+	store := oauth.NewRedisStore(stateRedis)
+	resolver := oauth.NewClientResolver(http.DefaultClient, store)
+
+	oauthServerConfig := oauth.ServerConfig{
+		Issuer:               testIssuer,
+		Resource:             cfg.MCPAudience,
+		FirebaseAPIKey:       "test-firebase-api-key",
+		FirebaseAuthDomain:   "httpsms-test.firebaseapp.com",
+		AuthorizationCodeTTL: cfg.AuthorizationCodeTTL,
+		AccessTokenTTL:       cfg.AccessTokenTTL,
+		RefreshTokenTTL:      cfg.RefreshTokenTTL,
+	}
+	oauthServer, err := oauth.NewServer(store, resolver, keys, approvingVerifier{}, oauthServerConfig)
+	require.NoError(t, err)
+
+	handler, err := server.New(cfg, server.Dependencies{
+		Logger:                zerolog.Nop(),
+		Keys:                  keys,
+		OAuthServer:           oauthServer,
+		OAuthServerConfig:     oauthServerConfig,
+		OAuthStore:            store,
+		APIClient:             stubAPIClient{},
+		RedisClient:           panickingRedisClient{},
+		APIDelegationTokenTTL: cfg.APIDelegationTokenTTL,
+		ConfirmationTTL:       cfg.ConfirmationTTL,
+		RateLimits:            newTestLimits(cfg),
+		Version:               "test",
+	})
+	require.NoError(t, err)
+
+	httpServer := httptest.NewServer(handler)
+	defer httpServer.Close()
+
+	h := &testHarness{httpServer: httpServer, keys: keys, cfg: cfg}
+	token := h.mintToken(t, allScopes...)
+
+	resp := postMCP(t, h, token, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_phones","arguments":{}}}`, nil)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var decoded struct {
+		Error *struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	require.NoError(t, json.Unmarshal(body, &decoded))
+	require.NotNilf(t, decoded.Error, "expected a JSON-RPC error, body: %s", body)
+	require.Equal(t, -32603, decoded.Error.Code)
+
+	// The process survived: a method that never touches the limiter still
+	// works.
+	resp2 := postMCP(t, h, token, `{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, nil)
+	defer resp2.Body.Close()
+	require.Equal(t, http.StatusOK, resp2.StatusCode)
 }
