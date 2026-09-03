@@ -4,7 +4,7 @@
 
 **Goal:** Allow a phone whose existing `fcm_token` is an HTTPS URL to receive message and heartbeat wake-ups over HTTP while preserving the current scheduling, backpressure, outstanding-message, and status-event flows.
 
-**Architecture:** Add transport helpers to `entities.Phone`, then route a transport-neutral `GatewayNotification` through Firebase and HTTP senders. The HTTP path uses a standard OpenTelemetry-wrapped `http.Client`, application retries with `github.com/avast/retry-go/v5`, FCM-compatible JSON, and the existing notification success/failure state transitions.
+**Architecture:** Add transport helpers to `entities.Phone`, then route a shared Firebase `*messaging.Message` through Firebase and HTTP senders while passing the delivery UUID separately. The HTTP path uses a standard OpenTelemetry-wrapped `http.Client`, application retries with `github.com/avast/retry-go/v5`, FCM-compatible JSON, and the existing notification success/failure state transitions.
 
 **Tech Stack:** Go 1.25.8, Fiber v3, Firebase Admin Messaging, OpenTelemetry, `net/http`, `retry-go/v5`, Testify, Docker Compose.
 
@@ -20,16 +20,25 @@ private-host allowlist.
   hostname classification; URL user information remains valid.
 - `Container.NotificationHTTPClient` uses the existing
   `go-otelroundtripper` pattern with the `phone_notification_http` name and
-  `http.DefaultTransport` as the final parent.
-- A telemetry-only seam exposes only scheme and host/port to OTel while the
-  default transport receives the original URL, headers, and body.
-- `HTTPNotificationSender` owns exactly three application attempts through
-  `retry.New(...).Do`, with a fresh request/body and five-second context per
-  attempt.
+  the default transport, matching the webhook client style without custom URL
+  redaction.
+- `HTTPNotificationSender` creates one reusable `*retry.Retrier` during
+  initialization. It owns exactly three application attempts with exponential
+  backoff, a fresh request/body, and a five-second child context per attempt;
+  caller contexts are enforced per operation rather than stored on the
+  reusable retrier.
+- Payload encoding, request creation, one-attempt delivery, and retry
+  configuration are separate focused methods. OpenTelemetry HTTP telemetry is
+  owned by the injected round-tripper, with no sender-specific attempt metrics
+  or spans.
 - No endpoint DNS/IP/SSRF policy, custom notification transport, or private-host
   allowlist is part of the final implementation.
 - The transport router is `PhoneNotificationDispatcher`; domain events continue
   to use the existing `EventDispatcher` directly.
+- `PhoneNotificationService` constructs `*messaging.Message` directly.
+  `PhoneNotificationDispatcher` sets the trimmed destination in `message.Token`
+  and passes the same pointer to either sender with the notification UUID as a
+  separate argument. Nil messages fail explicitly with stacktrace errors.
 
 ## Global Constraints
 
@@ -58,8 +67,10 @@ private-host allowlist.
 - `api/pkg/entities/phone_test.go` - table-driven transport classification tests.
 - `api/pkg/services/notification_endpoint_policy.go` - public HTTPS URL validation, reserved-IP rejection, and validated dialing.
 - `api/pkg/services/notification_endpoint_policy_test.go` - deterministic resolver/dialer tests, including DNS rebinding protection.
-- `api/pkg/services/notification_sender.go` - transport-neutral notification, sender interface, Firebase adapter, and dispatcher.
-- `api/pkg/services/notification_sender_test.go` - dispatcher routing and Firebase payload mapping tests.
+- `api/pkg/services/notification_sender.go` - shared sender interface and Firebase adapter.
+- `api/pkg/services/notification_sender_test.go` - Firebase payload mapping tests.
+- `api/pkg/services/phone_notification_dispatcher.go` - phone transport routing.
+- `api/pkg/services/phone_notification_dispatcher_test.go` - dispatcher routing tests and sender fake.
 - `api/pkg/services/http_notification_sender.go` - HTTP request encoding, retry classification, and timeout.
 - `api/pkg/services/http_notification_sender_test.go` - payload, retry, idempotency, and response tests.
 - `api/pkg/services/phone_notification_service_test.go` - message and heartbeat integration tests with hand-written fakes.
@@ -548,6 +559,8 @@ git commit -m "feat(api): validate adapter endpoints"
 **Files:**
 - Create: `api/pkg/services/notification_sender.go`
 - Create: `api/pkg/services/notification_sender_test.go`
+- Create: `api/pkg/services/phone_notification_dispatcher.go`
+- Create: `api/pkg/services/phone_notification_dispatcher_test.go`
 - Modify: `api/pkg/services/fcm_client.go`
 
 **Interfaces:**
@@ -560,50 +573,43 @@ func (phone *entities.Phone) NotificationTransport() (entities.NotificationTrans
 - Produces:
 
 ```go
-type GatewayNotification struct {
-    Data           map[string]string
-    Priority       string
-    TTL            *time.Duration
-    NotificationID uuid.UUID
-}
-
 type NotificationSender interface {
-    Send(ctx context.Context, destination string, notification GatewayNotification) (string, error)
+    Send(ctx context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error)
 }
 
-type NotificationDispatcher struct {
+type PhoneNotificationDispatcher struct {
     fcmSender  NotificationSender
     httpSender NotificationSender
 }
 
-func NewNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *NotificationDispatcher
-func (dispatcher *NotificationDispatcher) Send(ctx context.Context, phone *entities.Phone, notification GatewayNotification) (string, error)
+func NewPhoneNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *PhoneNotificationDispatcher
+func (dispatcher *PhoneNotificationDispatcher) Send(ctx context.Context, phone *entities.Phone, message *messaging.Message, notificationID uuid.UUID) (string, error)
 
 type FCMNotificationSender struct {
     client FCMClient
 }
 
 func NewFCMNotificationSender(client FCMClient) *FCMNotificationSender
-func (sender *FCMNotificationSender) Send(ctx context.Context, destination string, notification GatewayNotification) (string, error)
+func (sender *FCMNotificationSender) Send(ctx context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error)
 ```
 
 - [ ] **Step 1: Write failing dispatcher and Firebase mapping tests**
 
-Create `api/pkg/services/notification_sender_test.go` with a recording sender:
+Create `api/pkg/services/phone_notification_dispatcher_test.go` with a recording sender:
 
 ```go
 type recordingNotificationSender struct {
-    destination  string
-    notification GatewayNotification
-    result       string
-    err          error
-    calls        int
+    message        *messaging.Message
+    notificationID uuid.UUID
+    result         string
+    err            error
+    calls          int
 }
 
-func (sender *recordingNotificationSender) Send(_ context.Context, destination string, notification GatewayNotification) (string, error) {
+func (sender *recordingNotificationSender) Send(_ context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error) {
     sender.calls++
-    sender.destination = destination
-    sender.notification = notification
+    sender.message = message
+    sender.notificationID = notificationID
     return sender.result, sender.err
 }
 ```
@@ -611,29 +617,33 @@ func (sender *recordingNotificationSender) Send(_ context.Context, destination s
 Add tests that assert:
 
 ```go
-func TestNotificationDispatcherRoutesFCMToken(t *testing.T) {
+func TestPhoneNotificationDispatcherRoutesFCMToken(t *testing.T) {
     token := "fcm-token:value"
     phone := &entities.Phone{FcmToken: &token}
     fcmSender := &recordingNotificationSender{result: "projects/test/messages/1"}
     httpSender := &recordingNotificationSender{}
-    dispatcher := NewNotificationDispatcher(fcmSender, httpSender)
-    notification := GatewayNotification{Data: map[string]string{"KEY_MESSAGE_ID": uuid.NewString()}}
+    dispatcher := NewPhoneNotificationDispatcher(fcmSender, httpSender)
+    message := &messaging.Message{Data: map[string]string{"KEY_MESSAGE_ID": uuid.NewString()}}
+    notificationID := uuid.New()
 
-    result, err := dispatcher.Send(context.Background(), phone, notification)
+    result, err := dispatcher.Send(context.Background(), phone, message, notificationID)
 
     require.NoError(t, err)
     assert.Equal(t, "projects/test/messages/1", result)
     assert.Equal(t, 1, fcmSender.calls)
     assert.Zero(t, httpSender.calls)
-    assert.Equal(t, token, fcmSender.destination)
+    assert.Same(t, message, fcmSender.message)
+    assert.Equal(t, token, message.Token)
+    assert.Equal(t, notificationID, fcmSender.notificationID)
 }
 ```
 
 Add the equivalent HTTPS routing test and an invalid URL-like token test that
 asserts neither sender is called.
 
-Create a recording `FCMClient` and assert `FCMNotificationSender.Send` maps
-destination, data, priority, and TTL to `messaging.Message` without mutation.
+In `notification_sender_test.go`, create a recording `FCMClient` and assert
+`FCMNotificationSender.Send` passes the exact message pointer through without
+reconstruction. Add explicit nil-message tests for the dispatcher and sender.
 
 - [ ] **Step 2: Run the sender tests and confirm the API is missing**
 
@@ -641,33 +651,43 @@ Run:
 
 ```bash
 cd api
-go test ./pkg/services -run 'TestNotificationDispatcher|TestFCMNotificationSender' -count=1
+go test ./pkg/services -run 'TestPhoneNotificationDispatcher|TestFCMNotificationSender' -count=1
 ```
 
-Expected: compilation fails because the neutral sender types do not exist.
+Expected: compilation fails because the shared sender contract does not exist.
 
 - [ ] **Step 3: Implement the neutral notification and dispatcher**
 
-Create `api/pkg/services/notification_sender.go` with the exact interfaces
-above. Implement dispatcher routing:
+Keep the shared sender interface and Firebase sender in
+`api/pkg/services/notification_sender.go`. Implement dispatcher routing in
+`api/pkg/services/phone_notification_dispatcher.go`:
 
 ```go
-func (dispatcher *NotificationDispatcher) Send(
+func (dispatcher *PhoneNotificationDispatcher) Send(
     ctx context.Context,
     phone *entities.Phone,
-    notification GatewayNotification,
+    message *messaging.Message,
+    notificationID uuid.UUID,
 ) (string, error) {
     transport, err := phone.NotificationTransport()
     if err != nil {
         return "", stacktrace.Propagatef(err, "cannot determine notification transport for phone [%s]", phone.ID)
     }
 
-    destination := strings.TrimSpace(*phone.FcmToken)
+    if message == nil {
+        return "", stacktrace.Propagatef(
+            stacktrace.NewErrorf("notification message is nil"),
+            "cannot dispatch notification for phone [%s]",
+            phone.ID,
+        )
+    }
+
+    message.Token = strings.TrimSpace(*phone.FcmToken)
     switch transport {
     case entities.NotificationTransportFCM:
-        return dispatcher.fcmSender.Send(ctx, destination, notification)
+        return dispatcher.fcmSender.Send(ctx, message, notificationID)
     case entities.NotificationTransportHTTP:
-        return dispatcher.httpSender.Send(ctx, destination, notification)
+        return dispatcher.httpSender.Send(ctx, message, notificationID)
     default:
         return "", stacktrace.NewErrorf("unsupported notification transport [%s]", transport)
     }
@@ -681,16 +701,14 @@ In the same file, implement:
 ```go
 func (sender *FCMNotificationSender) Send(
     ctx context.Context,
-    destination string,
-    notification GatewayNotification,
+    message *messaging.Message,
+    _ uuid.UUID,
 ) (string, error) {
-    message := &messaging.Message{
-        Token: destination,
-        Data:  notification.Data,
-        Android: &messaging.AndroidConfig{
-            Priority: notification.Priority,
-            TTL:      notification.TTL,
-        },
+    if message == nil {
+        return "", stacktrace.Propagatef(
+            stacktrace.NewErrorf("notification message is nil"),
+            "cannot send Firebase notification",
+        )
     }
 
     result, err := sender.client.Send(ctx, message)
@@ -711,7 +729,7 @@ Run:
 
 ```bash
 cd api
-go test ./pkg/services -run 'TestNotificationDispatcher|TestFCMNotificationSender' -count=1
+go test ./pkg/services -run 'TestPhoneNotificationDispatcher|TestFCMNotificationSender' -count=1
 ```
 
 Expected: PASS.
@@ -722,8 +740,8 @@ Run:
 
 ```bash
 cd api
-go-fumpt -w pkg/services/notification_sender.go pkg/services/notification_sender_test.go pkg/services/fcm_client.go
-git add pkg/services/notification_sender.go pkg/services/notification_sender_test.go pkg/services/fcm_client.go
+go-fumpt -w pkg/services/notification_sender.go pkg/services/notification_sender_test.go pkg/services/phone_notification_dispatcher.go pkg/services/phone_notification_dispatcher_test.go pkg/services/fcm_client.go
+git add pkg/services/notification_sender.go pkg/services/notification_sender_test.go pkg/services/phone_notification_dispatcher.go pkg/services/phone_notification_dispatcher_test.go pkg/services/fcm_client.go
 git commit -m "refactor(api): dispatch gateway notifications"
 ```
 
@@ -739,11 +757,8 @@ git commit -m "refactor(api): dispatch gateway notifications"
 - Consumes:
 
 ```go
-type GatewayNotification struct {
-    Data           map[string]string
-    Priority       string
-    TTL            *time.Duration
-    NotificationID uuid.UUID
+type NotificationSender interface {
+    Send(ctx context.Context, message *messaging.Message, notificationID uuid.UUID) (string, error)
 }
 
 func (policy *NotificationEndpointPolicy) Validate(ctx context.Context, endpoint *url.URL) ([]netip.Addr, error)
@@ -753,26 +768,21 @@ func (policy *NotificationEndpointPolicy) Validate(ctx context.Context, endpoint
 
 ```go
 type HTTPNotificationSender struct {
-    logger     telemetry.Logger
-    tracer     telemetry.Tracer
-    client     *http.Client
-    policy     *NotificationEndpointPolicy
-    attempts   uint
-    timeout    time.Duration
-    retryDelay func(context.Context, time.Duration) error
+    logger  telemetry.Logger
+    client  *http.Client
+    retrier *retry.Retrier
+    timeout time.Duration
 }
 
 func NewHTTPNotificationSender(
     logger telemetry.Logger,
-    tracer telemetry.Tracer,
     client *http.Client,
-    policy *NotificationEndpointPolicy,
 ) *HTTPNotificationSender
 
 func (sender *HTTPNotificationSender) Send(
     ctx context.Context,
-    destination string,
-    notification GatewayNotification,
+    message *messaging.Message,
+    notificationID uuid.UUID,
 ) (string, error)
 ```
 
@@ -789,8 +799,8 @@ func (roundTrip roundTripFunc) RoundTrip(request *http.Request) (*http.Response,
 }
 ```
 
-Construct the sender directly in tests with `attempts: 3`,
-`timeout: 5*time.Second`, and a `retryDelay` that returns nil immediately.
+Construct the sender in tests with a reusable retrier configured through
+`newHTTPNotificationRetrier(0)` so retry delay is zero from initialization.
 Use a public address from the test resolver, and a client whose custom
 RoundTripper does not dial.
 
@@ -799,10 +809,10 @@ Assert the request:
 ```go
 assert.Equal(t, http.MethodPost, request.Method)
 assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
-assert.Equal(t, notification.NotificationID.String(), request.Header.Get("X-httpSMS-Notification-ID"))
+assert.Equal(t, notificationID.String(), request.Header.Get("X-httpSMS-Notification-ID"))
 ```
 
-Decode the body and assert this structure:
+Keep a test-only decoding struct and assert this structure:
 
 ```go
 type httpNotificationRequest struct {
@@ -851,28 +861,20 @@ Expected: compilation fails because `HTTPNotificationSender` does not exist.
 
 - [ ] **Step 4: Implement the FCM-compatible HTTP payload**
 
-Create `api/pkg/services/http_notification_sender.go` with private payload
-types:
+Create `api/pkg/services/http_notification_sender.go` and build the one-use
+payload directly with `map[string]any`:
 
 ```go
-type httpNotificationRequest struct {
-    Message httpNotificationMessage `json:"message"`
-}
-
-type httpNotificationMessage struct {
-    Token   string                  `json:"token"`
-    Data    map[string]string       `json:"data,omitempty"`
-    Android httpNotificationAndroid `json:"android,omitempty"`
-}
-
-type httpNotificationAndroid struct {
-    Priority string `json:"priority,omitempty"`
-    TTL      string `json:"ttl,omitempty"`
+payload := map[string]any{
+    "message": message,
 }
 ```
 
-Format a non-nil TTL with `notification.TTL.String()`. Build a new request body
-for every attempt so retries never reuse a consumed reader.
+Obtain the destination from `message.Token`. Rely on
+`messaging.Message.MarshalJSON` and `messaging.AndroidConfig.MarshalJSON` for
+the FCM shape and protobuf TTL, including `10*time.Minute` as `"600s"`. Build a
+new request body for every attempt so retries never reuse a consumed reader.
+Reject nil messages explicitly with a stacktrace-consistent error.
 
 - [ ] **Step 5: Implement bounded retries**
 
@@ -890,35 +892,38 @@ func notificationRetryDelay(attempt uint) time.Duration {
 }
 ```
 
-`Send` must:
-
-1. parse `destination`;
-2. call `policy.Validate` before the first attempt;
-3. marshal the request body once, then create a fresh reader per request;
-4. create a child context with the configured timeout per attempt;
-5. set `Content-Type` and `X-httpSMS-Notification-ID`;
-6. call `client.Do`;
-7. close each response body after copying at most 4 KiB to `io.Discard`;
-8. return `http/<notification UUID>` for any `2xx`;
-9. retry only the approved errors/statuses while attempts remain;
-10. return a stacktrace-wrapped error.
-
-Set constructor defaults:
+Create one reusable retrier during sender initialization:
 
 ```go
-attempts: 3,
-timeout:  5 * time.Second,
-retryDelay: func(ctx context.Context, delay time.Duration) error {
-    timer := time.NewTimer(delay)
-    defer timer.Stop()
-    select {
-    case <-ctx.Done():
-        return ctx.Err()
-    case <-timer.C:
-        return nil
-    }
-},
+func newHTTPNotificationRetrier(delay time.Duration) *retry.Retrier {
+    return retry.New(
+        retry.Attempts(3),
+        retry.Delay(delay),
+        retry.DelayType(retry.BackOffDelay),
+        retry.LastErrorOnly(true),
+        retry.RetryIf(isRetryableNotificationError),
+    )
+}
 ```
+
+Do not configure this retrier with `retry.Context`: each `Send` has a different
+caller context. Instead, check caller cancellation in the operation and return
+a terminal error, while deriving each attempt's five-second context from that
+caller.
+
+Focused sender methods must:
+
+1. parse `message.Token`;
+2. marshal the request body once, then create a fresh reader per request;
+3. create a child context with the configured timeout per attempt;
+4. set `Content-Type` and `X-httpSMS-Notification-ID`;
+5. call `client.Do`;
+6. close each response body after copying at most 4 KiB to `io.Discard`;
+7. return `http/<notification UUID>` for any `2xx`;
+8. retry only network errors, `408`, `429`, and `5xx` while attempts remain;
+9. treat request construction, caller cancellation, and other statuses as
+   terminal;
+10. return a stacktrace-wrapped error.
 
 Do not use the container's retrying HTTP client; retries belong in this sender
 so status classification, attempt count, and idempotency are explicit.
@@ -973,10 +978,11 @@ git commit -m "feat(api): send notifications to adapters"
 - Consumes:
 
 ```go
-func (dispatcher *NotificationDispatcher) Send(
+func (dispatcher *PhoneNotificationDispatcher) Send(
     ctx context.Context,
     phone *entities.Phone,
-    notification GatewayNotification,
+    message *messaging.Message,
+    notificationID uuid.UUID,
 ) (string, error)
 ```
 
@@ -991,7 +997,7 @@ type NotificationEventDispatcher interface {
 func NewNotificationService(
     logger telemetry.Logger,
     tracer telemetry.Tracer,
-    notificationDispatcher *NotificationDispatcher,
+    phoneNotificationDispatcher *PhoneNotificationDispatcher,
     phoneRepository repositories.PhoneRepository,
     phoneNotificationRepository repositories.PhoneNotificationRepository,
     messageSendScheduleRepository repositories.MessageSendScheduleRepository,
@@ -1039,7 +1045,7 @@ func (repository *phoneNotificationRepository) UpdateStatus(
 ```
 
 Add a fake event dispatcher that records CloudEvents and returns no error. Add a
-recording notification sender to a real `NotificationDispatcher`.
+recording notification sender to a real `PhoneNotificationDispatcher`.
 
 Test `Send` with an HTTPS token and assert:
 
@@ -1085,9 +1091,9 @@ Expected: compilation fails because `PhoneNotificationService` still consumes
 
 In `api/pkg/services/phone_notification_service.go`:
 
-- remove the Firebase `messaging` import;
+- construct Firebase `messaging.Message` values directly;
 - replace `messagingClient FCMClient` with
-  `notificationDispatcher *NotificationDispatcher`;
+  `phoneNotificationDispatcher *PhoneNotificationDispatcher`;
 - change the constructor to the exact signature above;
 - change `eventDispatcher` to `NotificationEventDispatcher`.
 
@@ -1095,26 +1101,27 @@ For message notifications, call:
 
 ```go
 ttl := phone.MessageExpirationDuration()
-result, err := service.notificationDispatcher.Send(ctx, phone, GatewayNotification{
+result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
     Data: map[string]string{
         "KEY_MESSAGE_ID": params.MessageID.String(),
     },
-    Priority:       "normal",
-    TTL:            &ttl,
-    NotificationID: params.PhoneNotificationID,
-})
+    Android: &messaging.AndroidConfig{
+        Priority: "normal",
+        TTL:      &ttl,
+    },
+}, params.PhoneNotificationID)
 ```
 
 For heartbeat notifications, call:
 
 ```go
-result, err := service.notificationDispatcher.Send(ctx, phone, GatewayNotification{
+notificationID := uuid.New()
+result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
     Data: map[string]string{
         "KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
     },
-    Priority:       "high",
-    NotificationID: uuid.New(),
-})
+    Android: &messaging.AndroidConfig{Priority: "high"},
+}, notificationID)
 ```
 
 - [ ] **Step 4: Add transport-aware failure text**
@@ -1168,7 +1175,7 @@ Run:
 
 ```bash
 cd api
-go test ./pkg/services -run 'TestPhoneNotificationService|TestNotificationDispatcher|TestHTTPNotificationSender' -count=1
+go test ./pkg/services -run 'TestPhoneNotificationService|TestPhoneNotificationDispatcher|TestHTTPNotificationSender' -count=1
 ```
 
 Expected: PASS.
@@ -1203,9 +1210,9 @@ git commit -m "feat(api): route phone gateway wake-ups"
 
 ```go
 func NewNotificationEndpointPolicy(resolver HostResolver, allowedPrivateHosts []string) *NotificationEndpointPolicy
-func NewNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *NotificationDispatcher
+func NewPhoneNotificationDispatcher(fcmSender NotificationSender, httpSender NotificationSender) *PhoneNotificationDispatcher
 func NewFCMNotificationSender(client FCMClient) *FCMNotificationSender
-func NewHTTPNotificationSender(logger telemetry.Logger, tracer telemetry.Tracer, client *http.Client, policy *NotificationEndpointPolicy) *HTTPNotificationSender
+func NewHTTPNotificationSender(logger telemetry.Logger, client *http.Client) *HTTPNotificationSender
 ```
 
 - Produces container factories:
@@ -1213,7 +1220,7 @@ func NewHTTPNotificationSender(logger telemetry.Logger, tracer telemetry.Tracer,
 ```go
 func (container *Container) NotificationEndpointPolicy() *services.NotificationEndpointPolicy
 func (container *Container) NotificationHTTPClient() *http.Client
-func (container *Container) NotificationDispatcher() *services.NotificationDispatcher
+func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotificationDispatcher
 ```
 
 - Produces validator constructor:
@@ -1361,14 +1368,12 @@ context for each attempt.
 Add:
 
 ```go
-func (container *Container) NotificationDispatcher() *services.NotificationDispatcher {
-    return services.NewNotificationDispatcher(
+func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotificationDispatcher {
+    return services.NewPhoneNotificationDispatcher(
         services.NewFCMNotificationSender(container.FCMClient()),
         services.NewHTTPNotificationSender(
             container.Logger(),
-            container.Tracer(),
             container.NotificationHTTPClient(),
-            container.NotificationEndpointPolicy(),
         ),
     )
 }
@@ -1386,7 +1391,7 @@ allowlist. Do not cache per-request sender state.
 - [ ] **Step 5: Wire service and validator constructors**
 
 Change `container.NotificationService()` to pass
-`container.NotificationDispatcher()` instead of `container.FCMClient()`.
+`container.PhoneNotificationDispatcher()` instead of `container.FCMClient()`.
 
 Find `container.PhoneHandlerValidator()` and pass
 `container.NotificationEndpointPolicy()` as its fourth argument. Keep existing

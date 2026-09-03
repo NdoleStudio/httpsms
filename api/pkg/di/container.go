@@ -578,7 +578,6 @@ func (container *Container) PhoneNotificationDispatcher() *services.PhoneNotific
 		services.NewFCMNotificationSender(container.FCMClient()),
 		services.NewHTTPNotificationSender(
 			container.Logger(),
-			container.Tracer(),
 			container.NotificationHTTPClient(),
 		),
 	)

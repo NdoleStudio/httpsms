@@ -26,6 +26,4 @@ func TestPhoneNotificationDispatcherInjectsNotificationHTTPClient(t *testing.T) 
 	transport := client.FieldByName("Transport").Elem()
 
 	assert.Equal(t, "*otelroundtripper.otelRoundTripper", transport.Type().String())
-	attemptRecorder := httpSender.FieldByName("attemptRecorder").Elem()
-	assert.Equal(t, "*services.otelNotificationHTTPAttemptRecorder", attemptRecorder.Type().String())
 }

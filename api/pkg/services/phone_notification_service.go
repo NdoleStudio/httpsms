@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
@@ -90,13 +91,13 @@ func (service *PhoneNotificationService) SendHeartbeatFCM(ctx context.Context, p
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("phone with id [%s] has no notification token", phone.ID))
 	}
 
-	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, GatewayNotification{
+	notificationID := uuid.New()
+	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
 		Data: map[string]string{
 			"KEY_HEARTBEAT_ID": time.Now().UTC().Format(time.RFC3339),
 		},
-		Priority:       "high",
-		NotificationID: uuid.New(),
-	})
+		Android: &messaging.AndroidConfig{Priority: "high"},
+	}, notificationID)
 	if err != nil {
 		ctxLogger.Warn(stacktrace.Propagatef(
 			err,
@@ -144,14 +145,15 @@ func (service *PhoneNotificationService) Send(ctx context.Context, params *Phone
 	}
 
 	ttl := phone.MessageExpirationDuration()
-	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, GatewayNotification{
+	result, err := service.phoneNotificationDispatcher.Send(ctx, phone, &messaging.Message{
 		Data: map[string]string{
 			"KEY_MESSAGE_ID": params.MessageID.String(),
 		},
-		Priority:       "normal",
-		TTL:            &ttl,
-		NotificationID: params.PhoneNotificationID,
-	})
+		Android: &messaging.AndroidConfig{
+			Priority: "normal",
+			TTL:      &ttl,
+		},
+	}, params.PhoneNotificationID)
 	if err != nil {
 		transport, transportErr := phone.NotificationTransport()
 		if transportErr != nil {

@@ -113,31 +113,34 @@ A token is considered URL-like when it declares a URI scheme. This prevents an
 invalid `http://`, `ftp://`, or malformed HTTPS endpoint from falling through
 to Firebase as if it were an FCM token. Ordinary FCM tokens remain opaque.
 
-### 2. Transport-neutral notification
+### 2. Shared Firebase message contract
 
-Add a small internal notification type containing only the data needed by both
-transports:
+Use Firebase's `messaging.Message` as the notification contract for both
+transports instead of maintaining a duplicate DTO:
 
 ```go
-type GatewayNotification struct {
-    Token          string
-    Data           map[string]string
-    Priority       string
-    TTL            *time.Duration
-    NotificationID string
+type NotificationSender interface {
+    Send(
+        ctx context.Context,
+        message *messaging.Message,
+        notificationID uuid.UUID,
+    ) (string, error)
 }
 ```
 
-`NotificationID` is the persisted `PhoneNotification.ID` for outgoing
-messages. Heartbeats have no persisted phone notification, so the service
-generates a request UUID for their delivery identity.
+`PhoneNotificationService` constructs `messaging.Message` directly with the
+data and Android configuration. The notification ID remains a separate
+argument: it is the persisted `PhoneNotification.ID` for outgoing messages,
+while heartbeats generate a request UUID for delivery identity.
 
 Add a dispatcher that:
 
 1. uses the phone helper to determine the transport;
-2. delegates Firebase tokens to the Firebase sender;
-3. delegates URL tokens to the HTTP sender;
-4. returns a transport-neutral delivery result string or an error.
+2. rejects a nil message with a stacktrace error;
+3. trims the phone's configured token and assigns it to `message.Token`;
+4. delegates the same message pointer and notification ID to the selected
+   sender;
+5. returns a transport-neutral delivery result string or an error.
 
 The result string is used only by existing notification event bookkeeping.
 Firebase keeps the message name returned by the SDK. HTTP delivery uses a
@@ -146,12 +149,9 @@ generated identifier that does not expose the callback URL.
 ### 3. Firebase sender
 
 Adapt the existing `FCMClient` behind the transport-neutral sender interface.
-It maps `GatewayNotification` to `messaging.Message`:
-
-- `Data` maps directly to the FCM data payload;
-- `Priority` maps to `messaging.AndroidConfig.Priority`;
-- `TTL` maps to `messaging.AndroidConfig.TTL`;
-- `Token` remains the FCM registration token.
+`FCMNotificationSender` validates that the message is non-nil and passes the
+same `*messaging.Message` directly to `FCMClient.Send` without reconstructing
+the payload.
 
 The production Firebase client and emulator client remain available. Android
 tokens follow the same SDK path, payload keys, priorities, TTL values, success
@@ -192,6 +192,11 @@ Heartbeat notifications use the same shape with:
 
 Adapters should depend on `message.data`; the Android object exists for payload
 compatibility and communicates priority and expiration hints.
+
+`HTTPNotificationSender` obtains the destination from `message.Token` and
+marshals `map[string]any{"message": message}`. Firebase's
+`messaging.Message` and `messaging.AndroidConfig.MarshalJSON` own the FCM JSON
+shape and protobuf duration formatting, including a ten-minute TTL as `600s`.
 
 Every request includes:
 
@@ -309,14 +314,17 @@ not perform endpoint DNS/IP classification, custom dialing, or private-host
 allowlisting.
 
 `Container.NotificationHTTPClient` is a standard `http.Client` using the
-existing `go-otelroundtripper` pattern without transport-level retries. A
-telemetry-only seam presents scheme and host/port to OpenTelemetry while
-`http.DefaultTransport` receives the original request URL, headers, and body.
-The client preserves Go's default redirect behavior.
+existing webhook-style `go-otelroundtripper` pattern without transport-level
+retries or custom URL redaction. The client preserves Go's default transport
+and redirect behavior.
 
-`HTTPNotificationSender` owns retries through `retry.New(...).Do`. It makes
-exactly three total attempts, creates a fresh request and body for each
-attempt, and applies a five-second context per attempt.
+`HTTPNotificationSender` creates one reusable `retry-go/v5` retrier during
+initialization. The retrier owns exactly three total attempts and exponential
+backoff, but does not bind a caller context because it is reused across sends.
+Each delivery checks its caller context, creates a fresh request and body, and
+applies a five-second child context per attempt. Payload encoding, request
+creation, one-attempt delivery, and retry configuration remain focused
+operations.
 
 ### 9. Validation and API compatibility
 
@@ -344,8 +352,9 @@ Regenerate Swagger documentation after implementation.
 ### 10. Observability
 
 Use the existing request, database, and OpenTelemetry logging behavior without
-special redaction for notification tokens or callback URLs. Notification
-attempt metrics record the attempt number, response status class, and result.
+special redaction for notification tokens or callback URLs. Rely on the
+existing OpenTelemetry HTTP round-tripper for outbound request spans and
+metrics; do not add sender-specific attempt spans or metrics.
 
 ## Components and Expected Files
 
@@ -357,7 +366,9 @@ Implementation is expected to touch:
   notifications and preserve existing state transitions;
 - `api/pkg/services/fcm_client.go` to adapt Firebase to the neutral sender;
 - `api/pkg/services/notification_sender.go` for the neutral notification,
-  sender interface, and dispatcher;
+  sender interface, and Firebase sender;
+- `api/pkg/services/phone_notification_dispatcher.go` for phone transport
+  routing;
 - `api/pkg/services/http_notification_sender.go` for HTTP payload encoding and
   delivery;
 - `api/pkg/services/emulator_fcm_client.go` only as needed to preserve the

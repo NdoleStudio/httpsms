@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,16 +8,14 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
+	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -42,16 +39,18 @@ type httpNotificationPayload struct {
 func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 	notificationID := uuid.New()
 	ttl := 10 * time.Minute
-	notification := GatewayNotification{
-		Data:           map[string]string{"KEY_MESSAGE_ID": "message-1"},
-		Priority:       "high",
-		TTL:            &ttl,
-		NotificationID: notificationID,
+	message := &messaging.Message{
+		Token: "https://adapter.example.com/notify",
+		Data:  map[string]string{"KEY_MESSAGE_ID": "message-1"},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+			TTL:      &ttl,
+		},
 	}
 	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		assert.Equal(t, http.MethodPost, request.Method)
 		assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
-		assert.Equal(t, notification.NotificationID.String(), request.Header.Get("X-httpSMS-Notification-ID"))
+		assert.Equal(t, notificationID.String(), request.Header.Get("X-httpSMS-Notification-ID"))
 
 		var payload httpNotificationPayload
 		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
@@ -64,30 +63,10 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	result, err := sender.Send(context.Background(), "https://adapter.example.com/notify", notification)
+	result, err := sender.Send(context.Background(), message, notificationID)
 
 	require.NoError(t, err)
 	assert.Equal(t, "http/"+notificationID.String(), result)
-}
-
-func TestFormatProtobufDuration(t *testing.T) {
-	tests := []struct {
-		name     string
-		duration time.Duration
-		expected string
-	}{
-		{name: "whole seconds", duration: 10 * time.Minute, expected: "600s"},
-		{name: "milliseconds", duration: 1500 * time.Millisecond, expected: "1.500s"},
-		{name: "microseconds", duration: time.Second + 234567*time.Microsecond, expected: "1.234567s"},
-		{name: "nanoseconds", duration: time.Second + 234567890*time.Nanosecond, expected: "1.234567890s"},
-		{name: "negative subsecond", duration: -500 * time.Millisecond, expected: "-0.500s"},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expected, formatProtobufDuration(test.duration))
-		})
-	}
 }
 
 func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
@@ -175,9 +154,11 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 			}))
 			notificationID := uuid.New()
 
-			_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-				NotificationID: notificationID,
-			})
+			_, err := sender.Send(
+				context.Background(),
+				&messaging.Message{Token: "https://adapter.example.com/notify"},
+				notificationID,
+			)
 
 			if test.wantErr {
 				require.Error(t, err)
@@ -188,6 +169,28 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 			assert.Equal(t, makeNotificationIDs(notificationID.String(), test.wantCalls), notificationIDs)
 		})
 	}
+}
+
+func TestHTTPNotificationSenderReusesRetrierAcrossSends(t *testing.T) {
+	calls := 0
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		calls++
+		if calls%2 == 1 {
+			return response(http.StatusServiceUnavailable, http.NoBody), nil
+		}
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+
+	for range 2 {
+		_, err := sender.Send(
+			context.Background(),
+			&messaging.Message{Token: "https://adapter.example.com/notify"},
+			uuid.New(),
+		)
+		require.NoError(t, err)
+	}
+
+	assert.Equal(t, 4, calls)
 }
 
 func TestHTTPNotificationSenderCreatesFreshRequestAndBodyForEveryAttempt(t *testing.T) {
@@ -204,10 +207,14 @@ func TestHTTPNotificationSenderCreatesFreshRequestAndBodyForEveryAttempt(t *test
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		Data:           map[string]string{"KEY_MESSAGE_ID": "message-1"},
-		NotificationID: uuid.New(),
-	})
+	_, err := sender.Send(
+		context.Background(),
+		&messaging.Message{
+			Token: "https://adapter.example.com/notify",
+			Data:  map[string]string{"KEY_MESSAGE_ID": "message-1"},
+		},
+		uuid.New(),
+	)
 
 	require.NoError(t, err)
 	require.Len(t, requests, 3)
@@ -225,30 +232,15 @@ func TestHTTPNotificationSenderBoundsResponseBodyDiscard(t *testing.T) {
 		return response(http.StatusNoContent, body), nil
 	}))
 
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		NotificationID: uuid.New(),
-	})
+	_, err := sender.Send(
+		context.Background(),
+		&messaging.Message{Token: "https://adapter.example.com/notify"},
+		uuid.New(),
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, int64(4096), body.read)
 	assert.True(t, body.closed)
-}
-
-func TestHTTPNotificationSenderRedactsDestinationSecrets(t *testing.T) {
-	logger := &httpNotificationRecordingLogger{}
-	sender := newHTTPNotificationSenderWithLogger(t, logger, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-		return response(http.StatusBadRequest, io.NopCloser(bytes.NewBufferString("customer-secret"))), nil
-	}))
-	destination := "https://adapter.example.com/secret/path?token=customer-secret"
-
-	_, err := sender.Send(context.Background(), destination, GatewayNotification{NotificationID: uuid.New()})
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "adapter.example.com")
-	for _, secret := range []string{"secret/path", "customer-secret", destination} {
-		assert.NotContains(t, err.Error(), secret)
-		assert.NotContains(t, strings.Join(logger.errors, "\n"), secret)
-	}
 }
 
 func TestHTTPNotificationSenderOmitsTTLForHeartbeat(t *testing.T) {
@@ -261,11 +253,17 @@ func TestHTTPNotificationSenderOmitsTTLForHeartbeat(t *testing.T) {
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		Data:           map[string]string{"KEY_HEARTBEAT_ID": "heartbeat-1"},
-		Priority:       "high",
-		NotificationID: uuid.New(),
-	})
+	_, err := sender.Send(
+		context.Background(),
+		&messaging.Message{
+			Token: "https://adapter.example.com/notify",
+			Data:  map[string]string{"KEY_HEARTBEAT_ID": "heartbeat-1"},
+			Android: &messaging.AndroidConfig{
+				Priority: "high",
+			},
+		},
+		uuid.New(),
+	)
 
 	require.NoError(t, err)
 }
@@ -279,7 +277,7 @@ func TestHTTPNotificationSenderUsesInjectedHTTPClientUnchanged(t *testing.T) {
 		Timeout:   time.Minute,
 	}
 
-	sender := NewHTTPNotificationSender(nil, nil, client)
+	sender := NewHTTPNotificationSender(nil, client)
 
 	assert.Same(t, client, sender.client)
 	assert.Equal(t, reflect.ValueOf(transport).Pointer(), reflect.ValueOf(sender.client.Transport).Pointer())
@@ -303,8 +301,8 @@ func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
 
 	_, err := sender.Send(
 		context.Background(),
-		endpoint.String(),
-		GatewayNotification{NotificationID: uuid.New()},
+		&messaging.Message{Token: endpoint.String()},
+		uuid.New(),
 	)
 
 	require.NoError(t, err)
@@ -319,9 +317,11 @@ func TestHTTPNotificationSenderBoundsEveryAttemptByTimeout(t *testing.T) {
 	}))
 	sender.timeout = 10 * time.Millisecond
 
-	_, err := sender.Send(context.Background(), "https://adapter.example.com/notify", GatewayNotification{
-		NotificationID: uuid.New(),
-	})
+	_, err := sender.Send(
+		context.Background(),
+		&messaging.Message{Token: "https://adapter.example.com/notify"},
+		uuid.New(),
+	)
 
 	require.Error(t, err)
 	assert.Equal(t, 3, calls)
@@ -337,51 +337,25 @@ func TestHTTPNotificationSenderStopsRetriesWhenParentContextIsCancelled(t *testi
 		return nil, request.Context().Err()
 	}))
 
-	_, err := sender.Send(ctx, "https://adapter.example.com/notify", GatewayNotification{
-		NotificationID: uuid.New(),
-	})
+	_, err := sender.Send(
+		ctx,
+		&messaging.Message{Token: "https://adapter.example.com/notify"},
+		uuid.New(),
+	)
 
 	require.Error(t, err)
 	assert.Equal(t, 1, calls)
 }
 
-func TestHTTPNotificationSenderTelemetryDoesNotExportCallbackURL(t *testing.T) {
-	spanRecorder := tracetest.NewSpanRecorder()
-	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
-	t.Cleanup(func() {
-		require.NoError(t, provider.Shutdown(context.Background()))
-	})
-	ctx, parent := provider.Tracer("test").Start(context.Background(), "parent")
-	logger := &httpNotificationRecordingLogger{}
-	tracer := telemetry.NewOtelLogger("test", logger)
+func TestHTTPNotificationSenderRejectsNilMessage(t *testing.T) {
 	sender := newHTTPNotificationSender(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
-	sender.attemptRecorder = newNotificationHTTPAttemptRecorder(tracer)
-	destination := "https://adapter.example.com/secret/path?token=customer-secret"
 
-	_, err := sender.Send(ctx, destination, GatewayNotification{NotificationID: uuid.New()})
-	parent.End()
+	_, err := sender.Send(context.Background(), nil, uuid.New())
 
-	require.NoError(t, err)
-	var exported string
-	for _, span := range spanRecorder.Ended() {
-		exported += span.Name() + span.Status().Description
-		for _, attribute := range span.Attributes() {
-			exported += string(attribute.Key) + attribute.Value.Emit()
-		}
-		for _, event := range span.Events() {
-			exported += event.Name
-			for _, attribute := range event.Attributes {
-				exported += string(attribute.Key) + attribute.Value.Emit()
-			}
-		}
-	}
-	assert.Contains(t, exported, "notification.transporthttp")
-	assert.Contains(t, exported, "notification.status_class2xx")
-	for _, secret := range []string{destination, "secret/path", "customer-secret"} {
-		assert.NotContains(t, exported, secret)
-	}
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "notification message is nil")
 }
 
 type roundTripOutcome struct {
@@ -449,9 +423,11 @@ func newHTTPNotificationSenderWithLogger(
 	transport roundTripFunc,
 ) *HTTPNotificationSender {
 	t.Helper()
-	sender := NewHTTPNotificationSender(logger, nil, &http.Client{Transport: transport})
-	sender.retryDelay = 0
-	return sender
+	return newHTTPNotificationSenderWithRetrier(
+		logger,
+		&http.Client{Transport: transport},
+		newHTTPNotificationRetrier(0),
+	)
 }
 
 func response(statusCode int, body io.ReadCloser) *http.Response {
