@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -33,6 +34,24 @@ const (
 	// response) any single call to the httpSMS API is allowed to take, on
 	// top of whatever deadline the caller's context already carries.
 	requestTimeout = 15 * time.Second
+
+	// dialTimeout bounds how long TCP connection establishment (DNS
+	// resolution plus connect) may take for a single dial, independently
+	// of the overall requestTimeout, so a slow or black-holed network path
+	// fails fast instead of consuming the whole request budget on dialing
+	// alone.
+	dialTimeout = 5 * time.Second
+
+	// tlsHandshakeTimeout bounds how long the TLS handshake may take once a
+	// TCP connection is established.
+	tlsHandshakeTimeout = 5 * time.Second
+
+	// responseHeaderTimeout bounds how long this client waits for the
+	// response status line and headers after the request (including its
+	// body, if any) has been fully written, so a server that accepts a
+	// connection but never responds cannot hold a call open until the
+	// overall requestTimeout.
+	responseHeaderTimeout = 10 * time.Second
 
 	maxIdleConns        = 100
 	maxIdleConnsPerHost = 10
@@ -66,40 +85,49 @@ type Client interface {
 	RotateUserAPIKey(ctx context.Context, token string, userID string) (User, error)
 }
 
-// client is the Client implementation calling the httpSMS HTTP API.
-type client struct {
+// HTTPClient is the Client implementation calling the httpSMS HTTP API.
+type HTTPClient struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-var _ Client = (*client)(nil)
+var _ Client = (*HTTPClient)(nil)
 
-// NewClient returns a Client calling baseURL (for example
+// NewClient returns an *HTTPClient calling baseURL (for example
 // "https://api.httpsms.com"). The returned client is bounded and makes a
-// single attempt per call: an explicit request timeout, a size-limited
-// connection pool, OpenTelemetry context propagation through
-// otelhttp.Transport, and no automatic retries. Retrying automatically
-// would risk duplicating the side effect of a non-idempotent call such as
-// sending an SMS, creating a phone API key, or rotating the user's primary
-// API key.
-func NewClient(baseURL string) *client {
+// single attempt per call: an explicit overall request timeout plus
+// separate dial, TLS handshake, and response header timeouts, a
+// size-limited connection pool, OpenTelemetry context propagation through
+// otelhttp.Transport (with query string values redacted from span
+// attributes; see queryRedactingTransport), and no automatic retries.
+// Retrying automatically would risk duplicating the side effect of a
+// non-idempotent call such as sending an SMS, creating a phone API key, or
+// rotating the user's primary API key.
+func NewClient(baseURL string) *HTTPClient {
 	transport := &http.Transport{
-		MaxIdleConns:        maxIdleConns,
-		MaxIdleConnsPerHost: maxIdleConnsPerHost,
-		IdleConnTimeout:     idleConnTimeout,
+		MaxIdleConns:          maxIdleConns,
+		MaxIdleConnsPerHost:   maxIdleConnsPerHost,
+		IdleConnTimeout:       idleConnTimeout,
+		TLSHandshakeTimeout:   tlsHandshakeTimeout,
+		ResponseHeaderTimeout: responseHeaderTimeout,
+		DialContext: (&net.Dialer{
+			Timeout: dialTimeout,
+		}).DialContext,
 	}
 
-	return &client{
+	instrumented := otelhttp.NewTransport(&queryRestoringTransport{base: transport})
+
+	return &HTTPClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{
 			Timeout:   requestTimeout,
-			Transport: otelhttp.NewTransport(transport),
+			Transport: &queryRedactingTransport{next: instrumented},
 		},
 	}
 }
 
 // ListPhones calls GET /v1/phones.
-func (c *client) ListPhones(ctx context.Context, token string, params ListPhonesParams) ([]Phone, error) {
+func (c *HTTPClient) ListPhones(ctx context.Context, token string, params ListPhonesParams) ([]Phone, error) {
 	query := url.Values{}
 	setIntIfPositive(query, "skip", params.Skip)
 	setStringIfNotEmpty(query, "query", params.Query)
@@ -126,7 +154,7 @@ type messageSendRequest struct {
 }
 
 // SendSMS calls POST /v1/messages/send.
-func (c *client) SendSMS(ctx context.Context, token string, params SendSMSParams) (Message, error) {
+func (c *HTTPClient) SendSMS(ctx context.Context, token string, params SendSMSParams) (Message, error) {
 	body := messageSendRequest{
 		From:        params.From,
 		To:          params.To,
@@ -145,7 +173,7 @@ func (c *client) SendSMS(ctx context.Context, token string, params SendSMSParams
 }
 
 // ListMessageThreads calls GET /v1/message-threads.
-func (c *client) ListMessageThreads(ctx context.Context, token string, params ListMessageThreadsParams) ([]MessageThread, error) {
+func (c *HTTPClient) ListMessageThreads(ctx context.Context, token string, params ListMessageThreadsParams) ([]MessageThread, error) {
 	query := url.Values{}
 	setStringIfNotEmpty(query, "owner", params.Owner)
 	setBoolPointer(query, "is_archived", params.IsArchived)
@@ -162,7 +190,7 @@ func (c *client) ListMessageThreads(ctx context.Context, token string, params Li
 }
 
 // ListThreadMessages calls GET /v1/messages.
-func (c *client) ListThreadMessages(ctx context.Context, token string, params ListThreadMessagesParams) ([]Message, error) {
+func (c *HTTPClient) ListThreadMessages(ctx context.Context, token string, params ListThreadMessagesParams) ([]Message, error) {
 	query := url.Values{}
 	setStringIfNotEmpty(query, "owner", params.Owner)
 	setStringIfNotEmpty(query, "contact", params.Contact)
@@ -178,7 +206,7 @@ func (c *client) ListThreadMessages(ctx context.Context, token string, params Li
 }
 
 // ListIncomingMessages calls GET /v1/messages/incoming.
-func (c *client) ListIncomingMessages(ctx context.Context, token string, params ListIncomingMessagesParams) ([]Message, error) {
+func (c *HTTPClient) ListIncomingMessages(ctx context.Context, token string, params ListIncomingMessagesParams) ([]Message, error) {
 	query := url.Values{}
 	setRepeated(query, "owners", params.Owners)
 	setRepeated(query, "statuses", params.Statuses)
@@ -204,7 +232,7 @@ type phoneAPIKeyStoreRequest struct {
 }
 
 // CreatePhoneAPIKey calls POST /v1/phone-api-keys.
-func (c *client) CreatePhoneAPIKey(ctx context.Context, token string, params CreatePhoneAPIKeyParams) (PhoneAPIKey, error) {
+func (c *HTTPClient) CreatePhoneAPIKey(ctx context.Context, token string, params CreatePhoneAPIKeyParams) (PhoneAPIKey, error) {
 	body := phoneAPIKeyStoreRequest{Name: params.Name}
 
 	var key PhoneAPIKey
@@ -217,7 +245,7 @@ func (c *client) CreatePhoneAPIKey(ctx context.Context, token string, params Cre
 // RotateUserAPIKey calls DELETE /v1/users/{userID}/api-keys. userID is
 // always the authenticated subject's own Firebase UID; callers must never
 // accept it as untrusted tool input.
-func (c *client) RotateUserAPIKey(ctx context.Context, token string, userID string) (User, error) {
+func (c *HTTPClient) RotateUserAPIKey(ctx context.Context, token string, userID string) (User, error) {
 	path := "/v1/users/" + url.PathEscape(userID) + "/api-keys"
 
 	var user User
@@ -239,7 +267,7 @@ func (c *client) RotateUserAPIKey(ctx context.Context, token string, userID stri
 // it for non-idempotent operations (sending an SMS, creating a phone API
 // key, rotating the primary API key) without risking a duplicated side
 // effect from a transport-level retry.
-func (c *client) do(
+func (c *HTTPClient) do(
 	ctx context.Context,
 	token string,
 	method string,

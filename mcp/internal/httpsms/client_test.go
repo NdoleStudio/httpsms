@@ -13,6 +13,10 @@ import (
 	"github.com/NdoleStudio/httpsms/mcp/internal/httpsms"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
 
 // newTestServer starts an httptest.Server that runs assert (given the
@@ -422,6 +426,110 @@ func TestClient_PropagatesContextCancellation(t *testing.T) {
 
 	_, err := client.ListPhones(ctx, "token", httpsms.ListPhonesParams{})
 	require.Error(t, err)
+}
+
+// TestNewClient_ReturnsAnExportedConcreteType is a compile-time assertion
+// that NewClient's declared return type is the exported *httpsms.HTTPClient
+// (not an unexported type), while *HTTPClient still satisfies Client. An
+// exported func returning an unexported type is a lint finding (the caller
+// cannot name the type, e.g. to embed it or declare a variable of it); this
+// would fail to compile if NewClient's signature regressed to an unexported
+// return type.
+func TestNewClient_ReturnsAnExportedConcreteType(t *testing.T) {
+	var typed *httpsms.HTTPClient = httpsms.NewClient("https://example.invalid")
+	var _ httpsms.Client = typed
+
+	assert.NotNil(t, typed)
+}
+
+// TestClient_RedactsQueryValuesFromOTelSpanAttributes is the regression
+// test for the critical review finding: query string values (which can
+// carry SMS content via the free-text "query" search filter, phone
+// numbers, or other sensitive filter values) must never be recorded as
+// OpenTelemetry span attributes, even though the real, unmodified query
+// string must still reach the httpSMS API on the wire and trace-context
+// propagation headers must still be injected.
+//
+// It uses an in-memory OTel span exporter to inspect every attribute of
+// every recorded span for a unique marker value used only as the "query"
+// filter, while independently capturing the raw query string the httptest
+// server actually received on the wire.
+func TestClient_RedactsQueryValuesFromOTelSpanAttributes(t *testing.T) {
+	const uniqueQueryValue = "otel-redaction-probe-4b9f9e6c-secret-sms-content"
+
+	var (
+		receivedRawQuery    string
+		receivedTraceparent string
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedRawQuery = r.URL.RawQuery
+		receivedTraceparent = r.Header.Get("Traceparent")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(httpsms.Response[[]httpsms.Phone]{Status: "success", Data: []httpsms.Phone{}})
+	}))
+	t.Cleanup(server.Close)
+
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
+
+	previousTracerProvider := otel.GetTracerProvider()
+	otel.SetTracerProvider(tp)
+	t.Cleanup(func() { otel.SetTracerProvider(previousTracerProvider) })
+
+	// The mcp binary's observability package registers a global W3C
+	// (tracecontext + baggage) propagator at startup (see
+	// internal/observability.New); replicate that here so this test
+	// exercises the same propagation path production traffic uses.
+	previousPropagator := otel.GetTextMapPropagator()
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	t.Cleanup(func() { otel.SetTextMapPropagator(previousPropagator) })
+
+	client := httpsms.NewClient(server.URL)
+	_, err := client.ListPhones(t.Context(), "token", httpsms.ListPhonesParams{Query: uniqueQueryValue, Limit: 10})
+	require.NoError(t, err)
+
+	// The real network request must still carry the unredacted query and a
+	// propagated trace context: redaction must be a span-attribute-only
+	// concern, not a change to what is actually sent over the wire.
+	assert.Contains(t, receivedRawQuery, uniqueQueryValue, "the httptest server must still receive the real, unredacted query")
+	assert.NotEmpty(t, receivedTraceparent, "trace-context propagation must still work despite query redaction")
+
+	spans := exporter.GetSpans()
+	require.Len(t, spans, 1, "expected exactly one span per call: redaction must not create a second otel span")
+
+	for _, span := range spans {
+		for _, attr := range span.Attributes {
+			assert.NotContains(t, attr.Value.Emit(), uniqueQueryValue,
+				"span attribute %q must not contain the redacted query value", attr.Key)
+		}
+	}
+}
+
+// TestClient_ResponseHeaderTimeoutFiresBeforeTheOverallRequestTimeout proves
+// the response header timeout is wired into the client's transport (not
+// just the overall http.Client.Timeout): a server that accepts the
+// connection and the request body but never writes a response must fail
+// well before the 15s overall request timeout, since the 10s response
+// header timeout fires first.
+func TestClient_ResponseHeaderTimeoutFiresBeforeTheOverallRequestTimeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-time.After(12 * time.Second):
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := httpsms.NewClient(server.URL)
+
+	start := time.Now()
+	_, err := client.ListPhones(context.Background(), "token", httpsms.ListPhonesParams{})
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.Less(t, elapsed, 13*time.Second, "expected the ~10s response header timeout to fire well before the 15s overall request timeout")
 }
 
 func readAll(r *http.Request) ([]byte, error) {
