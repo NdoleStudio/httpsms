@@ -30,6 +30,9 @@ jobs:
           bash tests/generate-firebase-credentials.sh tests/firebase-credentials.json
           echo "FIREBASE_CREDENTIALS=$(jq -c . tests/firebase-credentials.json)" >> $GITHUB_ENV
 
+      - name: Generate adapter certificates
+        run: bash tests/generate-adapter-certificates.sh tests/certs
+
       - name: Start Services
         working-directory: ./tests
         run: docker compose up -d --build

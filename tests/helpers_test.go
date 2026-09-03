@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -26,13 +27,32 @@ const (
 	apiBaseURL         = "http://localhost:8000"
 	wiremockURL        = "http://localhost:8080"
 	wiremockWebhookURL = "http://wiremock.local:8080" // reachable from API container, passes URL validation (needs a dot)
+	adapterControlURL  = "http://localhost:9092"
 	userAPIKey         = "test-user-api-key"
+	systemAPIKey       = "system-user-api-key"
 )
 
 type testPhone struct {
 	PhoneNumber string
 	PhoneAPIKey string
 	FcmToken    string
+}
+
+type adapterTestPhone struct {
+	testPhone
+	PhoneID   string
+	GatewayID string
+}
+
+type notificationRecord struct {
+	NotificationID string            `json:"notification_id"`
+	GatewayID      string            `json:"gateway_id"`
+	Data           map[string]string `json:"data"`
+	MessageID      string            `json:"message_id,omitempty"`
+	Kind           string            `json:"kind"`
+	Attempts       int               `json:"attempts"`
+	Processed      bool              `json:"processed"`
+	Error          string            `json:"error,omitempty"`
 }
 
 func newAPIClient() *httpsms.Client {
@@ -117,6 +137,233 @@ func setupPhone(ctx context.Context, t *testing.T, messagesPerMinute uint) testP
 		PhoneAPIKey: phoneAPIKeyValue,
 		FcmToken:    fcmToken,
 	}
+}
+
+func setupAdapterPhone(ctx context.Context, t *testing.T, messagesPerMinute uint) adapterTestPhone {
+	t.Helper()
+
+	gatewayID := uuid.NewString()
+	phoneNumber := randomPhoneNumber()
+	client := newAPIClient()
+
+	apiKeyResponse, response, err := client.PhoneAPIKeys.Store(ctx, &httpsms.PhoneAPIKeyStoreParams{
+		Name: "adapter-test-key-" + uuid.NewString(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode, "phone api key store failed")
+
+	phoneAPIKey := apiKeyResponse.Data.APIKey
+	require.NotEmpty(t, phoneAPIKey)
+
+	registrationBody, err := json.Marshal(map[string]any{
+		"phone_number":  phoneNumber,
+		"phone_api_key": phoneAPIKey,
+	})
+	require.NoError(t, err)
+	registrationRequest, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPut,
+		fmt.Sprintf("%s/test/gateways/%s", adapterControlURL, gatewayID),
+		bytes.NewReader(registrationBody),
+	)
+	require.NoError(t, err)
+	registrationRequest.Header.Set("Content-Type", "application/json")
+	registrationResponse, err := http.DefaultClient.Do(registrationRequest)
+	require.NoError(t, err)
+	registrationResponseBody, err := io.ReadAll(registrationResponse.Body)
+	registrationResponse.Body.Close()
+	require.NoError(t, err)
+	require.Equal(
+		t,
+		http.StatusNoContent,
+		registrationResponse.StatusCode,
+		"adapter gateway registration failed: %s",
+		string(registrationResponseBody),
+	)
+
+	callbackURL := fmt.Sprintf("https://adapter-emulator:9091/notifications/%s", gatewayID)
+	phoneResponse, response, err := client.Phones.Upsert(ctx, &httpsms.PhoneUpsertParams{
+		PhoneNumber:              phoneNumber,
+		FcmToken:                 callbackURL,
+		MessagesPerMinute:        messagesPerMinute,
+		MaxSendAttempts:          2,
+		MessageExpirationSeconds: 600,
+		SIM:                      "SIM1",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode, "phone upsert failed")
+	require.NotEmpty(t, phoneResponse.Data.ID)
+
+	phoneClient := newPhoneClient(phoneAPIKey)
+	_, response, err = phoneClient.Phones.UpsertFCMToken(ctx, &httpsms.PhoneFCMTokenParams{
+		PhoneNumber: phoneNumber,
+		FcmToken:    callbackURL,
+		SIM:         "SIM1",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode, "adapter callback bind failed")
+
+	waitForPhoneAuthorization(ctx, t, phoneAPIKey, phoneNumber, 20*time.Second)
+
+	return adapterTestPhone{
+		testPhone: testPhone{
+			PhoneNumber: phoneNumber,
+			PhoneAPIKey: phoneAPIKey,
+			FcmToken:    callbackURL,
+		},
+		PhoneID:   phoneResponse.Data.ID,
+		GatewayID: gatewayID,
+	}
+}
+
+func dispatchInternalEvent(ctx context.Context, t *testing.T, event map[string]any) {
+	t.Helper()
+
+	body, err := json.Marshal(event)
+	require.NoError(t, err)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBaseURL+"/v1/events", bytes.NewReader(body))
+	require.NoError(t, err)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("x-api-key", systemAPIKey)
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, response.StatusCode, "event dispatch failed: %s", string(responseBody))
+}
+
+func waitForAdapterMessageRecords(
+	t *testing.T,
+	gatewayID string,
+	messageID string,
+	timeout time.Duration,
+) []notificationRecord {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+	var records []notificationRecord
+	var lastErr error
+	for time.Now().Before(deadline) {
+		records, lastErr = fetchAdapterNotificationRecords(gatewayID, messageID)
+		if lastErr == nil && len(records) > 0 && adapterRecordsProcessed(records) {
+			return records
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.NoError(t, lastErr)
+	require.NotEmpty(t, records, "adapter message record for %s was not available within %v", messageID, timeout)
+	require.True(t, adapterRecordsProcessed(records), "adapter message records were not processed: %#v", records)
+	return records
+}
+
+func waitForAdapterHeartbeatRecord(
+	t *testing.T,
+	gatewayID string,
+	timeout time.Duration,
+) notificationRecord {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		records, err := fetchAdapterNotificationRecords(gatewayID, "")
+		lastErr = err
+		if err == nil {
+			for _, record := range records {
+				if record.Kind == "heartbeat" && record.Processed {
+					return record
+				}
+			}
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.NoError(t, lastErr)
+	t.Fatalf("processed adapter heartbeat record was not available within %v", timeout)
+	return notificationRecord{}
+}
+
+func triggerAdapterIncoming(
+	ctx context.Context,
+	t *testing.T,
+	phone adapterTestPhone,
+	contact string,
+	content string,
+) string {
+	t.Helper()
+
+	body, err := json.Marshal(map[string]any{
+		"contact":   contact,
+		"content":   content,
+		"encrypted": false,
+	})
+	require.NoError(t, err)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("%s/test/gateways/%s/incoming", adapterControlURL, phone.GatewayID),
+		bytes.NewReader(body),
+	)
+	require.NoError(t, err)
+	request.Header.Set("Content-Type", "application/json")
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+	responseBody, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.StatusCode, "adapter incoming trigger failed: %s", string(responseBody))
+
+	var result struct {
+		Data struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(responseBody, &result))
+	require.NotEmpty(t, result.Data.ID)
+	return result.Data.ID
+}
+
+func fetchAdapterNotificationRecords(gatewayID string, messageID string) ([]notificationRecord, error) {
+	endpoint := fmt.Sprintf("%s/test/gateways/%s/notifications", adapterControlURL, gatewayID)
+	if messageID != "" {
+		endpoint += "?message_id=" + url.QueryEscape(messageID)
+	}
+
+	response, err := (&http.Client{Timeout: 5 * time.Second}).Get(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("fetch adapter notification records: %w", err)
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read adapter notification records: %w", err)
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetch adapter notification records: status %d: %s", response.StatusCode, string(responseBody))
+	}
+
+	var result struct {
+		Data []notificationRecord `json:"data"`
+	}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return nil, fmt.Errorf("decode adapter notification records: %w", err)
+	}
+	return result.Data, nil
+}
+
+func adapterRecordsProcessed(records []notificationRecord) bool {
+	for _, record := range records {
+		if !record.Processed {
+			return false
+		}
+	}
+	return true
 }
 
 func waitForPhoneAuthorization(
