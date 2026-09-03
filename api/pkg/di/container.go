@@ -85,21 +85,20 @@ import (
 
 // Container is used to resolve services at runtime
 type Container struct {
-	projectID                  string
-	db                         *gorm.DB
-	dedicatedDB                *gorm.DB
-	mongoDB                    *mongoDriver.Database
-	version                    string
-	app                        *fiber.App
-	eventDispatcher            *services.EventDispatcher
-	logger                     telemetry.Logger
-	attachmentRepository       repositories.AttachmentRepository
-	contactService             *services.ContactService
-	userRistrettoCache         *ristretto.Cache[string, entities.AuthContext]
-	phoneRistrettoCache        *ristretto.Cache[string, *entities.Phone]
-	contactRistrettoCache      *ristretto.Cache[string, services.ContactCacheEntry]
-	inMemoryCache              cache.Cache
-	notificationEndpointPolicy *services.NotificationEndpointPolicy
+	projectID             string
+	db                    *gorm.DB
+	dedicatedDB           *gorm.DB
+	mongoDB               *mongoDriver.Database
+	version               string
+	app                   *fiber.App
+	eventDispatcher       *services.EventDispatcher
+	logger                telemetry.Logger
+	attachmentRepository  repositories.AttachmentRepository
+	contactService        *services.ContactService
+	userRistrettoCache    *ristretto.Cache[string, entities.AuthContext]
+	phoneRistrettoCache   *ristretto.Cache[string, *entities.Phone]
+	contactRistrettoCache *ristretto.Cache[string, services.ContactCacheEntry]
+	inMemoryCache         cache.Cache
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -567,26 +566,24 @@ func (container *Container) FCMClient() services.FCMClient {
 	return services.NewFirebaseFCMClient(messagingClient)
 }
 
-// NotificationEndpointPolicy creates the shared notification endpoint validation policy.
+// NotificationEndpointPolicy creates a notification endpoint validation policy.
 func (container *Container) NotificationEndpointPolicy() *services.NotificationEndpointPolicy {
-	if container.notificationEndpointPolicy != nil {
-		return container.notificationEndpointPolicy
-	}
-
 	allowedPrivateHosts := []string{}
 	if isLocal() {
 		allowedPrivateHosts = splitCommaEnv("NOTIFICATION_ENDPOINT_PRIVATE_HOST_ALLOWLIST", "")
 	}
-	container.notificationEndpointPolicy = services.NewNotificationEndpointPolicy(
+	return services.NewNotificationEndpointPolicy(
 		net.DefaultResolver,
 		allowedPrivateHosts,
 	)
-	return container.notificationEndpointPolicy
 }
 
 // NotificationHTTPClient creates the SSRF-safe HTTP client for phone notification adapters.
 func (container *Container) NotificationHTTPClient() *http.Client {
-	policy := container.NotificationEndpointPolicy()
+	return container.notificationHTTPClient(container.NotificationEndpointPolicy())
+}
+
+func (container *Container) notificationHTTPClient(policy *services.NotificationEndpointPolicy) *http.Client {
 	transport := &http.Transport{
 		ForceAttemptHTTP2: true,
 		TLSClientConfig: &tls.Config{
@@ -611,13 +608,14 @@ func (container *Container) NotificationHTTPClient() *http.Client {
 
 // NotificationDispatcher creates notification senders for Firebase and HTTP gateways.
 func (container *Container) NotificationDispatcher() *services.NotificationDispatcher {
+	policy := container.NotificationEndpointPolicy()
 	return services.NewNotificationDispatcher(
 		services.NewFCMNotificationSender(container.FCMClient()),
 		services.NewHTTPNotificationSender(
 			container.Logger(),
 			container.Tracer(),
-			container.NotificationHTTPClient(),
-			container.NotificationEndpointPolicy(),
+			container.notificationHTTPClient(policy),
+			policy,
 		),
 	)
 }

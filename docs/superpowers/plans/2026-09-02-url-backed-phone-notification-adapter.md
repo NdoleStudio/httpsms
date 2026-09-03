@@ -17,6 +17,7 @@
 - URL-like malformed or unsupported tokens are invalid and must never fall through to Firebase.
 - Send both outstanding-message and heartbeat notifications through the selected transport.
 - HTTP callback requests are unsigned and contain no message content, user API key, phone API key, or other credentials.
+- HTTPS callback URLs may include standard URL user information.
 - Accept any HTTP `2xx`; ignore response content.
 - Make at most three HTTP attempts with a five-second timeout per attempt.
 - Retry network failures, `408`, `429`, and `5xx`; do not retry other non-`2xx` responses.
@@ -224,10 +225,6 @@ func (phone *Phone) NotificationTransport() (NotificationTransport, error) {
     if endpoint.Hostname() == "" {
         return "", fmt.Errorf("notification URL must include a hostname")
     }
-    if endpoint.User != nil {
-        return "", fmt.Errorf("notification URL must not contain user information")
-    }
-
     return NotificationTransportHTTP, nil
 }
 
@@ -460,8 +457,8 @@ func isPublicNotificationAddress(address netip.Addr) bool {
 }
 ```
 
-`Validate` must verify HTTPS, hostname presence, absent user information, at
-least one DNS result, and every resolved address passing
+`Validate` must verify HTTPS, hostname presence, at least one DNS result, and
+every resolved address passing
 `isPublicNotificationAddress`. Private addresses are accepted only when the
 lowercased hostname exactly matches `allowedPrivateHosts`; never wildcard or
 suffix-match. Wrap resolver and validation errors with stacktrace context
@@ -1236,7 +1233,7 @@ func TestPhoneHandlerValidatorAcceptsPublicHTTPSNotificationURL(t *testing.T) {
 ```
 
 Add rejection tests for `http://`, loopback resolution, private resolution,
-mixed public/private resolution, embedded credentials, and malformed HTTPS.
+mixed public/private resolution, and malformed HTTPS.
 Add an opaque FCM token test to prove the resolver is not required for Firebase
 tokens.
 

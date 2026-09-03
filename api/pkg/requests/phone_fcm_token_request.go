@@ -14,7 +14,7 @@ type PhoneFCMToken struct {
 	request
 	PhoneNumber string `json:"phone_number"  example:"[+18005550199]"`
 	// FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.
-	FcmToken string `json:"fcm_token" example:"https://adapter.example.com/notifications"`
+	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
 }

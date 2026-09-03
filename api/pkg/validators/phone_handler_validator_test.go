@@ -88,11 +88,6 @@ func TestPhoneHandlerValidatorRejectsUnsafeNotificationURLs(t *testing.T) {
 			},
 		},
 		{
-			name:      "embedded credentials",
-			token:     "https://user@adapter.example.com/notify",
-			addresses: []netip.Addr{netip.MustParseAddr("8.8.8.8")},
-		},
-		{
 			name:  "malformed HTTPS",
 			token: "https://%",
 		},
@@ -156,6 +151,20 @@ func TestPhoneHandlerValidatorAcceptsOpaqueFirebaseNotificationTokenWithoutResol
 	errors := validator.ValidateFCMToken(context.Background(), requests.PhoneFCMToken{
 		PhoneNumber: "+18005550199",
 		FcmToken:    "opaque-firebase-registration-token",
+		SIM:         entities.SIM1.String(),
+	})
+
+	assert.Empty(t, errors)
+}
+
+func TestPhoneHandlerValidatorAcceptsNotificationURLWithUserInformation(t *testing.T) {
+	validator := newPhoneHandlerValidatorWithAddresses(map[string][]netip.Addr{
+		"adapter.example.com": {netip.MustParseAddr("8.8.8.8")},
+	})
+
+	errors := validator.ValidateFCMToken(context.Background(), requests.PhoneFCMToken{
+		PhoneNumber: "+18005550199",
+		FcmToken:    "https://adapter-user:adapter-password@adapter.example.com/notify",
 		SIM:         entities.SIM1.String(),
 	})
 

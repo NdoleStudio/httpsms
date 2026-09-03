@@ -29,7 +29,7 @@ func TestPhoneNotificationTransport(t *testing.T) {
 		{name: "scheme-like http token", token: stringPointer("http:foo"), hasError: true},
 		{name: "scheme-like ftp token", token: stringPointer("ftp:foo"), hasError: true},
 		{name: "missing host", token: stringPointer("https:///notify"), hasError: true},
-		{name: "embedded credentials", token: stringPointer("https://user@adapter.example.com/notify"), hasError: true},
+		{name: "embedded user information", token: stringPointer("https://user:password@adapter.example.com/notify"), transport: NotificationTransportHTTP},
 		{name: "malformed url", token: stringPointer("https://[::1"), hasError: true},
 	}
 
@@ -50,12 +50,16 @@ func TestPhoneNotificationTransport(t *testing.T) {
 }
 
 func TestPhoneNotificationURL(t *testing.T) {
-	phone := &Phone{FcmToken: stringPointer("https://adapter.example.com/notify?tenant=42")}
+	phone := &Phone{FcmToken: stringPointer("https://user:password@adapter.example.com/notify?tenant=42")}
 
 	endpoint, err := phone.NotificationURL()
 
 	require.NoError(t, err)
 	assert.Equal(t, "https", endpoint.Scheme)
+	assert.Equal(t, "user", endpoint.User.Username())
+	password, hasPassword := endpoint.User.Password()
+	assert.True(t, hasPassword)
+	assert.Equal(t, "password", password)
 	assert.Equal(t, "adapter.example.com", endpoint.Hostname())
 	assert.Equal(t, "/notify", endpoint.Path)
 	assert.Equal(t, "tenant=42", endpoint.RawQuery)

@@ -54,7 +54,9 @@ func TestNotificationEndpointPolicyValidate(t *testing.T) {
 
 			addresses, err := policy.Validate(context.Background(), endpoint)
 
-			if test.hasError {
+			// URL user information does not affect endpoint network safety.
+			hasError := test.hasError && endpoint.User == nil
+			if hasError {
 				require.Error(t, err)
 				return
 			}

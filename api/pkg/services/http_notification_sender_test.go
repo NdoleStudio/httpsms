@@ -257,6 +257,24 @@ func TestHTTPNotificationSenderConfiguresSecureHTTPClient(t *testing.T) {
 	assert.False(t, transport.TLSClientConfig.InsecureSkipVerify)
 }
 
+func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
+	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		username, password, ok := request.BasicAuth()
+		assert.True(t, ok)
+		assert.Equal(t, "adapter-user", username)
+		assert.Equal(t, "adapter-password", password)
+		return response(http.StatusNoContent, http.NoBody), nil
+	}))
+
+	_, err := sender.Send(
+		context.Background(),
+		"https://adapter-user:adapter-password@adapter.example.com/notify",
+		GatewayNotification{NotificationID: uuid.New()},
+	)
+
+	require.NoError(t, err)
+}
+
 func TestHTTPNotificationSenderRetriesTransientDNSFailures(t *testing.T) {
 	resolver := &sequenceHostResolver{outcomes: []hostResolverOutcome{
 		{err: errors.New("temporary resolver failure")},
@@ -340,7 +358,6 @@ func TestHTTPNotificationSenderDoesNotRetryTerminalEndpointPolicyFailures(t *tes
 		addresses []netip.Addr
 	}{
 		{name: "insecure scheme", endpoint: "http://adapter.example.com/notify"},
-		{name: "embedded user information", endpoint: "https://user@adapter.example.com/notify"},
 		{name: "private resolution", endpoint: "https://adapter.example.com/notify", addresses: []netip.Addr{netip.MustParseAddr("127.0.0.1")}},
 	}
 

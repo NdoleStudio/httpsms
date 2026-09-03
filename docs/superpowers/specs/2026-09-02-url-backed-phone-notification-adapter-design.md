@@ -89,8 +89,8 @@ The helpers provide three outcomes:
 
 - **Firebase:** the token has no URL syntax and is passed unchanged to Firebase.
 - **HTTP:** the token is an absolute, syntactically valid `https://` URL.
-- **Invalid:** the value is URL-like but malformed, uses another scheme, has no
-  hostname, or contains embedded user information.
+- **Invalid:** the value is URL-like but malformed, uses another scheme, or has
+  no hostname.
 
 Use these entity-level types and methods:
 
@@ -312,7 +312,6 @@ Accepted destinations must:
 
 - use `https`;
 - include a DNS hostname or public IP;
-- omit URL user information;
 - resolve only to public, globally routable IP addresses.
 
 Reject destinations resolving to loopback, private, link-local, multicast,
@@ -342,8 +341,8 @@ The HTTP client:
 The endpoint policy accepts an optional exact-host private-destination
 allowlist. The DI container passes configured values only when `ENV=local`;
 production ignores the setting. Allowlisting a hostname permits its private
-DNS answers but does not permit HTTP, embedded credentials, redirects, proxy
-use, or a different hostname. Unit tests use injected resolvers and dialers.
+DNS answers but does not permit HTTP, redirects, proxy use, or a different
+hostname. Unit tests use injected resolvers and dialers.
 The Docker integration stack allowlists only `adapter-emulator`.
 
 ### 9. Validation and API compatibility
@@ -432,8 +431,7 @@ Cover:
 - ordinary FCM tokens selecting Firebase;
 - valid public HTTPS URLs selecting HTTP;
 - empty and nil tokens;
-- `http`, `ftp`, URL user information, missing host, and malformed URLs being
-  invalid;
+- `http`, `ftp`, missing host, and malformed URLs being invalid;
 - URL-like invalid values never falling through to Firebase.
 
 ### Endpoint policy tests

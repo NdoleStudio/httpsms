@@ -4946,7 +4946,7 @@
                 "fcm_token": {
                     "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",
-                    "example": "https://adapter.example.com/notifications"
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
                 },
                 "phone_number": {
                     "type": "string",
@@ -4975,7 +4975,7 @@
                 "fcm_token": {
                     "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",
-                    "example": "https://adapter.example.com/notifications"
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
                 },
                 "max_send_attempts": {
                     "description": "MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.",

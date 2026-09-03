@@ -83,9 +83,6 @@ func (policy *NotificationEndpointPolicy) Validate(ctx context.Context, endpoint
 	if !strings.EqualFold(endpoint.Scheme, "https") {
 		return nil, newNotificationEndpointPolicyViolation("notification endpoint must use HTTPS")
 	}
-	if endpoint.User != nil {
-		return nil, newNotificationEndpointPolicyViolation("notification endpoint must not contain user information")
-	}
 
 	host := strings.ToLower(endpoint.Hostname())
 	if host == "" {

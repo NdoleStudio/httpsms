@@ -973,7 +973,7 @@ definitions:
       fcm_token:
         description: FcmToken is either a Firebase registration token or a public
           HTTPS adapter callback URL.
-        example: https://adapter.example.com/notifications
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
         type: string
       phone_number:
         example: '[+18005550199]'
@@ -993,7 +993,7 @@ definitions:
       fcm_token:
         description: FcmToken is either a Firebase registration token or a public
           HTTPS adapter callback URL.
-        example: https://adapter.example.com/notifications
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
         type: string
       max_send_attempts:
         description: MaxSendAttempts is the number of attempts when sending an SMS

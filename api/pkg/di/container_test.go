@@ -9,6 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNotificationEndpointPolicyCreatesNewInstances(t *testing.T) {
+	t.Setenv("ENV", "local")
+	container := NewLiteContainer()
+
+	assert.NotSame(t, container.NotificationEndpointPolicy(), container.NotificationEndpointPolicy())
+}
+
 func TestNotificationDispatcherUsesSecuredTransportAndSafeTelemetry(t *testing.T) {
 	t.Setenv("ENV", "local")
 	t.Setenv("FCM_ENDPOINT", "http://localhost")

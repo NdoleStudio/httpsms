@@ -100,9 +100,6 @@ func (phone *Phone) NotificationTransport() (NotificationTransport, error) {
 	if endpoint.Hostname() == "" {
 		return "", stacktrace.NewErrorf("notification URL must include a hostname")
 	}
-	if endpoint.User != nil {
-		return "", stacktrace.NewErrorf("notification URL must not contain user information")
-	}
 
 	return NotificationTransportHTTP, nil
 }
