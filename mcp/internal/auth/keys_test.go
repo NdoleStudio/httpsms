@@ -55,17 +55,16 @@ func newTestPKCS8PrivateKeyPEM(t *testing.T) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: bytes})
 }
 
-// newTestKeySet builds a KeySet with test issuer/audiences already set, as a
-// production caller would after loading them from config.Config.
+// newTestKeySet builds a KeySet with test issuer/audiences already
+// configured, as a production caller would after loading them from
+// config.Config.
 func newTestKeySet(t *testing.T) *auth.KeySet {
 	t.Helper()
 
 	keys, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
 	require.NoError(t, err)
 
-	keys.Issuer = testMCPIssuer
-	keys.MCPAudience = testMCPAudience
-	keys.APIAudience = testAPIAudience
+	require.NoError(t, keys.Configure(testMCPIssuer, testMCPAudience, testAPIAudience))
 
 	return keys
 }
@@ -106,6 +105,106 @@ func TestNewKeySetAcceptsPKCS1AndPKCS8Encodings(t *testing.T) {
 
 	_, err = auth.NewKeySet(newTestPKCS8PrivateKeyPEM(t), testSigningKeyID)
 	require.NoError(t, err)
+}
+
+func TestKeySetSigningFailsUntilConfigured(t *testing.T) {
+	keys, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
+	require.NoError(t, err)
+
+	_, err = keys.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Minute)
+	require.ErrorContains(t, err, "Configure")
+
+	_, err = keys.SignAPIDelegationToken(auth.Principal{UserID: testFirebaseUserID}, []string{"phones:read"}, "GET", "/v1/phones", time.Minute)
+	require.ErrorContains(t, err, "Configure")
+}
+
+func TestKeySetConfigureSucceedsOnce(t *testing.T) {
+	keys, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
+	require.NoError(t, err)
+
+	require.NoError(t, keys.Configure(testMCPIssuer, testMCPAudience, testAPIAudience))
+
+	raw, err := keys.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Minute)
+	require.NoError(t, err)
+
+	claims := parseTestClaims(t, raw, keys.PublicKey())
+	assert.Equal(t, testMCPIssuer, claims.Issuer)
+	assert.Equal(t, testMCPAudience, claims.Audience[0])
+}
+
+func TestKeySetConfigureRejectsEmptyValues(t *testing.T) {
+	testCases := map[string]struct {
+		issuer      string
+		mcpAudience string
+		apiAudience string
+	}{
+		"empty issuer":      {issuer: "", mcpAudience: testMCPAudience, apiAudience: testAPIAudience},
+		"empty mcpAudience": {issuer: testMCPIssuer, mcpAudience: "", apiAudience: testAPIAudience},
+		"empty apiAudience": {issuer: testMCPIssuer, mcpAudience: testMCPAudience, apiAudience: ""},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			keys, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
+			require.NoError(t, err)
+
+			err = keys.Configure(tc.issuer, tc.mcpAudience, tc.apiAudience)
+			require.Error(t, err)
+
+			// A rejected Configure call must not leave the KeySet able to
+			// sign, nor able to be configured again with valid values (an
+			// empty-value call must not consume the one-shot slot).
+			_, signErr := keys.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Minute)
+			require.Error(t, signErr)
+
+			require.NoError(t, keys.Configure(testMCPIssuer, testMCPAudience, testAPIAudience))
+		})
+	}
+}
+
+func TestKeySetConfigureRejectsSecondCall(t *testing.T) {
+	keys, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
+	require.NoError(t, err)
+
+	require.NoError(t, keys.Configure(testMCPIssuer, testMCPAudience, testAPIAudience))
+
+	err = keys.Configure("https://other.example", "https://other.example/mcp", "https://other.example/api")
+	require.ErrorContains(t, err, "already configured")
+
+	// The rejected reconfiguration must not have overwritten the original
+	// issuer/audiences.
+	raw, err := keys.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Minute)
+	require.NoError(t, err)
+
+	claims := parseTestClaims(t, raw, keys.PublicKey())
+	assert.Equal(t, testMCPIssuer, claims.Issuer)
+	assert.Equal(t, testMCPAudience, claims.Audience[0])
+}
+
+func TestKeySetConfigureIsRaceFreeUnderConcurrentCalls(t *testing.T) {
+	keys, err := auth.NewKeySet(newTestPrivateKeyPEM(t, 2048), testSigningKeyID)
+	require.NoError(t, err)
+
+	const attempts = 16
+	results := make(chan error, attempts)
+	for i := 0; i < attempts; i++ {
+		go func() {
+			results <- keys.Configure(testMCPIssuer, testMCPAudience, testAPIAudience)
+		}()
+	}
+
+	successes := 0
+	for i := 0; i < attempts; i++ {
+		if err := <-results; err == nil {
+			successes++
+		}
+	}
+	assert.Equal(t, 1, successes, "exactly one concurrent Configure call must succeed")
+
+	raw, err := keys.SignMCPAccessToken(auth.Principal{UserID: testFirebaseUserID}, "client", []string{"phones:read"}, time.Minute)
+	require.NoError(t, err)
+	claims := parseTestClaims(t, raw, keys.PublicKey())
+	assert.Equal(t, testMCPIssuer, claims.Issuer)
 }
 
 func TestKeySetSignsAudienceBoundTokens(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -36,31 +37,40 @@ type JWKS struct {
 	Keys []JWK `json:"keys"`
 }
 
+// keySetConfig holds the deployment-derived issuer/audiences a KeySet signs
+// with, published atomically as a single immutable value so a concurrent
+// reader either sees no configuration or sees all three fields fully
+// populated — never a partially-applied Configure call.
+type keySetConfig struct {
+	issuer      string
+	mcpAudience string
+	apiAudience string
+}
+
 // KeySet loads a single RSA signing key and mints/publishes the JWTs issued
 // by the hosted MCP service. A KeySet never logs, and never exposes through
 // any method, the private key it holds.
 //
-// Issuer, MCPAudience, and APIAudience are deployment configuration (derived
-// from config.Config) rather than key material, so they are plain exported
-// fields the caller sets after construction rather than constructor
-// parameters. Signing methods use whatever value is set at call time.
+// issuer, mcpAudience, and apiAudience are deployment configuration (derived
+// from config.Config) rather than key material, so NewKeySet returns a
+// KeySet that cannot sign anything until the caller calls Configure exactly
+// once. Configure is deliberately one-shot (not a plain setter) so a KeySet
+// can safely be shared across goroutines without a data race: the
+// issuer/audiences are stored behind a single atomic.Pointer swap, so
+// Configure either fully publishes a complete, immutable *keySetConfig or
+// does nothing, and every signing method only ever reads the published
+// value through an atomic load — there is no window in which a concurrent
+// reader can observe a partially-configured KeySet.
 type KeySet struct {
-	// Issuer is used as the `iss` claim for every token this KeySet mints.
-	// The wire contract with the httpSMS API requires this to be the MCP
-	// service's base URL (MCP_BASE_URL).
-	Issuer string
-
-	// MCPAudience is the `aud` claim for MCP access tokens, e.g.
-	// "https://mcp.httpsms.com/mcp".
-	MCPAudience string
-
-	// APIAudience is the `aud` claim for API delegation tokens, e.g.
-	// "https://api.httpsms.com". This must match the httpSMS API's
-	// configured API_AUDIENCE.
-	APIAudience string
-
 	privateKey *rsa.PrivateKey
 	keyID      string
+
+	// config is nil until Configure succeeds, after which it is never
+	// written again. atomic.Pointer.CompareAndSwap makes "claim the
+	// one-shot slot" and "publish the fully-built value" a single atomic
+	// step, so concurrent Configure calls race safely (exactly one wins)
+	// and concurrent signing calls never observe a half-written config.
+	config atomic.Pointer[keySetConfig]
 }
 
 // NewKeySet parses privateKeyPEM (PKCS#1 or PKCS#8, RSA only, at least
@@ -107,6 +117,36 @@ func parseRSAPrivateKeyPEM(privateKeyPEM []byte) (*rsa.PrivateKey, error) {
 	return rsaKey, nil
 }
 
+// Configure sets issuer, mcpAudience, and apiAudience exactly once. It must
+// be called before any signing method and must not be called more than
+// once; both are programmer errors and return an error rather than
+// panicking, so callers (and their tests) can assert on them.
+//
+// Configure builds the complete configuration value first, then publishes
+// it with a single atomic.Pointer.CompareAndSwap. This makes "claim the
+// one-shot slot" and "make the new issuer/audiences visible" the same
+// indivisible step, so KeySet is safe to share across goroutines: a
+// concurrent signing call either reads nil (and fails closed) or reads a
+// fully-populated *keySetConfig, never a partially-applied one.
+func (keys *KeySet) Configure(issuer, mcpAudience, apiAudience string) error {
+	if issuer == "" {
+		return errors.New("auth: KeySet issuer must not be empty")
+	}
+	if mcpAudience == "" {
+		return errors.New("auth: KeySet MCP audience must not be empty")
+	}
+	if apiAudience == "" {
+		return errors.New("auth: KeySet API audience must not be empty")
+	}
+
+	cfg := &keySetConfig{issuer: issuer, mcpAudience: mcpAudience, apiAudience: apiAudience}
+	if !keys.config.CompareAndSwap(nil, cfg) {
+		return errors.New("auth: KeySet is already configured")
+	}
+
+	return nil
+}
+
 // PublicKey returns the RSA public key corresponding to the loaded signing
 // key, for verifying tokens minted by this KeySet in tests and internal
 // callers. It never exposes the private key.
@@ -121,10 +161,15 @@ func (keys *KeySet) KeyID() string {
 
 // SignMCPAccessToken mints a short-lived MCP access token for principal,
 // scoped to scopes and bound to the OAuth client identified by clientID. The
-// token is audience-bound to keys.MCPAudience and must never be accepted by
-// the httpSMS API.
+// token is audience-bound to the configured MCP audience and must never be
+// accepted by the httpSMS API.
 func (keys *KeySet) SignMCPAccessToken(principal Principal, clientID string, scopes []string, ttl time.Duration) (string, error) {
-	claims, err := keys.baseClaims(principal, keys.MCPAudience, scopes, ttl)
+	cfg, err := keys.requireConfig()
+	if err != nil {
+		return "", err
+	}
+
+	claims, err := keys.baseClaims(cfg.issuer, principal, cfg.mcpAudience, scopes, ttl)
 	if err != nil {
 		return "", err
 	}
@@ -135,10 +180,11 @@ func (keys *KeySet) SignMCPAccessToken(principal Principal, clientID string, sco
 
 // SignAPIDelegationToken mints a short-lived downstream API delegation token
 // for principal, scoped to scopes, and bound to exactly one API operation
-// (method, path). The token is audience-bound to keys.APIAudience.
+// (method, path). The token is audience-bound to the configured API
+// audience.
 //
 // The resulting JWT carries JSON fields `scopes`, `http_method`, and
-// `http_path`; issuer keys.Issuer; audience keys.APIAudience; subject
+// `http_path`; the configured issuer; the configured API audience; subject
 // principal.UserID; is signed RS256; and carries a `kid` header. This is a
 // wire contract with the httpSMS API's delegated MCP token verifier
 // (api/pkg/auth.MCPClaims) and must not change independently of it.
@@ -147,7 +193,12 @@ func (keys *KeySet) SignAPIDelegationToken(principal Principal, scopes []string,
 		return "", errors.New("auth: API delegation token requires a non-empty method and path")
 	}
 
-	claims, err := keys.baseClaims(principal, keys.APIAudience, scopes, ttl)
+	cfg, err := keys.requireConfig()
+	if err != nil {
+		return "", err
+	}
+
+	claims, err := keys.baseClaims(cfg.issuer, principal, cfg.apiAudience, scopes, ttl)
 	if err != nil {
 		return "", err
 	}
@@ -157,16 +208,20 @@ func (keys *KeySet) SignAPIDelegationToken(principal Principal, scopes []string,
 	return keys.sign(claims)
 }
 
+// requireConfig returns the KeySet's published configuration, or an error if
+// Configure has not yet been called successfully.
+func (keys *KeySet) requireConfig() (*keySetConfig, error) {
+	cfg := keys.config.Load()
+	if cfg == nil {
+		return nil, errors.New("auth: KeySet.Configure must be called before signing tokens")
+	}
+	return cfg, nil
+}
+
 // baseClaims builds the claims shared by every token this KeySet mints.
-func (keys *KeySet) baseClaims(principal Principal, audience string, scopes []string, ttl time.Duration) (*AccessClaims, error) {
+func (keys *KeySet) baseClaims(issuer string, principal Principal, audience string, scopes []string, ttl time.Duration) (*AccessClaims, error) {
 	if principal.UserID == "" {
 		return nil, errors.New("auth: token subject (Firebase UID) must not be empty")
-	}
-	if keys.Issuer == "" {
-		return nil, errors.New("auth: KeySet.Issuer must be set before signing tokens")
-	}
-	if audience == "" {
-		return nil, errors.New("auth: token audience must not be empty")
 	}
 	if ttl <= 0 {
 		return nil, errors.New("auth: token TTL must be positive")
@@ -182,7 +237,7 @@ func (keys *KeySet) baseClaims(principal Principal, audience string, scopes []st
 		Email:  principal.Email,
 		Scopes: scopes,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    keys.Issuer,
+			Issuer:    issuer,
 			Subject:   principal.UserID,
 			Audience:  jwt.ClaimStrings{audience},
 			IssuedAt:  jwt.NewNumericDate(now),
