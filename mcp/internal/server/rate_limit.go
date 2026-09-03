@@ -40,8 +40,13 @@ type Limits struct {
 	// one-hour window.
 	KeyCreatesPerHour int
 
-	// KeyRotationsPerHour bounds rotate_user_api_key, per user, per
-	// rolling one-hour window.
+	// KeyRotationsPerHour bounds rotate_user_api_key *executions* (a call
+	// presenting MRTR confirmation state or a legacy confirmation_handle),
+	// per user, per rolling one-hour window. The confirmation-prompt
+	// budget (rotateUserAPIKeyConfirmBucket) is derived from this field --
+	// KeyRotationsPerHour * confirmationPromptMultiplier -- rather than
+	// being a separate configuration field, so there is nothing new to
+	// wire through config.Config or an environment variable.
 	KeyRotationsPerHour int
 }
 
@@ -72,18 +77,40 @@ type bucket struct {
 	window time.Duration
 }
 
-// buckets maps every rate-limited MCP tool name to the budget that bounds
-// it. A tool absent from this map (there are none today) is never rate
-// limited.
+// rotateUserAPIKeyConfirmBucket is the distinct rate-limit bucket for
+// confirmation-only rotate_user_api_key calls (an MRTR or legacy first
+// call that only mints a confirmation handle and can never itself rotate
+// anything). It is deliberately not a real MCP tool name -- no registered
+// tool name contains ":" -- so it can never collide with, or be spent
+// from, "rotate_user_api_key"'s own execution budget, and a Redis key
+// derived from it (see rateLimitKey) is always a distinct counter.
+const rotateUserAPIKeyConfirmBucket = "rotate_user_api_key:confirm"
+
+// confirmationPromptMultiplier sets the confirmation-prompt bucket's
+// hourly budget as a multiple of KeyRotationsPerHour. Before this, a
+// confirmation-only call was charged nothing at all, so a caller could
+// mint unlimited confirmation handles per hour; charging it against the
+// execution bucket instead would let a client burn the whole hourly
+// rotation budget on prompts alone and leave the user unable to complete a
+// rotation they had just been asked to confirm. A separate, wider budget
+// bounds prompt spam while still leaving room for a user to hesitate,
+// retry after a crash, or explore the flow more than once per hour.
+const confirmationPromptMultiplier = 5
+
+// buckets maps every rate-limited MCP tool bucket -- the seven real MCP
+// tool names plus the synthetic rotateUserAPIKeyConfirmBucket -- to the
+// budget that bounds it. A bucket absent from this map (there are none
+// today) is never rate limited.
 func (l Limits) buckets() map[string]bucket {
 	return map[string]bucket{
-		"list_phones":            {limit: l.ReadPerMinute, window: time.Minute},
-		"list_message_threads":   {limit: l.ReadPerMinute, window: time.Minute},
-		"list_thread_messages":   {limit: l.ReadPerMinute, window: time.Minute},
-		"list_incoming_messages": {limit: l.ReadPerMinute, window: time.Minute},
-		"send_sms":               {limit: l.SendPerMinute, window: time.Minute},
-		"create_phone_api_key":   {limit: l.KeyCreatesPerHour, window: time.Hour},
-		"rotate_user_api_key":    {limit: l.KeyRotationsPerHour, window: time.Hour},
+		"list_phones":                 {limit: l.ReadPerMinute, window: time.Minute},
+		"list_message_threads":        {limit: l.ReadPerMinute, window: time.Minute},
+		"list_thread_messages":        {limit: l.ReadPerMinute, window: time.Minute},
+		"list_incoming_messages":      {limit: l.ReadPerMinute, window: time.Minute},
+		"send_sms":                    {limit: l.SendPerMinute, window: time.Minute},
+		"create_phone_api_key":        {limit: l.KeyCreatesPerHour, window: time.Hour},
+		"rotate_user_api_key":         {limit: l.KeyRotationsPerHour, window: time.Hour},
+		rotateUserAPIKeyConfirmBucket: {limit: l.KeyRotationsPerHour * confirmationPromptMultiplier, window: time.Hour},
 	}
 }
 

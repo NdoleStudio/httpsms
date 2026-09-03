@@ -943,6 +943,91 @@ func TestRotateUserAPIKeyConfirmationPromptIsNotRateLimited(t *testing.T) {
 	require.NotContains(t, callError(t, unconfirmed), "rate limit")
 }
 
+// TestRotateUserAPIKeyConfirmationPromptBudgetIsExhausted asserts the
+// confirmation-prompt bucket -- distinct from the execution bucket -- has
+// its own finite budget (KeyRotationsPerHour * 5) rather than being
+// unlimited: a client that mints confirmation handles without ever
+// confirming eventually gets rate limited too, and the structured error it
+// receives names the confirmation bucket rather than the execution one.
+func TestRotateUserAPIKeyConfirmationPromptBudgetIsExhausted(t *testing.T) {
+	h := newTestHarness(t, func(cfg *config.Config) {
+		cfg.KeyRotationsPerHour = 1
+	})
+	token := h.mintToken(t, allScopes...)
+
+	unconfirmed := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rotate_user_api_key","arguments":{}}}`
+
+	// The confirmation-prompt budget is KeyRotationsPerHour * 5 = 5: the
+	// first five confirmation-only calls must all succeed.
+	for i := 0; i < 5; i++ {
+		resp := postMCP(t, h, token, unconfirmed, nil)
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		require.NoError(t, err)
+		require.NotContainsf(t, strings.ToLower(string(body)), "rate limit", "confirmation-only call %d, body: %s", i+1, body)
+	}
+
+	// The sixth confirmation-only call in the same hour is rejected.
+	resp := postMCP(t, h, token, unconfirmed, nil)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var decoded struct {
+		Error *struct {
+			Message string          `json:"message"`
+			Data    json.RawMessage `json:"data"`
+		} `json:"error"`
+	}
+	require.NoError(t, json.Unmarshal(body, &decoded))
+	require.NotNilf(t, decoded.Error, "expected the sixth confirmation-only call to be rate limited, body: %s", body)
+	require.Contains(t, strings.ToLower(decoded.Error.Message), "rate limit")
+
+	var data struct {
+		Tool string `json:"tool"`
+	}
+	require.NoError(t, json.Unmarshal(decoded.Error.Data, &data))
+	// The error names the confirmation bucket, not the execution tool
+	// name, so a client (and an operator reading logs) can tell the two
+	// budgets apart.
+	require.Equal(t, "rotate_user_api_key:confirm", data.Tool)
+}
+
+// TestRotateUserAPIKeyConfirmationAndExecutionBucketsAreIndependentOverHTTP
+// asserts, through the fully assembled HTTP handler, that exhausting the
+// confirmation-prompt bucket never spends any of the execution bucket's
+// budget, and vice versa -- the same independent-buckets guarantee
+// TestToolRateLimiterRotationConfirmationBucketIsIndependentAndDerived
+// asserts at the unit level, confirmed here to hold end to end.
+func TestRotateUserAPIKeyConfirmationAndExecutionBucketsAreIndependentOverHTTP(t *testing.T) {
+	h := newTestHarness(t, func(cfg *config.Config) {
+		cfg.KeyRotationsPerHour = 1
+	})
+	token := h.mintToken(t, allScopes...)
+
+	unconfirmed := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rotate_user_api_key","arguments":{}}}`
+	withHandle := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rotate_user_api_key","arguments":{"confirmation_handle":"not-a-real-handle"}}}`
+
+	callBody := func(t *testing.T, body string) string {
+		t.Helper()
+		resp := postMCP(t, h, token, body, nil)
+		defer resp.Body.Close()
+		raw, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return strings.ToLower(string(raw))
+	}
+
+	// Exhaust the confirmation-prompt bucket (budget 5).
+	for i := 0; i < 5; i++ {
+		require.NotContainsf(t, callBody(t, unconfirmed), "rate limit", "confirmation-only call %d", i+1)
+	}
+	require.Contains(t, callBody(t, unconfirmed), "rate limit")
+
+	// The execution bucket (budget 1) is untouched: the single
+	// confirmation-handle call still succeeds.
+	require.NotContains(t, callBody(t, withHandle), "rate limit")
+}
+
 // TestNewRejectsMCPAudienceThatIsNotTheCanonicalEndpointURL asserts an
 // MCP_AUDIENCE override that does not equal BaseURL + "/mcp" fails startup:
 // discovery metadata always publishes the canonical value, so any other
@@ -1067,4 +1152,90 @@ func TestRateLimiterPanicIsRecoveredAsJSONRPCInternalError(t *testing.T) {
 	resp2 := postMCP(t, h, token, `{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, nil)
 	defer resp2.Body.Close()
 	require.Equal(t, http.StatusOK, resp2.StatusCode)
+}
+
+// TestRotateUserAPIKeyConfirmationPromptFailsClosedOnRedisError asserts a
+// confirmation-only rotate_user_api_key call -- which, before this fix,
+// bypassed the rate limiter (and therefore Redis) entirely -- fails closed
+// when the rate limiter's Redis client errors, exactly like every other
+// rate-limited tool call. The call must never be let through just because
+// it targets the confirmation-prompt bucket rather than the execution
+// bucket.
+func TestRotateUserAPIKeyConfirmationPromptFailsClosedOnRedisError(t *testing.T) {
+	mr := miniredis.RunT(t)
+	cfg := newTestConfig(t, mr)
+	keys := newTestKeys(t, cfg)
+
+	stateRedis := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = stateRedis.Close() })
+
+	store := oauth.NewRedisStore(stateRedis)
+	resolver := oauth.NewClientResolver(http.DefaultClient, store)
+
+	oauthServerConfig := oauth.ServerConfig{
+		Issuer:               testIssuer,
+		Resource:             cfg.MCPAudience,
+		FirebaseAPIKey:       "test-firebase-api-key",
+		FirebaseAuthDomain:   "httpsms-test.firebaseapp.com",
+		AuthorizationCodeTTL: cfg.AuthorizationCodeTTL,
+		AccessTokenTTL:       cfg.AccessTokenTTL,
+		RefreshTokenTTL:      cfg.RefreshTokenTTL,
+	}
+	oauthServer, err := oauth.NewServer(store, resolver, keys, approvingVerifier{}, oauthServerConfig)
+	require.NoError(t, err)
+
+	// A separate, standalone miniredis instance backs only the rate
+	// limiter's Redis client (Dependencies.RedisClient), so it can be shut
+	// down without breaking the OAuth store the bearer-auth path never
+	// even needs. Closing it before the request forces every rate-limit
+	// command -- including the confirmation-prompt bucket's -- to fail.
+	limiterRedisServer := miniredis.RunT(t)
+	limiterRedisClient := redis.NewClient(&redis.Options{Addr: limiterRedisServer.Addr()})
+	t.Cleanup(func() { _ = limiterRedisClient.Close() })
+	limiterRedisServer.Close()
+
+	handler, err := server.New(cfg, server.Dependencies{
+		Logger:                zerolog.Nop(),
+		Keys:                  keys,
+		OAuthServer:           oauthServer,
+		OAuthServerConfig:     oauthServerConfig,
+		OAuthStore:            store,
+		APIClient:             stubAPIClient{},
+		RedisClient:           limiterRedisClient,
+		APIDelegationTokenTTL: cfg.APIDelegationTokenTTL,
+		ConfirmationTTL:       cfg.ConfirmationTTL,
+		RateLimits:            newTestLimits(cfg),
+		Version:               "test",
+	})
+	require.NoError(t, err)
+
+	httpServer := httptest.NewServer(handler)
+	defer httpServer.Close()
+
+	h := &testHarness{httpServer: httpServer, keys: keys, cfg: cfg}
+	token := h.mintToken(t, allScopes...)
+
+	unconfirmed := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rotate_user_api_key","arguments":{}}}`
+	resp := postMCP(t, h, token, unconfirmed, nil)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var decoded struct {
+		Result *struct {
+			IsError bool `json:"isError"`
+		} `json:"result"`
+		Error *struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	require.NoError(t, json.Unmarshal(body, &decoded))
+	// The call must be refused -- as a JSON-RPC error -- rather than
+	// silently allowed through to the tool dispatcher just because Redis
+	// is unreachable.
+	require.Nilf(t, decoded.Result, "expected the call to be refused, not dispatched, body: %s", body)
+	require.NotNilf(t, decoded.Error, "expected a JSON-RPC error when Redis is unreachable, body: %s", body)
+	require.Contains(t, strings.ToLower(decoded.Error.Message), "rate limit")
 }

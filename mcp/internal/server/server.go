@@ -311,6 +311,17 @@ func mcpTransportLogger() *slog.Logger {
 // bearer-auth middleware has already verified (auth.PrincipalFromContext),
 // never from tool input, so a caller can never spend another user's
 // budget or evade its own by claiming a different identity.
+//
+// Every call is charged against exactly one bucket. A rotate_user_api_key
+// call that cannot execute a rotation (see executesRotation) is charged
+// against rotateUserAPIKeyConfirmBucket -- its own, separate,
+// KeyRotationsPerHour*confirmationPromptMultiplier budget -- instead of
+// being charged nothing (which would let a client mint unlimited
+// confirmation handles per hour) or charged the execution bucket (which
+// would let a client burn the whole hourly rotation budget on prompts
+// alone). A call that presents confirmation state is charged only against
+// the execution bucket, never both, so a confirmed retry is never double
+// charged.
 func rateLimitMiddleware(limiter *ToolRateLimiter) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
@@ -333,11 +344,12 @@ func rateLimitMiddleware(limiter *ToolRateLimiter) mcp.Middleware {
 				return next(ctx, method, req)
 			}
 
-			if !chargesRateLimit(callReq) {
-				return next(ctx, method, req)
+			bucketName := callReq.Params.Name
+			if !executesRotation(callReq) {
+				bucketName = rotateUserAPIKeyConfirmBucket
 			}
 
-			if err := limiter.Allow(ctx, principal.UserID, callReq.Params.Name); err != nil {
+			if err := limiter.Allow(ctx, principal.UserID, bucketName); err != nil {
 				var rateLimitErr *RateLimitError
 				if errors.As(err, &rateLimitErr) {
 					return nil, rateLimitJSONRPCError(rateLimitErr)
@@ -355,24 +367,25 @@ func rateLimitMiddleware(limiter *ToolRateLimiter) mcp.Middleware {
 // caller to confirm.
 const rotateUserAPIKeyToolName = "rotate_user_api_key"
 
-// chargesRateLimit reports whether callReq should consume rate-limit
-// budget.
+// executesRotation reports whether callReq may actually execute a
+// rotate_user_api_key rotation, and therefore must be charged against the
+// execution bucket ("rotate_user_api_key") rather than the
+// confirmation-prompt bucket (rotateUserAPIKeyConfirmBucket).
 //
-// Every tool but rotate_user_api_key is charged on every call. A
-// rotate_user_api_key call that presents no confirmation at all cannot
-// rotate anything: it can only mint a confirmation handle and return an
-// MRTR elicitation, so charging it would let a client burn the entire
-// hourly rotation budget on prompts alone and leave the user unable to
-// actually complete a rotation they had already been asked to confirm.
-// Only a call that presents MRTR confirmation state (RequestState or
-// InputResponses) or a legacy confirmation_handle argument -- that is, a
-// call that may actually execute the rotation -- is charged.
+// Every tool but rotate_user_api_key always executes on every call, so
+// this always reports true for them. A rotate_user_api_key call that
+// presents no confirmation at all cannot rotate anything: it can only mint
+// a confirmation handle and return an MRTR elicitation. Only a call that
+// presents MRTR confirmation state (RequestState or InputResponses) or a
+// legacy confirmation_handle argument -- that is, a call that may actually
+// execute the rotation -- reports true here.
 //
 // Note that a client which supports neither MRTR nor elicitation can never
 // reach the execution path at all (the SDK's server-side MRTR shim needs a
 // live client to elicit from), so this can never be used to rotate a key
-// without spending budget.
-func chargesRateLimit(callReq *mcp.CallToolRequest) bool {
+// for free: every confirmation-only call it makes is still charged against
+// rotateUserAPIKeyConfirmBucket.
+func executesRotation(callReq *mcp.CallToolRequest) bool {
 	if callReq.Params.Name != rotateUserAPIKeyToolName {
 		return true
 	}
