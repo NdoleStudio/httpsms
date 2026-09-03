@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
   <title>Authorize {{.ClientName}} - httpSMS</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -14,12 +15,33 @@
     {{range .Scopes}}<li>{{.Description}}</li>{{end}}
   </ul>
 
+  <!--
+    The only form that is ever submitted to this service carries the
+    transaction ID, the Firebase ID token, and the approved scopes. The
+    email and password fields below deliberately live outside it: those
+    credentials are sent to Firebase by the browser SDK and must never
+    reach this server.
+  -->
   <form id="httpsms-authorize-form" method="POST" action="/oauth/firebase/complete">
     <input type="hidden" name="transaction_id" value="{{.TransactionID}}">
     <input type="hidden" name="id_token" id="httpsms-id-token" value="">
     {{range .Scopes}}<input type="hidden" name="approved_scopes" value="{{.Value}}">{{end}}
-    <button type="button" id="httpsms-allow-button">Sign in with Google to Allow</button>
   </form>
+
+  <div id="httpsms-sign-in">
+    <button type="button" id="httpsms-google-button">Sign in with Google to Allow</button>
+    <button type="button" id="httpsms-github-button">Sign in with GitHub to Allow</button>
+
+    <div id="httpsms-password-sign-in">
+      <label for="httpsms-email">Email</label>
+      <input type="email" id="httpsms-email" name="httpsms-email" autocomplete="username">
+      <label for="httpsms-password">Password</label>
+      <input type="password" id="httpsms-password" name="httpsms-password" autocomplete="current-password">
+      <button type="button" id="httpsms-password-button">Sign in with email and password to Allow</button>
+    </div>
+  </div>
+
+  <p id="httpsms-error" role="alert"></p>
 
   <form method="POST" action="/oauth/firebase/complete">
     <input type="hidden" name="transaction_id" value="{{.TransactionID}}">
@@ -43,16 +65,40 @@
     // submitted via a normal POST body -- it must never be appended to a
     // URL (query string, fragment, or otherwise), where it could leak
     // through browser history, a Referer header, or server access logs.
-    document.getElementById("httpsms-allow-button").addEventListener("click", function () {
-      var provider = new firebase.auth.GoogleAuthProvider();
-      firebase.auth().signInWithPopup(provider).then(function (result) {
-        return result.user.getIdToken();
-      }).then(function (idToken) {
+    // Every sign-in method below (Google, GitHub, and email/password)
+    // funnels through this single completion path.
+    function completeWithUser(user) {
+      return user.getIdToken().then(function (idToken) {
         document.getElementById("httpsms-id-token").value = idToken;
         document.getElementById("httpsms-authorize-form").submit();
-      }).catch(function (error) {
-        alert("Sign-in failed: " + error.message);
       });
+    }
+
+    function reportError(error) {
+      document.getElementById("httpsms-error").textContent = "Sign-in failed: " + error.message;
+    }
+
+    function signInWithProvider(provider) {
+      firebase.auth().signInWithPopup(provider).then(function (result) {
+        return completeWithUser(result.user);
+      }).catch(reportError);
+    }
+
+    document.getElementById("httpsms-google-button").addEventListener("click", function () {
+      signInWithProvider(new firebase.auth.GoogleAuthProvider());
+    });
+
+    document.getElementById("httpsms-github-button").addEventListener("click", function () {
+      signInWithProvider(new firebase.auth.GithubAuthProvider());
+    });
+
+    document.getElementById("httpsms-password-button").addEventListener("click", function () {
+      var email = document.getElementById("httpsms-email").value;
+      var password = document.getElementById("httpsms-password").value;
+
+      firebase.auth().signInWithEmailAndPassword(email, password).then(function (result) {
+        return completeWithUser(result.user);
+      }).catch(reportError);
     });
   </script>
 </body>

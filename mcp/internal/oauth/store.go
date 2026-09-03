@@ -39,9 +39,10 @@ var ErrNotFound = errors.New("oauth: not found")
 // AuthorizationTransaction records a single in-flight OAuth authorization
 // request from the moment its client, redirect URI, scopes, state, and PKCE
 // challenge have been validated until the resulting authorization code is
-// issued or the transaction expires unused. Unlike codes/tokens/handles it
-// is read (not consumed) so it can be re-read across the Firebase-login
-// redirect round trip.
+// issued or the transaction expires unused. It is read (not consumed) while
+// the browser is still completing Firebase login, and consumed exactly once
+// by the completion or denial that ends it (see
+// ConsumeAuthorizationTransaction).
 type AuthorizationTransaction struct {
 	// ID is the random public value this transaction is looked up by. It
 	// is used only to derive the record's Redis key and is never persisted
@@ -130,6 +131,7 @@ type Confirmation struct {
 type Store interface {
 	PutAuthorizationTransaction(context.Context, AuthorizationTransaction, time.Duration) error
 	GetAuthorizationTransaction(context.Context, string) (AuthorizationTransaction, error)
+	ConsumeAuthorizationTransaction(context.Context, string) (AuthorizationTransaction, error)
 	PutAuthorizationCode(context.Context, AuthorizationCode, time.Duration) error
 	ConsumeAuthorizationCode(context.Context, string) (AuthorizationCode, error)
 	PutRefreshToken(context.Context, RefreshGrant, time.Duration) error
@@ -202,6 +204,18 @@ func (s *RedisStore) PutAuthorizationTransaction(ctx context.Context, transactio
 func (s *RedisStore) GetAuthorizationTransaction(ctx context.Context, id string) (AuthorizationTransaction, error) {
 	var transaction AuthorizationTransaction
 	err := getRecord(ctx, s.client, keyPrefixTransaction, id, &transaction)
+	transaction.ID = id
+	return transaction, err
+}
+
+// ConsumeAuthorizationTransaction implements Store. It atomically fetches
+// and deletes the record, so exactly one completion (an approved login or
+// an explicit denial) can ever end a given authorization transaction: a
+// second attempt -- a replayed consent POST, or a concurrent one that lost
+// the race -- returns ErrNotFound.
+func (s *RedisStore) ConsumeAuthorizationTransaction(ctx context.Context, id string) (AuthorizationTransaction, error) {
+	var transaction AuthorizationTransaction
+	err := consumeRecord(ctx, s.client, keyPrefixTransaction, id, &transaction)
 	transaction.ID = id
 	return transaction, err
 }

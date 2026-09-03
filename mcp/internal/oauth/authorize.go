@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"mime"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -29,7 +31,45 @@ const (
 	// an authorization transaction ID and a one-time authorization code.
 	transactionIDBytes     = 32
 	authorizationCodeBytes = 32
+
+	// maxFormBodyBytes bounds every form-encoded request body this package
+	// accepts (POST /oauth/firebase/complete and POST /oauth/token). An
+	// unbounded ParseForm would otherwise let an unauthenticated client
+	// stream an arbitrarily large body into server memory.
+	maxFormBodyBytes = 64 << 10 // 64 KiB
+
+	// formMediaType is the only request media type either POST endpoint
+	// accepts, per RFC 6749 Section 4.1.3.
+	formMediaType = "application/x-www-form-urlencoded"
 )
+
+// authorizationRequestParams are the GET /oauth/authorize query parameters
+// that must appear at most once. A repeated parameter is rejected outright
+// rather than resolved by "first wins" or "last wins", since a server and a
+// client (or an intermediary) picking different occurrences is a
+// parameter-smuggling primitive.
+var authorizationRequestParams = []string{
+	"client_id",
+	"redirect_uri",
+	"response_type",
+	"state",
+	"code_challenge",
+	"code_challenge_method",
+	"resource",
+	"scope",
+}
+
+// firebaseCompleteParams are the POST /oauth/firebase/complete body
+// parameters that must appear at most once ("approved_scopes" is
+// deliberately excluded: it is legitimately repeated, once per scope).
+var firebaseCompleteParams = []string{"transaction_id", "id_token", "denied"}
+
+// codeChallengePattern matches an RFC 7636 S256 code challenge: the
+// base64url (no padding) encoding of a SHA-256 digest, i.e. exactly 43
+// characters drawn from the base64url alphabet. Any other length or
+// character can never match a challenge this server computes, so it is
+// rejected at the authorization endpoint rather than failing later.
+var codeChallengePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{43}$`)
 
 //go:embed templates/authorize.html
 var authorizeTemplateFS embed.FS
@@ -176,6 +216,11 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 
+	if repeated := firstRepeatedParam(query, authorizationRequestParams); repeated != "" {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "each authorization request parameter must appear exactly once")
+		return
+	}
+
 	clientID := query.Get("client_id")
 	if clientID == "" {
 		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "client_id is required")
@@ -207,8 +252,8 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	codeChallenge := query.Get("code_challenge")
 	codeChallengeMethod := query.Get("code_challenge_method")
-	if codeChallenge == "" || codeChallengeMethod != "S256" {
-		s.redirectError(w, r, redirectURI, state, "invalid_request", "a S256 code_challenge is required")
+	if codeChallengeMethod != "S256" || !codeChallengePattern.MatchString(codeChallenge) {
+		s.redirectError(w, r, redirectURI, state, "invalid_request", "a S256 code_challenge of 43 base64url characters is required")
 		return
 	}
 
@@ -258,7 +303,15 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 // The Firebase ID token and approved scopes are read only from the POST
 // body (never a query string), matching the requirement that a bearer
 // identity token must never appear in a URL (logs, browser history,
-// Referer headers).
+// Referer headers). The body must be form-encoded and is bounded to
+// maxFormBodyBytes.
+//
+// The authorization transaction is consumed atomically the moment the
+// decision that ends it is made -- an approval whose identity token
+// verified, or an explicit denial -- so a captured consent POST can never
+// be replayed into a second authorization code. A failed identity
+// verification deliberately leaves the transaction intact so the user can
+// simply sign in again in the same browser tab.
 func (s *Server) HandleFirebaseComplete(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
@@ -266,8 +319,12 @@ func (s *Server) HandleFirebaseComplete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "cannot parse request body")
+	if !parseFormRequest(w, r) {
+		return
+	}
+
+	if repeated := firstRepeatedParam(r.PostForm, firebaseCompleteParams); repeated != "" {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "each request parameter must appear exactly once")
 		return
 	}
 
@@ -279,11 +336,15 @@ func (s *Server) HandleFirebaseComplete(w http.ResponseWriter, r *http.Request) 
 
 	transaction, err := s.store.GetAuthorizationTransaction(r.Context(), transactionID)
 	if err != nil {
-		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "authorization transaction not found or expired")
+		writeStoreError(w, err, "invalid_request", "authorization transaction not found or expired")
 		return
 	}
 
 	if r.PostFormValue("denied") != "" {
+		if _, err := s.store.ConsumeAuthorizationTransaction(r.Context(), transactionID); err != nil {
+			writeStoreError(w, err, "invalid_request", "authorization transaction not found or expired")
+			return
+		}
 		s.redirectError(w, r, transaction.RedirectURI, transaction.State, "access_denied", "the user denied the request")
 		return
 	}
@@ -295,8 +356,19 @@ func (s *Server) HandleFirebaseComplete(w http.ResponseWriter, r *http.Request) 
 	}
 
 	principal, err := s.verifier.Verify(r.Context(), idToken)
-	if err != nil {
+	if err != nil || principal.UserID == "" {
+		// The transaction is intentionally *not* consumed here: a failed
+		// verification is not a completed authorization decision, so the
+		// user may retry. Nothing is issued, so nothing can be replayed.
 		writeOAuthError(w, http.StatusUnauthorized, "access_denied", "the identity token could not be verified")
+		return
+	}
+
+	// The decision is final from here on: consume the transaction
+	// atomically so only this completion can ever issue a code for it.
+	transaction, err = s.store.ConsumeAuthorizationTransaction(r.Context(), transactionID)
+	if err != nil {
+		writeStoreError(w, err, "invalid_request", "authorization transaction not found or expired")
 		return
 	}
 
@@ -334,7 +406,7 @@ func (s *Server) HandleFirebaseComplete(w http.ResponseWriter, r *http.Request) 
 		"state": transaction.State,
 		"iss":   s.config.Issuer,
 	})
-	http.Redirect(w, r, target, http.StatusFound)
+	s.redirect(w, r, target)
 }
 
 // renderAuthorizePage writes the Firebase login/consent page for
@@ -361,8 +433,27 @@ func (s *Server) renderAuthorizePage(w http.ResponseWriter, transaction Authoriz
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// The consent page carries an in-flight authorization transaction and
+	// is about to hold a Firebase ID token in the DOM: it must never be
+	// cached, framed (clickjacked into an invisible "Allow"), or leak its
+	// URL -- which carries the client's redirect URI and state -- through a
+	// Referer header.
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
+	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.WriteHeader(http.StatusOK)
 	_ = s.templates.ExecuteTemplate(w, "authorize.html", data)
+}
+
+// redirect sends an authorization response (success or error) back to the
+// client's redirect URI. Authorization responses carry a one-time code or
+// an error plus the client's state, so they must never be cached.
+func (s *Server) redirect(w http.ResponseWriter, r *http.Request, target string) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	http.Redirect(w, r, target, http.StatusFound)
 }
 
 // redirectError redirects to redirectURI with the given OAuth error code
@@ -375,7 +466,52 @@ func (s *Server) redirectError(w http.ResponseWriter, r *http.Request, redirectU
 		"state":             state,
 		"iss":               s.config.Issuer,
 	})
-	http.Redirect(w, r, target, http.StatusFound)
+	s.redirect(w, r, target)
+}
+
+// parseFormRequest enforces the form-encoding contract shared by POST
+// /oauth/firebase/complete and POST /oauth/token: the request must declare
+// "application/x-www-form-urlencoded" and its body must fit within
+// maxFormBodyBytes. It writes the OAuth "invalid_request" error and
+// reports false when either bound is violated, so callers can simply
+// return.
+func parseFormRequest(w http.ResponseWriter, r *http.Request) bool {
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || !strings.EqualFold(mediaType, formMediaType) {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Content-Type must be application/x-www-form-urlencoded")
+		return false
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBodyBytes)
+	if err := r.ParseForm(); err != nil {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", fmt.Sprintf("the request body could not be parsed or exceeds the %d byte limit", maxFormBodyBytes))
+		return false
+	}
+
+	return true
+}
+
+// firstRepeatedParam returns the first entry of params that appears more
+// than once in values, or "" when none does.
+func firstRepeatedParam(values url.Values, params []string) string {
+	for _, name := range params {
+		if len(values[name]) > 1 {
+			return name
+		}
+	}
+	return ""
+}
+
+// writeStoreError maps a Store failure onto an OAuth response: a missing,
+// expired, or already-consumed record is the requester's problem (400 with
+// the caller's error code), while any other failure is an infrastructure
+// failure that must not be reported as a client error (500 "server_error").
+func writeStoreError(w http.ResponseWriter, err error, code, description string) {
+	if errors.Is(err, ErrNotFound) {
+		writeOAuthError(w, http.StatusBadRequest, code, description)
+		return
+	}
+	writeOAuthError(w, http.StatusInternalServerError, "server_error", "the request could not be completed")
 }
 
 // buildRedirectURL appends params (skipping empty values) to redirectURI's
@@ -411,7 +547,8 @@ func containsExact(list []string, value string) bool {
 }
 
 // parseRequestedScopes splits raw (an OAuth "scope" parameter) on
-// whitespace and validates every entry against the fixed Scopes list,
+// whitespace, validates every entry against the fixed Scopes list, and
+// deduplicates the result while preserving the order the client asked in,
 // requiring at least one scope.
 func parseRequestedScopes(raw string) ([]string, error) {
 	fields := strings.Fields(raw)
@@ -423,12 +560,20 @@ func parseRequestedScopes(raw string) ([]string, error) {
 	for _, scope := range Scopes {
 		known[scope] = true
 	}
+
+	seen := make(map[string]bool, len(fields))
+	scopes := make([]string, 0, len(fields))
 	for _, field := range fields {
 		if !known[field] {
 			return nil, fmt.Errorf("unsupported scope %q", field)
 		}
+		if seen[field] {
+			continue
+		}
+		seen[field] = true
+		scopes = append(scopes, field)
 	}
-	return fields, nil
+	return scopes, nil
 }
 
 // intersectApprovedScopes returns the entries of approved that were also

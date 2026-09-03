@@ -62,6 +62,46 @@ func TestRedisStoreGetAuthorizationTransactionNotFound(t *testing.T) {
 	require.ErrorIs(t, err, oauth.ErrNotFound)
 }
 
+// TestRedisStoreConsumeAuthorizationTransactionIsOneTimeUse asserts the
+// completion (or denial) that ends an authorization transaction consumes it
+// atomically, so a replayed consent POST cannot end it a second time.
+func TestRedisStoreConsumeAuthorizationTransactionIsOneTimeUse(t *testing.T) {
+	store, _ := newTestStore(t)
+	ctx := context.Background()
+
+	transaction := oauth.AuthorizationTransaction{
+		ID:                  "one-time-transaction",
+		ClientID:            "https://client.example/metadata.json",
+		RedirectURI:         "https://client.example/callback",
+		Scopes:              []string{"phones:read", "messages:send"},
+		State:               "state-value",
+		Resource:            "https://mcp.httpsms.com/mcp",
+		CodeChallenge:       "challenge",
+		CodeChallengeMethod: "S256",
+		ResponseType:        "code",
+		CreatedAt:           time.Now().UTC().Truncate(time.Second),
+	}
+	require.NoError(t, store.PutAuthorizationTransaction(ctx, transaction, time.Minute))
+
+	first, err := store.ConsumeAuthorizationTransaction(ctx, "one-time-transaction")
+	require.NoError(t, err)
+	assert.Equal(t, transaction, first)
+
+	_, err = store.ConsumeAuthorizationTransaction(ctx, "one-time-transaction")
+	require.ErrorIs(t, err, oauth.ErrNotFound)
+
+	// It is also gone for the non-consuming reader.
+	_, err = store.GetAuthorizationTransaction(ctx, "one-time-transaction")
+	require.ErrorIs(t, err, oauth.ErrNotFound)
+}
+
+func TestRedisStoreConsumeAuthorizationTransactionNotFound(t *testing.T) {
+	store, _ := newTestStore(t)
+
+	_, err := store.ConsumeAuthorizationTransaction(context.Background(), "missing")
+	require.ErrorIs(t, err, oauth.ErrNotFound)
+}
+
 func TestRedisStoreConsumeAuthorizationCodeIsOneTimeUse(t *testing.T) {
 	store, _ := newTestStore(t)
 	ctx := context.Background()

@@ -82,12 +82,47 @@ func TestAuthorizationServerMetadataHandlerServesExactFields(t *testing.T) {
 		"user-api-key:rotate",
 	}, body["scopes_supported"])
 	assert.Equal(t, true, body["client_id_metadata_document_supported"])
+	assert.Equal(t, true, body["authorization_response_iss_parameter_supported"])
 
-	assert.Len(t, body, 10)
+	assert.Len(t, body, 11)
+}
+
+// TestAuthorizationServerMetadataHandlerServesExactJSONDocument pins the
+// exact bytes of the metadata document, including
+// "authorization_response_iss_parameter_supported": true -- clients rely on
+// that flag to know they must enforce the RFC 9207 "iss" parameter this
+// server sends on every authorization response.
+func TestAuthorizationServerMetadataHandlerServesExactJSONDocument(t *testing.T) {
+	handler := oauth.NewAuthorizationServerMetadataHandler(testMCPBaseURL)
+
+	req := httptest.NewRequest("GET", "/.well-known/oauth-authorization-server", nil)
+	rec := httptest.NewRecorder()
+	handler(rec, req)
+
+	require.Equal(t, 200, rec.Code)
+	assert.JSONEq(t, `{
+		"issuer": "https://mcp.httpsms.com",
+		"authorization_endpoint": "https://mcp.httpsms.com/oauth/authorize",
+		"token_endpoint": "https://mcp.httpsms.com/oauth/token",
+		"registration_endpoint": "https://mcp.httpsms.com/oauth/register",
+		"jwks_uri": "https://mcp.httpsms.com/.well-known/jwks.json",
+		"response_types_supported": ["code"],
+		"grant_types_supported": ["authorization_code", "refresh_token"],
+		"code_challenge_methods_supported": ["S256"],
+		"scopes_supported": [
+			"phones:read",
+			"messages:read",
+			"messages:send",
+			"phone-api-keys:write",
+			"user-api-key:rotate"
+		],
+		"authorization_response_iss_parameter_supported": true,
+		"client_id_metadata_document_supported": true
+	}`, rec.Body.String())
 }
 
 func TestScopesConstantOrderIsStable(t *testing.T) {
-	// Both metadata documents and the future consent screen depend on this
+	// Both metadata documents and the consent screen depend on this
 	// exact, fixed order; a reordering would silently change the scopes
 	// list presented to users.
 	assert.Equal(t, []string{

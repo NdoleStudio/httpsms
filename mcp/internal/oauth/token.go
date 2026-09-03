@@ -31,10 +31,25 @@ type tokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
+// tokenRequestParams are the POST /oauth/token body parameters that must
+// appear at most once; a repeated parameter is a smuggling primitive, not
+// a request this server will guess the intent of.
+var tokenRequestParams = []string{
+	"grant_type",
+	"code",
+	"code_verifier",
+	"client_id",
+	"redirect_uri",
+	"resource",
+	"refresh_token",
+	"scope",
+}
+
 // HandleToken implements POST /oauth/token: the authorization_code grant
 // (exchanging a one-time, PKCE-bound code for tokens) and the
 // refresh_token grant (rotating a previously issued refresh token for a
-// new access/refresh token pair). Every error response is an
+// new access/refresh token pair). The request body must be form-encoded
+// and is bounded to maxFormBodyBytes. Every error response is an
 // OAuth-compliant JSON body (RFC 6749 Section 5.2) with
 // "Cache-Control: no-store".
 func (s *Server) HandleToken(w http.ResponseWriter, r *http.Request) {
@@ -44,8 +59,12 @@ func (s *Server) HandleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "cannot parse request body")
+	if !parseFormRequest(w, r) {
+		return
+	}
+
+	if repeated := firstRepeatedParam(r.PostForm, tokenRequestParams); repeated != "" {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "each token request parameter must appear exactly once")
 		return
 	}
 
@@ -81,7 +100,7 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 
 	record, err := s.store.ConsumeAuthorizationCode(r.Context(), code)
 	if err != nil {
-		writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "the authorization code is invalid, expired, or already used")
+		writeStoreError(w, err, "invalid_grant", "the authorization code is invalid, expired, or already used")
 		return
 	}
 
@@ -115,7 +134,7 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 
 	grant, err := s.store.GetRefreshToken(r.Context(), refreshToken)
 	if err != nil {
-		writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "the refresh token is invalid, expired, or already used")
+		writeStoreError(w, err, "invalid_grant", "the refresh token is invalid, expired, or already used")
 		return
 	}
 
@@ -188,7 +207,10 @@ func (s *Server) issueTokens(w http.ResponseWriter, ctx context.Context, princip
 		storeErr = s.store.RotateRefreshToken(ctx, rotateOldToken, newGrant, s.config.RefreshTokenTTL)
 	}
 	if storeErr != nil {
-		writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "the refresh token is invalid, expired, or already used")
+		// Only a lost rotation race (the old token was already consumed)
+		// is the client's problem; a Redis or serialization failure is
+		// ours and must not be reported as an invalid grant.
+		writeStoreError(w, storeErr, "invalid_grant", "the refresh token is invalid, expired, or already used")
 		return
 	}
 

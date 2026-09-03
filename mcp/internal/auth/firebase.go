@@ -21,6 +21,20 @@ const (
 	firebaseCertsHTTPTimeout      = 2 * time.Second
 	firebaseCertsMaxResponseBytes = 1 << 20 // 1 MiB
 	firebaseCertsDefaultCacheTTL  = time.Hour
+
+	// firebaseCertsDefaultMinRefreshInterval is the default minimum delay
+	// between two outbound fetches of the certificate endpoint. It bounds
+	// refresh amplification: without it, a flood of tokens carrying random
+	// unknown "kid" headers would cause one outbound fetch per request.
+	// Google publishes a rotated signing key well before it starts signing
+	// with it, so a legitimate rotation is still picked up -- at worst one
+	// interval late.
+	firebaseCertsDefaultMinRefreshInterval = time.Minute
+
+	// firebaseClockSkewLeeway is the tolerance applied to the "iat" and
+	// "auth_time" claims, which are stamped by Google's clock and compared
+	// against ours.
+	firebaseClockSkewLeeway = time.Minute
 )
 
 // ErrInvalidIdentityToken is returned by IdentityVerifier.Verify for any
@@ -29,6 +43,10 @@ const (
 // deliberately does not distinguish the failure reason, so a caller can
 // never learn from the error alone which specific check failed.
 var ErrInvalidIdentityToken = errors.New("auth: invalid identity token")
+
+// errFirebaseCertsRefreshThrottled reports that a certificate refresh was
+// skipped because the minimum refresh interval has not elapsed yet.
+var errFirebaseCertsRefreshThrottled = errors.New("auth: Firebase certificate refresh is rate limited")
 
 // IdentityVerifier verifies a raw bearer identity token -- a Firebase ID
 // token presented during the browser login step of the OAuth authorization
@@ -43,6 +61,12 @@ type IdentityVerifier interface {
 type firebaseClaims struct {
 	Email  string `json:"email,omitempty"`
 	UserID string `json:"user_id,omitempty"`
+
+	// AuthTime is the Firebase "auth_time" claim: when the user actually
+	// authenticated. Firebase's own ID-token verification contract requires
+	// it to be present and in the past.
+	AuthTime *jwt.NumericDate `json:"auth_time,omitempty"`
+
 	jwt.RegisteredClaims
 }
 
@@ -64,7 +88,10 @@ type FirebaseVerifier struct {
 // Transport, if any, is preserved so tests can point it at an httptest
 // server; a bounded per-request timeout is always enforced regardless).
 // cacheTTL may be <= 0, in which case a one-hour default is used.
-func NewFirebaseVerifier(projectID string, certsURL string, httpClient *http.Client, cacheTTL time.Duration) (*FirebaseVerifier, error) {
+// minRefreshInterval bounds how often an unknown "kid" (or an expired
+// cache) may trigger an outbound fetch; it may be <= 0, in which case a
+// one-minute default is used.
+func NewFirebaseVerifier(projectID string, certsURL string, httpClient *http.Client, cacheTTL time.Duration, minRefreshInterval time.Duration) (*FirebaseVerifier, error) {
 	if projectID == "" {
 		return nil, errors.New("auth: Firebase project ID must not be empty")
 	}
@@ -74,14 +101,15 @@ func NewFirebaseVerifier(projectID string, certsURL string, httpClient *http.Cli
 
 	return &FirebaseVerifier{
 		projectID: projectID,
-		certs:     newFirebaseCertCache(certsURL, httpClient, cacheTTL),
+		certs:     newFirebaseCertCache(certsURL, httpClient, cacheTTL, minRefreshInterval),
 	}, nil
 }
 
 // Verify implements IdentityVerifier. It requires raw to be signed RS256,
 // issued by "https://securetoken.google.com/<projectID>", audienced to
 // projectID, unexpired (with an expiry claim required to be present at
-// all), and carrying a non-empty subject.
+// all), carrying "iat" and "auth_time" claims that are not in the future,
+// and carrying a non-empty subject.
 func (v *FirebaseVerifier) Verify(ctx context.Context, raw string) (Principal, error) {
 	claims := new(firebaseClaims)
 	token, err := jwt.ParseWithClaims(
@@ -93,11 +121,26 @@ func (v *FirebaseVerifier) Verify(ctx context.Context, raw string) (Principal, e
 		jwt.WithExpirationRequired(),
 		jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}),
 	)
-	if err != nil || !token.Valid || claims.Subject == "" {
+	if err != nil || !token.Valid || claims.Subject == "" || !hasValidFirebaseIssueTimes(claims) {
 		return Principal{}, ErrInvalidIdentityToken
 	}
 
 	return Principal{UserID: claims.Subject, Email: claims.Email}, nil
+}
+
+// hasValidFirebaseIssueTimes reports whether the token's "iat" and
+// "auth_time" claims are both present and not in the future (allowing for
+// firebaseClockSkewLeeway). Firebase's documented ID-token verification
+// contract requires both, and neither is validated by the registered-claim
+// options passed to jwt.ParseWithClaims.
+func hasValidFirebaseIssueTimes(claims *firebaseClaims) bool {
+	if claims.IssuedAt == nil || claims.AuthTime == nil {
+		return false
+	}
+
+	latest := time.Now().Add(firebaseClockSkewLeeway)
+
+	return !claims.IssuedAt.After(latest) && !claims.AuthTime.After(latest)
 }
 
 // keyfunc returns a jwt.Keyfunc that resolves the RSA public key matching
@@ -121,24 +164,43 @@ func (v *FirebaseVerifier) keyfunc(ctx context.Context) jwt.Keyfunc {
 // Google's Firebase certificate endpoint, keyed by "kid". Google's endpoint
 // serves a flat JSON object mapping key ID to a PEM-encoded X.509
 // certificate (not a JWKS document), so this cache is deliberately separate
-// from any generic JWKS/JWK cache. It refreshes at most once per call when
-// a requested "kid" is not (or no longer) cached, and otherwise refreshes
-// only after cacheTTL has elapsed since the last successful fetch -- the
-// same bounded refresh-on-missing-kid behavior used by the httpSMS API's
-// delegated MCP token verifier (api/pkg/auth's JWKS cache), applied here to
-// Google's certificate-map response shape instead of a JWKS document.
+// from any generic JWKS/JWK cache.
+//
+// Two bounds keep an attacker from turning a stream of tokens carrying
+// random unknown "kid" headers into a stream of outbound fetches:
+//
+//   - concurrent refreshes are collapsed into a single in-flight fetch that
+//     every waiting caller shares, and
+//   - a new fetch is never started until minRefreshInterval has elapsed
+//     since the previous attempt (successful or not); until then, callers
+//     either reuse the cached key or fail closed.
+//
+// A legitimate key rotation is still picked up: Google publishes a rotated
+// certificate before signing with it, and a missing "kid" triggers a real
+// refresh as soon as the interval has elapsed.
 type firebaseCertCache struct {
-	url        string
-	httpClient *http.Client
-	cacheTTL   time.Duration
+	url                string
+	httpClient         *http.Client
+	cacheTTL           time.Duration
+	minRefreshInterval time.Duration
 
-	mu        sync.Mutex
-	keys      map[string]*rsa.PublicKey
-	fetchedAt time.Time
+	mu            sync.Mutex
+	keys          map[string]*rsa.PublicKey
+	fetchedAt     time.Time
+	lastAttemptAt time.Time
+	inflight      *firebaseCertRefresh
+}
+
+// firebaseCertRefresh is a single in-flight certificate refresh shared by
+// every caller that arrives while it is running. err is written before done
+// is closed, so a waiter that observes done may safely read it.
+type firebaseCertRefresh struct {
+	done chan struct{}
+	err  error
 }
 
 // newFirebaseCertCache builds a firebaseCertCache for url.
-func newFirebaseCertCache(url string, httpClient *http.Client, cacheTTL time.Duration) *firebaseCertCache {
+func newFirebaseCertCache(url string, httpClient *http.Client, cacheTTL time.Duration, minRefreshInterval time.Duration) *firebaseCertCache {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -153,18 +215,23 @@ func newFirebaseCertCache(url string, httpClient *http.Client, cacheTTL time.Dur
 	if cacheTTL <= 0 {
 		cacheTTL = firebaseCertsDefaultCacheTTL
 	}
+	if minRefreshInterval <= 0 {
+		minRefreshInterval = firebaseCertsDefaultMinRefreshInterval
+	}
 
 	return &firebaseCertCache{
-		url:        url,
-		httpClient: client,
-		cacheTTL:   cacheTTL,
-		keys:       map[string]*rsa.PublicKey{},
+		url:                url,
+		httpClient:         client,
+		cacheTTL:           cacheTTL,
+		minRefreshInterval: minRefreshInterval,
+		keys:               map[string]*rsa.PublicKey{},
 	}
 }
 
 // key returns the cached RSA public key for kid, refreshing the
-// certificate map at most once per call when the cache is stale or the key
-// is not yet known.
+// certificate map when the cache is stale or the key is not yet known --
+// subject to the collapsing and rate limiting described on
+// firebaseCertCache.
 func (cache *firebaseCertCache) key(ctx context.Context, kid string) (*rsa.PublicKey, error) {
 	cache.mu.Lock()
 	key, ok := cache.keys[kid]
@@ -175,7 +242,14 @@ func (cache *firebaseCertCache) key(ctx context.Context, kid string) (*rsa.Publi
 		return key, nil
 	}
 
-	if err := cache.refresh(ctx); err != nil {
+	if err := cache.refreshOnce(ctx); err != nil {
+		// A rate-limited refresh must not invalidate a key we already
+		// hold: serving the (stale but still published) cached key is
+		// strictly better than failing a legitimate login because the
+		// cache TTL elapsed moments after the last fetch attempt.
+		if errors.Is(err, errFirebaseCertsRefreshThrottled) && ok {
+			return key, nil
+		}
 		return nil, fmt.Errorf("auth: cannot refresh Firebase certificates: %w", err)
 	}
 
@@ -187,6 +261,43 @@ func (cache *firebaseCertCache) key(ctx context.Context, kid string) (*rsa.Publi
 	}
 
 	return key, nil
+}
+
+// refreshOnce performs at most one outbound certificate fetch on behalf of
+// every caller that needs one at the same time, and refuses to start a new
+// fetch until minRefreshInterval has elapsed since the previous attempt.
+func (cache *firebaseCertCache) refreshOnce(ctx context.Context) error {
+	cache.mu.Lock()
+
+	if inflight := cache.inflight; inflight != nil {
+		cache.mu.Unlock()
+		select {
+		case <-inflight.done:
+			return inflight.err
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	if !cache.lastAttemptAt.IsZero() && time.Since(cache.lastAttemptAt) < cache.minRefreshInterval {
+		cache.mu.Unlock()
+		return errFirebaseCertsRefreshThrottled
+	}
+
+	inflight := &firebaseCertRefresh{done: make(chan struct{})}
+	cache.inflight = inflight
+	cache.lastAttemptAt = time.Now()
+	cache.mu.Unlock()
+
+	err := cache.refresh(ctx)
+	inflight.err = err
+
+	cache.mu.Lock()
+	cache.inflight = nil
+	cache.mu.Unlock()
+	close(inflight.done)
+
+	return err
 }
 
 // refresh fetches and replaces the cached certificate map.

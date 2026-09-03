@@ -42,16 +42,17 @@ func NewProtectedResourceMetadataHandler(baseURL string) http.HandlerFunc {
 // Server Metadata document, extended with the CIMD support flag consumed
 // by clients implementing the Client ID Metadata Document mechanism.
 type authorizationServerMetadata struct {
-	Issuer                            string   `json:"issuer"`
-	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
-	TokenEndpoint                     string   `json:"token_endpoint"`
-	RegistrationEndpoint              string   `json:"registration_endpoint"`
-	JWKSURI                           string   `json:"jwks_uri"`
-	ResponseTypesSupported            []string `json:"response_types_supported"`
-	GrantTypesSupported               []string `json:"grant_types_supported"`
-	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported"`
-	ScopesSupported                   []string `json:"scopes_supported"`
-	ClientIDMetadataDocumentSupported bool     `json:"client_id_metadata_document_supported"`
+	Issuer                                     string   `json:"issuer"`
+	AuthorizationEndpoint                      string   `json:"authorization_endpoint"`
+	TokenEndpoint                              string   `json:"token_endpoint"`
+	RegistrationEndpoint                       string   `json:"registration_endpoint"`
+	JWKSURI                                    string   `json:"jwks_uri"`
+	ResponseTypesSupported                     []string `json:"response_types_supported"`
+	GrantTypesSupported                        []string `json:"grant_types_supported"`
+	CodeChallengeMethodsSupported              []string `json:"code_challenge_methods_supported"`
+	ScopesSupported                            []string `json:"scopes_supported"`
+	AuthorizationResponseIssParameterSupported bool     `json:"authorization_response_iss_parameter_supported"`
+	ClientIDMetadataDocumentSupported          bool     `json:"client_id_metadata_document_supported"`
 }
 
 // NewAuthorizationServerMetadataHandler returns an http.HandlerFunc serving
@@ -60,16 +61,21 @@ func NewAuthorizationServerMetadataHandler(baseURL string) http.HandlerFunc {
 	root := strings.TrimRight(baseURL, "/")
 
 	return newMetadataHandler(authorizationServerMetadata{
-		Issuer:                            root,
-		AuthorizationEndpoint:             root + "/oauth/authorize",
-		TokenEndpoint:                     root + "/oauth/token",
-		RegistrationEndpoint:              root + "/oauth/register",
-		JWKSURI:                           root + "/.well-known/jwks.json",
-		ResponseTypesSupported:            []string{"code"},
-		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
-		CodeChallengeMethodsSupported:     []string{"S256"},
-		ScopesSupported:                   Scopes,
-		ClientIDMetadataDocumentSupported: true,
+		Issuer:                        root,
+		AuthorizationEndpoint:         root + "/oauth/authorize",
+		TokenEndpoint:                 root + "/oauth/token",
+		RegistrationEndpoint:          root + "/oauth/register",
+		JWKSURI:                       root + "/.well-known/jwks.json",
+		ResponseTypesSupported:        []string{"code"},
+		GrantTypesSupported:           []string{"authorization_code", "refresh_token"},
+		CodeChallengeMethodsSupported: []string{"S256"},
+		ScopesSupported:               Scopes,
+		// Every authorization response this server issues -- success or
+		// error, from the authorization endpoint or the Firebase
+		// completion endpoint -- carries the RFC 9207 "iss" parameter, so
+		// clients can and should enforce it.
+		AuthorizationResponseIssParameterSupported: true,
+		ClientIDMetadataDocumentSupported:          true,
 	})
 }
 

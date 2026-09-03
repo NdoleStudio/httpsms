@@ -385,3 +385,132 @@ func TestTokenEndpointRefreshRejectsMissingClientID(t *testing.T) {
 func TestVerifyPKCERejectsNonS256Method(t *testing.T) {
 	assert.False(t, verifyPKCE("challenge", "plain", "challenge"))
 }
+
+// TestTokenEndpointRejectsUnsupportedContentType asserts the token
+// endpoint only accepts form-encoded bodies (RFC 6749 Section 4.1.3), and
+// reports anything else as "invalid_request".
+func TestTokenEndpointRejectsUnsupportedContentType(t *testing.T) {
+	store := newClientsTestStore(t)
+	registerTestClient(t, store, testClientID, []string{testRedirect})
+	server := newTestOAuthServer(t, store, approvingVerifier())
+
+	code := issueTestAuthorizationCode(t, server, "verifier", nil)
+	body := authorizationCodeGrantValues(code, "verifier").Encode()
+
+	for _, contentType := range []string{"application/json", "text/plain", "multipart/form-data; boundary=x"} {
+		t.Run(contentType, func(t *testing.T) {
+			rec := postBody(t, server.HandleToken, contentType, body)
+
+			require.Equal(t, http.StatusBadRequest, rec.Code)
+			failure := decodeOAuthError(t, rec)
+			assert.Equal(t, "invalid_request", failure.Error)
+			assert.Contains(t, failure.ErrorDescription, "Content-Type must be application/x-www-form-urlencoded")
+		})
+	}
+
+	// The rejected requests must not have consumed the code: the same body
+	// still succeeds once it is correctly labelled.
+	success := postBody(t, server.HandleToken, "application/x-www-form-urlencoded; charset=UTF-8", body)
+	require.Equal(t, http.StatusOK, success.Code)
+}
+
+func TestTokenEndpointRejectsMissingContentType(t *testing.T) {
+	store := newClientsTestStore(t)
+	registerTestClient(t, store, testClientID, []string{testRedirect})
+	server := newTestOAuthServer(t, store, approvingVerifier())
+
+	rec := postBody(t, server.HandleToken, "", "grant_type=authorization_code")
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	failure := decodeOAuthError(t, rec)
+	assert.Equal(t, "invalid_request", failure.Error)
+	assert.Contains(t, failure.ErrorDescription, "Content-Type must be application/x-www-form-urlencoded")
+}
+
+// TestTokenEndpointRejectsOversizeBody asserts a body larger than the
+// 64 KiB bound is refused rather than buffered.
+func TestTokenEndpointRejectsOversizeBody(t *testing.T) {
+	store := newClientsTestStore(t)
+	registerTestClient(t, store, testClientID, []string{testRedirect})
+	server := newTestOAuthServer(t, store, approvingVerifier())
+
+	code := issueTestAuthorizationCode(t, server, "verifier", nil)
+	values := authorizationCodeGrantValues(code, "verifier")
+	values.Set("padding", strings.Repeat("a", maxFormBodyBytes+1))
+
+	rec := postToken(t, server, values)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, "invalid_request", decodeOAuthError(t, rec).Error)
+}
+
+// TestTokenEndpointRejectsDuplicateParameters asserts a repeated token
+// parameter is refused instead of resolved by "first wins".
+func TestTokenEndpointRejectsDuplicateParameters(t *testing.T) {
+	store := newClientsTestStore(t)
+	registerTestClient(t, store, testClientID, []string{testRedirect})
+	server := newTestOAuthServer(t, store, approvingVerifier())
+
+	code := issueTestAuthorizationCode(t, server, "verifier", nil)
+	values := authorizationCodeGrantValues(code, "verifier")
+	values["client_id"] = []string{testClientID, "some-other-client"}
+
+	rec := postToken(t, server, values)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, "invalid_request", decodeOAuthError(t, rec).Error)
+}
+
+// TestTokenEndpointReturnsServerErrorWhenCodeLookupFails asserts a Redis
+// failure while consuming an authorization code is a 500 "server_error",
+// not an "invalid_grant" that would make a client discard a valid code.
+func TestTokenEndpointReturnsServerErrorWhenCodeLookupFails(t *testing.T) {
+	base := newClientsTestStore(t)
+	registerTestClient(t, base, testClientID, []string{testRedirect})
+	failing := &errorStore{Store: base}
+	server := newTestOAuthServer(t, failing, approvingVerifier())
+
+	code := issueTestAuthorizationCode(t, server, "verifier", nil)
+	failing.failConsumeCode = true
+
+	rec := postToken(t, server, authorizationCodeGrantValues(code, "verifier"))
+	require.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(t, "server_error", decodeOAuthError(t, rec).Error)
+}
+
+// TestTokenEndpointRefreshDistinguishesMissingTokenFromStoreFailure
+// asserts an unknown/expired refresh token is "invalid_grant" (400), while
+// a Redis failure looking one up is "server_error" (500).
+func TestTokenEndpointRefreshDistinguishesMissingTokenFromStoreFailure(t *testing.T) {
+	base := newClientsTestStore(t)
+	registerTestClient(t, base, testClientID, []string{testRedirect})
+	failing := &errorStore{Store: base}
+	server := newTestOAuthServer(t, failing, approvingVerifier())
+
+	code := issueTestAuthorizationCode(t, server, "verifier", nil)
+	first := decodeTokenResponse(t, postToken(t, server, authorizationCodeGrantValues(code, "verifier")))
+
+	refreshValues := url.Values{
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {first.RefreshToken},
+		"client_id":     {testClientID},
+	}
+
+	failing.failGetRefreshToken = true
+	lookupFailure := postToken(t, server, refreshValues)
+	require.Equal(t, http.StatusInternalServerError, lookupFailure.Code)
+	assert.Equal(t, "server_error", decodeOAuthError(t, lookupFailure).Error)
+
+	failing.failGetRefreshToken = false
+	failing.failRotateRefreshToken = true
+	rotateFailure := postToken(t, server, refreshValues)
+	require.Equal(t, http.StatusInternalServerError, rotateFailure.Code)
+	assert.Equal(t, "server_error", decodeOAuthError(t, rotateFailure).Error)
+
+	// A genuinely unknown token remains a client error.
+	failing.failRotateRefreshToken = false
+	unknown := postToken(t, server, url.Values{
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {"never-issued"},
+		"client_id":     {testClientID},
+	})
+	require.Equal(t, http.StatusBadRequest, unknown.Code)
+	assert.Equal(t, "invalid_grant", decodeOAuthError(t, unknown).Error)
+}

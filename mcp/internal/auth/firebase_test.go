@@ -8,9 +8,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,8 +33,9 @@ const (
 // decodes, so tests can build tokens with exactly the fields a real
 // Firebase ID token carries without depending on any unexported type.
 type firebaseTestClaims struct {
-	Email  string `json:"email,omitempty"`
-	UserID string `json:"user_id,omitempty"`
+	Email    string           `json:"email,omitempty"`
+	UserID   string           `json:"user_id,omitempty"`
+	AuthTime *jwt.NumericDate `json:"auth_time,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -40,8 +44,9 @@ type firebaseTestClaims struct {
 func validFirebaseClaims() firebaseTestClaims {
 	now := time.Now()
 	return firebaseTestClaims{
-		Email:  "user@example.com",
-		UserID: "user-id",
+		Email:    "user@example.com",
+		UserID:   "user-id",
+		AuthTime: jwt.NewNumericDate(now.Add(-time.Minute)),
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    testFirebaseIssuer,
 			Subject:   "user-id",
@@ -106,23 +111,24 @@ func signFirebaseToken(t *testing.T, key *rsa.PrivateKey, kid string, claims jwt
 }
 
 // newTestVerifier builds a FirebaseVerifier pointed at a test certificate
-// endpoint.
+// endpoint, with the production default (one minute) minimum refresh
+// interval.
 func newTestVerifier(t *testing.T, certsURL string, client *http.Client) *auth.FirebaseVerifier {
 	t.Helper()
 
-	verifier, err := auth.NewFirebaseVerifier(testFirebaseProjectID, certsURL, client, 0)
+	verifier, err := auth.NewFirebaseVerifier(testFirebaseProjectID, certsURL, client, 0, 0)
 	require.NoError(t, err)
 
 	return verifier
 }
 
 func TestNewFirebaseVerifierRequiresProjectID(t *testing.T) {
-	_, err := auth.NewFirebaseVerifier("", "https://example.com/certs", nil, 0)
+	_, err := auth.NewFirebaseVerifier("", "https://example.com/certs", nil, 0, 0)
 	require.Error(t, err)
 }
 
 func TestNewFirebaseVerifierRequiresCertsURL(t *testing.T) {
-	_, err := auth.NewFirebaseVerifier("httpsms-test", "", nil, 0)
+	_, err := auth.NewFirebaseVerifier("httpsms-test", "", nil, 0, 0)
 	require.Error(t, err)
 }
 
@@ -259,17 +265,17 @@ func TestFirebaseVerifierRejectsTokenWhenCertsEndpointUnavailable(t *testing.T) 
 // TestFirebaseVerifierCachesCertificatesAndRefreshesOnRotation asserts the
 // bounded cached-certificate-fetching behavior: a cache hit never refetches;
 // a "kid" rotated in after the cache was populated triggers exactly one
-// additional bounded fetch before the newly-signed token verifies.
+// additional bounded fetch before the newly-signed token verifies, once the
+// minimum refresh interval has elapsed.
 func TestFirebaseVerifierCachesCertificatesAndRefreshesOnRotation(t *testing.T) {
 	firstKey := testRSAKeyPair(t)
 	secondKey := testRSAKeyPair(t)
 	firstCert := selfSignedCertificatePEM(t, firstKey)
 	secondCert := selfSignedCertificatePEM(t, secondKey)
 
-	requestCount := 0
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
-		if requestCount == 1 {
+		if requestCount.Add(1) == 1 {
 			firebaseCertsHandler(map[string]string{"key-1": firstCert})(w, r)
 			return
 		}
@@ -277,26 +283,29 @@ func TestFirebaseVerifierCachesCertificatesAndRefreshesOnRotation(t *testing.T) 
 	}))
 	defer server.Close()
 
-	verifier := newTestVerifier(t, server.URL, server.Client())
+	verifier, err := auth.NewFirebaseVerifier(testFirebaseProjectID, server.URL, server.Client(), 0, time.Millisecond)
+	require.NoError(t, err)
 
 	firstToken := signFirebaseToken(t, firstKey, "key-1", validFirebaseClaims())
-	_, err := verifier.Verify(context.Background(), firstToken)
+	_, err = verifier.Verify(context.Background(), firstToken)
 	require.NoError(t, err)
-	assert.Equal(t, 1, requestCount)
+	assert.Equal(t, int64(1), requestCount.Load())
 
 	// A cache hit for the already-known "key-1" must not trigger another
 	// fetch.
 	_, err = verifier.Verify(context.Background(), firstToken)
 	require.NoError(t, err)
-	assert.Equal(t, 1, requestCount)
+	assert.Equal(t, int64(1), requestCount.Load())
 
 	// The cache only has "key-1"; a token signed with the newly rotated
-	// "key-2" forces exactly one bounded refresh before it can verify.
+	// "key-2" forces exactly one bounded refresh before it can verify --
+	// legitimate rotation still works, it is only rate limited.
+	time.Sleep(5 * time.Millisecond)
 	secondToken := signFirebaseToken(t, secondKey, "key-2", validFirebaseClaims())
 	principal, err := verifier.Verify(context.Background(), secondToken)
 	require.NoError(t, err)
 	assert.Equal(t, "user-id", principal.UserID)
-	assert.Equal(t, 2, requestCount)
+	assert.Equal(t, int64(2), requestCount.Load())
 }
 
 // TestFirebaseVerifierRefreshesAfterCacheTTLExpires asserts the cache also
@@ -305,25 +314,184 @@ func TestFirebaseVerifierRefreshesAfterCacheTTLExpires(t *testing.T) {
 	key := testRSAKeyPair(t)
 	certPEM := selfSignedCertificatePEM(t, key)
 
-	requestCount := 0
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
+		requestCount.Add(1)
 		firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM})(w, r)
 	}))
 	defer server.Close()
 
-	verifier, err := auth.NewFirebaseVerifier(testFirebaseProjectID, server.URL, server.Client(), 10*time.Millisecond)
+	verifier, err := auth.NewFirebaseVerifier(testFirebaseProjectID, server.URL, server.Client(), 10*time.Millisecond, time.Millisecond)
 	require.NoError(t, err)
 
 	raw := signFirebaseToken(t, key, "firebase-test-key", validFirebaseClaims())
 
 	_, err = verifier.Verify(context.Background(), raw)
 	require.NoError(t, err)
-	assert.Equal(t, 1, requestCount)
+	assert.Equal(t, int64(1), requestCount.Load())
 
 	time.Sleep(20 * time.Millisecond)
 
 	_, err = verifier.Verify(context.Background(), raw)
 	require.NoError(t, err)
-	assert.Equal(t, 2, requestCount)
+	assert.Equal(t, int64(2), requestCount.Load())
+}
+
+// TestFirebaseVerifierRateLimitsUnknownKidRefreshes asserts an attacker
+// cannot amplify a flood of tokens carrying random unknown "kid" headers
+// into one outbound certificate fetch per request: after the first fetch,
+// no further fetch happens until the minimum refresh interval elapses.
+//
+// No token, certificate, or key material is logged by this test; only the
+// outbound request count is asserted.
+func TestFirebaseVerifierRateLimitsUnknownKidRefreshes(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+
+	var requestCount atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount.Add(1)
+		firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM})(w, r)
+	}))
+	defer server.Close()
+
+	// A one-minute minimum refresh interval, i.e. the production default.
+	verifier := newTestVerifier(t, server.URL, server.Client())
+
+	valid := signFirebaseToken(t, key, "firebase-test-key", validFirebaseClaims())
+	_, err := verifier.Verify(context.Background(), valid)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), requestCount.Load())
+
+	for i := 0; i < 200; i++ {
+		unknown := signFirebaseToken(t, key, fmt.Sprintf("random-kid-%d", i), validFirebaseClaims())
+		_, err := verifier.Verify(context.Background(), unknown)
+		require.ErrorIs(t, err, auth.ErrInvalidIdentityToken)
+	}
+
+	assert.Equal(t, int64(1), requestCount.Load(), "unknown kids must not cause one outbound fetch per request")
+
+	// The still-cached, still-published key keeps verifying throughout.
+	_, err = verifier.Verify(context.Background(), valid)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), requestCount.Load())
+}
+
+// TestFirebaseVerifierCollapsesConcurrentRefreshes asserts that a burst of
+// concurrent verifications arriving against a cold cache shares a single
+// outbound fetch instead of issuing one per goroutine.
+func TestFirebaseVerifierCollapsesConcurrentRefreshes(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+
+	var requestCount atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount.Add(1)
+		// Hold the fetch open long enough for every caller to pile up
+		// behind the single in-flight refresh.
+		time.Sleep(50 * time.Millisecond)
+		firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM})(w, r)
+	}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+	raw := signFirebaseToken(t, key, "firebase-test-key", validFirebaseClaims())
+
+	const callers = 25
+	var wg sync.WaitGroup
+	errs := make([]error, callers)
+	for i := 0; i < callers; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			_, err := verifier.Verify(context.Background(), raw)
+			errs[index] = err
+		}(i)
+	}
+	wg.Wait()
+
+	for index, err := range errs {
+		require.NoError(t, err, "caller %d must verify against the shared refresh", index)
+	}
+	assert.Equal(t, int64(1), requestCount.Load(), "concurrent refreshes must be collapsed into one fetch")
+}
+
+func TestFirebaseVerifierRejectsMissingIssuedAt(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+	server := httptest.NewServer(firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+
+	claims := validFirebaseClaims()
+	claims.IssuedAt = nil
+	raw := signFirebaseToken(t, key, "firebase-test-key", claims)
+
+	_, err := verifier.Verify(context.Background(), raw)
+	require.ErrorIs(t, err, auth.ErrInvalidIdentityToken)
+}
+
+func TestFirebaseVerifierRejectsFutureIssuedAt(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+	server := httptest.NewServer(firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+
+	claims := validFirebaseClaims()
+	claims.IssuedAt = jwt.NewNumericDate(time.Now().Add(time.Hour))
+	raw := signFirebaseToken(t, key, "firebase-test-key", claims)
+
+	_, err := verifier.Verify(context.Background(), raw)
+	require.ErrorIs(t, err, auth.ErrInvalidIdentityToken)
+}
+
+func TestFirebaseVerifierRejectsMissingAuthTime(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+	server := httptest.NewServer(firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+
+	claims := validFirebaseClaims()
+	claims.AuthTime = nil
+	raw := signFirebaseToken(t, key, "firebase-test-key", claims)
+
+	_, err := verifier.Verify(context.Background(), raw)
+	require.ErrorIs(t, err, auth.ErrInvalidIdentityToken)
+}
+
+func TestFirebaseVerifierRejectsFutureAuthTime(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+	server := httptest.NewServer(firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+
+	claims := validFirebaseClaims()
+	claims.AuthTime = jwt.NewNumericDate(time.Now().Add(time.Hour))
+	raw := signFirebaseToken(t, key, "firebase-test-key", claims)
+
+	_, err := verifier.Verify(context.Background(), raw)
+	require.ErrorIs(t, err, auth.ErrInvalidIdentityToken)
+}
+
+func TestFirebaseVerifierRejectsEmptySubject(t *testing.T) {
+	key := testRSAKeyPair(t)
+	certPEM := selfSignedCertificatePEM(t, key)
+	server := httptest.NewServer(firebaseCertsHandler(map[string]string{"firebase-test-key": certPEM}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+
+	claims := validFirebaseClaims()
+	claims.Subject = ""
+	raw := signFirebaseToken(t, key, "firebase-test-key", claims)
+
+	_, err := verifier.Verify(context.Background(), raw)
+	require.ErrorIs(t, err, auth.ErrInvalidIdentityToken)
 }
