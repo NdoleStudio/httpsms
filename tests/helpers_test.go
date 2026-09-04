@@ -421,7 +421,7 @@ func setupWebhook(ctx context.Context, t *testing.T, phoneNumber string, events 
 	webhookURL := wiremockWebhookURL + webhookPath
 
 	client := newAPIClient()
-	_, resp, err := client.Webhooks.Store(ctx, &httpsms.WebhookStoreParams{
+	stored, resp, err := client.Webhooks.Store(ctx, &httpsms.WebhookStoreParams{
 		SigningKey:   signingKey,
 		URL:          webhookURL,
 		PhoneNumbers: []string{phoneNumber},
@@ -429,6 +429,31 @@ func setupWebhook(ctx context.Context, t *testing.T, phoneNumber string, events 
 	})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.HTTPResponse.StatusCode, "webhook store failed")
+
+	// A user may only ever own 10 webhooks, so a webhook that outlives its
+	// test would make the suite fail after a couple of runs against the same
+	// stack. Deleting it here is what keeps repeated runs green without a
+	// database reset.
+	webhookID := stored.Data.ID
+	t.Cleanup(func() {
+		request, err := http.NewRequest(http.MethodDelete, apiBaseURL+"/v1/webhooks/"+webhookID, nil)
+		if err != nil {
+			t.Logf("cannot build the delete request for webhook %s: %v", webhookID, err)
+			return
+		}
+		request.Header.Set("x-api-key", userAPIKey)
+
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Logf("cannot delete webhook %s: %v", webhookID, err)
+			return
+		}
+		defer func() { _ = response.Body.Close() }()
+
+		if response.StatusCode != http.StatusNoContent && response.StatusCode != http.StatusOK {
+			t.Logf("deleting webhook %s returned %d", webhookID, response.StatusCode)
+		}
+	})
 
 	return signingKey, webhookPath
 }

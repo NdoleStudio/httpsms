@@ -346,6 +346,44 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(ctx context.Conte
 	return errors
 }
 
+// ValidateMessageIncoming validates the requests.MessageIncoming request
+func (validator MessageHandlerValidator) ValidateMessageIncoming(_ context.Context, request requests.MessageIncoming) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"owners": []string{
+				multipleContactPhoneNumberRule,
+			},
+			"statuses": []string{
+				multipleInRule + ":" + entities.MessageStatusReceived,
+			},
+			"sort_by": []string{
+				"in:" + strings.Join([]string{
+					"created_at",
+					"owner",
+					"contact",
+					"status",
+				}, ","),
+			},
+			"limit": []string{
+				"required",
+				"numeric",
+				"min:1",
+				"max:200",
+			},
+			"skip": []string{
+				"required",
+				"numeric",
+				"min:0",
+			},
+			"query": []string{
+				"max:50",
+			},
+		},
+	})
+	return v.ValidateStruct()
+}
+
 // ValidateMessageEvent validates the requests.MessageEvent request
 func (validator MessageHandlerValidator) ValidateMessageEvent(_ context.Context, request requests.MessageEvent) url.Values {
 	v := govalidator.New(govalidator.Options{

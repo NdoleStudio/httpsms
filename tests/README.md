@@ -1,162 +1,250 @@
 # Integration Tests
 
-End-to-end tests for the httpSMS API. The suite runs the API and its data
-stores in Docker, keeps the existing Firebase/WireMock coverage, and adds a
-standard-library-only HTTPS adapter emulator for URL-backed phone gateways.
+End-to-end integration tests for the httpSMS API and the hosted httpSMS MCP server. These tests validate the complete SMS lifecycle (including URL-backed phone gateways through a standard-library-only HTTPS adapter emulator), and the complete MCP OAuth/tool surface, by running the full application stack in Docker.
 
 ## Architecture
 
-```text
-                              ┌──────────────────┐
-                              │    API (Go)      │
-                              │    Port 8000     │
-                              └───────┬──────────┘
-                                      │
-                FCM HTTP              │ HTTPS callbacks
-           ┌──────────────────┐       │       ┌──────────────────────┐
-           │ WireMock         │◀──────┘       │ Adapter emulator     │
-           │ Port 8080        │               │ HTTPS callback :9091│
-           └──────────────────┘               │ HTTP control   :9092│
-                                              └──────────┬───────────┘
-                                                         │ phone API calls
-                                                         └──────────▶ API
-
-┌──────────────────┐        HTTP        ┌────────────────────────────┐
-│ Test runner      │───────────────────▶│ API, WireMock, and adapter │
-│ Go test on host  │                    │ control endpoints          │
-└──────────────────┘                    └────────────────────────────┘
-
-Data stores: CockroachDB, Redis, and MongoDB.
+```
+┌──────────────┐     HTTP      ┌──────────────┐   HTTPS callbacks   ┌──────────────────────┐
+│  Test Runner │──────────────▶│   API (Go)   │────────────────────▶│  Adapter Emulator    │
+│   (Go test)  │──┐            │  Port 8000   │◀────────────────────│  Callback  :9091     │
+└──────┬───────┘  │            └──────┬───────┘   phone API calls   │  Control   :9092     │
+       │          │                   │                              └──────────────────────┘
+       │  MCP (Streamable HTTP)       │  FCM push / events (HTTP)
+       │  + OAuth 2.1                 │
+       ▼                              ▼
+┌──────────────┐   delegated   ┌──────────────┐
+│  MCP server  │──────────────▶│   WireMock   │
+│  Port 8082   │   JWT (JWKS)  │  Port 8080   │
+└──────┬───────┘               └──────────────┘
+       │
+       │  OAuth state, confirmations, rate limits
+       ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│ CockroachDB  │   │    Redis     │   │   MongoDB    │
+│  Port 26257  │   │  Port 6379   │   │  Port 27017  │
+└──────────────┘   └──────────────┘   └──────────────┘
 ```
 
 ### Components
 
-| Component | Description |
-| --- | --- |
-| **API** | The httpSMS Go API server |
-| **WireMock** | Existing fake Firebase and webhook endpoints |
-| **Adapter emulator** | HTTPS URL-backed phone gateway with an HTTP-only host control API |
-| **CockroachDB** | Relational database for API data |
-| **Redis** | Cache and local event queue backend |
-| **MongoDB** | Heartbeat and contact backend |
-| **Seed** | One-shot container that inserts integration users and API keys |
-| **Test runner** | Go tests running on the host |
+| Component            | Description                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| **API**               | The httpSMS Go API server running in Docker                                         |
+| **MCP**               | The hosted httpSMS MCP server (`mcp/Dockerfile`), OAuth + MCP tools, port 8082      |
+| **WireMock**          | Fake FCM, OAuth token, webhook receiver, and Firebase certificate endpoints          |
+| **Adapter emulator**  | HTTPS URL-backed phone gateway with an HTTP-only host control API                    |
+| **CockroachDB**       | Database for the API (single-node, insecure mode)                                   |
+| **Redis**             | Standalone Redis: API cache/queue plus MCP OAuth state, confirmations, rate limits   |
+| **MongoDB**           | Heartbeat and contact storage backend                                               |
+| **Seed**              | One-shot container that seeds test data into CockroachDB                            |
+| **Test Runner**       | Go test binary that runs on the host machine                                        |
 
 ### Gateway Flows
 
-1. **Existing FCM flow:** the API sends Firebase-compatible requests to
-   WireMock. Existing tests fetch outstanding messages and submit phone events
-   without changing their transport.
-2. **URL-backed outgoing flow:** the API posts an FCM-compatible envelope to
-   `https://adapter-emulator:9091/notifications/{gatewayID}`. The adapter uses
-   its registered phone API key to fetch the outstanding message and post
-   `SENT` followed by `DELIVERED`.
-3. **URL-backed incoming flow:** the test calls the adapter control API on
-   host port `9092`; the adapter posts `/v1/messages/receive` as the registered
-   phone.
-4. **Heartbeat wake-up:** the test dispatches `phone.heartbeat.missed` through
-   `/v1/events`. The API sends an HTTPS callback containing
-   `KEY_HEARTBEAT_ID`, and the adapter posts `/v1/heartbeats`.
+1. **Send SMS flow**: Test sends `POST /v1/messages/send` → API pushes an FCM notification to WireMock → test fires `SENT` and `DELIVERED` events as the phone → test polls `GET /v1/messages/{id}` until status is `delivered`
 
-The HTTPS endpoint uses a two-day throwaway CA and server certificate with the
-DNS SAN `adapter-emulator`. The API container trusts only that generated CA via
-`SSL_CERT_FILE`; HTTPS verification is never bypassed. The notification sender
-uses the standard OpenTelemetry-instrumented Go HTTP transport.
+2. **Receive SMS flow**: Test sends `POST /v1/messages/receive` (as the phone) → API stores message → test verifies via `GET /v1/messages/{id}`
+
+3. **MCP flow**: Test completes a real PKCE authorization-code flow against the MCP server (signing a Firebase ID token the MCP server verifies against the WireMock certificate endpoint) → calls MCP tools over Streamable HTTP → the MCP server mints a short-lived, operation-bound delegation JWT per call → the API verifies it against the MCP server's JWKS document
+
+4. **URL-backed outgoing flow**: the API posts an FCM-compatible envelope to `https://adapter-emulator:9091/notifications/{gatewayID}`. The adapter uses its registered phone API key to fetch the outstanding message and post `SENT` followed by `DELIVERED`
+
+5. **URL-backed incoming flow**: the test calls the adapter control API on host port `9092`; the adapter posts `/v1/messages/receive` as the registered phone
+
+6. **Heartbeat wake-up flow**: the test dispatches `phone.heartbeat.missed` through `/v1/events`. The API sends an HTTPS callback containing `KEY_HEARTBEAT_ID`, and the adapter posts `/v1/heartbeats`
+
+### FCM Redirect
+
+The API's Firebase SDK is configured (via `FCM_ENDPOINT` env var) to redirect all FCM HTTP requests to WireMock instead of Google's servers. WireMock serves:
+
+- `/token` — Fake OAuth2 token endpoint (Firebase SDK requests tokens before sending)
+- `/v1/projects/:project/messages:send` — Fake FCM push endpoint
+- `/webhooks/*` — Webhook receiver
+- `/firebase-certs` — Firebase signing certificate map (generated, see below)
+
+### Adapter TLS Certificates
+
+The adapter emulator's HTTPS endpoint uses a two-day throwaway CA and server certificate with the DNS SAN `adapter-emulator`, generated by `generate-adapter-certificates.sh`. The API container trusts only that generated CA via `SSL_CERT_FILE`; HTTPS verification is never bypassed. The notification sender uses the standard OpenTelemetry-instrumented Go HTTP transport.
+
+### MCP identity and signing keys
+
+`generate-firebase-credentials.sh` generates every credential the stack needs, all throwaway and all git-ignored:
+
+| Artifact                                         | Used by                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `firebase-credentials.json`                       | API, as `FIREBASE_CREDENTIALS`                                                 |
+| `mcp-test-signing-key.pem`                        | MCP container (`MCP_SIGNING_PRIVATE_KEY_FILE`) and the tests, which sign test Firebase ID tokens and delegation tokens with it |
+| `mcp-test-signing-cert.pem`                       | The self-signed certificate matching that key                                  |
+| `wiremock/mappings/firebase-certs.generated.json` | WireMock stub serving `{"mcp-test-key": "<certificate>"}` at `/firebase-certs` |
+
+No secret is committed: the key, certificate, and generated mapping are listed in [`.gitignore`](./.gitignore).
 
 ## Test Coverage
 
-- [x] Existing encrypted send/receive phone scenarios through WireMock
-- [x] Existing rate-limit, webhook, contacts, bulk, and thread scenarios
-- [x] URL-backed outgoing message reaches `delivered`
-- [x] URL-backed incoming message reaches `received`
-- [x] URL-backed heartbeat callback stores a heartbeat
-- [x] Adapter callback notification IDs are deduplicated in memory
-- [x] HTTPS certificate trust is exercised
+- [x] **Send SMS E2E** — Full send lifecycle: API → FCM push → SENT/DELIVERED events → message reaches `delivered` status
+- [x] **Receive SMS E2E** — Phone submits received message to API → message is stored and retrievable via GET endpoint
+- [x] **Message thread unread count E2E** — Incoming SMS and missed calls increment the unread count, the existing thread update endpoint clears it, and outbound activity preserves the count
+- [x] **Unarchive Thread on Receive E2E** — Archived thread returns to the inbox on inbound message when the phone's `unarchive_thread` setting is enabled, and stays archived when disabled
+- [x] **Contacts E2E** — JSON CRUD, search and pagination totals, CSV import normalization, and contact details attached to message threads
+- [x] **URL-backed outgoing message** reaches `delivered` through the adapter emulator's HTTPS callback
+- [x] **URL-backed incoming message** reaches `received` through the adapter's host control API
+- [x] **URL-backed heartbeat callback** stores a heartbeat
+- [x] **Adapter callback deduplication** — adapter callback notification IDs are deduplicated in memory
+- [x] **HTTPS certificate trust** is exercised end-to-end for the adapter emulator
+- [x] **MCP readiness** — `/health` and `/healthz`, plus the secure response headers and request ID every response carries
+- [x] **MCP discovery** — RFC 9728 protected-resource metadata (root and `/mcp`-suffixed), RFC 8414 authorization-server metadata, JWKS, CORS preflight
+- [x] **MCP authentication challenge** — unauthenticated, malformed, and wrong-audience tokens are refused with `WWW-Authenticate` pointing at the resource metadata
+- [x] **MCP DCR and CIMD** — dynamic client registration, rejected client metadata, and a CIMD `client_id` resolving to a private host
+- [x] **MCP OAuth** — PKCE authorization-code exchange through real Firebase ID token verification, code replay, consent replay, mismatched client/redirect/resource/verifier, unverifiable identity tokens, refresh rotation and replay, scope narrowing and escalation
+- [x] **MCP protocol** — `2026-07-28` discovery/tool listing through the official SDK client, `2025-11-25` initialize/tools-list/tools-call over the raw wire protocol, and the exact seven-tool catalog on both
+- [x] **MCP tools** — `list_phones`, `send_sms` (through the FCM push and delivery events), `list_message_threads`, `list_thread_messages`, `list_incoming_messages` (received SMS present, missed calls absent), `create_phone_api_key`, `rotate_user_api_key`
+- [x] **MCP scopes** — every tool is refused when its scope was not granted
+- [x] **MCP delegation binding** — the API enforces the exact method, path, audience, issuer, expiry, and scope of every delegation token
+- [x] **MCP incoming vs. search** — `/v1/messages/incoming` serves a delegated token while the CAPTCHA-protected `/v1/messages/search` stays protected
+- [x] **MCP rotation confirmation** — an unconfirmed call never rotates, a legacy confirmation handle and an MRTR elicitation each rotate exactly once, the previous primary key stops working, and a redeemed handle can never be replayed
+- [x] **MCP rate limits** — an exhausted per-user/per-tool budget is rejected before the tool runs, with a structured retry hint, robustly across the UTC hour boundary the budget window is aligned to
+- [x] **MCP user-data isolation** — the MCP user sees its seeded phone and thread while a second, fully isolated user sees no phones, threads, thread messages, or incoming messages, even when naming the other user's phone number explicitly
+- [x] **MCP secret handling** — minted API keys, access tokens, and refresh tokens never appear in the MCP server's logs (and never in a test failure message either)
 
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) with Docker Compose
 - [Go 1.25+](https://go.dev/dl/)
-- [jq](https://jqlang.github.io/jq/download/)
-- [OpenSSL](https://www.openssl.org/)
+- [jq](https://jqlang.github.io/jq/download/) (for Firebase credentials generation)
+- [OpenSSL](https://www.openssl.org/) (for RSA key and certificate generation)
 
 On Windows, the scripts can be run with Git Bash, for example
 `C:\Program Files\Git\bin\bash.exe`.
 
 ## Running Locally
 
-### 1. Generate throwaway credentials and certificates
+### 1. Generate Credentials and Certificates
 
 Run both scripts before starting Docker:
 
 ```bash
 cd tests
-bash generate-firebase-credentials.sh firebase-credentials.json
+bash generate-firebase-credentials.sh
 bash generate-adapter-certificates.sh certs
 export FIREBASE_CREDENTIALS=$(jq -c . firebase-credentials.json)
 ```
 
-The generated Firebase credential and the complete `certs/` directory are
-ignored by Git.
+`generate-firebase-credentials.sh` creates `firebase-credentials.json`, the MCP signing key and certificate, and the WireMock Firebase certificate mapping. `generate-adapter-certificates.sh` creates the throwaway CA and server certificate the adapter emulator's HTTPS endpoint uses (in `certs/`). Re-run either any time; every artifact is disposable, and the generated Firebase credential and the complete `certs/` directory are ignored by Git.
 
-### 2. Start the stack and wait for seeding
+### 2. Start the Stack
 
 ```bash
-docker compose up -d --build --wait
+docker compose up -d --build --wait mcp
+```
+
+Naming `mcp` starts it and every service it depends on (CockroachDB, Redis, MongoDB, WireMock, the adapter emulator, and the API) and, because `--wait` only ever waits on the services named on the command line and their dependencies, it blocks until each of those health checks passes. Do not run a bare `docker compose up --wait`: that also targets the one-shot `cockroachdb-init` and `seed` containers, which have no health check and are *expected* to exit, so `--wait` treats them as failures.
+
+### 3. Seed the Database
+
+```bash
+docker compose up -d seed
 docker compose wait seed
-sleep 2
 ```
 
-### 3. Run the complete suite
+The seed container inserts the test users, the immutable seeded MCP phone and message thread, and their API keys into CockroachDB after the API has run its GORM migrations. It is idempotent (`ON CONFLICT ... DO NOTHING`), so re-running it against an already-seeded database is harmless.
+
+### 4. Run Tests
 
 ```bash
-go test -v -timeout 300s ./...
+go test -v -timeout 900s ./...
 ```
 
-### 4. Tear down
+Only the MCP suite:
+
+```bash
+go test -v -timeout 900s -run 'TestMCP' ./...
+```
+
+In a random order (every test is order independent):
+
+```bash
+go test -v -timeout 900s -shuffle=on ./...
+```
+
+The suite is re-runnable: running it again against the same containers, without tearing anything down, passes. Nothing it mutates is a prerequisite of anything it asserts — the rotation tests use a dedicated user and always derive the current key by rotating once first, and the rate-limit test authenticates as a brand-new Firebase UID so its hourly budget is always untouched. Every MCP test starts with a fast preflight that validates the immutable seeded prerequisites and prints the exact reset commands if (and only if) one of them is invalid.
+
+### 5. Tear Down
 
 ```bash
 docker compose down -v
 ```
 
-### One-liner
+The `-v` flag removes volumes (database data). This is only needed when you are finished, or when the preflight tells you a seeded prerequisite is missing or stale — not between ordinary runs.
+
+### One-Liner
 
 ```bash
 cd tests && \
   bash generate-firebase-credentials.sh firebase-credentials.json && \
   bash generate-adapter-certificates.sh certs && \
   export FIREBASE_CREDENTIALS=$(jq -c . firebase-credentials.json) && \
-  docker compose up -d --build --wait && \
+  docker compose up -d --build --wait mcp && \
+  docker compose up -d seed && \
   docker compose wait seed && \
-  sleep 2 && \
-  go test -v -timeout 300s ./... ; \
-  docker compose down -v
+  go test -v -timeout 900s ./...
 ```
+
+## Ports
+
+| Port    | Service                                    |
+| ------- | ------------------------------------------ |
+| `8000`  | API                                        |
+| `8080`  | WireMock (FCM, webhooks, Firebase certs)   |
+| `8081`  | CockroachDB admin UI                       |
+| `8082`  | MCP server (`/mcp`, OAuth, discovery)      |
+| `9092`  | Adapter emulator (host control API)        |
+| `6379`  | Redis                                      |
+| `26257` | CockroachDB SQL                            |
+| `27017` | MongoDB                                    |
+
+The adapter emulator's HTTPS callback port (`9091`) is only reached over the Docker network by the API container and is not published to the host.
 
 ## CI/CD
 
-`.github/workflows/api.yml` generates both the fake Firebase credential and
-the adapter CA/server certificate before building the Compose stack. The
-workflow runs API handler integration tests and this complete host-side suite,
-collects service logs on failure, and always tears the stack down.
+Integration tests run automatically in the `test` job ("Integration Tests") of [`.github/workflows/api.yml`](../.github/workflows/api.yml):
+
+- **Trigger**: Push to `main` or pull request targeting `main`
+- **Flow**: Generates credentials (including the MCP signing key, certificate, and WireMock certificate mapping) and the adapter CA/server certificates → Builds the API, MCP, and adapter emulator images → Starts the Docker stack → Waits for the MongoDB, API, MCP, and adapter emulator health checks → Seeds the DB → Runs the MCP unit tests (`go test -race -count=1 ./...` in `mcp/`) and builds the MCP server binary → Runs the API handler tests and this suite → Collects logs on failure → Tears down
+- **Gate**: The `deploy` job in the same workflow only runs after the `test` job passes, so a failing MCP unit test, MCP build, health check, or integration test blocks the deploy
 
 ## Test Data
 
-| Entity | Value |
-| --- | --- |
-| User API key | `test-user-api-key` |
-| System API key | `system-user-api-key` |
-| User ID | `test-user-id` |
-| System user ID | `system-user-id` |
+| Entity                     | Value                        |
+| -------------------------- | ---------------------------- |
+| User API Key               | `test-user-api-key`          |
+| User ID                    | `test-user-id`               |
+| System API Key             | `system-user-api-key`        |
+| System User ID             | `system-user-id`             |
+| Rotation User API Key      | `rotate-test-api-key`        |
+| Rotation User ID           | `rotate-test-user-id`        |
+| MCP User API Key           | `mcp-test-user-api-key`      |
+| MCP User ID                | `mcp-test-user-id`           |
+| MCP rotation user          | `mcp-rotation-user-id`       |
+| MCP isolated user          | `mcp-rate-limit-user-id`     |
+| MCP seeded phone           | `+18885550101`               |
+| MCP seeded thread contact  | `+18885550202`               |
+| MCP signing key ID         | `mcp-test-key`               |
+| Firebase project           | `httpsms-test`               |
 
-Adapter tests create a unique gateway UUID, phone number, phone API key, and
-callback path per test. See [`seed.sql`](./seed.sql) for shared seed data.
+`mcp-test-user-api-key` is never rotated by any test. The MCP rotation tests only ever rotate `mcp-rotation-user-id`'s key, and they derive its current value by rotating once first rather than assuming the seeded value is still current. The MCP isolated user never owns any data, which is what the user-data isolation test asserts. The MCP rate-limit test authenticates as a brand-new, throwaway Firebase UID on every attempt.
+
+The seeded MCP phone and message thread are immutable: no test mutates or deletes them, and the suite's preflight validates both before any MCP test runs.
+
+Adapter tests create a unique gateway UUID, phone number, phone API key, and callback path per test. Other phones, phone API keys, and message threads are created at runtime by the tests themselves.
+
+See [`seed.sql`](./seed.sql) for the complete seed data.
 
 ## Project Structure
 
-```text
+```
 tests/
-├── adapter-emulator/
+├── adapter-emulator/         # Standard-library-only HTTPS adapter emulator
 │   ├── Dockerfile
 │   ├── go.mod
 │   ├── main.go
@@ -165,18 +253,23 @@ tests/
 │   ├── notification_handler.go
 │   ├── control_handler.go
 │   └── emulator_test.go
-├── wiremock/
-│   └── mappings/
-├── adapter_integration_test.go
-├── integration_test.go
-├── helpers_test.go
-├── docker-compose.yml
-├── .env.test
-├── seed.sql
-├── generate-firebase-credentials.sh
-├── generate-adapter-certificates.sh
+├── docker-compose.yml        # Full stack orchestration
+├── seed.sql                  # Database seed data
+├── .env.test                 # API and MCP environment variables
+├── .gitignore                # Generated credentials and key material
+├── generate-firebase-credentials.sh  # Generates credentials and MCP signing key material
+├── generate-adapter-certificates.sh  # Generates the adapter emulator's throwaway CA/server certs
 ├── go.mod
-└── go.sum
+├── go.sum
+├── helpers_test.go           # API test utilities (HTTP client, polling)
+├── integration_test.go       # API E2E test cases
+├── adapter_integration_test.go       # URL-backed phone gateway E2E test cases
+├── contacts_integration_test.go
+├── read_receipts_test.go
+├── unarchive_thread_integration_test.go
+├── mcp_helpers_test.go       # MCP/OAuth test utilities (token signing, OAuth flow, MCP client)
+├── mcp_integration_test.go   # MCP E2E test cases
+└── wiremock/mappings/        # FCM, OAuth token, webhook, and Firebase certificate stubs
 ```
 
 ## Troubleshooting
@@ -187,9 +280,44 @@ tests/
 docker compose logs --tail 200 api adapter-emulator
 ```
 
-Confirm `tests/certs/ca.pem`, `server.pem`, and `server-key.pem` exist. TLS
-errors should be fixed by regenerating certificates; do not disable HTTPS
-verification.
+Confirm `tests/certs/ca.pem`, `server.pem`, and `server-key.pem` exist. TLS errors should be fixed by regenerating certificates with `bash generate-adapter-certificates.sh certs`; do not disable HTTPS verification.
+
+Also check:
+
+- `FIREBASE_CREDENTIALS` env var not set or malformed
+- CockroachDB not ready (increase `start_period` in healthcheck)
+
+### MCP server fails to start
+
+```bash
+docker compose logs mcp
+```
+
+Common issues:
+
+- `mcp-test-signing-key.pem` missing — run `bash generate-firebase-credentials.sh`
+- The key file is not readable by the container's unprivileged `mcp` user (the generator sets mode `0644`)
+- A configuration error: the MCP server names every missing or invalid setting in a single startup error
+
+### MCP tests fail with `access_denied` on the consent step
+
+WireMock is not serving the generated certificate, or the certificate no longer matches the signing key. Re-run `bash generate-firebase-credentials.sh` and restart WireMock so it reloads its mappings:
+
+```bash
+docker compose restart wiremock mcp
+```
+
+### MCP tests fail with 401 on the API
+
+The API could not verify the delegation token. Check that `MCP_AUTH_ISSUER`, `MCP_AUTH_AUDIENCE`, and `MCP_AUTH_JWKS_URL` in `.env.test` still match the MCP service's `MCP_BASE_URL`, `API_AUDIENCE`, and JWKS route.
+
+### MCP rotation or rate-limit tests fail on a re-run
+
+They should not: the rotation tests use a dedicated user and derive its current key by rotating once first, and the rate-limit test authenticates as a brand-new Firebase UID on every attempt. If a rotation test still fails, check the MCP preflight message — it names the exact seeded prerequisite that is missing and the commands to restore it.
+
+### A test fails with "MCP integration preflight failed"
+
+A prerequisite the suite cannot run without is missing. The message names it and prints the exact recovery commands: either re-run `bash generate-firebase-credentials.sh`, start the stack, or (only when an *immutable* seeded row is missing or stale) reset with `docker compose down -v` and re-seed.
 
 ### URL-backed outgoing message times out
 
@@ -197,29 +325,25 @@ verification.
 docker compose logs --tail 200 api adapter-emulator
 ```
 
-Adapter logs should show callback receipt, the outstanding-message fetch,
-`SENT`, and `DELIVERED`. Confirm `SSL_CERT_FILE=/adapter-certs/ca.pem` is
-present in the API container.
+Adapter logs should show callback receipt, the outstanding-message fetch, `SENT`, and `DELIVERED`. Confirm `SSL_CERT_FILE=/adapter-certs/ca.pem` is present in the API container.
 
 ### URL-backed incoming message times out
 
-Adapter logs should show the control request followed by a call to
-`/v1/messages/receive`. The gateway registration contains the per-test phone
-number and phone API key.
+Adapter logs should show the control request followed by a call to `/v1/messages/receive`. The gateway registration contains the per-test phone number and phone API key.
 
 ### Heartbeat callback times out
 
-API logs should show `phone.heartbeat.missed`. Adapter logs should show
-`KEY_HEARTBEAT_ID` followed by a successful heartbeat POST.
+API logs should show `phone.heartbeat.missed`. Adapter logs should show `KEY_HEARTBEAT_ID` followed by a successful heartbeat POST.
 
-### Existing FCM scenario times out
+### Tests timeout waiting for `delivered` status (existing FCM scenarios)
+
+Check the API and WireMock logs:
 
 ```bash
-docker compose logs --tail 200 api wiremock
+docker compose logs api wiremock
 ```
 
-Keep `FCM_ENDPOINT=http://wiremock:8080`; the adapter service does not replace
-or weaken the WireMock phone tests.
+If no FCM request appears, the API isn't reaching WireMock (check `FCM_ENDPOINT` in `.env.test`). Keep `FCM_ENDPOINT=http://wiremock:8080`; the adapter service does not replace or weaken the WireMock phone tests.
 
 ### Seed container fails
 
@@ -227,5 +351,14 @@ or weaken the WireMock phone tests.
 docker compose logs seed
 ```
 
-If a relation does not exist, inspect API migration/startup logs before
-increasing health-check timing.
+If you see "relation does not exist" errors, the API hasn't finished GORM migrations yet. Increase the API's `start_period` in `docker-compose.yml`.
+
+## Adding New Tests
+
+1. Add test functions to `integration_test.go` (or create new `*_test.go` files); MCP cases belong in `mcp_integration_test.go`, adapter cases belong in `adapter_integration_test.go`
+2. Use `requestJSON()`/`requestJSONAs()` for authenticated HTTP calls
+3. Use `pollMessageStatus()`/`pollMessageStatusAs()` to wait for async state changes
+4. For MCP cases, start with `requireMCPStack(t)`, then use `completeOAuthCodeFlow()` and `newMCPClient()`; never rotate `test-user-api-key` or `mcp-test-user-api-key`, and never mutate the seeded MCP phone or thread
+5. Keep every test independent of order, of other tests, and of how many times the suite has already run: derive mutated state inside the test rather than assuming a seeded value is still current
+6. Never let a secret reach the test log: quote response bodies through `redactSecrets()` and assert log redaction with `assertSecretNotLogged()`
+7. Update the test coverage checklist in this README

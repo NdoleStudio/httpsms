@@ -1,0 +1,34 @@
+steps:
+  - name: "gcr.io/kaniko-project/executor:v1.23.2"
+    id: "Build image and push"
+    dir: "mcp"
+    args:
+      - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA"
+      - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest"
+      - "--dockerfile=Dockerfile"
+      - "--context=."
+      - "--build-arg=GIT_COMMIT=$SHORT_SHA"
+      - "--snapshot-mode=time"
+
+  - id: "Deploy to cloud run"
+    name: "gcr.io/cloud-builders/gcloud"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        gcloud run deploy $_SERVICE_NAME \
+        --image=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA \
+        --region=$_REGION --platform managed --allow-unauthenticated \
+        --port=8080 \
+        --set-env-vars="ENV=production,MCP_BASE_URL=$_MCP_BASE_URL,HTTPSMS_API_URL=$_HTTPSMS_API_URL,FIREBASE_PROJECT_ID=$_FIREBASE_PROJECT_ID,FIREBASE_AUTH_DOMAIN=$_FIREBASE_AUTH_DOMAIN" \
+        --set-secrets="MCP_SIGNING_PRIVATE_KEY=mcp-signing-private-key:latest,MCP_SIGNING_KEY_ID=mcp-signing-key-id:latest,REDIS_URL=mcp-redis-url:latest,FIREBASE_API_KEY=mcp-firebase-api-key:latest"
+options:
+  substitutionOption: ALLOW_LOOSE
+
+substitutions:
+  _SERVICE_NAME: http-sms-mcp
+  _REGION: us-east1
+  _MCP_BASE_URL: https://mcp.httpsms.com
+  _HTTPSMS_API_URL: https://api.httpsms.com
+  _FIREBASE_PROJECT_ID: httpsms-86c51
+  _FIREBASE_AUTH_DOMAIN: auth.httpsms.com

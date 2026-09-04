@@ -2920,6 +2920,75 @@ paths:
       summary: Register a missed call event on the mobile phone
       tags:
       - Messages
+  /messages/incoming:
+    get:
+      consumes:
+      - application/json
+      description: This returns the list of mobile-originated messages received by
+        the user's phones. This route is scoped to messages:read and never returns
+        other message types
+      parameters:
+      - default: +18005550199,+18005550100
+        description: the owner's phone numbers
+        in: query
+        name: owners
+        required: true
+        type: string
+      - description: filter by message status
+        in: query
+        name: statuses
+        type: string
+      - description: number of messages to skip
+        in: query
+        minimum: 0
+        name: skip
+        type: integer
+      - description: filter messages containing query
+        in: query
+        name: query
+        type: string
+      - description: field used to sort the messages
+        in: query
+        name: sort_by
+        type: string
+      - description: sort messages in descending order
+        in: query
+        name: sort_descending
+        type: boolean
+      - description: number of messages to return
+        in: query
+        maximum: 200
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.MessagesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.BadRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Unauthorized'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/responses.UnprocessableEntity'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responses.InternalServerError'
+      security:
+      - ApiKeyAuth: []
+      summary: Search incoming messages of a user
+      tags:
+      - Messages
   /messages/outstanding:
     get:
       consumes:
