@@ -76,6 +76,12 @@ const (
 	cimdCacheTTL           = 15 * time.Minute
 	dynamicClientTTL       = 24 * time.Hour
 	dynamicClientIDBytes   = 24
+
+	// cimdCacheMaxEntries bounds how many validated Client ID Metadata Documents are held in
+	// memory at once. Any HTTPS URL that serves a valid document is a cacheable client_id,
+	// so without a ceiling a stream of distinct authorization requests would grow the cache
+	// without limit for the full 15-minute TTL.
+	cimdCacheMaxEntries = 1024
 )
 
 // supportedGrantTypes are the only grant_types a client may declare.
@@ -373,12 +379,54 @@ func (r *ClientResolver) cached(clientID string) (Client, bool) {
 	return entry.client, true
 }
 
-// cacheClient caches client for clientID for cimdCacheTTL.
+// cacheClient caches client for clientID for cimdCacheTTL, keeping the cache
+// bounded at cimdCacheMaxEntries entries: when a new client_id would exceed
+// the ceiling, every already-expired entry is purged first and, if that
+// frees nothing, the entry closest to expiring is evicted.
 func (r *ClientResolver) cacheClient(clientID string, client Client) {
 	r.cacheMu.Lock()
 	defer r.cacheMu.Unlock()
 
-	r.cache[clientID] = cachedClient{client: client, expiresAt: time.Now().Add(cimdCacheTTL)}
+	now := time.Now()
+
+	if _, replacing := r.cache[clientID]; !replacing && len(r.cache) >= cimdCacheMaxEntries {
+		r.purgeExpiredLocked(now)
+		if len(r.cache) >= cimdCacheMaxEntries {
+			r.evictOldestLocked()
+		}
+	}
+
+	r.cache[clientID] = cachedClient{client: client, expiresAt: now.Add(cimdCacheTTL)}
+}
+
+// purgeExpiredLocked deletes every cache entry that has expired by now. The
+// caller must hold cacheMu.
+func (r *ClientResolver) purgeExpiredLocked(now time.Time) {
+	for id, entry := range r.cache {
+		if now.After(entry.expiresAt) {
+			delete(r.cache, id)
+		}
+	}
+}
+
+// evictOldestLocked deletes the unexpired entry closest to expiring, which
+// is the entry cached longest ago since every entry shares the same TTL.
+// Ties are broken by client_id so eviction never depends on Go's randomized
+// map iteration order. The caller must hold cacheMu.
+func (r *ClientResolver) evictOldestLocked() {
+	oldestID := ""
+	var oldestExpiry time.Time
+
+	for id, entry := range r.cache {
+		if oldestID == "" || entry.expiresAt.Before(oldestExpiry) ||
+			(entry.expiresAt.Equal(oldestExpiry) && id < oldestID) {
+			oldestID, oldestExpiry = id, entry.expiresAt
+		}
+	}
+
+	if oldestID != "" {
+		delete(r.cache, oldestID)
+	}
 }
 
 // parseCIMDDocument decodes and validates a Client ID Metadata Document

@@ -110,6 +110,10 @@ type MCPTokenVerifierConfig struct {
 
 	// CacheTTL is how long a fetched JWKS document is cached. Defaults to 15 minutes.
 	CacheTTL time.Duration
+
+	// MinRefreshInterval bounds how often an unknown "kid" (or an expired cache) may trigger
+	// an outbound JWKS fetch. Defaults to one minute.
+	MinRefreshInterval time.Duration
 }
 
 // MCPTokenVerifier validates delegated MCP API JWTs minted by the hosted MCP service.
@@ -129,7 +133,7 @@ func NewMCPTokenVerifier(config MCPTokenVerifierConfig) (*MCPTokenVerifier, erro
 	return &MCPTokenVerifier{
 		issuer:   config.Issuer,
 		audience: config.Audience,
-		jwks:     newMCPJWKSCache(config.JWKSURL, config.HTTPClient, config.CacheTTL),
+		jwks:     newMCPJWKSCache(config.JWKSURL, config.HTTPClient, config.CacheTTL, config.MinRefreshInterval),
 	}, nil
 }
 
@@ -137,6 +141,15 @@ func NewMCPTokenVerifier(config MCPTokenVerifierConfig) (*MCPTokenVerifier, erro
 // the configured issuer for the configured audience, and bound to the exact method and path of
 // the current request with the scope that operation requires.
 func (verifier *MCPTokenVerifier) VerifyRequest(ctx context.Context, raw string, method string, path string) (*MCPClaims, error) {
+	// Cheap prefilter: this middleware runs before Firebase bearer authentication, so almost
+	// every token it sees is a Firebase ID token or another non-MCP credential. Reading the
+	// unverified "iss" claim -- which is never trusted for authentication, only to decide
+	// that this token is definitely not ours -- keeps those tokens from reaching the JWKS
+	// cache and turning unknown "kid" headers into outbound fetches.
+	if !hasUnverifiedIssuer(raw, verifier.issuer) {
+		return nil, stacktrace.NewErrorWithCodef(ErrCodeInvalidToken, "bearer token is not issued by the MCP issuer [%s]", verifier.issuer)
+	}
+
 	claims := new(MCPClaims)
 	token, err := jwt.ParseWithClaims(
 		raw,
@@ -165,6 +178,29 @@ func (verifier *MCPTokenVerifier) VerifyRequest(ctx context.Context, raw string,
 	}
 
 	return claims, nil
+}
+
+// mcpUnverifiedParser decodes a JWT without verifying its signature. It is only ever used by
+// hasUnverifiedIssuer to discard tokens that cannot be ours, never to authenticate a request.
+var mcpUnverifiedParser = jwt.NewParser()
+
+// hasUnverifiedIssuer reports whether raw is a well-formed JWT whose *unverified* "iss" claim
+// equals issuer. A false result means the token is definitely not a delegated MCP token, so it
+// can be rejected before any network I/O. A true result carries no authentication weight at
+// all: the issuer is still verified against the token signature by VerifyRequest. Neither the
+// token nor any of its claims is ever logged or returned.
+func hasUnverifiedIssuer(raw string, issuer string) bool {
+	claims := jwt.MapClaims{}
+	if _, _, err := mcpUnverifiedParser.ParseUnverified(raw, claims); err != nil {
+		return false
+	}
+
+	tokenIssuer, err := claims.GetIssuer()
+	if err != nil {
+		return false
+	}
+
+	return tokenIssuer == issuer
 }
 
 // keyfunc returns a jwt.Keyfunc that resolves the RSA public key matching the token's "kid"

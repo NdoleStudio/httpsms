@@ -81,6 +81,10 @@ func newTestVerifier(t *testing.T, jwksURL string, jwksClient *http.Client) *MCP
 		Audience:   "https://api.httpsms.com",
 		JWKSURL:    jwksURL,
 		HTTPClient: jwksClient,
+		// Refresh throttling is exercised on its own in mcp_jwks_test.go; the tests using
+		// this helper assert unrelated verification behavior, so every unknown "kid" here
+		// is allowed to refresh immediately.
+		MinRefreshInterval: time.Nanosecond,
 	})
 	require.NoError(t, err)
 
