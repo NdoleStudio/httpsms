@@ -94,12 +94,73 @@ services:
       - .env.test
     environment:
       FIREBASE_CREDENTIALS: "${FIREBASE_CREDENTIALS}"
+      # Delegated MCP authentication. The issuer matches the MCP service's
+      # own public base URL (MCP_BASE_URL below), the audience matches the
+      # API URL the MCP service is configured to call, and the JWKS document
+      # is fetched over the Docker network rather than through the host port
+      # mapping.
+      MCP_AUTH_ISSUER: http://localhost:8082
+      MCP_AUTH_AUDIENCE: http://api:8000
+      MCP_AUTH_JWKS_URL: http://mcp:8080/.well-known/jwks.json
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 5s
       timeout: 10s
       retries: 20
       start_period: 30s
+
+  mcp:
+    build:
+      context: ../mcp
+    ports:
+      - "8082:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      wiremock:
+        condition: service_healthy
+    env_file:
+      # Only for REDIS_URL and ENV; every MCP-specific setting is declared
+      # explicitly below so the MCP service's configuration is readable in
+      # one place.
+      - .env.test
+    environment:
+      PORT: "8080"
+      # The base URL is the host-mapped URL, because it is also the issuer,
+      # the RFC 8707 resource identifier ("<base>/mcp"), and the value
+      # published in OAuth discovery metadata: every one of those must be
+      # the URL an MCP client on the host actually connects to.
+      MCP_BASE_URL: http://localhost:8082
+      HTTPSMS_API_URL: http://api:8000
+      API_AUDIENCE: http://api:8000
+      FIREBASE_PROJECT_ID: httpsms-test
+      FIREBASE_API_KEY: test-firebase-api-key
+      FIREBASE_AUTH_DOMAIN: httpsms-test.firebaseapp.com
+      # Deterministic, offline Firebase certificate endpoint: WireMock serves
+      # the self-signed certificate generated alongside the signing key, so
+      # the integration tests can mint Firebase ID tokens the MCP service
+      # actually verifies (see generate-firebase-credentials.sh).
+      FIREBASE_CERTS_URL: http://wiremock:8080/firebase-certs
+      MCP_SIGNING_PRIVATE_KEY_FILE: /run/secrets/mcp-test-signing-key.pem
+      MCP_SIGNING_KEY_ID: mcp-test-key
+      # Rate-limit budgets sized for the integration suite: high enough that
+      # the functional tests never trip a limit, low enough that the
+      # dedicated rate-limit test exhausts the hourly create_phone_api_key
+      # budget in four calls.
+      READ_TOOLS_PER_MINUTE: "60"
+      SEND_TOOLS_PER_MINUTE: "30"
+      KEY_CREATES_PER_HOUR: "3"
+      KEY_ROTATIONS_PER_HOUR: "10"
+    volumes:
+      - ./mcp-test-signing-key.pem:/run/secrets/mcp-test-signing-key.pem:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
 
   seed:
     image: cockroachdb/cockroach:latest
