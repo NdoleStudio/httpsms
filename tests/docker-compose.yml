@@ -145,14 +145,18 @@ services:
       FIREBASE_CERTS_URL: http://wiremock:8080/firebase-certs
       MCP_SIGNING_PRIVATE_KEY_FILE: /run/secrets/mcp-test-signing-key.pem
       MCP_SIGNING_KEY_ID: mcp-test-key
-      # Rate-limit budgets sized for the integration suite: high enough that
-      # the functional tests never trip a limit, low enough that the
-      # dedicated rate-limit test exhausts the hourly create_phone_api_key
-      # budget in four calls.
-      READ_TOOLS_PER_MINUTE: "60"
+      # Rate-limit budgets sized for a suite that must be re-runnable against
+      # a live stack: high enough that repeated full runs within the same
+      # hour never trip a limit (an hourly window outlives a test run), low
+      # enough that the dedicated rate-limit test still exhausts the hourly
+      # create_phone_api_key budget in a couple of seconds. That test
+      # authenticates as a brand-new Firebase UID on every attempt, so it
+      # only ever spends its own untouched budget; KEY_CREATES_PER_HOUR is
+      # mirrored by mcpKeyCreatesPerHour in mcp_integration_test.go.
+      READ_TOOLS_PER_MINUTE: "240"
       SEND_TOOLS_PER_MINUTE: "30"
-      KEY_CREATES_PER_HOUR: "3"
-      KEY_ROTATIONS_PER_HOUR: "10"
+      KEY_CREATES_PER_HOUR: "40"
+      KEY_ROTATIONS_PER_HOUR: "500"
     volumes:
       - ./mcp-test-signing-key.pem:/run/secrets/mcp-test-signing-key.pem:ro
     healthcheck:

@@ -87,8 +87,9 @@ No secret is committed: the key, certificate, and generated mapping are listed i
 - [x] **MCP delegation binding** — the API enforces the exact method, path, audience, issuer, expiry, and scope of every delegation token
 - [x] **MCP incoming vs. search** — `/v1/messages/incoming` serves a delegated token while the CAPTCHA-protected `/v1/messages/search` stays protected
 - [x] **MCP rotation confirmation** — an unconfirmed call never rotates, a legacy confirmation handle and an MRTR elicitation each rotate exactly once, the previous primary key stops working, and a redeemed handle can never be replayed
-- [x] **MCP rate limits** — an exhausted per-user/per-tool budget is rejected before the tool runs, with a structured retry hint
-- [x] **MCP secret handling** — minted API keys, access tokens, and refresh tokens never appear in the MCP server's logs
+- [x] **MCP rate limits** — an exhausted per-user/per-tool budget is rejected before the tool runs, with a structured retry hint, robustly across the UTC hour boundary the budget window is aligned to
+- [x] **MCP user-data isolation** — the MCP user sees its seeded phone and thread while a second, fully isolated user sees no phones, threads, thread messages, or incoming messages, even when naming the other user's phone number explicitly
+- [x] **MCP secret handling** — minted API keys, access tokens, and refresh tokens never appear in the MCP server's logs (and never in a test failure message either)
 
 ## Prerequisites
 
@@ -117,31 +118,39 @@ export FIREBASE_CREDENTIALS=$(jq -c . firebase-credentials.json)
 ### 3. Start the Stack
 
 ```bash
-docker compose up -d --build --wait
+docker compose up -d --build --wait mcp
 ```
 
-This starts CockroachDB, Redis, MongoDB, WireMock, the API, and the MCP server. The `--wait` flag blocks until all health checks pass.
+Naming `mcp` starts it and every service it depends on (CockroachDB, Redis, MongoDB, WireMock, and the API) and, because `--wait` only ever waits on the services named on the command line and their dependencies, it blocks until each of those health checks passes. Do not run a bare `docker compose up --wait`: that also targets the one-shot `cockroachdb-init` and `seed` containers, which have no health check and are *expected* to exit, so `--wait` treats them as failures.
 
-### 4. Wait for Seeding
+### 4. Seed the Database
 
 ```bash
+docker compose up -d seed
 docker compose wait seed
-sleep 2
 ```
 
-The seed container inserts test users and API keys into CockroachDB after the API has run its GORM migrations.
+The seed container inserts the test users, the immutable seeded MCP phone and message thread, and their API keys into CockroachDB after the API has run its GORM migrations. It is idempotent (`ON CONFLICT ... DO NOTHING`), so re-running it against an already-seeded database is harmless.
 
 ### 5. Run Tests
 
 ```bash
-go test -v -timeout 300s ./...
+go test -v -timeout 900s ./...
 ```
 
 Only the MCP suite:
 
 ```bash
-go test -v -timeout 300s -run 'TestMCP' ./...
+go test -v -timeout 900s -run 'TestMCP' ./...
 ```
+
+In a random order (every test is order independent):
+
+```bash
+go test -v -timeout 900s -shuffle=on ./...
+```
+
+The suite is re-runnable: running it again against the same containers, without tearing anything down, passes. Nothing it mutates is a prerequisite of anything it asserts — the rotation tests use a dedicated user and always derive the current key by rotating once first, and the rate-limit test authenticates as a brand-new Firebase UID so its hourly budget is always untouched. Every MCP test starts with a fast preflight that validates the immutable seeded prerequisites and prints the exact reset commands if (and only if) one of them is invalid.
 
 ### 6. Tear Down
 
@@ -149,7 +158,7 @@ go test -v -timeout 300s -run 'TestMCP' ./...
 docker compose down -v
 ```
 
-The `-v` flag removes volumes (database data) for a clean slate next run. **Always tear the stack down between runs**: the MCP rotation tests invalidate the seeded MCP primary API key, and the MCP rate-limit test consumes an hourly Redis budget, so both expect a freshly seeded database and an empty Redis.
+The `-v` flag removes volumes (database data). This is only needed when you are finished, or when the preflight tells you a seeded prerequisite is missing or stale — not between ordinary runs.
 
 ### One-Liner
 
@@ -157,11 +166,10 @@ The `-v` flag removes volumes (database data) for a clean slate next run. **Alwa
 cd tests && \
   bash generate-firebase-credentials.sh && \
   export FIREBASE_CREDENTIALS=$(jq -c . firebase-credentials.json) && \
-  docker compose up -d --build --wait && \
+  docker compose up -d --build --wait mcp && \
+  docker compose up -d seed && \
   docker compose wait seed && \
-  sleep 2 && \
-  go test -v -timeout 300s ./... ; \
-  docker compose down -v
+  go test -v -timeout 900s ./...
 ```
 
 ## Ports
@@ -178,27 +186,34 @@ cd tests && \
 
 ## CI/CD
 
-Integration tests run automatically via GitHub Actions (`.github/workflows/integration-test.yml`):
+Integration tests run automatically in the `test` job ("Integration Tests") of [`.github/workflows/api.yml`](../.github/workflows/api.yml):
 
 - **Trigger**: Push to `main` or pull request targeting `main`
-- **Flow**: Generates credentials (including the MCP signing key, certificate, and WireMock certificate mapping) → Builds the API and MCP images → Starts Docker stack → Seeds DB → Runs tests → Collects logs on failure → Tears down
-- **Gate**: Deployment should only proceed if integration tests pass
+- **Flow**: Generates credentials (including the MCP signing key, certificate, and WireMock certificate mapping) → Builds the API and MCP images → Starts the Docker stack → Waits for health → Seeds the DB → Runs the API handler tests and this suite → Collects logs on failure → Tears down
+- **Gate**: The `deploy` job in the same workflow only runs after the `test` job passes
 
 ## Test Data
 
-| Entity                | Value                        |
-| --------------------- | ---------------------------- |
-| User API Key          | `test-user-api-key`          |
-| User ID               | `test-user-id`               |
-| Rotation User API Key | `rotate-test-api-key`        |
-| Rotation User ID      | `rotate-test-user-id`        |
-| MCP User API Key      | `mcp-test-user-api-key`      |
-| MCP User ID           | `mcp-test-user-id`           |
-| MCP Rate-limit User   | `mcp-rate-limit-user-id`     |
-| MCP signing key ID    | `mcp-test-key`               |
-| Firebase project      | `httpsms-test`               |
+| Entity                     | Value                        |
+| -------------------------- | ---------------------------- |
+| User API Key               | `test-user-api-key`          |
+| User ID                    | `test-user-id`               |
+| Rotation User API Key      | `rotate-test-api-key`        |
+| Rotation User ID           | `rotate-test-user-id`        |
+| MCP User API Key           | `mcp-test-user-api-key`      |
+| MCP User ID                | `mcp-test-user-id`           |
+| MCP rotation user          | `mcp-rotation-user-id`       |
+| MCP isolated user          | `mcp-rate-limit-user-id`     |
+| MCP seeded phone           | `+18885550101`               |
+| MCP seeded thread contact  | `+18885550202`               |
+| MCP signing key ID         | `mcp-test-key`               |
+| Firebase project           | `httpsms-test`               |
 
-Phones, phone API keys, and message threads are created at runtime by the tests themselves.
+`mcp-test-user-api-key` is never rotated by any test. The MCP rotation tests only ever rotate `mcp-rotation-user-id`'s key, and they derive its current value by rotating once first rather than assuming the seeded value is still current. The MCP isolated user never owns any data, which is what the user-data isolation test asserts. The MCP rate-limit test authenticates as a brand-new, throwaway Firebase UID on every attempt.
+
+The seeded MCP phone and message thread are immutable: no test mutates or deletes them, and the suite's preflight validates both before any MCP test runs.
+
+Other phones, phone API keys, and message threads are created at runtime by the tests themselves.
 
 See [`seed.sql`](./seed.sql) for the complete seed data.
 
@@ -264,7 +279,11 @@ The API could not verify the delegation token. Check that `MCP_AUTH_ISSUER`, `MC
 
 ### MCP rotation or rate-limit tests fail on a re-run
 
-Both mutate state that outlives a test run (the seeded primary API key, and an hourly Redis counter). Tear the stack down with `docker compose down -v` before running again.
+They should not: the rotation tests use a dedicated user and derive its current key by rotating once first, and the rate-limit test authenticates as a brand-new Firebase UID on every attempt. If a rotation test still fails, check the MCP preflight message — it names the exact seeded prerequisite that is missing and the commands to restore it.
+
+### A test fails with "MCP integration preflight failed"
+
+A prerequisite the suite cannot run without is missing. The message names it and prints the exact recovery commands: either re-run `bash generate-firebase-credentials.sh`, start the stack, or (only when an *immutable* seeded row is missing or stale) reset with `docker compose down -v` and re-seed.
 
 ### Tests timeout waiting for `delivered` status
 
@@ -289,6 +308,8 @@ If you see "relation does not exist" errors, the API hasn't finished GORM migrat
 1. Add test functions to `integration_test.go` (or create new `*_test.go` files); MCP cases belong in `mcp_integration_test.go`
 2. Use `requestJSON()`/`requestJSONAs()` for authenticated HTTP calls
 3. Use `pollMessageStatus()`/`pollMessageStatusAs()` to wait for async state changes
-4. For MCP cases, use `completeOAuthCodeFlow()` and `newMCPClient()`; never rotate `test-user-api-key`
-5. Update the test coverage checklist in this README
+4. For MCP cases, start with `requireMCPStack(t)`, then use `completeOAuthCodeFlow()` and `newMCPClient()`; never rotate `test-user-api-key` or `mcp-test-user-api-key`, and never mutate the seeded MCP phone or thread
+5. Keep every test independent of order, of other tests, and of how many times the suite has already run: derive mutated state inside the test rather than assuming a seeded value is still current
+6. Never let a secret reach the test log: quote response bodies through `redactSecrets()` and assert log redaction with `assertSecretNotLogged()`
+7. Update the test coverage checklist in this README
 

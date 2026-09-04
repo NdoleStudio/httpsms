@@ -22,6 +22,8 @@ import (
 // TestMCPReadiness asserts the MCP service's liveness/readiness endpoints,
 // which are what Docker Compose and Cloud Run both gate traffic on.
 func TestMCPReadiness(t *testing.T) {
+	requireMCPStack(t)
+
 	for _, path := range []string{"/health", "/healthz"} {
 		response, body := doMCPRequest(t, http.MethodGet, mcpBaseURL+path, "", nil)
 		require.Equal(t, http.StatusOK, response.StatusCode, "%s: %s", path, body)
@@ -37,6 +39,8 @@ func TestMCPReadiness(t *testing.T) {
 // server document, and the JWKS document the httpSMS API verifies delegation
 // tokens against.
 func TestMCPMetadataDiscovery(t *testing.T) {
+	requireMCPStack(t)
+
 	t.Run("protected resource metadata", func(t *testing.T) {
 		for _, path := range []string{"/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"} {
 			var document struct {
@@ -131,6 +135,8 @@ func TestMCPMetadataDiscovery(t *testing.T) {
 // unauthenticated or invalidly authenticated request with a 401 carrying the
 // RFC 9728 resource metadata pointer a client needs to start authorization.
 func TestMCPUnauthenticatedChallenge(t *testing.T) {
+	requireMCPStack(t)
+
 	tests := map[string]string{
 		"no token":      "",
 		"garbage token": "not-a-jwt",
@@ -156,6 +162,8 @@ func TestMCPUnauthenticatedChallenge(t *testing.T) {
 // and the CIMD (Client ID Metadata Document) client resolution path the
 // authorization server advertises.
 func TestMCPOAuthClientRegistration(t *testing.T) {
+	requireMCPStack(t)
+
 	t.Run("registers a public client", func(t *testing.T) {
 		clientID, redirectURI := registerMCPOAuthClient(t)
 		assert.NotEmpty(t, clientID)
@@ -229,11 +237,13 @@ func TestMCPOAuthClientRegistration(t *testing.T) {
 // code flow, through real Firebase ID token verification against the
 // WireMock-served certificate, and the access token it yields.
 func TestMCPOAuthAuthorizationCodeFlow(t *testing.T) {
+	requireMCPStack(t)
+
 	params := requestAuthorizationCode(t, mcpTestUserID, mcpTestUserEmail, mcpAllScopes)
 	assert.Equal(t, mcpBaseURL, params.Issuer, "RFC 9207 iss must be echoed on the authorization response")
 
 	response, body := redeemAuthorizationCode(t, params)
-	require.Equal(t, http.StatusOK, response.StatusCode, body)
+	require.Equal(t, http.StatusOK, response.StatusCode, redactSecrets(body))
 	assert.Equal(t, "no-store", response.Header.Get("Cache-Control"))
 
 	var tokens tokenResponse
@@ -251,7 +261,7 @@ func TestMCPOAuthAuthorizationCodeFlow(t *testing.T) {
 
 	t.Run("an authorization code cannot be replayed", func(t *testing.T) {
 		replayResponse, replayBody := redeemAuthorizationCode(t, params)
-		require.Equal(t, http.StatusBadRequest, replayResponse.StatusCode, replayBody)
+		require.Equal(t, http.StatusBadRequest, replayResponse.StatusCode, redactSecrets(replayBody))
 
 		var failure oauthErrorResponse
 		require.NoError(t, json.Unmarshal([]byte(replayBody), &failure))
@@ -265,6 +275,8 @@ func TestMCPOAuthAuthorizationCodeFlow(t *testing.T) {
 // key), and a token request whose client, redirect URI, or PKCE verifier does
 // not match the code.
 func TestMCPOAuthAuthorizationErrors(t *testing.T) {
+	requireMCPStack(t)
+
 	clientID, redirectURI := registerMCPOAuthClient(t)
 	_, challenge := pkcePair(t)
 
@@ -385,7 +397,7 @@ func TestMCPOAuthAuthorizationErrors(t *testing.T) {
 				params := requestAuthorizationCode(t, mcpTestUserID, mcpTestUserEmail, []string{"phones:read"})
 
 				response, body := redeemAuthorizationCode(t, params, override)
-				require.Equal(t, http.StatusBadRequest, response.StatusCode, body)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode, redactSecrets(body))
 
 				var failure oauthErrorResponse
 				require.NoError(t, json.Unmarshal([]byte(body), &failure))
@@ -394,7 +406,7 @@ func TestMCPOAuthAuthorizationErrors(t *testing.T) {
 				// The code was consumed before the mismatch was detected, so
 				// a corrected retry must fail too.
 				retryResponse, retryBody := redeemAuthorizationCode(t, params)
-				assert.Equal(t, http.StatusBadRequest, retryResponse.StatusCode, retryBody)
+				assert.Equal(t, http.StatusBadRequest, retryResponse.StatusCode, redactSecrets(retryBody))
 			})
 		}
 	})
@@ -414,21 +426,23 @@ func TestMCPOAuthAuthorizationErrors(t *testing.T) {
 // TestMCPOAuthRefreshRotation covers refresh-token rotation, replay of a
 // consumed refresh token, scope narrowing, and scope escalation.
 func TestMCPOAuthRefreshRotation(t *testing.T) {
+	requireMCPStack(t)
+
 	params := requestAuthorizationCode(t, mcpTestUserID, mcpTestUserEmail, []string{"phones:read", "messages:read"})
 
 	response, body := redeemAuthorizationCode(t, params)
-	require.Equal(t, http.StatusOK, response.StatusCode, body)
+	require.Equal(t, http.StatusOK, response.StatusCode, redactSecrets(body))
 
 	var issued tokenResponse
 	require.NoError(t, json.Unmarshal([]byte(body), &issued))
 
 	t.Run("rotates the refresh token", func(t *testing.T) {
 		refreshResponse, refreshBody := refreshTokens(t, issued.RefreshToken, params.ClientID)
-		require.Equal(t, http.StatusOK, refreshResponse.StatusCode, refreshBody)
+		require.Equal(t, http.StatusOK, refreshResponse.StatusCode, redactSecrets(refreshBody))
 
 		var rotated tokenResponse
 		require.NoError(t, json.Unmarshal([]byte(refreshBody), &rotated))
-		assert.NotEqual(t, issued.RefreshToken, rotated.RefreshToken, "the refresh token must rotate")
+		assert.False(t, rotated.RefreshToken == issued.RefreshToken, "the refresh token must rotate")
 		assert.NotEmpty(t, rotated.AccessToken)
 		assert.ElementsMatch(t, []string{"phones:read", "messages:read"}, strings.Fields(rotated.Scope))
 
@@ -439,7 +453,7 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 
 		t.Run("a replayed refresh token is refused", func(t *testing.T) {
 			replayResponse, replayBody := refreshTokens(t, issued.RefreshToken, params.ClientID)
-			require.Equal(t, http.StatusBadRequest, replayResponse.StatusCode, replayBody)
+			require.Equal(t, http.StatusBadRequest, replayResponse.StatusCode, redactSecrets(replayBody))
 
 			var failure oauthErrorResponse
 			require.NoError(t, json.Unmarshal([]byte(replayBody), &failure))
@@ -450,7 +464,7 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 			narrowedResponse, narrowedBody := refreshTokens(t, rotated.RefreshToken, params.ClientID, func(form url.Values) {
 				form.Set("scope", "phones:read")
 			})
-			require.Equal(t, http.StatusOK, narrowedResponse.StatusCode, narrowedBody)
+			require.Equal(t, http.StatusOK, narrowedResponse.StatusCode, redactSecrets(narrowedBody))
 
 			var narrowed tokenResponse
 			require.NoError(t, json.Unmarshal([]byte(narrowedBody), &narrowed))
@@ -459,7 +473,7 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 			widenedResponse, widenedBody := refreshTokens(t, narrowed.RefreshToken, params.ClientID, func(form url.Values) {
 				form.Set("scope", "phones:read messages:send")
 			})
-			require.Equal(t, http.StatusBadRequest, widenedResponse.StatusCode, widenedBody)
+			require.Equal(t, http.StatusBadRequest, widenedResponse.StatusCode, redactSecrets(widenedBody))
 
 			var failure oauthErrorResponse
 			require.NoError(t, json.Unmarshal([]byte(widenedBody), &failure))
@@ -470,13 +484,13 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 	t.Run("a refresh token is bound to its client", func(t *testing.T) {
 		otherParams := requestAuthorizationCode(t, mcpTestUserID, mcpTestUserEmail, []string{"phones:read"})
 		otherResponse, otherBody := redeemAuthorizationCode(t, otherParams)
-		require.Equal(t, http.StatusOK, otherResponse.StatusCode, otherBody)
+		require.Equal(t, http.StatusOK, otherResponse.StatusCode, redactSecrets(otherBody))
 
 		var otherTokens tokenResponse
 		require.NoError(t, json.Unmarshal([]byte(otherBody), &otherTokens))
 
 		mismatchResponse, mismatchBody := refreshTokens(t, otherTokens.RefreshToken, params.ClientID)
-		require.Equal(t, http.StatusBadRequest, mismatchResponse.StatusCode, mismatchBody)
+		require.Equal(t, http.StatusBadRequest, mismatchResponse.StatusCode, redactSecrets(mismatchBody))
 
 		var failure oauthErrorResponse
 		require.NoError(t, json.Unmarshal([]byte(mismatchBody), &failure))
@@ -488,6 +502,8 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 // current (2026-07-28) and previous (2025-11-25) protocol versions, and that
 // the tool catalog is exactly the seven approved tools on both.
 func TestMCPProtocolNegotiation(t *testing.T) {
+	requireMCPStack(t)
+
 	tokens := completeOAuthCodeFlow(t, mcpAllScopes)
 
 	t.Run("2026-07-28 discovery and tool listing", func(t *testing.T) {
@@ -548,7 +564,7 @@ func TestMCPProtocolNegotiation(t *testing.T) {
 
 		callResponse, call := callLegacyMCP(t, tokens.AccessToken, mcpProtocolPrevious, "tools/call", map[string]any{
 			"name":      "list_phones",
-			"arguments": map[string]any{"limit": 5},
+			"arguments": map[string]any{"query": mcpSeededPhoneQuery, "limit": 5},
 		})
 		require.Equal(t, http.StatusOK, callResponse.StatusCode)
 		require.Nil(t, call.Error, "legacy tools/call failed: %+v", call.Error)
@@ -556,11 +572,17 @@ func TestMCPProtocolNegotiation(t *testing.T) {
 		var called struct {
 			IsError           bool `json:"isError"`
 			StructuredContent struct {
-				Count int `json:"count"`
+				Count  int `json:"count"`
+				Phones []struct {
+					PhoneNumber string `json:"phone_number"`
+				} `json:"phones"`
 			} `json:"structuredContent"`
 		}
 		require.NoError(t, json.Unmarshal(call.Result, &called))
 		assert.False(t, called.IsError, "legacy tool call returned a tool error: %s", string(call.Result))
+		require.Equal(t, len(called.StructuredContent.Phones), called.StructuredContent.Count)
+		require.Len(t, called.StructuredContent.Phones, 1, "the seeded phone query must match exactly one phone")
+		assert.Equal(t, mcpSeededPhoneNumber, called.StructuredContent.Phones[0].PhoneNumber)
 	})
 }
 
@@ -568,11 +590,13 @@ func TestMCPProtocolNegotiation(t *testing.T) {
 // incoming-message path against the real MCP service, the real httpSMS API,
 // and the existing FCM emulator.
 func TestMCPToolsThroughRealStack(t *testing.T) {
+	requireMCPStack(t)
+
 	ctx := context.Background()
 	tokens := completeOAuthCodeFlow(t, mcpAllScopes)
 	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
 
-	phone := setupPhoneForUser(ctx, t, mcpUserAPIKey(), 60)
+	phone := setupPhoneForUser(ctx, t, mcpTestUserAPIKey, 60)
 	contact := randomPhoneNumber()
 
 	t.Run("list_phones returns the registered phone", func(t *testing.T) {
@@ -614,7 +638,7 @@ func TestMCPToolsThroughRealStack(t *testing.T) {
 		waitForFCMPush(t, output.Message.ID, 30*time.Second)
 		fireEvent(ctx, t, phone.PhoneAPIKey, output.Message.ID, "SENT")
 		fireEvent(ctx, t, phone.PhoneAPIKey, output.Message.ID, "DELIVERED")
-		pollMessageStatusAs(ctx, t, mcpUserAPIKey(), output.Message.ID, "delivered", 30*time.Second)
+		pollMessageStatusAs(ctx, t, mcpTestUserAPIKey, output.Message.ID, "delivered", 30*time.Second)
 	})
 
 	t.Run("list_message_threads returns the conversation", func(t *testing.T) {
@@ -707,18 +731,151 @@ func TestMCPToolsThroughRealStack(t *testing.T) {
 	})
 }
 
+// TestMCPUserDataIsolation asserts every MCP read tool is scoped to the
+// authenticated user's own data: the MCP test user sees its seeded phone and
+// message thread, while a second, fully isolated user -- authenticated through
+// its own complete OAuth flow against the same MCP service -- sees none of it,
+// even when it names the other user's phone number explicitly.
+//
+// The data it reads is seeded and immutable (see seed.sql), so the assertion
+// holds on a fresh stack, on a repeated run, when this test runs alone, and in
+// any shuffled order.
+func TestMCPUserDataIsolation(t *testing.T) {
+	requireMCPStack(t)
+
+	readScopes := []string{"phones:read", "messages:read"}
+
+	ownerTokens := completeOAuthCodeFlow(t, readScopes)
+	ownerSession := newMCPClient(t, ownerTokens.AccessToken, mcpProtocolLatest)
+
+	isolatedTokens := completeOAuthCodeFlowAs(t, mcpIsolatedUserID, mcpIsolatedUserEmail, readScopes)
+	isolatedSession := newMCPClient(t, isolatedTokens.AccessToken, mcpProtocolLatest)
+
+	t.Run("the MCP user sees its seeded phone", func(t *testing.T) {
+		var output struct {
+			Phones []struct {
+				PhoneNumber string `json:"phone_number"`
+			} `json:"phones"`
+			Count int `json:"count"`
+		}
+		decodeToolOutput(t, callMCPTool(t, ownerSession, "list_phones", map[string]any{"query": mcpSeededPhoneQuery, "limit": 20}), &output)
+
+		require.Equal(t, len(output.Phones), output.Count)
+		numbers := make([]string, 0, len(output.Phones))
+		for _, phone := range output.Phones {
+			numbers = append(numbers, phone.PhoneNumber)
+		}
+		assert.Contains(t, numbers, mcpSeededPhoneNumber)
+	})
+
+	t.Run("the MCP user sees its seeded message thread", func(t *testing.T) {
+		var output struct {
+			Threads []struct {
+				Owner   string `json:"owner"`
+				Contact string `json:"contact"`
+			} `json:"threads"`
+			Count int `json:"count"`
+		}
+		decodeToolOutput(t, callMCPTool(t, ownerSession, "list_message_threads", map[string]any{
+			"owner": mcpSeededPhoneNumber,
+			"limit": 20,
+		}), &output)
+
+		require.Equal(t, len(output.Threads), output.Count)
+		contacts := make([]string, 0, len(output.Threads))
+		for _, thread := range output.Threads {
+			assert.Equal(t, mcpSeededPhoneNumber, thread.Owner)
+			contacts = append(contacts, thread.Contact)
+		}
+		assert.Contains(t, contacts, mcpSeededThreadContact)
+	})
+
+	t.Run("the isolated user sees no phones at all", func(t *testing.T) {
+		var output struct {
+			Phones []struct {
+				PhoneNumber string `json:"phone_number"`
+			} `json:"phones"`
+			Count int `json:"count"`
+		}
+		decodeToolOutput(t, callMCPTool(t, isolatedSession, "list_phones", map[string]any{"limit": 20}), &output)
+
+		assert.Empty(t, output.Phones, "the isolated user must never see another user's phones")
+		assert.Zero(t, output.Count)
+	})
+
+	t.Run("the isolated user sees no threads on another user's phone", func(t *testing.T) {
+		var output struct {
+			Threads []struct {
+				Contact string `json:"contact"`
+			} `json:"threads"`
+			Count int `json:"count"`
+		}
+		decodeToolOutput(t, callMCPTool(t, isolatedSession, "list_message_threads", map[string]any{
+			"owner": mcpSeededPhoneNumber,
+			"limit": 20,
+		}), &output)
+
+		assert.Empty(t, output.Threads, "naming another user's phone number must never disclose their threads")
+		assert.Zero(t, output.Count)
+	})
+
+	t.Run("the isolated user sees no messages in another user's thread", func(t *testing.T) {
+		var output struct {
+			Messages []struct {
+				Content string `json:"content"`
+			} `json:"messages"`
+			Count int `json:"count"`
+		}
+		decodeToolOutput(t, callMCPTool(t, isolatedSession, "list_thread_messages", map[string]any{
+			"owner":   mcpSeededPhoneNumber,
+			"contact": mcpSeededThreadContact,
+			"limit":   20,
+		}), &output)
+
+		assert.Empty(t, output.Messages, "naming another user's thread must never disclose its messages")
+		assert.Zero(t, output.Count)
+	})
+
+	t.Run("the isolated user sees no incoming messages", func(t *testing.T) {
+		var output struct {
+			Messages []struct {
+				Content string `json:"content"`
+			} `json:"messages"`
+			Count int `json:"count"`
+		}
+		decodeToolOutput(t, callMCPTool(t, isolatedSession, "list_incoming_messages", map[string]any{
+			"owners": []string{mcpSeededPhoneNumber},
+			"limit":  20,
+		}), &output)
+
+		assert.Empty(t, output.Messages, "the isolated user must never see another user's incoming messages")
+		assert.Zero(t, output.Count)
+	})
+}
+
 // TestMCPToolScopes asserts a token is only good for the tools its granted
 // scopes cover.
 func TestMCPToolScopes(t *testing.T) {
+	requireMCPStack(t)
+
 	tokens := completeOAuthCodeFlow(t, []string{"phones:read"})
 	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
 
 	t.Run("a granted scope works", func(t *testing.T) {
 		var output struct {
+			Phones []struct {
+				PhoneNumber string `json:"phone_number"`
+			} `json:"phones"`
 			Count int `json:"count"`
 		}
-		decodeToolOutput(t, callMCPTool(t, session, "list_phones", map[string]any{"limit": 5}), &output)
-		assert.GreaterOrEqual(t, output.Count, 0)
+		decodeToolOutput(t, callMCPTool(t, session, "list_phones", map[string]any{"query": mcpSeededPhoneQuery, "limit": 5}), &output)
+
+		require.Equal(t, len(output.Phones), output.Count)
+		numbers := make([]string, 0, len(output.Phones))
+		for _, phone := range output.Phones {
+			numbers = append(numbers, phone.PhoneNumber)
+		}
+		assert.Contains(t, numbers, mcpSeededPhoneNumber, "a granted phones:read scope must return the caller's own seeded phone")
 	})
 
 	refusals := map[string]struct {
@@ -751,6 +908,8 @@ func TestMCPToolScopes(t *testing.T) {
 // uses, which is the only way to present the API with a token that is valid
 // but wrongly bound.
 func TestMCPDelegationTokenBinding(t *testing.T) {
+	requireMCPStack(t)
+
 	t.Run("a correctly bound token is accepted", func(t *testing.T) {
 		token := signAPIDelegationToken(t, mcpTestUserID, []string{"phones:read"}, http.MethodGet, "/v1/phones")
 
@@ -802,16 +961,18 @@ func TestMCPDelegationTokenBinding(t *testing.T) {
 // list_incoming_messages: the incoming route is reachable with a delegated MCP
 // token, while the CAPTCHA-protected search route stays protected.
 func TestMCPIncomingIsNotCaptchaProtected(t *testing.T) {
+	requireMCPStack(t)
+
 	t.Run("the incoming route serves a delegated MCP token", func(t *testing.T) {
 		token := signAPIDelegationToken(t, mcpTestUserID, []string{"messages:read"}, http.MethodGet, "/v1/messages/incoming")
 
 		status, body := apiRequestWithBearer(t, http.MethodGet, "/v1/messages/incoming?skip=0&limit=10", token)
-		require.Equal(t, http.StatusOK, status, body)
+		require.Equal(t, http.StatusOK, status, redactSecrets(body))
 	})
 
 	t.Run("the search route still requires a CAPTCHA token", func(t *testing.T) {
-		status, body := apiRequestWithAPIKey(t, http.MethodGet, "/v1/messages/search?skip=0&limit=10", mcpUserAPIKey())
-		require.Equal(t, http.StatusUnprocessableEntity, status, body)
+		status, body := apiRequestWithAPIKey(t, http.MethodGet, "/v1/messages/search?skip=0&limit=10", mcpTestUserAPIKey)
+		require.Equal(t, http.StatusUnprocessableEntity, status, redactSecrets(body))
 		assert.Contains(t, body, "token")
 	})
 }
@@ -820,6 +981,8 @@ func TestMCPIncomingIsNotCaptchaProtected(t *testing.T) {
 // immediately usable phone API key and returns it exactly once, marked
 // sensitive.
 func TestMCPCreatePhoneAPIKey(t *testing.T) {
+	requireMCPStack(t)
+
 	ctx := context.Background()
 	tokens := completeOAuthCodeFlow(t, []string{"phone-api-keys:write", "phones:read"})
 	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
@@ -841,7 +1004,7 @@ func TestMCPCreatePhoneAPIKey(t *testing.T) {
 	// The minted key must actually authenticate a phone against the API.
 	phoneNumber := randomPhoneNumber()
 	fcmToken := "fcm-" + uuid.NewString()
-	requestJSONAs(ctx, t, http.MethodPut, "/v1/phones", mcpUserAPIKey(), map[string]any{
+	requestJSONAs(ctx, t, http.MethodPut, "/v1/phones", mcpTestUserAPIKey, map[string]any{
 		"phone_number":               phoneNumber,
 		"fcm_token":                  fcmToken,
 		"messages_per_minute":        60,
@@ -865,38 +1028,57 @@ func TestMCPCreatePhoneAPIKey(t *testing.T) {
 		if !ok {
 			t.Skip("the Docker CLI is unavailable")
 		}
-		assert.NotContains(t, logs, output.APIKey, "a minted phone API key must never be logged")
-		assert.NotContains(t, logs, tokens.AccessToken, "an access token must never be logged")
-		assert.NotContains(t, logs, tokens.RefreshToken, "a refresh token must never be logged")
+		assertSecretNotLogged(t, logs, output.APIKey, "a minted phone API key")
+		assertSecretNotLogged(t, logs, tokens.AccessToken, "an access token")
+		assertSecretNotLogged(t, logs, tokens.RefreshToken, "a refresh token")
 	})
 }
 
+// mcpKeyCreatesPerHour mirrors KEY_CREATES_PER_HOUR in tests/docker-compose.yml.
+// It is the exact per-user hourly budget for create_phone_api_key, so the call
+// after it must be refused. The budget is deliberately generous: the hourly
+// window it is counted in outlives a test run, so a budget small enough to
+// exhaust quickly would also be small enough for TestMCPCreatePhoneAPIKey's one
+// call per run to exhaust after a handful of repeated runs. This test spends
+// its own brand-new user's budget instead, so a large number costs it only a
+// couple of seconds.
+const mcpKeyCreatesPerHour = 40
+
 // TestMCPRateLimit asserts the per-user, per-tool budget is enforced before a
-// tool executes, and that the rejection carries a retry hint. It runs as a
-// dedicated user so it can never starve the tools the other tests call.
+// tool executes, and that the rejection carries a retry hint.
+//
+// Every attempt authenticates as a brand-new Firebase UID, so the budget it
+// exhausts is always its own untouched one: the test can never starve another
+// test's tools, and it survives repeated runs against the same live stack
+// without an hour-long wait or a Redis reset. Because the budget is counted in
+// fixed UTC hour windows, the test also refuses to start with less than half a
+// minute left in the current window and retries in a fresh one if the hour
+// still rolls over mid-sequence -- the assertion itself is never relaxed.
 func TestMCPRateLimit(t *testing.T) {
-	tokens := completeOAuthCodeFlowAs(t, mcpRateLimitUserID, mcpRateLimitUserEmail, []string{"phone-api-keys:write"})
-	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
+	requireMCPStack(t)
 
-	// KEY_CREATES_PER_HOUR is 3 in tests/docker-compose.yml, so the fourth
-	// call within the hour must be rejected before it reaches the API.
-	var rateLimitErr error
-	for attempt := 1; attempt <= 4; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-		_, err := session.CallTool(ctx, &mcp.CallToolParams{
-			Name:      "create_phone_api_key",
-			Arguments: map[string]any{"name": fmt.Sprintf("rate-limit-%d-%s", attempt, uuid.NewString())},
-		})
-		cancel()
+	var (
+		rateLimitErr error
+		calls        int
+		completed    bool
+	)
 
-		if err != nil {
-			rateLimitErr = err
-			assert.Equal(t, 4, attempt, "the budget of 3 creates per hour must not be exhausted early")
-			break
+	for round := 1; round <= 3 && !completed; round++ {
+		waitForRateLimitWindowHeadroom(t)
+
+		windowStart := currentRateLimitWindow()
+		rateLimitErr, calls = exhaustKeyCreateBudget(t)
+
+		if !currentRateLimitWindow().Equal(windowStart) {
+			t.Logf("the UTC hour rolled over during round %d; retrying the whole sequence in a fresh window", round)
+			continue
 		}
+		completed = true
 	}
 
-	require.Error(t, rateLimitErr, "the fourth create_phone_api_key call must be rate limited")
+	require.True(t, completed, "the UTC hour rolled over on every attempt")
+	require.Error(t, rateLimitErr, "call %d must be rate limited once the hourly budget of %d is spent", mcpKeyCreatesPerHour+1, mcpKeyCreatesPerHour)
+	assert.Equal(t, mcpKeyCreatesPerHour+1, calls, "the budget of %d creates per hour must not be exhausted early", mcpKeyCreatesPerHour)
 	assert.Contains(t, rateLimitErr.Error(), "rate limit exceeded")
 
 	var wireError *jsonrpc.Error
@@ -912,15 +1094,50 @@ func TestMCPRateLimit(t *testing.T) {
 	assert.Positive(t, data.RetryAfterSeconds)
 }
 
+// exhaustKeyCreateBudget calls create_phone_api_key as a brand-new user until
+// a call is refused, or until the budget plus one call have all succeeded. It
+// returns the refusal (nil when nothing was refused) and how many calls were
+// made, so the caller can assert the refusal happened on exactly the call
+// after the budget.
+func exhaustKeyCreateBudget(t *testing.T) (error, int) {
+	t.Helper()
+
+	userID := newRateLimitUserID()
+	tokens := completeOAuthCodeFlowAs(t, userID, userID+"@httpsms.com", []string{"phone-api-keys:write"})
+	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
+
+	for attempt := 1; attempt <= mcpKeyCreatesPerHour+1; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		_, err := session.CallTool(ctx, &mcp.CallToolParams{
+			Name:      "create_phone_api_key",
+			Arguments: map[string]any{"name": fmt.Sprintf("rate-limit-%d-%s", attempt, uuid.NewString())},
+		})
+		cancel()
+
+		if err != nil {
+			return err, attempt
+		}
+	}
+
+	return nil, mcpKeyCreatesPerHour + 1
+}
+
 // TestMCPRotateUserAPIKey asserts the destructive rotation path end to end:
 // an unconfirmed call never rotates, a legacy confirmation handle completes
 // the rotation exactly once, the previous primary key stops working, the
 // replacement key works, and a redeemed handle can never be replayed.
 //
-// It runs last, and only ever against mcp-test-user-api-key, because it is the
-// only test that invalidates a seeded API key.
+// It authenticates as the dedicated rotation user, which is the only user
+// whose primary API key any test ever rotates, and it never assumes the
+// seeded key is still current: it establishes a key it knows the value of by
+// rotating once first. That is what makes it independent of test order and of
+// how many times the suite has already run against this stack.
 func TestMCPRotateUserAPIKeyLegacyConfirmation(t *testing.T) {
-	tokens := completeOAuthCodeFlow(t, []string{"user-api-key:rotate"})
+	requireMCPStack(t)
+
+	tokens := completeOAuthCodeFlowAs(t, mcpRotationUserID, mcpRotationUserEmail, []string{"user-api-key:rotate"})
+
+	previousAPIKey := establishRotationUserAPIKey(t, tokens)
 
 	// MRTR is disabled so the confirmation prompt is returned to the test
 	// verbatim, which is exactly what a legacy client that cannot complete an
@@ -929,16 +1146,13 @@ func TestMCPRotateUserAPIKeyLegacyConfirmation(t *testing.T) {
 		options.MultiRoundTrip = &mcp.MultiRoundTripOptions{Disabled: true}
 	})
 
-	previousAPIKey := mcpUserAPIKey()
-
 	prompt := callMCPTool(t, session, "rotate_user_api_key", map[string]any{})
 	require.False(t, prompt.IsError, "the first call must ask for confirmation, not fail: %s", toolResultText(prompt))
 	require.NotEmpty(t, prompt.RequestState, "the first call must return a confirmation handle")
 	require.Contains(t, prompt.InputRequests, "confirm_rotation")
 	assert.Nil(t, prompt.StructuredContent, "an unconfirmed call must never rotate anything")
 
-	status, body := apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", previousAPIKey)
-	require.Equal(t, http.StatusOK, status, "the primary API key must survive an unconfirmed call: %s", body)
+	assertAPIKeyAccepted(t, previousAPIKey, "the primary API key must survive an unconfirmed call")
 
 	handle := prompt.RequestState
 
@@ -953,28 +1167,22 @@ func TestMCPRotateUserAPIKeyLegacyConfirmation(t *testing.T) {
 	confirmed := callMCPTool(t, session, "rotate_user_api_key", map[string]any{"confirmation_handle": handle})
 	decodeToolOutput(t, confirmed, &rotated)
 
-	require.Equal(t, mcpTestUserID, rotated.User.ID)
+	require.Equal(t, mcpRotationUserID, rotated.User.ID)
 	require.NotEmpty(t, rotated.User.APIKey)
 	assert.True(t, strings.HasPrefix(rotated.User.APIKey, "uk_"), "a rotated primary key must carry the uk_ prefix")
-	assert.NotEqual(t, previousAPIKey, rotated.User.APIKey)
+	assert.False(t, rotated.User.APIKey == previousAPIKey, "the rotated primary key must differ from the previous one")
 	assert.True(t, rotated.Sensitive)
 	assert.Contains(t, rotated.Warning, "invalidated")
 
-	mcpUserAPIKeyValue = rotated.User.APIKey
-
-	status, body = apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", previousAPIKey)
-	assert.Equal(t, http.StatusUnauthorized, status, "the previous primary API key must stop working: %s", body)
-
-	status, body = apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", rotated.User.APIKey)
-	require.Equal(t, http.StatusOK, status, "the replacement primary API key must work: %s", body)
+	assertAPIKeyRejected(t, previousAPIKey, "the previous primary API key must stop working")
+	assertAPIKeyAccepted(t, rotated.User.APIKey, "the replacement primary API key must work")
 
 	t.Run("a redeemed confirmation handle cannot be replayed", func(t *testing.T) {
 		replay := callMCPTool(t, session, "rotate_user_api_key", map[string]any{"confirmation_handle": handle})
 		require.True(t, replay.IsError, "a redeemed confirmation handle must be refused")
 		assert.Contains(t, toolResultText(replay), "confirmation")
 
-		status, body := apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", mcpUserAPIKey())
-		require.Equal(t, http.StatusOK, status, "a refused replay must never rotate anything: %s", body)
+		assertAPIKeyAccepted(t, rotated.User.APIKey, "a refused replay must never rotate anything")
 	})
 
 	t.Run("an unknown confirmation handle is refused", func(t *testing.T) {
@@ -989,10 +1197,13 @@ func TestMCPRotateUserAPIKeyLegacyConfirmation(t *testing.T) {
 // rotation completes in a single CallTool, while a declined elicitation never
 // rotates anything.
 func TestMCPRotateUserAPIKeyMRTRConfirmation(t *testing.T) {
-	tokens := completeOAuthCodeFlow(t, []string{"user-api-key:rotate"})
+	requireMCPStack(t)
+
+	tokens := completeOAuthCodeFlowAs(t, mcpRotationUserID, mcpRotationUserEmail, []string{"user-api-key:rotate"})
+
+	previousAPIKey := establishRotationUserAPIKey(t, tokens)
 
 	t.Run("a declined elicitation never rotates", func(t *testing.T) {
-		before := mcpUserAPIKey()
 		session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest, func(options *mcp.ClientOptions) {
 			options.ElicitationHandler = func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
 				return &mcp.ElicitResult{Action: "decline"}, nil
@@ -1003,12 +1214,10 @@ func TestMCPRotateUserAPIKeyMRTRConfirmation(t *testing.T) {
 		require.True(t, result.IsError, "a declined confirmation must refuse the rotation")
 		assert.Contains(t, strings.ToLower(toolResultText(result)), "confirm")
 
-		status, body := apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", before)
-		require.Equal(t, http.StatusOK, status, "a declined confirmation must leave the primary API key intact: %s", body)
+		assertAPIKeyAccepted(t, previousAPIKey, "a declined confirmation must leave the primary API key intact")
 	})
 
 	t.Run("an accepted elicitation rotates exactly once", func(t *testing.T) {
-		before := mcpUserAPIKey()
 		session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest, func(options *mcp.ClientOptions) {
 			options.ElicitationHandler = func(_ context.Context, request *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
 				assert.Contains(t, request.Params.Message, "invalidates")
@@ -1025,27 +1234,57 @@ func TestMCPRotateUserAPIKeyMRTRConfirmation(t *testing.T) {
 		}
 		decodeToolOutput(t, callMCPTool(t, session, "rotate_user_api_key", map[string]any{}), &rotated)
 
-		require.Equal(t, mcpTestUserID, rotated.User.ID)
+		require.Equal(t, mcpRotationUserID, rotated.User.ID)
 		require.True(t, strings.HasPrefix(rotated.User.APIKey, "uk_"))
-		assert.NotEqual(t, before, rotated.User.APIKey)
+		assert.False(t, rotated.User.APIKey == previousAPIKey, "the rotated primary key must differ from the previous one")
 		assert.True(t, rotated.Sensitive)
 
-		mcpUserAPIKeyValue = rotated.User.APIKey
+		assertAPIKeyRejected(t, previousAPIKey, "the previous primary API key must stop working")
+		assertAPIKeyAccepted(t, rotated.User.APIKey, "the replacement primary API key must work")
 
-		status, _ := apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", before)
-		assert.Equal(t, http.StatusUnauthorized, status, "the previous primary API key must stop working")
-
-		status, body := apiRequestWithAPIKey(t, http.MethodGet, "/v1/users/me", rotated.User.APIKey)
-		require.Equal(t, http.StatusOK, status, "the replacement primary API key must work: %s", body)
+		t.Run("the rotated secret never reaches the service logs", func(t *testing.T) {
+			logs, ok := mcpContainerLogs(t)
+			if !ok {
+				t.Skip("the Docker CLI is unavailable")
+			}
+			assertSecretNotLogged(t, logs, rotated.User.APIKey, "a rotated primary API key")
+			assertSecretNotLogged(t, logs, tokens.AccessToken, "an access token")
+			assertSecretNotLogged(t, logs, tokens.RefreshToken, "a refresh token")
+		})
 	})
+}
 
-	t.Run("the rotated secret never reaches the service logs", func(t *testing.T) {
-		logs, ok := mcpContainerLogs(t)
-		if !ok {
-			t.Skip("the Docker CLI is unavailable")
+// establishRotationUserAPIKey rotates the rotation user's primary API key once
+// through an accepted MRTR elicitation and returns the brand-new key.
+//
+// It is how every rotation test starts from a primary key whose value it
+// knows, without depending on the seeded key still being current: the seeded
+// key is only ever valid until the first rotation of the first run, so a suite
+// that assumed it would fail on every subsequent run. Rotating to establish
+// the baseline also proves the tool works before the test's own assertions
+// begin, so a failure here is unambiguous.
+func establishRotationUserAPIKey(t *testing.T, tokens tokenResponse) string {
+	t.Helper()
+
+	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest, func(options *mcp.ClientOptions) {
+		options.ElicitationHandler = func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirmed": true}}, nil
 		}
-		assert.NotContains(t, logs, mcpUserAPIKey(), "a rotated primary API key must never be logged")
 	})
+
+	var established struct {
+		User struct {
+			ID     string `json:"id"`
+			APIKey string `json:"api_key"`
+		} `json:"user"`
+	}
+	decodeToolOutput(t, callMCPTool(t, session, "rotate_user_api_key", map[string]any{}), &established)
+
+	require.Equal(t, mcpRotationUserID, established.User.ID)
+	require.True(t, strings.HasPrefix(established.User.APIKey, "uk_"), "an established primary key must carry the uk_ prefix")
+	assertAPIKeyAccepted(t, established.User.APIKey, "the established primary API key must work")
+
+	return established.User.APIKey
 }
 
 // firstChars returns at most n characters of value, for error messages that

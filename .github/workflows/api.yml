@@ -67,6 +67,21 @@ jobs:
             sleep 5
           done
 
+          echo "Waiting for the MCP server to be healthy..."
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:8082/health >/dev/null 2>&1; then
+              echo "MCP server is healthy!"
+              break
+            fi
+            if [ $i -eq 40 ]; then
+              echo "MCP server failed to become healthy"
+              docker compose logs mcp
+              exit 1
+            fi
+            echo "MCP attempt $i/40 - waiting 5s..."
+            sleep 5
+          done
+
       - name: Seed Database
         working-directory: ./tests
         run: |
@@ -82,7 +97,7 @@ jobs:
 
       - name: Run Integration Tests
         working-directory: ./tests
-        run: go test -v -timeout 300s ./...
+        run: go test -v -timeout 900s ./...
 
       - name: Collect Logs on Failure
         if: failure()
