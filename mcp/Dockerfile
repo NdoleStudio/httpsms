@@ -6,7 +6,7 @@
 # of the final image.
 FROM golang:1.25-alpine AS builder
 
-ARG GIT_COMMIT
+ARG GIT_COMMIT=dev
 
 WORKDIR /src
 

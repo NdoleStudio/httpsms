@@ -136,6 +136,11 @@ The Cloud Run service's runtime service account needs
 
 ## One-time custom-domain mapping
 
+Ensure the Cloud project has verified ownership of `httpsms.com` in Google
+Search Console before creating its first domain mapping. Existing
+`app.httpsms.com` or `api.httpsms.com` mappings usually mean this prerequisite
+is already satisfied.
+
 `mcp.httpsms.com` is mapped once, not on every deploy:
 
 ```bash
