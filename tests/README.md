@@ -189,8 +189,8 @@ cd tests && \
 Integration tests run automatically in the `test` job ("Integration Tests") of [`.github/workflows/api.yml`](../.github/workflows/api.yml):
 
 - **Trigger**: Push to `main` or pull request targeting `main`
-- **Flow**: Generates credentials (including the MCP signing key, certificate, and WireMock certificate mapping) → Builds the API and MCP images → Starts the Docker stack → Waits for health → Seeds the DB → Runs the API handler tests and this suite → Collects logs on failure → Tears down
-- **Gate**: The `deploy` job in the same workflow only runs after the `test` job passes
+- **Flow**: Generates credentials (including the MCP signing key, certificate, and WireMock certificate mapping) → Builds the API and MCP images → Starts the Docker stack → Waits for the MongoDB, API, and MCP health checks → Seeds the DB → Runs the MCP unit tests (`go test -race -count=1 ./...` in `mcp/`) and builds the MCP server binary → Runs the API handler tests and this suite → Collects logs on failure → Tears down
+- **Gate**: The `deploy` job in the same workflow only runs after the `test` job passes, so a failing MCP unit test, MCP build, health check, or integration test blocks the deploy
 
 ## Test Data
 

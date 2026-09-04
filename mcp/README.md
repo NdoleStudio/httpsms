@@ -75,6 +75,26 @@ export MCP_SIGNING_KEY_ID=local-dev-1
 A local standalone Redis (`redis-server`, or the one already provided by
 `tests/docker-compose.yml`) satisfies `REDIS_URL`.
 
+## Tests and CI
+
+```bash
+cd mcp
+go test -race ./...
+go build ./cmd/server
+```
+
+The unit suite is hermetic: Redis is faked with `miniredis`, and every HTTP
+dependency (the httpSMS API, Firebase certificates, Client ID Metadata
+Documents) is served by an in-process `httptest` server. No Docker stack and no
+network access are required.
+
+Both commands also run in the `test` job of
+[`.github/workflows/api.yml`](../.github/workflows/api.yml), ahead of the
+full-stack integration suite in [`tests/`](../tests/README.md), and the
+`deploy` job is gated on that job. A failing MCP unit test, a broken
+`cmd/server` build, an unhealthy MCP container, or a failing MCP integration
+test therefore blocks the deploy.
+
 ## Health and MCP URLs
 
 | Path | Purpose |

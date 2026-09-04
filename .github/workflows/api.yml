@@ -89,6 +89,14 @@ jobs:
           docker compose wait seed || true
           sleep 2
 
+      - name: Run MCP Unit Tests
+        working-directory: ./mcp
+        run: go test -race -count=1 ./...
+
+      - name: Build MCP Server
+        working-directory: ./mcp
+        run: go build ./cmd/server
+
       - name: Run Handler Integration Tests
         working-directory: ./api
         env:
