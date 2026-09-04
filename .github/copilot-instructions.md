@@ -116,6 +116,11 @@ The API uses a **DI container** (`pkg/di/container.go`) that lazily initializes 
 - **HTTP client**: OkHttp with `x-api-key` authentication against the API.
 - **Encryption**: AES-256/CFB with SHA-256 key derivation (`Encrypter.kt`).
 
+## Documentation & PR Workflow
+
+- **Superpowers docs (`docs/superpowers/`) are never committed to git** — the directory is gitignored. Do not remove it from `.gitignore` or add its files with `git add -f`.
+- When a change is driven by a superpowers SPEC, include a **summarized version of the SPEC in the PR description** (goal, key decisions, scope) instead of the full doc, so reviewers/agents can understand the change without needing the uncommitted file.
+
 ## Key Conventions
 
 ### API (Go)
