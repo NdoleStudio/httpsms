@@ -980,11 +980,19 @@ func TestMCPIncomingIsNotCaptchaProtected(t *testing.T) {
 // TestMCPCreatePhoneAPIKey asserts create_phone_api_key mints a real,
 // immediately usable phone API key and returns it exactly once, marked
 // sensitive.
+//
+// It authenticates as the dedicated mcpPhoneAPIKeyUserID rather than the
+// shared mcpTestUserID: create_phone_api_key's rate-limit bucket is spent by
+// this test's one real call *and* by TestMCPToolScopes's missing-scope
+// refusal of the same tool (the limiter charges every call before a tool
+// handler ever inspects scope), so sharing mcpTestUserID's bucket between
+// them would halve how many repeated full-suite runs this test tolerates
+// within the hourly window.
 func TestMCPCreatePhoneAPIKey(t *testing.T) {
 	requireMCPStack(t)
 
 	ctx := context.Background()
-	tokens := completeOAuthCodeFlow(t, []string{"phone-api-keys:write", "phones:read"})
+	tokens := completeOAuthCodeFlowAs(t, mcpPhoneAPIKeyUserID, mcpPhoneAPIKeyUserEmail, []string{"phone-api-keys:write", "phones:read"})
 	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
 
 	var output struct {
@@ -1004,7 +1012,7 @@ func TestMCPCreatePhoneAPIKey(t *testing.T) {
 	// The minted key must actually authenticate a phone against the API.
 	phoneNumber := randomPhoneNumber()
 	fcmToken := "fcm-" + uuid.NewString()
-	requestJSONAs(ctx, t, http.MethodPut, "/v1/phones", mcpTestUserAPIKey, map[string]any{
+	requestJSONAs(ctx, t, http.MethodPut, "/v1/phones", mcpPhoneAPIKeyUserAPIKey, map[string]any{
 		"phone_number":               phoneNumber,
 		"fcm_token":                  fcmToken,
 		"messages_per_minute":        60,
@@ -1099,25 +1107,45 @@ func TestMCPRateLimit(t *testing.T) {
 // returns the refusal (nil when nothing was refused) and how many calls were
 // made, so the caller can assert the refusal happened on exactly the call
 // after the budget.
+//
+// The user is seeded into CockroachDB (see seedRateLimitUser) before any
+// call: create_phone_api_key's delegated token is only honored for a subject
+// the API can load a real users row for, so an unseeded brand-new UID would
+// fail every attempt with 401 -- consuming the whole rate-limit budget
+// without ever minting a key, and only surfacing the *first* budget-exhausted
+// call at the very end as a false pass. Every pre-budget call is asserted to
+// have actually succeeded (never a tool-level error), and the number of
+// phone_api_keys rows the seeded user ends up owning is asserted to match
+// exactly, so a regression back to that failure mode is caught immediately
+// rather than papered over by the rate limiter's own eventual rejection.
 func exhaustKeyCreateBudget(t *testing.T) (error, int) {
 	t.Helper()
 
-	userID := newRateLimitUserID()
+	userID, _ := seedRateLimitUser(t)
 	tokens := completeOAuthCodeFlowAs(t, userID, userID+"@httpsms.com", []string{"phone-api-keys:write"})
 	session := newMCPClient(t, tokens.AccessToken, mcpProtocolLatest)
 
+	succeeded := 0
 	for attempt := 1; attempt <= mcpKeyCreatesPerHour+1; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-		_, err := session.CallTool(ctx, &mcp.CallToolParams{
+		result, err := session.CallTool(ctx, &mcp.CallToolParams{
 			Name:      "create_phone_api_key",
 			Arguments: map[string]any{"name": fmt.Sprintf("rate-limit-%d-%s", attempt, uuid.NewString())},
 		})
 		cancel()
 
 		if err != nil {
+			assert.Equal(t, mcpKeyCreatesPerHour, succeeded, "exactly %d calls must have succeeded before call %d is rate limited", mcpKeyCreatesPerHour, attempt)
+			assert.Equal(t, succeeded, countPhoneAPIKeys(t, userID), "every pre-budget create_phone_api_key call must have actually persisted a phone API key row for %s, not just reported success", userID)
 			return err, attempt
 		}
+
+		require.NotNil(t, result, "call %d must return a result", attempt)
+		require.False(t, result.IsError, "call %d of the %d-call budget must succeed, not fail with a tool-level error: %s", attempt, mcpKeyCreatesPerHour, toolResultText(result))
+		succeeded++
 	}
+
+	assert.Equal(t, succeeded, countPhoneAPIKeys(t, userID), "every create_phone_api_key call must have actually persisted a phone API key row for %s, not just reported success", userID)
 
 	return nil, mcpKeyCreatesPerHour + 1
 }

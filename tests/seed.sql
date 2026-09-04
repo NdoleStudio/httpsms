@@ -39,6 +39,21 @@ VALUES (
     NOW()
 ) ON CONFLICT (id) DO NOTHING;
 
+-- Dedicated user for TestMCPCreatePhoneAPIKey. It is the ONLY user that test
+-- authenticates as, so its one create_phone_api_key call per run never
+-- shares a rate-limit bucket with TestMCPToolScopes's missing-scope refusal
+-- of the same tool against 'mcp-test-user-id'.
+INSERT INTO users (id, email, api_key, timezone, subscription_name, created_at, updated_at)
+VALUES (
+    'mcp-phone-api-key-user-id',
+    'mcp-phone-api-key@httpsms.com',
+    'mcp-phone-api-key-user-api-key',
+    'UTC',
+    'pro-monthly',
+    NOW(),
+    NOW()
+) ON CONFLICT (id) DO NOTHING;
+
 -- Dedicated user for the MCP API-key rotation tests. It is the ONLY user whose
 -- primary API key is ever rotated, so rotation can never invalidate a key any
 -- other test authenticates with. The rotation tests never assume the seeded

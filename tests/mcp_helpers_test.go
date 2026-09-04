@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	_ "github.com/lib/pq"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,6 +58,20 @@ const (
 const (
 	mcpRotationUserID    = "mcp-rotation-user-id"
 	mcpRotationUserEmail = "mcp-rotation@httpsms.com"
+)
+
+// Identity of the dedicated create_phone_api_key user. It is the only user
+// TestMCPCreatePhoneAPIKey ever authenticates as, so its one
+// create_phone_api_key call per run never shares a rate-limit bucket with
+// TestMCPToolScopes's missing-scope refusal of the same tool (both of which
+// spend budget in the rate limiter regardless of the eventual scope check,
+// since the limiter runs before a tool handler ever inspects scope). Without
+// this split, two calls against the shared mcpTestUserID bucket would halve
+// the number of repeated full-suite runs this test tolerates within an hour.
+const (
+	mcpPhoneAPIKeyUserID     = "mcp-phone-api-key-user-id"
+	mcpPhoneAPIKeyUserEmail  = "mcp-phone-api-key@httpsms.com"
+	mcpPhoneAPIKeyUserAPIKey = "mcp-phone-api-key-user-api-key"
 )
 
 // Identity of the dedicated isolation user. Nothing in the suite ever creates
@@ -903,10 +919,101 @@ func reportMissedCallAs(ctx context.Context, t *testing.T, phone testPhone, from
 // rate-limit test. Rate-limit budgets are keyed by user and tool, so a fresh
 // UID always starts with an untouched budget: the rate-limit assertion is
 // therefore exactly as strong as before while surviving repeated runs against
-// the same live stack. The httpSMS API creates phone API keys for whatever
-// principal a verified delegation token names, so no seeded row is required.
+// the same live stack. Unlike a delegated MCP call to a route the API
+// authenticates purely off the token's own claims, create_phone_api_key's
+// delegated token is only ever honored for a subject the API can load a real
+// users row for (see MCPDelegationAuth), so seedRateLimitUser must create one
+// before this UID can mint anything.
 func newRateLimitUserID() string {
 	return "mcp-rate-limit-" + uuid.NewString()
+}
+
+// cockroachDSN is the CockroachDB connection string the test binary uses to
+// seed and clean up throwaway rate-limit users directly, mirroring
+// DATABASE_URL in tests/.env.test with the host-mapped port (26257) the
+// stack publishes for exactly this purpose, rather than the in-network
+// "cockroachdb" hostname the containers themselves resolve.
+const cockroachDSN = "postgresql://root@localhost:26257/httpsms?sslmode=disable"
+
+// seedRateLimitUser inserts a brand-new user row for a throwaway rate-limit
+// UID directly into CockroachDB -- the same mechanism tests/seed.sql uses --
+// and registers a t.Cleanup that deletes it, and any phone API keys it ends
+// up owning, once the test finishes. Rate-limit budgets are still keyed by
+// UID alone, so a fresh UID starts with an untouched budget regardless of
+// this row's lifetime; seeding and deleting it around the test just keeps
+// create_phone_api_key from failing 401 without leaving a permanent row
+// behind, unlike a fixed seeded user shared across every run.
+//
+// The insert is deliberately minimal, mirroring the columns tests/seed.sql
+// sets for every other seeded user: id, email, api_key, timezone, and
+// subscription_name, with created_at/updated_at defaulted to NOW().
+func seedRateLimitUser(t *testing.T) (userID string, apiKey string) {
+	t.Helper()
+
+	db, err := sql.Open("postgres", cockroachDSN)
+	require.NoError(t, err, "open CockroachDB connection for rate-limit user setup")
+	t.Cleanup(func() { _ = db.Close() })
+	require.NoError(t, db.PingContext(context.Background()), "connect to CockroachDB at %s to seed the rate-limit user", cockroachDSN)
+
+	userID = newRateLimitUserID()
+	apiKey = "mcp-rate-limit-key-" + uuid.NewString()
+
+	_, err = db.ExecContext(context.Background(), `
+		INSERT INTO users (id, email, api_key, timezone, subscription_name, created_at, updated_at)
+		VALUES ($1, $2, $3, 'UTC', 'pro-monthly', NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, userID, userID+"@httpsms.com", apiKey)
+	require.NoError(t, err, "seed rate-limit user %s", userID)
+
+	t.Cleanup(func() { cleanupRateLimitUser(t, userID) })
+
+	return userID, apiKey
+}
+
+// cleanupRateLimitUser best-effort deletes the phone API keys and user row
+// seedRateLimitUser created for userID. It never fails the test: a stack
+// that has already been torn down (or a connection that cannot be reopened
+// from a t.Cleanup running after other cleanups closed it) must not turn a
+// passing rate-limit assertion into a failure over housekeeping. Any error
+// is logged instead, exactly as the suite's other best-effort cleanups do.
+func cleanupRateLimitUser(t *testing.T, userID string) {
+	t.Helper()
+
+	db, err := sql.Open("postgres", cockroachDSN)
+	if err != nil {
+		t.Logf("cannot open CockroachDB connection to clean up rate-limit user %s: %v", userID, err)
+		return
+	}
+	defer func() { _ = db.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if _, err := db.ExecContext(ctx, `DELETE FROM phone_api_keys WHERE user_id = $1`, userID); err != nil {
+		t.Logf("cannot delete phone API keys for rate-limit user %s: %v", userID, err)
+		return
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, userID); err != nil {
+		t.Logf("cannot delete rate-limit user %s: %v", userID, err)
+	}
+}
+
+// countPhoneAPIKeys returns how many phone_api_keys rows userID owns. The
+// rate-limit test uses it to assert every pre-budget create_phone_api_key
+// call actually persisted a key -- not just that the MCP service reported
+// success -- before the call that must be rate limited.
+func countPhoneAPIKeys(t *testing.T, userID string) int {
+	t.Helper()
+
+	db, err := sql.Open("postgres", cockroachDSN)
+	require.NoError(t, err, "open CockroachDB connection to count phone API keys for %s", userID)
+	defer func() { _ = db.Close() }()
+
+	var count int
+	err = db.QueryRowContext(context.Background(), `SELECT count(*) FROM phone_api_keys WHERE user_id = $1`, userID).Scan(&count)
+	require.NoError(t, err, "count phone API keys for %s", userID)
+
+	return count
 }
 
 // pollMessageStatusAs polls GET /v1/messages/{id} with apiKey until the
@@ -1021,6 +1128,7 @@ func mcpPreflight() error {
 	seededUsers := []struct{ name, apiKey string }{
 		{"the MCP test user (" + mcpTestUserID + ")", mcpTestUserAPIKey},
 		{"the isolated user (" + mcpIsolatedUserID + ")", mcpIsolatedUserKey},
+		{"the phone API key user (" + mcpPhoneAPIKeyUserID + ")", mcpPhoneAPIKeyUserAPIKey},
 	}
 	for _, user := range seededUsers {
 		if err := preflightStatusOK(client, apiBaseURL+"/v1/users/me", user.apiKey); err != nil {
