@@ -114,26 +114,18 @@ func (h *PhoneHandler) Upsert(c fiber.Ctx) error {
 
 	var request requests.PhoneUpsert
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot unmarshal phone update request into %T", request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateUpsert(ctx, h.userIDFomContext(c), request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewErrorf(
-			"validation errors [%s], while updating phone request [%s]",
-			spew.Sdump(errors),
-			c.Body(),
-		))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
 	phone, err := h.service.Upsert(ctx, request.ToUpsertParams(h.userFromContext(c), c.OriginalURL(), c.Body()))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(
-			err,
-			"cannot update phone with request [%s]",
-			c.Body(),
-		))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot update phones with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
@@ -200,26 +192,18 @@ func (h *PhoneHandler) UpsertFCMToken(c fiber.Ctx) error {
 
 	var request requests.PhoneFCMToken
 	if err := c.Bind().Body(&request); err != nil {
-		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot unmarshal phone token update request into %T", request))
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall params [%s] into %T", c.OriginalURL(), request))
 		return h.responseBadRequest(c, err)
 	}
 
 	if errors := h.validator.ValidateFCMToken(ctx, request.Sanitize()); len(errors) != 0 {
-		ctxLogger.Warn(stacktrace.NewErrorf(
-			"validation errors [%s], while updating phone token request [%s]",
-			spew.Sdump(errors),
-			c.Body(),
-		))
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while updating phones [%+#v]", spew.Sdump(errors), request))
 		return h.responseUnprocessableEntity(c, errors, "validation errors while updating phones")
 	}
 
 	phone, err := h.service.UpsertFCMToken(ctx, request.ToPhoneFCMTokenParams(h.userFromContext(c), c.OriginalURL()))
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(
-			err,
-			"cannot update phone token with request [%s]",
-			c.Body(),
-		))
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot delete phones with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
