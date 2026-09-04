@@ -25,6 +25,7 @@ type PhoneUpsert struct {
 	// MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.
 	MaxSendAttempts uint `json:"max_send_attempts" example:"2"`
 
+	// FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.
 	FcmToken string `json:"fcm_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."`
 
 	MissedCallAutoReply *string `json:"missed_call_auto_reply" example:"e.g. This phone cannot receive calls. Please send an SMS instead."`

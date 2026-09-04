@@ -2420,7 +2420,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates properties of a user's phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'",
+                "description": "Updates properties of a user's phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible HTTP wake-ups.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2483,7 +2483,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates the FCM token of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'",
+                "description": "Updates the FCM token or adapter callback URL of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible HTTP wake-ups.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4947,6 +4947,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "fcm_token": {
+                    "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
                 },
@@ -4975,6 +4976,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "fcm_token": {
+                    "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
                 },

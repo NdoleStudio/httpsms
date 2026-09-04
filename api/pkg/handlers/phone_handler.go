@@ -94,7 +94,7 @@ func (h *PhoneHandler) Index(c fiber.Ctx) error {
 
 // Upsert a phone
 // @Summary      Upsert Phone
-// @Description  Updates properties of a user's phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'
+// @Description  Updates properties of a user's phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible HTTP wake-ups.
 // @Security	 ApiKeyAuth
 // @Tags         Phones
 // @Accept       json
@@ -172,7 +172,7 @@ func (h *PhoneHandler) Delete(c fiber.Ctx) error {
 
 // UpsertFCMToken upserts the FCM token of a phone
 // @Summary      Upserts the FCM token of a phone
-// @Description  Updates the FCM token of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'
+// @Description  Updates the FCM token or adapter callback URL of a phone. If the phone with this number does not exist, a new one will be created. Think of this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible HTTP wake-ups.
 // @Security	 ApiKeyAuth
 // @Tags         Phones
 // @Accept       json
