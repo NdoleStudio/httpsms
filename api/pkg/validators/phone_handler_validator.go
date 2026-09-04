@@ -103,6 +103,11 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(ctx context.Context, user
 		return result
 	}
 
+	validator.validateNotificationToken(request.FcmToken, result)
+	if len(result) > 0 {
+		return result
+	}
+
 	if strings.TrimSpace(request.MessageSendScheduleID) != "" {
 		scheduleID, _ := uuid.Parse(strings.TrimSpace(request.MessageSendScheduleID))
 		if _, err := validator.scheduleService.Load(ctx, userID, scheduleID); err != nil {
@@ -133,7 +138,29 @@ func (validator *PhoneHandlerValidator) ValidateFCMToken(_ context.Context, requ
 		},
 	})
 
-	return v.ValidateStruct()
+	result := v.ValidateStruct()
+	if len(result) > 0 {
+		return result
+	}
+
+	validator.validateNotificationToken(request.FcmToken, result)
+	return result
+}
+
+func (validator *PhoneHandlerValidator) validateNotificationToken(
+	token string,
+	result url.Values,
+) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return
+	}
+
+	phone := &entities.Phone{FcmToken: &token}
+	_, err := phone.NotificationTransport()
+	if err != nil {
+		result.Add("fcm_token", err.Error())
+	}
 }
 
 // ValidateDelete ValidateUpsert validates requests.PhoneDelete

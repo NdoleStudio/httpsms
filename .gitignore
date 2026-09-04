@@ -8,6 +8,7 @@ android/app/debug/
 android/app/release/
 
 tests/firebase-credentials.json
+tests/certs/
 tests/emulator/emulator.exe
 SECURITY_AUDIT_REPORT.md
 
@@ -16,3 +17,5 @@ SECURITY_AUDIT_REPORT.md
 .output
 .agents/
 skills-lock.json
+.worktrees/
+docs/superpowers

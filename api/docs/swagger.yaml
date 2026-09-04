@@ -971,6 +971,8 @@ definitions:
   requests.PhoneFCMToken:
     properties:
       fcm_token:
+        description: FcmToken is either a Firebase registration token or a public
+          HTTPS adapter callback URL.
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
         type: string
       phone_number:
@@ -989,6 +991,8 @@ definitions:
   requests.PhoneUpsert:
     properties:
       fcm_token:
+        description: FcmToken is either a Firebase registration token or a public
+          HTTPS adapter callback URL.
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd.....
         type: string
       max_send_attempts:
@@ -3406,7 +3410,8 @@ paths:
       consumes:
       - application/json
       description: Updates properties of a user's phone. If the phone with this number
-        does not exist, a new one will be created. Think of this method like an 'upsert'
+        does not exist, a new one will be created. Think of this method like an 'upsert'.
+        URL-backed phone gateways receive FCM-compatible HTTP wake-ups.
       parameters:
       - description: Payload of new phone number.
         in: body
@@ -3486,8 +3491,10 @@ paths:
     put:
       consumes:
       - application/json
-      description: Updates the FCM token of a phone. If the phone with this number
-        does not exist, a new one will be created. Think of this method like an 'upsert'
+      description: Updates the FCM token or adapter callback URL of a phone. If the
+        phone with this number does not exist, a new one will be created. Think of
+        this method like an 'upsert'. URL-backed phone gateways receive FCM-compatible
+        HTTP wake-ups.
       parameters:
       - description: Payload of new FCM token.
         in: body

@@ -594,6 +594,24 @@ func (container *Container) FCMClient() services.FCMClient {
 	return services.NewFirebaseFCMClient(messagingClient)
 }
 
+// NotificationHTTPClient creates the OpenTelemetry-instrumented client for phone notification adapters.
+func (container *Container) NotificationHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: container.HTTPRoundTripperWithoutRetry("phone_notification_http"),
+	}
+}
+
+// PhoneNotificationClients creates notification clients keyed by phone transport.
+func (container *Container) PhoneNotificationClients() map[entities.NotificationTransport]services.FCMClient {
+	return map[entities.NotificationTransport]services.FCMClient{
+		entities.NotificationTransportFCM: container.FCMClient(),
+		entities.NotificationTransportHTTP: services.NewHTTPNotificationSender(
+			container.Logger(),
+			container.NotificationHTTPClient(),
+		),
+	}
+}
+
 // FirebaseCredentials returns firebase credentials as bytes.
 func (container *Container) FirebaseCredentials() []byte {
 	container.logger.Debug("creating firebase credentials")
@@ -1744,7 +1762,7 @@ func (container *Container) NotificationService() (service *services.PhoneNotifi
 	return services.NewNotificationService(
 		container.Logger(),
 		container.Tracer(),
-		container.FCMClient(),
+		container.PhoneNotificationClients(),
 		container.PhoneRepository(),
 		container.PhoneNotificationRepository(),
 		container.MessageSendScheduleRepository(),

@@ -76,6 +76,23 @@ services:
       timeout: 5s
       retries: 10
 
+  adapter-emulator:
+    build:
+      context: ./adapter-emulator
+    ports:
+      - "9092:9092"
+    environment:
+      API_BASE_URL: http://api:8000
+      ADAPTER_TLS_CERT: /certs/server.pem
+      ADAPTER_TLS_KEY: /certs/server-key.pem
+    volumes:
+      - ./certs:/certs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9092/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ../api
@@ -90,6 +107,8 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      adapter-emulator:
+        condition: service_healthy
     env_file:
       - .env.test
     environment:
@@ -102,6 +121,9 @@ services:
       MCP_AUTH_ISSUER: http://localhost:8082
       MCP_AUTH_AUDIENCE: http://api:8000
       MCP_AUTH_JWKS_URL: http://mcp:8080/.well-known/jwks.json
+      SSL_CERT_FILE: /adapter-certs/ca.pem
+    volumes:
+      - ./certs/ca.pem:/adapter-certs/ca.pem:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 5s
