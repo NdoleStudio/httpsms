@@ -475,7 +475,7 @@ onBeforeUnmount(() => {
                   </VListItem>
                 </VList>
               </VMenu>
-              <div :style="{ maxWidth: !mdAndUp ? '50%' : '100%' }">
+              <div :style="{ maxWidth: mdAndUp ? '50%' : '100%' }">
                 <VCard
                   rounded="shaped"
                   :variant="isMT(message) ? 'flat' : 'tonal'"
