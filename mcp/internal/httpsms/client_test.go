@@ -242,42 +242,6 @@ func TestClient_ListThreadMessages(t *testing.T) {
 	assert.True(t, messages[0].Encrypted)
 }
 
-func TestClient_ListIncomingMessages(t *testing.T) {
-	const token = "delegated-token-list-incoming"
-	descending := true
-
-	server := newTestServer(t, http.StatusOK, httpsms.Response[[]httpsms.Message]{
-		Status: "success",
-		Data: []httpsms.Message{
-			{ID: "message-2", Type: "mobile-originated", Status: "received"},
-		},
-	}, func(t *testing.T, r *http.Request) {
-		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, "/v1/messages/incoming", r.URL.Path)
-		requireBearer(t, r, token)
-		requireRequestID(t, r)
-
-		query := r.URL.Query()
-		assert.ElementsMatch(t, []string{"+18005550199", "+18005550188"}, query["owners"])
-		assert.ElementsMatch(t, []string{"received", "pending"}, query["statuses"])
-		assert.Equal(t, "created_at", query.Get("sort_by"))
-		assert.Equal(t, "true", query.Get("sort_descending"))
-		assert.Equal(t, "search text", query.Get("query"))
-	})
-
-	client := httpsms.NewClient(server.URL)
-	messages, err := client.ListIncomingMessages(t.Context(), token, httpsms.ListIncomingMessagesParams{
-		Owners:         []string{"+18005550199", "+18005550188"},
-		Statuses:       []string{"received", "pending"},
-		Query:          "search text",
-		SortBy:         "created_at",
-		SortDescending: &descending,
-	})
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "mobile-originated", messages[0].Type)
-}
-
 func TestClient_CreatePhoneAPIKey(t *testing.T) {
 	const token = "delegated-token-create-key"
 

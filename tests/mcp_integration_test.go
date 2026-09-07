@@ -712,8 +712,9 @@ func TestMCPToolsThroughRealStack(t *testing.T) {
 				time.Sleep(time.Second)
 			}
 			decodeToolOutput(t, callMCPTool(t, session, "list_incoming_messages", map[string]any{
-				"owners": []string{phone.PhoneNumber},
-				"limit":  50,
+				"receiver": phone.PhoneNumber,
+				"sender":   contact,
+				"limit":    50,
 			}), &output)
 
 			for _, message := range output.Messages {
@@ -844,8 +845,9 @@ func TestMCPUserDataIsolation(t *testing.T) {
 			Count int `json:"count"`
 		}
 		decodeToolOutput(t, callMCPTool(t, isolatedSession, "list_incoming_messages", map[string]any{
-			"owners": []string{mcpSeededPhoneNumber},
-			"limit":  20,
+			"receiver": mcpSeededPhoneNumber,
+			"sender":   mcpSeededThreadContact,
+			"limit":    20,
 		}), &output)
 
 		assert.Empty(t, output.Messages, "the isolated user must never see another user's incoming messages")
@@ -920,7 +922,7 @@ func TestMCPDelegationTokenBinding(t *testing.T) {
 	t.Run("a token bound to another path is refused", func(t *testing.T) {
 		token := signAPIDelegationToken(t, mcpTestUserID, []string{"phones:read", "messages:read"}, http.MethodGet, "/v1/phones")
 
-		status, body := apiRequestWithBearer(t, http.MethodGet, "/v1/messages/incoming?skip=0&limit=10", token)
+		status, body := apiRequestWithBearer(t, http.MethodGet, "/v1/messages?owner="+url.QueryEscape(mcpSeededPhoneNumber)+"&contact="+url.QueryEscape(mcpSeededThreadContact)+"&skip=0&limit=10", token)
 		assert.Equal(t, http.StatusForbidden, status, body)
 		assert.Contains(t, body, "MCP token cannot access this API operation")
 	})
@@ -957,16 +959,16 @@ func TestMCPDelegationTokenBinding(t *testing.T) {
 	})
 }
 
-// TestMCPIncomingIsNotCaptchaProtected asserts the design decision behind
-// list_incoming_messages: the incoming route is reachable with a delegated MCP
-// token, while the CAPTCHA-protected search route stays protected.
-func TestMCPIncomingIsNotCaptchaProtected(t *testing.T) {
+// TestMCPThreadMessagesIsNotCaptchaProtected asserts the thread messages route
+// is reachable with a delegated MCP token, while the general search route
+// remains CAPTCHA-protected.
+func TestMCPThreadMessagesIsNotCaptchaProtected(t *testing.T) {
 	requireMCPStack(t)
 
-	t.Run("the incoming route serves a delegated MCP token", func(t *testing.T) {
-		token := signAPIDelegationToken(t, mcpTestUserID, []string{"messages:read"}, http.MethodGet, "/v1/messages/incoming")
+	t.Run("the thread messages route serves a delegated MCP token", func(t *testing.T) {
+		token := signAPIDelegationToken(t, mcpTestUserID, []string{"messages:read"}, http.MethodGet, "/v1/messages")
 
-		status, body := apiRequestWithBearer(t, http.MethodGet, "/v1/messages/incoming?skip=0&limit=10", token)
+		status, body := apiRequestWithBearer(t, http.MethodGet, "/v1/messages?owner="+url.QueryEscape(mcpSeededPhoneNumber)+"&contact="+url.QueryEscape(mcpSeededThreadContact)+"&skip=0&limit=10", token)
 		require.Equal(t, http.StatusOK, status, redactSecrets(body))
 	})
 

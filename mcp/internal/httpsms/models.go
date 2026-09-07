@@ -167,20 +167,6 @@ type ListThreadMessagesParams struct {
 	Limit   int
 }
 
-// ListIncomingMessagesParams are the supported filters for
-// GET /v1/messages/incoming. SortDescending is a pointer so "not set" (let
-// the API pick its own default sort order) is distinguishable from an
-// explicit false.
-type ListIncomingMessagesParams struct {
-	Owners         []string
-	Statuses       []string
-	Query          string
-	SortBy         string
-	SortDescending *bool
-	Skip           int
-	Limit          int
-}
-
 // CreatePhoneAPIKeyParams is the payload for POST /v1/phone-api-keys.
 type CreatePhoneAPIKeyParams struct {
 	Name string

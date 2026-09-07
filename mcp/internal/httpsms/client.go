@@ -75,9 +75,6 @@ type Client interface {
 	// ListThreadMessages calls GET /v1/messages.
 	ListThreadMessages(ctx context.Context, token string, params ListThreadMessagesParams) ([]Message, error)
 
-	// ListIncomingMessages calls GET /v1/messages/incoming.
-	ListIncomingMessages(ctx context.Context, token string, params ListIncomingMessagesParams) ([]Message, error)
-
 	// CreatePhoneAPIKey calls POST /v1/phone-api-keys.
 	CreatePhoneAPIKey(ctx context.Context, token string, params CreatePhoneAPIKeyParams) (PhoneAPIKey, error)
 
@@ -238,24 +235,6 @@ func (c *HTTPClient) ListThreadMessages(ctx context.Context, token string, param
 
 	var messages []Message
 	if err := c.do(ctx, token, http.MethodGet, "/v1/messages", query, nil, &messages); err != nil {
-		return nil, err
-	}
-	return messages, nil
-}
-
-// ListIncomingMessages calls GET /v1/messages/incoming.
-func (c *HTTPClient) ListIncomingMessages(ctx context.Context, token string, params ListIncomingMessagesParams) ([]Message, error) {
-	query := url.Values{}
-	setRepeated(query, "owners", params.Owners)
-	setRepeated(query, "statuses", params.Statuses)
-	setStringIfNotEmpty(query, "query", params.Query)
-	setStringIfNotEmpty(query, "sort_by", params.SortBy)
-	setBoolPointer(query, "sort_descending", params.SortDescending)
-	setIntIfPositive(query, "skip", params.Skip)
-	setIntIfPositive(query, "limit", params.Limit)
-
-	var messages []Message
-	if err := c.do(ctx, token, http.MethodGet, "/v1/messages/incoming", query, nil, &messages); err != nil {
 		return nil, err
 	}
 	return messages, nil
@@ -438,14 +417,5 @@ func setBoolPointer(values url.Values, key string, value *bool) {
 func setBoolIfTrue(values url.Values, key string, value bool) {
 	if value {
 		values.Set(key, "true")
-	}
-}
-
-// setRepeated adds one query value per item in items under key, matching
-// the repeated-key encoding the API's query binder expects for []string
-// fields (for example "owners=a&owners=b").
-func setRepeated(values url.Values, key string, items []string) {
-	for _, item := range items {
-		values.Add(key, item)
 	}
 }

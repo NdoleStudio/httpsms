@@ -101,7 +101,7 @@ No secret is committed: the key, certificate, and generated mapping are listed i
 - [x] **MCP tools** — `list_phones`, `send_sms` (through the FCM push and delivery events), `list_message_threads`, `list_thread_messages`, `list_incoming_messages` (received SMS present, missed calls absent), `create_phone_api_key`, `rotate_user_api_key`
 - [x] **MCP scopes** — every tool is refused when its scope was not granted
 - [x] **MCP delegation binding** — the API enforces the exact method, path, audience, issuer, expiry, and scope of every delegation token
-- [x] **MCP incoming vs. search** — `/v1/messages/incoming` serves a delegated token while the CAPTCHA-protected `/v1/messages/search` stays protected
+- [x] **MCP incoming vs. search** — `list_incoming_messages` reads `/v1/messages` for a sender/receiver thread and filters mobile-originated messages while the CAPTCHA-protected `/v1/messages/search` stays protected
 - [x] **MCP rotation confirmation** — an unconfirmed call never rotates, a legacy confirmation handle and an MRTR elicitation each rotate exactly once, the previous primary key stops working, and a redeemed handle can never be replayed
 - [x] **MCP rate limits** — an exhausted per-user/per-tool budget is rejected before the tool runs, with a structured retry hint, robustly across the UTC hour boundary the budget window is aligned to
 - [x] **MCP user-data isolation** — the MCP user sees its seeded phone and thread while a second, fully isolated user sees no phones, threads, thread messages, or incoming messages, even when naming the other user's phone number explicitly

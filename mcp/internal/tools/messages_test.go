@@ -71,10 +71,6 @@ type stubClient struct {
 	listThreadMessagesResult []httpsms.Message
 	listThreadMessagesErr    error
 
-	listIncomingCalls  []stubCall[httpsms.ListIncomingMessagesParams]
-	listIncomingResult []httpsms.Message
-	listIncomingErr    error
-
 	createKeyCalls  []stubCall[httpsms.CreatePhoneAPIKeyParams]
 	createKeyResult httpsms.PhoneAPIKey
 	createKeyErr    error
@@ -112,11 +108,6 @@ func (s *stubClient) ListThreadMessages(_ context.Context, token string, params 
 	return s.listThreadMessagesResult, s.listThreadMessagesErr
 }
 
-func (s *stubClient) ListIncomingMessages(_ context.Context, token string, params httpsms.ListIncomingMessagesParams) ([]httpsms.Message, error) {
-	s.listIncomingCalls = append(s.listIncomingCalls, stubCall[httpsms.ListIncomingMessagesParams]{Token: token, Params: params})
-	return s.listIncomingResult, s.listIncomingErr
-}
-
 func (s *stubClient) CreatePhoneAPIKey(_ context.Context, token string, params httpsms.CreatePhoneAPIKeyParams) (httpsms.PhoneAPIKey, error) {
 	s.createKeyCalls = append(s.createKeyCalls, stubCall[httpsms.CreatePhoneAPIKeyParams]{Token: token, Params: params})
 	return s.createKeyResult, s.createKeyErr
@@ -132,8 +123,7 @@ func (s *stubClient) RotateUserAPIKey(_ context.Context, token string, userID st
 // reached the httpSMS API.
 func (s *stubClient) totalCalls() int {
 	return len(s.listPhonesCalls) + len(s.sendSMSCalls) + len(s.listThreadsCalls) +
-		len(s.listThreadMessagesCalls) + len(s.listIncomingCalls) +
-		len(s.createKeyCalls) + len(s.rotateCalls)
+		len(s.listThreadMessagesCalls) + len(s.createKeyCalls) + len(s.rotateCalls)
 }
 
 // --- test fixtures ------------------------------------------------------
@@ -411,6 +401,18 @@ func TestListThreadMessagesSchemaRequiresOwnerAndContact(t *testing.T) {
 	assert.NotContains(t, required, "query")
 }
 
+func TestListIncomingMessagesSchemaRequiresReceiverAndSender(t *testing.T) {
+	keys := newTestKeySet(t)
+	ctx := contextWithPrincipal(t, keys, allScopes)
+	session := newSession(t, ctx, keys, &stubClient{})
+
+	tool := toolByName(t, session, "list_incoming_messages")
+	required := schemaRequired(t, tool.InputSchema)
+	assert.Contains(t, required, "receiver")
+	assert.Contains(t, required, "sender")
+	assert.NotContains(t, required, "query")
+}
+
 func TestSendSMSSchemaRequiresFromToContentOnly(t *testing.T) {
 	keys := newTestKeySet(t)
 	ctx := contextWithPrincipal(t, keys, allScopes)
@@ -683,42 +685,38 @@ func TestListThreadMessagesDeniedWithoutMessagesReadScope(t *testing.T) {
 
 // --- list_incoming_messages ---------------------------------------------------------
 
-func TestListIncomingMessagesCallsTheDedicatedIncomingEndpoint(t *testing.T) {
+func TestListIncomingMessagesUsesThreadMessagesAndFiltersOutgoingMessages(t *testing.T) {
 	keys := newTestKeySet(t)
 	ctx := contextWithPrincipal(t, keys, allScopes)
-	stub := &stubClient{listIncomingResult: []httpsms.Message{{ID: "message-1", Type: "mobile-originated", Content: "hi"}}}
+	stub := &stubClient{listThreadMessagesResult: []httpsms.Message{
+		{ID: "message-1", Type: "mobile-originated", Content: "incoming"},
+		{ID: "message-2", Type: "mobile-terminated", Content: "outgoing"},
+		{ID: "message-3", Type: "call/missed", Content: "Missed phone call"},
+	}}
 	session := newSession(t, ctx, keys, stub)
 
 	var out tools.ListIncomingMessagesOutput
 	callTool(t, session, "list_incoming_messages", map[string]any{
-		"owners":          []any{"+18005550199"},
-		"statuses":        []any{"received"},
-		"query":           "hi",
-		"sort_by":         "order_timestamp",
-		"sort_descending": true,
-		"skip":            0,
-		"limit":           25,
+		"receiver": "+18005550199",
+		"sender":   "+18005550100",
+		"query":    "incoming",
+		"skip":     2,
+		"limit":    25,
 	}, &out)
 
 	require.Len(t, out.Messages, 1)
+	assert.Equal(t, "message-1", out.Messages[0].ID)
 	assert.Equal(t, 1, out.Count)
 
-	require.Len(t, stub.listIncomingCalls, 1)
-	params := stub.listIncomingCalls[0].Params
-	assert.Equal(t, []string{"+18005550199"}, params.Owners)
-	assert.Equal(t, []string{"received"}, params.Statuses)
-	assert.Equal(t, "hi", params.Query)
-	assert.Equal(t, "order_timestamp", params.SortBy)
-	require.NotNil(t, params.SortDescending)
-	assert.True(t, *params.SortDescending)
+	require.Len(t, stub.listThreadMessagesCalls, 1)
+	params := stub.listThreadMessagesCalls[0].Params
+	assert.Equal(t, "+18005550199", params.Owner)
+	assert.Equal(t, "+18005550100", params.Contact)
+	assert.Equal(t, "incoming", params.Query)
+	assert.Equal(t, 2, params.Skip)
 	assert.Equal(t, 25, params.Limit)
 
-	assertDelegationToken(t, keys, stub.listIncomingCalls[0].Token, http.MethodGet, "/v1/messages/incoming", []string{auth.ScopeMessagesRead})
-
-	// This tool must never call the CAPTCHA-protected general search route:
-	// the stub only implements ListIncomingMessages, so any use of a
-	// different underlying route would have to go through it too. Assert
-	// exactly one call was made overall.
+	assertDelegationToken(t, keys, stub.listThreadMessagesCalls[0].Token, http.MethodGet, "/v1/messages", []string{auth.ScopeMessagesRead})
 	assert.Equal(t, 1, stub.totalCalls())
 }
 
@@ -728,7 +726,10 @@ func TestListIncomingMessagesDeniedWithoutMessagesReadScope(t *testing.T) {
 	stub := &stubClient{}
 	session := newSession(t, ctx, keys, stub)
 
-	result := callToolExpectingError(t, session, "list_incoming_messages", nil)
+	result := callToolExpectingError(t, session, "list_incoming_messages", map[string]any{
+		"receiver": "+18005550199",
+		"sender":   "+18005550100",
+	})
 	assert.NotEmpty(t, resultText(result))
 	assert.Equal(t, 0, stub.totalCalls())
 }
@@ -736,10 +737,13 @@ func TestListIncomingMessagesDeniedWithoutMessagesReadScope(t *testing.T) {
 func TestListIncomingMessagesSurfacesAPIErrorAsToolError(t *testing.T) {
 	keys := newTestKeySet(t)
 	ctx := contextWithPrincipal(t, keys, allScopes)
-	stub := &stubClient{listIncomingErr: &httpsms.APIError{StatusCode: http.StatusInternalServerError, Message: "httpSMS API request failed"}}
+	stub := &stubClient{listThreadMessagesErr: &httpsms.APIError{StatusCode: http.StatusInternalServerError, Message: "httpSMS API request failed"}}
 	session := newSession(t, ctx, keys, stub)
 
-	result := callToolExpectingError(t, session, "list_incoming_messages", nil)
+	result := callToolExpectingError(t, session, "list_incoming_messages", map[string]any{
+		"receiver": "+18005550199",
+		"sender":   "+18005550100",
+	})
 	assert.Contains(t, resultText(result), "httpSMS API request failed")
 }
 

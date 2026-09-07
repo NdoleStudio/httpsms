@@ -17,10 +17,11 @@ import (
 // is a wire contract with api/pkg/auth's delegated MCP route table and
 // must not change independently of it.
 const (
-	sendSMSPath              = "/v1/messages/send"
-	listMessageThreadsPath   = "/v1/message-threads"
-	listThreadMessagesPath   = "/v1/messages"
-	listIncomingMessagesPath = "/v1/messages/incoming"
+	sendSMSPath            = "/v1/messages/send"
+	listMessageThreadsPath = "/v1/message-threads"
+	listThreadMessagesPath = "/v1/messages"
+
+	messageTypeMobileOriginated = "mobile-originated"
 )
 
 // listMessageThreadsMaxLimit bounds how many message threads a single
@@ -255,17 +256,13 @@ func newListThreadMessagesHandler(keys *auth.KeySet, api httpsms.Client, apiToke
 // ListIncomingMessagesInput is the input for the list_incoming_messages
 // tool.
 type ListIncomingMessagesInput struct {
-	// Owners optionally restricts results to these registered phone
-	// numbers. Omit to search across every registered phone.
-	Owners []string `json:"owners,omitempty" jsonschema:"restrict results to these registered phone numbers; omit to search every registered phone"`
-	// Statuses optionally restricts results to these message statuses.
-	Statuses []string `json:"statuses,omitempty" jsonschema:"restrict results to these message statuses"`
-	// Query filters messages by content or contact substring.
-	Query string `json:"query,omitempty" jsonschema:"filter messages by content or contact phone number substring"`
-	// SortBy optionally names the field results are ordered by.
-	SortBy string `json:"sort_by,omitempty" jsonschema:"field to sort results by"`
-	// SortDescending optionally reverses the sort order.
-	SortDescending *bool `json:"sort_descending,omitempty" jsonschema:"sort in descending order; omit to use the API's default order"`
+	// Receiver is the registered httpSMS phone number that received the
+	// messages, in E.164 format.
+	Receiver string `json:"receiver" jsonschema:"registered httpSMS phone number that received the messages, in E.164 format"`
+	// Sender is the other party in the thread, in E.164 format.
+	Sender string `json:"sender" jsonschema:"phone number that sent the messages, in E.164 format"`
+	// Query filters messages by content substring.
+	Query string `json:"query,omitempty" jsonschema:"filter messages whose content contains this substring"`
 	// Skip is the number of matching messages to skip, for pagination.
 	Skip int `json:"skip,omitempty" jsonschema:"number of matching messages to skip, for pagination"`
 	// Limit bounds how many messages are returned.
@@ -282,14 +279,13 @@ type ListIncomingMessagesOutput struct {
 }
 
 // registerListIncomingMessages registers the list_incoming_messages tool.
-// It calls GET /v1/messages/incoming (never the CAPTCHA-protected
-// /v1/messages/search route) and requires the messages:read scope.
+// It calls GET /v1/messages for a single sender/receiver thread, then
+// returns only mobile-originated messages.
 func registerListIncomingMessages(server *mcp.Server, keys *auth.KeySet, api httpsms.Client, apiTokenTTL time.Duration) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "list_incoming_messages",
-		Description: "List the user's incoming (mobile-originated) SMS " +
-			"messages received on any registered phone, optionally filtered " +
-			"by owner, status, or content.",
+		Description: "List incoming SMS messages sent by a specific sender " +
+			"to one of the user's registered phones.",
 		Annotations: readOnlyAnnotations(),
 	}, newListIncomingMessagesHandler(keys, api, apiTokenTTL))
 }
@@ -301,24 +297,29 @@ func newListIncomingMessagesHandler(keys *auth.KeySet, api httpsms.Client, apiTo
 			return nil, ListIncomingMessagesOutput{}, err
 		}
 
-		token, err := keys.SignAPIDelegationToken(principal, []string{auth.ScopeMessagesRead}, http.MethodGet, listIncomingMessagesPath, apiTokenTTL)
+		token, err := keys.SignAPIDelegationToken(principal, []string{auth.ScopeMessagesRead}, http.MethodGet, listThreadMessagesPath, apiTokenTTL)
 		if err != nil {
 			return nil, ListIncomingMessagesOutput{}, fmt.Errorf("sign API delegation token: %w", err)
 		}
 
-		messages, err := api.ListIncomingMessages(ctx, token, httpsms.ListIncomingMessagesParams{
-			Owners:         in.Owners,
-			Statuses:       in.Statuses,
-			Query:          in.Query,
-			SortBy:         in.SortBy,
-			SortDescending: in.SortDescending,
-			Skip:           in.Skip,
-			Limit:          in.Limit,
+		messages, err := api.ListThreadMessages(ctx, token, httpsms.ListThreadMessagesParams{
+			Owner:   in.Receiver,
+			Contact: in.Sender,
+			Query:   in.Query,
+			Skip:    in.Skip,
+			Limit:   in.Limit,
 		})
 		if err != nil {
 			return toolError(err), ListIncomingMessagesOutput{}, nil
 		}
 
-		return nil, ListIncomingMessagesOutput{Messages: messages, Count: len(messages)}, nil
+		incomingMessages := make([]httpsms.Message, 0, len(messages))
+		for _, message := range messages {
+			if message.Type == messageTypeMobileOriginated {
+				incomingMessages = append(incomingMessages, message)
+			}
+		}
+
+		return nil, ListIncomingMessagesOutput{Messages: incomingMessages, Count: len(incomingMessages)}, nil
 	}
 }

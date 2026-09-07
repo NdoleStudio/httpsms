@@ -64,10 +64,6 @@ func (stubAPIClient) ListThreadMessages(context.Context, string, httpsms.ListThr
 	return nil, nil
 }
 
-func (stubAPIClient) ListIncomingMessages(context.Context, string, httpsms.ListIncomingMessagesParams) ([]httpsms.Message, error) {
-	return nil, nil
-}
-
 func (stubAPIClient) CreatePhoneAPIKey(context.Context, string, httpsms.CreatePhoneAPIKeyParams) (httpsms.PhoneAPIKey, error) {
 	return httpsms.PhoneAPIKey{}, nil
 }

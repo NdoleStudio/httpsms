@@ -37,7 +37,6 @@ var mcpDelegatedRoutes = []mcpDelegatedRoute{
 	{method: http.MethodPost, segments: []string{"v1", "messages", "send"}, scope: "messages:send"},
 	{method: http.MethodGet, segments: []string{"v1", "message-threads"}, scope: "messages:read"},
 	{method: http.MethodGet, segments: []string{"v1", "messages"}, scope: "messages:read"},
-	{method: http.MethodGet, segments: []string{"v1", "messages", "incoming"}, scope: "messages:read"},
 	{method: http.MethodPost, segments: []string{"v1", "phone-api-keys"}, scope: "phone-api-keys:write"},
 	{method: http.MethodDelete, segments: []string{"v1", "users", "*", "api-keys"}, scope: "user-api-key:rotate"},
 }
