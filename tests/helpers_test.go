@@ -587,10 +587,9 @@ func assertWebhookJWT(t *testing.T, request wmJournal.Request, signingKey string
 
 // assertAdapterNotificationJWT validates the JWT the API signs adapter notification requests
 // with, using the receiving phone's ID as the HMAC-SHA256 secret (see
-// api/pkg/services/http_notification_sender.go getAuthToken). The adapter emulator itself
-// rejects notifications with an invalid token (401), so a processed record with this header
-// recorded is already proof the signature validated; this assertion additionally checks the
-// claim shape from the test side.
+// api/pkg/services/http_notification_sender.go getAuthToken). The phone ID is only used as the
+// secret and is never embedded in a claim, so this only checks the signature and issuer, not a
+// subject; the adapter emulator itself rejects notifications with an invalid signature (401).
 func assertAdapterNotificationJWT(t *testing.T, record notificationRecord, phoneID string) {
 	t.Helper()
 
@@ -608,7 +607,7 @@ func assertAdapterNotificationJWT(t *testing.T, record notificationRecord, phone
 	claims, ok := token.Claims.(jwt.MapClaims)
 	require.True(t, ok, "cannot parse claims")
 	require.Equal(t, "api.httpsms.com", claims["iss"], "issuer mismatch")
-	require.Equal(t, phoneID, claims["sub"], "subject must be the receiving phone's ID")
+	require.Empty(t, claims["sub"], "phone ID must not be embedded in a claim since it is also the signing secret")
 
 	exp, err := claims.GetExpirationTime()
 	require.NoError(t, err)

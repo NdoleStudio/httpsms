@@ -69,7 +69,8 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 		assert.True(t, token.Valid)
 		claims, ok := token.Claims.(jwt.MapClaims)
 		require.True(t, ok)
-		assert.Equal(t, testNotificationPhoneID.String(), claims["sub"])
+		assert.Empty(t, claims["sub"], "phone ID must not be embedded in a claim since it is also the signing secret")
+		assert.Equal(t, "api.httpsms.com", claims["iss"])
 
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))

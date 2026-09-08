@@ -487,7 +487,6 @@ func validNotificationToken(t *testing.T, phoneID string) string {
 		IssuedAt:  jwt.NewNumericDate(now),
 		Issuer:    notificationJWTIssuer,
 		NotBefore: jwt.NewNumericDate(now.Add(-10 * time.Minute)),
-		Subject:   phoneID,
 	})
 	signed, err := token.SignedString([]byte(phoneID))
 	if err != nil {

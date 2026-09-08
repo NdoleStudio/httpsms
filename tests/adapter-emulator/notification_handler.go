@@ -111,7 +111,9 @@ func notificationKind(data map[string]string) (kind string, messageID string, er
 
 // verifyNotificationAuth validates the JWT the httpSMS API signs notification requests with,
 // using the gateway's phone ID as the HMAC-SHA256 secret (see
-// api/pkg/services/http_notification_sender.go getAuthToken).
+// api/pkg/services/http_notification_sender.go getAuthToken). The phone ID is never carried in
+// a token claim, only used as the secret, so verification relies on the gateway's own
+// registration to know which phone ID to check against rather than trusting a claim.
 func verifyNotificationAuth(authorization string, phoneID string) error {
 	tokenString, ok := strings.CutPrefix(authorization, "Bearer ")
 	if !ok || strings.TrimSpace(tokenString) == "" {
@@ -130,9 +132,6 @@ func verifyNotificationAuth(authorization string, phoneID string) error {
 	}
 	if !token.Valid {
 		return fmt.Errorf("token is not valid")
-	}
-	if claims.Subject != phoneID {
-		return fmt.Errorf("subject mismatch")
 	}
 	if claims.Issuer != notificationJWTIssuer {
 		return fmt.Errorf("issuer mismatch")

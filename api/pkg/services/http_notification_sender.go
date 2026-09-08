@@ -103,7 +103,11 @@ func (sender *HTTPNotificationSender) Send(
 }
 
 // getAuthToken generates a JWT bearer token for the HTTPS adapter, signed with the phone ID
-// the same way webhook requests are signed with the webhook signing key.
+// the same way webhook requests are signed with the webhook signing key. The phone ID is only
+// used as the HMAC secret and is intentionally not embedded in any claim: the adapter already
+// knows which phone ID to verify against from its own gateway registration, and putting the
+// phone ID in a readable claim would let anyone who intercepts one token read the signing
+// secret and forge further tokens.
 func (sender *HTTPNotificationSender) getAuthToken(endpoint *url.URL, phoneID uuid.UUID) (string, error) {
 	audience := *endpoint
 	audience.User = nil
@@ -115,7 +119,6 @@ func (sender *HTTPNotificationSender) getAuthToken(endpoint *url.URL, phoneID uu
 		IssuedAt:  jwt.NewNumericDate(now),
 		Issuer:    notificationJWTIssuer,
 		NotBefore: jwt.NewNumericDate(now.Add(-notificationJWTValidity)),
-		Subject:   phoneID.String(),
 	})
 	return token.SignedString([]byte(phoneID.String()))
 }
