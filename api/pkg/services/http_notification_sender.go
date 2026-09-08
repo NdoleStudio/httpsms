@@ -26,9 +26,6 @@ const (
 	notificationHTTPRetryDelay          = 250 * time.Millisecond
 	notificationJWTIssuer               = "api.httpsms.com"
 	notificationJWTValidity             = 10 * time.Minute
-	// notificationSignatureHeader carries the phone-signed JWT. It is not sent as Authorization so
-	// adapters can still use HTTP basic auth embedded in the endpoint URL (see [url.URL.User]).
-	notificationSignatureHeader = "X-Httpsms-Signature"
 )
 
 // HTTPNotificationSender sends FCM-compatible gateway notifications to HTTPS adapters.
@@ -170,7 +167,7 @@ func createHTTPNotificationRequest(
 		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set(notificationSignatureHeader, fmt.Sprintf("Bearer %s", authToken))
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
 	return request, nil
 }
 

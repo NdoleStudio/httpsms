@@ -62,7 +62,7 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 		assert.Equal(t, "high", payload.Message.Android.Priority)
 		assert.Equal(t, "600s", payload.Message.Android.TTL)
 
-		token, err := jwt.Parse(strings.TrimPrefix(request.Header.Get("X-Httpsms-Signature"), "Bearer "), func(*jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer "), func(*jwt.Token) (interface{}, error) {
 			return []byte(testNotificationPhoneID.String()), nil
 		})
 		require.NoError(t, err)
@@ -293,17 +293,21 @@ func TestHTTPNotificationSenderUsesInjectedHTTPClientUnchanged(t *testing.T) {
 	assert.Equal(t, time.Minute, sender.client.Timeout)
 }
 
-func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
+func TestHTTPNotificationSenderIgnoresEndpointUserInformation(t *testing.T) {
+	// Adapter endpoints must not rely on HTTP basic auth embedded in the URL; the Authorization
+	// header always carries the phone-signed JWT instead.
 	sender := newHTTPNotificationSender(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
-		username, password, ok := request.BasicAuth()
-		assert.True(t, ok)
-		assert.Equal(t, "adapter-user", username)
-		assert.Equal(t, "adapter-password", password)
+		_, _, ok := request.BasicAuth()
+		assert.False(t, ok)
 
-		token, err := jwt.Parse(strings.TrimPrefix(request.Header.Get("X-Httpsms-Signature"), "Bearer "), func(*jwt.Token) (interface{}, error) {
+		authorization := request.Header.Get("Authorization")
+		assert.True(t, strings.HasPrefix(authorization, "Bearer "))
+
+		token, err := jwt.Parse(strings.TrimPrefix(authorization, "Bearer "), func(*jwt.Token) (interface{}, error) {
 			return []byte(testNotificationPhoneID.String()), nil
 		})
 		require.NoError(t, err)
+		assert.True(t, token.Valid)
 		claims, ok := token.Claims.(jwt.MapClaims)
 		require.True(t, ok)
 		audience, err := claims.GetAudience()
