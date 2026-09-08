@@ -9,15 +9,17 @@ import (
 type gateway struct {
 	PhoneNumber string
 	PhoneAPIKey string
+	PhoneID     string
 }
 
 type notificationRecord struct {
-	GatewayID string            `json:"gateway_id"`
-	Data      map[string]string `json:"data"`
-	MessageID string            `json:"message_id,omitempty"`
-	Kind      string            `json:"kind"`
-	Processed bool              `json:"processed"`
-	Error     string            `json:"error,omitempty"`
+	GatewayID     string            `json:"gateway_id"`
+	Data          map[string]string `json:"data"`
+	MessageID     string            `json:"message_id,omitempty"`
+	Kind          string            `json:"kind"`
+	Processed     bool              `json:"processed"`
+	Error         string            `json:"error,omitempty"`
+	Authorization string            `json:"authorization,omitempty"`
 }
 
 type emulator struct {
@@ -43,6 +45,7 @@ func (instance *emulator) registerGateway(gatewayID string, registration gateway
 	instance.gateways[gatewayID] = gateway{
 		PhoneNumber: registration.PhoneNumber,
 		PhoneAPIKey: registration.PhoneAPIKey,
+		PhoneID:     registration.PhoneID,
 	}
 }
 
@@ -59,15 +62,17 @@ func (instance *emulator) recordNotification(
 	data map[string]string,
 	kind string,
 	messageID string,
+	authorization string,
 ) *notificationRecord {
 	instance.mu.Lock()
 	defer instance.mu.Unlock()
 
 	record := &notificationRecord{
-		GatewayID: gatewayID,
-		Data:      copyStringMap(data),
-		MessageID: messageID,
-		Kind:      kind,
+		GatewayID:     gatewayID,
+		Data:          copyStringMap(data),
+		MessageID:     messageID,
+		Kind:          kind,
+		Authorization: authorization,
 	}
 	instance.records = append(instance.records, record)
 

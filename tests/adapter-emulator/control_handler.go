@@ -14,6 +14,7 @@ const maxControlBodyBytes = 1024 * 1024
 type gatewayRegistration struct {
 	PhoneNumber string `json:"phone_number"`
 	PhoneAPIKey string `json:"phone_api_key"`
+	PhoneID     string `json:"phone_id"`
 }
 
 type incomingMessageRequest struct {
@@ -39,8 +40,9 @@ func (instance *emulator) handleGatewayRegistration(writer http.ResponseWriter, 
 	}
 	registration.PhoneNumber = strings.TrimSpace(registration.PhoneNumber)
 	registration.PhoneAPIKey = strings.TrimSpace(registration.PhoneAPIKey)
-	if registration.PhoneNumber == "" || registration.PhoneAPIKey == "" {
-		writeControlError(writer, http.StatusBadRequest, errors.New("phone_number and phone_api_key are required"))
+	registration.PhoneID = strings.TrimSpace(registration.PhoneID)
+	if registration.PhoneNumber == "" || registration.PhoneAPIKey == "" || registration.PhoneID == "" {
+		writeControlError(writer, http.StatusBadRequest, errors.New("phone_number, phone_api_key and phone_id are required"))
 		return
 	}
 

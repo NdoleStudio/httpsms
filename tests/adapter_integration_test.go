@@ -37,6 +37,7 @@ func TestAdapterGatewayOutgoingMessage(t *testing.T) {
 	assert.Equal(t, "message", records[0].Kind)
 	assert.True(t, records[0].Processed)
 	assert.Equal(t, messageID, records[0].Data["KEY_MESSAGE_ID"])
+	assertAdapterNotificationJWT(t, records[0], phone.PhoneID)
 }
 
 func TestAdapterGatewayIncomingMessage(t *testing.T) {
@@ -79,6 +80,7 @@ func TestAdapterGatewayHeartbeatWakeUp(t *testing.T) {
 	record := waitForAdapterHeartbeatRecord(t, phone.GatewayID, 30*time.Second)
 	assert.Equal(t, "heartbeat", record.Kind)
 	assert.NotEmpty(t, record.Data["KEY_HEARTBEAT_ID"])
+	assertAdapterNotificationJWT(t, record, phone.PhoneID)
 
 	heartbeats, response, err := newAPIClient().Heartbeats.Index(ctx, &httpsms.HeartbeatIndexParams{
 		Owner: phone.PhoneNumber,

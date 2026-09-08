@@ -45,12 +45,13 @@ type adapterTestPhone struct {
 }
 
 type notificationRecord struct {
-	GatewayID string            `json:"gateway_id"`
-	Data      map[string]string `json:"data"`
-	MessageID string            `json:"message_id,omitempty"`
-	Kind      string            `json:"kind"`
-	Processed bool              `json:"processed"`
-	Error     string            `json:"error,omitempty"`
+	GatewayID     string            `json:"gateway_id"`
+	Data          map[string]string `json:"data"`
+	MessageID     string            `json:"message_id,omitempty"`
+	Kind          string            `json:"kind"`
+	Processed     bool              `json:"processed"`
+	Error         string            `json:"error,omitempty"`
+	Authorization string            `json:"authorization,omitempty"`
 }
 
 func newAPIClient() *httpsms.Client {
@@ -153,9 +154,26 @@ func setupAdapterPhone(ctx context.Context, t *testing.T, messagesPerMinute uint
 	phoneAPIKey := apiKeyResponse.Data.APIKey
 	require.NotEmpty(t, phoneAPIKey)
 
+	// Upsert the phone first so its ID is known before the adapter emulator is registered:
+	// the API signs notification requests with a JWT keyed by the phone ID, and the emulator
+	// needs that ID up front to validate the JWT on every notification it receives.
+	callbackURL := fmt.Sprintf("https://adapter-emulator:9091/notifications/%s", gatewayID)
+	phoneResponse, response, err := client.Phones.Upsert(ctx, &httpsms.PhoneUpsertParams{
+		PhoneNumber:              phoneNumber,
+		FcmToken:                 callbackURL,
+		MessagesPerMinute:        messagesPerMinute,
+		MaxSendAttempts:          2,
+		MessageExpirationSeconds: 600,
+		SIM:                      "SIM1",
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode, "phone upsert failed")
+	require.NotEmpty(t, phoneResponse.Data.ID)
+
 	registrationBody, err := json.Marshal(map[string]any{
 		"phone_number":  phoneNumber,
 		"phone_api_key": phoneAPIKey,
+		"phone_id":      phoneResponse.Data.ID,
 	})
 	require.NoError(t, err)
 	registrationRequest, err := http.NewRequestWithContext(
@@ -178,19 +196,6 @@ func setupAdapterPhone(ctx context.Context, t *testing.T, messagesPerMinute uint
 		"adapter gateway registration failed: %s",
 		string(registrationResponseBody),
 	)
-
-	callbackURL := fmt.Sprintf("https://adapter-emulator:9091/notifications/%s", gatewayID)
-	phoneResponse, response, err := client.Phones.Upsert(ctx, &httpsms.PhoneUpsertParams{
-		PhoneNumber:              phoneNumber,
-		FcmToken:                 callbackURL,
-		MessagesPerMinute:        messagesPerMinute,
-		MaxSendAttempts:          2,
-		MessageExpirationSeconds: 600,
-		SIM:                      "SIM1",
-	})
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode, "phone upsert failed")
-	require.NotEmpty(t, phoneResponse.Data.ID)
 
 	phoneClient := newPhoneClient(phoneAPIKey)
 	_, response, err = phoneClient.Phones.UpsertFCMToken(ctx, &httpsms.PhoneFCMTokenParams{
@@ -570,6 +575,40 @@ func assertWebhookJWT(t *testing.T, request wmJournal.Request, signingKey string
 	require.True(t, ok, "cannot parse claims")
 	require.Equal(t, "api.httpsms.com", claims["iss"], "issuer mismatch")
 	require.NotEmpty(t, claims["sub"], "subject mismatch")
+
+	exp, err := claims.GetExpirationTime()
+	require.NoError(t, err)
+	require.True(t, exp.After(time.Now()), "token is expired")
+
+	nbf, err := claims.GetNotBefore()
+	require.NoError(t, err)
+	require.True(t, nbf.Before(time.Now()), "token not yet valid")
+}
+
+// assertAdapterNotificationJWT validates the JWT the API signs adapter notification requests
+// with, using the receiving phone's ID as the HMAC-SHA256 secret (see
+// api/pkg/services/http_notification_sender.go getAuthToken). The adapter emulator itself
+// rejects notifications with an invalid token (401), so a processed record with this header
+// recorded is already proof the signature validated; this assertion additionally checks the
+// claim shape from the test side.
+func assertAdapterNotificationJWT(t *testing.T, record notificationRecord, phoneID string) {
+	t.Helper()
+
+	require.NotEmpty(t, record.Authorization, "adapter notification record missing Authorization header")
+	require.True(t, strings.HasPrefix(record.Authorization, "Bearer "), "Authorization header must start with Bearer")
+
+	tokenString := strings.TrimPrefix(record.Authorization, "Bearer ")
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		require.Equal(t, jwt.SigningMethodHS256, token.Method, "unexpected signing method")
+		return []byte(phoneID), nil
+	})
+	require.NoError(t, err, "JWT validation failed")
+	require.True(t, token.Valid, "JWT token is not valid")
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	require.True(t, ok, "cannot parse claims")
+	require.Equal(t, "api.httpsms.com", claims["iss"], "issuer mismatch")
+	require.Equal(t, phoneID, claims["sub"], "subject must be the receiving phone's ID")
 
 	exp, err := claims.GetExpirationTime()
 	require.NoError(t, err)
