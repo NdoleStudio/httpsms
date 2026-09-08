@@ -90,6 +90,7 @@ func (logger *phoneNotificationLogger) Printf(string, ...interface{}) {}
 
 type recordingPhoneNotificationClient struct {
 	message *messaging.Message
+	phoneID uuid.UUID
 	result  string
 	err     error
 	calls   int
@@ -98,9 +99,11 @@ type recordingPhoneNotificationClient struct {
 func (client *recordingPhoneNotificationClient) Send(
 	_ context.Context,
 	message *messaging.Message,
+	phoneID uuid.UUID,
 ) (string, error) {
 	client.calls++
 	client.message = message
+	client.phoneID = phoneID
 	return client.result, client.err
 }
 
@@ -122,6 +125,7 @@ func TestPhoneNotificationServiceSendPhoneNotificationUsesMappedClient(t *testin
 	assert.Equal(t, entities.NotificationTransportHTTP, transport)
 	assert.Equal(t, "https://adapter.example.com/notify", message.Token)
 	assert.Same(t, message, httpClient.message)
+	assert.Equal(t, phone.ID, httpClient.phoneID)
 	assert.Equal(t, 1, httpClient.calls)
 }
 

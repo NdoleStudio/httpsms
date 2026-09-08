@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +15,8 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
 	"github.com/avast/retry-go/v5"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 const (
@@ -21,6 +24,11 @@ const (
 	notificationHTTPAttempts            = 3
 	notificationHTTPTimeout             = 5 * time.Second
 	notificationHTTPRetryDelay          = 250 * time.Millisecond
+	notificationJWTIssuer               = "api.httpsms.com"
+	notificationJWTValidity             = 10 * time.Minute
+	// notificationSignatureHeader carries the phone-signed JWT. It is not sent as Authorization so
+	// adapters can still use HTTP basic auth embedded in the endpoint URL (see [url.URL.User]).
+	notificationSignatureHeader = "X-Httpsms-Signature"
 )
 
 // HTTPNotificationSender sends FCM-compatible gateway notifications to HTTPS adapters.
@@ -62,6 +70,7 @@ func newHTTPNotificationSenderWithRetrier(
 func (sender *HTTPNotificationSender) Send(
 	ctx context.Context,
 	message *messaging.Message,
+	phoneID uuid.UUID,
 ) (string, error) {
 	if message == nil {
 		return "", sender.notificationError("", "notification message is nil")
@@ -78,8 +87,13 @@ func (sender *HTTPNotificationSender) Send(
 		return "", sender.notificationError(hostname, "cannot encode notification")
 	}
 
+	authToken, err := sender.getAuthToken(endpoint, phoneID)
+	if err != nil {
+		return "", sender.notificationError(hostname, "cannot generate notification auth token")
+	}
+
 	err = sender.retrier.Do(func() error {
-		return sender.deliver(ctx, endpoint, body)
+		return sender.deliver(ctx, endpoint, body, authToken)
 	})
 	if err == nil {
 		return "http/success", nil
@@ -89,6 +103,24 @@ func (sender *HTTPNotificationSender) Send(
 	}
 
 	return "", sender.notificationError(hostname, "notification request failed")
+}
+
+// getAuthToken generates a JWT bearer token for the HTTPS adapter, signed with the phone ID
+// the same way webhook requests are signed with the webhook signing key.
+func (sender *HTTPNotificationSender) getAuthToken(endpoint *url.URL, phoneID uuid.UUID) (string, error) {
+	audience := *endpoint
+	audience.User = nil
+
+	now := time.Now().UTC()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Audience:  []string{audience.String()},
+		ExpiresAt: jwt.NewNumericDate(now.Add(notificationJWTValidity)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		Issuer:    notificationJWTIssuer,
+		NotBefore: jwt.NewNumericDate(now.Add(-notificationJWTValidity)),
+		Subject:   phoneID.String(),
+	})
+	return token.SignedString([]byte(phoneID.String()))
 }
 
 func encodeHTTPNotificationPayload(message *messaging.Message) ([]byte, error) {
@@ -101,6 +133,7 @@ func (sender *HTTPNotificationSender) deliver(
 	ctx context.Context,
 	endpoint *url.URL,
 	body []byte,
+	authToken string,
 ) error {
 	if err := ctx.Err(); err != nil {
 		return terminalNotificationRequestError{cause: err}
@@ -109,7 +142,7 @@ func (sender *HTTPNotificationSender) deliver(
 	attemptCtx, cancel := context.WithTimeout(ctx, sender.timeout)
 	defer cancel()
 
-	request, err := createHTTPNotificationRequest(attemptCtx, endpoint, body)
+	request, err := createHTTPNotificationRequest(attemptCtx, endpoint, body, authToken)
 	if err != nil {
 		return terminalNotificationRequestError{cause: err}
 	}
@@ -125,6 +158,7 @@ func createHTTPNotificationRequest(
 	ctx context.Context,
 	endpoint *url.URL,
 	body []byte,
+	authToken string,
 ) (*http.Request, error) {
 	request, err := http.NewRequestWithContext(
 		ctx,
@@ -136,6 +170,7 @@ func createHTTPNotificationRequest(
 		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set(notificationSignatureHeader, fmt.Sprintf("Bearer %s", authToken))
 	return request, nil
 }
 

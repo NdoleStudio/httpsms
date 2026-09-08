@@ -11,6 +11,7 @@ import (
 	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
+	"github.com/google/uuid"
 )
 
 // EmulatorFCMClient sends FCM messages to the phone emulator via HTTP.
@@ -50,7 +51,7 @@ type emulatorFCMResponse struct {
 }
 
 // Send sends a message to the emulator's FCM endpoint.
-func (c *EmulatorFCMClient) Send(ctx context.Context, message *messaging.Message) (string, error) {
+func (c *EmulatorFCMClient) Send(ctx context.Context, message *messaging.Message, _ uuid.UUID) (string, error) {
 	payload := &emulatorFCMRequest{
 		Message: &emulatorFCMMessage{
 			Token: message.Token,

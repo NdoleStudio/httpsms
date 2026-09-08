@@ -8,15 +8,20 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"firebase.google.com/go/messaging"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 )
+
+var testNotificationPhoneID = uuid.New()
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
@@ -57,10 +62,19 @@ func TestHTTPNotificationSenderSendsFCMCompatiblePayload(t *testing.T) {
 		assert.Equal(t, "high", payload.Message.Android.Priority)
 		assert.Equal(t, "600s", payload.Message.Android.TTL)
 
+		token, err := jwt.Parse(strings.TrimPrefix(request.Header.Get("X-Httpsms-Signature"), "Bearer "), func(*jwt.Token) (interface{}, error) {
+			return []byte(testNotificationPhoneID.String()), nil
+		})
+		require.NoError(t, err)
+		assert.True(t, token.Valid)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		require.True(t, ok)
+		assert.Equal(t, testNotificationPhoneID.String(), claims["sub"])
+
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	result, err := sender.Send(context.Background(), message)
+	result, err := sender.Send(context.Background(), message, testNotificationPhoneID)
 
 	require.NoError(t, err)
 	assert.Equal(t, "http/success", result)
@@ -150,6 +164,7 @@ func TestHTTPNotificationSenderRetriesOnlyTransientFailures(t *testing.T) {
 			result, err := sender.Send(
 				context.Background(),
 				&messaging.Message{Token: "https://adapter.example.com/notify"},
+				testNotificationPhoneID,
 			)
 
 			if test.wantErr {
@@ -179,6 +194,7 @@ func TestHTTPNotificationSenderReusesRetrierAcrossSends(t *testing.T) {
 		_, err := sender.Send(
 			context.Background(),
 			&messaging.Message{Token: "https://adapter.example.com/notify"},
+			testNotificationPhoneID,
 		)
 		require.NoError(t, err)
 	}
@@ -206,6 +222,7 @@ func TestHTTPNotificationSenderCreatesFreshRequestAndBodyForEveryAttempt(t *test
 			Token: "https://adapter.example.com/notify",
 			Data:  map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		},
+		testNotificationPhoneID,
 	)
 
 	require.NoError(t, err)
@@ -227,6 +244,7 @@ func TestHTTPNotificationSenderBoundsResponseBodyDiscard(t *testing.T) {
 	_, err := sender.Send(
 		context.Background(),
 		&messaging.Message{Token: "https://adapter.example.com/notify"},
+		testNotificationPhoneID,
 	)
 
 	require.NoError(t, err)
@@ -253,6 +271,7 @@ func TestHTTPNotificationSenderOmitsTTLForHeartbeat(t *testing.T) {
 				Priority: "high",
 			},
 		},
+		testNotificationPhoneID,
 	)
 
 	require.NoError(t, err)
@@ -280,6 +299,19 @@ func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "adapter-user", username)
 		assert.Equal(t, "adapter-password", password)
+
+		token, err := jwt.Parse(strings.TrimPrefix(request.Header.Get("X-Httpsms-Signature"), "Bearer "), func(*jwt.Token) (interface{}, error) {
+			return []byte(testNotificationPhoneID.String()), nil
+		})
+		require.NoError(t, err)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		require.True(t, ok)
+		audience, err := claims.GetAudience()
+		require.NoError(t, err)
+		require.Len(t, audience, 1)
+		assert.NotContains(t, audience[0], "adapter-user")
+		assert.NotContains(t, audience[0], "adapter-password")
+
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 	endpoint := &url.URL{
@@ -292,6 +324,7 @@ func TestHTTPNotificationSenderAllowsEndpointUserInformation(t *testing.T) {
 	_, err := sender.Send(
 		context.Background(),
 		&messaging.Message{Token: endpoint.String()},
+		testNotificationPhoneID,
 	)
 
 	require.NoError(t, err)
@@ -309,6 +342,7 @@ func TestHTTPNotificationSenderBoundsEveryAttemptByTimeout(t *testing.T) {
 	_, err := sender.Send(
 		context.Background(),
 		&messaging.Message{Token: "https://adapter.example.com/notify"},
+		testNotificationPhoneID,
 	)
 
 	require.Error(t, err)
@@ -328,6 +362,7 @@ func TestHTTPNotificationSenderStopsRetriesWhenParentContextIsCancelled(t *testi
 	_, err := sender.Send(
 		ctx,
 		&messaging.Message{Token: "https://adapter.example.com/notify"},
+		testNotificationPhoneID,
 	)
 
 	require.Error(t, err)
@@ -339,7 +374,7 @@ func TestHTTPNotificationSenderRejectsNilMessage(t *testing.T) {
 		return response(http.StatusNoContent, http.NoBody), nil
 	}))
 
-	_, err := sender.Send(context.Background(), nil)
+	_, err := sender.Send(context.Background(), nil, testNotificationPhoneID)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "notification message is nil")
