@@ -10,7 +10,8 @@ import (
 // FCMClient sends Firebase-compatible messages through a phone notification transport.
 type FCMClient interface {
 	// Send sends a message and returns the transport's delivery identifier on success.
-	// phoneID identifies the sending phone and is used by HTTP adapter transports to sign the request.
+	// phoneID identifies the receiving phone (the notification's target) and is used by HTTP
+	// adapter transports to sign the request.
 	Send(ctx context.Context, message *messaging.Message, phoneID uuid.UUID) (string, error)
 }
 
