@@ -9,7 +9,12 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+const testGatewayPhoneID = "11111111-1111-1111-1111-111111111111"
 
 func TestRecordNotificationCopiesRecords(t *testing.T) {
 	t.Parallel()
@@ -18,6 +23,7 @@ func TestRecordNotificationCopiesRecords(t *testing.T) {
 	instance.registerGateway("gateway-1", gatewayRegistration{
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
 	})
 
 	record := instance.recordNotification(
@@ -25,6 +31,7 @@ func TestRecordNotificationCopiesRecords(t *testing.T) {
 		map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		"message",
 		"message-1",
+		"Bearer test-token",
 	)
 	instance.markNotificationProcessed(record)
 
@@ -90,6 +97,7 @@ func TestNotificationHandlerProcessesMessage(t *testing.T) {
 	instance.registerGateway("gateway-1", gatewayRegistration{
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
 	})
 
 	body := callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})
@@ -98,6 +106,7 @@ func TestNotificationHandlerProcessesMessage(t *testing.T) {
 		"/notifications/gateway-1",
 		bytes.NewReader(body),
 	)
+	request.Header.Set("Authorization", validNotificationToken(t, testGatewayPhoneID))
 	response := httptest.NewRecorder()
 	instance.notificationHandler().ServeHTTP(response, request)
 	if response.Code != http.StatusNoContent {
@@ -146,6 +155,7 @@ func TestNotificationHandlerStoresHeartbeat(t *testing.T) {
 	instance.registerGateway("gateway-1", gatewayRegistration{
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
 	})
 
 	request := httptest.NewRequest(
@@ -153,6 +163,7 @@ func TestNotificationHandlerStoresHeartbeat(t *testing.T) {
 		"/notifications/gateway-1",
 		bytes.NewReader(callbackBody(t, map[string]string{"KEY_HEARTBEAT_ID": "heartbeat-1"})),
 	)
+	request.Header.Set("Authorization", validNotificationToken(t, testGatewayPhoneID))
 	response := httptest.NewRecorder()
 	instance.notificationHandler().ServeHTTP(response, request)
 	if response.Code != http.StatusNoContent {
@@ -184,6 +195,7 @@ func TestNotificationHandlerRetainsProcessingFailure(t *testing.T) {
 	instance.registerGateway("gateway-1", gatewayRegistration{
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
 	})
 
 	request := httptest.NewRequest(
@@ -191,6 +203,7 @@ func TestNotificationHandlerRetainsProcessingFailure(t *testing.T) {
 		"/notifications/gateway-1",
 		bytes.NewReader(callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})),
 	)
+	request.Header.Set("Authorization", validNotificationToken(t, testGatewayPhoneID))
 	response := httptest.NewRecorder()
 	instance.notificationHandler().ServeHTTP(response, request)
 	if response.Code != http.StatusInternalServerError {
@@ -250,17 +263,20 @@ func TestNotificationHandlerProcessesRetryAfterFailure(t *testing.T) {
 	instance.registerGateway("gateway-1", gatewayRegistration{
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
 	})
 	handler := instance.notificationHandler()
 	body := callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})
 
 	firstRequest := httptest.NewRequest(http.MethodPost, "/notifications/gateway-1", bytes.NewReader(body))
+	firstRequest.Header.Set("Authorization", validNotificationToken(t, testGatewayPhoneID))
 	firstResponse := httptest.NewRecorder()
 	handler.ServeHTTP(firstResponse, firstRequest)
 	if firstResponse.Code != http.StatusInternalServerError {
 		t.Fatalf("first callback status = %d, want 500: %s", firstResponse.Code, firstResponse.Body.String())
 	}
 	secondRequest := httptest.NewRequest(http.MethodPost, "/notifications/gateway-1", bytes.NewReader(body))
+	secondRequest.Header.Set("Authorization", validNotificationToken(t, testGatewayPhoneID))
 	secondResponse := httptest.NewRecorder()
 	handler.ServeHTTP(secondResponse, secondRequest)
 	if secondResponse.Code != http.StatusNoContent {
@@ -315,6 +331,7 @@ func TestControlHandlerRegistersGatewayAndReceivesIncomingMessage(t *testing.T) 
 	registration := performJSONRequest(t, handler, http.MethodPut, "/test/gateways/gateway-1", map[string]any{
 		"phone_number":  "+18005550199",
 		"phone_api_key": "phone-key",
+		"phone_id":      testGatewayPhoneID,
 	})
 	if registration.Code != http.StatusNoContent {
 		t.Fatalf("registration status = %d, want 204: %s", registration.Code, registration.Body.String())
@@ -368,18 +385,21 @@ func TestControlHandlerFiltersNotificationRecordsByMessageID(t *testing.T) {
 	instance.registerGateway("gateway-1", gatewayRegistration{
 		PhoneNumber: "+18005550199",
 		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
 	})
 	instance.recordNotification(
 		"gateway-1",
 		map[string]string{"KEY_MESSAGE_ID": "message-1"},
 		"message",
 		"message-1",
+		"Bearer test-token",
 	)
 	instance.recordNotification(
 		"gateway-1",
 		map[string]string{"KEY_MESSAGE_ID": "message-2"},
 		"message",
 		"message-2",
+		"Bearer test-token",
 	)
 
 	response := httptest.NewRecorder()
@@ -404,6 +424,114 @@ func TestControlHandlerFiltersNotificationRecordsByMessageID(t *testing.T) {
 	if len(payload.Data) != 1 || payload.Data[0].MessageID != "message-2" {
 		t.Fatalf("filtered records = %#v, want message-2 only", payload.Data)
 	}
+}
+
+func TestNotificationHandlerRejectsMissingAuthorization(t *testing.T) {
+	t.Parallel()
+
+	instance := newEmulator("http://api.example", http.DefaultClient)
+	instance.registerGateway("gateway-1", gatewayRegistration{
+		PhoneNumber: "+18005550199",
+		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
+	})
+
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/notifications/gateway-1",
+		bytes.NewReader(callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})),
+	)
+	response := httptest.NewRecorder()
+	instance.notificationHandler().ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("callback status = %d, want 401: %s", response.Code, response.Body.String())
+	}
+	if records := instance.listGatewayRecords("gateway-1"); len(records) != 0 {
+		t.Fatalf("record count = %d, want 0 for an unauthenticated request", len(records))
+	}
+}
+
+func TestNotificationHandlerRejectsTokenSignedWithWrongSecret(t *testing.T) {
+	t.Parallel()
+
+	instance := newEmulator("http://api.example", http.DefaultClient)
+	instance.registerGateway("gateway-1", gatewayRegistration{
+		PhoneNumber: "+18005550199",
+		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
+	})
+
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/notifications/gateway-1",
+		bytes.NewReader(callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})),
+	)
+	request.Header.Set("Authorization", validNotificationToken(t, "some-other-phone-id"))
+	response := httptest.NewRecorder()
+	instance.notificationHandler().ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("callback status = %d, want 401: %s", response.Code, response.Body.String())
+	}
+	if records := instance.listGatewayRecords("gateway-1"); len(records) != 0 {
+		t.Fatalf("record count = %d, want 0 for a request signed with the wrong secret", len(records))
+	}
+}
+
+func TestNotificationHandlerRejectsNonHS256SigningMethod(t *testing.T) {
+	t.Parallel()
+
+	instance := newEmulator("http://api.example", http.DefaultClient)
+	instance.registerGateway("gateway-1", gatewayRegistration{
+		PhoneNumber: "+18005550199",
+		PhoneAPIKey: "phone-key",
+		PhoneID:     testGatewayPhoneID,
+	})
+
+	now := time.Now().UTC()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS384, jwt.RegisteredClaims{
+		Audience:  []string{"https://adapter-emulator:9091/notifications/gateway-1"},
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		Issuer:    notificationJWTIssuer,
+		NotBefore: jwt.NewNumericDate(now.Add(-10 * time.Minute)),
+	})
+	signed, err := token.SignedString([]byte(testGatewayPhoneID))
+	if err != nil {
+		t.Fatalf("sign notification token: %v", err)
+	}
+
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/notifications/gateway-1",
+		bytes.NewReader(callbackBody(t, map[string]string{"KEY_MESSAGE_ID": "message-1"})),
+	)
+	request.Header.Set("Authorization", "Bearer "+signed)
+	response := httptest.NewRecorder()
+	instance.notificationHandler().ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("callback status = %d, want 401: %s", response.Code, response.Body.String())
+	}
+	if records := instance.listGatewayRecords("gateway-1"); len(records) != 0 {
+		t.Fatalf("record count = %d, want 0 for a request signed with a non-HS256 method", len(records))
+	}
+}
+
+func validNotificationToken(t *testing.T, phoneID string) string {
+	t.Helper()
+
+	now := time.Now().UTC()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Audience:  []string{"https://adapter-emulator:9091/notifications/gateway-1"},
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		Issuer:    notificationJWTIssuer,
+		NotBefore: jwt.NewNumericDate(now.Add(-10 * time.Minute)),
+	})
+	signed, err := token.SignedString([]byte(phoneID))
+	if err != nil {
+		t.Fatalf("sign notification token: %v", err)
+	}
+	return "Bearer " + signed
 }
 
 func callbackBody(t *testing.T, data map[string]string) []byte {

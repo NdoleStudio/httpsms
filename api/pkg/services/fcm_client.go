@@ -4,12 +4,15 @@ import (
 	"context"
 
 	"firebase.google.com/go/messaging"
+	"github.com/google/uuid"
 )
 
 // FCMClient sends Firebase-compatible messages through a phone notification transport.
 type FCMClient interface {
 	// Send sends a message and returns the transport's delivery identifier on success.
-	Send(ctx context.Context, message *messaging.Message) (string, error)
+	// phoneID identifies the receiving phone (the notification's target) and is used by HTTP
+	// adapter transports to sign the request.
+	Send(ctx context.Context, message *messaging.Message, phoneID uuid.UUID) (string, error)
 }
 
 // FirebaseFCMClient wraps the real Firebase messaging.Client.
@@ -23,6 +26,6 @@ func NewFirebaseFCMClient(client *messaging.Client) *FirebaseFCMClient {
 }
 
 // Send sends a message via the real Firebase SDK.
-func (c *FirebaseFCMClient) Send(ctx context.Context, message *messaging.Message) (string, error) {
+func (c *FirebaseFCMClient) Send(ctx context.Context, message *messaging.Message, _ uuid.UUID) (string, error) {
 	return c.client.Send(ctx, message)
 }

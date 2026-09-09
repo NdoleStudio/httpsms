@@ -215,7 +215,7 @@ func (service *PhoneNotificationService) sendPhoneNotification(
 	}
 
 	message.Token = strings.TrimSpace(*phone.FcmToken)
-	result, err := client.Send(ctx, message)
+	result, err := client.Send(ctx, message, phone.ID)
 	if err != nil {
 		return "", transport, stacktrace.Propagatef(
 			err,

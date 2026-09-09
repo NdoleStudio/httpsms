@@ -6,9 +6,15 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const maxCallbackBodyBytes = 1024 * 1024
+
+// notificationJWTIssuer must match the issuer the httpSMS API signs adapter notification
+// tokens with (see api/pkg/services/http_notification_sender.go).
+const notificationJWTIssuer = "api.httpsms.com"
 
 type callbackEnvelope struct {
 	Message struct {
@@ -31,6 +37,13 @@ func (instance *emulator) handleNotification(writer http.ResponseWriter, request
 		return
 	}
 
+	authorization := request.Header.Get("Authorization")
+	if err := verifyNotificationAuth(authorization, registeredGateway.PhoneID); err != nil {
+		log.Printf("[ADAPTER] rejected notification for gateway=%s: %v", gatewayID, err)
+		http.Error(writer, fmt.Sprintf("invalid notification token: %v", err), http.StatusUnauthorized)
+		return
+	}
+
 	request.Body = http.MaxBytesReader(writer, request.Body, maxCallbackBodyBytes)
 	var envelope callbackEnvelope
 	if err := json.NewDecoder(request.Body).Decode(&envelope); err != nil {
@@ -44,6 +57,7 @@ func (instance *emulator) handleNotification(writer http.ResponseWriter, request
 		envelope.Message.Data,
 		kind,
 		messageID,
+		authorization,
 	)
 	log.Printf(
 		"[ADAPTER] callback gateway=%s data=%v",
@@ -93,4 +107,34 @@ func notificationKind(data map[string]string) (kind string, messageID string, er
 	default:
 		return "", "", fmt.Errorf("unsupported notification data")
 	}
+}
+
+// verifyNotificationAuth validates the JWT the httpSMS API signs notification requests with,
+// using the gateway's phone ID as the HMAC-SHA256 secret (see
+// api/pkg/services/http_notification_sender.go getAuthToken). The phone ID is never carried in
+// a token claim, only used as the secret, so verification relies on the gateway's own
+// registration to know which phone ID to check against rather than trusting a claim.
+func verifyNotificationAuth(authorization string, phoneID string) error {
+	tokenString, ok := strings.CutPrefix(authorization, "Bearer ")
+	if !ok || strings.TrimSpace(tokenString) == "" {
+		return fmt.Errorf("missing bearer token")
+	}
+
+	claims := jwt.RegisteredClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
+		if token.Method != jwt.SigningMethodHS256 {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(phoneID), nil
+	})
+	if err != nil {
+		return fmt.Errorf("parse token: %w", err)
+	}
+	if !token.Valid {
+		return fmt.Errorf("token is not valid")
+	}
+	if claims.Issuer != notificationJWTIssuer {
+		return fmt.Errorf("issuer mismatch")
+	}
+	return nil
 }
