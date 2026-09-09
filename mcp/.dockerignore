@@ -1,0 +1,24 @@
+# Keep the Docker build context limited to what the builder stage needs
+# (go.mod, go.sum, and Go source). Everything else here either doesn't exist
+# in a fresh clone of mcp/ or must never end up inside an image layer.
+.git
+.gitignore
+.dockerignore
+Dockerfile
+cloudbuild.yaml
+README.md
+*.md
+
+# Local build artifacts and editor/OS cruft.
+server.exe
+*.exe
+*.test
+tmp/
+.idea/
+.vscode/
+
+# Never bake local env files or key material into an image layer.
+.env
+.env.*
+*.pem
+*.key
