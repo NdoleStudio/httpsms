@@ -31,6 +31,20 @@ func newClientsTestStore(t *testing.T) Store {
 	return NewRedisStore(client)
 }
 
+// newClientsTestLimiter returns a Redis-backed RegistrationLimiter with
+// the production budget, backed by its own miniredis instance so a
+// registration test that inspects the store's keys never sees the
+// limiter's counter.
+func newClientsTestLimiter(t *testing.T) RegistrationLimiter {
+	t.Helper()
+
+	server := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+
+	return NewRedisRegistrationLimiter(client, DefaultRegistrationsPerMinute)
+}
+
 // newLocalizedHTTPClient returns an *http.Client whose Transport connects
 // to server's real listener address regardless of the requested host, with
 // TLS hostname verification disabled. This lets a test use a
@@ -467,7 +481,7 @@ func TestClientResolverResolveUnknownDynamicClientNotFound(t *testing.T) {
 
 func TestRegistrationHandlerCreatesClientAndReturns201(t *testing.T) {
 	store := newClientsTestStore(t)
-	handler := NewRegistrationHandler(store)
+	handler := NewRegistrationHandler(store, newClientsTestLimiter(t))
 
 	requestBody := `{
 		"client_name": "Test Client",
@@ -501,7 +515,7 @@ func TestRegistrationHandlerStoresRecordFor24Hours(t *testing.T) {
 	t.Cleanup(func() { _ = redisClient.Close() })
 	store := NewRedisStore(redisClient)
 
-	handler := NewRegistrationHandler(store)
+	handler := NewRegistrationHandler(store, newClientsTestLimiter(t))
 	requestBody := `{
 		"client_name": "Test Client",
 		"redirect_uris": ["https://client.example/callback"],
@@ -525,7 +539,7 @@ func TestRegistrationHandlerStoresRecordFor24Hours(t *testing.T) {
 }
 
 func TestRegistrationHandlerRejectsInvalidMetadata(t *testing.T) {
-	handler := NewRegistrationHandler(newClientsTestStore(t))
+	handler := NewRegistrationHandler(newClientsTestStore(t), newClientsTestLimiter(t))
 
 	requestBody := `{"client_name": "Missing Redirect URIs"}`
 	req := httptest.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(requestBody))
@@ -540,7 +554,7 @@ func TestRegistrationHandlerRejectsInvalidMetadata(t *testing.T) {
 }
 
 func TestRegistrationHandlerRejectsMalformedJSON(t *testing.T) {
-	handler := NewRegistrationHandler(newClientsTestStore(t))
+	handler := NewRegistrationHandler(newClientsTestStore(t), newClientsTestLimiter(t))
 
 	req := httptest.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader("not json"))
 	rec := httptest.NewRecorder()
@@ -550,7 +564,7 @@ func TestRegistrationHandlerRejectsMalformedJSON(t *testing.T) {
 }
 
 func TestRegistrationHandlerRejectsNonPOST(t *testing.T) {
-	handler := NewRegistrationHandler(newClientsTestStore(t))
+	handler := NewRegistrationHandler(newClientsTestStore(t), newClientsTestLimiter(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/oauth/register", nil)
 	rec := httptest.NewRecorder()
@@ -565,7 +579,7 @@ func TestRegistrationHandlerRejectsNonPOST(t *testing.T) {
 // metadata this server will honour for it, and must never be served from a
 // shared cache to a different registrant.
 func TestRegistrationHandlerResponsesAreNeverCached(t *testing.T) {
-	handler := NewRegistrationHandler(newClientsTestStore(t))
+	handler := NewRegistrationHandler(newClientsTestStore(t), newClientsTestLimiter(t))
 
 	validBody := `{
 		"client_name": "Test Client",

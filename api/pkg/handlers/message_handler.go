@@ -54,6 +54,7 @@ func (h *MessageHandler) RegisterRoutes(router fiber.Router, middlewares ...fibe
 	h.register(router, fiber.MethodPost, "/v1/messages/bulk-send", middlewares, h.BulkSend)
 	h.register(router, fiber.MethodGet, "/v1/messages", middlewares, h.Index)
 	h.register(router, fiber.MethodGet, "/v1/messages/search", middlewares, h.Search)
+	h.register(router, fiber.MethodGet, "/v1/messages/incoming", middlewares, h.Incoming)
 	h.register(router, fiber.MethodGet, "/v1/messages/:messageID", middlewares, h.Get)
 	h.register(router, fiber.MethodDelete, "/v1/messages/:messageID", middlewares, h.Delete)
 }
@@ -543,6 +544,50 @@ func (h *MessageHandler) Search(c fiber.Ctx) error {
 	messages, err := h.service.SearchMessages(ctx, request.ToSearchParams(h.userIDFomContext(c)))
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot search messages with params [%+#v]", request))
+		return h.responseInternalServerError(c)
+	}
+
+	return h.responseOK(c, fmt.Sprintf("found %d %s", len(messages), h.pluralize("message", len(messages))), messages)
+}
+
+// Incoming returns a filtered list of mobile-originated messages of a user
+// @Summary      Search incoming messages of a user
+// @Description  This returns the list of mobile-originated messages received by the user's phones. This route is scoped to messages:read and never returns other message types
+// @Security	 ApiKeyAuth
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        owners		query  string  	true 	"the owner's phone numbers" 		default(+18005550199,+18005550100)
+// @Param        statuses		query  string  	false 	"filter by message status"
+// @Param        skip		query  int  	false	"number of messages to skip"		minimum(0)
+// @Param        query		query  string  	false 	"filter messages containing query"
+// @Param        sort_by		query  string  	false 	"field used to sort the messages"
+// @Param        sort_descending	query  bool  	false 	"sort messages in descending order"
+// @Param        limit		query  int  	false	"number of messages to return"		minimum(1)	maximum(200)
+// @Success      200 		{object}	responses.MessagesResponse
+// @Failure      400		{object}	responses.BadRequest
+// @Failure 	 401    	{object}	responses.Unauthorized
+// @Failure      422		{object}	responses.UnprocessableEntity
+// @Failure      500		{object}	responses.InternalServerError
+// @Router       /messages/incoming [get]
+func (h *MessageHandler) Incoming(c fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	var request requests.MessageIncoming
+	if err := c.Bind().Query(&request); err != nil {
+		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot marshall params in [%s] into [%T]", c.OriginalURL(), request))
+		return h.responseBadRequest(c, err)
+	}
+
+	if errors := h.validator.ValidateMessageIncoming(ctx, request.Sanitize()); len(errors) != 0 {
+		ctxLogger.Warn(stacktrace.NewErrorf("validation errors [%s], while fetching incoming messages [%+#v]", spew.Sdump(errors), request))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching incoming messages")
+	}
+
+	messages, err := h.service.SearchMessages(ctx, request.ToSearchParams(h.userIDFomContext(c)))
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch incoming messages with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 

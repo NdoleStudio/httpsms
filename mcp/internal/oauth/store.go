@@ -20,21 +20,50 @@ import (
 
 // Redis key namespaces. Every key is the fixed prefix followed by the
 // hex-encoded SHA-256 hash of the record's public value (transaction ID,
-// authorization code, refresh token, DCR client ID, or confirmation
-// handle) -- never the raw value itself, so a Redis key listing or a log
-// line that leaks a key name never leaks the bearer secret it protects.
+// authorization code, refresh token, refresh-token family ID, DCR client
+// ID, or confirmation handle) -- never the raw value itself, so a Redis
+// key listing or a log line that leaks a key name never leaks the bearer
+// secret it protects.
 const (
 	keyPrefixTransaction  = "httpsms:mcp:oauth:transaction:"
 	keyPrefixCode         = "httpsms:mcp:oauth:code:"
 	keyPrefixRefresh      = "httpsms:mcp:oauth:refresh:"
 	keyPrefixClient       = "httpsms:mcp:oauth:client:"
 	keyPrefixConfirmation = "httpsms:mcp:confirmation:"
+
+	// keyPrefixRefreshUsed namespaces the tombstone written for every
+	// refresh token that has been consumed by a rotation. The tombstone
+	// outlives the token it replaced (it is written with the same refresh
+	// TTL) precisely so a later replay of that token is recognizable as
+	// reuse rather than as an ordinary expiry.
+	//
+	// A tombstone's value is the family pointer's Redis key -- itself a
+	// hash-derived key name, never a token -- so reuse detection can walk
+	// from a replayed token to its family's currently active token in a
+	// single atomic script without ever storing or reading a plaintext
+	// refresh token.
+	keyPrefixRefreshUsed = "httpsms:mcp:oauth:refresh-used:"
+
+	// keyPrefixRefreshFamily namespaces the "currently active member" of
+	// each refresh-token family (rotation lineage). Its value is the
+	// hashed Redis key of that family's live refresh token, never the
+	// token itself.
+	keyPrefixRefreshFamily = "httpsms:mcp:oauth:refresh-family:"
 )
 
 // ErrNotFound is returned by every Get/Consume/Rotate method when the
 // requested record does not exist, has already expired, or (for
 // Consume/Rotate) has already been redeemed exactly once.
 var ErrNotFound = errors.New("oauth: not found")
+
+// ErrRefreshTokenReuse is returned by DetectRefreshTokenReuse when the
+// presented refresh token has already been consumed by a rotation. It is
+// deliberately distinct from ErrNotFound: an expired or never-issued token
+// is an ordinary invalid grant, whereas a replayed already-rotated token
+// means either the token leaked or the legitimate client and an attacker
+// both hold a copy of the lineage, and the whole family has therefore been
+// revoked.
+var ErrRefreshTokenReuse = errors.New("oauth: refresh token reuse detected; the token family has been revoked")
 
 // AuthorizationTransaction records a single in-flight OAuth authorization
 // request from the moment its client, redirect URI, scopes, state, and PKCE
@@ -137,53 +166,124 @@ type Store interface {
 	PutRefreshToken(context.Context, RefreshGrant, time.Duration) error
 	GetRefreshToken(context.Context, string) (RefreshGrant, error)
 	RotateRefreshToken(context.Context, string, RefreshGrant, time.Duration) error
+
+	// DetectRefreshTokenReuse reports whether the given refresh token has
+	// already been consumed by a rotation and, when it has, atomically
+	// revokes the whole token family it belonged to: the family's
+	// currently active refresh token and the family pointer are both
+	// deleted, so neither the attacker's copy nor the legitimate client's
+	// copy can be rotated again.
+	//
+	// It returns ErrRefreshTokenReuse when reuse was detected (and the
+	// family revoked), ErrNotFound when the token carries no tombstone
+	// (an ordinary expired or never-issued token), and any other error
+	// when the check itself failed.
+	DetectRefreshTokenReuse(context.Context, string) error
+
 	PutDynamicClient(context.Context, Client, time.Duration) error
 	GetDynamicClient(context.Context, string) (Client, error)
 	PutConfirmation(context.Context, Confirmation, time.Duration) error
 	ConsumeConfirmation(context.Context, string) (Confirmation, error)
 }
 
-// rotateRefreshTokenScript atomically deletes the old refresh-token hash
-// and creates the new one with a TTL, or does nothing and reports failure
-// when the old hash is already gone (already rotated, replayed, or
-// expired). A Lua script run through EVAL is the only way to make "check
-// the old key exists, delete it, and create the new key" a single
-// indivisible server-side operation: MULTI/EXEC alone cannot branch on the
-// old key's existence, and WATCH-based optimistic locking would let a
-// replayed rotation race the legitimate one instead of failing closed.
+// putRefreshTokenScript atomically creates a brand-new refresh token's
+// record and points its family at it, both with the same TTL. Issuing the
+// token and publishing it as its family's active member must be one
+// indivisible step: a token that exists without a family pointer could
+// never be revoked by reuse detection, and a family pointer written
+// without its token would revoke a key that was never issued.
+var putRefreshTokenScript = redis.NewScript(`
+redis.call("SET", KEYS[1], ARGV[1], "PX", ARGV[2])
+redis.call("SET", KEYS[2], KEYS[1], "PX", ARGV[2])
+return 1
+`)
+
+// rotateRefreshTokenScript atomically consumes the old refresh token and
+// replaces it with its successor, or does nothing and reports failure when
+// the old hash is already gone (already rotated, replayed, or expired).
+// One EVAL performs all four steps of a rotation:
+//
+//  1. verify the old token still exists (else fail closed),
+//  2. delete it,
+//  3. write its tombstone (KEYS[4]), whose value is the family pointer's
+//     key, so a later replay of the old token can find and revoke whatever
+//     is active in the family at that moment, and
+//  4. create the replacement token (KEYS[2]) and repoint the family
+//     (KEYS[3]) at it.
+//
+// A Lua script is the only way to make this indivisible: MULTI/EXEC cannot
+// branch on the old key's existence, and WATCH-based optimistic locking
+// would let a replayed rotation race the legitimate one instead of failing
+// closed. Splitting the tombstone write out of the script would leave a
+// window in which a rotated token is neither live nor tombstoned, and a
+// replay landing in that window would be indistinguishable from an
+// expired token.
 var rotateRefreshTokenScript = redis.NewScript(`
 if redis.call("GET", KEYS[1]) == false then
 	return 0
 end
 redis.call("DEL", KEYS[1])
+redis.call("SET", KEYS[4], KEYS[3], "PX", ARGV[2])
 redis.call("SET", KEYS[2], ARGV[1], "PX", ARGV[2])
+redis.call("SET", KEYS[3], KEYS[2], "PX", ARGV[2])
+return 1
+`)
+
+// detectRefreshTokenReuseScript atomically checks for a consumed-token
+// tombstone (KEYS[1]) and, when one exists, revokes the family it names:
+// it reads the family pointer stored as the tombstone's value, deletes
+// whichever refresh token that pointer currently names, and deletes the
+// pointer itself. Returning 1 means reuse was detected and the family is
+// now revoked; 0 means the token was simply never issued or has expired.
+//
+// Reading the family pointer and deleting the active token must be one
+// step: between a separate read and delete, a concurrent legitimate
+// rotation could repoint the family, and the revocation would then delete
+// an already-superseded token while leaving the newest one live -- exactly
+// the token an attacker holding the leaked lineage would use next.
+//
+// The tombstone itself is deliberately left in place for its remaining
+// TTL, so every later replay of the same token is still recognized as
+// reuse rather than decaying into an ordinary "unknown token".
+var detectRefreshTokenReuseScript = redis.NewScript(`
+local familyKey = redis.call("GET", KEYS[1])
+if familyKey == false then
+	return 0
+end
+local activeKey = redis.call("GET", familyKey)
+if activeKey ~= false then
+	redis.call("DEL", activeKey)
+end
+redis.call("DEL", familyKey)
 return 1
 `)
 
 // RedisStore is the Redis-backed implementation of Store.
 //
 // RedisStore requires a standalone Redis deployment (a client created with
-// redis.NewClient), not a Redis Cluster or Ring client. The five key
+// redis.NewClient), not a Redis Cluster or Ring client. The key
 // namespaces above are an approved, fixed format that must not change, and
-// RotateRefreshToken's Lua script touches two keys derived from unrelated
-// hashes (the old and new refresh-token hashes) in a single atomic EVAL --
-// Redis Cluster requires all keys touched by one command to hash to the
-// same hash slot, and this key format gives no such guarantee, so the
-// script would fail against a cluster with a CROSSSLOT error. This is an
-// intentional constraint of this service, not an oversight: it is not
-// safe to point RedisStore at a Redis Cluster or Ring client.
+// the refresh-token scripts touch several keys derived from unrelated
+// hashes (the old and new refresh-token hashes, the family ID hash, and --
+// in DetectRefreshTokenReuse -- a key name read out of a value at runtime)
+// in a single atomic EVAL. Redis Cluster requires all keys touched by one
+// command to hash to the same hash slot, and this key format gives no such
+// guarantee, so the scripts would fail against a cluster with a CROSSSLOT
+// error. This is an intentional constraint of this service, not an
+// oversight: it is not safe to point RedisStore at a Redis Cluster or Ring
+// client.
 type RedisStore struct {
 	client redis.UniversalClient
 }
 
 // NewRedisStore returns a Store backed by client. client must be a
 // standalone Redis client (redis.NewClient); NewRedisStore panics if given
-// a *redis.ClusterClient or *redis.Ring, since RotateRefreshToken's
-// cross-slot Lua script cannot run against a cluster (see the RedisStore
-// doc comment). The constructor still accepts the redis.UniversalClient
-// interface so callers can pass through *redis.Client without an
-// unnecessary concrete-type dependency; only these two known-incompatible
-// concrete types are rejected.
+// a *redis.ClusterClient or *redis.Ring, since the refresh-token
+// rotation and reuse-detection scripts are cross-slot and cannot run
+// against a cluster (see the RedisStore doc comment). The constructor
+// still accepts the redis.UniversalClient interface so callers can pass
+// through *redis.Client without an unnecessary concrete-type dependency;
+// only these two known-incompatible concrete types are rejected.
 func NewRedisStore(client redis.UniversalClient) *RedisStore {
 	switch client.(type) {
 	case *redis.ClusterClient, *redis.Ring:
@@ -237,12 +337,34 @@ func (s *RedisStore) ConsumeAuthorizationCode(ctx context.Context, code string) 
 	return record, err
 }
 
-// PutRefreshToken implements Store.
+// PutRefreshToken implements Store. It atomically stores grant and
+// publishes it as its family's currently active member, so the grant is
+// revocable by DetectRefreshTokenReuse from the moment it exists.
 func (s *RedisStore) PutRefreshToken(ctx context.Context, grant RefreshGrant, ttl time.Duration) error {
 	if grant.Token == "" {
 		return errors.New("oauth: refresh token value must not be empty")
 	}
-	return putRecord(ctx, s.client, keyPrefixRefresh, grant.Token, grant, ttl)
+	if grant.FamilyID == "" {
+		return errors.New("oauth: refresh grant family ID must not be empty")
+	}
+	if ttl <= 0 {
+		return errors.New("oauth: refresh token TTL must be positive")
+	}
+
+	data, err := json.Marshal(grant)
+	if err != nil {
+		return fmt.Errorf("oauth: cannot marshal refresh grant: %w", err)
+	}
+
+	keys := []string{
+		hashedKey(keyPrefixRefresh, grant.Token),
+		hashedKey(keyPrefixRefreshFamily, grant.FamilyID),
+	}
+
+	if err := putRefreshTokenScript.Run(ctx, s.client, keys, data, ttl.Milliseconds()).Err(); err != nil {
+		return fmt.Errorf("oauth: cannot store refresh token: %w", err)
+	}
+	return nil
 }
 
 // GetRefreshToken implements Store. Unlike RotateRefreshToken it does not
@@ -251,7 +373,9 @@ func (s *RedisStore) PutRefreshToken(ctx context.Context, grant RefreshGrant, tt
 // request and build the rotated replacement grant RotateRefreshToken then
 // atomically swaps in. A refresh token that has already been rotated or
 // has expired returns ErrNotFound, exactly as RotateRefreshToken's replay
-// check would.
+// check would; callers that want to distinguish "already rotated" (reuse)
+// from "expired or never issued" must follow up with
+// DetectRefreshTokenReuse.
 func (s *RedisStore) GetRefreshToken(ctx context.Context, token string) (RefreshGrant, error) {
 	var grant RefreshGrant
 	err := getRecord(ctx, s.client, keyPrefixRefresh, token, &grant)
@@ -259,15 +383,20 @@ func (s *RedisStore) GetRefreshToken(ctx context.Context, token string) (Refresh
 	return grant, err
 }
 
-// RotateRefreshToken implements Store. It atomically deletes oldToken's
-// record and creates newGrant's record with ttl; a second rotation attempt
-// against the same oldToken (replay) returns ErrNotFound.
+// RotateRefreshToken implements Store. It atomically consumes oldToken's
+// record, tombstones it, creates newGrant's record with ttl, and repoints
+// newGrant's family at the replacement; a second rotation attempt against
+// the same oldToken (replay) returns ErrNotFound and leaves every record
+// untouched.
 func (s *RedisStore) RotateRefreshToken(ctx context.Context, oldToken string, newGrant RefreshGrant, ttl time.Duration) error {
 	if oldToken == "" {
 		return errors.New("oauth: old refresh token value must not be empty")
 	}
 	if newGrant.Token == "" {
 		return errors.New("oauth: new refresh token value must not be empty")
+	}
+	if newGrant.FamilyID == "" {
+		return errors.New("oauth: refresh grant family ID must not be empty")
 	}
 	if ttl <= 0 {
 		return errors.New("oauth: refresh token TTL must be positive")
@@ -278,10 +407,14 @@ func (s *RedisStore) RotateRefreshToken(ctx context.Context, oldToken string, ne
 		return fmt.Errorf("oauth: cannot marshal refresh grant: %w", err)
 	}
 
-	oldKey := hashedKey(keyPrefixRefresh, oldToken)
-	newKey := hashedKey(keyPrefixRefresh, newGrant.Token)
+	keys := []string{
+		hashedKey(keyPrefixRefresh, oldToken),
+		hashedKey(keyPrefixRefresh, newGrant.Token),
+		hashedKey(keyPrefixRefreshFamily, newGrant.FamilyID),
+		hashedKey(keyPrefixRefreshUsed, oldToken),
+	}
 
-	result, err := rotateRefreshTokenScript.Run(ctx, s.client, []string{oldKey, newKey}, data, ttl.Milliseconds()).Int64()
+	result, err := rotateRefreshTokenScript.Run(ctx, s.client, keys, data, ttl.Milliseconds()).Int64()
 	if err != nil {
 		return fmt.Errorf("oauth: cannot rotate refresh token: %w", err)
 	}
@@ -289,6 +422,24 @@ func (s *RedisStore) RotateRefreshToken(ctx context.Context, oldToken string, ne
 		return ErrNotFound
 	}
 	return nil
+}
+
+// DetectRefreshTokenReuse implements Store. See the Store interface for
+// the contract and detectRefreshTokenReuseScript for why the revocation
+// must be a single atomic script.
+func (s *RedisStore) DetectRefreshTokenReuse(ctx context.Context, token string) error {
+	if token == "" {
+		return errors.New("oauth: refresh token value must not be empty")
+	}
+
+	result, err := detectRefreshTokenReuseScript.Run(ctx, s.client, []string{hashedKey(keyPrefixRefreshUsed, token)}).Int64()
+	if err != nil {
+		return fmt.Errorf("oauth: cannot check refresh token reuse: %w", err)
+	}
+	if result == 0 {
+		return ErrNotFound
+	}
+	return ErrRefreshTokenReuse
 }
 
 // PutDynamicClient implements Store.

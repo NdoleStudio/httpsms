@@ -64,6 +64,10 @@ func (stubAPIClient) ListThreadMessages(context.Context, string, httpsms.ListThr
 	return nil, nil
 }
 
+func (stubAPIClient) ListIncomingMessages(context.Context, string, httpsms.ListIncomingMessagesParams) ([]httpsms.Message, error) {
+	return nil, nil
+}
+
 func (stubAPIClient) CreatePhoneAPIKey(context.Context, string, httpsms.CreatePhoneAPIKeyParams) (httpsms.PhoneAPIKey, error) {
 	return httpsms.PhoneAPIKey{}, nil
 }
@@ -126,6 +130,11 @@ type testHarness struct {
 	httpServer *httptest.Server
 	keys       *auth.KeySet
 	cfg        config.Config
+
+	// redis is the miniredis instance backing every Redis-dependent
+	// component of the assembled server, exposed so a test can assert on
+	// what a request did (or did not) persist.
+	redis *miniredis.Miniredis
 }
 
 // newTestHarness assembles server.New's dependencies against a fresh
@@ -192,7 +201,7 @@ func newTestHarnessWithAPIClient(t *testing.T, apiClient httpsms.Client, mutate 
 	httpServer := httptest.NewServer(handler)
 	t.Cleanup(httpServer.Close)
 
-	return &testHarness{httpServer: httpServer, keys: keys, cfg: cfg}
+	return &testHarness{httpServer: httpServer, keys: keys, cfg: cfg, redis: mr}
 }
 
 // mintToken mints a fixed-scope MCP access token for the harness's test

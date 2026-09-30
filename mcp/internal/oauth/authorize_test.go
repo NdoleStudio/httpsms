@@ -74,6 +74,7 @@ type errorStore struct {
 	failConsumeCode        bool
 	failGetRefreshToken    bool
 	failRotateRefreshToken bool
+	failDetectReuse        bool
 }
 
 func (s *errorStore) GetAuthorizationTransaction(ctx context.Context, id string) (AuthorizationTransaction, error) {
@@ -109,6 +110,13 @@ func (s *errorStore) RotateRefreshToken(ctx context.Context, oldToken string, gr
 		return errStoreFailure
 	}
 	return s.Store.RotateRefreshToken(ctx, oldToken, grant, ttl)
+}
+
+func (s *errorStore) DetectRefreshTokenReuse(ctx context.Context, token string) error {
+	if s.failDetectReuse {
+		return errStoreFailure
+	}
+	return s.Store.DetectRefreshTokenReuse(ctx, token)
 }
 
 // newTestServerConfig returns a valid ServerConfig for tests.

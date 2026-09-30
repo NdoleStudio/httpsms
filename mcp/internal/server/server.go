@@ -220,7 +220,15 @@ func New(cfg config.Config, deps Dependencies) (http.Handler, error) {
 	mux.Handle(authorizationServerMetadataPath, withPublicCORS(oauth.NewAuthorizationServerMetadataHandler(baseURL)))
 	mux.Handle(jwksPath, withPublicCORS(jwksHandler(deps.Keys)))
 
-	mux.Handle("POST "+registerPath, oauth.NewRegistrationHandler(deps.OAuthStore))
+	// The DCR registration limiter deliberately takes no client identity:
+	// POST /oauth/register is unauthenticated, and the only identifiers
+	// available on such a request (the transport peer address behind
+	// Cloud Run's proxy, or X-Forwarded-For / X-Real-IP /
+	// CF-Connecting-IP) are spoofable or trivially rotated, so a
+	// per-"client-IP" budget would bound nothing. The budget is global
+	// and fails closed (see oauth.RedisRegistrationLimiter).
+	registrationLimiter := oauth.NewRedisRegistrationLimiter(deps.RedisClient, oauth.DefaultRegistrationsPerMinute)
+	mux.Handle("POST "+registerPath, oauth.NewRegistrationHandler(deps.OAuthStore, registrationLimiter))
 	mux.HandleFunc("GET "+authorizePath, deps.OAuthServer.HandleAuthorize)
 	mux.HandleFunc("POST "+firebaseCompletePath, deps.OAuthServer.HandleFirebaseComplete)
 	mux.HandleFunc("POST "+tokenPath, deps.OAuthServer.HandleToken)

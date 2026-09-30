@@ -196,6 +196,98 @@ func TestClient_ListMessageThreads(t *testing.T) {
 	assert.EqualValues(t, 2, threads[0].UnreadCount)
 }
 
+func TestClient_ListMessageThreads_DecodesContactDetails(t *testing.T) {
+	// This is the httpSMS API's own wire shape for a message thread
+	// listed with contacts=true (api/pkg/entities.MessageThread embedding
+	// entities.Contact under "contact_details"). Decoding it must not
+	// drop the saved contact.
+	const body = `{
+		"status": "success",
+		"message": "message threads fetched successfully",
+		"data": [
+			{
+				"id": "8f9c71b8-6f1c-4f1c-9b0b-8f2d3f4a5b6c",
+				"owner": "+18005550199",
+				"contact": "+18005550100",
+				"is_archived": false,
+				"unread_count": 1,
+				"status": "received",
+				"last_message_content": "hello there",
+				"last_message_id": "c5b2ab7c-0b1c-4d1e-9f0a-1b2c3d4e5f60",
+				"order_timestamp": "2022-06-05T14:26:02.302718+03:00",
+				"created_at": "2022-06-05T14:26:02.302718+03:00",
+				"updated_at": "2022-06-05T14:26:02.302718+03:00",
+				"contact_details": {
+					"id": "32343a19-da5e-4b1b-a767-3298a73703cb",
+					"user_id": "WB7DRDWrJZRGbYrv2CKGkqbzvqdC",
+					"name": "Alice Smith",
+					"emails": ["alice@example.com"],
+					"phone_numbers": ["+18005550100"],
+					"properties": {"company": "Acme"},
+					"created_at": "2022-06-05T14:26:02.302718+03:00",
+					"updated_at": "2022-06-05T14:26:02.302718+03:00"
+				}
+			},
+			{
+				"id": "2d3e4f50-6172-4839-a0b1-c2d3e4f50617",
+				"owner": "+18005550199",
+				"contact": "+18005550101",
+				"is_archived": false,
+				"unread_count": 0,
+				"status": "received",
+				"last_message_content": null,
+				"last_message_id": null,
+				"order_timestamp": "2022-06-05T14:26:02.302718+03:00",
+				"created_at": "2022-06-05T14:26:02.302718+03:00",
+				"updated_at": "2022-06-05T14:26:02.302718+03:00"
+			}
+		]
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1/message-threads", r.URL.Path)
+		assert.Equal(t, "true", r.URL.Query().Get("contacts"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, body)
+	}))
+	t.Cleanup(server.Close)
+
+	client := httpsms.NewClient(server.URL)
+	threads, err := client.ListMessageThreads(t.Context(), "token", httpsms.ListMessageThreadsParams{
+		Owner:        "+18005550199",
+		WithContacts: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, threads, 2)
+
+	require.NotNil(t, threads[0].ContactDetails, "contact_details must not be dropped")
+	assert.Equal(t, "Alice Smith", threads[0].ContactDetails.Name)
+	assert.Equal(t, "32343a19-da5e-4b1b-a767-3298a73703cb", threads[0].ContactDetails.ID)
+	assert.Equal(t, "WB7DRDWrJZRGbYrv2CKGkqbzvqdC", threads[0].ContactDetails.UserID)
+	assert.Equal(t, []string{"alice@example.com"}, threads[0].ContactDetails.Emails)
+	assert.Equal(t, []string{"+18005550100"}, threads[0].ContactDetails.PhoneNumbers)
+	assert.Equal(t, map[string]string{"company": "Acme"}, threads[0].ContactDetails.Properties)
+
+	assert.Nil(t, threads[1].ContactDetails, "a thread with no saved contact must decode to a nil ContactDetails")
+}
+
+// TestMessageThread_OmitsAbsentContactDetails asserts an unsaved contact
+// is omitted from the tool's own JSON output rather than surfacing as a
+// null field, matching api/pkg/entities.MessageThread.
+func TestMessageThread_OmitsAbsentContactDetails(t *testing.T) {
+	data, err := json.Marshal(httpsms.MessageThread{ID: "thread-1"})
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(data, &payload))
+	assert.NotContains(t, payload, "contact_details")
+
+	data, err = json.Marshal(httpsms.MessageThread{ID: "thread-1", ContactDetails: &httpsms.Contact{Name: "Alice Smith"}})
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(data, &payload))
+	require.Contains(t, payload, "contact_details")
+}
+
 func TestClient_ListMessageThreads_OmitsUnsetArchiveFilter(t *testing.T) {
 	server := newTestServer(t, http.StatusOK, httpsms.Response[[]httpsms.MessageThread]{Status: "success", Data: []httpsms.MessageThread{}}, func(t *testing.T, r *http.Request) {
 		query := r.URL.Query()
@@ -240,6 +332,42 @@ func TestClient_ListThreadMessages(t *testing.T) {
 	require.Len(t, messages, 1)
 	assert.Equal(t, "hi", messages[0].Content)
 	assert.True(t, messages[0].Encrypted)
+}
+
+func TestClient_ListIncomingMessages(t *testing.T) {
+	const token = "delegated-token-list-incoming"
+	descending := true
+
+	server := newTestServer(t, http.StatusOK, httpsms.Response[[]httpsms.Message]{
+		Status: "success",
+		Data: []httpsms.Message{
+			{ID: "message-2", Type: "mobile-originated", Status: "received"},
+		},
+	}, func(t *testing.T, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/v1/messages/incoming", r.URL.Path)
+		requireBearer(t, r, token)
+		requireRequestID(t, r)
+
+		query := r.URL.Query()
+		assert.ElementsMatch(t, []string{"+18005550199", "+18005550188"}, query["owners"])
+		assert.ElementsMatch(t, []string{"received", "pending"}, query["statuses"])
+		assert.Equal(t, "created_at", query.Get("sort_by"))
+		assert.Equal(t, "true", query.Get("sort_descending"))
+		assert.Equal(t, "search text", query.Get("query"))
+	})
+
+	client := httpsms.NewClient(server.URL)
+	messages, err := client.ListIncomingMessages(t.Context(), token, httpsms.ListIncomingMessagesParams{
+		Owners:         []string{"+18005550199", "+18005550188"},
+		Statuses:       []string{"received", "pending"},
+		Query:          "search text",
+		SortBy:         "created_at",
+		SortDescending: &descending,
+	})
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "mobile-originated", messages[0].Type)
 }
 
 func TestClient_CreatePhoneAPIKey(t *testing.T) {

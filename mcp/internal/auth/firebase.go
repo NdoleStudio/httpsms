@@ -81,8 +81,10 @@ type FirebaseVerifier struct {
 
 // NewFirebaseVerifier returns a FirebaseVerifier for projectID, fetching
 // signing certificates from certsURL (Google's
-// "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
-// endpoint in production) through httpClient.
+// "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+// endpoint in production) through httpClient. certsURL must serve a flat
+// JSON object mapping key ID to a PEM-encoded X.509 certificate; a JWKS
+// document is not accepted (see firebaseCertCache).
 //
 // httpClient may be nil, in which case http.DefaultClient is used (its
 // Transport, if any, is preserved so tests can point it at an httptest

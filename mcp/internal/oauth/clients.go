@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -591,18 +593,37 @@ type registrationError struct {
 }
 
 // NewRegistrationHandler returns an http.HandlerFunc implementing
-// POST /oauth/register (RFC 7591 Dynamic Client Registration): it validates
-// the submitted client metadata with the same rules enforced on a CIMD
+// POST /oauth/register (RFC 7591 Dynamic Client Registration): it charges
+// the request against limiter's global registration budget, validates the
+// submitted client metadata with the same rules enforced on a CIMD
 // document (redirect URIs, grant/response types, and
 // token_endpoint_auth_method=none), assigns a random client_id, stores the
 // resulting record in store for 24 hours, and responds 201 Created with the
 // stored Client.
-func NewRegistrationHandler(store Store) http.HandlerFunc {
+//
+// The rate-limit check runs before anything is read, generated, or
+// persisted, so an exhausted budget (or an unreachable Redis) can never
+// result in a stored client record. limiter must not be nil: registration
+// is this service's only unauthenticated write, and an unlimited one would
+// let any caller fill Redis with 24-hour records.
+func NewRegistrationHandler(store Store, limiter RegistrationLimiter) http.HandlerFunc {
+	if store == nil {
+		panic("oauth: NewRegistrationHandler requires a Store")
+	}
+	if limiter == nil {
+		panic("oauth: NewRegistrationHandler requires a RegistrationLimiter")
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", http.MethodPost)
 			w.Header().Set("Cache-Control", "no-store")
 			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		if err := limiter.Allow(r.Context()); err != nil {
+			writeRegistrationRateLimited(w, err)
 			return
 		}
 
@@ -673,6 +694,39 @@ func mustMarshal(v any) []byte {
 		panic(err)
 	}
 	return data
+}
+
+// writeRegistrationRateLimited writes the response for a registration
+// request that was refused by the RegistrationLimiter.
+//
+// An exhausted budget is a 429 carrying a Retry-After header (RFC 9110
+// Section 10.2.3, in whole seconds, never below one) so a well-behaved
+// client backs off for exactly the remainder of the current window. A
+// limiter failure -- Redis unavailable -- is a 503: the service cannot
+// account for the registration, so it fails closed and refuses it rather
+// than persisting a client it could not charge. Both carry the RFC
+// 6749/7591-shaped "temporarily_unavailable" error code, which is the
+// OAuth-registered code for exactly this condition, and neither leaks the
+// underlying error.
+func writeRegistrationRateLimited(w http.ResponseWriter, err error) {
+	var rateLimited *RegistrationRateLimitError
+	if !errors.As(err, &rateLimited) {
+		writeRegistrationError(w, http.StatusServiceUnavailable, "temporarily_unavailable", "client registration is temporarily unavailable, please retry")
+		return
+	}
+
+	retryAfterSeconds := int(math.Ceil(rateLimited.RetryAfter.Seconds()))
+	if retryAfterSeconds < 1 {
+		retryAfterSeconds = 1
+	}
+	w.Header().Set("Retry-After", strconv.Itoa(retryAfterSeconds))
+
+	writeRegistrationError(
+		w,
+		http.StatusTooManyRequests,
+		"temporarily_unavailable",
+		"too many client registration requests, please retry later",
+	)
 }
 
 // writeRegistrationError writes an RFC 7591 error response. Like the

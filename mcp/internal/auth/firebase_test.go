@@ -148,6 +148,32 @@ func TestFirebaseVerifierAcceptsValidToken(t *testing.T) {
 	assert.Equal(t, "user@example.com", principal.Email)
 }
 
+// TestFirebaseVerifierRejectsJWKSDocument documents the certificate
+// endpoint's wire contract: the verifier parses a flat
+// {"kid": "<PEM X.509 certificate>"} map, which is what Google's
+// /robot/v1/metadata/x509/securetoken@system.gserviceaccount.com endpoint
+// serves. Google also publishes the same keys as a JWKS
+// ({"keys": [...]}) document under /service_accounts/v1/jwk/..., and
+// pointing FIREBASE_CERTS_URL at that document silently yields an empty
+// key map and fails every login -- so the default must never be the JWKS
+// URL (see config.defaultFirebaseCertsURL).
+func TestFirebaseVerifierRejectsJWKSDocument(t *testing.T) {
+	key := testRSAKeyPair(t)
+
+	jwksDocument := `{"keys":[{"kty":"RSA","use":"sig","alg":"RS256","kid":"firebase-test-key","n":"AQAB","e":"AQAB"}]}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(jwksDocument))
+	}))
+	defer server.Close()
+
+	verifier := newTestVerifier(t, server.URL, server.Client())
+	raw := signFirebaseToken(t, key, "firebase-test-key", validFirebaseClaims())
+
+	_, err := verifier.Verify(context.Background(), raw)
+	require.Error(t, err, "a JWKS document must not be silently accepted as a certificate map")
+}
+
 func TestFirebaseVerifierRejectsWrongIssuer(t *testing.T) {
 	key := testRSAKeyPair(t)
 	certPEM := selfSignedCertificatePEM(t, key)

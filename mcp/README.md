@@ -37,7 +37,7 @@ absent. In `production` (`ENV=production`), every URL-valued setting must use
 | --- | --- | --- |
 | `ENV` | `local` | Set to `production` in Cloud Run to enforce HTTPS on every configured URL. |
 | `PORT` | `8080` | TCP port the HTTP server listens on. Cloud Run supplies this automatically; do not set it manually in Cloud Run. |
-| `FIREBASE_CERTS_URL` | Google's public Firebase JWKS endpoint | Override only for local/test identity providers. |
+| `FIREBASE_CERTS_URL` | Google's public Firebase X.509 certificate endpoint (`https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`) | Override only for local/test identity providers. The endpoint must serve a flat JSON object mapping key ID to a PEM-encoded X.509 certificate; a JWKS (`{"keys": [...]}`) document is **not** supported. |
 | `MCP_AUDIENCE` | `<MCP_BASE_URL>/mcp` | Audience MCP access tokens are bound to. |
 | `API_AUDIENCE` | `<HTTPSMS_API_URL>` | Audience API delegation tokens are bound to. **Must match** the API's `MCP_AUTH_AUDIENCE` (see [Coordinating with the API](#coordinating-with-the-api)). |
 | `MCP_ACCESS_TOKEN_TTL` | `15m` | MCP access token lifetime. |

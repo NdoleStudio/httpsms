@@ -167,7 +167,7 @@ func TestRedisStoreRotateRefreshTokenReplacesOldWithNew(t *testing.T) {
 	require.NoError(t, store.RotateRefreshToken(ctx, "old-refresh-token", newGrant, time.Hour))
 
 	// The old refresh token must no longer rotate (it has been consumed).
-	err := store.RotateRefreshToken(ctx, "old-refresh-token", oauth.RefreshGrant{Token: "another-token"}, time.Hour)
+	err := store.RotateRefreshToken(ctx, "old-refresh-token", oauth.RefreshGrant{Token: "another-token", FamilyID: "family-1"}, time.Hour)
 	require.ErrorIs(t, err, oauth.ErrNotFound)
 
 	// The new refresh token must itself now be rotatable, proving it was
@@ -184,20 +184,20 @@ func TestRedisStoreRotateRefreshTokenRejectsReplay(t *testing.T) {
 	store, _ := newTestStore(t)
 	ctx := context.Background()
 
-	require.NoError(t, store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "token-a"}, time.Hour))
+	require.NoError(t, store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "token-a", FamilyID: "family-a"}, time.Hour))
 
-	require.NoError(t, store.RotateRefreshToken(ctx, "token-a", oauth.RefreshGrant{Token: "token-b"}, time.Hour))
+	require.NoError(t, store.RotateRefreshToken(ctx, "token-a", oauth.RefreshGrant{Token: "token-b", FamilyID: "family-a"}, time.Hour))
 
 	// Replaying rotation with the already-consumed old token must fail even
 	// though a (different, unrelated) new token value is supplied.
-	err := store.RotateRefreshToken(ctx, "token-a", oauth.RefreshGrant{Token: "token-c"}, time.Hour)
+	err := store.RotateRefreshToken(ctx, "token-a", oauth.RefreshGrant{Token: "token-c", FamilyID: "family-a"}, time.Hour)
 	require.ErrorIs(t, err, oauth.ErrNotFound)
 }
 
 func TestRedisStoreRotateRefreshTokenUnknownOldTokenFails(t *testing.T) {
 	store, _ := newTestStore(t)
 
-	err := store.RotateRefreshToken(context.Background(), "never-issued", oauth.RefreshGrant{Token: "new-token"}, time.Hour)
+	err := store.RotateRefreshToken(context.Background(), "never-issued", oauth.RefreshGrant{Token: "new-token", FamilyID: "family-1"}, time.Hour)
 	require.ErrorIs(t, err, oauth.ErrNotFound)
 }
 
@@ -231,7 +231,7 @@ func TestRedisStoreGetRefreshTokenReadsWithoutConsuming(t *testing.T) {
 	assert.Equal(t, grant, got2)
 
 	// The grant must still be rotatable, proving Get did not delete it.
-	require.NoError(t, store.RotateRefreshToken(ctx, "refresh-token", oauth.RefreshGrant{Token: "rotated-token"}, time.Hour))
+	require.NoError(t, store.RotateRefreshToken(ctx, "refresh-token", oauth.RefreshGrant{Token: "rotated-token", FamilyID: "family-1"}, time.Hour))
 }
 
 func TestRedisStoreGetRefreshTokenNotFound(t *testing.T) {
@@ -329,16 +329,17 @@ func TestRedisStoreKeysAreNamespacedAndHashed(t *testing.T) {
 
 	require.NoError(t, store.PutAuthorizationTransaction(ctx, oauth.AuthorizationTransaction{ID: "super-secret-transaction-id"}, time.Minute))
 	require.NoError(t, store.PutAuthorizationCode(ctx, oauth.AuthorizationCode{Code: "super-secret-code"}, time.Minute))
-	require.NoError(t, store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "super-secret-refresh-token"}, time.Hour))
+	require.NoError(t, store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "super-secret-refresh-token", FamilyID: "super-secret-family-id"}, time.Hour))
 	require.NoError(t, store.PutDynamicClient(ctx, oauth.Client{ID: "super-secret-client-id"}, time.Hour))
 	require.NoError(t, store.PutConfirmation(ctx, oauth.Confirmation{Handle: "super-secret-handle"}, time.Minute))
 
 	keys := server.Keys()
-	require.Len(t, keys, 5)
+	require.Len(t, keys, 6)
 
 	expectedPrefixes := []string{
 		"httpsms:mcp:oauth:transaction:",
 		"httpsms:mcp:oauth:code:",
+		"httpsms:mcp:oauth:refresh-family:",
 		"httpsms:mcp:oauth:refresh:",
 		"httpsms:mcp:oauth:client:",
 		"httpsms:mcp:confirmation:",
@@ -360,6 +361,13 @@ func TestRedisStoreKeysAreNamespacedAndHashed(t *testing.T) {
 
 		assert.NotContains(t, key, "super-secret", "Redis key %q must not contain the raw secret value", key)
 	}
+
+	// No stored value may carry a raw refresh token either: the family
+	// pointer stores the refresh record's hashed key name, never the
+	// token it protects.
+	for _, key := range keys {
+		assert.NotContains(t, server.Dump(), "super-secret-refresh-token", "no Redis value may contain the raw refresh token (key %q)", key)
+	}
 }
 
 func TestRedisStorePutRejectsNonPositiveTTL(t *testing.T) {
@@ -369,7 +377,7 @@ func TestRedisStorePutRejectsNonPositiveTTL(t *testing.T) {
 	err := store.PutAuthorizationCode(ctx, oauth.AuthorizationCode{Code: "code"}, 0)
 	require.Error(t, err)
 
-	err = store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "token"}, -time.Second)
+	err = store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "token", FamilyID: "family-1"}, -time.Second)
 	require.Error(t, err)
 }
 
@@ -377,9 +385,9 @@ func TestRedisStoreRotateRefreshTokenRejectsNonPositiveTTL(t *testing.T) {
 	store, _ := newTestStore(t)
 	ctx := context.Background()
 
-	require.NoError(t, store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "token"}, time.Hour))
+	require.NoError(t, store.PutRefreshToken(ctx, oauth.RefreshGrant{Token: "token", FamilyID: "family-1"}, time.Hour))
 
-	err := store.RotateRefreshToken(ctx, "token", oauth.RefreshGrant{Token: "new-token"}, 0)
+	err := store.RotateRefreshToken(ctx, "token", oauth.RefreshGrant{Token: "new-token", FamilyID: "family-1"}, 0)
 	require.Error(t, err)
 }
 

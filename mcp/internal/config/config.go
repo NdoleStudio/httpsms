@@ -34,7 +34,15 @@ const (
 	defaultSendToolsPerMinute    = 30
 	defaultKeyCreatesPerHour     = 10
 	defaultKeyRotationsPerHour   = 3
-	defaultFirebaseCertsURL      = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+	// defaultFirebaseCertsURL is Google's X.509 metadata endpoint for the
+	// Firebase secure-token service. It serves a flat JSON object mapping
+	// each key ID to a PEM-encoded X.509 certificate, which is exactly the
+	// shape auth.FirebaseVerifier's certificate cache parses. Google also
+	// publishes the same keys as a JWKS document under
+	// /service_accounts/v1/jwk/..., but that document is a
+	// {"keys": [...]} envelope this service does not decode, so pointing
+	// FIREBASE_CERTS_URL at it would fail every Firebase login.
+	defaultFirebaseCertsURL = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
 )
 
 // Config is the validated runtime configuration for the httpSMS MCP service.
@@ -72,8 +80,10 @@ type Config struct {
 	// login page's client-side Firebase SDK.
 	FirebaseAuthDomain string
 
-	// FirebaseCertsURL is the JWKS endpoint used to verify Firebase ID
-	// token signatures.
+	// FirebaseCertsURL is the Google X.509 certificate metadata endpoint
+	// used to verify Firebase ID token signatures. It must serve a flat
+	// JSON object mapping key ID to a PEM-encoded X.509 certificate (see
+	// defaultFirebaseCertsURL), not a JWKS document.
 	FirebaseCertsURL *url.URL
 
 	// SigningPrivateKeyPEM is the PEM-encoded RSA private key this service

@@ -86,6 +86,21 @@ type Message struct {
 	FailureReason  *string    `json:"failure_reason"`
 }
 
+// Contact is a user's saved contact, as returned by the httpSMS API in a
+// message thread's "contact_details" field. Its JSON field names are a
+// wire contract with api/pkg/entities.Contact and must not change
+// independently of it.
+type Contact struct {
+	ID           string            `json:"id"`
+	UserID       string            `json:"user_id"`
+	Name         string            `json:"name"`
+	Emails       []string          `json:"emails"`
+	PhoneNumbers []string          `json:"phone_numbers"`
+	Properties   map[string]string `json:"properties"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
+}
+
 // MessageThread is a conversation between one of the user's phones (Owner)
 // and a Contact.
 type MessageThread struct {
@@ -100,6 +115,14 @@ type MessageThread struct {
 	OrderTimestamp     time.Time `json:"order_timestamp"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
+
+	// ContactDetails is the thread contact's saved contact record. The
+	// API only populates it when a thread listing is requested with
+	// with_contacts=true and the contact is actually saved, so it is
+	// omitted (rather than serialized as null) when absent -- matching
+	// api/pkg/entities.MessageThread's own
+	// `json:"contact_details,omitempty"` field.
+	ContactDetails *Contact `json:"contact_details,omitempty"`
 }
 
 // PhoneAPIKey authenticates the httpSMS Android app for a subset of the
@@ -165,6 +188,20 @@ type ListThreadMessagesParams struct {
 	Query   string
 	Skip    int
 	Limit   int
+}
+
+// ListIncomingMessagesParams are the supported filters for
+// GET /v1/messages/incoming. SortDescending is a pointer so "not set" (let
+// the API pick its own default sort order) is distinguishable from an
+// explicit false.
+type ListIncomingMessagesParams struct {
+	Owners         []string
+	Statuses       []string
+	Query          string
+	SortBy         string
+	SortDescending *bool
+	Skip           int
+	Limit          int
 }
 
 // CreatePhoneAPIKeyParams is the payload for POST /v1/phone-api-keys.

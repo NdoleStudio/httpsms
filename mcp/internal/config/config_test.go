@@ -61,7 +61,36 @@ func TestLoadSucceedsWithAValidEnvironment(t *testing.T) {
 	assert.Equal(t, 30, cfg.SendToolsPerMinute)
 	assert.Equal(t, 10, cfg.KeyCreatesPerHour)
 	assert.Equal(t, 3, cfg.KeyRotationsPerHour)
-	assert.Equal(t, "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com", cfg.FirebaseCertsURL.String())
+	assert.Equal(t, "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com", cfg.FirebaseCertsURL.String())
+}
+
+// TestLoadDefaultFirebaseCertsURLIsNotTheJWKSEndpoint pins the default
+// Firebase certificate endpoint to Google's X.509 metadata URL, which
+// serves the flat {"kid": "<PEM certificate>"} map auth.FirebaseVerifier
+// parses. The sibling /service_accounts/v1/jwk/... endpoint serves a JWKS
+// ({"keys": [...]}) document instead; defaulting to it decodes to an
+// empty key map and breaks every Firebase login, so the default must stay
+// on the X.509 endpoint.
+func TestLoadDefaultFirebaseCertsURLIsNotTheJWKSEndpoint(t *testing.T) {
+	setValidEnv(t)
+
+	cfg, err := config.Load()
+	require.NoError(t, err)
+
+	certsURL := cfg.FirebaseCertsURL.String()
+	assert.Contains(t, certsURL, "/robot/v1/metadata/x509/")
+	assert.NotContains(t, certsURL, "/service_accounts/v1/jwk/")
+}
+
+// TestLoadAllowsOverridingFirebaseCertsURL asserts a local/test identity
+// provider can still be pointed at, which the integration stack relies on.
+func TestLoadAllowsOverridingFirebaseCertsURL(t *testing.T) {
+	setValidEnv(t)
+	t.Setenv("FIREBASE_CERTS_URL", "http://wiremock:8080/firebase-certs")
+
+	cfg, err := config.Load()
+	require.NoError(t, err)
+	assert.Equal(t, "http://wiremock:8080/firebase-certs", cfg.FirebaseCertsURL.String())
 }
 
 func TestLoadRejectsPartialConfiguration(t *testing.T) {

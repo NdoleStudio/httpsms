@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -123,6 +124,13 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 // (Store.RotateRefreshToken): a replayed old refresh token always fails
 // with "invalid_grant", even if a legitimate rotation already consumed it
 // moments earlier.
+//
+// A replay is not merely rejected: presenting an already-rotated refresh
+// token means the lineage is held by more than one party, so
+// Store.DetectRefreshTokenReuse revokes the whole token family --
+// including the replacement the legitimate client is currently holding --
+// before the request is refused. The client sees the same "invalid_grant"
+// either way and learns nothing about which case it hit.
 func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request) {
 	refreshToken := r.PostFormValue("refresh_token")
 	clientID := r.PostFormValue("client_id")
@@ -134,6 +142,10 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 
 	grant, err := s.store.GetRefreshToken(r.Context(), refreshToken)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			s.revokeReusedRefreshTokenFamily(w, r.Context(), refreshToken)
+			return
+		}
 		writeStoreError(w, err, "invalid_grant", "the refresh token is invalid, expired, or already used")
 		return
 	}
@@ -207,6 +219,15 @@ func (s *Server) issueTokens(w http.ResponseWriter, ctx context.Context, princip
 		storeErr = s.store.RotateRefreshToken(ctx, rotateOldToken, newGrant, s.config.RefreshTokenTTL)
 	}
 	if storeErr != nil {
+		if rotateOldToken != "" && errors.Is(storeErr, ErrNotFound) {
+			// The grant was readable moments ago but its rotation lost
+			// the race, which means a concurrent request consumed the
+			// same refresh token: two parties hold the lineage, so this
+			// is reuse and the family must be revoked, exactly as a
+			// later replay would be.
+			s.revokeReusedRefreshTokenFamily(w, ctx, rotateOldToken)
+			return
+		}
 		// Only a lost rotation race (the old token was already consumed)
 		// is the client's problem; a Redis or serialization failure is
 		// ours and must not be reported as an invalid grant.
@@ -221,6 +242,27 @@ func (s *Server) issueTokens(w http.ResponseWriter, ctx context.Context, princip
 		RefreshToken: newRefreshToken,
 		Scope:        strings.Join(scopes, " "),
 	})
+}
+
+// revokeReusedRefreshTokenFamily is called when a presented refresh token
+// is not live. It asks the store whether the token was already consumed by
+// a rotation and, if so, atomically revokes the family's currently active
+// token before responding.
+//
+// Every outcome writes an "invalid_grant" error with the same description:
+// a client that replays a stolen token must not be able to tell from the
+// response whether the token was expired, never issued, or belonged to a
+// family that has just been revoked. Only a store failure (which is this
+// server's problem, not the client's) produces a different, 500-shaped
+// response.
+func (s *Server) revokeReusedRefreshTokenFamily(w http.ResponseWriter, ctx context.Context, refreshToken string) {
+	err := s.store.DetectRefreshTokenReuse(ctx, refreshToken)
+	if err != nil && !errors.Is(err, ErrNotFound) && !errors.Is(err, ErrRefreshTokenReuse) {
+		writeOAuthError(w, http.StatusInternalServerError, "server_error", "the request could not be completed")
+		return
+	}
+
+	writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "the refresh token is invalid, expired, or already used")
 }
 
 // verifyPKCE reports whether verifier is the correct RFC 7636 S256 PKCE
