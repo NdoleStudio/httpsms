@@ -19,11 +19,13 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/NdoleStudio/httpsms/mcp/internal/auth"
 	"github.com/NdoleStudio/httpsms/mcp/internal/config"
 	"github.com/NdoleStudio/httpsms/mcp/internal/httpsms"
 	"github.com/NdoleStudio/httpsms/mcp/internal/oauth"
+	"github.com/NdoleStudio/httpsms/mcp/internal/observability"
 	"github.com/NdoleStudio/httpsms/mcp/internal/tools"
 )
 
@@ -275,8 +277,12 @@ func protectedMCPHandler(deps Dependencies) http.Handler {
 	// anywhere below would unwind through the SDK's JSON-RPC dispatch and
 	// kill the whole process, dropping every other in-flight request.
 	mcpServer.AddReceivingMiddleware(
+		observability.MCPMiddleware(deps.Logger, "receive", trace.SpanKindServer),
 		recoverPanicMiddleware(deps.Logger),
 		rateLimitMiddleware(limiter),
+	)
+	mcpServer.AddSendingMiddleware(
+		observability.MCPMiddleware(deps.Logger, "send", trace.SpanKindClient),
 	)
 
 	mcpHandler := mcp.NewStreamableHTTPHandler(
@@ -633,13 +639,18 @@ func loggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(sw, r)
 
-			logger.Info().
+			event := logger.Info().
 				Str("request_id", requestIDFromContext(r.Context())).
 				Str("method", r.Method).
 				Str("path", r.URL.Path).
 				Int("status", sw.status).
-				Dur("duration", time.Since(start)).
-				Msg("http request")
+				Dur("duration", time.Since(start))
+			if spanContext := trace.SpanContextFromContext(r.Context()); spanContext.IsValid() {
+				event = event.
+					Str("trace_id", spanContext.TraceID().String()).
+					Str("span_id", spanContext.SpanID().String())
+			}
+			event.Msg("http request")
 		})
 	}
 }

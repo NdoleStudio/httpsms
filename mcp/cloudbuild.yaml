@@ -20,8 +20,8 @@ steps:
         --image=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA \
         --region=$_REGION --platform managed --allow-unauthenticated \
         --port=8080 \
-        --set-env-vars="ENV=production,MCP_BASE_URL=$_MCP_BASE_URL,HTTPSMS_API_URL=$_HTTPSMS_API_URL,FIREBASE_PROJECT_ID=$_FIREBASE_PROJECT_ID,FIREBASE_AUTH_DOMAIN=$_FIREBASE_AUTH_DOMAIN" \
-        --set-secrets="MCP_SIGNING_PRIVATE_KEY=mcp-signing-private-key:latest,MCP_SIGNING_KEY_ID=mcp-signing-key-id:latest,REDIS_URL=mcp-redis-url:latest,FIREBASE_API_KEY=mcp-firebase-api-key:latest"
+        --update-env-vars="ENV=production,MCP_BASE_URL=$_MCP_BASE_URL,HTTPSMS_API_URL=$_HTTPSMS_API_URL,FIREBASE_PROJECT_ID=$_FIREBASE_PROJECT_ID,FIREBASE_AUTH_DOMAIN=$_FIREBASE_AUTH_DOMAIN" \
+        --set-secrets="MCP_SIGNING_PRIVATE_KEY=mcp-signing-private-key:latest,MCP_SIGNING_KEY_ID=mcp-signing-key-id:latest,REDIS_URL=mcp-redis-url:latest,FIREBASE_API_KEY=mcp-firebase-api-key:latest,AXIOM_TOKEN=axiom-token:latest"
 options:
   substitutionOption: ALLOW_LOOSE
 

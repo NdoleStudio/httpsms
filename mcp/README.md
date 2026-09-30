@@ -50,6 +50,10 @@ absent. In `production` (`ENV=production`), every URL-valued setting must use
 | `SEND_TOOLS_PER_MINUTE` | `30` | Per-user rate limit for `send_sms`. |
 | `KEY_CREATES_PER_HOUR` | `10` | Per-user rate limit for `create_phone_api_key`. |
 | `KEY_ROTATIONS_PER_HOUR` | `3` | Per-user rate limit for `rotate_user_api_key`. |
+| `AXIOM_TOKEN` | unset | Axiom ingest token. When set with `AXIOM_DATASET_EVENTS`, structured logs and OpenTelemetry traces are sent to Axiom as well as stdout. Cloud Build maps this from the `axiom-token` Secret Manager secret. |
+| `AXIOM_DATASET_EVENTS` | unset | Axiom dataset for logs and traces. Configure this directly on the MCP Cloud Run service; deploys preserve it with `--update-env-vars`. |
+| `AXIOM_OTLP_ENDPOINT` | `us-east-1.aws.edge.axiom.co` | Override the Axiom OTLP/HTTP endpoint, for example for another Axiom region. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | unset | Standard OpenTelemetry trace-export destination. When either is set it takes precedence over the Axiom trace exporter; all standard OTLP/HTTP headers and TLS variables remain supported. |
 
 None of the values above have a safe committed default for secrets: `.env`
 files, `*.pem`/`*.key` files, and anything matching `mcp/.dockerignore` must
@@ -113,6 +117,28 @@ Cloud Run supplies the listen port through `PORT`; the container's `EXPOSE
 overridden in Cloud Run, `--port` in `cloudbuild.yaml` must change to match,
 or the health check will fail and the revision will never become ready.
 
+## Observability
+
+The server emits nested OpenTelemetry spans for:
+
+- every inbound HTTP request;
+- every inbound MCP method, including tool calls and prompt requests;
+- every outbound MCP method sent from the server to the client, including
+  sampling and elicitation requests;
+- every outbound call to the httpSMS API.
+
+MCP spans include only the protocol method, direction, outcome, and the
+tool/prompt name where applicable. Tool arguments, prompt text, sampled
+messages, resource URIs, response bodies, OAuth values, API keys, and bearer
+tokens are never attached to spans or logs. Structured HTTP and MCP logs carry
+the matching `trace_id` and `span_id`, allowing an Axiom query to move between
+an event and its trace.
+
+The official `modelcontextprotocol/go-sdk` does not currently provide a
+built-in OpenTelemetry integration. It exposes `AddReceivingMiddleware` and
+`AddSendingMiddleware` as its tracing/metrics integration points; this server
+instruments both directions through those APIs.
+
 ## Cloud Build invocation
 
 `cloudbuild.yaml` mirrors `api/cloudbuild.yaml`: it builds `mcp/Dockerfile`
@@ -131,7 +157,8 @@ wired, scoped to changes under `mcp/`.
 
 Non-sensitive configuration (`ENV`, `MCP_BASE_URL`, `HTTPSMS_API_URL`,
 `FIREBASE_PROJECT_ID`, `FIREBASE_AUTH_DOMAIN`) is passed with
-`--set-env-vars` from `cloudbuild.yaml` substitutions. **Secrets are never
+`--update-env-vars` from `cloudbuild.yaml` substitutions so manually configured
+values such as `AXIOM_DATASET_EVENTS` are preserved. **Secrets are never
 placed in `cloudbuild.yaml` or Cloud Build substitutions.** They are
 referenced from Google Secret Manager with `--set-secrets`:
 
@@ -141,6 +168,7 @@ referenced from Google Secret Manager with `--set-secrets`:
 | `MCP_SIGNING_KEY_ID` | `mcp-signing-key-id` |
 | `REDIS_URL` | `mcp-redis-url` |
 | `FIREBASE_API_KEY` | `mcp-firebase-api-key` |
+| `AXIOM_TOKEN` | `axiom-token` |
 
 Create/update these once with, e.g.:
 
@@ -149,6 +177,7 @@ printf '%s' "$PRIVATE_KEY_PEM" | gcloud secrets create mcp-signing-private-key -
 printf '%s' "prod-mcp-key-1"   | gcloud secrets create mcp-signing-key-id --data-file=-
 printf '%s' "$REDIS_URL"       | gcloud secrets create mcp-redis-url --data-file=-
 printf '%s' "$FIREBASE_API_KEY" | gcloud secrets create mcp-firebase-api-key --data-file=-
+printf '%s' "$AXIOM_TOKEN"      | gcloud secrets create axiom-token --data-file=-
 ```
 
 The Cloud Run service's runtime service account needs
