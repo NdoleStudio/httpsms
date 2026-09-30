@@ -461,7 +461,14 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 		})
 
 		t.Run("scope may be narrowed but never widened", func(t *testing.T) {
-			narrowedResponse, narrowedBody := refreshTokens(t, rotated.RefreshToken, params.ClientID, func(form url.Values) {
+			scopeParams := requestAuthorizationCode(t, mcpTestUserID, mcpTestUserEmail, []string{"phones:read", "messages:read"})
+			scopeResponse, scopeBody := redeemAuthorizationCode(t, scopeParams)
+			require.Equal(t, http.StatusOK, scopeResponse.StatusCode, redactSecrets(scopeBody))
+
+			var scopeTokens tokenResponse
+			require.NoError(t, json.Unmarshal([]byte(scopeBody), &scopeTokens))
+
+			narrowedResponse, narrowedBody := refreshTokens(t, scopeTokens.RefreshToken, scopeParams.ClientID, func(form url.Values) {
 				form.Set("scope", "phones:read")
 			})
 			require.Equal(t, http.StatusOK, narrowedResponse.StatusCode, redactSecrets(narrowedBody))
@@ -470,7 +477,7 @@ func TestMCPOAuthRefreshRotation(t *testing.T) {
 			require.NoError(t, json.Unmarshal([]byte(narrowedBody), &narrowed))
 			assert.Equal(t, "phones:read", narrowed.Scope)
 
-			widenedResponse, widenedBody := refreshTokens(t, narrowed.RefreshToken, params.ClientID, func(form url.Values) {
+			widenedResponse, widenedBody := refreshTokens(t, narrowed.RefreshToken, scopeParams.ClientID, func(form url.Values) {
 				form.Set("scope", "phones:read messages:send")
 			})
 			require.Equal(t, http.StatusBadRequest, widenedResponse.StatusCode, redactSecrets(widenedBody))
