@@ -98,7 +98,7 @@ func TestCreatePhoneAPIKeyToolIsMarkedNotIdempotentAndNotDestructive(t *testing.
 func TestCreatePhoneAPIKeyNeverLeaksSecretOutsideStructuredResult(t *testing.T) {
 	keys := newTestKeySet(t)
 	ctx := contextWithPrincipal(t, keys, allScopes)
-	const secret = "unique-phone-api-key-secret-4b9f9e6c-do-not-log"
+	const secret = "test-phone-api-key"
 	stub := &stubClient{createKeyResult: httpsms.PhoneAPIKey{ID: "key-1", Name: "android-phone", APIKey: secret}}
 	session := newSession(t, ctx, keys, stub)
 

@@ -1,7 +1,12 @@
 package config_test
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,6 +21,7 @@ import (
 func setValidEnv(t *testing.T) {
 	t.Helper()
 
+	privateKeyPEM := generatedTestPrivateKeyPEM(t)
 	t.Setenv("ENV", "local")
 	t.Setenv("MCP_BASE_URL", "https://mcp.httpsms.com")
 	t.Setenv("HTTPSMS_API_URL", "https://api.httpsms.com")
@@ -23,13 +29,14 @@ func setValidEnv(t *testing.T) {
 	t.Setenv("FIREBASE_PROJECT_ID", "httpsms")
 	t.Setenv("FIREBASE_API_KEY", "test-firebase-api-key")
 	t.Setenv("FIREBASE_AUTH_DOMAIN", "httpsms.firebaseapp.com")
-	t.Setenv("MCP_SIGNING_PRIVATE_KEY", testPrivateKeyPEM)
+	t.Setenv("MCP_SIGNING_PRIVATE_KEY", privateKeyPEM)
 	t.Setenv("MCP_SIGNING_PRIVATE_KEY_FILE", "")
 	t.Setenv("MCP_SIGNING_KEY_ID", "test-key-1")
 }
 
 func TestLoadSucceedsWithAValidEnvironment(t *testing.T) {
 	setValidEnv(t)
+	privateKeyPEM := generatedTestPrivateKeyPEM(t)
 
 	cfg, err := config.Load()
 
@@ -41,7 +48,7 @@ func TestLoadSucceedsWithAValidEnvironment(t *testing.T) {
 	assert.Equal(t, "redis://localhost:6379", cfg.RedisURL)
 	assert.Equal(t, "httpsms", cfg.FirebaseProjectID)
 	assert.Equal(t, "test-key-1", cfg.SigningKeyID)
-	assert.Equal(t, []byte(testPrivateKeyPEM), cfg.SigningPrivateKeyPEM)
+	assert.Equal(t, []byte(privateKeyPEM), cfg.SigningPrivateKeyPEM)
 	assert.Equal(t, "https://mcp.httpsms.com/mcp", cfg.MCPAudience)
 	assert.Equal(t, "https://api.httpsms.com", cfg.APIAudience)
 	assert.Equal(t, 15*time.Minute, cfg.AccessTokenTTL)
@@ -158,14 +165,15 @@ func TestLoadRejectsMalformedSigningKeyPEM(t *testing.T) {
 
 func TestLoadReadsSigningKeyFromFile(t *testing.T) {
 	setValidEnv(t)
+	privateKeyPEM := generatedTestPrivateKeyPEM(t)
 	t.Setenv("MCP_SIGNING_PRIVATE_KEY", "")
-	keyFile := writeTempKeyFile(t, testPrivateKeyPEM)
+	keyFile := writeTempKeyFile(t, privateKeyPEM)
 	t.Setenv("MCP_SIGNING_PRIVATE_KEY_FILE", keyFile)
 
 	cfg, err := config.Load()
 
 	require.NoError(t, err)
-	assert.Equal(t, []byte(testPrivateKeyPEM), cfg.SigningPrivateKeyPEM)
+	assert.Equal(t, []byte(privateKeyPEM), cfg.SigningPrivateKeyPEM)
 }
 
 func TestLoadRejectsUnreadableSigningKeyFile(t *testing.T) {
@@ -266,37 +274,31 @@ func TestLoadReportsEveryProblemAtOnce(t *testing.T) {
 	require.ErrorContains(t, err, "REDIS_URL")
 }
 
-// testPrivateKeyPEM is a throwaway 2048-bit RSA private key used only to
-// exercise config.Load's PEM validation. It is not used to sign anything and
-// is not the same key used by any other package's tests.
-const testPrivateKeyPEM = `-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAsaRrsPaMlhkOb2j7UOaCShBBZNZ5nz0AGJq3HHW92Rd+VQ3l
-/vl1Zed0laz9lUyxWqR6vVR0fuK5reBVaN1GYHV9GgT9x1HM9cTg6eN0n8qpblWo
-DBKq8Qi4o2D7sNr2tl3SWbrUfKaKnBd6bFRHihJyEZXwc6zCXoPQ7eBQ7ozy99g7
-nyXtBse5Z5VY563W+hRbqOqHzzZ3qFwDv1Gy0VQZuMz2Paik1cY+XhVIdA2D3pAh
-UxDxG1TYkBKxsLuM+LmH3HgUGba+Pu9QGYe8PaH5SqGGX3EZxLDyClaaxQgmsZpt
-KzlwNSZk2sPAvCrYQxto8gelflYPw0jOSX/6EQIDAQABAoIBAEhQrcJZa7vCsXyr
-GPvDCrEJ0wUwxkwLshlSCk7co49XoAcR5FoaxS7ZvT0dMhHwKZbDtG+UjOQGeh4N
-X9eTlI255laMR583bp9yKTktbhGKl9ShrApWIx6CNV/VIEDLsnlk0jfS9aNUzMJk
-UGL/ICxV+/equTrtziZZtNjRY0DolFbo7swFhwey9K4bT7JGl5W+fpRLz3ucjN0z
-mBU7yI6CAM7YXH0kR4DXSZKiEUZ8xf0fbbraBpjbrA9hTVSWvouEtBJfyIjs6oXy
-ktchAWydNILqjiQzsNWLI/Vt3PdG9Gs2QT7ZpDxjuOiP7J9CDphDqhLoutD+bHJ8
-K4i+s/0CgYEAzaRj9KVt8x8IGv68gHShL+4eqXB6MAItLYFlLMDWWo5QK3l7ppFi
-dwHf3GpAdftQxzCy/R2TARu9oC822DiJJE+8YFci9uIH06adW1nqMPdIorPkvF8Y
-fKB7Sudw/2ILjeT0wg2AAaDw2VutVvSEpm5j9zA0NSUyKhNYt5thXbcCgYEA3SS7
-FfFM3EWhsjlKoa6RY6djTZzt7osMGy8u52nqPiFZR7fCbhrxJYROh2UmFn0/J8RB
-gLoHN4ZbmBze6cro8aTScFmz7cK6bT/eCLq0NopAL+OFP9jGkawo5UMZ7/hfBX8P
-gMoBD97VkTZw75uAyuVwbKMfPKF6lsFKUMNN5ncCgYEAxawQ3TksAHjC3NgjMMNr
-sdwOI0fYXE+rR8PLEoLnSbLlA3VKU+oKoWTu4DxObFrA4khAtah5B6a318Oqz5tA
-0OPIqz73gCPz7BKLziUXRixd6PBNnnk2242UFoN1Djgb7TC5ydMaSfZ/riA+9ogi
-/qy8cP8oIDH6D5H7RLsak+8CgYEAiPzY25XXS9fiezmcLp2puHaXQBvHE+6UeD55
-KqbkkMotuQxu56/O07OqxZp1xpadSa/795bFI7MaCBdSSrcEJ7Q3G5ulptHqlARt
-MTEes25epoulHlDVaKWhy6sOZSWRDyGPY/M+Ryt9Vm/H89V7KbSJOPKvReqturdP
-psnk9q8CgYB0knFbkzt3R7mowiiXqj4MhfO4baCPk9PeOslujQIJoX1Ca+/wQdox
-F2m9w4bRMrdsT19eMrRZsJYslJc6s2tNlCuUDMgFk3FUrmpFDQlq/taUCB/wDUxp
-3SBuTr9BHx8yJc9p6hYkjI3HZ+aqsImZIxN/23OFEvtOH2z3m8JPnA==
------END RSA PRIVATE KEY-----
-`
+var (
+	testPrivateKeyOnce sync.Once
+	testPrivateKeyPEM  string
+	testPrivateKeyErr  error
+)
+
+func generatedTestPrivateKeyPEM(t *testing.T) string {
+	t.Helper()
+
+	testPrivateKeyOnce.Do(func() {
+		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			testPrivateKeyErr = err
+			return
+		}
+
+		testPrivateKeyPEM = string(pem.EncodeToMemory(&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+		}))
+	})
+
+	require.NoError(t, testPrivateKeyErr)
+	return testPrivateKeyPEM
+}
 
 // writeTempKeyFile writes contents to a new file inside t.TempDir() and
 // returns its path.
