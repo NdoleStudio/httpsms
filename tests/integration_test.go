@@ -449,6 +449,7 @@ func TestBulkSMS_CSV(t *testing.T) {
 
 	// Wait for FCM push
 	waitForFCMPush(t, messageID, 30*time.Second)
+	pollMessageStatus(ctx, t, messageID, "scheduled", 15*time.Second)
 
 	// Fire SENT event
 	fireEvent(ctx, t, phone.PhoneAPIKey, messageID, "SENT")
@@ -537,6 +538,7 @@ func TestBulkSMS_Excel(t *testing.T) {
 	msgID2 := bulkMessages[1].ID.String()
 	waitForFCMPush(t, msgID1, 30*time.Second)
 	waitForFCMPush(t, msgID2, 30*time.Second)
+	pollMessageStatus(ctx, t, msgID1, "scheduled", 15*time.Second)
 
 	// Fire SENT then DELIVERED on message 1, leave message 2 pending
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "SENT")
