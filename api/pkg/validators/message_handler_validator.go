@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -317,13 +318,10 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(ctx context.Conte
 			"limit": []string{
 				"required",
 				"numeric",
-				"min:1",
-				"max:200",
 			},
 			"skip": []string{
 				"required",
 				"numeric",
-				"min:0",
 			},
 			"query": []string{
 				"max:50",
@@ -335,6 +333,7 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(ctx context.Conte
 	})
 
 	errors := v.ValidateStruct()
+	validateMessageSearchPagination(errors, request.Limit, request.Skip)
 	if len(errors) > 0 {
 		return errors
 	}
@@ -344,6 +343,52 @@ func (validator MessageHandlerValidator) ValidateMessageSearch(ctx context.Conte
 	}
 
 	return errors
+}
+
+// ValidateMessageIncoming validates the requests.MessageIncoming request
+func (validator MessageHandlerValidator) ValidateMessageIncoming(_ context.Context, request requests.MessageIncoming) url.Values {
+	v := govalidator.New(govalidator.Options{
+		Data: &request,
+		Rules: govalidator.MapData{
+			"owners": []string{
+				multipleContactPhoneNumberRule,
+			},
+			"statuses": []string{
+				multipleInRule + ":" + entities.MessageStatusReceived,
+			},
+			"sort_by": []string{
+				"in:" + strings.Join([]string{
+					"created_at",
+					"owner",
+					"contact",
+					"status",
+				}, ","),
+			},
+			"limit": []string{
+				"required",
+				"numeric",
+			},
+			"skip": []string{
+				"required",
+				"numeric",
+			},
+			"query": []string{
+				"max:50",
+			},
+		},
+	})
+	errors := v.ValidateStruct()
+	validateMessageSearchPagination(errors, request.Limit, request.Skip)
+	return errors
+}
+
+func validateMessageSearchPagination(errors url.Values, limitValue, skipValue string) {
+	if limit, err := strconv.Atoi(limitValue); err == nil && (limit < 1 || limit > 200) {
+		errors.Add("limit", "The limit must be between 1 and 200")
+	}
+	if skip, err := strconv.Atoi(skipValue); err == nil && skip < 0 {
+		errors.Add("skip", "The skip must be at least 0")
+	}
 }
 
 // ValidateMessageEvent validates the requests.MessageEvent request
