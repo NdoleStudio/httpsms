@@ -2932,7 +2932,6 @@ paths:
         description: the owner's phone numbers
         in: query
         name: owners
-        required: true
         type: string
       - description: filter by message status
         in: query

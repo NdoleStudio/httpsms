@@ -1595,8 +1595,7 @@ const docTemplate = `{
                         "default": "+18005550199,+18005550100",
                         "description": "the owner's phone numbers",
                         "name": "owners",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -344,9 +345,12 @@ func (c *HTTPClient) do(
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		// http.Client errors may wrap the request URL (never a secret: the
-		// bearer token is a header, not part of the URL) but never the
-		// request body or headers, so it is safe to wrap here.
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			sanitized := *urlErr
+			sanitized.URL = redactURLQuery(urlErr.URL)
+			err = &sanitized
+		}
 		return fmt.Errorf("httpsms: request [%s] failed: %w", requestID, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -377,6 +381,16 @@ func (c *HTTPClient) do(
 	}
 
 	return nil
+}
+
+func redactURLQuery(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "<redacted>"
+	}
+	parsed.RawQuery = ""
+	parsed.ForceQuery = false
+	return parsed.String()
 }
 
 // parseAPIError decodes a non-2xx httpSMS API response body into an

@@ -599,6 +599,20 @@ func TestClient_RedactsQueryValuesFromOTelSpanAttributes(t *testing.T) {
 	}
 }
 
+func TestClient_RedactsQueryValuesFromTransportErrors(t *testing.T) {
+	const uniqueQueryValue = "transport-error-probe-secret-sms-content"
+
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	serverURL := server.URL
+	server.Close()
+
+	client := httpsms.NewClient(serverURL)
+	_, err := client.ListPhones(t.Context(), "token", httpsms.ListPhonesParams{Query: uniqueQueryValue})
+
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), uniqueQueryValue)
+}
+
 // TestClient_ResponseHeaderTimeoutFiresBeforeTheOverallRequestTimeout proves
 // the response header timeout is wired into the client's transport (not
 // just the overall http.Client.Timeout): a server that accepts the

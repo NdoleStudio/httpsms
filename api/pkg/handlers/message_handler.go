@@ -557,7 +557,7 @@ func (h *MessageHandler) Search(c fiber.Ctx) error {
 // @Tags         Messages
 // @Accept       json
 // @Produce      json
-// @Param        owners		query  string  	true 	"the owner's phone numbers" 		default(+18005550199,+18005550100)
+// @Param        owners		query  string  	false 	"the owner's phone numbers" 		default(+18005550199,+18005550100)
 // @Param        statuses		query  string  	false 	"filter by message status"
 // @Param        skip		query  int  	false	"number of messages to skip"		minimum(0)
 // @Param        query		query  string  	false 	"filter messages containing query"
