@@ -1,6 +1,6 @@
 module github.com/NdoleStudio/httpsms
 
-go 1.25.8
+go 1.26.0
 
 require (
 	cloud.google.com/go/cloudtasks v1.19.0
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.23.0
 	google.golang.org/api v0.295.0
 	google.golang.org/protobuf v1.36.12
 	gorm.io/driver/postgres v1.6.0
