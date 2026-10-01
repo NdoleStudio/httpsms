@@ -199,6 +199,8 @@ func TestSendSMS_RateLimit(t *testing.T) {
 	t.Logf("FCM push gap: %dms", gapMs)
 	assert.GreaterOrEqual(t, gapMs, int64(5500), "rate limit gap should be >= 5500ms (6s minus timing tolerance), got %dms", gapMs)
 
+	pollMessageStatus(ctx, t, msgID1, "scheduled", 15*time.Second)
+	pollMessageStatus(ctx, t, msgID2, "scheduled", 15*time.Second)
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID1, "SENT")
 	pollMessageStatus(ctx, t, msgID1, "sent", 15*time.Second)
 	fireEvent(ctx, t, phone.PhoneAPIKey, msgID2, "SENT")
