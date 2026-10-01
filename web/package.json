@@ -40,7 +40,7 @@
     "pusher-js": "^8.5.0",
     "qrcode": "^1.5.4",
     "sass": "^1.100.0",
-    "v-phone-input": "^7.0.0",
+    "v-phone-input": "^7.0.1",
     "vue": "^3.5.34",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^5.0.7",
