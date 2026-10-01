@@ -60,7 +60,7 @@
     "stylelint": "^17.13.0",
     "stylelint-config-recommended-vue": "^1.6.1",
     "stylelint-config-standard": "^40.0.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vuetify-nuxt-module": "^0.19.5"
   }
 }
