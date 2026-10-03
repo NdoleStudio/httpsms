@@ -20,27 +20,126 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// Matches the \uE000<index>\uE000 placeholders (private-use Unicode area,
-// unlikely to appear in real text) used to protect linkified URLs from the
-// markdown replacements that run afterwards.
-const LINK_PLACEHOLDER = '\uE000'
-const LINK_PLACEHOLDER_PATTERN = /\uE000(\d+)\uE000/g
+// Character class (as a regex source string) that is treated as a valid
+// boundary around a formatting marker: whitespace, common punctuation, or
+// the start/end of the string.
+const BOUNDARY_CHARS = String.raw`\s.,!?;:'"()\[\]{}-`
+
+function withBoundaries(pattern: string): RegExp {
+  return new RegExp(
+    `(?<=^|[${BOUNDARY_CHARS}])${pattern}(?=$|[${BOUNDARY_CHARS}])`,
+    'g',
+  )
+}
+
+const CODE_BLOCK_PATTERN = withBoundaries('```([^`]+)```')
+const INLINE_CODE_PATTERN = withBoundaries('`(\\S(?:[^`\\n]*\\S)?)`')
+const BOLD_PATTERN = withBoundaries('\\*(\\S(?:[^*\\n]*\\S)?)\\*')
+const ITALIC_PATTERN = withBoundaries('_(\\S(?:[^_\\n]*\\S)?)_')
+const STRIKE_PATTERN = withBoundaries('~(\\S(?:[^~\\n]*\\S)?)~')
+
+// Characters that are stripped off the end of a matched URL because they are
+// either trailing sentence punctuation or WhatsApp formatting markers (e.g.
+// the closing `*` in `*https://example.com*`), rather than part of the URL.
+const URL_TRAILING_CHARS = new Set([
+  ')',
+  ',',
+  '.',
+  ';',
+  ':',
+  '!',
+  '?',
+  "'",
+  '"',
+  ']',
+  '}',
+  '*',
+  '_',
+  '~',
+  '`',
+])
+
+/**
+ * Splits a raw URL match into the actual URL and any trailing characters
+ * that aren't part of it (sentence punctuation or formatting markers).
+ * Closing parentheses are balance-checked so URLs such as
+ * `https://example.com/page_(v2)` keep their closing parenthesis.
+ */
+function splitTrailingPunctuation(raw: string): {
+  url: string
+  trailing: string
+} {
+  let end = raw.length
+  while (end > 0) {
+    const char = raw[end - 1] as string
+    if (char === ')') {
+      const opens = (raw.slice(0, end).match(/\(/g) ?? []).length
+      const closes = (raw.slice(0, end).match(/\)/g) ?? []).length
+      if (closes <= opens) break
+      end--
+      continue
+    }
+    if (!URL_TRAILING_CHARS.has(char)) break
+    end--
+  }
+  return { url: raw.slice(0, end), trailing: raw.slice(end) }
+}
+
+/**
+ * Stores HTML fragments (links, code spans) behind unique placeholder
+ * tokens so that the markdown replacements that run afterwards don't touch
+ * them. Each store instance uses a random per-call nonce so that literal
+ * text in the message can never collide with a placeholder token.
+ */
+function createPlaceholderStore() {
+  const nonce = Math.random().toString(36).slice(2)
+  const open = `\uE000${nonce}:`
+  const close = `:${nonce}\uE000`
+  const store: string[] = []
+  const pattern = new RegExp(`${open}(\\d+)${close}`, 'g')
+
+  return {
+    protect(html: string): string {
+      store.push(html)
+      return `${open}${store.length - 1}${close}`
+    },
+    restore(text: string): string {
+      return text.replace(pattern, (_, idx: string) => store[Number(idx)] ?? '')
+    },
+  }
+}
+
+type PlaceholderStore = ReturnType<typeof createPlaceholderStore>
 
 /**
  * Replaces raw URLs with anchor tags, protecting them behind placeholder
- * tokens so that markdown characters inside the URL (e.g. `_`) are not
- * misinterpreted as formatting by later replacements.
+ * tokens so that markdown characters are not misinterpreted as formatting.
  */
-function linkifyUrls(text: string, links: string[]): string {
+function linkifyUrls(text: string, placeholders: PlaceholderStore): string {
   return text.replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi, (match) => {
-    const trailing = match.match(/[),.;:!?'"]+$/)?.[0] ?? ''
-    const urlText = trailing ? match.slice(0, -trailing.length) : match
-    const href = /^www\./i.test(urlText) ? `https://${urlText}` : urlText
-    links.push(
-      `<a href="${href}" target="_blank" rel="noopener noreferrer">${urlText}</a>${trailing}`,
-    )
-    return `${LINK_PLACEHOLDER}${links.length - 1}${LINK_PLACEHOLDER}`
+    const { url, trailing } = splitTrailingPunctuation(match)
+    const href = /^www\./i.test(url) ? `https://${url}` : url
+    const anchor = `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    return placeholders.protect(anchor) + trailing
   })
+}
+
+/**
+ * Replaces code blocks/spans with placeholder tokens so that bold, italic
+ * and strikethrough markers inside code are rendered literally instead of
+ * being interpreted as formatting.
+ */
+function extractCodeSpans(
+  text: string,
+  placeholders: PlaceholderStore,
+): string {
+  return text
+    .replace(CODE_BLOCK_PATTERN, (_, content: string) =>
+      placeholders.protect(`<code>${content}</code>`),
+    )
+    .replace(INLINE_CODE_PATTERN, (_, content: string) =>
+      placeholders.protect(`<code>${content}</code>`),
+    )
 }
 
 /**
@@ -51,49 +150,33 @@ function linkifyUrls(text: string, links: string[]): string {
  *  - *bold*
  *  - _italic_
  *  - ~strikethrough~
- *  - `code` / ```code block```
- *  - "> " quoted lines
+ *  - `code` / ```code block``` (code content is never re-formatted)
+ *  - "> " quoted lines (the space after ">" is required)
  *  - raw URLs, turned into clickable links
  */
 export function formatWhatsappText(text: string): string {
   const escaped = escapeHtml(text ?? '')
+  const placeholders = createPlaceholderStore()
 
-  const links: string[] = []
-  const withPlaceholders = linkifyUrls(escaped, links)
+  const withLinks = linkifyUrls(escaped, placeholders)
 
-  const lines = withPlaceholders.split('\n').map((line) => {
-    const quoteMatch = line.match(/^&gt;\s?(.*)$/)
-    if (quoteMatch) {
-      return `<span class="d-block pl-2" style="border-left: 3px solid currentColor; opacity: 0.8;">${quoteMatch[1]}</span>`
-    }
-    return line
-  })
-
-  const formatted = lines
+  const withQuotes = withLinks
+    .split('\n')
+    .map((line) => {
+      const quoteMatch = line.match(/^&gt; (.*)$/)
+      if (quoteMatch) {
+        return `<span class="d-block pl-2" style="border-left: 3px solid currentColor; opacity: 0.8;">${quoteMatch[1]}</span>`
+      }
+      return line
+    })
     .join('\n')
-    .replace(
-      /(?<=^|[\s.,!?;:'"()[\]{}-])```(\S(?:[^`]*\S)?)```(?=$|[\s.,!?;:'"()[\]{}-])/g,
-      '<code>$1</code>',
-    )
-    .replace(
-      /(?<=^|[\s.,!?;:'"()[\]{}-])`(\S(?:[^`\n]*\S)?)`(?=$|[\s.,!?;:'"()[\]{}-])/g,
-      '<code>$1</code>',
-    )
-    .replace(
-      /(?<=^|[\s.,!?;:'"()[\]{}-])\*(\S(?:[^*\n]*\S)?)\*(?=$|[\s.,!?;:'"()[\]{}-])/g,
-      '<strong>$1</strong>',
-    )
-    .replace(
-      /(?<=^|[\s.,!?;:'"()[\]{}-])_(\S(?:[^_\n]*\S)?)_(?=$|[\s.,!?;:'"()[\]{}-])/g,
-      '<em>$1</em>',
-    )
-    .replace(
-      /(?<=^|[\s.,!?;:'"()[\]{}-])~(\S(?:[^~\n]*\S)?)~(?=$|[\s.,!?;:'"()[\]{}-])/g,
-      '<s>$1</s>',
-    )
 
-  return formatted.replace(
-    LINK_PLACEHOLDER_PATTERN,
-    (_, idx: string) => links[Number(idx)] ?? '',
-  )
+  const withCode = extractCodeSpans(withQuotes, placeholders)
+
+  const formatted = withCode
+    .replace(BOLD_PATTERN, '<strong>$1</strong>')
+    .replace(ITALIC_PATTERN, '<em>$1</em>')
+    .replace(STRIKE_PATTERN, '<s>$1</s>')
+
+  return placeholders.restore(formatted)
 }
