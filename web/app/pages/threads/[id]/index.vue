@@ -22,6 +22,10 @@ import type { Channel } from 'pusher-js'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import { storeToRefs } from 'pinia'
 import type { EntitiesMessage } from '~~/shared/types/api'
+import {
+  isUrlNotificationToken,
+  formatWhatsappText,
+} from '~/utils/whatsapp-format'
 
 definePageMeta({
   middleware: ['auth'],
@@ -86,6 +90,11 @@ function isMo(message: EntitiesMessage): boolean {
 
 function isMissedCall(message: EntitiesMessage): boolean {
   return message.type === 'call/missed'
+}
+
+function isWhatsappFormatted(message: EntitiesMessage): boolean {
+  const phone = phonesStore.phones.find((x) => x.phone_number === message.owner)
+  return isUrlNotificationToken(phone?.fcm_token)
 }
 
 function isPending(message: EntitiesMessage): boolean {
@@ -487,7 +496,13 @@ onBeforeUnmount(() => {
                     class="text-break"
                     style="white-space: pre-line"
                   >
-                    <span v-if="!isMissedCall(message)">{{
+                    <span
+                      v-if="
+                        !isMissedCall(message) && isWhatsappFormatted(message)
+                      "
+                      v-html="formatWhatsappText(message.content)"
+                    />
+                    <span v-else-if="!isMissedCall(message)">{{
                       message.content
                     }}</span>
                     <span v-else class="text-medium-emphasis"
