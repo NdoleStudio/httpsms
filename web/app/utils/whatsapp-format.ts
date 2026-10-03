@@ -1,7 +1,6 @@
 /**
  * Returns true when the given phone notification token is a URL (HTTP notification
- * transport) instead of an FCM token. This mirrors `isNotificationURLCandidate` in
- * api/pkg/entities/phone.go.
+ * transport) instead of an FCM token.
  */
 export function isUrlNotificationToken(
   fcmToken?: string | null | undefined,
@@ -9,13 +8,7 @@ export function isUrlNotificationToken(
   if (!fcmToken) {
     return false
   }
-  const token = fcmToken.trim().toLowerCase()
-  return (
-    token.includes('://') ||
-    token.startsWith('http:') ||
-    token.startsWith('https:') ||
-    token.startsWith('ftp:')
-  )
+  return fcmToken.trim().toLowerCase().startsWith('https://')
 }
 
 function escapeHtml(text: string): string {
