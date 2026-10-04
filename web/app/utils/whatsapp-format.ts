@@ -39,10 +39,9 @@ const ITALIC_PATTERN = withBoundaries('_(\\S(?:[^_\\n]*\\S)?)_')
 const STRIKE_PATTERN = withBoundaries('~(\\S(?:[^~\\n]*\\S)?)~')
 
 // Characters that are stripped off the end of a matched URL because they are
-// either trailing sentence punctuation or WhatsApp formatting markers (e.g.
-// the closing `*` in `*https://example.com*`), rather than part of the URL.
-const URL_TRAILING_CHARS = new Set([
-  ')',
+// Sentence punctuation that is always treated as trailing text, never part
+// of a URL (balanced closing parentheses are handled separately below).
+const URL_TRAILING_PUNCTUATION = new Set([
   ',',
   '.',
   ';',
@@ -53,19 +52,24 @@ const URL_TRAILING_CHARS = new Set([
   '"',
   ']',
   '}',
-  '*',
-  '_',
-  '~',
-  '`',
 ])
+
+// WhatsApp formatting-marker characters. A trailing one of these is only
+// stripped from a URL when it pairs with a matching opening delimiter
+// immediately before the URL (e.g. the closing `*` in `*https://x.com*`),
+// so legitimate URL characters like the trailing `_` in `.../file_name_`
+// are preserved.
+const URL_TRAILING_MARKERS = new Set(['*', '_', '~', '`'])
 
 /**
  * Splits a raw URL match into the actual URL and any trailing characters
- * that aren't part of it (sentence punctuation or formatting markers).
- * Closing parentheses are balance-checked so URLs such as
- * `https://example.com/page_(v2)` keep their closing parenthesis.
+ * that aren't part of it. Closing parentheses are balance-checked so URLs
+ * such as `https://example.com/page_(v2)` keep their closing parenthesis.
  */
-function splitTrailingPunctuation(raw: string): {
+function splitTrailingPunctuation(
+  raw: string,
+  precedingChar: string | undefined,
+): {
   url: string
   trailing: string
 } {
@@ -79,9 +83,17 @@ function splitTrailingPunctuation(raw: string): {
       end--
       continue
     }
-    if (!URL_TRAILING_CHARS.has(char)) break
+    if (!URL_TRAILING_PUNCTUATION.has(char)) break
     end--
   }
+
+  if (end > 0) {
+    const char = raw[end - 1] as string
+    if (URL_TRAILING_MARKERS.has(char) && precedingChar === char) {
+      end--
+    }
+  }
+
   return { url: raw.slice(0, end), trailing: raw.slice(end) }
 }
 
@@ -116,12 +128,16 @@ type PlaceholderStore = ReturnType<typeof createPlaceholderStore>
  * tokens so that markdown characters are not misinterpreted as formatting.
  */
 function linkifyUrls(text: string, placeholders: PlaceholderStore): string {
-  return text.replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi, (match) => {
-    const { url, trailing } = splitTrailingPunctuation(match)
-    const href = /^www\./i.test(url) ? `https://${url}` : url
-    const anchor = `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`
-    return placeholders.protect(anchor) + trailing
-  })
+  return text.replace(
+    /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi,
+    (match, _group, offset: number, full: string) => {
+      const precedingChar = offset > 0 ? full[offset - 1] : undefined
+      const { url, trailing } = splitTrailingPunctuation(match, precedingChar)
+      const href = /^www\./i.test(url) ? `https://${url}` : url
+      const anchor = `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`
+      return placeholders.protect(anchor) + trailing
+    },
+  )
 }
 
 /**

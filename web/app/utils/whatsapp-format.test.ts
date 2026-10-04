@@ -37,8 +37,8 @@ test('formatWhatsappText - boundaries', async (t) => {
 
   await t.test('does not bold a marker with no boundary at the end', () => {
     assert.equal(
-      formatWhatsappText('*donotboldme*no space oe end of string'),
-      '*donotboldme*no space oe end of string',
+      formatWhatsappText('*donotboldme*no space or end of string'),
+      '*donotboldme*no space or end of string',
     )
   })
 
@@ -112,6 +112,16 @@ test('formatWhatsappText - links', async (t) => {
       assert.equal(
         formatWhatsappText('See https://example.com/page_(v2) for details.'),
         'See <a href="https://example.com/page_(v2)" target="_blank" rel="noopener noreferrer">https://example.com/page_(v2)</a> for details.',
+      )
+    },
+  )
+
+  await t.test(
+    'preserves a legitimate trailing marker character that is part of the URL',
+    () => {
+      assert.equal(
+        formatWhatsappText('Download https://example.com/file_name_ now'),
+        'Download <a href="https://example.com/file_name_" target="_blank" rel="noopener noreferrer">https://example.com/file_name_</a> now',
       )
     },
   )
