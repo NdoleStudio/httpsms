@@ -153,8 +153,8 @@ test('formatWhatsappText - escaping and placeholders', async (t) => {
   await t.test('two calls do not interfere with each other', () => {
     const first = formatWhatsappText('visit https://a.example today')
     const second = formatWhatsappText('visit https://b.example today')
-    assert.ok(first.includes('https://a.example'))
-    assert.ok(second.includes('https://b.example'))
-    assert.ok(!first.includes('https://b.example'))
+    assert.match(first, /href="https:\/\/a\.example"/)
+    assert.match(second, /href="https:\/\/b\.example"/)
+    assert.doesNotMatch(first, /https:\/\/b\.example/)
   })
 })
