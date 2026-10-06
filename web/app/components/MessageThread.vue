@@ -177,10 +177,12 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
           }"
           style="max-width: 250px"
         >
+          <!-- eslint-disable vue/no-v-html -->
           <span
             v-if="isWhatsappFormatted(thread)"
             v-html="threadPreviewHtml(thread)"
           />
+          <!-- eslint-enable vue/no-v-html -->
           <template v-else>{{ thread.last_message_content }}</template>
         </v-list-item-subtitle>
         <template #append>
