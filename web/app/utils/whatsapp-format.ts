@@ -23,7 +23,9 @@ function escapeHtml(text: string): string {
 // Character class (as a regex source string) that is treated as a valid
 // boundary around a formatting marker: whitespace, common punctuation, or
 // the start/end of the string.
-const BOUNDARY_CHARS = String.raw`\s.,!?;:'"()\[\]{}-`
+// Other formatting markers and generated tags (<>) also count so that nested
+// formatting such as `_*text*_` works.
+const BOUNDARY_CHARS = String.raw`\s.,!?;:'"()\[\]{}<>*_~-`
 
 function withBoundaries(pattern: string): RegExp {
   return new RegExp(

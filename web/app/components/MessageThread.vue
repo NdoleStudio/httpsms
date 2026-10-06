@@ -8,6 +8,10 @@ import {
   mdiAccount,
 } from '@mdi/js'
 import type { EntitiesMessageThread } from '~~/shared/types/api'
+import {
+  isUrlNotificationToken,
+  formatWhatsappText,
+} from '~/utils/whatsapp-format'
 
 const threadsStore = useThreadsStore()
 const phonesStore = usePhonesStore()
@@ -43,6 +47,19 @@ function onInstallApp() {
     type: 'info',
     message: 'Downloading the httpSMS Android App',
   })
+}
+
+function isWhatsappFormatted(thread: EntitiesMessageThread): boolean {
+  const phone = phonesStore.phones.find((x) => x.phone_number === thread.owner)
+  return isUrlNotificationToken(phone?.fcm_token)
+}
+
+function threadPreviewHtml(thread: EntitiesMessageThread): string {
+  // Links are unwrapped because the preview sits inside a router link.
+  return formatWhatsappText(thread.last_message_content ?? '').replace(
+    /<a [^>]*>(.*?)<\/a>/g,
+    '$1',
+  )
 }
 
 function threadContactName(thread: EntitiesMessageThread): string {
@@ -160,7 +177,11 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
           }"
           style="max-width: 250px"
         >
-          {{ thread.last_message_content }}
+          <span
+            v-if="isWhatsappFormatted(thread)"
+            v-html="threadPreviewHtml(thread)"
+          />
+          <template v-else>{{ thread.last_message_content }}</template>
         </v-list-item-subtitle>
         <template #append>
           <div class="d-flex flex-column align-end">
