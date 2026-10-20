@@ -63,8 +63,8 @@ threadsStore.setThreadId(route.params.id as string)
 const formMessageRules = [
   (v: string) =>
     v === '' ||
-    (v && v.length <= 320) ||
-    'Message must be less than 320 characters',
+    (v && v.length <= 2048) ||
+    'Message must be less than 2048 characters',
 ]
 
 let webhookChannel: Channel | null = null
