@@ -21,7 +21,12 @@ import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import { storeToRefs } from 'pinia'
-import type { EntitiesContact, EntitiesMessage } from '~~/shared/types/api'
+import { getApiErrorMessage, toApiError } from '~/utils/api-error'
+import type {
+  EntitiesContact,
+  EntitiesMessage,
+  EntitiesMessageThread,
+} from '~~/shared/types/api'
 import {
   isUrlNotificationToken,
   formatWhatsappText,
@@ -203,6 +208,45 @@ async function loadData() {
     await threadsStore.loadThreads()
   }
 
+  if (route.params.id !== threadId) return
+  if (!threadsStore.hasThreadId(threadId)) {
+    let requestedThread: EntitiesMessageThread
+    try {
+      requestedThread = await threadsStore.fetchThread(threadId)
+    } catch (error) {
+      if (route.params.id !== threadId) return
+      const status = toApiError(error).status
+      if (status === 404 || status === 422) {
+        notificationsStore.addNotification({
+          type: 'error',
+          message: 'The conversation could not be found',
+        })
+        await router.push('/threads')
+        return
+      }
+      notificationsStore.addNotification({
+        type: 'error',
+        message: getApiErrorMessage(
+          error,
+          'The conversation could not be loaded',
+        ),
+      })
+      throw error
+    }
+    if (route.params.id !== threadId) return
+    const contextChanged =
+      phonesStore.owner !== requestedThread.owner ||
+      threadsStore.archivedThreads !== requestedThread.is_archived
+    if (phonesStore.owner !== requestedThread.owner) {
+      await authStore.updateUser({ owner: requestedThread.owner })
+    }
+    if (route.params.id !== threadId) return
+    threadsStore.archivedThreads = requestedThread.is_archived
+    if (contextChanged) await threadsStore.loadThreads()
+    if (route.params.id !== threadId) return
+    threadsStore.setThreadId(threadId)
+  }
+
   if (!threadsStore.hasThreadId(threadId)) {
     await router.push('/threads')
     return
@@ -312,7 +356,7 @@ watch(
     if (!previousThreadId || threadId === previousThreadId) return
 
     threadsStore.setThreadId(threadId)
-    void loadMessages()
+    void loadData()
   },
 )
 

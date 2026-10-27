@@ -20,7 +20,9 @@ export const useThreadsStore = defineStore('threads', () => {
   const unreadOnly = ref(false)
   const retainedThread = ref<EntitiesMessageThread | null>(null)
   const openedThreads = ref(new Map<string, EntitiesMessageThread>())
+  const fetchedThreadIds = ref(new Set<string>())
   let threadRequestId = 0
+  let stateGeneration = 0
   let readMutationGeneration = 0
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
@@ -28,7 +30,11 @@ export const useThreadsStore = defineStore('threads', () => {
   const currentThread = computed<EntitiesMessageThread | null>(() => {
     return (
       threads.value.find((x) => x.id === threadId.value) ??
-      ((unreadOnly.value || loadingThreads.value || hasMoreThreads.value) &&
+      ((unreadOnly.value ||
+        loadingThreads.value ||
+        hasMoreThreads.value ||
+        (threadId.value !== null &&
+          fetchedThreadIds.value.has(threadId.value))) &&
       retainedThread.value?.id === threadId.value
         ? retainedThread.value
         : null)
@@ -42,7 +48,7 @@ export const useThreadsStore = defineStore('threads', () => {
   )
 
   const hasThread = computed(
-    () => threadId.value != null && !loadingThreads.value,
+    () => currentThread.value !== null && !loadingThreads.value,
   )
 
   function hasThreadId(id: string): boolean {
@@ -188,6 +194,19 @@ export const useThreadsStore = defineStore('threads', () => {
     }
   }
 
+  async function fetchThread(id: string): Promise<EntitiesMessageThread> {
+    const generation = stateGeneration
+    const response = await apiFetch<{ data: EntitiesMessageThread }>(
+      `/v1/message-threads/${id}`,
+    )
+    if (generation !== stateGeneration) {
+      throw new DOMException('Conversation lookup was canceled', 'AbortError')
+    }
+    openedThreads.value.set(response.data.id, response.data)
+    fetchedThreadIds.value.add(response.data.id)
+    return response.data
+  }
+
   async function loadThreadMessages(
     id: string | null,
   ): Promise<EntitiesMessage[]> {
@@ -220,7 +239,10 @@ export const useThreadsStore = defineStore('threads', () => {
       id === null
         ? null
         : (threads.value.find((thread) => thread.id === id) ??
-          ((unreadOnly.value || loadingThreads.value || hasMoreThreads.value) &&
+          ((unreadOnly.value ||
+            loadingThreads.value ||
+            hasMoreThreads.value ||
+            fetchedThreadIds.value.has(id)) &&
           cached &&
           cached.owner === owner &&
           cached.is_archived === archivedThreads.value
@@ -249,6 +271,7 @@ export const useThreadsStore = defineStore('threads', () => {
     )
     setThreadId(null)
     openedThreads.value.delete(payload.threadId)
+    fetchedThreadIds.value.delete(payload.threadId)
     notificationsStore.addNotification({
       message: payload.isArchived ? 'Archived' : 'Unarchived',
       type: 'success',
@@ -294,6 +317,7 @@ export const useThreadsStore = defineStore('threads', () => {
     await apiFetch(`/v1/message-threads/${id}`, { method: 'DELETE' })
     setThreadId(null)
     openedThreads.value.delete(id)
+    fetchedThreadIds.value.delete(id)
     notificationsStore.addNotification({
       message: 'The message thread has been deleted successfully',
       type: 'success',
@@ -302,6 +326,7 @@ export const useThreadsStore = defineStore('threads', () => {
 
   function resetState() {
     threadRequestId++
+    stateGeneration++
     readMutationGeneration = 0
     loadMoreGeneration++
     pageCount = 1
@@ -312,6 +337,7 @@ export const useThreadsStore = defineStore('threads', () => {
     threadId.value = null
     retainedThread.value = null
     openedThreads.value.clear()
+    fetchedThreadIds.value.clear()
     archivedThreads.value = false
     unreadOnly.value = false
     loadingThreads.value = true
@@ -331,6 +357,7 @@ export const useThreadsStore = defineStore('threads', () => {
     hasThreadId,
     loadThreads,
     loadMoreThreads,
+    fetchThread,
     loadThreadMessages,
     setThreadId,
     toggleArchive,

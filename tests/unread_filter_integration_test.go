@@ -137,4 +137,17 @@ func TestMessageThreadPaginationHasMore(t *testing.T) {
 		seen[thread.ID] = true
 	}
 	assert.False(t, seen[second.Data[0].ID], "equal timestamps must not duplicate threads between pages")
+
+	var individual struct {
+		Data integrationThread `json:"data"`
+	}
+	path := "/v1/message-threads/" + second.Data[0].ID
+	requestJSON(ctx, t, http.MethodGet, path, userAPIKey, nil, http.StatusOK, &individual)
+	assert.Equal(t, second.Data[0].ID, individual.Data.ID, "an older conversation must load independently of the first page")
+	assert.Equal(t, phone.PhoneNumber, individual.Data.Owner)
+	archiveThread(ctx, t, individual.Data.ID)
+	requestJSON(ctx, t, http.MethodGet, path, userAPIKey, nil, http.StatusOK, &individual)
+	assert.True(t, individual.Data.IsArchived, "direct lookup must also resolve archived conversations")
+	requestJSON(ctx, t, http.MethodGet, path, systemAPIKey, nil, http.StatusNotFound, nil)
+	requestJSON(ctx, t, http.MethodGet, "/v1/message-threads/invalid", userAPIKey, nil, http.StatusUnprocessableEntity, nil)
 }

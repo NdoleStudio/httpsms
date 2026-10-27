@@ -29,6 +29,8 @@ function thread(id: string, unreadCount: number): EntitiesMessageThread {
 function setupStore() {
   const calls: { path: string; params?: Record<string, unknown> }[] = []
   let responseThreads = [thread('unread', 2), thread('read', 0)]
+  const individualThreads = new Map<string, EntitiesMessageThread>()
+  let nextLookup: Promise<{ data: EntitiesMessageThread }> | undefined
   let nextResponse: Promise<{ data: EntitiesMessageThread[] }> | undefined
   const phones = {
     owner: '+18005550199',
@@ -44,7 +46,7 @@ function setupStore() {
         options: {
           params?: Record<string, unknown>
           method?: string
-        },
+        } = {},
       ) => {
         calls.push({ path, params: options.params })
         if (options.method === 'PUT') {
@@ -54,6 +56,20 @@ function setupStore() {
           return { data: thread('unread', 0) }
         }
         if (path === '/v1/messages') return { data: [] }
+        if (
+          (!options.method || options.method === 'GET') &&
+          path.startsWith('/v1/message-threads/')
+        ) {
+          if (nextLookup) {
+            const pending = nextLookup
+            nextLookup = undefined
+            return pending
+          }
+          const item = individualThreads.get(path.split('/').at(-1) ?? '')
+          if (!item)
+            throw Object.assign(new Error('Thread not found'), { status: 404 })
+          return { data: item }
+        }
         const pending = nextResponse
         nextResponse = undefined
         if (pending) return { ...(await pending), has_more: false }
@@ -75,6 +91,12 @@ function setupStore() {
     calls,
     respondWith: (threads: EntitiesMessageThread[]) => {
       responseThreads = threads
+    },
+    respondToLookup: (item: EntitiesMessageThread) => {
+      individualThreads.set(item.id, item)
+    },
+    deferLookup: (response: Promise<{ data: EntitiesMessageThread }>) => {
+      nextLookup = response
     },
     deferNextLoad: (response: Promise<{ data: EntitiesMessageThread[] }>) => {
       nextResponse = response
@@ -477,4 +499,70 @@ test('changing filters cancels an older Load More result', async () => {
   assert.equal(store.loadingMoreThreads, false)
   await store.loadMoreThreads()
   assert.equal(store.threads.length, 40)
+})
+
+test('a cold deep link resolves an older conversation independently of page one', async () => {
+  const { store, respondWith, respondToLookup, calls } = setupStore()
+  const rows = manyThreads(65)
+  const requested = {
+    ...thread('page-60', 0),
+    contact: '+18005550060',
+    contact_details: contact('Older contact', ['+18005550060']),
+  }
+  respondWith(rows)
+  respondToLookup(requested)
+  store.setThreadId(requested.id)
+
+  await store.fetchThread(requested.id)
+  await store.loadThreads()
+  store.setThreadId(requested.id)
+
+  assert.equal(store.threads.length, 20)
+  assert.equal(store.currentThread?.id, requested.id)
+  assert.equal(store.currentThread.contact_details?.name, 'Older contact')
+  await store.loadThreadMessages(requested.id)
+  assert.equal(calls.at(-1)?.params?.contact, requested.contact)
+  assert.equal(
+    calls.filter((call) => call.path === '/v1/message-threads').length,
+    1,
+  )
+})
+
+test('individual lookup preserves a real 404 instead of searching every page', async () => {
+  const { store, calls } = setupStore()
+
+  await assert.rejects(store.fetchThread('missing'), { status: 404 })
+
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0]?.path, '/v1/message-threads/missing')
+})
+
+test('a successfully fetched conversation remains selectable independently of list metadata', async () => {
+  const { store, respondWith, respondToLookup } = setupStore()
+  respondWith(manyThreads(20))
+  const requested = thread('directly-requested', 0)
+  respondToLookup(requested)
+  await store.loadThreads()
+  assert.equal(store.hasMoreThreads, false)
+
+  await store.fetchThread(requested.id)
+  store.setThreadId(requested.id)
+
+  assert.equal(store.currentThread?.id, requested.id)
+  assert.equal(store.threads.length, 20)
+})
+
+test('resetting the session cancels an older individual lookup', async () => {
+  const { store, deferLookup } = setupStore()
+  const pending = Promise.withResolvers<{ data: EntitiesMessageThread }>()
+  deferLookup(pending.promise)
+  const loading = store.fetchThread('old-session')
+
+  store.resetState()
+  pending.resolve({ data: thread('old-session', 0) })
+
+  await assert.rejects(loading, { name: 'AbortError' })
+  store.unreadOnly = true
+  store.setThreadId('old-session')
+  assert.equal(store.currentThread, null)
 })

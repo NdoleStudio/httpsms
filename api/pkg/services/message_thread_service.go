@@ -322,8 +322,8 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 }
 
 // GetThread fetches an entities.MessageThread  message thread by the ID
-func (service *MessageThreadService) GetThread(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID) (*entities.MessageThread, error) {
-	ctx, span := service.tracer.Start(ctx)
+func (service *MessageThreadService) GetThread(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID, withContacts bool) (*entities.MessageThread, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	thread, err := service.repository.Load(ctx, userID, messageThreadID)
@@ -331,6 +331,14 @@ func (service *MessageThreadService) GetThread(ctx context.Context, userID entit
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, stacktrace.GetCode(err), "could not fetch thread with ID [%s] for user [%s]", messageThreadID, userID))
 	}
 
+	if withContacts {
+		contacts, contactErr := service.contactService.GetContactMap(ctx, userID, []string{thread.Contact})
+		if contactErr != nil {
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(contactErr, "cannot resolve contact for thread [%s]", messageThreadID)))
+		} else {
+			thread.ContactDetails = contacts[thread.Contact]
+		}
+	}
 	return thread, nil
 }
 

@@ -1210,6 +1210,62 @@ const docTemplate = `{
             }
         },
         "/message-threads/{messageThreadID}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a conversation belonging to the authenticated user, including matching contact details when available.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MessageThreads"
+                ],
+                "summary": "Get a message thread",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the message thread",
+                        "name": "messageThreadID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessageThreadResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
