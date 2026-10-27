@@ -234,7 +234,7 @@ func (repository *gormMessageThreadRepository) Load(ctx context.Context, userID 
 }
 
 // Index message threads for an owner
-func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID entities.UserID, owner string, isArchived bool, params IndexParams) (*[]entities.MessageThread, error) {
+func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID entities.UserID, owner string, isArchived bool, unreadOnly bool, params IndexParams) (*[]entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -249,6 +249,10 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID
 		query.Where(repository.db.Where("is_archived = ?", isArchived).Or("is_archived IS NULL"))
 	}
 
+	if unreadOnly {
+		query.Where("unread_count > ?", 0)
+	}
+
 	if len(params.Query) > 0 {
 		queryPattern := "%" + params.Query + "%"
 		query.Where(
@@ -259,7 +263,7 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID
 	}
 
 	threads := new([]entities.MessageThread)
-	if err := query.Order("order_timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&threads).Error; err != nil {
+	if err := query.Order("order_timestamp DESC").Order("id DESC").Limit(params.Limit).Offset(params.Skip).Find(&threads).Error; err != nil {
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch message threads with owner [%s] and params [%+#v]", owner, params))
 	}
 

@@ -1166,6 +1166,13 @@ const docTemplate = `{
                         "description": "include matching contact details",
                         "name": "contacts",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "only include threads with unread messages",
+                        "name": "unread_only",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1203,6 +1210,62 @@ const docTemplate = `{
             }
         },
         "/message-threads/{messageThreadID}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a conversation belonging to the authenticated user, including matching contact details when available.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MessageThreads"
+                ],
+                "summary": "Get a message thread",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the message thread",
+                        "name": "messageThreadID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.MessageThreadResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.Unauthorized"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NotFound"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/responses.UnprocessableEntity"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.InternalServerError"
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
@@ -4204,6 +4267,7 @@ const docTemplate = `{
         "entities.Phone": {
             "type": "object",
             "required": [
+                "archive_new_outgoing_message_threads",
                 "created_at",
                 "id",
                 "max_send_attempts",
@@ -4216,6 +4280,11 @@ const docTemplate = `{
                 "user_id"
             ],
             "properties": {
+                "archive_new_outgoing_message_threads": {
+                    "description": "ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2022-06-05T14:26:02.302718+03:00"
@@ -4975,6 +5044,11 @@ const docTemplate = `{
                 "unarchive_thread"
             ],
             "properties": {
+                "archive_new_outgoing_message_threads": {
+                    "description": "ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "fcm_token": {
                     "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",

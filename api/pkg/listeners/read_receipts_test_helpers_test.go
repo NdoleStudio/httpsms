@@ -52,7 +52,7 @@ func (repository *listenerMessageThreadRepository) Load(context.Context, entitie
 	return &entities.MessageThread{}, nil
 }
 
-func (repository *listenerMessageThreadRepository) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (repository *listenerMessageThreadRepository) Index(context.Context, entities.UserID, string, bool, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
 	threads := []entities.MessageThread{}
 	return &threads, nil
 }

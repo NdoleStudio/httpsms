@@ -20,7 +20,7 @@ export default defineNuxtConfig({
     download: true,
   },
 
-  css: ['vuetify/styles'],
+  css: ['vuetify/styles', 'v-phone-input/styles'],
 
   site: {
     url: process.env.APP_URL || 'https://httpsms.com',

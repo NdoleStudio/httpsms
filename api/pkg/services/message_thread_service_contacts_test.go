@@ -22,7 +22,7 @@ type messageThreadContactRepositoryStub struct {
 	calls   int
 }
 
-func (stub *messageThreadContactRepositoryStub) Index(_ context.Context, _ entities.UserID, _ string, _ bool, _ repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (stub *messageThreadContactRepositoryStub) Index(_ context.Context, _ entities.UserID, _ string, _ bool, _ bool, _ repositories.IndexParams) (*[]entities.MessageThread, error) {
 	stub.calls++
 	if stub.err != nil {
 		return nil, stub.err

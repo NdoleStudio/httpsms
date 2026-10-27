@@ -117,14 +117,15 @@ export const useContactsStore = defineStore('contacts', () => {
   async function saveContacts(
     items: ContactInput | ContactInput[],
     options: ContactMutationOptions = {},
-  ): Promise<void> {
+  ): Promise<EntitiesContact[]> {
     const contactsToSave = Array.isArray(items) ? items : [items]
     const { refresh = true } = options
 
     loading.value = true
     try {
+      let response: { data: EntitiesContact[] }
       try {
-        await apiFetch('/v1/contacts', {
+        response = await apiFetch<{ data: EntitiesContact[] }>('/v1/contacts', {
           method: 'POST',
           body: contactsToSave,
         })
@@ -146,6 +147,7 @@ export const useContactsStore = defineStore('contacts', () => {
       if (refresh) {
         await loadContacts(true)
       }
+      return response.data
     } finally {
       loading.value = false
     }
@@ -155,15 +157,19 @@ export const useContactsStore = defineStore('contacts', () => {
     id: string,
     payload: ContactInput,
     options: ContactMutationOptions = {},
-  ): Promise<void> {
+  ): Promise<EntitiesContact> {
     const { refresh = true } = options
     loading.value = true
     try {
+      let response: { data: EntitiesContact }
       try {
-        await apiFetch(`/v1/contacts/${id}`, {
-          method: 'PUT',
-          body: payload,
-        })
+        response = await apiFetch<{ data: EntitiesContact }>(
+          `/v1/contacts/${id}`,
+          {
+            method: 'PUT',
+            body: payload,
+          },
+        )
       } catch (error: unknown) {
         notificationsStore.addNotification({
           message: getApiErrorMessage(error, 'Error while updating contact'),
@@ -179,6 +185,7 @@ export const useContactsStore = defineStore('contacts', () => {
       if (refresh) {
         await loadContacts(true)
       }
+      return response.data
     } finally {
       loading.value = false
     }

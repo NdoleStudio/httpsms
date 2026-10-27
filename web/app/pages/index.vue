@@ -53,9 +53,7 @@ const pricing = ref(0)
 const pricingLabels = ['10K', '20K', '50K', '100K', '200K']
 const pricingLabelsFull = ['10,000', '20,000', '50,000', '100,000', '200,000']
 
-const planMessages = computed(() =>
-  pricingLabels[pricing.value].replace('K', ',000'),
-)
+const planMessages = computed(() => pricingLabelsFull[pricing.value])
 const planMonthlyPrice = computed(() => [20, 35, 89, 175, 350][pricing.value])
 const planYearlyPrice = computed(
   () => [200, 350, 1068, 2100, 4200][pricing.value],

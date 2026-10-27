@@ -23,7 +23,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type messageThreadHandlerRepositoryStub struct{}
+type messageThreadHandlerRepositoryStub struct {
+	load func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error)
+}
 
 func (stub *messageThreadHandlerRepositoryStub) Store(context.Context, *entities.MessageThread) error {
 	return nil
@@ -41,11 +43,14 @@ func (stub *messageThreadHandlerRepositoryStub) LoadByOwnerContact(context.Conte
 	return nil, nil
 }
 
-func (stub *messageThreadHandlerRepositoryStub) Load(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error) {
+func (stub *messageThreadHandlerRepositoryStub) Load(ctx context.Context, userID entities.UserID, id uuid.UUID) (*entities.MessageThread, error) {
+	if stub.load != nil {
+		return stub.load(ctx, userID, id)
+	}
 	return nil, nil
 }
 
-func (stub *messageThreadHandlerRepositoryStub) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (stub *messageThreadHandlerRepositoryStub) Index(context.Context, entities.UserID, string, bool, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
 	return nil, nil
 }
 
@@ -88,6 +93,67 @@ func TestMessageThreadHandlerUpdate_ReturnsNotFoundWhenThreadIsMissing(t *testin
 	}
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
 	require.Equal(t, "cannot find message thread with ID ["+messageThreadID.String()+"]", payload.Message)
+}
+
+func TestMessageThreadHandlerGetLoadsIndividualUserScopedThread(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		status int
+	}{
+		{name: "existing", status: http.StatusOK},
+		{name: "missing", status: http.StatusNotFound},
+		{name: "another user", status: http.StatusNotFound},
+		{name: "invalid UUID", status: http.StatusUnprocessableEntity},
+		{name: "repository failure", status: http.StatusInternalServerError},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			id := uuid.New()
+			contact := &entities.Contact{ID: uuid.New(), Name: "Alice", PhoneNumbers: []string{"+18005550100"}}
+			repository := &messageThreadHandlerRepositoryStub{
+				load: func(_ context.Context, userID entities.UserID, threadID uuid.UUID) (*entities.MessageThread, error) {
+					require.Equal(t, entities.UserID("user-id"), userID)
+					require.Equal(t, id, threadID)
+					if test.name == "missing" || test.name == "another user" {
+						return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+					}
+					if test.name == "repository failure" {
+						return nil, stacktrace.NewError("database unavailable")
+					}
+					return &entities.MessageThread{ID: id, UserID: userID, Owner: "+18005550199", Contact: "+18005550100"}, nil
+				},
+			}
+			logger := &messageThreadHandlerNoopLogger{}
+			tracer := telemetry.NewOtelLogger("test", logger)
+			provider := &messageThreadHandlerContactProviderStub{contacts: map[string]*entities.Contact{"+18005550100": contact}}
+			service := services.NewMessageThreadService(logger, tracer, repository, nil, nil, provider)
+			handler := NewMessageThreadHandler(logger, tracer, validators.NewMessageThreadHandlerValidator(logger, tracer), service)
+			app := fiber.New()
+			app.Use(func(c fiber.Ctx) error {
+				c.Locals(middlewares.ContextKeyAuthUserID, entities.AuthContext{ID: entities.UserID("user-id"), Email: "user@example.com"})
+				return c.Next()
+			})
+			handler.RegisterRoutes(app)
+			pathID := id.String()
+			if test.name == "invalid UUID" {
+				pathID = "invalid"
+			}
+
+			response, err := app.Test(httptest.NewRequest(http.MethodGet, "/v1/message-threads/"+pathID, nil))
+
+			require.NoError(t, err)
+			defer response.Body.Close()
+			require.Equal(t, test.status, response.StatusCode)
+			if test.status == http.StatusOK {
+				var payload struct {
+					Data entities.MessageThread `json:"data"`
+				}
+				require.NoError(t, json.NewDecoder(response.Body).Decode(&payload))
+				require.Equal(t, id, payload.Data.ID)
+				require.NotNil(t, payload.Data.ContactDetails)
+				require.Equal(t, "Alice", payload.Data.ContactDetails.Name)
+			}
+		})
+	}
 }
 
 type messageThreadHandlerNoopLogger struct{}

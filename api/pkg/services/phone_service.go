@@ -94,18 +94,19 @@ func (service *PhoneService) Load(ctx context.Context, userID entities.UserID, o
 
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
-	PhoneNumber               *phonenumbers.PhoneNumber
-	FcmToken                  *string
-	MessagesPerMinute         *uint
-	MaxSendAttempts           *uint
-	WebhookURL                *string
-	MessageExpirationDuration *time.Duration
-	MissedCallAutoReply       *string
-	UnarchiveThread           *bool
-	SIM                       entities.SIM
-	MessageSendScheduleID     *uuid.UUID
-	Source                    string
-	UserID                    entities.UserID
+	PhoneNumber                      *phonenumbers.PhoneNumber
+	FcmToken                         *string
+	MessagesPerMinute                *uint
+	MaxSendAttempts                  *uint
+	WebhookURL                       *string
+	MessageExpirationDuration        *time.Duration
+	MissedCallAutoReply              *string
+	UnarchiveThread                  *bool
+	ArchiveNewOutgoingMessageThreads *bool
+	SIM                              entities.SIM
+	MessageSendScheduleID            *uuid.UUID
+	Source                           string
+	UserID                           entities.UserID
 }
 
 // Upsert a new entities.Phone
@@ -125,7 +126,7 @@ func (service *PhoneService) Upsert(ctx context.Context, params *PhoneUpsertPara
 			FcmToken:              params.FcmToken,
 			SIM:                   params.SIM,
 			MessageSendScheduleID: params.MessageSendScheduleID,
-		})
+		}, params.ArchiveNewOutgoingMessageThreads != nil && *params.ArchiveNewOutgoingMessageThreads)
 	}
 
 	if err != nil {
@@ -224,7 +225,7 @@ func (service *PhoneService) UpsertFCMToken(ctx context.Context, params *PhoneFC
 
 	phone, err := service.repository.Load(ctx, params.UserID, phonenumbers.Format(params.PhoneNumber, phonenumbers.E164))
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return service.createPhone(ctx, params)
+		return service.createPhone(ctx, params, false)
 	}
 
 	if err != nil {
@@ -242,7 +243,7 @@ func (service *PhoneService) UpsertFCMToken(ctx context.Context, params *PhoneFC
 	return phone, service.dispatchPhoneUpdatedEvent(ctx, phone, params)
 }
 
-func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTokenParams) (*entities.Phone, error) {
+func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTokenParams, archiveNewOutgoingMessageThreads bool) (*entities.Phone, error) {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -252,15 +253,16 @@ func (service *PhoneService) createPhone(ctx context.Context, params *PhoneFCMTo
 		FcmToken: params.FcmToken,
 		// Android has a limit of 30 SMS messages per minute without user permission, to be safe let's use 10 messages per minute
 		// https://android.googlesource.com/platform/frameworks/opt/telephony/+/master/src/java/com/android/internal/telephony/SmsUsageMonitor.java#80
-		MessagesPerMinute:        10,
-		MessageExpirationSeconds: 10 * 60, // 10 minutes
-		MaxSendAttempts:          2,
-		SIM:                      params.SIM,
-		MissedCallAutoReply:      nil,
-		MessageSendScheduleID:    params.MessageSendScheduleID,
-		PhoneNumber:              phonenumbers.Format(params.PhoneNumber, phonenumbers.E164),
-		CreatedAt:                time.Now().UTC(),
-		UpdatedAt:                time.Now().UTC(),
+		MessagesPerMinute:                10,
+		MessageExpirationSeconds:         10 * 60, // 10 minutes
+		MaxSendAttempts:                  2,
+		SIM:                              params.SIM,
+		MissedCallAutoReply:              nil,
+		MessageSendScheduleID:            params.MessageSendScheduleID,
+		ArchiveNewOutgoingMessageThreads: archiveNewOutgoingMessageThreads,
+		PhoneNumber:                      phonenumbers.Format(params.PhoneNumber, phonenumbers.E164),
+		CreatedAt:                        time.Now().UTC(),
+		UpdatedAt:                        time.Now().UTC(),
 	}
 
 	if err := service.repository.Save(ctx, phone); err != nil {
@@ -301,6 +303,10 @@ func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertPa
 
 	if params.UnarchiveThread != nil {
 		phone.UnarchiveThread = *params.UnarchiveThread
+	}
+
+	if params.ArchiveNewOutgoingMessageThreads != nil {
+		phone.ArchiveNewOutgoingMessageThreads = *params.ArchiveNewOutgoingMessageThreads
 	}
 
 	phone.SIM = params.SIM

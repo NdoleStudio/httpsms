@@ -31,7 +31,7 @@ function parseErrors(error: unknown): ErrorMessages {
   const bag = new ErrorMessages()
   const data = toApiError(error).data?.data
   if (data && typeof data === 'object') {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]))
+    Object.entries(data).forEach(([key, values]) => bag.addMany(key, values))
   }
   return bag
 }
@@ -42,7 +42,7 @@ function cleanName(requestId: string): string {
   if (requestId.startsWith('bulk-xls-'))
     return requestId.replace(/^bulk-xls-/, '') + '.xlsx'
   const newFormatMatch = requestId.match(/^bulk-[0-9A-Za-z]+-(.+)$/)
-  if (newFormatMatch) return newFormatMatch[1]
+  if (newFormatMatch?.[1]) return newFormatMatch[1]
   return requestId.replace(/^bulk-/, '')
 }
 

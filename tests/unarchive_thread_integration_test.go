@@ -21,6 +21,7 @@ type integrationThread struct {
 	Contact            string  `json:"contact"`
 	Owner              string  `json:"owner"`
 	IsArchived         bool    `json:"is_archived"`
+	UnreadCount        uint    `json:"unread_count"`
 	LastMessageContent *string `json:"last_message_content"`
 }
 

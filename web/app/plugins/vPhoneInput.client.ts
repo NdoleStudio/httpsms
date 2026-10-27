@@ -1,5 +1,4 @@
 import 'flag-icons/css/flag-icons.min.css'
-import 'v-phone-input/styles'
 import {
   createVPhoneInput,
   autocompletePhoneCountryInput,

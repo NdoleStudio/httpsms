@@ -209,6 +209,16 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	isArchived := false
+	if params.Status != entities.MessageStatusReceived {
+		phone, err := service.phoneRepository.Load(ctx, params.UserID, params.Owner)
+		if err != nil {
+			ctxLogger.Warn(stacktrace.Propagatef(err, "cannot load phone [%s] for user [%s] to resolve ArchiveNewOutgoingMessageThreads; creating the thread unarchived", params.Owner, params.UserID))
+		} else {
+			isArchived = phone.ArchiveNewOutgoingMessageThreads
+		}
+	}
+
 	unreadCount := uint(0)
 	if params.MarkAsUnread {
 		unreadCount = 1
@@ -220,7 +230,7 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 		Owner:              params.Owner,
 		Contact:            params.Contact,
 		UserID:             params.UserID,
-		IsArchived:         false,
+		IsArchived:         isArchived,
 		UnreadCount:        unreadCount,
 		Color:              service.getColor(),
 		LastMessageContent: &params.Content,
@@ -274,6 +284,7 @@ func (service *MessageThreadService) getColor() string {
 type MessageThreadGetParams struct {
 	repositories.IndexParams
 	IsArchived   bool
+	UnreadOnly   bool
 	WithContacts bool
 	UserID       entities.UserID
 	Owner        string
@@ -284,7 +295,7 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	threads, err := service.repository.Index(ctx, params.UserID, params.Owner, params.IsArchived, params.IndexParams)
+	threads, err := service.repository.Index(ctx, params.UserID, params.Owner, params.IsArchived, params.UnreadOnly, params.IndexParams)
 	if err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "could not fetch messages threads for params [%+#v]", params))
 	}
@@ -312,8 +323,8 @@ func (service *MessageThreadService) GetThreads(ctx context.Context, params Mess
 }
 
 // GetThread fetches an entities.MessageThread  message thread by the ID
-func (service *MessageThreadService) GetThread(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID) (*entities.MessageThread, error) {
-	ctx, span := service.tracer.Start(ctx)
+func (service *MessageThreadService) GetThread(ctx context.Context, userID entities.UserID, messageThreadID uuid.UUID, withContacts bool) (*entities.MessageThread, error) {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	thread, err := service.repository.Load(ctx, userID, messageThreadID)
@@ -321,6 +332,14 @@ func (service *MessageThreadService) GetThread(ctx context.Context, userID entit
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, stacktrace.GetCode(err), "could not fetch thread with ID [%s] for user [%s]", messageThreadID, userID))
 	}
 
+	if withContacts {
+		contacts, contactErr := service.contactService.GetContactMap(ctx, userID, []string{thread.Contact})
+		if contactErr != nil {
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(contactErr, "cannot resolve contact for thread [%s]", messageThreadID)))
+		} else {
+			thread.ContactDetails = contacts[thread.Contact]
+		}
+	}
 	return thread, nil
 }
 

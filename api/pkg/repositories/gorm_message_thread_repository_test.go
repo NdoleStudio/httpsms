@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,42 @@ import (
 type messageThreadTestStatement struct {
 	query string
 	args  []any
+}
+
+func TestMessageThreadIndexFiltersUnreadBeforePagination(t *testing.T) {
+	for _, unreadOnly := range []bool{false, true} {
+		t.Run(fmt.Sprintf("unread_only=%t", unreadOnly), func(t *testing.T) {
+			db, err := gorm.Open(postgres.New(postgres.Config{Conn: &messageThreadTestConnPool{}}), &gorm.Config{
+				DisableAutomaticPing: true,
+				DryRun:               true,
+			})
+			require.NoError(t, err)
+			var query string
+			var args []any
+			require.NoError(t, db.Callback().Query().After("gorm:query").Register("capture", func(db *gorm.DB) {
+				query = db.Statement.SQL.String()
+				args = db.Statement.Vars
+			}))
+			logger := &messageThreadTestLogger{}
+			repository := NewGormMessageThreadRepository(logger, telemetry.NewOtelLogger("test", logger), db)
+
+			_, err = repository.Index(context.Background(), entities.UserID("user-id"), "+18005550199", true, unreadOnly, IndexParams{Limit: 20, Skip: 5})
+
+			require.NoError(t, err)
+			assert.Contains(t, query, "user_id = $1")
+			assert.Contains(t, query, "owner = $2")
+			assert.Contains(t, query, "is_archived = $3")
+			assert.Equal(t, []any{entities.UserID("user-id"), "+18005550199", true}, args[:3])
+			if unreadOnly {
+				assert.Contains(t, query, "unread_count >")
+				assert.Less(t, strings.Index(query, "unread_count >"), strings.Index(query, "LIMIT"))
+			} else {
+				assert.NotContains(t, query, "unread_count >")
+			}
+			assert.Contains(t, query, "ORDER BY order_timestamp DESC,id DESC LIMIT")
+			assert.Contains(t, query, "OFFSET")
+		})
+	}
 }
 
 type messageThreadTestConnPool struct {

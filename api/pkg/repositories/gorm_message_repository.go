@@ -234,10 +234,29 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
-	if err := repository.db.WithContext(ctx).Save(message).Error; err != nil {
+	// Send attempts are owned by the atomic increment, not a loaded status snapshot.
+	if err := repository.db.WithContext(ctx).Omit("send_attempt_count").Save(message).Error; err != nil {
 		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update message with ID [%s]", message.ID))
 	}
 
+	return nil
+}
+
+func (repository *gormMessageRepository) IncreaseSendAttemptCount(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	result := repository.db.WithContext(ctx).
+		Model(&entities.Message{}).
+		Where("user_id = ?", userID).
+		Where("id = ?", messageID).
+		Update("send_attempt_count", gorm.Expr("send_attempt_count + ?", 1))
+	if result.Error != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot increment send attempts for message [%s] for user [%s]", messageID, userID))
+	}
+	if result.RowsAffected == 0 {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, ErrCodeNotFound, "message [%s] for user [%s] does not exist", messageID, userID))
+	}
 	return nil
 }
 

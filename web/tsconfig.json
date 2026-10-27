@@ -14,17 +14,5 @@
     {
       "path": "./.nuxt/tsconfig.node.json"
     }
-  ],
-  "compilerOptions": {
-    "strict": true,
-    "moduleResolution": "bundler",
-    "module": "ESNext",
-    "target": "ESNext",
-    "paths": {
-      "~/*": ["./app/*"],
-      "~~/*": ["./*"],
-      "#imports": ["./app/types/nuxt-shims"]
-    }
-  },
-  "include": ["app/**/*.ts", "app/**/*.d.ts", "shared/**/*.ts"]
+  ]
 }

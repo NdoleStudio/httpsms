@@ -152,7 +152,7 @@ function parseErrors(error: unknown): ErrorMessages {
   const bag = new ErrorMessages()
   const data = toApiError(error).data?.data
   if (data && typeof data === 'object') {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]))
+    Object.entries(data).forEach(([key, values]) => bag.addMany(key, values))
   }
   return bag
 }

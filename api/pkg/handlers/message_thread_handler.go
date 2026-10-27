@@ -42,6 +42,7 @@ func NewMessageThreadHandler(
 // RegisterRoutes registers the routes for the MessageHandler
 func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	h.register(router, fiber.MethodGet, "/v1/message-threads", middlewares, h.Index)
+	h.register(router, fiber.MethodGet, "/v1/message-threads/:messageThreadID", middlewares, h.Get)
 	h.register(router, fiber.MethodPut, "/v1/message-threads/:messageThreadID", middlewares, h.Update)
 	h.register(router, fiber.MethodDelete, "/v1/message-threads/:messageThreadID", middlewares, h.Delete)
 }
@@ -58,6 +59,7 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares .
 // @Param        query	query  string  	false 	"filter message threads containing query"
 // @Param        limit	query  int  	false	"number of messages to return"				minimum(1)	maximum(20)
 // @Param        contacts	query  bool  	false	"include matching contact details"
+// @Param        unread_only	query  bool  	false	"only include threads with unread messages"	default(false)
 // @Success      200 	{object}	responses.MessageThreadsResponse
 // @Failure      400	{object}	responses.BadRequest
 // @Failure 	 401    {object}	responses.Unauthorized
@@ -90,6 +92,39 @@ func (h *MessageThreadHandler) Index(c fiber.Ctx) error {
 	}
 
 	return h.responseOK(c, fmt.Sprintf("fetched %d message %s", len(*threads), h.pluralize("thread", len(*threads))), threads)
+}
+
+// Get returns a single entities.MessageThread independently of list filters and pagination.
+// @Summary      Get a message thread
+// @Description  Returns a conversation belonging to the authenticated user, including matching contact details when available.
+// @Security     ApiKeyAuth
+// @Tags         MessageThreads
+// @Produce      json
+// @Param        messageThreadID path string true "ID of the message thread"
+// @Success      200 {object} responses.MessageThreadResponse
+// @Failure      401 {object} responses.Unauthorized
+// @Failure      404 {object} responses.NotFound
+// @Failure      422 {object} responses.UnprocessableEntity
+// @Failure      500 {object} responses.InternalServerError
+// @Router       /message-threads/{messageThreadID} [get]
+func (h *MessageThreadHandler) Get(c fiber.Ctx) error {
+	ctx, span, ctxLogger := h.tracer.StartFromFiberCtxWithLogger(c, h.logger)
+	defer span.End()
+
+	id := c.Params("messageThreadID")
+	if errors := h.validator.ValidateUUID(id, "messageThreadID"); len(errors) != 0 {
+		ctxLogger.Warn(stacktrace.NewErrorf("invalid message thread ID [%s]", id))
+		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching a message thread")
+	}
+	thread, err := h.service.GetThread(ctx, h.userIDFomContext(c), uuid.MustParse(id), true)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return h.responseNotFound(c, fmt.Sprintf("cannot find message thread with ID [%s]", id))
+	}
+	if err != nil {
+		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch message thread [%s]", id))
+		return h.responseInternalServerError(c)
+	}
+	return h.responseOK(c, "message thread fetched successfully", thread)
 }
 
 // Update an entities.MessageThread
@@ -161,7 +196,7 @@ func (h *MessageThreadHandler) Delete(c fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while deleting a thread thread")
 	}
 
-	thread, err := h.service.GetThread(ctx, h.userIDFomContext(c), uuid.MustParse(messageThreadID))
+	thread, err := h.service.GetThread(ctx, h.userIDFomContext(c), uuid.MustParse(messageThreadID), false)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		return h.responseNotFound(c, fmt.Sprintf("cannot find thread thread with ID [%s]", messageThreadID))
 	}
