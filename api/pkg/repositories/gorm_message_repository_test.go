@@ -43,7 +43,7 @@ func TestMessageSendAttemptIncrementOnlyUpdatesItsOwnedColumn(t *testing.T) {
 	logger := &messageThreadTestLogger{}
 	repository := NewGormMessageRepository(logger, telemetry.NewOtelLogger("test", logger), db)
 
-	err = repository.IncrementSendAttemptCount(context.Background(), entities.UserID("user-id"), uuid.New())
+	err = repository.IncreaseSendAttemptCount(context.Background(), entities.UserID("user-id"), uuid.New())
 
 	require.NoError(t, err)
 	require.Len(t, pool.statements, 1)

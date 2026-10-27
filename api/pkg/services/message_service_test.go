@@ -31,7 +31,7 @@ func (repository *notificationMessageRepository) Update(_ context.Context, messa
 	return nil
 }
 
-func (repository *notificationMessageRepository) IncrementSendAttemptCount(context.Context, entities.UserID, uuid.UUID) error {
+func (repository *notificationMessageRepository) IncreaseSendAttemptCount(context.Context, entities.UserID, uuid.UUID) error {
 	repository.stored.SendAttemptCount++
 	return nil
 }

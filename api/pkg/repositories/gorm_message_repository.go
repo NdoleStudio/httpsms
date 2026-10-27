@@ -242,7 +242,7 @@ func (repository *gormMessageRepository) Update(ctx context.Context, message *en
 	return nil
 }
 
-func (repository *gormMessageRepository) IncrementSendAttemptCount(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
+func (repository *gormMessageRepository) IncreaseSendAttemptCount(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 

@@ -800,7 +800,7 @@ func (service *MessageService) HandleMessageNotificationSent(ctx context.Context
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	if err := service.repository.IncrementSendAttemptCount(ctx, params.UserID, params.ID); err != nil {
+	if err := service.repository.IncreaseSendAttemptCount(ctx, params.UserID, params.ID); err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot increment send attempts for message with id [%s]", params.ID))
 	}
 
