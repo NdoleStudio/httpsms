@@ -7,6 +7,7 @@ import (
 	"time"
 
 	httpsms "github.com/NdoleStudio/httpsms-go"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,6 +45,29 @@ func sendThreadMessage(ctx context.Context, t *testing.T, phone testPhone, conta
 	})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, response.HTTPResponse.StatusCode)
+}
+
+func TestArchiveNewOutgoingMessageThreadsOnFirstRegistration(t *testing.T) {
+	ctx := context.Background()
+	phone := testPhone{
+		PhoneNumber: randomPhoneNumber(),
+		FcmToken:    "fcm-" + uuid.NewString(),
+	}
+	var response struct {
+		Data phoneThreadSettings `json:"data"`
+	}
+	requestJSON(ctx, t, http.MethodPut, "/v1/phones", userAPIKey, map[string]any{
+		"phone_number":                         phone.PhoneNumber,
+		"fcm_token":                            phone.FcmToken,
+		"sim":                                  "SIM1",
+		"archive_new_outgoing_message_threads": true,
+	}, http.StatusOK, &response)
+	require.True(t, response.Data.ArchiveNewOutgoingMessageThreads)
+
+	contact := "+18005540100"
+	sendThreadMessage(ctx, t, phone, contact, "First registration archives outgoing")
+	require.NotNil(t, waitForThread(ctx, t, phone.PhoneNumber, contact, true, "First registration archives outgoing", 20*time.Second))
+	assert.Nil(t, findThreadByContact(fetchThreads(ctx, t, phone.PhoneNumber, false), contact))
 }
 
 func TestArchiveNewOutgoingMessageThreadsPerPhoneAndDirection(t *testing.T) {
