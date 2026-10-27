@@ -466,6 +466,7 @@ func fireEvent(ctx context.Context, t *testing.T, phoneAPIKey string, messageID 
 func pollMessageStatus(ctx context.Context, t *testing.T, messageID string, targetStatus string, timeout time.Duration) httpsms.Message {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
+	lastStatus := "not observed"
 
 	for time.Now().Before(deadline) {
 		url := fmt.Sprintf("%s/v1/messages/%s", apiBaseURL, messageID)
@@ -480,8 +481,11 @@ func pollMessageStatus(ctx context.Context, t *testing.T, messageID string, targ
 				resp.Body.Close()
 				if readErr == nil && resp.StatusCode == http.StatusOK {
 					var result httpsms.MessageResponse
-					if json.Unmarshal(body, &result) == nil && result.Data.Status == targetStatus {
-						return result.Data
+					if json.Unmarshal(body, &result) == nil {
+						lastStatus = result.Data.Status
+						if result.Data.Status == targetStatus {
+							return result.Data
+						}
 					}
 				}
 			}
@@ -490,7 +494,7 @@ func pollMessageStatus(ctx context.Context, t *testing.T, messageID string, targ
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	t.Fatalf("message %s did not reach status %q within %v", messageID, targetStatus, timeout)
+	t.Fatalf("message %s did not reach status %q within %v (last observed status: %q)", messageID, targetStatus, timeout, lastStatus)
 	return httpsms.Message{}
 }
 

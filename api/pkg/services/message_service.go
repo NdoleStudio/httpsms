@@ -800,16 +800,11 @@ func (service *MessageService) HandleMessageNotificationSent(ctx context.Context
 
 	ctxLogger := service.tracer.CtxLogger(service.logger, span)
 
-	message, err := service.repository.Load(ctx, params.UserID, params.ID)
-	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot find message with id [%s]", params.ID))
+	if err := service.repository.IncrementSendAttemptCount(ctx, params.UserID, params.ID); err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot increment send attempts for message with id [%s]", params.ID))
 	}
 
-	if err = service.repository.Update(ctx, message.AddSendAttemptCount()); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update message with id [%s] as expired", message.ID))
-	}
-
-	ctxLogger.Info(fmt.Sprintf("notification for message with id [%s] has been sent at [%s]", message.ID, params.Timestamp.String()))
+	ctxLogger.Info(fmt.Sprintf("notification for message with id [%s] has been sent at [%s]", params.ID, params.Timestamp.String()))
 	return nil
 }
 

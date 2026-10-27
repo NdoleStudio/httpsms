@@ -15,6 +15,9 @@ type MessageRepository interface {
 	// Update a new entities.Message
 	Update(ctx context.Context, message *entities.Message) error
 
+	// IncrementSendAttemptCount atomically increments attempts without changing message status.
+	IncrementSendAttemptCount(ctx context.Context, userID entities.UserID, messageID uuid.UUID) error
+
 	// Load an entities.Message by ID
 	Load(ctx context.Context, userID entities.UserID, messageID uuid.UUID) (*entities.Message, error)
 

@@ -1,15 +1,64 @@
 package services
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/events"
+	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 )
+
+type notificationMessageRepository struct {
+	repositories.MessageRepository
+	stored entities.Message
+}
+
+func (repository *notificationMessageRepository) Load(context.Context, entities.UserID, uuid.UUID) (*entities.Message, error) {
+	stale := repository.stored
+	stale.Status = entities.MessageStatusPending
+	return &stale, nil
+}
+
+func (repository *notificationMessageRepository) Update(_ context.Context, message *entities.Message) error {
+	repository.stored = *message
+	return nil
+}
+
+func (repository *notificationMessageRepository) IncrementSendAttemptCount(context.Context, entities.UserID, uuid.UUID) error {
+	repository.stored.SendAttemptCount++
+	return nil
+}
+
+func TestNotificationSentDoesNotRestoreStalePendingStatus(t *testing.T) {
+	repository := &notificationMessageRepository{stored: entities.Message{
+		ID:     uuid.New(),
+		UserID: entities.UserID("user-id"),
+		Status: entities.MessageStatusScheduled,
+	}}
+	logger := &noopLogger{}
+	service := &MessageService{
+		logger:     logger,
+		tracer:     telemetry.NewOtelLogger("test", logger),
+		repository: repository,
+	}
+
+	err := service.HandleMessageNotificationSent(context.Background(), HandleMessageParams{
+		ID:        repository.stored.ID,
+		UserID:    repository.stored.UserID,
+		Timestamp: time.Now().UTC(),
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, entities.MessageStatus(entities.MessageStatusScheduled), repository.stored.Status)
+	assert.EqualValues(t, 1, repository.stored.SendAttemptCount)
+}
 
 func TestGetSendDelay_WithSendAt_ReturnsTimeUntil(t *testing.T) {
 	service := &MessageService{}
