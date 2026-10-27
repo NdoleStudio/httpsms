@@ -21,7 +21,7 @@ import Pusher from 'pusher-js'
 import type { Channel } from 'pusher-js'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import { storeToRefs } from 'pinia'
-import type { EntitiesMessage } from '~~/shared/types/api'
+import type { EntitiesContact, EntitiesMessage } from '~~/shared/types/api'
 import {
   isUrlNotificationToken,
   formatWhatsappText,
@@ -128,8 +128,8 @@ function currentThreadContactTitle(): string {
   )
 }
 
-async function refreshThreadContact() {
-  await threadsStore.loadThreads()
+async function refreshThreadContact(contacts: EntitiesContact[]) {
+  await threadsStore.loadThreads(contacts)
 }
 
 function scrollToElement() {

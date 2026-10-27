@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createPinia, setActivePinia } from 'pinia'
 import { computed, ref } from 'vue'
-import type { EntitiesMessageThread } from '../../shared/types/api'
+import type {
+  EntitiesContact,
+  EntitiesMessageThread,
+} from '../../shared/types/api'
 import { useThreadsStore } from './threads'
 
 function thread(id: string, unreadCount: number): EntitiesMessageThread {
@@ -65,6 +68,22 @@ function setupStore() {
     deferNextLoad: (response: Promise<{ data: EntitiesMessageThread[] }>) => {
       nextResponse = response
     },
+  }
+}
+
+function contact(
+  name: string,
+  phoneNumbers = ['+18005550100'],
+): EntitiesContact {
+  return {
+    id: 'contact-id',
+    name,
+    phone_numbers: phoneNumbers,
+    emails: [],
+    properties: {},
+    user_id: 'user-id',
+    created_at: '2026-10-27T10:00:00Z',
+    updated_at: '2026-10-27T11:00:00Z',
   }
 }
 
@@ -163,3 +182,46 @@ test('All does not retain a conversation removed from the server list', async ()
 
   assert.equal(store.currentThread, null)
 })
+
+for (const scenario of [
+  {
+    name: 'adding a contact refreshes a retained read conversation',
+    existing: undefined,
+    saved: contact('New contact'),
+    expectedName: 'New contact',
+  },
+  {
+    name: 'editing a contact refreshes a retained read conversation',
+    existing: contact('Old name'),
+    saved: contact('Updated name'),
+    expectedName: 'Updated name',
+  },
+  {
+    name: 'removing the conversation number clears its retained contact',
+    existing: contact('Old name'),
+    saved: contact('Updated name', ['+18005550101']),
+    expectedName: undefined,
+  },
+]) {
+  test(scenario.name, async () => {
+    const { store, respondWith } = setupStore()
+    respondWith([
+      { ...thread('unread', 1), contact_details: scenario.existing },
+    ])
+    await store.loadThreads()
+    store.setThreadId('unread')
+    store.unreadOnly = true
+    await store.resetThreadUnreadCount('unread')
+    respondWith([])
+    await store.loadThreads()
+
+    await store.loadThreads([scenario.saved])
+
+    assert.equal(store.currentThread?.id, 'unread')
+    assert.equal(
+      store.currentThread.contact_details?.name,
+      scenario.expectedName,
+    )
+    assert.deepEqual(store.visibleThreads, [])
+  })
+}

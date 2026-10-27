@@ -45,7 +45,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  saved: []
+  saved: [contacts: EntitiesContact[]]
   'update:modelValue': [value: boolean]
 }>()
 
@@ -183,17 +183,17 @@ async function submitForm() {
   const payload = buildPayload()
   saving.value = true
   try {
-    if (props.contact) {
-      await contactsStore.updateContact(props.contact.id, payload, {
-        refresh: props.refreshContacts,
-      })
-    } else {
-      await contactsStore.saveContacts([payload], {
-        refresh: props.refreshContacts,
-      })
-    }
+    const savedContacts = props.contact
+      ? [
+          await contactsStore.updateContact(props.contact.id, payload, {
+            refresh: props.refreshContacts,
+          }),
+        ]
+      : await contactsStore.saveContacts([payload], {
+          refresh: props.refreshContacts,
+        })
     closeDialog()
-    emit('saved')
+    emit('saved', savedContacts)
   } catch (error: unknown) {
     const bag = new ErrorMessages()
     const messages = fieldErrorsFromApi(error)

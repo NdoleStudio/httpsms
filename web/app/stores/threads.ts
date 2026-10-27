@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type {
+  EntitiesContact,
   EntitiesMessageThread,
   EntitiesMessage,
 } from '~~/shared/types/api'
@@ -65,8 +66,22 @@ export const useThreadsStore = defineStore('threads', () => {
     }
   }
 
-  async function loadThreads() {
+  async function loadThreads(savedContacts: EntitiesContact[] = []) {
     const requestId = ++threadRequestId
+    const selectedThread = currentThread.value
+    if (selectedThread) {
+      for (const contact of savedContacts) {
+        const matchesNumber = contact.phone_numbers.includes(
+          selectedThread.contact,
+        )
+        if (
+          matchesNumber ||
+          selectedThread.contact_details?.id === contact.id
+        ) {
+          selectedThread.contact_details = matchesNumber ? contact : undefined
+        }
+      }
+    }
     const phonesStore = usePhonesStore()
     if (phonesStore.owner === null && phonesStore.phones.length === 0) {
       loadingThreads.value = false
