@@ -12,7 +12,9 @@ export const useThreadsStore = defineStore('threads', () => {
   const archivedThreads = ref(false)
   const unreadOnly = ref(false)
   const retainedThread = ref<EntitiesMessageThread | null>(null)
+  const openedThreads = ref(new Map<string, EntitiesMessageThread>())
   let threadRequestId = 0
+  let readMutationGeneration = 0
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
 
@@ -64,21 +66,28 @@ export const useThreadsStore = defineStore('threads', () => {
     if (updatedThread.id === threadId.value) {
       retainedThread.value = replacement
     }
+    if (
+      openedThreads.value.has(updatedThread.id) ||
+      updatedThread.id === threadId.value
+    ) {
+      openedThreads.value.set(updatedThread.id, replacement)
+    }
   }
 
   async function loadThreads(savedContacts: EntitiesContact[] = []) {
     const requestId = ++threadRequestId
+    const readGeneration = readMutationGeneration
     const selectedThread = currentThread.value
     if (selectedThread) {
+      openedThreads.value.set(selectedThread.id, selectedThread)
+    }
+    for (const openedThread of openedThreads.value.values()) {
       for (const contact of savedContacts) {
         const matchesNumber = contact.phone_numbers.includes(
-          selectedThread.contact,
+          openedThread.contact,
         )
-        if (
-          matchesNumber ||
-          selectedThread.contact_details?.id === contact.id
-        ) {
-          selectedThread.contact_details = matchesNumber ? contact : undefined
+        if (matchesNumber || openedThread.contact_details?.id === contact.id) {
+          openedThread.contact_details = matchesNumber ? contact : undefined
         }
       }
     }
@@ -102,10 +111,19 @@ export const useThreadsStore = defineStore('threads', () => {
         },
       )
       if (requestId !== threadRequestId) return
+      if (readGeneration !== readMutationGeneration) {
+        await loadThreads()
+        return
+      }
 
       phonesStore.getHeartbeat().catch(console.error)
       retainedThread.value = currentThread.value
       threads.value = [...response.data]
+      for (const thread of response.data) {
+        if (openedThreads.value.has(thread.id)) {
+          openedThreads.value.set(thread.id, thread)
+        }
+      }
     } finally {
       if (requestId === threadRequestId) {
         loadingThreads.value = false
@@ -134,11 +152,26 @@ export const useThreadsStore = defineStore('threads', () => {
   }
 
   function setThreadId(id: string | null) {
+    const previousThread = currentThread.value
+    if (previousThread) {
+      openedThreads.value.set(previousThread.id, previousThread)
+    }
+    const cached = id === null ? undefined : openedThreads.value.get(id)
+    const phonesStore = usePhonesStore()
+    const owner = phonesStore.owner ?? phonesStore.phones[0]?.phone_number
     retainedThread.value =
       id === null
         ? null
         : (threads.value.find((thread) => thread.id === id) ??
-          (retainedThread.value?.id === id ? retainedThread.value : null))
+          ((unreadOnly.value || loadingThreads.value) &&
+          cached &&
+          cached.owner === owner &&
+          cached.is_archived === archivedThreads.value
+            ? cached
+            : null))
+    if (retainedThread.value) {
+      openedThreads.value.set(retainedThread.value.id, retainedThread.value)
+    }
     threadId.value = id
   }
 
@@ -158,6 +191,7 @@ export const useThreadsStore = defineStore('threads', () => {
       (thread) => thread.id !== payload.threadId,
     )
     setThreadId(null)
+    openedThreads.value.delete(payload.threadId)
     notificationsStore.addNotification({
       message: payload.isArchived ? 'Archived' : 'Unarchived',
       type: 'success',
@@ -179,6 +213,7 @@ export const useThreadsStore = defineStore('threads', () => {
           body: { unread_count: 0 },
         },
       )
+      readMutationGeneration++
       replaceThread(response.data)
     } catch (error) {
       notificationsStore.addNotification({
@@ -201,6 +236,7 @@ export const useThreadsStore = defineStore('threads', () => {
   async function deleteThread(id: string) {
     await apiFetch(`/v1/message-threads/${id}`, { method: 'DELETE' })
     setThreadId(null)
+    openedThreads.value.delete(id)
     notificationsStore.addNotification({
       message: 'The message thread has been deleted successfully',
       type: 'success',
@@ -209,9 +245,11 @@ export const useThreadsStore = defineStore('threads', () => {
 
   function resetState() {
     threadRequestId++
+    readMutationGeneration = 0
     threads.value = []
     threadId.value = null
     retainedThread.value = null
+    openedThreads.value.clear()
     archivedThreads.value = false
     unreadOnly.value = false
     loadingThreads.value = true

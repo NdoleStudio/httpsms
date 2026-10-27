@@ -30,6 +30,11 @@ function setupStore() {
   const calls: { path: string; params?: Record<string, unknown> }[] = []
   let responseThreads = [thread('unread', 2), thread('read', 0)]
   let nextResponse: Promise<{ data: EntitiesMessageThread[] }> | undefined
+  const phones = {
+    owner: '+18005550199',
+    phones: [],
+    getHeartbeat: async () => [],
+  }
   Object.assign(globalThis, {
     ref,
     computed,
@@ -43,6 +48,9 @@ function setupStore() {
       ) => {
         calls.push({ path, params: options.params })
         if (options.method === 'PUT') {
+          responseThreads = responseThreads.map((item) =>
+            item.id === 'unread' ? { ...item, unread_count: 0 } : item,
+          )
           return { data: thread('unread', 0) }
         }
         if (path === '/v1/messages') return { data: [] }
@@ -51,16 +59,13 @@ function setupStore() {
         return pending ?? { data: responseThreads }
       },
     }),
-    usePhonesStore: () => ({
-      owner: '+18005550199',
-      phones: [],
-      getHeartbeat: async () => [],
-    }),
+    usePhonesStore: () => phones,
     useNotificationsStore: () => ({ addNotification: () => {} }),
   })
   setActivePinia(createPinia())
   return {
     store: useThreadsStore(),
+    phones,
     calls,
     respondWith: (threads: EntitiesMessageThread[]) => {
       responseThreads = threads
@@ -85,6 +90,20 @@ function contact(
     created_at: '2026-10-27T10:00:00Z',
     updated_at: '2026-10-27T11:00:00Z',
   }
+}
+
+async function setupReadConversationHistory() {
+  const fixture = setupStore()
+  const other = { ...thread('other', 1), contact: '+18005550101' }
+  fixture.respondWith([thread('unread', 1), other])
+  await fixture.store.loadThreads()
+  fixture.store.setThreadId('unread')
+  fixture.store.unreadOnly = true
+  await fixture.store.resetThreadUnreadCount('unread')
+  fixture.respondWith([other])
+  await fixture.store.loadThreads()
+  await fixture.store.loadThreadMessages('other')
+  return fixture
 }
 
 test('Unread requests server-side filtering within the API limit', async () => {
@@ -223,5 +242,96 @@ for (const scenario of [
       scenario.expectedName,
     )
     assert.deepEqual(store.visibleThreads, [])
+  })
+}
+
+test('a late poll cannot restore unread counts after mark-read succeeds', async () => {
+  const { store, deferNextLoad } = setupStore()
+  await store.loadThreads()
+  store.setThreadId('unread')
+  store.unreadOnly = true
+  const pending = Promise.withResolvers<{ data: EntitiesMessageThread[] }>()
+  deferNextLoad(pending.promise)
+  store.loadingThreads = true
+  const poll = store.loadThreads()
+
+  await store.resetThreadUnreadCount('unread')
+  pending.resolve({ data: [thread('unread', 2)] })
+  await poll
+
+  assert.equal(store.currentThread?.unread_count, 0)
+  assert.deepEqual(store.visibleThreads, [])
+  assert.equal(store.loadingThreads, false)
+})
+
+test('refreshing an overlapping read preserves messages received after the read', async () => {
+  const { store, deferNextLoad, respondWith } = setupStore()
+  await store.loadThreads()
+  store.setThreadId('unread')
+  store.unreadOnly = true
+  const pending = Promise.withResolvers<{ data: EntitiesMessageThread[] }>()
+  deferNextLoad(pending.promise)
+  const poll = store.loadThreads()
+
+  await store.resetThreadUnreadCount('unread')
+  respondWith([
+    {
+      ...thread('unread', 1),
+      last_message_id: 'new-inbound-message',
+      last_message_content: 'Received after mark-read',
+    },
+  ])
+  pending.resolve({ data: [thread('unread', 2)] })
+  await poll
+
+  assert.equal(store.currentThread?.unread_count, 1)
+  assert.equal(store.currentThread.last_message_id, 'new-inbound-message')
+  assert.equal(store.visibleThreads.length, 1)
+  assert.equal(store.loadingThreads, false)
+})
+
+test('Back navigation restores an earlier read conversation in Unread', async () => {
+  const { store, calls } = await setupReadConversationHistory()
+
+  store.setThreadId('unread')
+
+  assert.equal(store.currentThread?.id, 'unread')
+  assert.equal(store.currentThread.unread_count, 0)
+  await store.loadThreadMessages('unread')
+  assert.equal(calls.at(-1)?.params?.contact, '+18005550100')
+  assert.deepEqual(
+    store.visibleThreads.map((item) => item.id),
+    ['other'],
+  )
+})
+
+test('saved contacts refresh previously opened read conversations too', async () => {
+  const { store } = await setupReadConversationHistory()
+  await store.loadThreads([contact('Alice')])
+
+  store.setThreadId('unread')
+
+  assert.equal(store.currentThread?.contact_details?.name, 'Alice')
+})
+
+for (const action of ['reset', 'delete', 'archive', 'owner', 'view']) {
+  test(`navigation cache does not restore conversations after ${action}`, async () => {
+    const { store, phones, respondWith } = await setupReadConversationHistory()
+    if (action === 'reset') store.resetState()
+    if (action === 'delete') await store.deleteThread('unread')
+    if (action === 'archive') {
+      await store.updateThread({ threadId: 'unread', isArchived: true })
+    }
+    if (action === 'owner' || action === 'view') {
+      if (action === 'owner') phones.owner = '+18005550198'
+      if (action === 'view') store.archivedThreads = true
+      respondWith([])
+      await store.loadThreads()
+    }
+
+    store.setThreadId('unread')
+
+    assert.equal(store.currentThread, null)
+    assert.equal(store.hasThreadId('unread'), false)
   })
 }
