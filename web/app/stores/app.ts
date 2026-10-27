@@ -14,7 +14,7 @@ export const useAppStore = defineStore('app', () => {
   const polling = ref(false)
 
   const appData = computed<AppData>(() => {
-    const publicConfig = config.public as Record<string, string>
+    const publicConfig = config.public
     let url = publicConfig.appUrl || ''
     if (url.endsWith('/')) {
       url = url.substring(0, url.length - 1)
@@ -29,9 +29,7 @@ export const useAppStore = defineStore('app', () => {
     }
   })
 
-  const isLocal = computed(
-    () => (config.public as Record<string, string>).appEnv === 'local',
-  )
+  const isLocal = computed(() => config.public.appEnv === 'local')
 
   function setPolling(value: boolean) {
     polling.value = value

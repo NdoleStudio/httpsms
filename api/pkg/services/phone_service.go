@@ -94,18 +94,19 @@ func (service *PhoneService) Load(ctx context.Context, userID entities.UserID, o
 
 // PhoneUpsertParams are parameters for creating a new entities.Phone
 type PhoneUpsertParams struct {
-	PhoneNumber               *phonenumbers.PhoneNumber
-	FcmToken                  *string
-	MessagesPerMinute         *uint
-	MaxSendAttempts           *uint
-	WebhookURL                *string
-	MessageExpirationDuration *time.Duration
-	MissedCallAutoReply       *string
-	UnarchiveThread           *bool
-	SIM                       entities.SIM
-	MessageSendScheduleID     *uuid.UUID
-	Source                    string
-	UserID                    entities.UserID
+	PhoneNumber                      *phonenumbers.PhoneNumber
+	FcmToken                         *string
+	MessagesPerMinute                *uint
+	MaxSendAttempts                  *uint
+	WebhookURL                       *string
+	MessageExpirationDuration        *time.Duration
+	MissedCallAutoReply              *string
+	UnarchiveThread                  *bool
+	ArchiveNewOutgoingMessageThreads *bool
+	SIM                              entities.SIM
+	MessageSendScheduleID            *uuid.UUID
+	Source                           string
+	UserID                           entities.UserID
 }
 
 // Upsert a new entities.Phone
@@ -301,6 +302,10 @@ func (service *PhoneService) update(phone *entities.Phone, params *PhoneUpsertPa
 
 	if params.UnarchiveThread != nil {
 		phone.UnarchiveThread = *params.UnarchiveThread
+	}
+
+	if params.ArchiveNewOutgoingMessageThreads != nil {
+		phone.ArchiveNewOutgoingMessageThreads = *params.ArchiveNewOutgoingMessageThreads
 	}
 
 	phone.SIM = params.SIM

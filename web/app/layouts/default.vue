@@ -68,10 +68,12 @@ function startPoller() {
   <v-app>
     <v-navigation-drawer v-if="lgAndUp && hasDrawer" :width="400" permanent>
       <template #prepend>
-        <div v-if="appStore.isLocal" class="py-2 bg-warning" />
-        <MessageThreadHeader />
-        <div class="overflow-y-auto v-navigation-drawer__message-thread">
-          <MessageThread />
+        <div class="message-thread-sidebar d-flex flex-column">
+          <div v-if="appStore.isLocal" class="py-2 bg-warning" />
+          <MessageThreadHeader />
+          <div class="overflow-y-auto v-navigation-drawer__message-thread">
+            <MessageThread />
+          </div>
         </div>
       </template>
     </v-navigation-drawer>
@@ -96,8 +98,12 @@ function startPoller() {
       padding-left: 400px;
     }
   }
+  .message-thread-sidebar {
+    height: 100dvh;
+  }
   .v-navigation-drawer__message-thread {
-    height: calc(100vh - 120px);
+    flex: 1;
+    min-height: 0;
     &::-webkit-scrollbar {
       width: 8px;
     }

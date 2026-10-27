@@ -94,7 +94,8 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
     <div
       v-if="
         !threadsStore.loadingThreads &&
-        threadsStore.threads.length === 0 &&
+        threadsStore.visibleThreads.length === 0 &&
+        !threadsStore.unreadOnly &&
         !threadsStore.archivedThreads
       "
       class="text-center mt-6"
@@ -135,13 +136,26 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
         Download App
       </v-btn>
     </div>
+    <p
+      v-if="
+        !threadsStore.loadingThreads &&
+        threadsStore.unreadOnly &&
+        threadsStore.visibleThreads.length === 0 &&
+        phonesStore.owner
+      "
+      class="text-medium-emphasis text-center mt-6"
+    >
+      No unread conversations
+    </p>
     <v-list
-      v-if="!threadsStore.loadingThreads && threadsStore.threads.length > 0"
+      v-if="
+        !threadsStore.loadingThreads && threadsStore.visibleThreads.length > 0
+      "
       class="py-0"
       lines="three"
     >
       <v-list-item
-        v-for="thread in threadsStore.threads"
+        v-for="thread in threadsStore.visibleThreads"
         :key="thread.id"
         color="primary"
         :to="{ name: 'threads-id', params: { id: thread.id } }"

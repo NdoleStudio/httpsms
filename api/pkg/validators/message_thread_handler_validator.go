@@ -48,6 +48,10 @@ func (validator *MessageThreadHandlerValidator) ValidateMessageThreadIndex(_ con
 				"required",
 				"in:true,false",
 			},
+			"unread_only": []string{
+				"required",
+				"in:true,false",
+			},
 			"query": []string{
 				"max:100",
 			},

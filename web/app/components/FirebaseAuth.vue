@@ -300,7 +300,7 @@ function getGeneralErrorMessage(
       block
       color="white"
       size="large"
-      class="mb-3 position-relative"
+      class="mb-3 position-relative overflow-visible"
       :loading="loading"
       :disabled="loading"
       @click="signInWithGoogle"
@@ -324,7 +324,7 @@ function getGeneralErrorMessage(
       size="large"
       variant="flat"
       color="black"
-      class="mb-3 position-relative"
+      class="mb-3 position-relative overflow-visible"
       :loading="loading"
       :disabled="loading"
       @click="signInWithGithub"
@@ -349,7 +349,7 @@ function getGeneralErrorMessage(
       size="large"
       variant="flat"
       color="red"
-      class="mb-3 position-relative"
+      class="mb-3 position-relative overflow-visible"
       :disabled="loading"
       @click="showEmailForm = true"
     >

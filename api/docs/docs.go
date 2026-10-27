@@ -1166,6 +1166,13 @@ const docTemplate = `{
                         "description": "include matching contact details",
                         "name": "contacts",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "only include threads with unread messages",
+                        "name": "unread_only",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4204,6 +4211,7 @@ const docTemplate = `{
         "entities.Phone": {
             "type": "object",
             "required": [
+                "archive_new_outgoing_message_threads",
                 "created_at",
                 "id",
                 "max_send_attempts",
@@ -4216,6 +4224,11 @@ const docTemplate = `{
                 "user_id"
             ],
             "properties": {
+                "archive_new_outgoing_message_threads": {
+                    "description": "ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2022-06-05T14:26:02.302718+03:00"
@@ -4975,6 +4988,11 @@ const docTemplate = `{
                 "unarchive_thread"
             ],
             "properties": {
+                "archive_new_outgoing_message_threads": {
+                    "description": "ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "fcm_token": {
                     "description": "FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.",
                     "type": "string",

@@ -244,6 +244,11 @@ export interface EntitiesMessageThread {
 }
 
 export interface EntitiesPhone {
+  /**
+   * ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.
+   * @example false
+   */
+  archive_new_outgoing_message_threads: boolean;
   /** @example "2022-06-05T14:26:02.302718+03:00" */
   created_at: string;
   /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
@@ -537,7 +542,10 @@ export interface RequestsPhoneAPIKeyStoreRequest {
 }
 
 export interface RequestsPhoneFCMToken {
-  /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
+  /**
+   * FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.
+   * @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
+   */
   fcm_token: string;
   /** @example "[+18005550199]" */
   phone_number: string;
@@ -549,7 +557,15 @@ export interface RequestsPhoneFCMToken {
 }
 
 export interface RequestsPhoneUpsert {
-  /** @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....." */
+  /**
+   * ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.
+   * @example false
+   */
+  archive_new_outgoing_message_threads?: boolean;
+  /**
+   * FcmToken is either a Firebase registration token or a public HTTPS adapter callback URL.
+   * @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd....."
+   */
   fcm_token: string;
   /**
    * MaxSendAttempts is the number of attempts when sending an SMS message to handle the case where the phone is offline.

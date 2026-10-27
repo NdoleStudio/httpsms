@@ -234,7 +234,7 @@ func (repository *gormMessageThreadRepository) Load(ctx context.Context, userID 
 }
 
 // Index message threads for an owner
-func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID entities.UserID, owner string, isArchived bool, params IndexParams) (*[]entities.MessageThread, error) {
+func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID entities.UserID, owner string, isArchived bool, unreadOnly bool, params IndexParams) (*[]entities.MessageThread, error) {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
 
@@ -247,6 +247,10 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID
 		query.Where("is_archived = ?", isArchived)
 	} else {
 		query.Where(repository.db.Where("is_archived = ?", isArchived).Or("is_archived IS NULL"))
+	}
+
+	if unreadOnly {
+		query.Where("unread_count > ?", 0)
 	}
 
 	if len(params.Query) > 0 {

@@ -1699,6 +1699,15 @@ onMounted(async () => {
                   hint="Here you can configure an automated SMS message which is sent to the caller when this phone has a missed call"
                 />
                 <VSwitch
+                  v-model="activePhone.archive_new_outgoing_message_threads"
+                  class="mt-4"
+                  color="primary"
+                  density="compact"
+                  label="Archive New Outgoing Message Threads"
+                  hint="Automatically archive new conversations started by an outgoing message. Conversations started by an incoming message are not affected."
+                  persistent-hint
+                />
+                <VSwitch
                   v-model="activePhone.unarchive_thread"
                   class="mt-4"
                   color="primary"

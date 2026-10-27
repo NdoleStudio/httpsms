@@ -33,6 +33,9 @@ type PhoneUpsert struct {
 	// UnarchiveThread moves an archived thread back to the inbox when a new message is received on this phone.
 	UnarchiveThread bool `json:"unarchive_thread" example:"false"`
 
+	// ArchiveNewOutgoingMessageThreads archives new conversations started by an outgoing message on this phone.
+	ArchiveNewOutgoingMessageThreads bool `json:"archive_new_outgoing_message_threads" example:"false" validate:"optional"`
+
 	// SIM is the SIM slot of the phone in case the phone has more than 1 SIM slot
 	SIM string `json:"sim" example:"SIM1"`
 
@@ -84,6 +87,11 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 		unarchiveThread = &input.UnarchiveThread
 	}
 
+	var archiveNewOutgoingMessageThreads *bool
+	if _, exists := fields["archive_new_outgoing_message_threads"]; exists {
+		archiveNewOutgoingMessageThreads = &input.ArchiveNewOutgoingMessageThreads
+	}
+
 	var scheduleID *uuid.UUID
 	if _, exists := fields["message_send_schedule_id"]; exists {
 		if parsed, err := uuid.Parse(strings.TrimSpace(input.MessageSendScheduleID)); err == nil {
@@ -92,16 +100,17 @@ func (input *PhoneUpsert) ToUpsertParams(user entities.AuthContext, source strin
 	}
 
 	return &services.PhoneUpsertParams{
-		Source:                    source,
-		PhoneNumber:               phone,
-		MessagesPerMinute:         messagesPerMinute,
-		MissedCallAutoReply:       input.MissedCallAutoReply,
-		MessageExpirationDuration: timeout,
-		MaxSendAttempts:           maxSendAttempts,
-		FcmToken:                  fcmToken,
-		UserID:                    user.ID,
-		SIM:                       entities.SIM(input.SIM),
-		UnarchiveThread:           unarchiveThread,
-		MessageSendScheduleID:     scheduleID,
+		Source:                           source,
+		PhoneNumber:                      phone,
+		MessagesPerMinute:                messagesPerMinute,
+		MissedCallAutoReply:              input.MissedCallAutoReply,
+		MessageExpirationDuration:        timeout,
+		MaxSendAttempts:                  maxSendAttempts,
+		FcmToken:                         fcmToken,
+		UserID:                           user.ID,
+		SIM:                              entities.SIM(input.SIM),
+		UnarchiveThread:                  unarchiveThread,
+		ArchiveNewOutgoingMessageThreads: archiveNewOutgoingMessageThreads,
+		MessageSendScheduleID:            scheduleID,
 	}
 }

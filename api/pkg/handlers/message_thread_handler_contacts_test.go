@@ -22,10 +22,12 @@ import (
 
 type messageThreadHandlerIndexRepositoryStub struct {
 	repositories.MessageThreadRepository
-	threads []entities.MessageThread
+	threads    []entities.MessageThread
+	unreadOnly bool
 }
 
-func (stub *messageThreadHandlerIndexRepositoryStub) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (stub *messageThreadHandlerIndexRepositoryStub) Index(_ context.Context, _ entities.UserID, _ string, _ bool, unreadOnly bool, _ repositories.IndexParams) (*[]entities.MessageThread, error) {
+	stub.unreadOnly = unreadOnly
 	threads := make([]entities.MessageThread, len(stub.threads))
 	copy(threads, stub.threads)
 	return &threads, nil
@@ -41,7 +43,7 @@ func (stub *messageThreadHandlerContactProviderStub) GetContactMap(context.Conte
 	return stub.contacts, nil
 }
 
-func TestMessageThreadHandlerIndex_ParsesContactsQuery(t *testing.T) {
+func TestMessageThreadHandlerIndex_ParsesContactsAndUnreadQuery(t *testing.T) {
 	contact := &entities.Contact{ID: uuid.New(), Name: "Alice", PhoneNumbers: []string{"+18005550100"}}
 	repository := &messageThreadHandlerIndexRepositoryStub{threads: []entities.MessageThread{{Contact: "+18005550100"}}}
 	provider := &messageThreadHandlerContactProviderStub{contacts: map[string]*entities.Contact{"+18005550100": contact}}
@@ -57,19 +59,41 @@ func TestMessageThreadHandlerIndex_ParsesContactsQuery(t *testing.T) {
 	})
 	handler.RegisterRoutes(app)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/message-threads?owner=%2B18005550199&contacts=true", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/message-threads?owner=%2B18005550199&contacts=true&unread_only=true", nil)
 	resp, err := app.Test(req, fiber.TestConfig{Timeout: time.Second})
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, 1, provider.calls)
+	assert.True(t, repository.unreadOnly)
 
 	var payload struct {
 		Data []entities.MessageThread `json:"data"`
 	}
+
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
 	require.Len(t, payload.Data, 1)
 	require.NotNil(t, payload.Data[0].ContactDetails)
 	assert.Equal(t, contact.ID, payload.Data[0].ContactDetails.ID)
 	assert.Equal(t, "Alice", payload.Data[0].ContactDetails.Name)
+}
+
+func TestMessageThreadHandlerIndexRejectsInvalidUnreadFilter(t *testing.T) {
+	repository := &messageThreadHandlerIndexRepositoryStub{}
+	logger := &messageThreadHandlerNoopLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	service := services.NewMessageThreadService(logger, tracer, repository, nil, nil, nil)
+	handler := NewMessageThreadHandler(logger, tracer, validators.NewMessageThreadHandlerValidator(logger, tracer), service)
+	app := fiber.New()
+	app.Use(func(c fiber.Ctx) error {
+		c.Locals(middlewares.ContextKeyAuthUserID, entities.AuthContext{ID: entities.UserID("user-id"), Email: "user@example.com"})
+		return c.Next()
+	})
+	handler.RegisterRoutes(app)
+
+	response, err := app.Test(httptest.NewRequest(http.MethodGet, "/v1/message-threads?owner=%2B18005550199&unread_only=invalid", nil))
+
+	require.NoError(t, err)
+	defer response.Body.Close()
+	assert.Equal(t, http.StatusUnprocessableEntity, response.StatusCode)
 }

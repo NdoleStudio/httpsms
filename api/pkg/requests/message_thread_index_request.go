@@ -14,6 +14,7 @@ import (
 type MessageThreadIndex struct {
 	request
 	IsArchived string `json:"is_archived" query:"is_archived" example:"false"`
+	UnreadOnly string `json:"unread_only" query:"unread_only" example:"false"`
 	Skip       string `json:"skip" query:"skip"`
 	Query      string `json:"query" query:"query"`
 	Limit      string `json:"limit" query:"limit"`
@@ -36,6 +37,10 @@ func (input *MessageThreadIndex) Sanitize() MessageThreadIndex {
 	}
 
 	input.IsArchived = input.sanitizeBool(input.IsArchived)
+	input.UnreadOnly = input.sanitizeBool(input.UnreadOnly)
+	if input.UnreadOnly == "" {
+		input.UnreadOnly = "false"
+	}
 	input.Contacts = input.sanitizeBool(input.Contacts)
 	if input.Contacts != "true" && input.Contacts != "false" {
 		input.Contacts = "false"
@@ -62,6 +67,7 @@ func (input *MessageThreadIndex) ToGetParams(userID entities.UserID) services.Me
 		},
 		UserID:       userID,
 		IsArchived:   input.getBool(input.IsArchived),
+		UnreadOnly:   input.getBool(input.UnreadOnly),
 		WithContacts: input.getBool(input.Contacts),
 		Owner:        input.Owner,
 	}

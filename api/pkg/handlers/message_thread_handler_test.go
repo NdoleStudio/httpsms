@@ -45,7 +45,7 @@ func (stub *messageThreadHandlerRepositoryStub) Load(context.Context, entities.U
 	return nil, nil
 }
 
-func (stub *messageThreadHandlerRepositoryStub) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (stub *messageThreadHandlerRepositoryStub) Index(context.Context, entities.UserID, string, bool, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
 	return nil, nil
 }
 

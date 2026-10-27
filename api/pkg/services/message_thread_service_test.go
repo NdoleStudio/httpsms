@@ -15,6 +15,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type threadPhoneRepositoryStub struct {
+	repositories.PhoneRepository
+	load func(context.Context, entities.UserID, string) (*entities.Phone, error)
+}
+
+func (stub *threadPhoneRepositoryStub) Load(ctx context.Context, userID entities.UserID, owner string) (*entities.Phone, error) {
+	return stub.load(ctx, userID, owner)
+}
+
 type messageThreadRepositoryStub struct {
 	loadByOwnerContact func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error)
 	load               func(context.Context, entities.UserID, uuid.UUID) (*entities.MessageThread, error)
@@ -56,7 +65,7 @@ func (stub *messageThreadRepositoryStub) Load(ctx context.Context, userID entiti
 	return stub.load(ctx, userID, id)
 }
 
-func (stub *messageThreadRepositoryStub) Index(context.Context, entities.UserID, string, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (stub *messageThreadRepositoryStub) Index(context.Context, entities.UserID, string, bool, bool, repositories.IndexParams) (*[]entities.MessageThread, error) {
 	threads := []entities.MessageThread{}
 	return &threads, nil
 }
@@ -232,4 +241,141 @@ func TestShouldCheckUnarchive(t *testing.T) {
 	assert.False(t, service.shouldCheckUnarchive(archived, sent), "outbound status -> no check")
 	assert.False(t, service.shouldCheckUnarchive(notArchived, received), "already unarchived -> no check")
 	assert.False(t, service.shouldCheckUnarchive(notArchived, sent), "not archived + outbound -> no check")
+}
+
+func TestCreateThreadArchivesOnlyNewOutgoingConversationsForEnabledPhone(t *testing.T) {
+	tests := []struct {
+		name         string
+		status       entities.MessageStatus
+		owner        string
+		wantArchived bool
+	}{
+		{name: "outgoing pending", status: entities.MessageStatusPending, owner: "+18005550199", wantArchived: true},
+		{name: "outgoing sent", status: entities.MessageStatusSent, owner: "+18005550199", wantArchived: true},
+		{name: "outgoing scheduled", status: entities.MessageStatusScheduled, owner: "+18005550199", wantArchived: true},
+		{name: "incoming", status: entities.MessageStatusReceived, owner: "+18005550199", wantArchived: false},
+		{name: "other phone defaults off", status: entities.MessageStatusPending, owner: "+18005550198", wantArchived: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var stored *entities.MessageThread
+			repository := &messageThreadRepositoryStub{
+				loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+					return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+				},
+				store: func(_ context.Context, thread *entities.MessageThread) error {
+					stored = thread
+					return nil
+				},
+			}
+			service := newMessageThreadServiceForTest(repository)
+			service.phoneRepository = &threadPhoneRepositoryStub{
+				load: func(_ context.Context, userID entities.UserID, owner string) (*entities.Phone, error) {
+					assert.Equal(t, entities.UserID("user-id"), userID)
+					assert.Equal(t, test.owner, owner)
+					assert.NotEqual(t, entities.MessageStatusReceived, test.status, "incoming creation must not consult the setting")
+					phone := &entities.Phone{}
+					if owner == "+18005550199" {
+						phone.ArchiveNewOutgoingMessageThreads = true
+					}
+					return phone, nil
+				},
+			}
+
+			err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+				UserID:    entities.UserID("user-id"),
+				Owner:     test.owner,
+				Contact:   "+18005550100",
+				MessageID: uuid.New(),
+				Status:    test.status,
+				Timestamp: time.Now().UTC(),
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, stored)
+			assert.Equal(t, test.wantArchived, stored.IsArchived)
+		})
+	}
+}
+
+func TestCreateOutgoingThreadDoesNotStoreWhenPhoneCannotBeLoaded(t *testing.T) {
+	stored := false
+	service := newMessageThreadServiceForTest(&messageThreadRepositoryStub{
+		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+			return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
+		},
+		store: func(context.Context, *entities.MessageThread) error {
+			stored = true
+			return nil
+		},
+	})
+	phoneErr := stacktrace.NewError("phone unavailable")
+	service.phoneRepository = &threadPhoneRepositoryStub{
+		load: func(context.Context, entities.UserID, string) (*entities.Phone, error) {
+			return nil, phoneErr
+		},
+	}
+
+	err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+		UserID: entities.UserID("user-id"),
+		Owner:  "+18005550199",
+		Status: entities.MessageStatusPending,
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "phone unavailable")
+	assert.False(t, stored)
+}
+
+func TestArchiveNewOutgoingMessageThreadsPreservesExistingConversationBehavior(t *testing.T) {
+	tests := []struct {
+		name          string
+		status        entities.MessageStatus
+		archived      bool
+		unarchive     bool
+		wantUnarchive bool
+	}{
+		{name: "outgoing existing inbox", status: entities.MessageStatusPending},
+		{name: "outgoing existing archive", status: entities.MessageStatusPending, archived: true},
+		{name: "reply stays archived", status: entities.MessageStatusReceived, archived: true},
+		{name: "reply unarchives when enabled", status: entities.MessageStatusReceived, archived: true, unarchive: true, wantUnarchive: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var captured repositories.MessageThreadActivityUpdate
+			repository := &messageThreadRepositoryStub{
+				loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
+					return &entities.MessageThread{ID: uuid.New(), IsArchived: test.archived}, nil
+				},
+				updateActivity: func(_ context.Context, params repositories.MessageThreadActivityUpdate) error {
+					captured = params
+					return nil
+				},
+				store: func(context.Context, *entities.MessageThread) error {
+					t.Fatal("existing conversations must not be recreated")
+					return nil
+				},
+			}
+			service := newMessageThreadServiceForTest(repository)
+			service.phoneRepository = &threadPhoneRepositoryStub{
+				load: func(context.Context, entities.UserID, string) (*entities.Phone, error) {
+					return &entities.Phone{UnarchiveThread: test.unarchive, ArchiveNewOutgoingMessageThreads: true}, nil
+				},
+			}
+
+			err := service.UpdateThread(context.Background(), MessageThreadUpdateParams{
+				UserID:    entities.UserID("user-id"),
+				Owner:     "+18005550199",
+				Contact:   "+18005550100",
+				MessageID: uuid.New(),
+				Status:    test.status,
+				Timestamp: time.Now().UTC(),
+			})
+
+			require.NoError(t, err)
+			assert.Equal(t, test.wantUnarchive, captured.Unarchive)
+		})
+	}
 }

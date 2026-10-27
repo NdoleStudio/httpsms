@@ -9,68 +9,99 @@ export const useThreadsStore = defineStore('threads', () => {
   const threadId = ref<string | null>(null)
   const loadingThreads = ref(true)
   const archivedThreads = ref(false)
+  const unreadOnly = ref(false)
+  const retainedThread = ref<EntitiesMessageThread | null>(null)
+  let threadRequestId = 0
   const { apiFetch } = useApi()
   const notificationsStore = useNotificationsStore()
 
   const currentThread = computed<EntitiesMessageThread | null>(() => {
-    return threads.value.find((x) => x.id === threadId.value) ?? null
+    return (
+      threads.value.find((x) => x.id === threadId.value) ??
+      ((unreadOnly.value || loadingThreads.value) &&
+      retainedThread.value?.id === threadId.value
+        ? retainedThread.value
+        : null)
+    )
   })
+
+  const visibleThreads = computed(() =>
+    unreadOnly.value
+      ? threads.value.filter((thread) => thread.unread_count > 0)
+      : threads.value,
+  )
 
   const hasThread = computed(
     () => threadId.value != null && !loadingThreads.value,
   )
 
   function hasThreadId(id: string): boolean {
-    return threads.value.find((x) => x.id === id) !== undefined
+    return (
+      threads.value.some((thread) => thread.id === id) ||
+      currentThread.value?.id === id
+    )
   }
 
   function replaceThread(updatedThread: EntitiesMessageThread) {
     const index = threads.value.findIndex(
       (thread) => thread.id === updatedThread.id,
     )
+    const existingThread =
+      index !== -1 ? threads.value[index] : retainedThread.value
+    const replacement = {
+      ...updatedThread,
+      // Mark-read PUT responses are not contact-enriched.
+      contact_details:
+        updatedThread.contact_details ??
+        (updatedThread.contact === existingThread?.contact
+          ? existingThread.contact_details
+          : undefined),
+    }
     if (index !== -1) {
-      const existingThread = threads.value[index]!
-      threads.value[index] = {
-        ...updatedThread,
-        // Mark-read PUT responses are not contact-enriched; keep the resolved
-        // contact so display names do not disappear after the thread updates.
-        contact_details:
-          updatedThread.contact_details ??
-          (updatedThread.contact === existingThread.contact
-            ? existingThread.contact_details
-            : undefined),
-      }
+      threads.value[index] = replacement
+    }
+    if (updatedThread.id === threadId.value) {
+      retainedThread.value = replacement
     }
   }
 
   async function loadThreads() {
+    const requestId = ++threadRequestId
     const phonesStore = usePhonesStore()
     if (phonesStore.owner === null && phonesStore.phones.length === 0) {
       loadingThreads.value = false
       return
     }
 
-    const response = await apiFetch<{ data: EntitiesMessageThread[] }>(
-      '/v1/message-threads',
-      {
-        params: {
-          owner: phonesStore.owner ?? phonesStore.phones[0]?.phone_number,
-          limit: 100,
-          is_archived: archivedThreads.value,
-          contacts: true,
+    try {
+      const response = await apiFetch<{ data: EntitiesMessageThread[] }>(
+        '/v1/message-threads',
+        {
+          params: {
+            owner: phonesStore.owner ?? phonesStore.phones[0]?.phone_number,
+            limit: 20,
+            is_archived: archivedThreads.value,
+            unread_only: unreadOnly.value,
+            contacts: true,
+          },
         },
-      },
-    )
+      )
+      if (requestId !== threadRequestId) return
 
-    phonesStore.getHeartbeat().catch(console.error)
-    threads.value = [...response.data]
-    loadingThreads.value = false
+      phonesStore.getHeartbeat().catch(console.error)
+      retainedThread.value = currentThread.value
+      threads.value = [...response.data]
+    } finally {
+      if (requestId === threadRequestId) {
+        loadingThreads.value = false
+      }
+    }
   }
 
   async function loadThreadMessages(
     id: string | null,
   ): Promise<EntitiesMessage[]> {
-    threadId.value = id
+    setThreadId(id)
     const thread = currentThread.value
     if (!thread) throw new Error(`Cannot find thread with id ${id}`)
 
@@ -88,6 +119,11 @@ export const useThreadsStore = defineStore('threads', () => {
   }
 
   function setThreadId(id: string | null) {
+    retainedThread.value =
+      id === null
+        ? null
+        : (threads.value.find((thread) => thread.id === id) ??
+          (retainedThread.value?.id === id ? retainedThread.value : null))
     threadId.value = id
   }
 
@@ -106,7 +142,7 @@ export const useThreadsStore = defineStore('threads', () => {
     threads.value = threads.value.filter(
       (thread) => thread.id !== payload.threadId,
     )
-    threadId.value = null
+    setThreadId(null)
     notificationsStore.addNotification({
       message: payload.isArchived ? 'Archived' : 'Unarchived',
       type: 'success',
@@ -114,7 +150,9 @@ export const useThreadsStore = defineStore('threads', () => {
   }
 
   async function resetThreadUnreadCount(threadId: string, force = false) {
-    const thread = threads.value.find((item) => item.id === threadId)
+    const thread =
+      threads.value.find((item) => item.id === threadId) ??
+      (retainedThread.value?.id === threadId ? retainedThread.value : null)
     if (!thread) throw new Error(`Cannot find thread with id ${threadId}`)
     if (!force && thread.unread_count === 0) return
 
@@ -147,7 +185,7 @@ export const useThreadsStore = defineStore('threads', () => {
 
   async function deleteThread(id: string) {
     await apiFetch(`/v1/message-threads/${id}`, { method: 'DELETE' })
-    threadId.value = null
+    setThreadId(null)
     notificationsStore.addNotification({
       message: 'The message thread has been deleted successfully',
       type: 'success',
@@ -155,9 +193,12 @@ export const useThreadsStore = defineStore('threads', () => {
   }
 
   function resetState() {
+    threadRequestId++
     threads.value = []
     threadId.value = null
+    retainedThread.value = null
     archivedThreads.value = false
+    unreadOnly.value = false
     loadingThreads.value = true
   }
 
@@ -166,6 +207,8 @@ export const useThreadsStore = defineStore('threads', () => {
     threadId,
     loadingThreads,
     archivedThreads,
+    unreadOnly,
+    visibleThreads,
     currentThread,
     hasThread,
     hasThreadId,
