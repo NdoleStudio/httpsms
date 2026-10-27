@@ -197,7 +197,7 @@ export const useThreadsStore = defineStore('threads', () => {
       `/v1/message-threads/${id}`,
     )
     if (generation !== stateGeneration) {
-      throw new DOMException('Conversation lookup was canceled', 'AbortError')
+      throw new DOMException('thread fetch was canceled', 'AbortError')
     }
     openedThreads.value.set(response.data.id, response.data)
     fetchedThreadIds.value.add(response.data.id)

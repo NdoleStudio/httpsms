@@ -94,7 +94,7 @@ func (h *MessageThreadHandler) Index(c fiber.Ctx) error {
 	return h.responseOK(c, fmt.Sprintf("fetched %d message %s", len(*threads), h.pluralize("thread", len(*threads))), threads)
 }
 
-// Get returns a single conversation independently of list filters and pagination.
+// Get returns a single entities.MessageThread independently of list filters and pagination.
 // @Summary      Get a message thread
 // @Description  Returns a conversation belonging to the authenticated user, including matching contact details when available.
 // @Security     ApiKeyAuth
@@ -123,9 +123,6 @@ func (h *MessageThreadHandler) Get(c fiber.Ctx) error {
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch message thread [%s]", id))
 		return h.responseInternalServerError(c)
-	}
-	if !h.authorizePhoneAPIKey(c, thread.Owner) {
-		return h.responsePhoneAPIKeyUnauthorized(c, thread.Owner, h.userFromContext(c))
 	}
 	return h.responseOK(c, "message thread fetched successfully", thread)
 }
