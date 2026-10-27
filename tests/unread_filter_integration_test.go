@@ -12,7 +12,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type integrationThreadPage struct {
+	Data    []integrationThread `json:"data"`
+	HasMore bool                `json:"has_more"`
+}
+
 func fetchFilteredThreads(ctx context.Context, t *testing.T, owner string, archived, unreadOnly bool, limit, skip int) []integrationThread {
+	t.Helper()
+	return fetchThreadPage(ctx, t, owner, archived, unreadOnly, limit, skip).Data
+}
+
+func fetchThreadPage(ctx context.Context, t *testing.T, owner string, archived, unreadOnly bool, limit, skip int) integrationThreadPage {
 	t.Helper()
 
 	query := url.Values{
@@ -22,11 +32,9 @@ func fetchFilteredThreads(ctx context.Context, t *testing.T, owner string, archi
 		"limit":       {fmt.Sprint(limit)},
 		"skip":        {fmt.Sprint(skip)},
 	}
-	var response struct {
-		Data []integrationThread `json:"data"`
-	}
+	var response integrationThreadPage
 	requestJSON(ctx, t, http.MethodGet, "/v1/message-threads?"+query.Encode(), userAPIKey, nil, http.StatusOK, &response)
-	return response.Data
+	return response
 }
 
 func TestMessageThreadUnreadFilter(t *testing.T) {
@@ -87,4 +95,46 @@ func TestMessageThreadUnreadFilterRejectsInvalidValue(t *testing.T) {
 		"unread_only": {"invalid"},
 	}
 	requestJSON(context.Background(), t, http.MethodGet, "/v1/message-threads?"+query.Encode(), userAPIKey, nil, http.StatusUnprocessableEntity, nil)
+}
+
+func TestMessageThreadPaginationHasMore(t *testing.T) {
+	ctx := context.Background()
+	phone := setupPhone(ctx, t, 60)
+	timestamp := time.Now().Add(-time.Minute).Truncate(time.Second)
+	for index := 0; index < 20; index++ {
+		receiveInbound(ctx, t, phone.PhoneAPIKey, fmt.Sprintf("+1800554%04d", index), phone.PhoneNumber, "Pagination thread", timestamp)
+	}
+
+	var first integrationThreadPage
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		first = fetchThreadPage(ctx, t, phone.PhoneNumber, false, false, 20, 0)
+		if len(first.Data) == 20 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	require.Len(t, first.Data, 20)
+	assert.False(t, first.HasMore, "exactly 20 conversations must not offer Load More")
+
+	receiveInbound(ctx, t, phone.PhoneAPIKey, "+18005540020", phone.PhoneNumber, "One extra thread", timestamp)
+	deadline = time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		first = fetchThreadPage(ctx, t, phone.PhoneNumber, false, false, 20, 0)
+		if first.HasMore {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	require.True(t, first.HasMore)
+	require.Len(t, first.Data, 20)
+
+	second := fetchThreadPage(ctx, t, phone.PhoneNumber, false, false, 20, 20)
+	require.Len(t, second.Data, 1)
+	assert.False(t, second.HasMore)
+	seen := map[string]bool{}
+	for _, thread := range first.Data {
+		seen[thread.ID] = true
+	}
+	assert.False(t, seen[second.Data[0].ID], "equal timestamps must not duplicate threads between pages")
 }

@@ -1120,7 +1120,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order.",
+                "description": "Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order. The has_more field indicates whether another page exists.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5552,6 +5552,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "data",
+                "has_more",
                 "message",
                 "status"
             ],
@@ -5561,6 +5562,11 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/entities.MessageThread"
                     }
+                },
+                "has_more": {
+                    "description": "HasMore indicates that additional threads exist after this page.",
+                    "type": "boolean",
+                    "example": true
                 },
                 "message": {
                     "type": "string",

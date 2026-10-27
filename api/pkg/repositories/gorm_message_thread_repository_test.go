@@ -55,7 +55,7 @@ func TestMessageThreadIndexFiltersUnreadBeforePagination(t *testing.T) {
 			} else {
 				assert.NotContains(t, query, "unread_count >")
 			}
-			assert.Contains(t, query, "ORDER BY order_timestamp DESC LIMIT")
+			assert.Contains(t, query, "ORDER BY order_timestamp DESC,id DESC LIMIT")
 			assert.Contains(t, query, "OFFSET")
 		})
 	}

@@ -263,7 +263,7 @@ func (repository *gormMessageThreadRepository) Index(ctx context.Context, userID
 	}
 
 	threads := new([]entities.MessageThread)
-	if err := query.Order("order_timestamp DESC").Limit(params.Limit).Offset(params.Skip).Find(&threads).Error; err != nil {
+	if err := query.Order("order_timestamp DESC").Order("id DESC").Limit(params.Limit).Offset(params.Skip).Find(&threads).Error; err != nil {
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch message threads with owner [%s] and params [%+#v]", owner, params))
 	}
 

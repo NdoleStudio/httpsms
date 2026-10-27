@@ -49,6 +49,18 @@ function onInstallApp() {
   })
 }
 
+async function loadMoreThreads() {
+  try {
+    await threadsStore.loadMoreThreads()
+  } catch (error) {
+    notificationsStore.addNotification({
+      type: 'error',
+      message: 'More conversations could not be loaded',
+    })
+    console.error(error)
+  }
+}
+
 function isWhatsappFormatted(thread: EntitiesMessageThread): boolean {
   const phone = phonesStore.phones.find((x) => x.phone_number === thread.owner)
   return isUrlNotificationToken(phone?.fcm_token)
@@ -141,6 +153,7 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
         !threadsStore.loadingThreads &&
         threadsStore.unreadOnly &&
         threadsStore.visibleThreads.length === 0 &&
+        !threadsStore.hasMoreThreads &&
         phonesStore.owner
       "
       class="text-medium-emphasis text-center mt-6"
@@ -244,5 +257,19 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
         </template>
       </v-list-item>
     </v-list>
+    <div
+      v-if="!threadsStore.loadingThreads && threadsStore.hasMoreThreads"
+      class="d-flex justify-center pa-4"
+    >
+      <v-btn
+        color="primary"
+        variant="tonal"
+        :loading="threadsStore.loadingMoreThreads"
+        :disabled="threadsStore.loadingMoreThreads"
+        @click="loadMoreThreads"
+      >
+        Load More
+      </v-btn>
+    </div>
   </div>
 </template>

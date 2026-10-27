@@ -784,6 +784,11 @@ export interface ResponsesMessageThreadResponse {
 
 export interface ResponsesMessageThreadsResponse {
   data: EntitiesMessageThread[];
+  /**
+   * HasMore indicates that additional threads exist after this page.
+   * @example true
+   */
+  has_more: boolean;
   /** @example "Request handled successfully" */
   message: string;
   /** @example "success" */

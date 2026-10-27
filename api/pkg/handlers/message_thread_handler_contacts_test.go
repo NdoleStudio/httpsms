@@ -24,10 +24,12 @@ type messageThreadHandlerIndexRepositoryStub struct {
 	repositories.MessageThreadRepository
 	threads    []entities.MessageThread
 	unreadOnly bool
+	limit      int
 }
 
-func (stub *messageThreadHandlerIndexRepositoryStub) Index(_ context.Context, _ entities.UserID, _ string, _ bool, unreadOnly bool, _ repositories.IndexParams) (*[]entities.MessageThread, error) {
+func (stub *messageThreadHandlerIndexRepositoryStub) Index(_ context.Context, _ entities.UserID, _ string, _ bool, unreadOnly bool, params repositories.IndexParams) (*[]entities.MessageThread, error) {
 	stub.unreadOnly = unreadOnly
+	stub.limit = params.Limit
 	threads := make([]entities.MessageThread, len(stub.threads))
 	copy(threads, stub.threads)
 	return &threads, nil
@@ -96,4 +98,46 @@ func TestMessageThreadHandlerIndexRejectsInvalidUnreadFilter(t *testing.T) {
 	require.NoError(t, err)
 	defer response.Body.Close()
 	assert.Equal(t, http.StatusUnprocessableEntity, response.StatusCode)
+}
+
+func TestMessageThreadIndexReportsWhetherAnotherPageExists(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		count   int
+		wantLen int
+		more    bool
+	}{
+		{name: "empty", count: 0, wantLen: 0},
+		{name: "partial page", count: 19, wantLen: 19},
+		{name: "exactly one page", count: 20, wantLen: 20},
+		{name: "another page exists", count: 21, wantLen: 20, more: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repository := &messageThreadHandlerIndexRepositoryStub{threads: make([]entities.MessageThread, test.count)}
+			logger := &messageThreadHandlerNoopLogger{}
+			tracer := telemetry.NewOtelLogger("test", logger)
+			service := services.NewMessageThreadService(logger, tracer, repository, nil, nil, nil)
+			handler := NewMessageThreadHandler(logger, tracer, validators.NewMessageThreadHandlerValidator(logger, tracer), service)
+			app := fiber.New()
+			app.Use(func(c fiber.Ctx) error {
+				c.Locals(middlewares.ContextKeyAuthUserID, entities.AuthContext{ID: entities.UserID("user-id"), Email: "user@example.com"})
+				return c.Next()
+			})
+			handler.RegisterRoutes(app)
+
+			response, err := app.Test(httptest.NewRequest(http.MethodGet, "/v1/message-threads?owner=%2B18005550199&limit=20", nil))
+
+			require.NoError(t, err)
+			defer response.Body.Close()
+			require.Equal(t, http.StatusOK, response.StatusCode)
+			var body struct {
+				Data    []entities.MessageThread `json:"data"`
+				HasMore bool                     `json:"has_more"`
+			}
+			require.NoError(t, json.NewDecoder(response.Body).Decode(&body))
+			assert.Len(t, body.Data, test.wantLen)
+			assert.Equal(t, test.more, body.HasMore)
+			assert.Equal(t, 21, repository.limit)
+		})
+	}
 }

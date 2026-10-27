@@ -5,10 +5,17 @@ import type {
   EntitiesMessage,
 } from '~~/shared/types/api'
 
+const PAGE_SIZE = 20
+
 export const useThreadsStore = defineStore('threads', () => {
   const threads = ref<EntitiesMessageThread[]>([])
   const threadId = ref<string | null>(null)
   const loadingThreads = ref(true)
+  const loadingMoreThreads = ref(false)
+  const hasMoreThreads = ref(false)
+  let pageCount = 1
+  let pageContext = ''
+  let loadMoreGeneration = 0
   const archivedThreads = ref(false)
   const unreadOnly = ref(false)
   const retainedThread = ref<EntitiesMessageThread | null>(null)
@@ -21,7 +28,7 @@ export const useThreadsStore = defineStore('threads', () => {
   const currentThread = computed<EntitiesMessageThread | null>(() => {
     return (
       threads.value.find((x) => x.id === threadId.value) ??
-      ((unreadOnly.value || loadingThreads.value) &&
+      ((unreadOnly.value || loadingThreads.value || hasMoreThreads.value) &&
       retainedThread.value?.id === threadId.value
         ? retainedThread.value
         : null)
@@ -94,21 +101,39 @@ export const useThreadsStore = defineStore('threads', () => {
     const phonesStore = usePhonesStore()
     if (phonesStore.owner === null && phonesStore.phones.length === 0) {
       loadingThreads.value = false
+      hasMoreThreads.value = false
       return
     }
 
+    const owner = phonesStore.owner ?? phonesStore.phones[0]?.phone_number
+    const archived = archivedThreads.value
+    const unread = unreadOnly.value
+    const context = JSON.stringify([owner, archived, unread])
+    if (context !== pageContext) {
+      pageContext = context
+      pageCount = 1
+      hasMoreThreads.value = false
+      loadingMoreThreads.value = false
+      loadMoreGeneration++
+    }
+
     try {
-      const response = await apiFetch<{ data: EntitiesMessageThread[] }>(
-        '/v1/message-threads',
-        {
-          params: {
-            owner: phonesStore.owner ?? phonesStore.phones[0]?.phone_number,
-            limit: 20,
-            is_archived: archivedThreads.value,
-            unread_only: unreadOnly.value,
-            contacts: true,
-          },
-        },
+      const responses = await Promise.all(
+        Array.from({ length: pageCount }, (_, page) =>
+          apiFetch<{ data: EntitiesMessageThread[]; has_more: boolean }>(
+            '/v1/message-threads',
+            {
+              params: {
+                owner,
+                limit: PAGE_SIZE,
+                skip: page * PAGE_SIZE,
+                is_archived: archived,
+                unread_only: unread,
+                contacts: true,
+              },
+            },
+          ),
+        ),
       )
       if (requestId !== threadRequestId) return
       if (readGeneration !== readMutationGeneration) {
@@ -118,8 +143,17 @@ export const useThreadsStore = defineStore('threads', () => {
 
       phonesStore.getHeartbeat().catch(console.error)
       retainedThread.value = currentThread.value
-      threads.value = [...response.data]
-      for (const thread of response.data) {
+      const combined = new Map<string, EntitiesMessageThread>()
+      let hasMore = false
+      for (const response of responses) {
+        hasMore = response.has_more
+        for (const thread of response.data) {
+          if (!combined.has(thread.id)) combined.set(thread.id, thread)
+        }
+      }
+      threads.value = [...combined.values()]
+      hasMoreThreads.value = hasMore
+      for (const thread of threads.value) {
         if (openedThreads.value.has(thread.id)) {
           openedThreads.value.set(thread.id, thread)
         }
@@ -128,6 +162,29 @@ export const useThreadsStore = defineStore('threads', () => {
       if (requestId === threadRequestId) {
         loadingThreads.value = false
       }
+    }
+  }
+
+  async function loadMoreThreads() {
+    if (
+      loadingThreads.value ||
+      loadingMoreThreads.value ||
+      !hasMoreThreads.value
+    )
+      return
+
+    const generation = ++loadMoreGeneration
+    const previousPageCount = pageCount
+    pageCount++
+    loadingMoreThreads.value = true
+    try {
+      await loadThreads()
+    } catch (error) {
+      if (generation !== loadMoreGeneration) return
+      pageCount = previousPageCount
+      throw error
+    } finally {
+      if (generation === loadMoreGeneration) loadingMoreThreads.value = false
     }
   }
 
@@ -163,7 +220,7 @@ export const useThreadsStore = defineStore('threads', () => {
       id === null
         ? null
         : (threads.value.find((thread) => thread.id === id) ??
-          ((unreadOnly.value || loadingThreads.value) &&
+          ((unreadOnly.value || loadingThreads.value || hasMoreThreads.value) &&
           cached &&
           cached.owner === owner &&
           cached.is_archived === archivedThreads.value
@@ -246,6 +303,11 @@ export const useThreadsStore = defineStore('threads', () => {
   function resetState() {
     threadRequestId++
     readMutationGeneration = 0
+    loadMoreGeneration++
+    pageCount = 1
+    pageContext = ''
+    hasMoreThreads.value = false
+    loadingMoreThreads.value = false
     threads.value = []
     threadId.value = null
     retainedThread.value = null
@@ -259,6 +321,8 @@ export const useThreadsStore = defineStore('threads', () => {
     threads,
     threadId,
     loadingThreads,
+    loadingMoreThreads,
+    hasMoreThreads,
     archivedThreads,
     unreadOnly,
     visibleThreads,
@@ -266,6 +330,7 @@ export const useThreadsStore = defineStore('threads', () => {
     hasThread,
     hasThreadId,
     loadThreads,
+    loadMoreThreads,
     loadThreadMessages,
     setThreadId,
     toggleArchive,
