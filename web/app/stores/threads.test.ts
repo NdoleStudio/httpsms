@@ -72,12 +72,11 @@ function setupStore() {
         }
         const pending = nextResponse
         nextResponse = undefined
-        if (pending) return { ...(await pending), has_more: false }
+        if (pending) return pending
         const skip = Number(options.params?.skip ?? 0)
         const limit = Number(options.params?.limit ?? 20)
         return {
           data: responseThreads.slice(skip, skip + limit),
-          has_more: responseThreads.length > skip + limit,
         }
       },
     }),
@@ -372,14 +371,14 @@ function manyThreads(count: number) {
 }
 
 for (const count of [0, 19, 20, 21]) {
-  test(`Load More is available only when more than 20 threads exist (${count})`, async () => {
+  test(`Load More is available when the last page is full (${count})`, async () => {
     const { store, respondWith } = setupStore()
     respondWith(manyThreads(count))
 
     await store.loadThreads()
 
     assert.equal(store.threads.length, Math.min(count, 20))
-    assert.equal(store.hasMoreThreads, count > 20)
+    assert.equal(store.hasMoreThreads, count >= 20)
   })
 }
 
@@ -400,6 +399,23 @@ test('Load More expands the loaded list and disappears on the final page', async
   await store.loadMoreThreads()
   assert.equal(calls.length, completedCalls)
 })
+
+for (const count of [20, 40]) {
+  test(`an empty final page hides Load More without losing ${count} loaded threads`, async () => {
+    const { store, respondWith } = setupStore()
+    respondWith(manyThreads(count))
+    await store.loadThreads()
+    if (count === 40) await store.loadMoreThreads()
+    assert.equal(store.threads.length, count)
+    assert.equal(store.hasMoreThreads, true)
+
+    await store.loadMoreThreads()
+
+    assert.equal(store.threads.length, count)
+    assert.equal(store.hasMoreThreads, false)
+    assert.equal(store.loadingMoreThreads, false)
+  })
+}
 
 test('polling preserves loaded pages and changing filters resets them', async () => {
   const { store, respondWith } = setupStore()
@@ -490,6 +506,7 @@ test('changing filters cancels an older Load More result', async () => {
   deferNextLoad(pending.promise)
 
   const loading = store.loadMoreThreads()
+  assert.equal(store.loadingMoreThreads, true)
   store.unreadOnly = true
   await store.loadThreads()
   pending.resolve({ data: existing.slice(0, 20) })
@@ -539,7 +556,7 @@ test('individual lookup preserves a real 404 instead of searching every page', a
 
 test('a successfully fetched conversation remains selectable independently of list metadata', async () => {
   const { store, respondWith, respondToLookup } = setupStore()
-  respondWith(manyThreads(20))
+  respondWith(manyThreads(19))
   const requested = thread('directly-requested', 0)
   respondToLookup(requested)
   await store.loadThreads()
@@ -549,7 +566,7 @@ test('a successfully fetched conversation remains selectable independently of li
   store.setThreadId(requested.id)
 
   assert.equal(store.currentThread?.id, requested.id)
-  assert.equal(store.threads.length, 20)
+  assert.equal(store.threads.length, 19)
 })
 
 test('resetting the session cancels an older individual lookup', async () => {

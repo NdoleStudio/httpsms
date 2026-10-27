@@ -106,15 +106,6 @@ func (h *handler) responseOKWithTotal(c fiber.Ctx, message string, data interfac
 	})
 }
 
-func (h *handler) responseOKWithHasMore(c fiber.Ctx, message string, data interface{}, hasMore bool) error {
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":   "success",
-		"message":  message,
-		"data":     data,
-		"has_more": hasMore,
-	})
-}
-
 func (h *handler) responseCreated(c fiber.Ctx, message string, data interface{}) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"status":  "success",

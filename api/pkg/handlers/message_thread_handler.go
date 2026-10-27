@@ -49,7 +49,7 @@ func (h *MessageThreadHandler) RegisterRoutes(router fiber.Router, middlewares .
 
 // Index returns message threads for a phone number
 // @Summary      Get message threads for a phone number
-// @Description  Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order. The has_more field indicates whether another page exists.
+// @Description  Get list of contacts which a phone number has communicated with (threads). It will be sorted by timestamp in descending order.
 // @Security	 ApiKeyAuth
 // @Tags         MessageThreads
 // @Accept       json
@@ -85,20 +85,13 @@ func (h *MessageThreadHandler) Index(c fiber.Ctx) error {
 		return h.responseUnprocessableEntity(c, errors, "validation errors while fetching message threads")
 	}
 
-	params := request.ToGetParams(h.userIDFomContext(c))
-	limit := params.Limit
-	params.Limit++
-	threads, err := h.service.GetThreads(ctx, params)
+	threads, err := h.service.GetThreads(ctx, request.ToGetParams(h.userIDFomContext(c)))
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot get message threads with params [%+#v]", request))
 		return h.responseInternalServerError(c)
 	}
 
-	hasMore := len(*threads) > limit
-	if hasMore {
-		*threads = (*threads)[:limit]
-	}
-	return h.responseOKWithHasMore(c, fmt.Sprintf("fetched %d message %s", len(*threads), h.pluralize("thread", len(*threads))), threads, hasMore)
+	return h.responseOK(c, fmt.Sprintf("fetched %d message %s", len(*threads), h.pluralize("thread", len(*threads))), threads)
 }
 
 // Get returns a single conversation independently of list filters and pagination.

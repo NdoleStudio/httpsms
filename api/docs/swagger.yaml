@@ -1423,10 +1423,6 @@ definitions:
         items:
           $ref: '#/definitions/entities.MessageThread'
         type: array
-      has_more:
-        description: HasMore indicates that additional threads exist after this page.
-        example: true
-        type: boolean
       message:
         example: Request handled successfully
         type: string
@@ -1435,7 +1431,6 @@ definitions:
         type: string
     required:
     - data
-    - has_more
     - message
     - status
     type: object
@@ -2499,8 +2494,7 @@ paths:
       consumes:
       - application/json
       description: Get list of contacts which a phone number has communicated with
-        (threads). It will be sorted by timestamp in descending order. The has_more
-        field indicates whether another page exists.
+        (threads). It will be sorted by timestamp in descending order.
       parameters:
       - default: "+18005550199"
         description: owner phone number

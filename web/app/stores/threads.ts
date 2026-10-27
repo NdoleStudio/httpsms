@@ -126,19 +126,16 @@ export const useThreadsStore = defineStore('threads', () => {
     try {
       const responses = await Promise.all(
         Array.from({ length: pageCount }, (_, page) =>
-          apiFetch<{ data: EntitiesMessageThread[]; has_more: boolean }>(
-            '/v1/message-threads',
-            {
-              params: {
-                owner,
-                limit: PAGE_SIZE,
-                skip: page * PAGE_SIZE,
-                is_archived: archived,
-                unread_only: unread,
-                contacts: true,
-              },
+          apiFetch<{ data: EntitiesMessageThread[] }>('/v1/message-threads', {
+            params: {
+              owner,
+              limit: PAGE_SIZE,
+              skip: page * PAGE_SIZE,
+              is_archived: archived,
+              unread_only: unread,
+              contacts: true,
             },
-          ),
+          }),
         ),
       )
       if (requestId !== threadRequestId) return
@@ -152,7 +149,7 @@ export const useThreadsStore = defineStore('threads', () => {
       const combined = new Map<string, EntitiesMessageThread>()
       let hasMore = false
       for (const response of responses) {
-        hasMore = response.has_more
+        hasMore = response.data.length === PAGE_SIZE
         for (const thread of response.data) {
           if (!combined.has(thread.id)) combined.set(thread.id, thread)
         }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -32,6 +33,8 @@ func (stub *messageThreadHandlerIndexRepositoryStub) Index(_ context.Context, _ 
 	stub.limit = params.Limit
 	threads := make([]entities.MessageThread, len(stub.threads))
 	copy(threads, stub.threads)
+	start := min(params.Skip, len(threads))
+	threads = threads[start:min(start+params.Limit, len(threads))]
 	return &threads, nil
 }
 
@@ -100,17 +103,18 @@ func TestMessageThreadHandlerIndexRejectsInvalidUnreadFilter(t *testing.T) {
 	assert.Equal(t, http.StatusUnprocessableEntity, response.StatusCode)
 }
 
-func TestMessageThreadIndexReportsWhetherAnotherPageExists(t *testing.T) {
+func TestMessageThreadIndexUsesRequestedLimitWithoutLookAhead(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		count   int
 		wantLen int
-		more    bool
+		limit   int
 	}{
-		{name: "empty", count: 0, wantLen: 0},
-		{name: "partial page", count: 19, wantLen: 19},
-		{name: "exactly one page", count: 20, wantLen: 20},
-		{name: "another page exists", count: 21, wantLen: 20, more: true},
+		{name: "empty", count: 0, wantLen: 0, limit: 20},
+		{name: "partial page", count: 19, wantLen: 19, limit: 20},
+		{name: "exactly one page", count: 20, wantLen: 20, limit: 20},
+		{name: "another page exists", count: 21, wantLen: 20, limit: 20},
+		{name: "custom limit", count: 4, wantLen: 3, limit: 3},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repository := &messageThreadHandlerIndexRepositoryStub{threads: make([]entities.MessageThread, test.count)}
@@ -125,19 +129,18 @@ func TestMessageThreadIndexReportsWhetherAnotherPageExists(t *testing.T) {
 			})
 			handler.RegisterRoutes(app)
 
-			response, err := app.Test(httptest.NewRequest(http.MethodGet, "/v1/message-threads?owner=%2B18005550199&limit=20", nil))
+			response, err := app.Test(httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/message-threads?owner=%%2B18005550199&limit=%d", test.limit), nil))
 
 			require.NoError(t, err)
 			defer response.Body.Close()
 			require.Equal(t, http.StatusOK, response.StatusCode)
-			var body struct {
-				Data    []entities.MessageThread `json:"data"`
-				HasMore bool                     `json:"has_more"`
-			}
+			var body map[string]json.RawMessage
 			require.NoError(t, json.NewDecoder(response.Body).Decode(&body))
-			assert.Len(t, body.Data, test.wantLen)
-			assert.Equal(t, test.more, body.HasMore)
-			assert.Equal(t, 21, repository.limit)
+			var threads []entities.MessageThread
+			require.NoError(t, json.Unmarshal(body["data"], &threads))
+			assert.Len(t, threads, test.wantLen)
+			assert.NotContains(t, body, "has_more")
+			assert.Equal(t, test.limit, repository.limit)
 		})
 	}
 }
