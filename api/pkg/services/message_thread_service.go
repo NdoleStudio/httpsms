@@ -213,9 +213,10 @@ func (service *MessageThreadService) createThread(ctx context.Context, params Me
 	if params.Status != entities.MessageStatusReceived {
 		phone, err := service.phoneRepository.Load(ctx, params.UserID, params.Owner)
 		if err != nil {
-			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load phone [%s] for user [%s] to resolve ArchiveNewOutgoingMessageThreads", params.Owner, params.UserID))
+			ctxLogger.Warn(stacktrace.Propagatef(err, "cannot load phone [%s] for user [%s] to resolve ArchiveNewOutgoingMessageThreads; creating the thread unarchived", params.Owner, params.UserID))
+		} else {
+			isArchived = phone.ArchiveNewOutgoingMessageThreads
 		}
-		isArchived = phone.ArchiveNewOutgoingMessageThreads
 	}
 
 	unreadCount := uint(0)

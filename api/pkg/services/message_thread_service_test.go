@@ -299,17 +299,19 @@ func TestCreateThreadArchivesOnlyNewOutgoingConversationsForEnabledPhone(t *test
 	}
 }
 
-func TestCreateOutgoingThreadDoesNotStoreWhenPhoneCannotBeLoaded(t *testing.T) {
-	stored := false
+func TestCreateOutgoingThreadDefaultsToUnarchivedWhenPhoneCannotBeLoaded(t *testing.T) {
+	var stored *entities.MessageThread
 	service := newMessageThreadServiceForTest(&messageThreadRepositoryStub{
 		loadByOwnerContact: func(context.Context, entities.UserID, string, string) (*entities.MessageThread, error) {
 			return nil, stacktrace.PropagateWithCodef(gorm.ErrRecordNotFound, repositories.ErrCodeNotFound, "not found")
 		},
-		store: func(context.Context, *entities.MessageThread) error {
-			stored = true
+		store: func(_ context.Context, thread *entities.MessageThread) error {
+			stored = thread
 			return nil
 		},
 	})
+	logger := &phoneNotificationLogger{}
+	service.logger = logger
 	phoneErr := stacktrace.NewError("phone unavailable")
 	service.phoneRepository = &threadPhoneRepositoryStub{
 		load: func(context.Context, entities.UserID, string) (*entities.Phone, error) {
@@ -323,9 +325,11 @@ func TestCreateOutgoingThreadDoesNotStoreWhenPhoneCannotBeLoaded(t *testing.T) {
 		Status: entities.MessageStatusPending,
 	})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "phone unavailable")
-	assert.False(t, stored)
+	require.NoError(t, err)
+	require.NotNil(t, stored)
+	assert.False(t, stored.IsArchived)
+	require.Len(t, logger.warnings, 1)
+	assert.Contains(t, logger.warnings[0], "phone unavailable")
 }
 
 func TestArchiveNewOutgoingMessageThreadsPreservesExistingConversationBehavior(t *testing.T) {
