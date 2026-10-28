@@ -19,7 +19,7 @@ import (
 
 func TestSendSMS_Encrypted(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	encryptionKey := randomEncryptionKey()
 	signingKey, webhookPath := setupWebhook(ctx, t, phone.PhoneNumber, []string{
@@ -87,7 +87,7 @@ func TestSendSMS_Encrypted(t *testing.T) {
 
 func TestReceiveSMS_Encrypted(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	encryptionKey := randomEncryptionKey()
 	signingKey, webhookPath := setupWebhook(ctx, t, phone.PhoneNumber, []string{
@@ -303,7 +303,7 @@ func TestRotateAPIKey_InvalidatesCache(t *testing.T) {
 
 func TestSendSMS_OutstandingFlow(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	signingKey, webhookPath := setupWebhook(ctx, t, phone.PhoneNumber, []string{
 		"message.phone.sent",
@@ -352,7 +352,7 @@ func TestSendSMS_OutstandingFlow(t *testing.T) {
 
 func TestHeartbeat_StoreAndIndex(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	// Store a heartbeat via phone API key (retry to allow async phone-API-key association)
 	storePayload := map[string]interface{}{
@@ -408,7 +408,7 @@ func TestHeartbeat_StoreAndIndex(t *testing.T) {
 
 func TestBulkSMS_CSV(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	// Build CSV content with 1 message
 	contact := randomPhoneNumber()
@@ -474,7 +474,7 @@ func TestBulkSMS_CSV(t *testing.T) {
 
 func TestBulkSMS_Excel(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	contact1 := randomPhoneNumber()
 	contact2 := randomPhoneNumber()

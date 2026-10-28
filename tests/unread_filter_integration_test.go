@@ -31,8 +31,8 @@ func fetchFilteredThreads(ctx context.Context, t *testing.T, owner string, archi
 
 func TestMessageThreadUnreadFilter(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
-	otherPhone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
+	otherPhone := setupPhone(ctx, t, 30)
 	require.NotEqual(t, phone.PhoneNumber, otherPhone.PhoneNumber)
 	unreadContact := randomPhoneNumber()
 	readContact := randomPhoneNumber()
@@ -91,7 +91,7 @@ func TestMessageThreadUnreadFilterRejectsInvalidValue(t *testing.T) {
 
 func TestMessageThreadPaginationReturnsRequestedPages(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 	timestamp := time.Now().Add(-time.Minute).Truncate(time.Second)
 	for index := 0; index < 20; index++ {
 		receiveInbound(ctx, t, phone.PhoneAPIKey, fmt.Sprintf("+1800554%04d", index), phone.PhoneNumber, "Pagination thread", timestamp)

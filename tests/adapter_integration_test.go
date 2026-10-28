@@ -14,7 +14,7 @@ import (
 
 func TestAdapterGatewayOutgoingMessage(t *testing.T) {
 	ctx := context.Background()
-	phone := setupAdapterPhone(ctx, t, 60)
+	phone := setupAdapterPhone(ctx, t, 30)
 	contact := randomPhoneNumber()
 	content := "Adapter outgoing " + randomEncryptionKey()
 
@@ -42,7 +42,7 @@ func TestAdapterGatewayOutgoingMessage(t *testing.T) {
 
 func TestAdapterGatewayIncomingMessage(t *testing.T) {
 	ctx := context.Background()
-	phone := setupAdapterPhone(ctx, t, 60)
+	phone := setupAdapterPhone(ctx, t, 30)
 	contact := randomPhoneNumber()
 	content := "Adapter incoming " + randomEncryptionKey()
 
@@ -57,7 +57,7 @@ func TestAdapterGatewayIncomingMessage(t *testing.T) {
 
 func TestAdapterGatewayHeartbeatWakeUp(t *testing.T) {
 	ctx := context.Background()
-	phone := setupAdapterPhone(ctx, t, 60)
+	phone := setupAdapterPhone(ctx, t, 30)
 	monitorID := uuid.NewString()
 
 	dispatchInternalEvent(ctx, t, map[string]any{

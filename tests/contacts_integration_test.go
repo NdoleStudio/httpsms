@@ -295,7 +295,7 @@ func TestContacts_CSVUpload(t *testing.T) {
 
 func TestContacts_MessageThreadsIncludeContactDetails(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 	contactPhone := randomPhoneNumber()
 	marker := strings.ToLower(uuid.New().String())
 
