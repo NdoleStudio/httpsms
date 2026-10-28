@@ -36,6 +36,37 @@ func TestPhoneHandlerValidatorAcceptsHTTPSNotificationURLOnUpsert(t *testing.T) 
 	assert.Empty(t, errors)
 }
 
+func TestPhoneHandlerValidatorMessagesPerMinuteLimit(t *testing.T) {
+	tests := []struct {
+		name              string
+		messagesPerMinute uint
+		valid             bool
+	}{
+		{name: "zero", messagesPerMinute: 0, valid: true},
+		{name: "maximum", messagesPerMinute: 30, valid: true},
+		{name: "above maximum", messagesPerMinute: 31, valid: false},
+		{name: "previous maximum", messagesPerMinute: 60, valid: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validator := newPhoneHandlerValidator()
+			errors := validator.ValidateUpsert(context.Background(), "", requests.PhoneUpsert{
+				PhoneNumber:              "+18005550199",
+				SIM:                      entities.SIM1.String(),
+				MessageExpirationSeconds: 60,
+				MessagesPerMinute:        test.messagesPerMinute,
+			})
+
+			if test.valid {
+				assert.Empty(t, errors)
+			} else {
+				assert.NotEmpty(t, errors["messages_per_minute"])
+			}
+		})
+	}
+}
+
 func TestPhoneHandlerValidatorAcceptsPrivateAndLoopbackNotificationHosts(t *testing.T) {
 	validator := newPhoneHandlerValidator()
 

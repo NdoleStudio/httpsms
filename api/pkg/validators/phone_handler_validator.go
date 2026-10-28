@@ -74,7 +74,7 @@ func (validator *PhoneHandlerValidator) ValidateUpsert(ctx context.Context, user
 			},
 			"messages_per_minute": []string{
 				"min:0",
-				"max:60",
+				"max:30",
 			},
 			"max_send_attempts": []string{
 				"min:0",
