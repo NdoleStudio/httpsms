@@ -22,8 +22,8 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth'
 import QRCode from 'qrcode'
-import { ErrorMessages } from '~/utils/errors'
-import { getApiErrorMessage, toApiError } from '~/utils/api-error'
+import { ErrorMessages, getErrorMessages } from '~/utils/errors'
+import { getApiErrorMessage } from '~/utils/api-error'
 import type {
   EntitiesPhone,
   EntitiesWebhook,
@@ -133,15 +133,6 @@ const webhookEventOptions = [
 
 function resetErrors() {
   errorMessages.value = new ErrorMessages()
-}
-
-function parseErrors(error: unknown): ErrorMessages {
-  const bag = new ErrorMessages()
-  const data = toApiError(error).data?.data
-  if (data && typeof data === 'object') {
-    Object.keys(data).forEach((key) => bag.addMany(key, data[key]!))
-  }
-  return bag
 }
 
 // ---------------------------------------------------------------------------
@@ -295,7 +286,7 @@ async function saveWebhook() {
     showWebhookEdit.value = false
     await loadWebhooks()
   } catch (error: unknown) {
-    errorMessages.value = parseErrors(error)
+    errorMessages.value = getErrorMessages(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
         message: getApiErrorMessage(error, 'Failed to save webhook'),
@@ -403,7 +394,7 @@ async function saveDiscord() {
     showDiscordEdit.value = false
     await loadDiscordIntegrations()
   } catch (error: unknown) {
-    errorMessages.value = parseErrors(error)
+    errorMessages.value = getErrorMessages(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
         message: getApiErrorMessage(
@@ -466,7 +457,7 @@ async function updatePhone() {
     showPhoneEdit.value = false
     activePhone.value = null
   } catch (error: unknown) {
-    errorMessages.value = parseErrors(error)
+    errorMessages.value = getErrorMessages(error)
   } finally {
     updatingPhone.value = false
   }
@@ -686,7 +677,7 @@ async function saveSchedule() {
     showScheduleEdit.value = false
     await loadSendSchedules()
   } catch (error: unknown) {
-    errorMessages.value = parseErrors(error)
+    errorMessages.value = getErrorMessages(error)
     if (errorMessages.value.size() === 0) {
       notificationsStore.addNotification({
         type: 'error',
