@@ -1657,6 +1657,7 @@ onMounted(async () => {
                 />
                 <VTextField
                   v-model="activePhone.message_expiration_seconds"
+                  class="mt-1"
                   variant="outlined"
                   type="number"
                   density="compact"
@@ -1667,6 +1668,7 @@ onMounted(async () => {
                 />
                 <VTextField
                   v-model="activePhone.messages_per_minute"
+                  class="mt-1"
                   variant="outlined"
                   type="number"
                   density="compact"
@@ -1675,6 +1677,7 @@ onMounted(async () => {
                 />
                 <VTextField
                   v-model="activePhone.max_send_attempts"
+                  class="mt-1"
                   variant="outlined"
                   type="number"
                   density="compact"
@@ -1691,6 +1694,7 @@ onMounted(async () => {
                 />
                 <VAutocomplete
                   v-model="activePhone.message_send_schedule_id"
+                  class="mt-1"
                   variant="outlined"
                   :readonly="sendSchedules.length === 0"
                   density="compact"
