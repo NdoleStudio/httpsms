@@ -643,9 +643,9 @@ function scheduleWindowError(index: number): string | null {
     ? errorMessages.value.get('windows')
     : []
   if (messages.length === 0) return null
-  const message = messages.find((x) => x.includes(`day_of_week ${index}`))
+  const message = messages.find((x) => x.includes(`Day of week ${index}`))
   return message
-    ? message.replace(`day_of_week ${index}`, getWeekday(index))
+    ? message.replace(`Day of week ${index}`, getWeekday(index))
     : null
 }
 
