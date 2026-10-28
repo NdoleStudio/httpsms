@@ -446,6 +446,7 @@ async function deleteDiscord(id: string) {
 // ---------------------------------------------------------------------------
 const updatingPhone = ref(false)
 const showPhoneEdit = ref(false)
+const showPhoneDelete = ref(false)
 const activePhone = ref<EntitiesPhone | null>(null)
 
 function showEditPhone(phoneId: string) {
@@ -458,24 +459,29 @@ function showEditPhone(phoneId: string) {
 
 async function updatePhone() {
   if (!activePhone.value) return
+  resetErrors()
   updatingPhone.value = true
   try {
     await phonesStore.updatePhone(activePhone.value)
     showPhoneEdit.value = false
     activePhone.value = null
+  } catch (error: unknown) {
+    errorMessages.value = parseErrors(error)
   } finally {
     updatingPhone.value = false
   }
 }
 
-async function deletePhone(phoneId: string) {
+async function deletePhone() {
+  if (!activePhone.value || updatingPhone.value) return
   updatingPhone.value = true
   try {
-    await phonesStore.deletePhone(phoneId)
+    await phonesStore.deletePhone(activePhone.value.id)
     notificationsStore.addNotification({
       message: 'Phone deleted successfully',
       type: 'success',
     })
+    showPhoneDelete.value = false
     showPhoneEdit.value = false
     activePhone.value = null
   } catch (error: unknown) {
@@ -1623,6 +1629,7 @@ onMounted(async () => {
                   disabled
                   label="ID"
                   :model-value="activePhone.id"
+                  :error-messages="errorMessages.get('id')"
                 />
                 <VTextField
                   variant="outlined"
@@ -1630,6 +1637,7 @@ onMounted(async () => {
                   density="compact"
                   label="Phone Number"
                   :model-value="activePhone.phone_number"
+                  :error-messages="errorMessages.get('phone_number')"
                 />
                 <VTextField
                   variant="outlined"
@@ -1637,6 +1645,7 @@ onMounted(async () => {
                   density="compact"
                   label="SIM"
                   :model-value="activePhone.sim"
+                  :error-messages="errorMessages.get('sim')"
                 />
                 <VTextarea
                   variant="outlined"
@@ -1644,6 +1653,7 @@ onMounted(async () => {
                   density="compact"
                   label="FCM Token"
                   :model-value="activePhone.fcm_token"
+                  :error-messages="errorMessages.get('fcm_token')"
                 />
                 <VTextField
                   v-model="activePhone.message_expiration_seconds"
@@ -1651,6 +1661,9 @@ onMounted(async () => {
                   type="number"
                   density="compact"
                   label="Message Expiration (seconds)"
+                  :error-messages="
+                    errorMessages.get('message_expiration_seconds')
+                  "
                 />
                 <VTextField
                   v-model="activePhone.messages_per_minute"
@@ -1658,6 +1671,7 @@ onMounted(async () => {
                   type="number"
                   density="compact"
                   label="Messages Per Minute"
+                  :error-messages="errorMessages.get('messages_per_minute')"
                 />
                 <VTextField
                   v-model="activePhone.max_send_attempts"
@@ -1666,6 +1680,7 @@ onMounted(async () => {
                   density="compact"
                   placeholder="How many retries when sending an SMS"
                   label="Max Send Attempts"
+                  :error-messages="errorMessages.get('max_send_attempts')"
                   min="1"
                   max="5"
                   :rules="[
@@ -1681,6 +1696,9 @@ onMounted(async () => {
                   density="compact"
                   clearable
                   label="Send Schedule"
+                  :error-messages="
+                    errorMessages.get('message_send_schedule_id')
+                  "
                   :items="sendSchedules"
                   item-title="name"
                   item-value="id"
@@ -1693,6 +1711,7 @@ onMounted(async () => {
                   density="compact"
                   class="mt-6"
                   label="Missed Call AutoReply"
+                  :error-messages="errorMessages.get('missed_call_auto_reply')"
                   persistent-placeholder
                   persistent-hint
                   placeholder="We are currently closed at the moment, please send us a text message from 09:00 to 17:00"
@@ -1704,6 +1723,9 @@ onMounted(async () => {
                   color="primary"
                   density="compact"
                   label="Archive New Outgoing Message Threads"
+                  :error-messages="
+                    errorMessages.get('archive_new_outgoing_message_threads')
+                  "
                   hint="Automatically archive new conversations started by an outgoing message. Conversations started by an incoming message are not affected."
                   persistent-hint
                 />
@@ -1713,6 +1735,7 @@ onMounted(async () => {
                   color="primary"
                   density="compact"
                   label="Unarchive Threads Automatically"
+                  :error-messages="errorMessages.get('unarchive_thread')"
                   hint="When a new message is received on an archived conversation, change it back to the unarchived state"
                   persistent-hint
                 />
@@ -1730,10 +1753,45 @@ onMounted(async () => {
             color="error"
             variant="text"
             :disabled="updatingPhone"
-            @click="deletePhone(activePhone?.id ?? '')"
+            @click="showPhoneDelete = true"
           >
             <VIcon v-if="lgAndUp" start :icon="mdiDelete" />
             Delete
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="showPhoneDelete"
+      max-width="500"
+      opacity="0.9"
+      :persistent="updatingPhone"
+    >
+      <VCard>
+        <VCardTitle>Delete Phone</VCardTitle>
+        <VCardText class="text-medium-emphasis">
+          Are you sure you want to delete the phone
+          <b>{{ activePhone?.phone_number }}</b
+          >? This action cannot be undone.
+        </VCardText>
+        <VCardActions>
+          <VBtn
+            variant="flat"
+            color="error"
+            :loading="updatingPhone"
+            :disabled="updatingPhone"
+            @click="deletePhone"
+          >
+            Delete
+          </VBtn>
+          <VSpacer />
+          <VBtn
+            variant="text"
+            :disabled="updatingPhone"
+            @click="showPhoneDelete = false"
+          >
+            Cancel
           </VBtn>
         </VCardActions>
       </VCard>

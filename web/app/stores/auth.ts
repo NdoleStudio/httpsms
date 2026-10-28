@@ -49,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function loadUser() {
     const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me')
+    setApiKey(response.data.api_key)
     user.value = response.data
   }
 
