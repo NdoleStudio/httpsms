@@ -130,7 +130,7 @@ func clearMessageThreadUnreadCount(ctx context.Context, t *testing.T, threadID s
 
 func TestMessageThreadUnreadCount(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 	contact := randomPhoneNumber()
 
 	requestJSON(

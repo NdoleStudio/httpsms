@@ -72,8 +72,8 @@ func TestArchiveNewOutgoingMessageThreadsOnFirstRegistration(t *testing.T) {
 
 func TestArchiveNewOutgoingMessageThreadsPerPhoneAndDirection(t *testing.T) {
 	ctx := context.Background()
-	enabledPhone := setupPhone(ctx, t, 60)
-	defaultPhone := setupPhone(ctx, t, 60)
+	enabledPhone := setupPhone(ctx, t, 30)
+	defaultPhone := setupPhone(ctx, t, 30)
 	require.NotEqual(t, enabledPhone.PhoneNumber, defaultPhone.PhoneNumber)
 
 	existingContact := randomPhoneNumber()
@@ -104,7 +104,7 @@ func TestArchiveNewOutgoingMessageThreadsPerPhoneAndDirection(t *testing.T) {
 
 func TestArchiveNewOutgoingMessageThreadsToggleAndPartialUpdates(t *testing.T) {
 	ctx := context.Background()
-	phone := setupPhone(ctx, t, 60)
+	phone := setupPhone(ctx, t, 30)
 
 	require.True(t, updatePhoneThreadSettings(ctx, t, phone, map[string]bool{"archive_new_outgoing_message_threads": true}).ArchiveNewOutgoingMessageThreads)
 	settings := updatePhoneThreadSettings(ctx, t, phone, map[string]bool{"unarchive_thread": true})
@@ -135,7 +135,7 @@ func TestArchiveNewOutgoingMessageThreadsReplyRespectsUnarchiveSetting(t *testin
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			phone := setupPhone(ctx, t, 60)
+			phone := setupPhone(ctx, t, 30)
 			updatePhoneThreadSettings(ctx, t, phone, map[string]bool{
 				"archive_new_outgoing_message_threads": true,
 				"unarchive_thread":                     test.unarchive,
