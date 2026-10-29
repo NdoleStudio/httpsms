@@ -132,30 +132,10 @@ func TestSamplingSpanProcessorSlowDatabaseSpans(t *testing.T) {
 	}
 }
 
-func TestSamplingSpanProcessorWarningEvent(t *testing.T) {
-	test := newSamplingTestSpan(t, false)
-	test.span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", "warn")))
-	test.finish(t, "test")
-}
-
-func TestSamplingSpanProcessorUppercaseSeverity(t *testing.T) {
-	for _, severity := range []string{"WARN", "WARNING", "ERROR", "FATAL"} {
-		t.Run(severity, func(t *testing.T) {
-			test := newSamplingTestSpan(t, false)
-			test.span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", severity)))
-			test.finish(t, "test")
-		})
-	}
-}
-
 func TestSamplingSpanProcessorTruncatedTelemetry(t *testing.T) {
 	scenarios := map[string]func(*samplingTestSpan){
 		"evicted exception": func(test *samplingTestSpan) {
 			test.span.RecordError(errors.New("failed"))
-			test.fillEvents()
-		},
-		"evicted warning event": func(test *samplingTestSpan) {
-			test.span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", "warn")))
 			test.fillEvents()
 		},
 		"warning after event limit": func(test *samplingTestSpan) {
@@ -167,9 +147,9 @@ func TestSamplingSpanProcessorTruncatedTelemetry(t *testing.T) {
 			test.logger.Warn(errors.New("warning"))
 			test.fillEvents()
 		},
-		"dropped warning attribute": func(test *samplingTestSpan) {
+		"dropped retention flag": func(test *samplingTestSpan) {
 			test.fillAttributes()
-			test.span.SetAttributes(attribute.String("log.severity", "warn"))
+			test.span.SetAttributes(attribute.Bool("httpsms.must_sample", true))
 		},
 	}
 	for name, record := range scenarios {
@@ -187,8 +167,7 @@ func TestSamplingSpanProcessorTruncatedEventAttributes(t *testing.T) {
 	for index := range 200 {
 		attributes = append(attributes, attribute.Int(fmt.Sprintf("attribute.%d", index), index))
 	}
-	attributes = append(attributes, attribute.String("log.severity", "warn"))
-	test.span.AddEvent("log", trace.WithAttributes(attributes...))
+	test.span.AddEvent("event", trace.WithAttributes(attributes...))
 	test.finish(t, "test")
 }
 

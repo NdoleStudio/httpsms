@@ -10,21 +10,19 @@ import (
 )
 
 type zerologLogger struct {
-	zerolog     *zerodriver.Logger
-	spanContext *trace.SpanContext
-	fields      map[string]string
-	projectID   string
-	level       zerolog.Level
-	callerSkip  int
+	zerolog   *zerodriver.Logger
+	span      trace.Span
+	fields    map[string]string
+	projectID string
 }
 
 // NewZerologLogger creates a new instance of the zerolog logger
-func NewZerologLogger(projectID string, fields map[string]string, driver *zerodriver.Logger, span *trace.SpanContext) Logger {
+func NewZerologLogger(projectID string, fields map[string]string, driver *zerodriver.Logger, span trace.Span) Logger {
 	logger := &zerologLogger{
-		zerolog:     driver,
-		fields:      fields,
-		projectID:   projectID,
-		spanContext: span,
+		zerolog:   driver,
+		fields:    fields,
+		projectID: projectID,
+		span:      span,
 	}
 
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
@@ -33,12 +31,7 @@ func NewZerologLogger(projectID string, fields map[string]string, driver *zerodr
 
 // WithService creates a new structured zerolog logger instance with a service name
 func (logger *zerologLogger) WithService(service string) Logger {
-	return NewZerologLogger(
-		logger.projectID,
-		logger.addField(string(semconv.ServiceNamespaceKey), service),
-		logger.zerolog,
-		logger.spanContext,
-	)
+	return logger.WithString(string(semconv.ServiceNamespaceKey), service)
 }
 
 func (logger *zerologLogger) Printf(s string, i ...interface{}) {
@@ -51,7 +44,7 @@ func (logger *zerologLogger) WithString(key string, value string) Logger {
 		logger.projectID,
 		logger.addField(key, value),
 		logger.zerolog,
-		logger.spanContext,
+		logger.span,
 	)
 }
 
@@ -67,6 +60,7 @@ func (logger *zerologLogger) Trace(value string) {
 
 // Warn logs a new message with warning level.
 func (logger *zerologLogger) Warn(err error) {
+	logger.markSpanForSampling()
 	logger.decorateEvent(logger.zerolog.Warn()).Err(err).Send()
 }
 
@@ -77,30 +71,32 @@ func (logger *zerologLogger) Debug(value string) {
 
 // Fatal logs a new message with fatal level.
 func (logger *zerologLogger) Fatal(err error) {
+	logger.markSpanForSampling()
 	logger.decorateEvent(logger.zerolog.Fatal()).Err(err).Send()
 }
 
 // Error logs an error
 func (logger *zerologLogger) Error(err error) {
+	logger.markSpanForSampling()
 	logger.decorateEvent(logger.zerolog.Error()).Err(err).Send()
 }
 
-// WithSpan adds a spanContext to a logger
-func (logger *zerologLogger) WithSpan(spanContext trace.SpanContext) Logger {
+// WithSpan adds a span to a logger.
+func (logger *zerologLogger) WithSpan(span trace.Span) Logger {
 	return NewZerologLogger(
 		logger.projectID,
 		logger.fields,
 		logger.zerolog,
-		&spanContext,
+		span,
 	)
 }
 
 func (logger *zerologLogger) decorateEvent(event *zerodriver.Event) *zerolog.Event {
-	event.CallerSkipFrame(logger.callerSkip)
-	if logger.spanContext != nil {
-		event.Str("trace_id", logger.spanContext.TraceID().String())
-		event.Str("span_id", logger.spanContext.SpanID().String())
-		event.Bool("trace_sampled", logger.spanContext.IsSampled())
+	if logger.span != nil {
+		spanContext := logger.span.SpanContext()
+		event.Str("trace_id", spanContext.TraceID().String())
+		event.Str("span_id", spanContext.SpanID().String())
+		event.Bool("trace_sampled", spanContext.IsSampled())
 	}
 	for key, value := range logger.fields {
 		event.Str(key, value)
@@ -108,10 +104,10 @@ func (logger *zerologLogger) decorateEvent(event *zerodriver.Event) *zerolog.Eve
 	return event.Event
 }
 
-func (logger *zerologLogger) withCallerSkipFrame(skip int) Logger {
-	clone := *logger
-	clone.callerSkip += skip
-	return &clone
+func (logger *zerologLogger) markSpanForSampling() {
+	if logger.span != nil {
+		logger.span.SetAttributes(mustSampleAttribute.Bool(true))
+	}
 }
 
 func (logger *zerologLogger) addField(key string, value string) map[string]string {

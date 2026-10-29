@@ -61,13 +61,13 @@ func (logger *messageThreadContactLogger) WithService(string) telemetry.Logger {
 
 func (logger *messageThreadContactLogger) WithString(string, string) telemetry.Logger { return logger }
 
-func (logger *messageThreadContactLogger) WithSpan(trace.SpanContext) telemetry.Logger { return logger }
-func (logger *messageThreadContactLogger) Trace(string)                                {}
-func (logger *messageThreadContactLogger) Info(string)                                 {}
-func (logger *messageThreadContactLogger) Warn(error)                                  {}
-func (logger *messageThreadContactLogger) Debug(string)                                {}
-func (logger *messageThreadContactLogger) Fatal(error)                                 {}
-func (logger *messageThreadContactLogger) Printf(string, ...interface{})               {}
+func (logger *messageThreadContactLogger) WithSpan(trace.Span) telemetry.Logger { return logger }
+func (logger *messageThreadContactLogger) Trace(string)                         {}
+func (logger *messageThreadContactLogger) Info(string)                          {}
+func (logger *messageThreadContactLogger) Warn(error)                           {}
+func (logger *messageThreadContactLogger) Debug(string)                         {}
+func (logger *messageThreadContactLogger) Fatal(error)                          {}
+func (logger *messageThreadContactLogger) Printf(string, ...interface{})        {}
 
 func newMessageThreadContactServiceForTest(repository repositories.MessageThreadRepository, provider contactMapProvider, logger telemetry.Logger) *MessageThreadService {
 	if logger == nil {

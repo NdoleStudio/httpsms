@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -42,7 +41,7 @@ func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
 	return span.DroppedEvents() > 0 ||
 		span.DroppedAttributes() > 0 ||
 		span.Status().Code == codes.Error ||
-		hasRetentionAttributes(span.Attributes()) ||
+		hasRetentionFlag(span.Attributes()) ||
 		hasExceptionalEvents(span.Events()) ||
 		isSlowDatabaseSpan(span)
 }
@@ -64,32 +63,18 @@ func isSlowDatabaseSpan(span sdktrace.ReadOnlySpan) bool {
 
 func hasExceptionalEvents(events []sdktrace.Event) bool {
 	for _, event := range events {
-		if event.Name == "exception" || event.DroppedAttributeCount > 0 || hasRetentionAttributes(event.Attributes) {
+		if event.Name == "exception" || event.DroppedAttributeCount > 0 {
 			return true
 		}
 	}
 	return false
 }
 
-func hasRetentionAttributes(attributes []attribute.KeyValue) bool {
+func hasRetentionFlag(attributes []attribute.KeyValue) bool {
 	for _, value := range attributes {
-		if isRetentionAttribute(value) {
+		if value.Key == mustSampleAttribute && value.Value.AsBool() {
 			return true
 		}
-	}
-	return false
-}
-
-func isRetentionAttribute(value attribute.KeyValue) bool {
-	if value.Key == mustSampleAttribute {
-		return value.Value.AsBool()
-	}
-	if value.Key != "log.severity" {
-		return false
-	}
-	switch strings.ToLower(value.Value.AsString()) {
-	case "warn", "warning", "error", "fatal":
-		return true
 	}
 	return false
 }

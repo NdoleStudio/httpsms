@@ -34,7 +34,7 @@ func (tracer *otelTracer) StartFromFiberCtx(c fiber.Ctx, name ...string) (contex
 }
 
 func (tracer *otelTracer) CtxLogger(logger Logger, span trace.Span) Logger {
-	return &spanLogger{Logger: logger.WithSpan(span.SpanContext()), span: span}
+	return logger.WithSpan(span)
 }
 
 func (tracer *otelTracer) StartWithLogger(c context.Context, logger Logger, name ...string) (context.Context, trace.Span, Logger) {
