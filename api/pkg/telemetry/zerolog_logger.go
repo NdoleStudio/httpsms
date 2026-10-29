@@ -15,6 +15,7 @@ type zerologLogger struct {
 	fields      map[string]string
 	projectID   string
 	level       zerolog.Level
+	callerSkip  int
 }
 
 // NewZerologLogger creates a new instance of the zerolog logger
@@ -95,6 +96,7 @@ func (logger *zerologLogger) WithSpan(spanContext trace.SpanContext) Logger {
 }
 
 func (logger *zerologLogger) decorateEvent(event *zerodriver.Event) *zerolog.Event {
+	event.CallerSkipFrame(logger.callerSkip)
 	if logger.spanContext != nil {
 		event.Str("trace_id", logger.spanContext.TraceID().String())
 		event.Str("span_id", logger.spanContext.SpanID().String())
@@ -104,6 +106,12 @@ func (logger *zerologLogger) decorateEvent(event *zerodriver.Event) *zerolog.Eve
 		event.Str(key, value)
 	}
 	return event.Event
+}
+
+func (logger *zerologLogger) withCallerSkipFrame(skip int) Logger {
+	clone := *logger
+	clone.callerSkip += skip
+	return &clone
 }
 
 func (logger *zerologLogger) addField(key string, value string) map[string]string {

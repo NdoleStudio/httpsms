@@ -12,6 +12,7 @@ type samplingSpanProcessor struct {
 }
 
 // NewSamplingSpanProcessor exports warning/error spans and 50% of other spans.
+// Spans with dropped telemetry are retained because their severity may be lost.
 // The provider must record all spans so the decision can be made after they end.
 func NewSamplingSpanProcessor(exporter sdktrace.SpanExporter) sdktrace.SpanProcessor {
 	return &samplingSpanProcessor{
@@ -23,12 +24,16 @@ func NewSamplingSpanProcessor(exporter sdktrace.SpanExporter) sdktrace.SpanProce
 func (processor *samplingSpanProcessor) OnEnd(span sdktrace.ReadOnlySpan) {
 	if processor.sampler.ShouldSample(sdktrace.SamplingParameters{
 		TraceID: span.SpanContext().TraceID(),
-	}).Decision == sdktrace.RecordAndSample || isWarningOrErrorSpan(span) {
+	}).Decision == sdktrace.RecordAndSample || shouldRetainSpan(span) {
 		processor.SpanProcessor.OnEnd(span)
 	}
 }
 
-func isWarningOrErrorSpan(span sdktrace.ReadOnlySpan) bool {
+func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
+	// Drop counters survive buffer limits, unlike severity attributes and events.
+	if span.DroppedEvents() > 0 || span.DroppedAttributes() > 0 {
+		return true
+	}
 	if span.Status().Code == codes.Error || hasWarningOrErrorSeverity(span.Attributes()) {
 		return true
 	}

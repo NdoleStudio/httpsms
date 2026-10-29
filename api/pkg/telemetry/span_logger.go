@@ -20,17 +20,24 @@ func (logger *spanLogger) WithString(key string, value string) Logger {
 
 func (logger *spanLogger) Warn(err error) {
 	logger.recordLog("warn", err)
-	logger.Logger.Warn(err)
+	logger.callerLogger().Warn(err)
 }
 
 func (logger *spanLogger) Error(err error) {
 	logger.recordLog("error", err)
-	logger.Logger.Error(err)
+	logger.callerLogger().Error(err)
 }
 
 func (logger *spanLogger) Fatal(err error) {
 	logger.recordLog("fatal", err)
-	logger.Logger.Fatal(err)
+	logger.callerLogger().Fatal(err)
+}
+
+func (logger *spanLogger) callerLogger() Logger {
+	if callerLogger, ok := logger.Logger.(interface{ withCallerSkipFrame(int) Logger }); ok {
+		return callerLogger.withCallerSkipFrame(1)
+	}
+	return logger.Logger
 }
 
 func (logger *spanLogger) recordLog(severity string, err error) {
