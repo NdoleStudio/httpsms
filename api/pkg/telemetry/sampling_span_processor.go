@@ -2,21 +2,25 @@ package telemetry
 
 import (
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-const mustSampleAttribute attribute.Key = "httpsms.must_sample"
+const (
+	mustSampleAttribute       attribute.Key = "httpsms.must_sample"
+	slowDatabaseSpanThreshold               = 200 * time.Millisecond
+)
 
 type samplingSpanProcessor struct {
 	sdktrace.SpanProcessor
 	sampler sdktrace.Sampler
 }
 
-// NewSamplingSpanProcessor exports warning/error spans and 50% of other spans.
-// Spans with dropped telemetry are retained because their severity may be lost.
+// NewSamplingSpanProcessor exports warning/error spans, database spans over 200ms,
+// and 50% of other spans. Truncated spans are retained conservatively.
 // The provider must record all spans so the decision can be made after they end.
 func NewSamplingSpanProcessor(exporter sdktrace.SpanExporter) sdktrace.SpanProcessor {
 	return &samplingSpanProcessor{
@@ -39,7 +43,23 @@ func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
 		span.DroppedAttributes() > 0 ||
 		span.Status().Code == codes.Error ||
 		hasRetentionAttributes(span.Attributes()) ||
-		hasExceptionalEvents(span.Events())
+		hasExceptionalEvents(span.Events()) ||
+		isSlowDatabaseSpan(span)
+}
+
+func isSlowDatabaseSpan(span sdktrace.ReadOnlySpan) bool {
+	if span.EndTime().Sub(span.StartTime()) <= slowDatabaseSpanThreshold {
+		return false
+	}
+	for _, value := range span.Attributes() {
+		switch value.Key {
+		case "db.system.name", "db.system":
+			if value.Value.AsString() != "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func hasExceptionalEvents(events []sdktrace.Event) bool {

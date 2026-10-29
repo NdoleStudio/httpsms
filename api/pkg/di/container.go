@@ -262,15 +262,6 @@ func (container *Container) DedicatedDB() (db *gorm.DB) {
 
 	config := &gorm.Config{
 		TranslateError: true,
-		Logger: telemetry.NewGormSpanLogger(
-			container.Tracer(),
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
-			gormLogger.Config{
-				SlowThreshold: 200 * time.Millisecond,
-				LogLevel:      gormLogger.Warn,
-				Colorful:      true,
-			},
-		),
 	}
 	if isLocal() {
 		config = &gorm.Config{Logger: container.GormLogger()}

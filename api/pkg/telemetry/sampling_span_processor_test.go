@@ -15,7 +15,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
-	gormlogger "gorm.io/gorm/logger"
 )
 
 func TestSamplingSpanProcessor(t *testing.T) {
@@ -100,16 +99,37 @@ func TestSamplingSpanProcessorGormLogs(t *testing.T) {
 		}, errors.New("failed"))
 		test.finish(t, "test")
 	})
-	t.Run("slow query warning", func(t *testing.T) {
+	t.Run("successful query does not promote span", func(t *testing.T) {
 		test := newSamplingTestSpan(t, false)
-		NewGormLoggerWithConfig(test.tracer, test.logger, gormlogger.Config{
-			SlowThreshold: 200 * time.Millisecond,
-			LogLevel:      gormlogger.Warn,
-		}).Trace(test.ctx, time.Now().Add(-time.Second), func() (string, int64) {
+		NewGormLogger(test.tracer, test.logger).Trace(test.ctx, time.Now(), func() (string, int64) {
 			return "SELECT 1", 1
 		}, nil)
-		test.finish(t, "test")
+		test.finish(t)
 	})
+}
+
+func TestSamplingSpanProcessorSlowDatabaseSpans(t *testing.T) {
+	tests := []struct {
+		name      string
+		systemKey attribute.Key
+		duration  time.Duration
+		want      []string
+	}{
+		{name: "slow database", systemKey: "db.system.name", duration: 201 * time.Millisecond, want: []string{"test"}},
+		{name: "legacy database attribute", systemKey: "db.system", duration: time.Second, want: []string{"test"}},
+		{name: "at threshold", systemKey: "db.system.name", duration: 200 * time.Millisecond},
+		{name: "fast database", systemKey: "db.system.name", duration: time.Millisecond},
+		{name: "slow non-database", systemKey: "service.name", duration: time.Second},
+	}
+	for _, spec := range tests {
+		t.Run(spec.name, func(t *testing.T) {
+			start := time.Now()
+			test := newSamplingTestSpan(t, false, trace.WithTimestamp(start))
+			test.span.SetAttributes(spec.systemKey.String("postgresql"))
+			test.span.End(trace.WithTimestamp(start.Add(spec.duration)))
+			test.finish(t, spec.want...)
+		})
+	}
 }
 
 func TestSamplingSpanProcessorWarningEvent(t *testing.T) {
@@ -181,7 +201,7 @@ type samplingTestSpan struct {
 	exporter *tracetest.InMemoryExporter
 }
 
-func newSamplingTestSpan(t *testing.T, sampled bool) *samplingTestSpan {
+func newSamplingTestSpan(t *testing.T, sampled bool, options ...trace.SpanStartOption) *samplingTestSpan {
 	t.Helper()
 	exporter := tracetest.NewInMemoryExporter()
 	provider := sdktrace.NewTracerProvider(
@@ -201,7 +221,7 @@ func newSamplingTestSpan(t *testing.T, sampled bool) *samplingTestSpan {
 		TraceID: traceID,
 		SpanID:  trace.SpanID{7: 1},
 	}))
-	ctx, span := provider.Tracer("test").Start(ctx, "test")
+	ctx, span := provider.Tracer("test").Start(ctx, "test", options...)
 	driver := zerolog.Nop()
 	logger := NewZerologLogger("", nil, &zerodriver.Logger{Logger: &driver}, nil)
 	tracer := NewOtelLogger("", logger)
