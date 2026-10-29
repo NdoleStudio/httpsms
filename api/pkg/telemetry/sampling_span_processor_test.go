@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -20,199 +19,215 @@ import (
 )
 
 func TestSamplingSpanProcessor(t *testing.T) {
-	tests := []struct {
-		name     string
-		sampled  bool
-		record   func(context.Context, trace.Span, Logger, Tracer)
-		exported bool
-	}{
-		{name: "sampled trace", sampled: true, exported: true},
-		{name: "unsampled trace"},
-		{
-			name: "error status",
-			record: func(_ context.Context, span trace.Span, _ Logger, _ Tracer) {
-				span.SetStatus(codes.Error, "failed")
-			},
-			exported: true,
+	t.Run("sampled trace", func(t *testing.T) {
+		test := newSamplingTestSpan(t, true)
+		test.finish(t, "test", "sibling")
+	})
+	t.Run("unsampled trace", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		test.finish(t)
+	})
+	t.Run("info log does not promote span", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		test.logger.Info("info")
+		test.finish(t)
+	})
+}
+
+func TestSamplingSpanProcessorErrors(t *testing.T) {
+	t.Run("error status", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		test.span.SetStatus(codes.Error, "failed")
+		test.finish(t, "test")
+	})
+	t.Run("exception without error status", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		test.span.RecordError(errors.New("failed"))
+		test.finish(t, "test")
+	})
+}
+
+func TestSamplingSpanProcessorLogs(t *testing.T) {
+	logs := map[string]func(Logger){
+		"warning": func(logger Logger) {
+			logger.Warn(errors.New("warning"))
 		},
-		{
-			name: "exception without error status",
-			record: func(_ context.Context, span trace.Span, _ Logger, _ Tracer) {
-				span.RecordError(errors.New("failed"))
-			},
-			exported: true,
+		"decorated warning": func(logger Logger) {
+			logger.WithString("key", "value").WithService("test").Warn(errors.New("warning"))
 		},
-		{
-			name: "evicted exception",
-			record: func(_ context.Context, span trace.Span, _ Logger, _ Tracer) {
-				span.RecordError(errors.New("failed"))
-				for range 200 {
-					span.AddEvent("info")
-				}
-			},
-			exported: true,
+		"error": func(logger Logger) {
+			logger.Error(errors.New("failed"))
 		},
-		{
-			name: "warning log",
-			record: func(_ context.Context, _ trace.Span, logger Logger, _ Tracer) {
-				logger.Warn(errors.New("warning"))
-			},
-			exported: true,
-		},
-		{
-			name: "decorated warning log",
-			record: func(_ context.Context, _ trace.Span, logger Logger, _ Tracer) {
-				logger.WithString("key", "value").WithService("test").Warn(errors.New("warning"))
-			},
-			exported: true,
-		},
-		{
-			name: "error log",
-			record: func(_ context.Context, _ trace.Span, logger Logger, _ Tracer) {
-				logger.Error(errors.New("failed"))
-			},
-			exported: true,
-		},
-		{
-			name: "warning after event limit",
-			record: func(_ context.Context, span trace.Span, logger Logger, _ Tracer) {
-				logger.Warn(errors.New("warning"))
-				for range 200 {
-					span.AddEvent("info")
-				}
-			},
-			exported: true,
-		},
-		{
-			name: "warning after attribute exhaustion and event eviction",
-			record: func(_ context.Context, span trace.Span, logger Logger, _ Tracer) {
-				for index := range 200 {
-					span.SetAttributes(attribute.Int(fmt.Sprintf("attribute.%d", index), index))
-				}
-				logger.Warn(errors.New("warning"))
-				for range 200 {
-					span.AddEvent("info")
-				}
-			},
-			exported: true,
-		},
-		{
-			name: "nil warning",
-			record: func(_ context.Context, _ trace.Span, logger Logger, _ Tracer) {
-				logger.Warn(nil)
-			},
-			exported: true,
-		},
-		{
-			name: "gorm warning",
-			record: func(ctx context.Context, _ trace.Span, logger Logger, tracer Tracer) {
-				NewGormLogger(tracer, logger).Warn(ctx, "warning %s", "message")
-			},
-			exported: true,
-		},
-		{
-			name: "gorm query error",
-			record: func(ctx context.Context, _ trace.Span, logger Logger, tracer Tracer) {
-				NewGormLogger(tracer, logger).Trace(ctx, time.Now(), func() (string, int64) {
-					return "SELECT 1", 0
-				}, errors.New("failed"))
-			},
-			exported: true,
-		},
-		{
-			name: "gorm slow query warning",
-			record: func(ctx context.Context, _ trace.Span, logger Logger, tracer Tracer) {
-				NewGormLoggerWithConfig(tracer, logger, gormlogger.Config{
-					SlowThreshold: 200 * time.Millisecond,
-					LogLevel:      gormlogger.Warn,
-				}).Trace(ctx, time.Now().Add(-time.Second), func() (string, int64) {
-					return "SELECT 1", 1
-				}, nil)
-			},
-			exported: true,
-		},
-		{
-			name: "info log",
-			record: func(_ context.Context, _ trace.Span, logger Logger, _ Tracer) {
-				logger.Info("info")
-			},
-		},
-		{
-			name: "warning event",
-			record: func(_ context.Context, span trace.Span, _ Logger, _ Tracer) {
-				span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", "warn")))
-			},
-			exported: true,
-		},
-		{
-			name: "evicted warning event",
-			record: func(_ context.Context, span trace.Span, _ Logger, _ Tracer) {
-				span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", "warn")))
-				for range 200 {
-					span.AddEvent("info")
-				}
-			},
-			exported: true,
-		},
-		{
-			name: "dropped warning attribute",
-			record: func(_ context.Context, span trace.Span, _ Logger, _ Tracer) {
-				for index := range 200 {
-					span.SetAttributes(attribute.Int(fmt.Sprintf("attribute.%d", index), index))
-				}
-				span.SetAttributes(attribute.String("log.severity", "warn"))
-			},
-			exported: true,
+		"nil warning": func(logger Logger) {
+			logger.Warn(nil)
 		},
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			exporter := tracetest.NewInMemoryExporter()
-			provider := sdktrace.NewTracerProvider(
-				sdktrace.WithSampler(sdktrace.AlwaysSample()),
-				sdktrace.WithSpanProcessor(NewSamplingSpanProcessor(exporter)),
-			)
-			t.Cleanup(func() {
-				require.NoError(t, provider.Shutdown(context.Background()))
-			})
-
-			// Ratio sampling uses the lower half of the trace ID.
-			traceID := trace.TraceID{8: 0xff, 15: 1}
-			if test.sampled {
-				traceID[8] = 0
-			}
-			ctx := trace.ContextWithRemoteSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
-				TraceID: traceID,
-				SpanID:  trace.SpanID{7: 1},
-			}))
-			ctx, span := provider.Tracer("test").Start(ctx, "test")
-			var output bytes.Buffer
-			driver := zerolog.New(&output)
-			logger := NewZerologLogger("", nil, &zerodriver.Logger{Logger: &driver}, nil)
-			tracer := NewOtelLogger("", logger)
-			if test.record != nil {
-				test.record(ctx, span, tracer.CtxLogger(logger, span), tracer)
-			}
-			span.End()
-
-			// Normal siblings share the same 50% decision, but are not promoted by errors.
-			_, sibling := provider.Tracer("test").Start(ctx, "sibling")
-			sibling.End()
-			require.NoError(t, provider.ForceFlush(context.Background()))
-
-			want := 0
-			if test.exported {
-				want++
-			}
-			if test.sampled {
-				want++
-			}
-			spans := exporter.GetSpans()
-			require.Len(t, spans, want)
-			if test.exported {
-				require.Equal(t, "test", spans[0].Name)
-			}
+	for name, log := range logs {
+		t.Run(name, func(t *testing.T) {
+			test := newSamplingTestSpan(t, false)
+			log(test.logger)
+			test.finish(t, "test")
+			exported := test.exporter.GetSpans()[0]
+			require.Contains(t, exported.Attributes, attribute.Bool("httpsms.must_sample", true))
+			require.Empty(t, exported.Events)
 		})
+	}
+}
+
+func TestSamplingSpanProcessorMustSample(t *testing.T) {
+	t.Run("true retains span", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		test.span.SetAttributes(attribute.Bool("httpsms.must_sample", true))
+		test.finish(t, "test")
+	})
+	t.Run("false does not retain span", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		test.span.SetAttributes(attribute.Bool("httpsms.must_sample", false))
+		test.finish(t)
+	})
+}
+
+func TestSamplingSpanProcessorGormLogs(t *testing.T) {
+	t.Run("warning", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		NewGormLogger(test.tracer, test.logger).Warn(test.ctx, "warning %s", "message")
+		test.finish(t, "test")
+	})
+	t.Run("query error", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		NewGormLogger(test.tracer, test.logger).Trace(test.ctx, time.Now(), func() (string, int64) {
+			return "SELECT 1", 0
+		}, errors.New("failed"))
+		test.finish(t, "test")
+	})
+	t.Run("slow query warning", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		NewGormLoggerWithConfig(test.tracer, test.logger, gormlogger.Config{
+			SlowThreshold: 200 * time.Millisecond,
+			LogLevel:      gormlogger.Warn,
+		}).Trace(test.ctx, time.Now().Add(-time.Second), func() (string, int64) {
+			return "SELECT 1", 1
+		}, nil)
+		test.finish(t, "test")
+	})
+}
+
+func TestSamplingSpanProcessorWarningEvent(t *testing.T) {
+	test := newSamplingTestSpan(t, false)
+	test.span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", "warn")))
+	test.finish(t, "test")
+}
+
+func TestSamplingSpanProcessorTruncatedTelemetry(t *testing.T) {
+	scenarios := map[string]func(*samplingTestSpan){
+		"evicted exception": func(test *samplingTestSpan) {
+			test.span.RecordError(errors.New("failed"))
+			test.fillEvents()
+		},
+		"evicted warning event": func(test *samplingTestSpan) {
+			test.span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", "warn")))
+			test.fillEvents()
+		},
+		"warning after event limit": func(test *samplingTestSpan) {
+			test.logger.Warn(errors.New("warning"))
+			test.fillEvents()
+		},
+		"warning after attribute exhaustion and event eviction": func(test *samplingTestSpan) {
+			test.fillAttributes()
+			test.logger.Warn(errors.New("warning"))
+			test.fillEvents()
+		},
+		"dropped warning attribute": func(test *samplingTestSpan) {
+			test.fillAttributes()
+			test.span.SetAttributes(attribute.String("log.severity", "warn"))
+		},
+	}
+	for name, record := range scenarios {
+		t.Run(name, func(t *testing.T) {
+			test := newSamplingTestSpan(t, false)
+			record(test)
+			test.finish(t, "test")
+		})
+	}
+}
+
+func TestSamplingSpanProcessorTruncatedEventAttributes(t *testing.T) {
+	test := newSamplingTestSpan(t, false)
+	var attributes []attribute.KeyValue
+	for index := range 200 {
+		attributes = append(attributes, attribute.Int(fmt.Sprintf("attribute.%d", index), index))
+	}
+	attributes = append(attributes, attribute.String("log.severity", "warn"))
+	test.span.AddEvent("log", trace.WithAttributes(attributes...))
+	test.finish(t, "test")
+}
+
+type samplingTestSpan struct {
+	ctx      context.Context
+	span     trace.Span
+	logger   Logger
+	tracer   Tracer
+	provider *sdktrace.TracerProvider
+	exporter *tracetest.InMemoryExporter
+}
+
+func newSamplingTestSpan(t *testing.T, sampled bool) *samplingTestSpan {
+	t.Helper()
+	exporter := tracetest.NewInMemoryExporter()
+	provider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(NewSamplingSpanProcessor(exporter)),
+	)
+	t.Cleanup(func() {
+		require.NoError(t, provider.Shutdown(context.Background()))
+	})
+
+	// Ratio sampling uses the lower half of the trace ID.
+	traceID := trace.TraceID{8: 0xff, 15: 1}
+	if sampled {
+		traceID[8] = 0
+	}
+	ctx := trace.ContextWithRemoteSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: traceID,
+		SpanID:  trace.SpanID{7: 1},
+	}))
+	ctx, span := provider.Tracer("test").Start(ctx, "test")
+	driver := zerolog.Nop()
+	logger := NewZerologLogger("", nil, &zerodriver.Logger{Logger: &driver}, nil)
+	tracer := NewOtelLogger("", logger)
+	return &samplingTestSpan{
+		ctx:      ctx,
+		span:     span,
+		logger:   tracer.CtxLogger(logger, span),
+		tracer:   tracer,
+		provider: provider,
+		exporter: exporter,
+	}
+}
+
+func (test *samplingTestSpan) finish(t *testing.T, want ...string) {
+	t.Helper()
+	test.span.End()
+	// Normal siblings share the same 50% decision, but are not promoted by errors.
+	_, sibling := test.provider.Tracer("test").Start(test.ctx, "sibling")
+	sibling.End()
+	require.NoError(t, test.provider.ForceFlush(context.Background()))
+
+	var names []string
+	for _, span := range test.exporter.GetSpans() {
+		names = append(names, span.Name)
+	}
+	require.Equal(t, want, names)
+}
+
+func (test *samplingTestSpan) fillEvents() {
+	for range 200 {
+		test.span.AddEvent("info")
+	}
+}
+
+func (test *samplingTestSpan) fillAttributes() {
+	for index := range 200 {
+		test.span.SetAttributes(attribute.Int(fmt.Sprintf("attribute.%d", index), index))
 	}
 }

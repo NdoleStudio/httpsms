@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -19,17 +18,17 @@ func (logger *spanLogger) WithString(key string, value string) Logger {
 }
 
 func (logger *spanLogger) Warn(err error) {
-	logger.recordLog("warn", err)
+	logger.span.SetAttributes(mustSampleAttribute.Bool(true))
 	logger.callerLogger().Warn(err)
 }
 
 func (logger *spanLogger) Error(err error) {
-	logger.recordLog("error", err)
+	logger.span.SetAttributes(mustSampleAttribute.Bool(true))
 	logger.callerLogger().Error(err)
 }
 
 func (logger *spanLogger) Fatal(err error) {
-	logger.recordLog("fatal", err)
+	logger.span.SetAttributes(mustSampleAttribute.Bool(true))
 	logger.callerLogger().Fatal(err)
 }
 
@@ -38,13 +37,4 @@ func (logger *spanLogger) callerLogger() Logger {
 		return callerLogger.withCallerSkipFrame(1)
 	}
 	return logger.Logger
-}
-
-func (logger *spanLogger) recordLog(severity string, err error) {
-	attributes := []attribute.KeyValue{attribute.String("log.severity", severity)}
-	logger.span.SetAttributes(attributes...)
-	if err != nil {
-		attributes = append(attributes, attribute.String("log.message", err.Error()))
-	}
-	logger.span.AddEvent("log", trace.WithAttributes(attributes...))
 }

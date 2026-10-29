@@ -6,6 +6,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
+const mustSampleAttribute attribute.Key = "httpsms.must_sample"
+
 type samplingSpanProcessor struct {
 	sdktrace.SpanProcessor
 	sampler sdktrace.Sampler
@@ -31,28 +33,41 @@ func (processor *samplingSpanProcessor) OnEnd(span sdktrace.ReadOnlySpan) {
 
 func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
 	// Drop counters survive buffer limits, unlike severity attributes and events.
-	if span.DroppedEvents() > 0 || span.DroppedAttributes() > 0 {
-		return true
-	}
-	if span.Status().Code == codes.Error || hasWarningOrErrorSeverity(span.Attributes()) {
-		return true
-	}
-	for _, event := range span.Events() {
-		if event.Name == "exception" || hasWarningOrErrorSeverity(event.Attributes) {
+	return span.DroppedEvents() > 0 ||
+		span.DroppedAttributes() > 0 ||
+		span.Status().Code == codes.Error ||
+		hasRetentionAttributes(span.Attributes()) ||
+		hasExceptionalEvents(span.Events())
+}
+
+func hasExceptionalEvents(events []sdktrace.Event) bool {
+	for _, event := range events {
+		if event.Name == "exception" || event.DroppedAttributeCount > 0 || hasRetentionAttributes(event.Attributes) {
 			return true
 		}
 	}
 	return false
 }
 
-func hasWarningOrErrorSeverity(attributes []attribute.KeyValue) bool {
+func hasRetentionAttributes(attributes []attribute.KeyValue) bool {
 	for _, value := range attributes {
-		if value.Key == "log.severity" {
-			switch value.Value.AsString() {
-			case "warn", "warning", "error", "fatal":
-				return true
-			}
+		if isRetentionAttribute(value) {
+			return true
 		}
+	}
+	return false
+}
+
+func isRetentionAttribute(value attribute.KeyValue) bool {
+	if value.Key == mustSampleAttribute {
+		return value.Value.AsBool()
+	}
+	if value.Key != "log.severity" {
+		return false
+	}
+	switch value.Value.AsString() {
+	case "warn", "warning", "error", "fatal":
+		return true
 	}
 	return false
 }
