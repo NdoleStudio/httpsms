@@ -1925,7 +1925,7 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 	}
 
 	tp := trace.NewTracerProvider(
-		trace.WithBatcher(traceExporter),
+		trace.WithSpanProcessor(telemetry.NewSamplingSpanProcessor(traceExporter)),
 		trace.WithSampler(trace.AlwaysSample()),
 		trace.WithResource(container.OtelResources(version, namespace)),
 	)
@@ -1970,7 +1970,7 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 	}
 
 	tp := trace.NewTracerProvider(
-		trace.WithBatcher(traceExporter),
+		trace.WithSpanProcessor(telemetry.NewSamplingSpanProcessor(traceExporter)),
 		trace.WithSampler(trace.AlwaysSample()),
 		trace.WithResource(container.OtelResources(version, namespace)),
 	)
