@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"strings"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -65,7 +67,7 @@ func isRetentionAttribute(value attribute.KeyValue) bool {
 	if value.Key != "log.severity" {
 		return false
 	}
-	switch value.Value.AsString() {
+	switch strings.ToLower(value.Value.AsString()) {
 	case "warn", "warning", "error", "fatal":
 		return true
 	}

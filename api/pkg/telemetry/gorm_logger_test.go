@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	stdlog "log"
+	"runtime"
 	"testing"
 	"time"
 
@@ -128,8 +130,7 @@ func TestGormSpanLoggerDirectWarningsAndErrors(t *testing.T) {
 func newDelegatedGormLogger(test *samplingTestSpan) (gormlogger.Interface, *bytes.Buffer) {
 	output := &bytes.Buffer{}
 	config := gormlogger.Config{SlowThreshold: 200 * time.Millisecond, LogLevel: gormlogger.Warn}
-	delegate := gormlogger.New(stdlog.New(output, "", 0), config)
-	return NewGormSpanLogger(test.tracer, delegate, config), output
+	return NewGormSpanLogger(test.tracer, stdlog.New(output, "", 0), config), output
 }
 
 func assertDelegatedGormOutput(t *testing.T, output string, message string) {
@@ -140,4 +141,74 @@ func assertDelegatedGormOutput(t *testing.T, output string, message string) {
 	}
 	require.Contains(t, output, message)
 	require.Contains(t, output, "SELECT 1")
+}
+
+func TestGormSpanLoggerPreservesCaller(t *testing.T) {
+	for _, severity := range []string{"warn", "error", "slow query", "query error"} {
+		t.Run(severity, func(t *testing.T) {
+			test := newSamplingTestSpan(t, false)
+			logger, output := newDelegatedGormLogger(test)
+			caller := emitGormLogAtCaller(logger, test.ctx, severity)
+			require.Contains(t, output.String(), caller)
+			test.finish(t, "test")
+		})
+	}
+}
+
+func emitGormLogAtCaller(logger gormlogger.Interface, ctx context.Context, severity string) string {
+	query := func() (string, int64) { return "SELECT 1", 1 }
+	switch severity {
+	case "warn":
+		_, file, line, _ := runtime.Caller(0)
+		logger.Warn(ctx, "warning")
+		return fmt.Sprintf("%s:%d", file, line+1)
+	case "error":
+		_, file, line, _ := runtime.Caller(0)
+		logger.Error(ctx, "error")
+		return fmt.Sprintf("%s:%d", file, line+1)
+	case "slow query":
+		_, file, line, _ := runtime.Caller(0)
+		logger.Trace(ctx, time.Now().Add(-time.Second), query, nil)
+		return fmt.Sprintf("%s:%d", file, line+1)
+	default:
+		_, file, line, _ := runtime.Caller(0)
+		logger.Trace(ctx, time.Now(), query, errors.New("query error"))
+		return fmt.Sprintf("%s:%d", file, line+1)
+	}
+}
+
+func TestGormLoggerParameterizedQueries(t *testing.T) {
+	for _, delegated := range []bool{false, true} {
+		for _, parameterized := range []bool{false, true} {
+			t.Run(fmt.Sprintf("delegated=%t/parameterized=%t", delegated, parameterized), func(t *testing.T) {
+				test := newSamplingTestSpan(t, false)
+				config := gormlogger.Config{ParameterizedQueries: parameterized, LogLevel: gormlogger.Warn}
+				logger := newParameterFilterLogger(test, config, delegated)
+				filter, ok := logger.(interface {
+					ParamsFilter(context.Context, string, ...interface{}) (string, []interface{})
+				})
+				require.True(t, ok)
+				sql, params := filter.ParamsFilter(test.ctx, "SELECT ?", "example-value")
+				require.Equal(t, "SELECT ?", sql)
+				assertGormQueryParams(t, params, parameterized)
+				test.finish(t)
+			})
+		}
+	}
+}
+
+func newParameterFilterLogger(test *samplingTestSpan, config gormlogger.Config, delegated bool) gormlogger.Interface {
+	if delegated {
+		return NewGormSpanLogger(test.tracer, stdlog.New(&bytes.Buffer{}, "", 0), config)
+	}
+	return NewGormLoggerWithConfig(test.tracer, test.logger, config)
+}
+
+func assertGormQueryParams(t *testing.T, params []interface{}, parameterized bool) {
+	t.Helper()
+	if parameterized {
+		require.Empty(t, params)
+		return
+	}
+	require.Equal(t, []interface{}{"example-value"}, params)
 }

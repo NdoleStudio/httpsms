@@ -118,6 +118,16 @@ func TestSamplingSpanProcessorWarningEvent(t *testing.T) {
 	test.finish(t, "test")
 }
 
+func TestSamplingSpanProcessorUppercaseSeverity(t *testing.T) {
+	for _, severity := range []string{"WARN", "WARNING", "ERROR", "FATAL"} {
+		t.Run(severity, func(t *testing.T) {
+			test := newSamplingTestSpan(t, false)
+			test.span.AddEvent("log", trace.WithAttributes(attribute.String("log.severity", severity)))
+			test.finish(t, "test")
+		})
+	}
+}
+
 func TestSamplingSpanProcessorTruncatedTelemetry(t *testing.T) {
 	scenarios := map[string]func(*samplingTestSpan){
 		"evicted exception": func(test *samplingTestSpan) {
