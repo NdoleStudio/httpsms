@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"testing"
@@ -19,6 +20,20 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 )
+
+func TestTraceSamplingSupportsUUIDTraceIDs(t *testing.T) {
+	sampled := 0
+	for index := range 1024 {
+		var traceID trace.TraceID
+		binary.BigEndian.PutUint64(traceID[8:], uint64(index))
+		traceID[6] = 0x40
+		traceID[8] |= 0x80
+		if isSampledTrace(traceID) {
+			sampled++
+		}
+	}
+	require.InDelta(t, 512, sampled, 64)
+}
 
 func TestSamplingSpanProcessor(t *testing.T) {
 	t.Run("sampled trace", func(t *testing.T) {
@@ -198,9 +213,9 @@ func TestMetricExemplarsOnlyReferenceSampledTraces(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, sampled := range []bool{false, true} {
-		traceID := trace.TraceID{8: 0xff, 15: 1}
+		traceID := trace.TraceID{6: 0x40, 8: 0x80, 15: 1}
 		if sampled {
-			traceID[8] = 0
+			traceID[15] = 2
 		}
 		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
 			TraceID:    traceID,
@@ -257,10 +272,10 @@ func newSamplingTestSpan(t *testing.T, sampled bool, options ...trace.SpanStartO
 		require.NoError(t, provider.Shutdown(context.Background()))
 	})
 
-	// Ratio sampling uses the lower half of the trace ID.
-	traceID := trace.TraceID{8: 0xff, 15: 1}
+	// Fixed UUID-shaped IDs exercise both outcomes of the stable hash decision.
+	traceID := trace.TraceID{6: 0x40, 8: 0x80, 15: 1}
 	if sampled {
-		traceID[8] = 0
+		traceID[15] = 2
 	}
 	ctx := trace.ContextWithRemoteSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID: traceID,

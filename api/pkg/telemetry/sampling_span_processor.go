@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"crypto/sha256"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -14,8 +15,6 @@ const (
 	mustSampleAttribute       attribute.Key = "httpsms.must_sample"
 	slowDatabaseSpanThreshold               = 200 * time.Millisecond
 )
-
-var exportSampler = sdktrace.TraceIDRatioBased(0.5)
 
 type samplingSpanProcessor struct {
 	sdktrace.SpanProcessor
@@ -43,7 +42,9 @@ func SampledTraceExemplarFilter(ctx context.Context) bool {
 }
 
 func isSampledTrace(traceID trace.TraceID) bool {
-	return exportSampler.ShouldSample(sdktrace.SamplingParameters{TraceID: traceID}).Decision == sdktrace.RecordAndSample
+	// UUID version/variant bits must not bias the trace-ID decision.
+	hash := sha256.Sum256(traceID[:])
+	return hash[0] < 128
 }
 
 func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
