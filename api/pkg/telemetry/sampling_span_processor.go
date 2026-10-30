@@ -1,11 +1,13 @@
 package telemetry
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -13,9 +15,10 @@ const (
 	slowDatabaseSpanThreshold               = 200 * time.Millisecond
 )
 
+var exportSampler = sdktrace.TraceIDRatioBased(0.5)
+
 type samplingSpanProcessor struct {
 	sdktrace.SpanProcessor
-	sampler sdktrace.Sampler
 }
 
 // NewSamplingSpanProcessor exports warning/error spans, database spans over 200ms,
@@ -24,16 +27,23 @@ type samplingSpanProcessor struct {
 func NewSamplingSpanProcessor(exporter sdktrace.SpanExporter) sdktrace.SpanProcessor {
 	return &samplingSpanProcessor{
 		SpanProcessor: sdktrace.NewBatchSpanProcessor(exporter),
-		sampler:       sdktrace.TraceIDRatioBased(0.5),
 	}
 }
 
 func (processor *samplingSpanProcessor) OnEnd(span sdktrace.ReadOnlySpan) {
-	if processor.sampler.ShouldSample(sdktrace.SamplingParameters{
-		TraceID: span.SpanContext().TraceID(),
-	}).Decision == sdktrace.RecordAndSample || shouldRetainSpan(span) {
+	if isSampledTrace(span.SpanContext().TraceID()) || shouldRetainSpan(span) {
 		processor.SpanProcessor.OnEnd(span)
 	}
+}
+
+// SampledTraceExemplarFilter links metrics only to the stable trace-ID sample.
+func SampledTraceExemplarFilter(ctx context.Context) bool {
+	spanContext := trace.SpanContextFromContext(ctx)
+	return spanContext.IsValid() && spanContext.IsSampled() && isSampledTrace(spanContext.TraceID())
+}
+
+func isSampledTrace(traceID trace.TraceID) bool {
+	return exportSampler.ShouldSample(sdktrace.SamplingParameters{TraceID: traceID}).Decision == sdktrace.RecordAndSample
 }
 
 func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
@@ -43,7 +53,20 @@ func shouldRetainSpan(span sdktrace.ReadOnlySpan) bool {
 		span.Status().Code == codes.Error ||
 		hasRetentionFlag(span.Attributes()) ||
 		hasExceptionalEvents(span.Events()) ||
+		hasTruncatedLinks(span) ||
 		isSlowDatabaseSpan(span)
+}
+
+func hasTruncatedLinks(span sdktrace.ReadOnlySpan) bool {
+	if span.DroppedLinks() > 0 {
+		return true
+	}
+	for _, link := range span.Links() {
+		if link.DroppedAttributeCount > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func isSlowDatabaseSpan(span sdktrace.ReadOnlySpan) bool {

@@ -1938,6 +1938,7 @@ func (container *Container) initializeGoogleTraceProvider(version string, namesp
 
 	meterProvider := metric.NewMeterProvider(
 		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithExemplarFilter(telemetry.SampledTraceExemplarFilter),
 		metric.WithResource(container.OtelResources(version, namespace)),
 	)
 	otel.SetMeterProvider(meterProvider)
@@ -1997,6 +1998,7 @@ func (container *Container) initializeAxiomTraceProvider(version string, namespa
 
 	meterProvider := metric.NewMeterProvider(
 		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithExemplarFilter(telemetry.SampledTraceExemplarFilter),
 		metric.WithResource(container.OtelResources(version, namespace)),
 	)
 	otel.SetMeterProvider(meterProvider)

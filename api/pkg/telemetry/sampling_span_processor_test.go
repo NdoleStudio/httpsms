@@ -12,6 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -158,6 +161,69 @@ func TestSamplingSpanProcessorTruncatedTelemetry(t *testing.T) {
 			record(test)
 			test.finish(t, "test")
 		})
+	}
+}
+
+func TestSamplingSpanProcessorTruncatedLinks(t *testing.T) {
+	link := trace.Link{SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: trace.TraceID{15: 2},
+		SpanID:  trace.SpanID{7: 2},
+	})}
+	t.Run("dropped links", func(t *testing.T) {
+		test := newSamplingTestSpan(t, false)
+		for range 200 {
+			test.span.AddLink(link)
+		}
+		test.finish(t, "test")
+	})
+	t.Run("dropped link attributes", func(t *testing.T) {
+		var attributes []attribute.KeyValue
+		for index := range 200 {
+			attributes = append(attributes, attribute.Int(fmt.Sprintf("attribute.%d", index), index))
+		}
+		link.Attributes = attributes
+		test := newSamplingTestSpan(t, false, trace.WithLinks(link))
+		test.finish(t, "test")
+	})
+}
+
+func TestMetricExemplarsOnlyReferenceSampledTraces(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(reader),
+		sdkmetric.WithExemplarFilter(SampledTraceExemplarFilter),
+	)
+	t.Cleanup(func() { require.NoError(t, provider.Shutdown(context.Background())) })
+	histogram, err := provider.Meter("test").Float64Histogram("duration")
+	require.NoError(t, err)
+
+	for _, sampled := range []bool{false, true} {
+		traceID := trace.TraceID{8: 0xff, 15: 1}
+		if sampled {
+			traceID[8] = 0
+		}
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    traceID,
+			SpanID:     trace.SpanID{7: 1},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		histogram.Record(ctx, 10, metric.WithAttributes(attribute.Bool("sampled", sampled)))
+	}
+
+	var result metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(context.Background(), &result))
+	data, ok := result.ScopeMetrics[0].Metrics[0].Data.(metricdata.Histogram[float64])
+	require.True(t, ok)
+	require.Len(t, data.DataPoints, 2)
+	for _, point := range data.DataPoints {
+		require.Equal(t, uint64(1), point.Count)
+		require.Equal(t, float64(10), point.Sum)
+		sampled, _ := point.Attributes.Value("sampled")
+		if sampled.AsBool() {
+			require.Len(t, point.Exemplars, 1)
+		} else {
+			require.Empty(t, point.Exemplars)
+		}
 	}
 }
 
