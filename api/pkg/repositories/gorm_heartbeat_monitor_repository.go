@@ -53,7 +53,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
-	err := repository.db.
+	err := repository.db.WithContext(ctx).
 		Model(&entities.HeartbeatMonitor{}).
 		Where("id = ?", monitorID).
 		Where("user_id = ?", userID).
@@ -75,7 +75,7 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
 	defer cancel()
 
-	err := repository.db.
+	err := repository.db.WithContext(ctx).
 		Model(&entities.HeartbeatMonitor{}).
 		Where("id = ?", monitorID).
 		Updates(map[string]any{

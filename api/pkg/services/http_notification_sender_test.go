@@ -418,6 +418,8 @@ type httpNotificationRecordingLogger struct {
 	errors []string
 }
 
+var _ telemetry.Logger = (*httpNotificationRecordingLogger)(nil)
+
 func (logger *httpNotificationRecordingLogger) Error(err error) {
 	logger.errors = append(logger.errors, err.Error())
 }
@@ -428,7 +430,7 @@ func (logger *httpNotificationRecordingLogger) WithString(string, string) teleme
 	return logger
 }
 
-func (logger *httpNotificationRecordingLogger) WithSpan(trace.SpanContext) telemetry.Logger {
+func (logger *httpNotificationRecordingLogger) WithSpan(trace.Span) telemetry.Logger {
 	return logger
 }
 

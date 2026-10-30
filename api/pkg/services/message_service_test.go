@@ -142,13 +142,13 @@ type noopLogger struct{}
 
 var _ telemetry.Logger = (*noopLogger)(nil)
 
-func (l *noopLogger) Error(_ error)                                 {}
-func (l *noopLogger) WithService(_ string) telemetry.Logger         { return l }
-func (l *noopLogger) WithString(_, _ string) telemetry.Logger       { return l }
-func (l *noopLogger) WithSpan(_ trace.SpanContext) telemetry.Logger { return l }
-func (l *noopLogger) Trace(_ string)                                {}
-func (l *noopLogger) Info(_ string)                                 {}
-func (l *noopLogger) Warn(_ error)                                  {}
-func (l *noopLogger) Debug(_ string)                                {}
-func (l *noopLogger) Fatal(_ error)                                 {}
-func (l *noopLogger) Printf(_ string, _ ...interface{})             {}
+func (l *noopLogger) Error(_ error)                           {}
+func (l *noopLogger) WithService(_ string) telemetry.Logger   { return l }
+func (l *noopLogger) WithString(_, _ string) telemetry.Logger { return l }
+func (l *noopLogger) WithSpan(_ trace.Span) telemetry.Logger  { return l }
+func (l *noopLogger) Trace(_ string)                          {}
+func (l *noopLogger) Info(_ string)                           {}
+func (l *noopLogger) Warn(_ error)                            {}
+func (l *noopLogger) Debug(_ string)                          {}
+func (l *noopLogger) Fatal(_ error)                           {}
+func (l *noopLogger) Printf(_ string, _ ...interface{})       {}

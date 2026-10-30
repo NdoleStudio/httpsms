@@ -12,16 +12,16 @@ import (
 
 type noopListenerLogger struct{}
 
-func (logger *noopListenerLogger) Error(error)                                 {}
-func (logger *noopListenerLogger) WithService(string) telemetry.Logger         { return logger }
-func (logger *noopListenerLogger) WithString(string, string) telemetry.Logger  { return logger }
-func (logger *noopListenerLogger) WithSpan(trace.SpanContext) telemetry.Logger { return logger }
-func (logger *noopListenerLogger) Trace(string)                                {}
-func (logger *noopListenerLogger) Info(string)                                 {}
-func (logger *noopListenerLogger) Warn(error)                                  {}
-func (logger *noopListenerLogger) Debug(string)                                {}
-func (logger *noopListenerLogger) Fatal(error)                                 {}
-func (logger *noopListenerLogger) Printf(string, ...interface{})               {}
+func (logger *noopListenerLogger) Error(error)                                {}
+func (logger *noopListenerLogger) WithService(string) telemetry.Logger        { return logger }
+func (logger *noopListenerLogger) WithString(string, string) telemetry.Logger { return logger }
+func (logger *noopListenerLogger) WithSpan(trace.Span) telemetry.Logger       { return logger }
+func (logger *noopListenerLogger) Trace(string)                               {}
+func (logger *noopListenerLogger) Info(string)                                {}
+func (logger *noopListenerLogger) Warn(error)                                 {}
+func (logger *noopListenerLogger) Debug(string)                               {}
+func (logger *noopListenerLogger) Fatal(error)                                {}
+func (logger *noopListenerLogger) Printf(string, ...interface{})              {}
 
 type listenerMessageThreadRepository struct {
 	activity repositories.MessageThreadActivityUpdate
