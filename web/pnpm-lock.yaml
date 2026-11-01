@@ -30,8 +30,8 @@ importers:
         specifier: ^12.13.0
         version: 12.17.1
       flag-icons:
-        specifier: ^7.5.0
-        version: 7.5.0
+        specifier: ^7.6.0
+        version: 7.6.0
       highlight.js:
         specifier: ^11.12.0
         version: 11.12.0
@@ -3463,8 +3463,8 @@ packages:
   firebase@12.17.1:
     resolution: {integrity: sha512-dhp41ye9jMQvhx5FwjMkf/hjDHJApl7gXmvzOZGvP0M7c/GZGUnQ4qvsvlOBkF0Pa7wAwHMdcpL0ON2pXCQ4Sw==}
 
-  flag-icons@7.5.0:
-    resolution: {integrity: sha512-kd+MNXviFIg5hijH766tt+3x76ele1AXlo4zDdCxIvqWZhKt4T83bOtxUOOMlTx/EcFdUMH5yvQgYlFh1EqqFg==}
+  flag-icons@7.6.0:
+    resolution: {integrity: sha512-hir/PsXwr0EESyizKrXJzmkzpLIMf+1vlNKLqAfvdh+bsU94a7LYWTiubkHKqptGoCPzOUGcm6c4PfC9/BaGSQ==}
 
   flat-cache@6.1.23:
     resolution: {integrity: sha512-f++BY9pTk+983xK1FLzlLpmM0i0z+jHmx3QESGkURMXujQZz1k5wzwX6hjnQ8goaD0B+sYnDK1yZ6MTyZfUaqA==}
@@ -9672,7 +9672,7 @@ snapshots:
     transitivePeerDependencies:
       - '@react-native-async-storage/async-storage'
 
-  flag-icons@7.5.0: {}
+  flag-icons@7.6.0: {}
 
   flat-cache@6.1.23:
     dependencies:
@@ -12117,7 +12117,7 @@ snapshots:
       countries-list: 3.4.1
       vue: 3.5.41(typescript@6.0.3)
     optionalDependencies:
-      flag-icons: 7.5.0
+      flag-icons: 7.6.0
       vuetify: 4.2.2(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
       world-flags-sprite: 0.0.2
     transitivePeerDependencies:
