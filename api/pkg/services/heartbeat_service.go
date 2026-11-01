@@ -124,7 +124,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return heartbeat, nil
 	}
 
-	if monitor.QueueID == "" || monitor.RequiresCheck() {
+	if monitor.RequiresCheck() {
 		if err = service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, &HeartbeatMonitorParams{
 			Owner:     monitor.Owner,
 			PhoneID:   monitor.PhoneID,
@@ -132,7 +132,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 			MonitorID: monitor.ID,
 			Source:    params.Source,
 		}); err != nil {
-			return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot restart heartbeat check for monitor [%s]", monitor.ID))
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot restart heartbeat check for monitor [%s]", monitor.ID)))
 		}
 	}
 

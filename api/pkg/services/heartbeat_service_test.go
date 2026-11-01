@@ -54,9 +54,13 @@ func (repository *heartbeatServiceMonitorRepository) UpdatePhoneOnline(_ context
 
 type heartbeatServiceQueue struct {
 	phoneNotificationEventQueue
+	err error
 }
 
 func (queue *heartbeatServiceQueue) Enqueue(ctx context.Context, task *PushQueueTask, timeout time.Duration) (string, error) {
+	if queue.err != nil {
+		return "", queue.err
+	}
 	if _, err := queue.phoneNotificationEventQueue.Enqueue(ctx, task, timeout); err != nil {
 		return "", err
 	}
@@ -159,4 +163,38 @@ func TestHeartbeatServiceMonitor_StopsCheckingDeletedMonitor(t *testing.T) {
 		UserID: entities.UserID("user-1"), Owner: "+18005550199", Source: "https://example.com",
 	}))
 	assert.Empty(t, queue.events)
+}
+
+func TestHeartbeatServiceStore_ReturnsHeartbeatWhenRestartFails(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		online bool
+	}{
+		{name: "online phone", online: true},
+		{name: "offline phone"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			logger := &phoneNotificationLogger{}
+			tracer := telemetry.NewOtelLogger("test", logger)
+			queue := &heartbeatServiceQueue{err: stacktrace.NewError("queue unavailable")}
+			repository := &heartbeatServiceRepository{}
+			monitor := &entities.HeartbeatMonitor{
+				ID: uuid.New(), PhoneID: uuid.New(), UserID: entities.UserID("user-1"),
+				Owner: "+18005550199", UpdatedAt: time.Now().UTC(), PhoneOnline: test.online,
+			}
+			service := NewHeartbeatService(logger, tracer, repository,
+				&heartbeatServiceMonitorRepository{monitor: monitor},
+				NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+
+			heartbeat, err := service.Store(context.Background(), HeartbeatStoreParams{
+				UserID: monitor.UserID, Owner: monitor.Owner, Source: "https://example.com", Timestamp: time.Now().UTC(),
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, heartbeat)
+			assert.Same(t, repository.heartbeat, heartbeat)
+			assert.Empty(t, monitor.QueueID)
+			assert.True(t, monitor.PhoneOnline)
+		})
+	}
 }
