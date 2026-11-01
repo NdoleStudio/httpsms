@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
+    "@commitlint/config-conventional": "^21.2.4",
     "@nuxt/eslint": "^1.16.0",
     "@nuxtjs/seo": "^5.3.2",
     "@types/qrcode": "^1.5.6",
