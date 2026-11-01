@@ -74,7 +74,8 @@ func newHeartbeatCloudTaskQueue(t *testing.T, logger telemetry.Logger, tracer te
 	t.Helper()
 	listener := bufconn.Listen(1024 * 1024)
 	server := &heartbeatCloudTaskServer{}
-	rpcServer := grpc.NewServer()
+	// Both the server and custom dialer use bufconn only; no network socket is opened.
+	rpcServer := grpc.NewServer() // nosemgrep: go.grpc.security.grpc-server-insecure-connection.grpc-server-insecure-connection
 	cloudtaskspb.RegisterCloudTasksServer(rpcServer, server)
 	go func() { _ = rpcServer.Serve(listener) }()
 	connection, err := grpc.NewClient("passthrough:///cloudtasks",

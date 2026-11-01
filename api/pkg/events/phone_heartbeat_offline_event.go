@@ -13,6 +13,7 @@ const EventTypePhoneHeartbeatOffline = "phone.heartbeat.offline"
 // PhoneHeartbeatOfflinePayload is the payload of the EventTypePhoneHeartbeatOffline event
 type PhoneHeartbeatOfflinePayload struct {
 	PhoneID                uuid.UUID       `json:"phone_id"`
+	HeartbeatID            uuid.UUID       `json:"heartbeat_id,omitempty"`
 	UserID                 entities.UserID `json:"user_id"`
 	LastHeartbeatTimestamp time.Time       `json:"last_heartbeat_timestamp"`
 	Timestamp              time.Time       `json:"timestamp"`

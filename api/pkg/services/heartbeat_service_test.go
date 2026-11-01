@@ -40,11 +40,13 @@ func (repository *heartbeatServiceRepository) Store(_ context.Context, heartbeat
 
 type heartbeatServiceMonitorRepository struct {
 	repositories.HeartbeatMonitorRepository
-	monitor    *entities.HeartbeatMonitor
-	err        error
-	afterLoad  func()
-	beforeSwap func()
-	swapErr    error
+	monitor      *entities.HeartbeatMonitor
+	err          error
+	afterLoad    func()
+	beforeSwap   func()
+	swapErr      error
+	beforeRecord func()
+	recordErr    error
 }
 
 func (repository *heartbeatServiceMonitorRepository) Load(context.Context, entities.UserID, string) (*entities.HeartbeatMonitor, error) {
@@ -89,6 +91,24 @@ func (repository *heartbeatServiceMonitorRepository) UpdatePhoneOnline(_ context
 	repository.monitor.PhoneOnline = online
 	repository.monitor.UpdatedAt = time.Now().UTC()
 	return nil
+}
+
+func (repository *heartbeatServiceMonitorRepository) RecordHeartbeat(_ context.Context, _ entities.UserID, _ uuid.UUID, expected, heartbeatID uuid.UUID) (*entities.HeartbeatMonitor, error) {
+	if repository.beforeRecord != nil {
+		hook := repository.beforeRecord
+		repository.beforeRecord = nil
+		hook()
+	}
+	if repository.recordErr != nil {
+		return nil, repository.recordErr
+	}
+	if repository.monitor.LastHeartbeatID != expected {
+		return nil, nil
+	}
+	previous := *repository.monitor
+	repository.monitor.LastHeartbeatID = heartbeatID
+	repository.monitor.PhoneOnline = true
+	return &previous, nil
 }
 
 type heartbeatServiceQueue struct {
@@ -753,4 +773,151 @@ func TestHeartbeatServiceMonitor_DeduplicatesOfflineAlertOnSuccessorRetry(t *tes
 			assert.Equal(t, "check:"+payload.CheckID, monitor.QueueID)
 		})
 	}
+}
+
+func TestHeartbeatServiceMonitor_RevalidatesAfterMissedNotification(t *testing.T) {
+	for _, takeover := range []bool{false, true} {
+		t.Run(map[bool]string{false: "returning heartbeat", true: "lease takeover"}[takeover], func(t *testing.T) {
+			logger := &phoneNotificationLogger{}
+			tracer := telemetry.NewOtelLogger("test", logger)
+			queue := &heartbeatServiceQueue{}
+			monitor := &entities.HeartbeatMonitor{
+				ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199",
+				PhoneOnline: true, QueueID: "check:current-check", UpdatedAt: time.Now().UTC(),
+			}
+			repository := &heartbeatServiceRepository{heartbeat: &entities.Heartbeat{
+				ID: uuid.New(), Timestamp: time.Now().UTC().Add(-4*heartbeatCheckInterval - time.Minute),
+			}}
+			service := NewHeartbeatService(logger, tracer, repository, &heartbeatServiceMonitorRepository{monitor: monitor},
+				NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+			params := HeartbeatMonitorParams{
+				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
+				Source: "https://example.com", CheckID: "current-check",
+			}
+			queue.afterEnqueue = func() {
+				monitor.UpdatedAt = time.Now().UTC().Add(-2 * heartbeatClaimLease)
+				_, err := service.Store(context.Background(), HeartbeatStoreParams{
+					UserID: monitor.UserID, Owner: monitor.Owner, Source: params.Source, Timestamp: time.Now().UTC(),
+				})
+				require.NoError(t, err)
+				if takeover {
+					competing := params
+					require.NoError(t, service.Monitor(context.Background(), &competing))
+				}
+			}
+			require.NoError(t, service.Monitor(context.Background(), &params))
+			require.Len(t, queue.events, 2, "only the missed signal and one owned successor should be queued")
+			assert.Equal(t, events.EventTypePhoneHeartbeatCheck, queue.events[1].Type())
+			var successor events.PhoneHeartbeatCheckPayload
+			require.NoError(t, queue.events[1].DataAs(&successor))
+			assert.Equal(t, "check:"+successor.CheckID, monitor.QueueID)
+			assert.WithinDuration(t, repository.heartbeat.Timestamp.Add(heartbeatCheckInterval), successor.ScheduledAt, time.Millisecond)
+		})
+	}
+}
+
+func TestHeartbeatServiceStore_OverlappingArrivalsKeepLatestVersion(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	history := &heartbeatServiceRepository{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199",
+		PhoneOnline: true, QueueID: "check:active-check", UpdatedAt: time.Now().UTC(),
+	}
+	repository := &heartbeatServiceMonitorRepository{monitor: monitor}
+	service := NewHeartbeatService(logger, tracer, history, repository,
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	params := HeartbeatStoreParams{UserID: monitor.UserID, Owner: monitor.Owner, Source: "https://example.com", Timestamp: time.Now().UTC()}
+	var newer *entities.Heartbeat
+	repository.beforeRecord = func() {
+		params.Timestamp = params.Timestamp.Add(time.Second)
+		var err error
+		newer, err = service.Store(context.Background(), params)
+		require.NoError(t, err)
+	}
+	older, err := service.Store(context.Background(), params)
+	require.NoError(t, err)
+	require.NotEqual(t, older.ID, newer.ID)
+	require.Equal(t, newer.ID, monitor.LastHeartbeatID, "a paused earlier arrival must not restore an older alert version")
+	assert.Empty(t, queue.events, "active monitoring must not be restarted by overlapping arrivals")
+}
+
+func TestHeartbeatServiceStore_ReturnsSavedHeartbeatWhenVersionRecordFails(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	history := &heartbeatServiceRepository{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199", UpdatedAt: time.Now().UTC(),
+	}
+	repository := &heartbeatServiceMonitorRepository{monitor: monitor, recordErr: stacktrace.NewError("version update unavailable")}
+	service := NewHeartbeatService(logger, tracer, history, repository,
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	heartbeat, err := service.Store(context.Background(), HeartbeatStoreParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, Source: "https://example.com", Timestamp: time.Now().UTC(),
+	})
+	require.NoError(t, err)
+	require.Same(t, history.heartbeat, heartbeat)
+	require.True(t, monitor.PhoneOnline)
+	require.Len(t, queue.events, 2)
+	assert.Equal(t, events.EventTypePhoneHeartbeatCheck, queue.events[0].Type())
+	assert.Equal(t, events.EventTypePhoneHeartbeatOnline, queue.events[1].Type())
+}
+
+func TestHeartbeatServiceMonitor_OfflineRetryNamesFollowHeartbeatIdentity(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue, server := newHeartbeatCloudTaskQueue(t, logger, tracer)
+	server.rejectChecks = true
+	first := &entities.Heartbeat{ID: uuid.New(), Timestamp: time.Now().UTC().Add(-65 * time.Minute)}
+	history := &heartbeatServiceRepository{heartbeat: first}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199",
+		PhoneOnline: true, QueueID: "check:current-check", UpdatedAt: time.Now().UTC(),
+	}
+	service := NewHeartbeatService(logger, tracer, history, &heartbeatServiceMonitorRepository{monitor: monitor},
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{ConsumerEndpoint: "https://example.com/events"}))
+	params := &HeartbeatMonitorParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID, Source: "https://example.com", CheckID: "current-check",
+	}
+	require.Error(t, service.Monitor(context.Background(), params))
+	second, err := service.Store(context.Background(), HeartbeatStoreParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, Source: params.Source, Timestamp: first.Timestamp,
+	})
+	require.NoError(t, err)
+	server.mu.Lock()
+	server.rejectChecks = false
+	server.mu.Unlock()
+	require.NoError(t, service.Monitor(context.Background(), params))
+	alerts := server.queuedEvents(t, events.EventTypePhoneHeartbeatOffline)
+	require.Len(t, alerts, 2, "a stale queued alert must not suppress a distinct heartbeat version with the same timestamp")
+	var firstPayload, secondPayload events.PhoneHeartbeatOfflinePayload
+	require.NoError(t, alerts[0].DataAs(&firstPayload))
+	require.NoError(t, alerts[1].DataAs(&secondPayload))
+	require.Equal(t, first.ID, firstPayload.HeartbeatID)
+	require.Equal(t, second.ID, secondPayload.HeartbeatID)
+}
+
+func TestHeartbeatServiceStore_DoesNotRestartHistoryRemovedAfterSaving(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	history := &heartbeatServiceRepository{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199", PhoneOnline: true,
+	}
+	history.afterLast = func() {
+		history.heartbeat = nil
+		history.err = stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "history expired after saving")
+	}
+	service := NewHeartbeatService(logger, tracer, history, &heartbeatServiceMonitorRepository{monitor: monitor},
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	heartbeat, err := service.Store(context.Background(), HeartbeatStoreParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, Source: "https://example.com", Timestamp: time.Now().UTC(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, heartbeat)
+	assert.Empty(t, queue.events, "known missing history must not schedule checks")
+	assert.True(t, monitor.RequiresCheck(), "a later heartbeat must still be able to restart")
 }

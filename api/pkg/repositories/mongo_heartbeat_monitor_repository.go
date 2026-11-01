@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -154,6 +155,56 @@ func (repository *mongoHeartbeatMonitorRepository) CompareAndSwapQueueID(ctx con
 		return false, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot claim heartbeat monitor ID [%s]", monitorID))
 	}
 	return result.MatchedCount == 1, nil
+}
+
+func (repository *mongoHeartbeatMonitorRepository) RecordHeartbeat(ctx context.Context, userID entities.UserID, monitorID, expected, heartbeatID uuid.UUID) (*entities.HeartbeatMonitor, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "last_heartbeat_id", Value: heartbeatID.String()},
+		{Key: "phone_online", Value: true},
+	}}}
+	var previous entities.HeartbeatMonitor
+	err := repository.collection.FindOneAndUpdate(ctx, heartbeatMonitorVersionFilter(userID, monitorID, expected), update,
+		options.FindOneAndUpdate().SetReturnDocument(options.Before)).Decode(&previous)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot record heartbeat version for monitor [%s]", monitorID))
+	}
+	return &previous, nil
+}
+
+func (repository *mongoHeartbeatMonitorRepository) UpdatePhoneOfflineForHeartbeat(ctx context.Context, userID entities.UserID, monitorID, expected, heartbeatID uuid.UUID) (bool, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "last_heartbeat_id", Value: heartbeatID.String()},
+		{Key: "phone_online", Value: false},
+	}}}
+	result, err := repository.collection.UpdateOne(ctx, heartbeatMonitorVersionFilter(userID, monitorID, expected), update)
+	if err != nil {
+		return false, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot apply offline heartbeat version for monitor [%s]", monitorID))
+	}
+	return result.MatchedCount == 1, nil
+}
+
+func heartbeatMonitorVersionFilter(userID entities.UserID, monitorID, heartbeatID uuid.UUID) bson.D {
+	filter := bson.D{{Key: "_id", Value: monitorID.String()}, {Key: "user_id", Value: string(userID)}}
+	if heartbeatID == uuid.Nil {
+		return append(filter, bson.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "last_heartbeat_id", Value: uuid.Nil.String()}},
+			bson.D{{Key: "last_heartbeat_id", Value: nil}},
+		}})
+	}
+	return append(filter, bson.E{Key: "last_heartbeat_id", Value: heartbeatID.String()})
 }
 
 func (repository *mongoHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.Context, userID entities.UserID, monitorID uuid.UUID, online bool) error {

@@ -127,14 +127,47 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return heartbeat, nil
 	}
 
+	wasOffline := service.recordHeartbeatArrival(ctx, heartbeat, monitor)
 	service.restartMonitorOnHeartbeat(ctx, heartbeat, monitor, params.Source)
 
-	if monitor.PhoneIsOffline() {
+	if wasOffline {
 		ctxLogger.Info(fmt.Sprintf("phone with monitor ID [%s] was offline for user [%s]", monitor.ID, monitor.UserID))
 		service.handleHeartbeatWhenPhoneWasOffline(ctx, params.Source, heartbeat, monitor)
 	}
 
 	return heartbeat, nil
+}
+
+func (service *HeartbeatService) recordHeartbeatArrival(ctx context.Context, heartbeat *entities.Heartbeat, monitor *entities.HeartbeatMonitor) bool {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	current := monitor
+	for attempt := 0; attempt < 3; attempt++ {
+		latest, err := service.repository.Last(ctx, heartbeat.UserID, heartbeat.Owner)
+		if err != nil {
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load saved heartbeat version for monitor [%s]", monitor.ID)))
+			return monitor.PhoneIsOffline()
+		}
+		previous, err := service.monitorRepository.RecordHeartbeat(ctx, monitor.UserID, monitor.ID, current.LastHeartbeatID, latest.ID)
+		if err != nil {
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot record saved heartbeat version for monitor [%s]", monitor.ID)))
+			return monitor.PhoneIsOffline()
+		}
+		if previous != nil {
+			return previous.PhoneIsOffline()
+		}
+		current, err = service.monitorRepository.Load(ctx, monitor.UserID, monitor.Owner)
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound || (err == nil && current.ID != monitor.ID) {
+			return false
+		}
+		if err != nil {
+			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot reload heartbeat version for monitor [%s]", monitor.ID)))
+			return monitor.PhoneIsOffline()
+		}
+	}
+	ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("heartbeat version repeatedly changed for monitor [%s]; saved heartbeat retained", monitor.ID)))
+	return monitor.PhoneIsOffline()
 }
 
 // HeartbeatMonitorStoreParams are parameters for creating a new entities.Heartbeat
@@ -318,6 +351,14 @@ func (service *HeartbeatService) restartMonitorOnHeartbeat(ctx context.Context, 
 	if !monitor.RequiresCheck() {
 		return
 	}
+	latest, err := service.repository.Last(ctx, heartbeat.UserID, heartbeat.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return
+	}
+	if err != nil {
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot validate heartbeat history before restarting monitor [%s]", monitor.ID)))
+		return
+	}
 	params := &HeartbeatMonitorParams{
 		Owner:     monitor.Owner,
 		PhoneID:   monitor.PhoneID,
@@ -325,7 +366,7 @@ func (service *HeartbeatService) restartMonitorOnHeartbeat(ctx context.Context, 
 		MonitorID: monitor.ID,
 		Source:    source,
 	}
-	if err := service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params, monitor, true); err != nil {
+	if err := service.scheduleHeartbeatCheck(ctx, latest.Timestamp, params, monitor, true); err != nil {
 		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot restart heartbeat check for monitor [%s]", monitor.ID)))
 	}
 }
@@ -435,25 +476,54 @@ func (service *HeartbeatService) checkHeartbeatAvailability(ctx context.Context,
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	failed := time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval*4 &&
-		time.Now().UTC().Sub(heartbeat.Timestamp) < heartbeatCheckInterval*5 && monitor.PhoneOnline
-	nextTimestamp := heartbeat.Timestamp
-	if failed {
-		nextTimestamp = time.Now().UTC()
-	}
-
 	// send urgent FCM message if the last heartbeat is late
 	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval && time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) {
 		ctxLogger.Info(fmt.Sprintf("sending missed heartbeat notification for userID [%s] and owner [%s] and monitor ID [%s]", params.UserID, params.Owner, params.MonitorID))
 		service.handleMissedMonitor(ctx, heartbeat.Timestamp, params)
 	}
 
+	heartbeat, owned, err := service.refreshHeartbeatCheck(ctx, params, monitor)
+	if err != nil || !owned {
+		return err
+	}
+	age := time.Since(heartbeat.Timestamp)
+	failed := age > heartbeatCheckInterval*4 && age < heartbeatCheckInterval*5 && monitor.PhoneOnline
+	nextTimestamp := heartbeat.Timestamp
 	if failed {
-		if err := service.handleFailedMonitor(ctx, heartbeat.Timestamp, params); err != nil {
+		nextTimestamp = time.Now().UTC()
+		if err := service.handleFailedMonitor(ctx, heartbeat, params); err != nil {
 			return err
 		}
 	}
 	return service.scheduleHeartbeatCheck(ctx, nextTimestamp, params, monitor, false)
+}
+
+func (service *HeartbeatService) refreshHeartbeatCheck(ctx context.Context, params *HeartbeatMonitorParams, monitor *entities.HeartbeatMonitor) (*entities.Heartbeat, bool, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	current, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot revalidate running heartbeat monitor [%s]", monitor.ID))
+	}
+	if current.ID != monitor.ID {
+		return nil, false, nil
+	}
+	if current.QueueID != monitor.QueueID {
+		return nil, false, service.requireHeartbeatCheckCommit(ctx, current, params.CheckID)
+	}
+	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return nil, false, service.stopHeartbeatCheck(ctx, params, monitor)
+	}
+	if err != nil {
+		return nil, false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot revalidate heartbeat history for monitor [%s]", monitor.ID))
+	}
+	monitor.PhoneOnline = current.PhoneOnline
+	return heartbeat, true, nil
 }
 
 func (service *HeartbeatService) handleMissedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) {
@@ -478,15 +548,16 @@ func (service *HeartbeatService) handleMissedMonitor(ctx context.Context, lastTi
 	}
 }
 
-func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
+func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, heartbeat *entities.Heartbeat, params *HeartbeatMonitorParams) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
 	event, err := service.createPhoneHeartbeatOfflineEvent(params.Source, params.CheckID, &events.PhoneHeartbeatOfflinePayload{
 		PhoneID:                params.PhoneID,
+		HeartbeatID:            heartbeat.ID,
 		UserID:                 params.UserID,
 		MonitorID:              params.MonitorID,
-		LastHeartbeatTimestamp: lastTimestamp,
+		LastHeartbeatTimestamp: heartbeat.Timestamp,
 		Timestamp:              time.Now().UTC(),
 		Owner:                  params.Owner,
 	})
@@ -500,6 +571,38 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat monitor with id [%s] and phone id [%s] failed for user [%s]", params.MonitorID, params.PhoneID, params.UserID))
 	return nil
+}
+
+// ApplyOfflineHeartbeat rejects stale events before any notification subscriber runs.
+func (service *HeartbeatService) ApplyOfflineHeartbeat(ctx context.Context, payload *events.PhoneHeartbeatOfflinePayload) (bool, error) {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	monitor, err := service.monitorRepository.Load(ctx, payload.UserID, payload.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load monitor for offline heartbeat [%s]", payload.MonitorID))
+	}
+	if monitor.ID != payload.MonitorID || (payload.HeartbeatID == uuid.Nil && monitor.LastHeartbeatID != uuid.Nil) {
+		return false, nil
+	}
+	heartbeat, err := service.repository.Last(ctx, payload.UserID, payload.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot validate offline heartbeat for monitor [%s]", monitor.ID))
+	}
+	if !heartbeat.Timestamp.Equal(payload.LastHeartbeatTimestamp) || (payload.HeartbeatID != uuid.Nil && heartbeat.ID != payload.HeartbeatID) {
+		return false, nil
+	}
+	applied, err := service.monitorRepository.UpdatePhoneOfflineForHeartbeat(ctx, payload.UserID, monitor.ID, monitor.LastHeartbeatID, payload.HeartbeatID)
+	if err != nil {
+		return false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot apply offline heartbeat version for monitor [%s]", monitor.ID))
+	}
+	return applied, nil
 }
 
 func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams, monitor *entities.HeartbeatMonitor, restart bool) error {
@@ -609,7 +712,7 @@ func (service *HeartbeatService) createPhoneHeartbeatOfflineEvent(source, checkI
 		return event, err
 	}
 	// Queue-level deduplication survives retries before the offline listener updates phone status.
-	event.SetID(uuid.NewSHA1(payload.MonitorID, []byte(checkID+":"+payload.LastHeartbeatTimestamp.UTC().Format(time.RFC3339Nano))).String())
+	event.SetID(uuid.NewSHA1(payload.MonitorID, []byte(checkID+":"+payload.HeartbeatID.String()+":"+payload.LastHeartbeatTimestamp.UTC().Format(time.RFC3339Nano))).String())
 	return event, nil
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // gormHeartbeatRepository is responsible for persisting entities.Heartbeat
@@ -125,6 +126,63 @@ func (repository *gormHeartbeatMonitorRepository) CompareAndSwapQueueID(ctx cont
 		return false, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot claim heartbeat monitor ID [%s]", monitorID))
 	}
 	return result.RowsAffected == 1, nil
+}
+
+func (repository *gormHeartbeatMonitorRepository) RecordHeartbeat(ctx context.Context, userID entities.UserID, monitorID, expected, heartbeatID uuid.UUID) (*entities.HeartbeatMonitor, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	var previous *entities.HeartbeatMonitor
+	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		monitor := new(entities.HeartbeatMonitor)
+		query := heartbeatMonitorWithVersion(tx.Where("id = ?", monitorID).Where("user_id = ?", userID), expected)
+		if err := query.Clauses(clause.Locking{Strength: "UPDATE"}).First(monitor).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return stacktrace.Propagatef(err, "cannot lock heartbeat version for monitor [%s]", monitorID)
+		}
+		before := *monitor
+		if err := tx.Model(monitor).UpdateColumns(map[string]any{
+			"last_heartbeat_id": heartbeatID,
+			"phone_online":      true,
+		}).Error; err != nil {
+			return stacktrace.Propagatef(err, "cannot record heartbeat version for monitor [%s]", monitorID)
+		}
+		previous = &before
+		return nil
+	})
+	if err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot mark heartbeat monitor [%s] online", monitorID))
+	}
+	return previous, nil
+}
+
+func (repository *gormHeartbeatMonitorRepository) UpdatePhoneOfflineForHeartbeat(ctx context.Context, userID entities.UserID, monitorID, expected, heartbeatID uuid.UUID) (bool, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	query := heartbeatMonitorWithVersion(repository.db.WithContext(ctx).
+		Model(&entities.HeartbeatMonitor{}).Where("id = ?", monitorID).Where("user_id = ?", userID), expected)
+	result := query.UpdateColumns(map[string]any{
+		"last_heartbeat_id": heartbeatID,
+		"phone_online":      false,
+	})
+	if result.Error != nil {
+		return false, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot apply offline heartbeat version for monitor [%s]", monitorID))
+	}
+	return result.RowsAffected == 1, nil
+}
+
+func heartbeatMonitorWithVersion(query *gorm.DB, heartbeatID uuid.UUID) *gorm.DB {
+	if heartbeatID == uuid.Nil {
+		return query.Where("last_heartbeat_id IS NULL OR last_heartbeat_id = ?", uuid.Nil)
+	}
+	return query.Where("last_heartbeat_id = ?", heartbeatID)
 }
 
 // Index entities.Message between 2 parties

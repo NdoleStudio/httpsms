@@ -33,11 +33,10 @@ func NewHeartbeatListener(
 	}
 
 	return l, map[string]events.EventListener{
-		events.EventTypePhoneUpdated:          l.onPhoneUpdated,
-		events.EventTypePhoneDeleted:          l.onPhoneDeleted,
-		events.EventTypePhoneHeartbeatCheck:   l.onPhoneHeartbeatCheck,
-		events.EventTypePhoneHeartbeatOffline: l.onPhoneHeartbeatOffline,
-		events.UserAccountDeleted:             l.onUserAccountDeleted,
+		events.EventTypePhoneUpdated:        l.onPhoneUpdated,
+		events.EventTypePhoneDeleted:        l.onPhoneDeleted,
+		events.EventTypePhoneHeartbeatCheck: l.onPhoneHeartbeatCheck,
+		events.UserAccountDeleted:           l.onUserAccountDeleted,
 	}
 }
 
@@ -108,21 +107,22 @@ func (listener *HeartbeatListener) onPhoneHeartbeatCheck(ctx context.Context, ev
 	return nil
 }
 
-// onPhoneDeleted handles the events.EventTypePhoneDeleted event
-func (listener *HeartbeatListener) onPhoneHeartbeatOffline(ctx context.Context, event cloudevents.Event) error {
+// FilterOfflineEvent validates and applies the transition before notification subscribers run.
+func (listener *HeartbeatListener) FilterOfflineEvent(ctx context.Context, event cloudevents.Event) (bool, error) {
 	ctx, span := listener.tracer.Start(ctx)
 	defer span.End()
 
 	var payload events.PhoneHeartbeatOfflinePayload
 	if err := event.DataAs(&payload); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
+		return false, listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
-	if err := listener.service.UpdatePhoneOnline(ctx, payload.UserID, payload.MonitorID, false); err != nil {
-		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot delete heartbeat monitor with userID [%s] and owner [%s] for event with ID [%s]", payload.UserID, payload.Owner, event.ID()))
+	allowed, err := listener.service.ApplyOfflineHeartbeat(ctx, &payload)
+	if err != nil {
+		return false, listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot validate offline heartbeat for monitor [%s]", payload.MonitorID))
 	}
 
-	return nil
+	return allowed, nil
 }
 
 func (listener *HeartbeatListener) onUserAccountDeleted(ctx context.Context, event cloudevents.Event) error {

@@ -24,6 +24,7 @@ type EventDispatcher struct {
 	logger      telemetry.Logger
 	tracer      telemetry.Tracer
 	listeners   map[string][]events.EventListener
+	filters     map[string]events.EventFilter
 	meter       metric.Float64Histogram
 	queue       PushQueue
 	queueConfig PushQueueConfig
@@ -42,6 +43,7 @@ func NewEventDispatcher(
 		tracer:      tracer,
 		meter:       meter,
 		listeners:   make(map[string][]events.EventListener),
+		filters:     make(map[string]events.EventFilter),
 		queue:       queue,
 		queueConfig: queueConfig,
 	}
@@ -56,10 +58,14 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type()))
 	}
 
-	if event.Type() == events.EventTypePhoneHeartbeatCheck {
-		return dispatcher.publish(ctx, event)
+	allowed, err := dispatcher.shouldPublish(ctx, event)
+	if err != nil || !allowed {
+		return err
 	}
-	dispatcher.Publish(ctx, event)
+	if event.Type() == events.EventTypePhoneHeartbeatCheck {
+		return dispatcher.publishSubscribers(ctx, event)
+	}
+	_ = dispatcher.publishSubscribers(ctx, event)
 	return nil
 }
 
@@ -121,7 +127,37 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 	_ = dispatcher.publish(ctx, event)
 }
 
+// SubscribeFilter registers a guard that runs before any subscriber sees an event.
+func (dispatcher *EventDispatcher) SubscribeFilter(eventType string, filter events.EventFilter) {
+	dispatcher.filters[eventType] = filter
+}
+
 func (dispatcher *EventDispatcher) publish(ctx context.Context, event cloudevents.Event) error {
+	allowed, err := dispatcher.shouldPublish(ctx, event)
+	if err != nil || !allowed {
+		return err
+	}
+	return dispatcher.publishSubscribers(ctx, event)
+}
+
+func (dispatcher *EventDispatcher) shouldPublish(ctx context.Context, event cloudevents.Event) (bool, error) {
+	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
+	defer span.End()
+
+	filter, exists := dispatcher.filters[event.Type()]
+	if !exists {
+		return true, nil
+	}
+	allowed, err := filter(ctx, event)
+	if err != nil {
+		err = dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot validate event [%s] with ID [%s]", event.Type(), event.ID()))
+		ctxLogger.Error(err)
+		return false, err
+	}
+	return allowed, nil
+}
+
+func (dispatcher *EventDispatcher) publishSubscribers(ctx context.Context, event cloudevents.Event) error {
 	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
 	defer span.End()
 
