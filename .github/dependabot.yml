@@ -6,6 +6,10 @@ updates:
     schedule:
       interval: monthly
       time: "00:00"
+    # Keep version updates beyond pnpm's 24-hour release-age guard.
+    # Security updates bypass cooldown; transitive resolution also needs the workspace gate.
+    cooldown:
+      default-days: 3
     open-pull-requests-limit: 10
     reviewers:
       - AchoArnold
