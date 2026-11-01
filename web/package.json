@@ -55,7 +55,7 @@
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
+    "lint-staged": "^17.6.0",
     "postcss-html": "^1.8.1",
     "stylelint": "^17.15.0",
     "stylelint-config-recommended-vue": "^1.6.1",
