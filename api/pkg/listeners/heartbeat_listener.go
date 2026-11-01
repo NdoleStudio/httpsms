@@ -96,6 +96,7 @@ func (listener *HeartbeatListener) onPhoneHeartbeatCheck(ctx context.Context, ev
 		Owner:     payload.Owner,
 		PhoneID:   payload.PhoneID,
 		MonitorID: payload.MonitorID,
+		CheckID:   payload.CheckID,
 		UserID:    payload.UserID,
 		Source:    event.Source(),
 	}

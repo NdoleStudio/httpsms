@@ -134,6 +134,28 @@ func (repository *mongoHeartbeatMonitorRepository) Delete(ctx context.Context, u
 	return nil
 }
 
+func (repository *mongoHeartbeatMonitorRepository) CompareAndSwapQueueID(ctx context.Context, monitorID uuid.UUID, expected, queueID string) (bool, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	filter := bson.D{
+		{Key: "_id", Value: monitorID.String()},
+		{Key: "queue_id", Value: expected},
+	}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "queue_id", Value: queueID},
+		{Key: "updated_at", Value: time.Now().UTC()},
+	}}}
+	result, err := repository.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return false, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot claim heartbeat monitor ID [%s]", monitorID))
+	}
+	return result.MatchedCount == 1, nil
+}
+
 func (repository *mongoHeartbeatMonitorRepository) UpdatePhoneOnline(ctx context.Context, userID entities.UserID, monitorID uuid.UUID, online bool) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

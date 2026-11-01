@@ -106,6 +106,27 @@ func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, us
 	return nil
 }
 
+func (repository *gormHeartbeatMonitorRepository) CompareAndSwapQueueID(ctx context.Context, monitorID uuid.UUID, expected, queueID string) (bool, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	result := repository.db.WithContext(ctx).
+		Model(&entities.HeartbeatMonitor{}).
+		Where("id = ?", monitorID).
+		Where("queue_id = ?", expected).
+		Updates(map[string]any{
+			"queue_id":   queueID,
+			"updated_at": time.Now().UTC(),
+		})
+	if result.Error != nil {
+		return false, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(result.Error, "cannot claim heartbeat monitor ID [%s]", monitorID))
+	}
+	return result.RowsAffected == 1, nil
+}
+
 // Index entities.Message between 2 parties
 func (repository *gormHeartbeatMonitorRepository) Index(ctx context.Context, userID entities.UserID, owner string, params IndexParams) (*[]entities.Heartbeat, error) {
 	ctx, span := repository.tracer.Start(ctx)

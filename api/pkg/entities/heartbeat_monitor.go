@@ -8,9 +8,10 @@ import (
 
 // HeartbeatMonitor is used to monitor heartbeats of a phone
 type HeartbeatMonitor struct {
-	ID          uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;" bson:"_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	PhoneID     uuid.UUID `json:"phone_id" bson:"phone_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
-	UserID      UserID    `json:"user_id" bson:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	ID      uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;" bson:"_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	PhoneID uuid.UUID `json:"phone_id" bson:"phone_id" example:"32343a19-da5e-4b1b-a767-3298a73703cb"`
+	UserID  UserID    `json:"user_id" bson:"user_id" example:"WB7DRDWrJZRGbYrv2CKGkqbzvqdC"`
+	// QueueID is the current check ownership marker, not the external task queue's ID.
 	QueueID     string    `json:"queue_id" bson:"queue_id" example:"0360259236613675274"`
 	Owner       string    `json:"owner" bson:"owner" example:"+18005550199"`
 	PhoneOnline bool      `json:"phone_online" bson:"phone_online" example:"true" default:"true"`

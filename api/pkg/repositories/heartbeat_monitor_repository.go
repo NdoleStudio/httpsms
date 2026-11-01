@@ -22,6 +22,9 @@ type HeartbeatMonitorRepository interface {
 	// UpdateQueueID updates the queueID of a monitor
 	UpdateQueueID(ctx context.Context, monitorID uuid.UUID, queueID string) error
 
+	// CompareAndSwapQueueID changes check ownership only if the expected marker still matches.
+	CompareAndSwapQueueID(ctx context.Context, monitorID uuid.UUID, expected, queueID string) (bool, error)
+
 	// Delete an entities.HeartbeatMonitor
 	Delete(ctx context.Context, userID entities.UserID, phoneNumber string) error
 

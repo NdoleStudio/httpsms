@@ -131,7 +131,7 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 			UserID:    monitor.UserID,
 			MonitorID: monitor.ID,
 			Source:    params.Source,
-		}); err != nil {
+		}, monitor, true); err != nil {
 			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot restart heartbeat check for monitor [%s]", monitor.ID)))
 		}
 	}
@@ -206,7 +206,7 @@ func (service *HeartbeatService) StoreMonitor(ctx context.Context, params *Heart
 		MonitorID: monitor.ID,
 		Source:    params.Source,
 	}
-	if err = service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), monitorParams); err != nil {
+	if err = service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), monitorParams, monitor, true); err != nil {
 		return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule healthcheck for monitor [%s] with owner [%s] and userID [%s]", monitor.ID, params.Owner, params.UserID))
 	}
 
@@ -281,6 +281,7 @@ type HeartbeatMonitorParams struct {
 	PhoneID   uuid.UUID
 	UserID    entities.UserID
 	Source    string
+	CheckID   string
 }
 
 // Monitor the heartbeats of an owner and phone number
@@ -298,7 +299,12 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
-		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load heartbeat monitor for check"))
+	}
+
+	// Legacy queued events have no CheckID; all newly scheduled checks carry their ownership marker.
+	if params.CheckID != "" && (params.CheckID != monitor.QueueID || params.MonitorID != monitor.ID) {
+		return nil
 	}
 
 	// Update params in case of ID duplicate
@@ -308,14 +314,63 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat history does not exist for userID [%s] and owner [%s], stopping check", params.UserID, params.Owner))
-		if err = service.monitorRepository.UpdateQueueID(ctx, monitor.ID, ""); err != nil {
+		stopped, err := service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, monitor.QueueID, "")
+		if err != nil {
 			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot clear heartbeat check queue for monitor [%s]", monitor.ID))
 		}
-		return nil
+		if !stopped {
+			return nil
+		}
+		// A heartbeat may have been saved while its Store call still saw the old active marker.
+		heartbeat, err = service.repository.Last(ctx, params.UserID, params.Owner)
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+			return nil
+		}
+		if err != nil {
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot recheck heartbeat history after stopping monitor [%s]", monitor.ID))
+		}
+		monitor, err = service.monitorRepository.Load(ctx, params.UserID, params.Owner)
+		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+			return nil
+		}
+		if err != nil {
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot reload stopped heartbeat monitor [%s]", params.MonitorID))
+		}
+		if !monitor.RequiresCheck() {
+			return nil
+		}
+		params.PhoneID = monitor.PhoneID
+		params.MonitorID = monitor.ID
+		err = service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params, monitor, true)
+		return err
 	}
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID))
 		return nil
+	}
+
+	previousCheckID := monitor.QueueID
+	processingID := uuid.NewString()
+	claimed, err := service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, previousCheckID, processingID)
+	if err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot claim running heartbeat check for monitor [%s]", monitor.ID))
+	}
+	if !claimed {
+		return nil
+	}
+	monitor.QueueID = processingID
+	// Restore the incoming check on failure so the task queue can retry it, without stealing a successor.
+	defer func() {
+		if _, releaseErr := service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, processingID, previousCheckID); releaseErr != nil {
+			ctxLogger.Error(stacktrace.Propagatef(releaseErr, "cannot release running heartbeat check for monitor [%s]", monitor.ID))
+		}
+	}()
+
+	failed := time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval*4 &&
+		time.Now().UTC().Sub(heartbeat.Timestamp) < heartbeatCheckInterval*5 && monitor.PhoneOnline
+	nextTimestamp := heartbeat.Timestamp
+	if failed {
+		nextTimestamp = time.Now().UTC()
 	}
 
 	// send urgent FCM message if the last heartbeat is late
@@ -324,12 +379,14 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		service.handleMissedMonitor(ctx, heartbeat.Timestamp, params)
 	}
 
-	if time.Now().UTC().Sub(heartbeat.Timestamp) > (heartbeatCheckInterval*4) &&
-		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) && monitor.PhoneOnline {
-		return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
+	if failed {
+		if err = service.handleFailedMonitor(ctx, heartbeat.Timestamp, params); err != nil {
+			return err
+		}
 	}
 
-	return service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params)
+	err = service.scheduleHeartbeatCheck(ctx, nextTimestamp, params, monitor, false)
+	return err
 }
 
 func (service *HeartbeatService) handleMissedMonitor(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) {
@@ -358,11 +415,6 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	err := service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
-	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule healthcheck for monitor with owner [%s] and userID [%s]", params.Owner, params.UserID))
-	}
-
 	event, err := service.createPhoneHeartbeatOfflineEvent(params.Source, &events.PhoneHeartbeatOfflinePayload{
 		PhoneID:                params.PhoneID,
 		UserID:                 params.UserID,
@@ -383,28 +435,46 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 	return nil
 }
 
-func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams) error {
+func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams, monitor *entities.HeartbeatMonitor, restart bool) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	checkID := uuid.NewString()
 	event, err := service.createPhoneHeartbeatCheckEvent(params.Source, &events.PhoneHeartbeatCheckPayload{
 		PhoneID:     params.PhoneID,
 		UserID:      params.UserID,
 		MonitorID:   params.MonitorID,
 		ScheduledAt: lastTimestamp.Add(heartbeatCheckInterval),
 		Owner:       params.Owner,
+		CheckID:     checkID,
 	})
 	if err != nil {
+		if restart {
+			if _, releaseErr := service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, monitor.QueueID, ""); releaseErr != nil {
+				ctxLogger.Error(stacktrace.Propagatef(releaseErr, "cannot clear failed heartbeat restart for monitor [%s]", monitor.ID))
+			}
+		}
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot create event when phone monitor failed"))
+	}
+
+	claimed, err := service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, monitor.QueueID, checkID)
+	if err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot claim heartbeat check for monitor [%s]", monitor.ID))
+	}
+	if !claimed {
+		return nil
 	}
 
 	queueID, err := service.dispatcher.DispatchWithTimeout(ctx, event, heartbeatCheckInterval)
 	if err != nil {
+		releaseID := monitor.QueueID
+		if restart {
+			releaseID = ""
+		}
+		if _, releaseErr := service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, checkID, releaseID); releaseErr != nil {
+			ctxLogger.Error(stacktrace.Propagatef(releaseErr, "cannot release heartbeat check claim for monitor [%s]", monitor.ID))
+		}
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), params.PhoneID))
-	}
-
-	if err = service.monitorRepository.UpdateQueueID(ctx, params.MonitorID, queueID); err != nil {
-		service.logger.Error(stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", params.MonitorID, params.PhoneID, queueID, params.UserID))

@@ -17,4 +17,5 @@ type PhoneHeartbeatCheckPayload struct {
 	ScheduledAt time.Time       `json:"scheduled_at"`
 	Owner       string          `json:"owner"`
 	MonitorID   uuid.UUID       `json:"monitor_id"`
+	CheckID     string          `json:"check_id,omitempty"`
 }
