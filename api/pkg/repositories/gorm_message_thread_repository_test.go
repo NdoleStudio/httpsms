@@ -104,13 +104,13 @@ func (logger *messageThreadTestLogger) WithService(string) telemetry.Logger { re
 
 func (logger *messageThreadTestLogger) WithString(string, string) telemetry.Logger { return logger }
 
-func (logger *messageThreadTestLogger) WithSpan(trace.SpanContext) telemetry.Logger { return logger }
-func (logger *messageThreadTestLogger) Trace(string)                                {}
-func (logger *messageThreadTestLogger) Info(string)                                 {}
-func (logger *messageThreadTestLogger) Warn(error)                                  {}
-func (logger *messageThreadTestLogger) Debug(string)                                {}
-func (logger *messageThreadTestLogger) Fatal(error)                                 {}
-func (logger *messageThreadTestLogger) Printf(string, ...interface{})               {}
+func (logger *messageThreadTestLogger) WithSpan(trace.Span) telemetry.Logger { return logger }
+func (logger *messageThreadTestLogger) Trace(string)                         {}
+func (logger *messageThreadTestLogger) Info(string)                          {}
+func (logger *messageThreadTestLogger) Warn(error)                           {}
+func (logger *messageThreadTestLogger) Debug(string)                         {}
+func (logger *messageThreadTestLogger) Fatal(error)                          {}
+func (logger *messageThreadTestLogger) Printf(string, ...interface{})        {}
 
 func TestMessageThreadStoreIncrementsUnreadCountOnConflict(t *testing.T) {
 	pool := &messageThreadTestConnPool{}

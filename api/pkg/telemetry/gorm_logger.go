@@ -28,20 +28,20 @@ func (gorm *gormLogger) LogMode(_ logger.LogLevel) logger.Interface {
 }
 
 func (gorm *gormLogger) Info(ctx context.Context, s string, i ...any) {
-	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Info(fmt.Sprintf(s, i...))
+	gorm.logger.WithSpan(gorm.tracer.Span(ctx)).Info(fmt.Sprintf(s, i...))
 }
 
 func (gorm *gormLogger) Warn(ctx context.Context, s string, i ...any) {
-	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Warn(fmt.Errorf(s, i...))
+	gorm.logger.WithSpan(gorm.tracer.Span(ctx)).Warn(fmt.Errorf(s, i...))
 }
 
 func (gorm *gormLogger) Error(ctx context.Context, s string, i ...any) {
-	gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).Error(fmt.Errorf(s, i...))
+	gorm.logger.WithSpan(gorm.tracer.Span(ctx)).Error(fmt.Errorf(s, i...))
 }
 
 func (gorm *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	elapsed := time.Since(begin)
-	l := gorm.logger.WithSpan(gorm.tracer.Span(ctx).SpanContext()).WithString("latency", elapsed.String())
+	l := gorm.logger.WithSpan(gorm.tracer.Span(ctx)).WithString("latency", elapsed.String())
 	sql, rows := fc()
 	msg := fmt.Sprintf("[ROWS:%d][%s]", rows, sql)
 

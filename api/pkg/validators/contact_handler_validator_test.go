@@ -424,7 +424,7 @@ func (logger *contactValidatorNoopLogger) WithService(_ string) telemetry.Logger
 
 func (logger *contactValidatorNoopLogger) WithString(_, _ string) telemetry.Logger { return logger }
 
-func (logger *contactValidatorNoopLogger) WithSpan(_ trace.SpanContext) telemetry.Logger {
+func (logger *contactValidatorNoopLogger) WithSpan(_ trace.Span) telemetry.Logger {
 	return logger
 }
 func (logger *contactValidatorNoopLogger) Trace(_ string)                    {}

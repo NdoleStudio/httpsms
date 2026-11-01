@@ -165,7 +165,7 @@ func (logger *messageThreadHandlerNoopLogger) WithService(_ string) telemetry.Lo
 
 func (logger *messageThreadHandlerNoopLogger) WithString(_, _ string) telemetry.Logger { return logger }
 
-func (logger *messageThreadHandlerNoopLogger) WithSpan(_ trace.SpanContext) telemetry.Logger {
+func (logger *messageThreadHandlerNoopLogger) WithSpan(_ trace.Span) telemetry.Logger {
 	return logger
 }
 func (logger *messageThreadHandlerNoopLogger) Trace(_ string)                    {}

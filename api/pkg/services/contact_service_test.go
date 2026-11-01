@@ -255,7 +255,7 @@ func (l *recordingLogger) Debug(v string) {
 
 func (l *recordingLogger) WithService(_ string) telemetry.Logger   { return l }
 func (l *recordingLogger) WithString(_, _ string) telemetry.Logger { return l }
-func (l *recordingLogger) WithSpan(_ trace.SpanContext) telemetry.Logger {
+func (l *recordingLogger) WithSpan(_ trace.Span) telemetry.Logger {
 	return l
 }
 

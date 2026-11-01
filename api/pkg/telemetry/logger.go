@@ -15,8 +15,8 @@ type Logger interface {
 	// WithString creates a new structured logger instance with a string
 	WithString(key string, value string) Logger
 
-	// WithSpan creates a new structured logger instance for a spanContext
-	WithSpan(span trace.SpanContext) Logger
+	// WithSpan creates a new structured logger instance for a span.
+	WithSpan(span trace.Span) Logger
 
 	// Trace logs a new message with trace level.
 	Trace(value string)

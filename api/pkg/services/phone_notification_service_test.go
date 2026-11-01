@@ -78,9 +78,9 @@ func (logger *phoneNotificationLogger) WithString(string, string) telemetry.Logg
 	return logger
 }
 
-func (logger *phoneNotificationLogger) WithSpan(trace.SpanContext) telemetry.Logger { return logger }
-func (logger *phoneNotificationLogger) Trace(string)                                {}
-func (logger *phoneNotificationLogger) Info(string)                                 {}
+func (logger *phoneNotificationLogger) WithSpan(trace.Span) telemetry.Logger { return logger }
+func (logger *phoneNotificationLogger) Trace(string)                         {}
+func (logger *phoneNotificationLogger) Info(string)                          {}
 func (logger *phoneNotificationLogger) Warn(err error) {
 	logger.warnings = append(logger.warnings, err.Error())
 }
