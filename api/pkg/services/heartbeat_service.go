@@ -321,8 +321,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		} else {
 			return nil
 		}
-	} else if params.CheckID != "" && params.CheckID != monitor.QueueID {
-		// Legacy queued events have no CheckID and transition to fenced checks.
+	} else if params.CheckID != "" && monitor.QueueID != "" && params.CheckID != monitor.QueueID {
 		return nil
 	}
 
@@ -330,6 +329,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	params.PhoneID = monitor.PhoneID
 	params.MonitorID = monitor.ID
 
+	// An empty marker can follow an interrupted stop; history still gates any restart.
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat history does not exist for userID [%s] and owner [%s], stopping check", params.UserID, params.Owner))

@@ -368,17 +368,20 @@ func TestHeartbeatServiceMonitor_RetriesFailedSuccessor(t *testing.T) {
 
 func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		marker    string
-		expired   bool
-		wantRetry bool
-		wantCheck bool
+		name           string
+		marker         string
+		expired        bool
+		wantRetry      bool
+		wantCheck      bool
+		missingHistory bool
 	}{
 		{name: "running lease active", marker: "running:current-check:claim", wantRetry: true},
 		{name: "running lease expired", marker: "running:current-check:claim", expired: true, wantCheck: true},
 		{name: "pending lease active", marker: "pending:current-check:next-check", wantRetry: true},
 		{name: "pending lease expired", marker: "pending:current-check:next-check", expired: true, wantCheck: true},
 		{name: "queued pending check", marker: "pending:previous-check:current-check", wantCheck: true},
+		{name: "interrupted stop", wantCheck: true},
+		{name: "interrupted stop without history", missingHistory: true},
 		{name: "unrelated expired running check", marker: "running:other-check:claim", expired: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -392,9 +395,13 @@ func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
 			if test.expired {
 				monitor.UpdatedAt = time.Now().UTC().Add(-2 * heartbeatClaimLease)
 			}
-			service := NewHeartbeatService(logger, tracer, &heartbeatServiceRepository{heartbeat: &entities.Heartbeat{
+			repository := &heartbeatServiceRepository{heartbeat: &entities.Heartbeat{
 				Timestamp: time.Now().UTC(),
-			}}, &heartbeatServiceMonitorRepository{monitor: monitor},
+			}}
+			if test.missingHistory {
+				repository.err = stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "heartbeat not found")
+			}
+			service := NewHeartbeatService(logger, tracer, repository, &heartbeatServiceMonitorRepository{monitor: monitor},
 				NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
 			err := service.Monitor(context.Background(), &HeartbeatMonitorParams{
 				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
