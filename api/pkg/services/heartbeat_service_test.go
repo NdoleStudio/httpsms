@@ -334,7 +334,7 @@ func TestHeartbeatServiceMonitor_RejectsSupersededAndOverlappingChecks(t *testin
 		copy := params
 		require.NoError(t, service.Monitor(context.Background(), &copy))
 	}
-	require.NoError(t, service.Monitor(context.Background(), &params))
+	require.Error(t, service.Monitor(context.Background(), &params))
 	require.Len(t, queue.events, 3)
 	assert.Equal(t, events.PhoneHeartbeatMissed, queue.events[0].Type())
 	assert.Equal(t, events.EventTypePhoneHeartbeatOffline, queue.events[1].Type())
@@ -362,6 +362,82 @@ func TestHeartbeatServiceMonitor_RetriesFailedSuccessor(t *testing.T) {
 	require.Error(t, service.Monitor(context.Background(), params))
 	assert.Equal(t, params.CheckID, monitor.QueueID)
 	queue.err = nil
+	require.NoError(t, service.Monitor(context.Background(), params))
+	require.Len(t, queue.events, 1)
+}
+
+func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		marker    string
+		expired   bool
+		wantRetry bool
+		wantCheck bool
+	}{
+		{name: "running lease active", marker: "running:current-check:claim", wantRetry: true},
+		{name: "running lease expired", marker: "running:current-check:claim", expired: true, wantCheck: true},
+		{name: "pending lease active", marker: "pending:current-check:next-check", wantRetry: true},
+		{name: "pending lease expired", marker: "pending:current-check:next-check", expired: true, wantCheck: true},
+		{name: "queued pending check", marker: "pending:previous-check:current-check", wantCheck: true},
+		{name: "unrelated expired running check", marker: "running:other-check:claim", expired: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			logger := &phoneNotificationLogger{}
+			tracer := telemetry.NewOtelLogger("test", logger)
+			queue := &heartbeatServiceQueue{}
+			monitor := &entities.HeartbeatMonitor{
+				ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1",
+				Owner: "+18005550199", PhoneOnline: true, QueueID: test.marker, UpdatedAt: time.Now().UTC(),
+			}
+			if test.expired {
+				monitor.UpdatedAt = time.Now().UTC().Add(-2 * heartbeatClaimLease)
+			}
+			service := NewHeartbeatService(logger, tracer, &heartbeatServiceRepository{heartbeat: &entities.Heartbeat{
+				Timestamp: time.Now().UTC(),
+			}}, &heartbeatServiceMonitorRepository{monitor: monitor},
+				NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+			err := service.Monitor(context.Background(), &HeartbeatMonitorParams{
+				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
+				Source: "https://example.com", CheckID: "current-check",
+			})
+			if test.wantRetry {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			if test.wantCheck {
+				require.Len(t, queue.events, 1)
+			} else {
+				assert.Empty(t, queue.events)
+				assert.Equal(t, test.marker, monitor.QueueID)
+			}
+		})
+	}
+}
+
+func TestHeartbeatServiceMonitor_RetriesHistoryRecheckFailure(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	repository := &heartbeatServiceRepository{
+		err: stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "heartbeat not found"),
+	}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1",
+		Owner: "+18005550199", PhoneOnline: true, QueueID: "current-check", UpdatedAt: time.Now().UTC(),
+	}
+	repository.afterLast = func() { repository.err = stacktrace.NewError("database unavailable") }
+	service := NewHeartbeatService(logger, tracer, repository, &heartbeatServiceMonitorRepository{monitor: monitor},
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	params := &HeartbeatMonitorParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
+		Source: "https://example.com", CheckID: monitor.QueueID,
+	}
+	require.Error(t, service.Monitor(context.Background(), params))
+	assert.Equal(t, params.CheckID, monitor.QueueID)
+	assert.Empty(t, queue.events)
+	repository.heartbeat = &entities.Heartbeat{Timestamp: time.Now().UTC()}
+	repository.err = nil
 	require.NoError(t, service.Monitor(context.Background(), params))
 	require.Len(t, queue.events, 1)
 }
