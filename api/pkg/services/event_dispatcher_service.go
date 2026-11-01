@@ -89,7 +89,7 @@ func (dispatcher *EventDispatcher) enqueue(ctx context.Context, event cloudevent
 	defer span.End()
 
 	queueID, err := dispatcher.queue.Enqueue(ctx, task, timeout)
-	if errors.Is(err, context.DeadlineExceeded) && event.Type() != events.EventTypePhoneHeartbeatCheck {
+	if errors.Is(err, context.DeadlineExceeded) && task.ID == "" && event.Type() != events.EventTypePhoneHeartbeatCheck {
 		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot enqueue event with ID [%s] and type [%s] to [%T]", event.ID(), event.Type(), dispatcher.queue))
 		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
 		time.AfterFunc(timeout, func() {
@@ -184,12 +184,16 @@ func (dispatcher *EventDispatcher) createCloudTask(event cloudevents.Event) (*Pu
 		return nil, stacktrace.Propagatef(err, "cannot marshall [%T] with ID [%s]", event, event.ID())
 	}
 
-	return &PushQueueTask{
+	task := &PushQueueTask{
 		Method: http.MethodPost,
 		URL:    dispatcher.queueConfig.ConsumerEndpoint,
 		Body:   eventContent,
 		Headers: map[string]string{
 			"x-api-key": dispatcher.queueConfig.UserAPIKey,
 		},
-	}, nil
+	}
+	if event.Type() == events.EventTypePhoneHeartbeatOffline {
+		task.ID = event.ID()
+	}
+	return task, nil
 }

@@ -38,7 +38,7 @@ func TestEventDispatcherDispatchSync_RetriesOnlyHeartbeatCheckFailures(t *testin
 }
 
 func TestEventDispatcherDispatchWithTimeout_DoesNotUseLocalFallbackForHeartbeatChecks(t *testing.T) {
-	for _, eventType := range []string{events.EventTypePhoneHeartbeatCheck, events.EventTypePhoneHeartbeatOnline} {
+	for _, eventType := range []string{events.EventTypePhoneHeartbeatCheck, events.EventTypePhoneHeartbeatOffline, events.EventTypePhoneHeartbeatOnline} {
 		t.Run(eventType, func(t *testing.T) {
 			logger := &phoneNotificationLogger{}
 			tracer := telemetry.NewOtelLogger("test", logger)
@@ -49,7 +49,7 @@ func TestEventDispatcherDispatchWithTimeout_DoesNotUseLocalFallbackForHeartbeatC
 			event.SetSource("https://example.com")
 			event.SetType(eventType)
 			queueID, err := dispatcher.DispatchWithTimeout(context.Background(), event, time.Hour)
-			if eventType == events.EventTypePhoneHeartbeatCheck {
+			if eventType != events.EventTypePhoneHeartbeatOnline {
 				require.ErrorIs(t, err, context.DeadlineExceeded)
 				require.Empty(t, queueID)
 			} else {

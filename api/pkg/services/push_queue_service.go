@@ -9,6 +9,8 @@ import (
 
 // PushQueueTask represents a push queue task
 type PushQueueTask struct {
+	// ID deduplicates named task creation; empty IDs retain anonymous queue behavior.
+	ID      string
 	Method  string
 	URL     string
 	Body    []byte

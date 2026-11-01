@@ -12,6 +12,8 @@ import (
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -75,11 +77,18 @@ func (queue *googlePushQueue) enqueueImpl(ctx context.Context, task *PushQueueTa
 
 	// Add a payload message if one is present.
 	req.Task.GetHttpRequest().Body = task.Body
+	if task.ID != "" {
+		req.Task.Name = queue.queueConfig.Name + "/tasks/" + task.ID
+	}
 
 	requestCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
 	queueTask, err := queue.client.CreateTask(requestCtx, req)
+	if status.Code(err) == codes.AlreadyExists && req.Task.Name != "" {
+		ctxLogger.Info(fmt.Sprintf("task [%s] was already queued", req.Task.Name))
+		return req.Task.Name, nil
+	}
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL))
 		return queueID, queue.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot schedule task [%s] to URL [%s]", string(task.Body), task.URL))

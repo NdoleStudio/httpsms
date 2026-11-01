@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/NdoleStudio/stacktrace"
@@ -14,10 +15,11 @@ import (
 )
 
 type emulatorPushQueue struct {
-	config PushQueueConfig
-	client *http.Client
-	logger telemetry.Logger
-	tracer telemetry.Tracer
+	config     PushQueueConfig
+	client     *http.Client
+	logger     telemetry.Logger
+	tracer     telemetry.Tracer
+	namedTasks sync.Map
 }
 
 // EmulatorPushQueue creates a new googlePushQueue
@@ -41,6 +43,14 @@ func (queue *emulatorPushQueue) Enqueue(ctx context.Context, task *PushQueueTask
 	defer span.End()
 
 	queueID = uuid.New().String()
+	if task.ID != "" {
+		queueID = task.ID
+		if _, exists := queue.namedTasks.LoadOrStore(queueID, struct{}{}); exists {
+			return queueID, nil
+		}
+		// Mirror Cloud Tasks' named-task retention in this non-durable local emulator.
+		time.AfterFunc(24*time.Hour, func() { queue.namedTasks.Delete(queueID) })
+	}
 
 	time.AfterFunc(timeout, queue.push(*task, queueID))
 

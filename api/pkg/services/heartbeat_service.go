@@ -303,7 +303,7 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	// An empty marker can follow an interrupted stop; history still gates any restart.
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return service.stopHeartbeatCheck(ctx, params, monitor, retryID)
+		return service.stopHeartbeatCheck(ctx, params, monitor)
 	}
 	if err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch heartbeat history for check"))
@@ -367,7 +367,7 @@ func (service *HeartbeatService) heartbeatCheckOwnership(ctx context.Context, mo
 	return monitor.QueueID, true, nil
 }
 
-func (service *HeartbeatService) stopHeartbeatCheck(ctx context.Context, params *HeartbeatMonitorParams, monitor *entities.HeartbeatMonitor, retryID string) (resultErr error) {
+func (service *HeartbeatService) stopHeartbeatCheck(ctx context.Context, params *HeartbeatMonitorParams, monitor *entities.HeartbeatMonitor) error {
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
@@ -379,11 +379,6 @@ func (service *HeartbeatService) stopHeartbeatCheck(ctx context.Context, params 
 	if !stopped {
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("heartbeat stop ownership changed for monitor [%s]; retry to verify its restart", monitor.ID))
 	}
-	defer func() {
-		if resultErr != nil {
-			service.releaseHeartbeatCheck(ctx, monitor.ID, "", retryID)
-		}
-	}()
 	return service.restartAfterHeartbeatStop(ctx, params)
 }
 
@@ -407,7 +402,7 @@ func (service *HeartbeatService) restartAfterHeartbeatStop(ctx context.Context, 
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot reload stopped heartbeat monitor [%s]", params.MonitorID))
 	}
 	if !monitor.RequiresCheck() {
-		return service.requireHeartbeatCheckCommit(ctx, monitor)
+		return service.requireHeartbeatCheckCommit(ctx, monitor, params.CheckID)
 	}
 	params.PhoneID = monitor.PhoneID
 	params.MonitorID = monitor.ID
@@ -487,7 +482,7 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, lastTi
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	event, err := service.createPhoneHeartbeatOfflineEvent(params.Source, &events.PhoneHeartbeatOfflinePayload{
+	event, err := service.createPhoneHeartbeatOfflineEvent(params.Source, params.CheckID, &events.PhoneHeartbeatOfflinePayload{
 		PhoneID:                params.PhoneID,
 		UserID:                 params.UserID,
 		MonitorID:              params.MonitorID,
@@ -549,11 +544,25 @@ func (service *HeartbeatService) enqueueHeartbeatCheck(ctx context.Context, even
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event [%s] for heartbeat monitor with phone id [%s]", event.Type(), monitor.PhoneID))
 	}
 
-	if _, err = service.monitorRepository.CompareAndSwapQueueID(ctx, monitor.ID, pendingID, "check:"+checkID); err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot finalize queued heartbeat check for monitor [%s]", monitor.ID))
+	if err := service.finalizeHeartbeatCheck(ctx, monitor.ID, pendingID, checkID); err != nil {
+		return err
 	}
 	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", monitor.ID, monitor.PhoneID, queueID, monitor.UserID))
 
+	return nil
+}
+
+func (service *HeartbeatService) finalizeHeartbeatCheck(ctx context.Context, monitorID uuid.UUID, pendingID, checkID string) error {
+	ctx, span := service.tracer.Start(ctx)
+	defer span.End()
+
+	committed, err := service.monitorRepository.CompareAndSwapQueueID(ctx, monitorID, pendingID, "check:"+checkID)
+	if err != nil {
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot finalize queued heartbeat check for monitor [%s]", monitorID))
+	}
+	if !committed {
+		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("heartbeat finalization ownership changed for monitor [%s]; retry delivery", monitorID))
+	}
 	return nil
 }
 
@@ -577,14 +586,14 @@ func (service *HeartbeatService) verifyHeartbeatCheckCommit(ctx context.Context,
 	if err != nil {
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot verify successor for heartbeat monitor [%s]", params.MonitorID))
 	}
-	return service.requireHeartbeatCheckCommit(ctx, monitor)
+	return service.requireHeartbeatCheckCommit(ctx, monitor, params.CheckID)
 }
 
-func (service *HeartbeatService) requireHeartbeatCheckCommit(ctx context.Context, monitor *entities.HeartbeatMonitor) error {
+func (service *HeartbeatService) requireHeartbeatCheckCommit(ctx context.Context, monitor *entities.HeartbeatMonitor, incomingCheckID string) error {
 	_, span := service.tracer.Start(ctx)
 	defer span.End()
 
-	if monitor.QueueID == "" || strings.HasPrefix(monitor.QueueID, "running:") || strings.HasPrefix(monitor.QueueID, "pending:") {
+	if !strings.HasPrefix(monitor.QueueID, "check:") || strings.TrimPrefix(monitor.QueueID, "check:") == incomingCheckID {
 		return service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("heartbeat successor for monitor [%s] is not committed; retry delivery", monitor.ID))
 	}
 	return nil
@@ -594,8 +603,14 @@ func (service *HeartbeatService) createPhoneHeartbeatMissedEvent(source string, 
 	return service.createEvent(events.PhoneHeartbeatMissed, source, payload)
 }
 
-func (service *HeartbeatService) createPhoneHeartbeatOfflineEvent(source string, payload *events.PhoneHeartbeatOfflinePayload) (cloudevents.Event, error) {
-	return service.createEvent(events.EventTypePhoneHeartbeatOffline, source, payload)
+func (service *HeartbeatService) createPhoneHeartbeatOfflineEvent(source, checkID string, payload *events.PhoneHeartbeatOfflinePayload) (cloudevents.Event, error) {
+	event, err := service.createEvent(events.EventTypePhoneHeartbeatOffline, source, payload)
+	if err != nil {
+		return event, err
+	}
+	// Queue-level deduplication survives retries before the offline listener updates phone status.
+	event.SetID(uuid.NewSHA1(payload.MonitorID, []byte(checkID+":"+payload.LastHeartbeatTimestamp.UTC().Format(time.RFC3339Nano))).String())
+	return event, nil
 }
 
 func (service *HeartbeatService) createPhoneHeartbeatCheckEvent(params *HeartbeatMonitorParams, lastTimestamp time.Time, checkID string) (cloudevents.Event, error) {
