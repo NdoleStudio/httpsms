@@ -18,11 +18,11 @@ importers:
         specifier: ^0.11.3
         version: 0.11.3(magic-string@1.4.5)(magicast@0.5.4)(oxc-parser@0.153.0)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.14)(unplugin@3.6.0(esbuild@0.25.12)(rolldown@1.2.14)(rollup@4.62.4)(vite@8.3.4(@types/node@26.1.2)(esbuild@0.25.12)(jiti@2.7.0)(sass@1.105.1)(terser@5.49.2)(tsx@4.23.15)(yaml@2.9.1)))
       chart.js:
-        specifier: ^4.5.1
-        version: 4.5.1
+        specifier: ^4.6.1
+        version: 4.6.1
       chartjs-adapter-moment:
         specifier: ^1.0.1
-        version: 1.0.1(chart.js@4.5.1)(moment@2.31.0)
+        version: 1.0.1(chart.js@4.6.1)(moment@2.31.0)
       date-fns:
         specifier: ^4.3.0
         version: 4.4.0
@@ -67,7 +67,7 @@ importers:
         version: 3.5.41(typescript@6.0.3)
       vue-chartjs:
         specifier: ^5.3.3
-        version: 5.3.4(chart.js@4.5.1)(vue@3.5.41(typescript@6.0.3))
+        version: 5.3.4(chart.js@4.6.1)(vue@3.5.41(typescript@6.0.3))
       vue-router:
         specifier: ^5.0.7
         version: 5.2.0(@vue/compiler-sfc@3.5.44)(esbuild@0.25.12)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.14)(rollup@4.62.4)(vite@8.3.4(@types/node@26.1.2)(esbuild@0.25.12)(jiti@2.7.0)(sass@1.105.1)(terser@5.49.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.41(typescript@6.0.3))
@@ -2787,8 +2787,8 @@ packages:
   change-case@5.4.4:
     resolution: {integrity: sha512-HRQyTk2/YPEkt9TnUPbOpr64Uw3KOicFWPVBb+xiHvd6eBx/qPr9xqfBFDT8P2vWsvvz4jbEkfDe71W3VyNu2w==}
 
-  chart.js@4.5.1:
-    resolution: {integrity: sha512-GIjfiT9dbmHRiYi6Nl2yFCq7kkwdkp1W/lp2J99rX0yo9tgJGn3lKQATztIjb5tVtevcBtIdICNWqlq5+E8/Pw==}
+  chart.js@4.6.1:
+    resolution: {integrity: sha512-hJyniucsFmq//EvXYvJ6c6mahPoI3kaxdjVH8awTaJ/fDNWeSqqqArixMJWkWNN6fcYvPU3HneSANFNYtRi61g==}
     engines: {pnpm: '>=8'}
 
   chartjs-adapter-moment@1.0.1:
@@ -8959,13 +8959,13 @@ snapshots:
 
   change-case@5.4.4: {}
 
-  chart.js@4.5.1:
+  chart.js@4.6.1:
     dependencies:
       '@kurkle/color': 0.3.4
 
-  chartjs-adapter-moment@1.0.1(chart.js@4.5.1)(moment@2.31.0):
+  chartjs-adapter-moment@1.0.1(chart.js@4.6.1)(moment@2.31.0):
     dependencies:
-      chart.js: 4.5.1
+      chart.js: 4.6.1
       moment: 2.31.0
 
   chokidar@5.0.0:
@@ -12249,9 +12249,9 @@ snapshots:
     dependencies:
       ufo: 1.6.4
 
-  vue-chartjs@5.3.4(chart.js@4.5.1)(vue@3.5.41(typescript@6.0.3)):
+  vue-chartjs@5.3.4(chart.js@4.6.1)(vue@3.5.41(typescript@6.0.3)):
     dependencies:
-      chart.js: 4.5.1
+      chart.js: 4.6.1
       vue: 3.5.41(typescript@6.0.3)
 
   vue-component-type-helpers@3.3.13: {}
