@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
@@ -31,6 +32,29 @@ func TestEventDispatcherDispatchSync_RetriesOnlyHeartbeatCheckFailures(t *testin
 				require.ErrorIs(t, err, failure)
 			} else {
 				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEventDispatcherDispatchWithTimeout_DoesNotUseLocalFallbackForHeartbeatChecks(t *testing.T) {
+	for _, eventType := range []string{events.EventTypePhoneHeartbeatCheck, events.EventTypePhoneHeartbeatOnline} {
+		t.Run(eventType, func(t *testing.T) {
+			logger := &phoneNotificationLogger{}
+			tracer := telemetry.NewOtelLogger("test", logger)
+			queue := &heartbeatServiceQueue{err: context.DeadlineExceeded}
+			dispatcher := NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{})
+			event := cloudevents.NewEvent()
+			event.SetID("check-1")
+			event.SetSource("https://example.com")
+			event.SetType(eventType)
+			queueID, err := dispatcher.DispatchWithTimeout(context.Background(), event, time.Hour)
+			if eventType == events.EventTypePhoneHeartbeatCheck {
+				require.ErrorIs(t, err, context.DeadlineExceeded)
+				require.Empty(t, queueID)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, "local-check-1", queueID)
 			}
 		})
 	}

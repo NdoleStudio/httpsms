@@ -89,7 +89,7 @@ func (dispatcher *EventDispatcher) enqueue(ctx context.Context, event cloudevent
 	defer span.End()
 
 	queueID, err := dispatcher.queue.Enqueue(ctx, task, timeout)
-	if errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, context.DeadlineExceeded) && event.Type() != events.EventTypePhoneHeartbeatCheck {
 		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot enqueue event with ID [%s] and type [%s] to [%T]", event.ID(), event.Type(), dispatcher.queue))
 		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
 		time.AfterFunc(timeout, func() {

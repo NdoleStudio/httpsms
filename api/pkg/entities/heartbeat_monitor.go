@@ -1,10 +1,14 @@
 package entities
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// HeartbeatCheckClaimLease bounds recovery of interrupted heartbeat check claims.
+const HeartbeatCheckClaimLease = time.Minute
 
 // HeartbeatMonitor is used to monitor heartbeats of a phone
 type HeartbeatMonitor struct {
@@ -21,7 +25,8 @@ type HeartbeatMonitor struct {
 
 // RequiresCheck returns true if the heartbeat monitor requires a check
 func (h *HeartbeatMonitor) RequiresCheck() bool {
-	return h.QueueID == "" || h.UpdatedAt.Add(2*time.Hour).Before(time.Now())
+	return h.QueueID == "" || h.UpdatedAt.Add(2*time.Hour).Before(time.Now()) ||
+		(strings.HasPrefix(h.QueueID, "pending::") && h.UpdatedAt.Add(HeartbeatCheckClaimLease).Before(time.Now()))
 }
 
 // PhoneIsOffline returns true if the phone is offline

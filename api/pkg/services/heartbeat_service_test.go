@@ -134,7 +134,7 @@ func TestHeartbeatService_RestartsChecksAfterHistoryExpires(t *testing.T) {
 	assert.True(t, monitor.PhoneOnline)
 	var payload events.PhoneHeartbeatCheckPayload
 	require.NoError(t, queue.events[0].DataAs(&payload))
-	assert.Equal(t, payload.CheckID, monitor.QueueID)
+	assert.Equal(t, "check:"+payload.CheckID, monitor.QueueID)
 	assert.NotEmpty(t, payload.CheckID)
 	assert.Equal(t, monitor.ID, payload.MonitorID)
 	assert.Equal(t, monitor.PhoneID, payload.PhoneID)
@@ -154,9 +154,12 @@ func TestHeartbeatServiceStore_OnlyRestartsInactiveChecks(t *testing.T) {
 		name      string
 		updatedAt time.Time
 		wantCheck bool
+		queueID   string
 	}{
 		{name: "active monitor", updatedAt: time.Now().UTC()},
 		{name: "stale monitor", updatedAt: time.Now().UTC().Add(-3 * time.Hour), wantCheck: true},
+		{name: "fresh restart claim", updatedAt: time.Now().UTC(), queueID: "pending::new-check"},
+		{name: "expired restart claim", updatedAt: time.Now().UTC().Add(-2 * heartbeatClaimLease), queueID: "pending::new-check", wantCheck: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			logger := &phoneNotificationLogger{}
@@ -165,6 +168,9 @@ func TestHeartbeatServiceStore_OnlyRestartsInactiveChecks(t *testing.T) {
 			monitor := &entities.HeartbeatMonitor{
 				ID: uuid.New(), PhoneID: uuid.New(), UserID: entities.UserID("user-1"),
 				Owner: "+18005550199", QueueID: "previous-check", UpdatedAt: test.updatedAt, PhoneOnline: true,
+			}
+			if test.queueID != "" {
+				monitor.QueueID = test.queueID
 			}
 			service := NewHeartbeatService(logger, tracer, &heartbeatServiceRepository{},
 				&heartbeatServiceMonitorRepository{monitor: monitor},
@@ -300,14 +306,19 @@ func TestHeartbeatServiceMonitor_RestartsHeartbeatArrivingDuringStop(t *testing.
 			} else {
 				repository.afterLast = func() { repository.afterLast = store }
 			}
-			require.NoError(t, service.Monitor(context.Background(), &HeartbeatMonitorParams{
+			err := service.Monitor(context.Background(), &HeartbeatMonitorParams{
 				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
 				Source: "https://example.com", CheckID: monitor.QueueID,
-			}))
+			})
+			if arrival == "restart wins" {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			require.Len(t, queue.events, 1)
 			var payload events.PhoneHeartbeatCheckPayload
 			require.NoError(t, queue.events[0].DataAs(&payload))
-			assert.Equal(t, payload.CheckID, monitor.QueueID)
+			assert.Equal(t, "check:"+payload.CheckID, monitor.QueueID)
 		})
 	}
 }
@@ -374,6 +385,7 @@ func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
 		wantRetry      bool
 		wantCheck      bool
 		missingHistory bool
+		legacy         bool
 	}{
 		{name: "running lease active", marker: "running:current-check:claim", wantRetry: true},
 		{name: "running lease expired", marker: "running:current-check:claim", expired: true, wantCheck: true},
@@ -382,6 +394,9 @@ func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
 		{name: "queued pending check", marker: "pending:previous-check:current-check", wantCheck: true},
 		{name: "interrupted stop", wantCheck: true},
 		{name: "interrupted stop without history", missingHistory: true},
+		{name: "legacy running recovery", marker: "running:legacy:claim", expired: true, wantCheck: true, legacy: true},
+		{name: "legacy pending recovery", marker: "pending:legacy:next-check", expired: true, wantCheck: true, legacy: true},
+		{name: "legacy rejects restart-only claim", marker: "pending::next-check", expired: true, legacy: true},
 		{name: "unrelated expired running check", marker: "running:other-check:claim", expired: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -403,10 +418,14 @@ func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
 			}
 			service := NewHeartbeatService(logger, tracer, repository, &heartbeatServiceMonitorRepository{monitor: monitor},
 				NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
-			err := service.Monitor(context.Background(), &HeartbeatMonitorParams{
+			params := &HeartbeatMonitorParams{
 				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
 				Source: "https://example.com", CheckID: "current-check",
-			})
+			}
+			if test.legacy {
+				params.CheckID = ""
+			}
+			err := service.Monitor(context.Background(), params)
 			if test.wantRetry {
 				require.Error(t, err)
 			} else {
@@ -447,4 +466,59 @@ func TestHeartbeatServiceMonitor_RetriesHistoryRecheckFailure(t *testing.T) {
 	repository.err = nil
 	require.NoError(t, service.Monitor(context.Background(), params))
 	require.Len(t, queue.events, 1)
+}
+
+func TestHeartbeatServiceMonitor_LegacyMigrationIsOneWay(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1",
+		Owner: "+18005550199", PhoneOnline: true, QueueID: "legacy-task", UpdatedAt: time.Now().UTC(),
+	}
+	service := NewHeartbeatService(logger, tracer, &heartbeatServiceRepository{heartbeat: &entities.Heartbeat{
+		Timestamp: time.Now().UTC(),
+	}}, &heartbeatServiceMonitorRepository{monitor: monitor},
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	params := &HeartbeatMonitorParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID, Source: "https://example.com",
+	}
+	require.NoError(t, service.Monitor(context.Background(), params))
+	require.Len(t, queue.events, 1)
+	var payload events.PhoneHeartbeatCheckPayload
+	require.NoError(t, queue.events[0].DataAs(&payload))
+	assert.Equal(t, "check:"+payload.CheckID, monitor.QueueID)
+	require.NoError(t, service.Monitor(context.Background(), params))
+	assert.Len(t, queue.events, 1)
+	params.CheckID = payload.CheckID
+	require.NoError(t, service.Monitor(context.Background(), params))
+	assert.Len(t, queue.events, 2)
+}
+
+func TestHeartbeatServiceMonitor_RetriesLostStopOwnership(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1",
+		Owner: "+18005550199", PhoneOnline: true, QueueID: "current-check", UpdatedAt: time.Now().UTC(),
+	}
+	repository := &heartbeatServiceRepository{
+		err: stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "heartbeat not found"),
+	}
+	monitorRepository := &heartbeatServiceMonitorRepository{monitor: monitor}
+	monitorRepository.beforeSwap = func() { monitor.QueueID = "" }
+	service := NewHeartbeatService(logger, tracer, repository, monitorRepository,
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	params := &HeartbeatMonitorParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
+		Source: "https://example.com", CheckID: monitor.QueueID,
+	}
+	require.Error(t, service.Monitor(context.Background(), params))
+	assert.Empty(t, queue.events)
+	monitor.QueueID = params.CheckID
+	repository.err = nil
+	repository.heartbeat = &entities.Heartbeat{Timestamp: time.Now().UTC()}
+	require.NoError(t, service.Monitor(context.Background(), params))
+	assert.Len(t, queue.events, 1)
 }
