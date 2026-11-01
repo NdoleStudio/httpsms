@@ -391,12 +391,15 @@ func TestHeartbeatServiceMonitor_RecoversInterruptedClaims(t *testing.T) {
 		{name: "running lease expired", marker: "running:current-check:claim", expired: true, wantCheck: true},
 		{name: "pending lease active", marker: "pending:current-check:next-check", wantRetry: true},
 		{name: "pending lease expired", marker: "pending:current-check:next-check", expired: true, wantCheck: true},
+		{name: "restart-only lease active", marker: "pending::next-check", wantRetry: true},
+		{name: "restart-only lease expired", marker: "pending::next-check", expired: true, wantCheck: true},
 		{name: "queued pending check", marker: "pending:previous-check:current-check", wantCheck: true},
 		{name: "interrupted stop", wantCheck: true},
 		{name: "interrupted stop without history", missingHistory: true},
 		{name: "legacy running recovery", marker: "running:legacy:claim", expired: true, wantCheck: true, legacy: true},
 		{name: "legacy pending recovery", marker: "pending:legacy:next-check", expired: true, wantCheck: true, legacy: true},
-		{name: "legacy rejects restart-only claim", marker: "pending::next-check", expired: true, legacy: true},
+		{name: "legacy waits for restart-only claim", marker: "pending::next-check", wantRetry: true, legacy: true},
+		{name: "legacy recovers abandoned restart-only claim", marker: "pending::next-check", expired: true, wantCheck: true, legacy: true},
 		{name: "unrelated expired running check", marker: "running:other-check:claim", expired: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -466,6 +469,69 @@ func TestHeartbeatServiceMonitor_RetriesHistoryRecheckFailure(t *testing.T) {
 	repository.err = nil
 	require.NoError(t, service.Monitor(context.Background(), params))
 	require.Len(t, queue.events, 1)
+}
+
+func TestHeartbeatServiceMonitor_RetriesPendingRestartAfterStop(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1",
+		Owner: "+18005550199", PhoneOnline: true, QueueID: "current-check", UpdatedAt: time.Now().UTC(),
+	}
+	repository := &heartbeatServiceRepository{
+		err: stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "heartbeat not found"),
+	}
+	repository.afterLast = func() {
+		repository.heartbeat = &entities.Heartbeat{Timestamp: time.Now().UTC()}
+		repository.err = nil
+		repository.afterLast = func() {
+			monitor.QueueID = "pending::concurrent-restart"
+			monitor.UpdatedAt = time.Now().UTC()
+		}
+	}
+	service := NewHeartbeatService(logger, tracer, repository, &heartbeatServiceMonitorRepository{monitor: monitor},
+		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	params := &HeartbeatMonitorParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
+		Source: "https://example.com", CheckID: monitor.QueueID,
+	}
+	require.Error(t, service.Monitor(context.Background(), params))
+	assert.Equal(t, "pending::concurrent-restart", monitor.QueueID)
+	assert.Empty(t, queue.events)
+	monitor.UpdatedAt = time.Now().UTC().Add(-2 * heartbeatClaimLease)
+	require.NoError(t, service.Monitor(context.Background(), params))
+	assert.Len(t, queue.events, 1)
+}
+
+func TestHeartbeatServiceMonitor_RetriesUncommittedSuccessorOnClaimLoss(t *testing.T) {
+	logger := &phoneNotificationLogger{}
+	tracer := telemetry.NewOtelLogger("test", logger)
+	queue := &heartbeatServiceQueue{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1",
+		Owner: "+18005550199", PhoneOnline: true, QueueID: "current-check", UpdatedAt: time.Now().UTC(),
+	}
+	monitorRepository := &heartbeatServiceMonitorRepository{monitor: monitor}
+	monitorRepository.beforeSwap = func() {
+		monitorRepository.beforeSwap = func() {
+			monitor.QueueID = "pending::concurrent-restart"
+			monitor.UpdatedAt = time.Now().UTC()
+		}
+	}
+	service := NewHeartbeatService(logger, tracer, &heartbeatServiceRepository{heartbeat: &entities.Heartbeat{
+		Timestamp: time.Now().UTC(),
+	}}, monitorRepository, NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
+	params := &HeartbeatMonitorParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID,
+		Source: "https://example.com", CheckID: monitor.QueueID,
+	}
+	require.Error(t, service.Monitor(context.Background(), params))
+	assert.Equal(t, "pending::concurrent-restart", monitor.QueueID)
+	assert.Empty(t, queue.events)
+	monitor.UpdatedAt = time.Now().UTC().Add(-2 * heartbeatClaimLease)
+	require.NoError(t, service.Monitor(context.Background(), params))
+	assert.Len(t, queue.events, 1)
 }
 
 func TestHeartbeatServiceMonitor_LegacyMigrationIsOneWay(t *testing.T) {

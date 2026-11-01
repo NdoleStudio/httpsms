@@ -123,6 +123,13 @@ The API uses a **DI container** (`pkg/di/container.go`) that lazily initializes 
 
 ## Key Conventions
 
+### Clean Code & SOLID
+
+- Write the simplest, clearest code that fully satisfies the requirement. Follow SOLID principles without introducing unnecessary abstractions or overengineering.
+- Keep methods short and focused on a single responsibility. Avoid long methods that combine unrelated functionality.
+- Extract distinct responsibilities into clearly named private methods (unexported methods in Go), keeping the main method a readable orchestration of those steps.
+- Keep responsibilities cohesive, depend on appropriate interfaces, and prefer small, focused interfaces over broad ones. Preserve existing behavior when refactoring.
+
 ### API (Go)
 
 - **Error handling**: Use `github.com/palantir/stacktrace` — wrap errors with `stacktrace.Propagate(err, "context")` or `stacktrace.PropagateWithCode()`. Never return bare errors.
