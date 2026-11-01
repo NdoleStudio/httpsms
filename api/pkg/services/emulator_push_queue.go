@@ -66,28 +66,30 @@ func (queue *emulatorPushQueue) Enqueue(ctx context.Context, task *PushQueueTask
 
 func (queue *emulatorPushQueue) push(task PushQueueTask, queueID string) func() {
 	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		request := requests.
-			URL(task.URL).
-			Client(queue.client).
-			Method(task.Method).
-			BodyBytes(task.Body)
-
-		// add headers
-		for key, value := range task.Headers {
-			request.Header(key, value)
+		backoff := time.Second
+		for {
+			if err := queue.send(task); err == nil {
+				queue.logger.Info(fmt.Sprintf("queue task [%s] sent to URL [%s]", queueID, task.URL))
+				return
+			} else {
+				queue.logger.Error(stacktrace.Propagatef(err, "cannot send http request to [%s] for queue task [%s]", task.URL, queueID))
+			}
+			time.Sleep(backoff)
+			backoff = min(2*backoff, time.Minute)
 		}
-
-		// add content type
-		request.Header("Content-Type", "application/json")
-
-		if err := request.Fetch(ctx); err != nil {
-			queue.logger.Error(stacktrace.Propagatef(err, "cannot send http request to [%s] for queue task [%s]", task.URL, queueID))
-			return
-		}
-
-		queue.logger.Info(fmt.Sprintf("queue task [%s] sent to URL [%s]", queueID, task.URL))
 	}
+}
+
+func (queue *emulatorPushQueue) send(task PushQueueTask) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	request := requests.URL(task.URL).Client(queue.client).Method(task.Method).BodyBytes(task.Body)
+	for key, value := range task.Headers {
+		request.Header(key, value)
+	}
+	if err := request.Header("Content-Type", "application/json").Fetch(ctx); err != nil {
+		return stacktrace.Propagatef(err, "cannot deliver queue HTTP request to [%s]", task.URL)
+	}
+	return nil
 }

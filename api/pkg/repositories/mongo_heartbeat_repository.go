@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -99,17 +100,40 @@ func (repository *mongoHeartbeatRepository) Last(ctx context.Context, userID ent
 		{Key: "owner", Value: owner},
 	}
 
-	opts := options.FindOne().SetSort(bson.D{{Key: "timestamp", Value: -1}})
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(2)
+	cursor, err := repository.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load heartbeat with userID [%s] and owner [%s]", userID, owner))
+	}
 
+	var candidates []entities.Heartbeat
+	if err := cursor.All(ctx, &candidates); err != nil {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode latest heartbeats with userID [%s] and owner [%s]", userID, owner))
+	}
+	if len(candidates) == 0 {
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(mongo.ErrNoDocuments, ErrCodeNotFound, "heartbeat with userID [%s] and owner [%s] does not exist", userID, owner))
+	}
+	if len(candidates) == 1 || !candidates[0].Timestamp.Equal(candidates[1].Timestamp) {
+		return &candidates[0], nil
+	}
+	return repository.lastHeartbeatAtTimestamp(ctx, userID, owner, candidates[0].Timestamp)
+}
+
+func (repository *mongoHeartbeatRepository) lastHeartbeatAtTimestamp(ctx context.Context, userID entities.UserID, owner string, timestamp time.Time) (*entities.Heartbeat, error) {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	filter := bson.D{{Key: "user_id", Value: string(userID)}, {Key: "owner", Value: owner}, {Key: "timestamp", Value: timestamp}}
+	// Restrict sorting to the tied timestamp; the existing history index bounds both queries.
+	opts := options.FindOne().SetSort(bson.D{{Key: "_id", Value: 1}})
 	var heartbeat entities.Heartbeat
 	err := repository.collection.FindOne(ctx, filter, opts).Decode(&heartbeat)
 	if err == mongo.ErrNoDocuments {
 		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.PropagateWithCodef(err, ErrCodeNotFound, "heartbeat with userID [%s] and owner [%s] does not exist", userID, owner))
 	}
 	if err != nil {
-		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load heartbeat with userID [%s] and owner [%s]", userID, owner))
+		return nil, repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot resolve tied heartbeats with userID [%s] and owner [%s]", userID, owner))
 	}
-
 	return &heartbeat, nil
 }
 
