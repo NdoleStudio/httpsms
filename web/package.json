@@ -30,7 +30,7 @@
     "chartjs-adapter-moment": "^1.0.1",
     "date-fns": "^4.3.0",
     "firebase": "^12.13.0",
-    "flag-icons": "^7.5.0",
+    "flag-icons": "^7.6.0",
     "highlight.js": "^11.11.1",
     "libphonenumber-js": "^1.13.3",
     "moment": "^2.31.0",
