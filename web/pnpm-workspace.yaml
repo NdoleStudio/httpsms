@@ -5,3 +5,5 @@ allowBuilds:
   protobufjs: true
   unrs-resolver: true
   vue-demi: true
+# Share pnpm's 24-hour guard with Dependabot's resolver, including pnpm 10.16+.
+minimumReleaseAge: 1440
