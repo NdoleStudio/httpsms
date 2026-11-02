@@ -25,7 +25,7 @@
   "dependencies": {
     "@mdi/js": "^7.4.47",
     "@nuxtjs/google-fonts": "^3.2.0",
-    "@pinia/nuxt": "^0.11.3",
+    "@pinia/nuxt": "^1.0.3",
     "chart.js": "^4.6.1",
     "chartjs-adapter-moment": "^1.0.1",
     "date-fns": "^4.3.0",
@@ -35,7 +35,7 @@
     "libphonenumber-js": "^1.13.3",
     "moment": "^2.31.0",
     "nuxt": "^4.6.3",
-    "pinia": "^3.0.4",
+    "pinia": "^4.1.0",
     "prettier": "^3.9.10",
     "pusher-js": "^8.5.0",
     "qrcode": "^1.5.4",
