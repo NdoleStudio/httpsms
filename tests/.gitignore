@@ -1,0 +1,8 @@
+# Generated integration-test credentials and key material. Every file here is
+# produced by generate-firebase-credentials.sh, is throwaway, and must never be
+# committed.
+firebase-credentials.json
+mcp-test-signing-key.pem
+mcp-test-signing-cert.pem
+mcp-test-openssl.cnf
+wiremock/mappings/firebase-certs.generated.json
