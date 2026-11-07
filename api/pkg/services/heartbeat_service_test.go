@@ -169,7 +169,7 @@ func TestHeartbeatServiceMonitor_StopsCheckingDeletedMonitor(t *testing.T) {
 		NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
 
 	require.NoError(t, service.Monitor(context.Background(), &HeartbeatMonitorParams{
-		UserID: entities.UserID("user-1"), Owner: "+18005550199", Source: "https://example.com",
+		UserID: entities.UserID("user-1"), Owner: "+18005550199", Source: "https://example.com", QueueID: "current-check",
 	}))
 	assert.Empty(t, queue.events)
 }

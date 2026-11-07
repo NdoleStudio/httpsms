@@ -93,10 +93,13 @@ func TestHeartbeatListener_ChecksOnlyCurrentQueueTask(t *testing.T) {
 		storedQueue string
 		eventQueue  string
 		wantChecks  int
+		loadErr     error
 	}{
 		{name: "current task", storedQueue: "current-check", eventQueue: "current-check", wantChecks: 1},
 		{name: "superseded task", storedQueue: "current-check", eventQueue: "old-check"},
 		{name: "missing task ID", storedQueue: "current-check"},
+		{name: "missing task ID and empty stored ID"},
+		{name: "missing task ID and unavailable monitor", storedQueue: "current-check", loadErr: errors.New("database unavailable")},
 		{name: "inactive monitor", eventQueue: "old-check"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -109,7 +112,7 @@ func TestHeartbeatListener_ChecksOnlyCurrentQueueTask(t *testing.T) {
 			repository := &heartbeatListenerRepository{}
 			queue := &heartbeatListenerQueue{}
 			service := services.NewHeartbeatService(logger, tracer, repository,
-				&heartbeatListenerMonitorRepository{monitor: monitor},
+				&heartbeatListenerMonitorRepository{monitor: monitor, err: test.loadErr},
 				services.NewEventDispatcher(logger, tracer, nil, queue, services.PushQueueConfig{}))
 			_, routes := NewHeartbeatListener(logger, tracer, service)
 
