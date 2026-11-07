@@ -14,7 +14,7 @@ require (
 	github.com/NdoleStudio/plunk-go v0.0.2
 	github.com/NdoleStudio/stacktrace v1.1.0
 	github.com/avast/retry-go/v5 v5.0.0
-	github.com/axiomhq/axiom-go v0.32.0
+	github.com/axiomhq/axiom-go v0.38.0
 	github.com/carlmjohnson/requests v0.26.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
@@ -71,7 +71,7 @@ require (
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
 	github.com/olekukonko/errors v1.3.0 // indirect
 	github.com/olekukonko/ll v0.1.8 // indirect
-	github.com/sirupsen/logrus v1.9.4 // indirect
+	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
 )
@@ -97,7 +97,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.12.0 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/andybalholm/cascadia v1.3.4 // indirect
-	github.com/buger/jsonparser v1.2.0 // indirect
+	github.com/buger/jsonparser v1.6.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
