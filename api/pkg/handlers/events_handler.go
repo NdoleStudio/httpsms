@@ -5,6 +5,7 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
+	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
@@ -62,6 +63,12 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 		ctxLogger.Error(stacktrace.NewErrorf("user with ID [%s], cannot dispatch event [%+#v]", h.userIDFomContext(c), request))
 		return h.responseForbidden(c)
 	}
+
+	queueID := ""
+	if taskName := c.Get("X-CloudTasks-TaskName"); taskName != "" {
+		queueID = fmt.Sprintf("%s/tasks/%s", h.queueConfig.Name, taskName)
+	}
+	request.SetExtension(events.ExtensionQueueID, queueID)
 
 	ctxLogger.Info(fmt.Sprintf("handling [%s] event with ID [%s]", request.Type(), request.ID()))
 	err := h.service.DispatchSync(ctx, request)

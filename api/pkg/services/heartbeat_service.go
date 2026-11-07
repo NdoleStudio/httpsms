@@ -283,6 +283,7 @@ type HeartbeatMonitorParams struct {
 	PhoneID   uuid.UUID
 	UserID    entities.UserID
 	Source    string
+	QueueID   string
 }
 
 // Monitor the heartbeats of an owner and phone number
@@ -296,8 +297,12 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		return nil
 	}
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
-		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
+	}
+
+	if params.QueueID != monitor.QueueID {
+		ctxLogger.Info(fmt.Sprintf("ignoring heartbeat check with queue ID [%s] for monitor [%s] with current queue ID [%s]", params.QueueID, monitor.ID, monitor.QueueID))
+		return nil
 	}
 
 	// Update params in case of ID duplicate
@@ -306,6 +311,9 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		if err = service.monitorRepository.UpdateQueueID(ctx, monitor.ID, ""); err != nil {
+			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot clear queue ID for stopped heartbeat monitor [%s]", monitor.ID))
+		}
 		ctxLogger.Info(fmt.Sprintf("heartbeat history does not exist for userID [%s] and owner [%s], stopping check", params.UserID, params.Owner))
 		return nil
 	}
