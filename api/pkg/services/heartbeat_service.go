@@ -290,8 +290,6 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger.Info(fmt.Sprintf("monitoring heartbeat for owner [%s] and user [%s] with monitor ID [%s] and phone ID [%s]", params.Owner, params.UserID, params.MonitorID, params.PhoneID))
-
 	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
