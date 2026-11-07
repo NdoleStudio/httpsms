@@ -124,6 +124,20 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return heartbeat, nil
 	}
 
+	if monitor.RequiresCheck() {
+		ctxLogger.Info(fmt.Sprintf("heartbeat [%s]  with heartbeat monitor [%s] for owner [%s] and user [%s] requires a check because it was updated at [%s]", heartbeat.ID, monitor.ID, monitor.Owner, monitor.UserID, monitor.UpdatedAt))
+		if err = service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, &HeartbeatMonitorParams{
+			Owner:     monitor.Owner,
+			PhoneID:   monitor.PhoneID,
+			UserID:    monitor.UserID,
+			MonitorID: monitor.ID,
+			Source:    params.Source,
+		}); err != nil {
+			ctxLogger.Error(stacktrace.Propagatef(err, "cannot schedule heartbeat check for monitor [%s] due to heartbeat [%s]", monitor.ID, heartbeat.ID))
+			return heartbeat, nil
+		}
+	}
+
 	if monitor.PhoneIsOffline() {
 		ctxLogger.Info(fmt.Sprintf("phone with monitor ID [%s] was offline for user [%s]", monitor.ID, monitor.UserID))
 		service.handleHeartbeatWhenPhoneWasOffline(ctx, params.Source, heartbeat, monitor)
@@ -273,17 +287,16 @@ type HeartbeatMonitorParams struct {
 
 // Monitor the heartbeats of an owner and phone number
 func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatMonitorParams) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+	ctxLogger.Info(fmt.Sprintf("monitoring heartbeat for owner [%s] and user [%s] with monitor ID [%s] and phone ID [%s]", params.Owner, params.UserID, params.MonitorID, params.PhoneID))
 
 	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
 		return nil
 	}
-
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
 		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
@@ -294,6 +307,10 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	params.MonitorID = monitor.ID
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
+	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
+		ctxLogger.Info(fmt.Sprintf("heartbeat history does not exist for userID [%s] and owner [%s], stopping check", params.UserID, params.Owner))
+		return nil
+	}
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID))
 		return nil
