@@ -20,7 +20,7 @@ type HeartbeatMonitor struct {
 
 // RequiresCheck returns true if the heartbeat monitor requires a check
 func (h *HeartbeatMonitor) RequiresCheck() bool {
-	return h.QueueID == "" || h.UpdatedAt.Add(2*time.Hour).Before(time.Now())
+	return h.UpdatedAt.Add(2 * time.Hour).Before(time.Now())
 }
 
 // PhoneIsOffline returns true if the phone is offline

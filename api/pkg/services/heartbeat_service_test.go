@@ -57,13 +57,6 @@ func (repository *heartbeatServiceMonitorRepository) UpdateQueueID(_ context.Con
 	return nil
 }
 
-func (repository *heartbeatServiceMonitorRepository) ClearQueueID(ctx context.Context, monitorID uuid.UUID, expectedQueueID string) error {
-	if repository.monitor.QueueID != expectedQueueID {
-		return nil
-	}
-	return repository.UpdateQueueID(ctx, monitorID, "")
-}
-
 func (repository *heartbeatServiceMonitorRepository) UpdatePhoneOnline(_ context.Context, _ entities.UserID, _ uuid.UUID, online bool) error {
 	repository.monitor.PhoneOnline = online
 	return nil
@@ -93,7 +86,7 @@ func TestHeartbeatService_RestartsChecksAfterHistoryExpires(t *testing.T) {
 		UserID:    entities.UserID("user-1"),
 		Owner:     "+18005550199",
 		QueueID:   "expired-check",
-		UpdatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC().Add(-61 * 24 * time.Hour),
 	}
 	monitorRepository := &heartbeatServiceMonitorRepository{monitor: monitor}
 	service := NewHeartbeatService(logger, tracer, repository, monitorRepository,
@@ -102,7 +95,7 @@ func TestHeartbeatService_RestartsChecksAfterHistoryExpires(t *testing.T) {
 
 	require.NoError(t, service.Monitor(context.Background(), params))
 	assert.Empty(t, queue.events)
-	assert.Empty(t, monitor.QueueID)
+	assert.Equal(t, "expired-check", monitor.QueueID)
 
 	heartbeat, err := service.Store(context.Background(), HeartbeatStoreParams{
 		UserID: monitor.UserID, Owner: monitor.Owner, Source: params.Source, Timestamp: time.Now().UTC(),
@@ -137,7 +130,7 @@ func TestHeartbeatServiceStore_OnlyRestartsInactiveChecks(t *testing.T) {
 	}{
 		{name: "active monitor", updatedAt: time.Now().UTC(), queueID: "previous-check"},
 		{name: "stale monitor", updatedAt: time.Now().UTC().Add(-3 * time.Hour), queueID: "previous-check", wantCheck: true},
-		{name: "stopped monitor", updatedAt: time.Now().UTC(), wantCheck: true},
+		{name: "recent monitor without task ID", updatedAt: time.Now().UTC()},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			logger := &phoneNotificationLogger{}
@@ -163,29 +156,6 @@ func TestHeartbeatServiceStore_OnlyRestartsInactiveChecks(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestHeartbeatServiceMonitor_ReportsFailureToClearStoppedCheck(t *testing.T) {
-	logger := &phoneNotificationLogger{}
-	tracer := telemetry.NewOtelLogger("test", logger)
-	queue := &heartbeatServiceQueue{}
-	monitor := &entities.HeartbeatMonitor{
-		ID: uuid.New(), UserID: "user-1", Owner: "+18005550199", QueueID: "expired-check",
-	}
-	monitorRepository := &heartbeatServiceMonitorRepository{
-		monitor: monitor, updateQueueErr: stacktrace.NewError("queue update failed"),
-	}
-	service := NewHeartbeatService(logger, tracer, &heartbeatServiceRepository{
-		err: stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "heartbeat not found"),
-	}, monitorRepository, NewEventDispatcher(logger, tracer, nil, queue, PushQueueConfig{}))
-
-	err := service.Monitor(context.Background(), &HeartbeatMonitorParams{
-		UserID: monitor.UserID, Owner: monitor.Owner, QueueID: monitor.QueueID,
-	})
-
-	require.ErrorContains(t, err, "queue update failed")
-	assert.Equal(t, "expired-check", monitor.QueueID)
-	assert.Empty(t, queue.events)
 }
 
 func TestHeartbeatServiceMonitor_StopsCheckingDeletedMonitor(t *testing.T) {
@@ -269,7 +239,7 @@ func TestHeartbeatServiceMonitor_PreservesConcurrentReplacement(t *testing.T) {
 	queue := &heartbeatServiceQueue{}
 	monitor := &entities.HeartbeatMonitor{
 		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199",
-		QueueID: "old-check", UpdatedAt: time.Now().UTC().Add(-3 * time.Hour), PhoneOnline: true,
+		QueueID: "old-check", UpdatedAt: time.Now().UTC().Add(-61 * 24 * time.Hour), PhoneOnline: true,
 	}
 	repository := &heartbeatServiceRepository{
 		err: stacktrace.NewErrorWithCode(repositories.ErrCodeNotFound, "heartbeat not found"),

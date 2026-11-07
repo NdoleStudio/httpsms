@@ -88,28 +88,6 @@ func (repository *gormHeartbeatMonitorRepository) UpdateQueueID(ctx context.Cont
 	return nil
 }
 
-// ClearQueueID clears the observed queue ID without erasing a replacement task.
-func (repository *gormHeartbeatMonitorRepository) ClearQueueID(ctx context.Context, monitorID uuid.UUID, expectedQueueID string) error {
-	ctx, span := repository.tracer.Start(ctx)
-	defer span.End()
-
-	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
-	defer cancel()
-
-	err := repository.db.WithContext(ctx).
-		Model(&entities.HeartbeatMonitor{}).
-		Where("id = ?", monitorID).
-		Where("queue_id = ?", expectedQueueID).
-		Updates(map[string]any{
-			"queue_id":   "",
-			"updated_at": time.Now().UTC(),
-		}).Error
-	if err != nil {
-		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot clear queue ID for heartbeat monitor [%s]", monitorID))
-	}
-	return nil
-}
-
 func (repository *gormHeartbeatMonitorRepository) Delete(ctx context.Context, userID entities.UserID, owner string) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()
