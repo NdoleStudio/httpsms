@@ -124,7 +124,8 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return heartbeat, nil
 	}
 
-	if monitor.QueueID == "" || monitor.RequiresCheck() {
+	if monitor.RequiresCheck() {
+		ctxLogger.Info(fmt.Sprintf("heartbeat [%s]  with heartbeat monitor [%s] for owner [%s] and user [%s] requires a check because it was updated at [%s]", heartbeat.ID, monitor.ID, monitor.Owner, monitor.UserID, monitor.UpdatedAt))
 		if err = service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, &HeartbeatMonitorParams{
 			Owner:     monitor.Owner,
 			PhoneID:   monitor.PhoneID,
@@ -132,7 +133,8 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 			MonitorID: monitor.ID,
 			Source:    params.Source,
 		}); err != nil {
-			return nil, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot restart heartbeat check for monitor [%s]", monitor.ID))
+			ctxLogger.Error(stacktrace.Propagatef(err, "cannot schedule heartbeat check for monitor [%s] due to heartbeat [%s]", monitor.ID, heartbeat.ID))
+			return heartbeat, nil
 		}
 	}
 
@@ -308,9 +310,6 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat history does not exist for userID [%s] and owner [%s], stopping check", params.UserID, params.Owner))
-		if err = service.monitorRepository.UpdateQueueID(ctx, monitor.ID, ""); err != nil {
-			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot clear heartbeat check queue for monitor [%s]", monitor.ID))
-		}
 		return nil
 	}
 	if err != nil {
