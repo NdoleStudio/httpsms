@@ -318,15 +318,21 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s]", params.UserID, params.Owner, params.MonitorID))
 	}
 
-	// send urgent FCM message if the last heartbeat is late
-	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval && time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) {
+	return service.checkLastHeartbeat(ctx, heartbeat, monitor, params)
+}
+
+func (service *HeartbeatService) checkLastHeartbeat(ctx context.Context, heartbeat *entities.Heartbeat, monitor *entities.HeartbeatMonitor, params *HeartbeatMonitorParams) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	heartbeatAge := time.Now().UTC().Sub(heartbeat.Timestamp)
+	if heartbeatAge > heartbeatCheckInterval && heartbeatAge < heartbeatCheckInterval*5 {
 		ctxLogger.Info(fmt.Sprintf("sending missed heartbeat notification for userID [%s] and owner [%s] and monitor ID [%s]", params.UserID, params.Owner, params.MonitorID))
 		service.handleMissedMonitor(ctx, heartbeat.Timestamp, params)
-	}
 
-	if time.Now().UTC().Sub(heartbeat.Timestamp) > (heartbeatCheckInterval*4) &&
-		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) && monitor.PhoneOnline {
-		return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
+		if heartbeatAge > heartbeatCheckInterval*4 && monitor.PhoneOnline {
+			return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
+		}
 	}
 
 	return service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params)
