@@ -27,9 +27,10 @@ func TestEventDispatcher_LocalFallbackIncludesQueueID(t *testing.T) {
 	meter, err := noop.NewMeterProvider().Meter("test").Float64Histogram("events")
 	require.NoError(t, err)
 	dispatcher := NewEventDispatcher(logger, tracer, meter, &deadlineEventQueue{}, PushQueueConfig{})
-	delivered := make(chan cloudevents.Event, 1)
-	dispatcher.Subscribe(events.EventTypePhoneHeartbeatCheck, func(_ context.Context, event cloudevents.Event) error {
-		delivered <- event
+	delivered := make(chan string, 1)
+	dispatcher.Subscribe(events.EventTypePhoneHeartbeatCheck, func(ctx context.Context, _ cloudevents.Event) error {
+		queueID, _ := ctx.Value(events.ExtensionQueueID).(string)
+		delivered <- queueID
 		return nil
 	})
 	event := cloudevents.NewEvent()
@@ -41,7 +42,7 @@ func TestEventDispatcher_LocalFallbackIncludesQueueID(t *testing.T) {
 	require.NoError(t, err)
 	select {
 	case received := <-delivered:
-		assert.Equal(t, queueID, received.Extensions()["queueid"])
+		assert.Equal(t, queueID, received)
 	case <-time.After(time.Second):
 		t.Fatal("local fallback did not deliver the event")
 	}

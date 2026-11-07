@@ -40,9 +40,9 @@ func TestEventsHandler_UsesDeliveredTaskQueueID(t *testing.T) {
 			}
 
 			dispatcher := services.NewEventDispatcher(logger, tracer, meter, nil, config)
-			var delivered cloudevents.Event
-			dispatcher.Subscribe(events.EventTypePhoneHeartbeatCheck, func(_ context.Context, event cloudevents.Event) error {
-				delivered = event
+			var deliveredQueueID string
+			dispatcher.Subscribe(events.EventTypePhoneHeartbeatCheck, func(ctx context.Context, _ cloudevents.Event) error {
+				deliveredQueueID, _ = ctx.Value(events.ExtensionQueueID).(string)
 				return nil
 			})
 			handler := NewEventsHandler(logger, tracer, config, dispatcher)
@@ -68,7 +68,7 @@ func TestEventsHandler_UsesDeliveredTaskQueueID(t *testing.T) {
 			require.NoError(t, err)
 			defer response.Body.Close()
 			require.Equal(t, http.StatusNoContent, response.StatusCode)
-			assert.Equal(t, test.queueID, delivered.Extensions()["queueid"])
+			assert.Equal(t, test.queueID, deliveredQueueID)
 		})
 	}
 }

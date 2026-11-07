@@ -53,12 +53,12 @@ func TestHeartbeatListener_DoesNotRescheduleWhenMonitorCannotBeLoaded(t *testing
 	event.SetID("event-123")
 	event.SetSource("https://example.com")
 	event.SetType(events.EventTypePhoneHeartbeatCheck)
-	event.SetExtension("queueid", "old-check")
+	ctx := context.WithValue(context.Background(), events.ExtensionQueueID, "old-check")
 	require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.PhoneHeartbeatCheckPayload{
 		UserID: "user-1", Owner: "+18005550199",
 	}))
 
-	err := routes[event.Type()](context.Background(), event)
+	err := routes[event.Type()](ctx, event)
 
 	require.ErrorContains(t, err, "database unavailable")
 	assert.Zero(t, repository.lastCalls)
@@ -113,14 +113,15 @@ func TestHeartbeatListener_ChecksOnlyCurrentQueueTask(t *testing.T) {
 			event.SetID(uuid.NewString())
 			event.SetSource("https://example.com")
 			event.SetType(events.EventTypePhoneHeartbeatCheck)
+			ctx := context.Background()
 			if test.eventQueue != "" {
-				event.SetExtension("queueid", test.eventQueue)
+				ctx = context.WithValue(ctx, events.ExtensionQueueID, test.eventQueue)
 			}
 			require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.PhoneHeartbeatCheckPayload{
 				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: uuid.New(), PhoneID: uuid.New(),
 			}))
 
-			require.NoError(t, routes[event.Type()](context.Background(), event))
+			require.NoError(t, routes[event.Type()](ctx, event))
 			assert.Equal(t, test.wantChecks, repository.lastCalls)
 			require.Len(t, queue.events, test.wantChecks)
 			if test.wantChecks == 0 {
@@ -134,7 +135,7 @@ func TestHeartbeatListener_ChecksOnlyCurrentQueueTask(t *testing.T) {
 			assert.Equal(t, monitor.PhoneID, payload.PhoneID)
 
 			// Redelivery of the previous task must not start another stream.
-			require.NoError(t, routes[event.Type()](context.Background(), event))
+			require.NoError(t, routes[event.Type()](ctx, event))
 			assert.Equal(t, 1, repository.lastCalls)
 			assert.Len(t, queue.events, 1)
 		})

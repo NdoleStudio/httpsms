@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -68,7 +69,7 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 	if taskName := c.Get("X-CloudTasks-TaskName"); taskName != "" {
 		queueID = fmt.Sprintf("%s/tasks/%s", h.queueConfig.Name, taskName)
 	}
-	request.SetExtension(events.ExtensionQueueID, queueID)
+	ctx = context.WithValue(ctx, events.ExtensionQueueID, queueID)
 
 	ctxLogger.Info(fmt.Sprintf("handling [%s] event with ID [%s]", request.Type(), request.ID()))
 	err := h.service.DispatchSync(ctx, request)
