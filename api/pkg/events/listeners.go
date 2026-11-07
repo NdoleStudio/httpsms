@@ -8,6 +8,3 @@ import (
 
 // EventListener is the type for processing events
 type EventListener func(ctx context.Context, event cloudevents.Event) error
-
-// EventFilter decides whether an event may reach any subscribers.
-type EventFilter func(ctx context.Context, event cloudevents.Event) (bool, error)

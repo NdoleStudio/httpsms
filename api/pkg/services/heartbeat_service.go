@@ -127,47 +127,14 @@ func (service *HeartbeatService) Store(ctx context.Context, params HeartbeatStor
 		return heartbeat, nil
 	}
 
-	wasOffline := service.recordHeartbeatArrival(ctx, heartbeat, monitor)
 	service.restartMonitorOnHeartbeat(ctx, heartbeat, monitor, params.Source)
 
-	if wasOffline {
+	if monitor.PhoneIsOffline() {
 		ctxLogger.Info(fmt.Sprintf("phone with monitor ID [%s] was offline for user [%s]", monitor.ID, monitor.UserID))
 		service.handleHeartbeatWhenPhoneWasOffline(ctx, params.Source, heartbeat, monitor)
 	}
 
 	return heartbeat, nil
-}
-
-func (service *HeartbeatService) recordHeartbeatArrival(ctx context.Context, heartbeat *entities.Heartbeat, monitor *entities.HeartbeatMonitor) bool {
-	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
-	defer span.End()
-
-	current := monitor
-	for attempt := 0; attempt < 3; attempt++ {
-		latest, err := service.repository.Last(ctx, heartbeat.UserID, heartbeat.Owner)
-		if err != nil {
-			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load saved heartbeat version for monitor [%s]", monitor.ID)))
-			return monitor.PhoneIsOffline()
-		}
-		previous, err := service.monitorRepository.RecordHeartbeat(ctx, monitor.UserID, monitor.ID, current.LastHeartbeatID, latest.ID)
-		if err != nil {
-			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot record saved heartbeat version for monitor [%s]", monitor.ID)))
-			return monitor.PhoneIsOffline()
-		}
-		if previous != nil {
-			return previous.PhoneIsOffline()
-		}
-		current, err = service.monitorRepository.Load(ctx, monitor.UserID, monitor.Owner)
-		if stacktrace.GetCode(err) == repositories.ErrCodeNotFound || (err == nil && current.ID != monitor.ID) {
-			return false
-		}
-		if err != nil {
-			ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot reload heartbeat version for monitor [%s]", monitor.ID)))
-			return monitor.PhoneIsOffline()
-		}
-	}
-	ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.NewErrorf("heartbeat version repeatedly changed for monitor [%s]; saved heartbeat retained", monitor.ID)))
-	return monitor.PhoneIsOffline()
 }
 
 // HeartbeatMonitorStoreParams are parameters for creating a new entities.Heartbeat
@@ -571,38 +538,6 @@ func (service *HeartbeatService) handleFailedMonitor(ctx context.Context, heartb
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat monitor with id [%s] and phone id [%s] failed for user [%s]", params.MonitorID, params.PhoneID, params.UserID))
 	return nil
-}
-
-// ApplyOfflineHeartbeat rejects stale events before any notification subscriber runs.
-func (service *HeartbeatService) ApplyOfflineHeartbeat(ctx context.Context, payload *events.PhoneHeartbeatOfflinePayload) (bool, error) {
-	ctx, span := service.tracer.Start(ctx)
-	defer span.End()
-
-	monitor, err := service.monitorRepository.Load(ctx, payload.UserID, payload.Owner)
-	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return false, nil
-	}
-	if err != nil {
-		return false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot load monitor for offline heartbeat [%s]", payload.MonitorID))
-	}
-	if monitor.ID != payload.MonitorID || (payload.HeartbeatID == uuid.Nil && monitor.LastHeartbeatID != uuid.Nil) {
-		return false, nil
-	}
-	heartbeat, err := service.repository.Last(ctx, payload.UserID, payload.Owner)
-	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		return false, nil
-	}
-	if err != nil {
-		return false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot validate offline heartbeat for monitor [%s]", monitor.ID))
-	}
-	if !heartbeat.Timestamp.Equal(payload.LastHeartbeatTimestamp) || (payload.HeartbeatID != uuid.Nil && heartbeat.ID != payload.HeartbeatID) {
-		return false, nil
-	}
-	applied, err := service.monitorRepository.UpdatePhoneOfflineForHeartbeat(ctx, payload.UserID, monitor.ID, monitor.LastHeartbeatID, payload.HeartbeatID)
-	if err != nil {
-		return false, service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot apply offline heartbeat version for monitor [%s]", monitor.ID))
-	}
-	return applied, nil
 }
 
 func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, lastTimestamp time.Time, params *HeartbeatMonitorParams, monitor *entities.HeartbeatMonitor, restart bool) error {

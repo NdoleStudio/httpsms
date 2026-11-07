@@ -25,13 +25,6 @@ type HeartbeatMonitorRepository interface {
 	// CompareAndSwapQueueID changes check ownership only if the expected marker still matches.
 	CompareAndSwapQueueID(ctx context.Context, monitorID uuid.UUID, expected, queueID string) (bool, error)
 
-	// RecordHeartbeat atomically records the heartbeat and marks the phone online.
-	// It returns the previous monitor, or nil when the expected heartbeat version changed.
-	RecordHeartbeat(ctx context.Context, userID entities.UserID, monitorID, expected, heartbeatID uuid.UUID) (*entities.HeartbeatMonitor, error)
-
-	// UpdatePhoneOfflineForHeartbeat applies an offline transition only to the observed heartbeat version.
-	UpdatePhoneOfflineForHeartbeat(ctx context.Context, userID entities.UserID, monitorID, expected, heartbeatID uuid.UUID) (bool, error)
-
 	// Delete an entities.HeartbeatMonitor
 	Delete(ctx context.Context, userID entities.UserID, phoneNumber string) error
 

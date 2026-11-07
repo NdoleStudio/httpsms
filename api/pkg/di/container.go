@@ -64,7 +64,6 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/cors"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
-	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/listeners"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
 	"github.com/NdoleStudio/httpsms/pkg/services"
@@ -1502,12 +1501,11 @@ func (container *Container) RegisterNotificationListeners() {
 // RegisterHeartbeatListeners registers event listeners for listeners.HeartbeatListener
 func (container *Container) RegisterHeartbeatListeners() {
 	container.logger.Debug(fmt.Sprintf("registering listners for %T", listeners.HeartbeatListener{}))
-	heartbeatListener, routes := listeners.NewHeartbeatListener(
+	_, routes := listeners.NewHeartbeatListener(
 		container.Logger(),
 		container.Tracer(),
 		container.HeartbeatService(),
 	)
-	container.EventDispatcher().SubscribeFilter(events.EventTypePhoneHeartbeatOffline, heartbeatListener.FilterOfflineEvent)
 
 	for event, handler := range routes {
 		container.EventDispatcher().Subscribe(event, handler)
