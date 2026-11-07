@@ -114,6 +114,28 @@ func (repository *mongoHeartbeatMonitorRepository) UpdateQueueID(ctx context.Con
 	return nil
 }
 
+func (repository *mongoHeartbeatMonitorRepository) ClearQueueID(ctx context.Context, monitorID uuid.UUID, expectedQueueID string) error {
+	ctx, span := repository.tracer.Start(ctx)
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, dbOperationDuration)
+	defer cancel()
+
+	filter := bson.D{
+		{Key: "_id", Value: monitorID.String()},
+		{Key: "queue_id", Value: expectedQueueID},
+	}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "queue_id", Value: ""},
+		{Key: "updated_at", Value: time.Now().UTC()},
+	}}}
+	_, err := repository.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return repository.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot clear queue ID for heartbeat monitor [%s]", monitorID))
+	}
+	return nil
+}
+
 func (repository *mongoHeartbeatMonitorRepository) Delete(ctx context.Context, userID entities.UserID, phoneNumber string) error {
 	ctx, span := repository.tracer.Start(ctx)
 	defer span.End()

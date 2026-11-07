@@ -22,6 +22,9 @@ type HeartbeatMonitorRepository interface {
 	// UpdateQueueID updates the queueID of a monitor
 	UpdateQueueID(ctx context.Context, monitorID uuid.UUID, queueID string) error
 
+	// ClearQueueID clears a queue ID only if it still matches the observed task.
+	ClearQueueID(ctx context.Context, monitorID uuid.UUID, expectedQueueID string) error
+
 	// Delete an entities.HeartbeatMonitor
 	Delete(ctx context.Context, userID entities.UserID, phoneNumber string) error
 

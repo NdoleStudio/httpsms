@@ -311,15 +311,14 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 
 	heartbeat, err := service.repository.Last(ctx, params.UserID, params.Owner)
 	if stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
-		if err = service.monitorRepository.UpdateQueueID(ctx, monitor.ID, ""); err != nil {
+		if err = service.monitorRepository.ClearQueueID(ctx, monitor.ID, params.QueueID); err != nil {
 			return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot clear queue ID for stopped heartbeat monitor [%s]", monitor.ID))
 		}
 		ctxLogger.Info(fmt.Sprintf("heartbeat history does not exist for userID [%s] and owner [%s], stopping check", params.UserID, params.Owner))
 		return nil
 	}
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID))
-		return nil
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s]", params.UserID, params.Owner, params.MonitorID))
 	}
 
 	// send urgent FCM message if the last heartbeat is late
@@ -408,7 +407,7 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 	}
 
 	if err = service.monitorRepository.UpdateQueueID(ctx, params.MonitorID, queueID); err != nil {
-		service.logger.Error(stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
+		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", params.MonitorID, params.PhoneID, queueID, params.UserID))
