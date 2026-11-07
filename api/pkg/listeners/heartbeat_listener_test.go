@@ -38,14 +38,17 @@ func (repository *heartbeatListenerMonitorRepository) Load(context.Context, enti
 	return repository.monitor, repository.err
 }
 
-func TestHeartbeatListener_DoesNotRescheduleWhenMonitorCannotBeLoaded(t *testing.T) {
+func TestHeartbeatListener_ReschedulesWhenMonitorCannotBeLoaded(t *testing.T) {
 	logger := &noopListenerLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
 	repository := &heartbeatListenerRepository{}
 	queue := &heartbeatListenerQueue{}
+	monitor := &entities.HeartbeatMonitor{
+		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199", QueueID: "old-check",
+	}
 	service := services.NewHeartbeatService(logger, tracer, repository,
 		&heartbeatListenerMonitorRepository{
-			monitor: &entities.HeartbeatMonitor{}, err: errors.New("database unavailable"),
+			monitor: monitor, err: errors.New("database unavailable"),
 		},
 		services.NewEventDispatcher(logger, tracer, nil, queue, services.PushQueueConfig{}))
 	_, routes := NewHeartbeatListener(logger, tracer, service)
@@ -53,16 +56,17 @@ func TestHeartbeatListener_DoesNotRescheduleWhenMonitorCannotBeLoaded(t *testing
 	event.SetID("event-123")
 	event.SetSource("https://example.com")
 	event.SetType(events.EventTypePhoneHeartbeatCheck)
-	ctx := context.WithValue(context.Background(), events.ExtensionQueueID, "old-check")
+	ctx := context.WithValue(context.Background(), events.QueueIDKey, "old-check")
 	require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.PhoneHeartbeatCheckPayload{
-		UserID: "user-1", Owner: "+18005550199",
+		UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: monitor.ID, PhoneID: monitor.PhoneID,
 	}))
 
 	err := routes[event.Type()](ctx, event)
 
-	require.ErrorContains(t, err, "database unavailable")
+	require.NoError(t, err)
 	assert.Zero(t, repository.lastCalls)
-	assert.Empty(t, queue.events)
+	require.Len(t, queue.events, 1)
+	assert.Equal(t, events.EventTypePhoneHeartbeatCheck, queue.events[0].Type())
 }
 
 func (repository *heartbeatListenerMonitorRepository) UpdateQueueID(_ context.Context, _ uuid.UUID, queueID string) error {
@@ -115,7 +119,7 @@ func TestHeartbeatListener_ChecksOnlyCurrentQueueTask(t *testing.T) {
 			event.SetType(events.EventTypePhoneHeartbeatCheck)
 			ctx := context.Background()
 			if test.eventQueue != "" {
-				ctx = context.WithValue(ctx, events.ExtensionQueueID, test.eventQueue)
+				ctx = context.WithValue(ctx, events.QueueIDKey, test.eventQueue)
 			}
 			require.NoError(t, event.SetData(cloudevents.ApplicationJSON, events.PhoneHeartbeatCheckPayload{
 				UserID: monitor.UserID, Owner: monitor.Owner, MonitorID: uuid.New(), PhoneID: uuid.New(),

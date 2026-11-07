@@ -174,7 +174,7 @@ func TestHeartbeatServiceMonitor_StopsCheckingDeletedMonitor(t *testing.T) {
 	assert.Empty(t, queue.events)
 }
 
-func TestHeartbeatServiceMonitor_ReportsHeartbeatReadFailure(t *testing.T) {
+func TestHeartbeatServiceMonitor_StopsOnHeartbeatReadFailure(t *testing.T) {
 	logger := &phoneNotificationLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
 	queue := &heartbeatServiceQueue{}
@@ -190,18 +190,18 @@ func TestHeartbeatServiceMonitor_ReportsHeartbeatReadFailure(t *testing.T) {
 		UserID: monitor.UserID, Owner: monitor.Owner, QueueID: monitor.QueueID,
 	})
 
-	require.ErrorContains(t, err, "heartbeat read failed")
+	require.NoError(t, err)
 	assert.Equal(t, "current-check", monitor.QueueID)
 	assert.Empty(t, queue.events)
 }
 
-func TestHeartbeatServiceMonitor_RetriesFailedQueueIDSaves(t *testing.T) {
+func TestHeartbeatServiceMonitor_RecoversFailedQueueIDSavesOnHeartbeat(t *testing.T) {
 	logger := &phoneNotificationLogger{}
 	tracer := telemetry.NewOtelLogger("test", logger)
 	queue := &heartbeatServiceQueue{}
 	monitor := &entities.HeartbeatMonitor{
 		ID: uuid.New(), PhoneID: uuid.New(), UserID: "user-1", Owner: "+18005550199",
-		QueueID: "current-check", PhoneOnline: true,
+		QueueID: "current-check", PhoneOnline: true, UpdatedAt: time.Now().UTC().Add(-3 * time.Hour),
 	}
 	monitorRepository := &heartbeatServiceMonitorRepository{
 		monitor: monitor, updateQueueErr: stacktrace.NewError("queue update failed"),
@@ -213,12 +213,15 @@ func TestHeartbeatServiceMonitor_RetriesFailedQueueIDSaves(t *testing.T) {
 		UserID: monitor.UserID, Owner: monitor.Owner, QueueID: monitor.QueueID, Source: "https://example.com",
 	}
 
-	require.ErrorContains(t, service.Monitor(context.Background(), params), "queue update failed")
+	require.NoError(t, service.Monitor(context.Background(), params))
 	assert.Equal(t, "current-check", monitor.QueueID)
 	require.Len(t, queue.events, 1)
 
 	monitorRepository.updateQueueErr = nil
-	require.NoError(t, service.Monitor(context.Background(), params))
+	_, err := service.Store(context.Background(), HeartbeatStoreParams{
+		UserID: monitor.UserID, Owner: monitor.Owner, Source: params.Source, Timestamp: time.Now().UTC(),
+	})
+	require.NoError(t, err)
 	assert.Equal(t, "queue-2", monitor.QueueID)
 	require.Len(t, queue.events, 2)
 

@@ -297,7 +297,8 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		return nil
 	}
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)))
+		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
 	}
 
 	if params.QueueID != monitor.QueueID {
@@ -315,7 +316,8 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		return nil
 	}
 	if err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s]", params.UserID, params.Owner, params.MonitorID))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s]", params.UserID, params.Owner, params.MonitorID)))
+		return nil
 	}
 
 	return service.checkLastHeartbeat(ctx, heartbeat, monitor, params)
@@ -410,7 +412,7 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 	}
 
 	if err = service.monitorRepository.UpdateQueueID(ctx, params.MonitorID, queueID); err != nil {
-		return service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID)))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", params.MonitorID, params.PhoneID, queueID, params.UserID))

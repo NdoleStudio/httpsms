@@ -65,11 +65,7 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 		return h.responseForbidden(c)
 	}
 
-	queueID := ""
-	if taskName := c.Get("X-CloudTasks-TaskName"); taskName != "" {
-		queueID = fmt.Sprintf("%s/tasks/%s", h.queueConfig.Name, taskName)
-	}
-	ctx = context.WithValue(ctx, events.ExtensionQueueID, queueID)
+	ctx = h.withQueueTaskID(ctx, c.Get("X-CloudTasks-TaskName"))
 
 	ctxLogger.Info(fmt.Sprintf("handling [%s] event with ID [%s]", request.Type(), request.ID()))
 	err := h.service.DispatchSync(ctx, request)
@@ -79,4 +75,12 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 	}
 
 	return h.responseNoContent(c, "event dispatched successfully")
+}
+
+func (h *EventsHandler) withQueueTaskID(ctx context.Context, taskName string) context.Context {
+	queueID := ""
+	if taskName != "" {
+		queueID = fmt.Sprintf("%s/tasks/%s", h.queueConfig.Name, taskName)
+	}
+	return context.WithValue(ctx, events.QueueIDKey, queueID)
 }

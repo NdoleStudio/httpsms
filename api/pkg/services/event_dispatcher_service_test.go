@@ -29,7 +29,7 @@ func TestEventDispatcher_LocalFallbackIncludesQueueID(t *testing.T) {
 	dispatcher := NewEventDispatcher(logger, tracer, meter, &deadlineEventQueue{}, PushQueueConfig{})
 	delivered := make(chan string, 1)
 	dispatcher.Subscribe(events.EventTypePhoneHeartbeatCheck, func(ctx context.Context, _ cloudevents.Event) error {
-		queueID, _ := ctx.Value(events.ExtensionQueueID).(string)
+		queueID, _ := ctx.Value(events.QueueIDKey).(string)
 		delivered <- queueID
 		return nil
 	})

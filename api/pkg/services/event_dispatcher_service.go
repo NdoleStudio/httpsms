@@ -56,9 +56,7 @@ func (dispatcher *EventDispatcher) DispatchSync(ctx context.Context, event cloud
 		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch event with ID [%s] and type [%s] because it is invalid", event.ID(), event.Type()))
 	}
 
-	if err := dispatcher.Publish(ctx, event); err != nil && event.Type() == events.EventTypePhoneHeartbeatCheck {
-		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot dispatch heartbeat check with ID [%s]", event.ID()))
-	}
+	dispatcher.Publish(ctx, event)
 	return nil
 }
 
@@ -91,7 +89,7 @@ func (dispatcher *EventDispatcher) enqueue(ctx context.Context, event cloudevent
 	if errors.Is(err, context.DeadlineExceeded) {
 		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot enqueue event with ID [%s] and type [%s] to [%T]", event.ID(), event.Type(), dispatcher.queue))
 		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
-		ctx = context.WithValue(ctx, events.ExtensionQueueID, queueID)
+		ctx = context.WithValue(ctx, events.QueueIDKey, queueID)
 		time.AfterFunc(timeout, func() {
 			dispatcher.Publish(ctx, event)
 		})
@@ -117,7 +115,7 @@ func (dispatcher *EventDispatcher) Subscribe(eventType string, listener events.E
 }
 
 // Publish an event to subscribers
-func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevents.Event) error {
+func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevents.Event) {
 	ctx, span, ctxLogger := dispatcher.tracer.StartWithLogger(ctx, dispatcher.logger)
 	defer span.End()
 
@@ -128,29 +126,21 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 	subscribers, ok := dispatcher.listeners[event.Type()]
 	if !ok {
 		ctxLogger.Info(fmt.Sprintf("no listener is configured for event type [%s] with id [%s]", event.Type(), event.ID()))
-		return nil
+		return
 	}
 
-	listenerErrors := make(chan error, len(subscribers))
 	var wg sync.WaitGroup
 	for _, sub := range subscribers {
 		wg.Add(1)
 		go func(ctx context.Context, sub events.EventListener) {
 			if err := sub(ctx, event); err != nil {
-				wrapped := stacktrace.Propagatef(err, "subscriber [%T] cannot handle event [%s]", sub, event.Type())
-				ctxLogger.Error(wrapped)
-				listenerErrors <- wrapped
+				ctxLogger.Error(stacktrace.Propagatef(err, "subscriber [%T] cannot handle event [%s]", sub, event.Type()))
 			}
 			wg.Done()
 		}(ctx, sub)
 	}
 
 	wg.Wait()
-	close(listenerErrors)
-	var failures []error
-	for err := range listenerErrors {
-		failures = append(failures, err)
-	}
 
 	dispatcher.meter.Record(
 		ctx,
@@ -160,10 +150,6 @@ func (dispatcher *EventDispatcher) Publish(ctx context.Context, event cloudevent
 			semconv.CloudeventsEventSpecVersion(event.SpecVersion()),
 		),
 	)
-	if len(failures) != 0 {
-		return dispatcher.tracer.WrapErrorSpan(span, stacktrace.Propagatef(errors.Join(failures...), "cannot publish event [%s] with ID [%s]", event.Type(), event.ID()))
-	}
-	return nil
 }
 
 func (dispatcher *EventDispatcher) addCloudEventAttributes(span trace.Span, event cloudevents.Event) {

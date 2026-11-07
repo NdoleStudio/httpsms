@@ -42,7 +42,7 @@ func TestEventsHandler_UsesDeliveredTaskQueueID(t *testing.T) {
 			dispatcher := services.NewEventDispatcher(logger, tracer, meter, nil, config)
 			var deliveredQueueID string
 			dispatcher.Subscribe(events.EventTypePhoneHeartbeatCheck, func(ctx context.Context, _ cloudevents.Event) error {
-				deliveredQueueID, _ = ctx.Value(events.ExtensionQueueID).(string)
+				deliveredQueueID, _ = ctx.Value(events.QueueIDKey).(string)
 				return nil
 			})
 			handler := NewEventsHandler(logger, tracer, config, dispatcher)
@@ -73,7 +73,7 @@ func TestEventsHandler_UsesDeliveredTaskQueueID(t *testing.T) {
 	}
 }
 
-func TestEventsHandler_RetriesFailedHeartbeatChecks(t *testing.T) {
+func TestEventsHandler_AcknowledgesFailedListeners(t *testing.T) {
 	for _, eventType := range []string{events.EventTypePhoneHeartbeatCheck, events.EventTypePhoneUpdated} {
 		t.Run(eventType, func(t *testing.T) {
 			logger := &messageThreadHandlerNoopLogger{}
@@ -104,9 +104,6 @@ func TestEventsHandler_RetriesFailedHeartbeatChecks(t *testing.T) {
 			require.NoError(t, err)
 
 			statuses := []int{http.StatusNoContent, http.StatusNoContent}
-			if eventType == events.EventTypePhoneHeartbeatCheck {
-				statuses[0] = http.StatusInternalServerError
-			}
 			for _, status := range statuses {
 				request := httptest.NewRequest(http.MethodPost, "/v1/events", bytes.NewReader(body))
 				request.Header.Set("Content-Type", "application/json")
