@@ -287,17 +287,16 @@ type HeartbeatMonitorParams struct {
 
 // Monitor the heartbeats of an owner and phone number
 func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatMonitorParams) error {
-	ctx, span := service.tracer.Start(ctx)
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
-	ctxLogger := service.tracer.CtxLogger(service.logger, span)
+	ctxLogger.Info(fmt.Sprintf("monitoring heartbeat for owner [%s] and user [%s] with monitor ID [%s] and phone ID [%s]", params.Owner, params.UserID, params.MonitorID, params.PhoneID))
 
 	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
 		return nil
 	}
-
 	if err != nil {
 		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
 		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
