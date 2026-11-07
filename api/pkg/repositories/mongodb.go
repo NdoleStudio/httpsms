@@ -109,6 +109,12 @@ func createMongoIndexes(ctx context.Context, db *mongo.Database) error {
 
 	_, err := heartbeatsCol.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "owner", Value: 1}, {Key: "timestamp", Value: -1}}},
+		{
+			Keys: bson.D{{Key: "timestamp", Value: 1}},
+			Options: options.Index().
+				SetName("heartbeats_retention").
+				SetExpireAfterSeconds(int32((60 * 24 * time.Hour) / time.Second)),
+		},
 	})
 	if err != nil {
 		return stacktrace.Propagatef(err, "cannot create indexes on heartbeats collection")
