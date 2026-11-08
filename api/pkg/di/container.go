@@ -23,6 +23,7 @@ import (
 	otelfiber "github.com/gofiber/contrib/v3/otel"
 	"gorm.io/plugin/opentelemetry/tracing"
 
+	mcpauth "github.com/NdoleStudio/httpsms/pkg/auth"
 	"github.com/NdoleStudio/httpsms/pkg/discord"
 
 	"cloud.google.com/go/storage"
@@ -206,6 +207,9 @@ func (container *Container) App() (app *fiber.App) {
 		),
 	)
 	app.Use(middlewares.HTTPRequestLogger(container.Tracer(), container.Logger()))
+	if verifier := container.MCPTokenVerifier(); verifier != nil {
+		app.Use(middlewares.MCPDelegationAuth(container.Logger(), container.Tracer(), verifier, container.UserRepository()))
+	}
 	app.Use(middlewares.BearerAuth(container.Logger(), container.Tracer(), container.FirebaseAuthClient()))
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
 
@@ -484,6 +488,31 @@ func (container *Container) FirebaseAuthClient() (client *auth.Client) {
 		container.logger.Fatal(stacktrace.Propagatef(err, "cannot initialize firebase auth client"))
 	}
 	return authClient
+}
+
+// MCPTokenVerifier creates a new instance of *auth.MCPTokenVerifier used to validate delegated
+// MCP API JWTs, configured from MCP_AUTH_ISSUER, MCP_AUTH_AUDIENCE, and MCP_AUTH_JWKS_URL.
+//
+// It returns nil when all three environment variables are empty, which disables delegated MCP
+// authentication entirely. A partially configured issuer, audience, or JWKS URL is treated as a
+// misconfiguration and stops container construction.
+func (container *Container) MCPTokenVerifier() *mcpauth.MCPTokenVerifier {
+	config, enabled, err := mcpTokenVerifierConfigFromEnv(os.Getenv)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "invalid MCP delegated authentication configuration"))
+		return nil
+	}
+	if !enabled {
+		return nil
+	}
+
+	verifier, err := mcpauth.NewMCPTokenVerifier(config)
+	if err != nil {
+		container.logger.Fatal(stacktrace.Propagate(err, "cannot create MCP token verifier"))
+		return nil
+	}
+
+	return verifier
 }
 
 // CloudTasksClient creates a new instance of cloudtasks.Client

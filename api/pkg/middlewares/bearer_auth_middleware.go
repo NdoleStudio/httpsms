@@ -19,6 +19,13 @@ func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *au
 		_, span := tracer.StartFromFiberCtx(c, "middlewares.BearerAuth")
 		defer span.End()
 
+		// A delegated MCP token has already authenticated this request; skip Firebase
+		// verification so a valid but non-Firebase MCP JWT is not rejected here.
+		if authUser, ok := c.Locals(ContextKeyAuthUserID).(entities.AuthContext); ok && !authUser.IsNoop() {
+			span.AddEvent("the request is already authenticated")
+			return c.Next()
+		}
+
 		authToken := c.Get(authHeaderBearer)
 		if !strings.HasPrefix(authToken, bearerScheme) {
 			span.AddEvent(fmt.Sprintf("The request header has no [%s] token", bearerScheme))
@@ -33,7 +40,7 @@ func BearerAuth(logger telemetry.Logger, tracer telemetry.Tracer, authClient *au
 
 		token, err := authClient.VerifyIDToken(context.Background(), authToken)
 		if err != nil {
-			ctxLogger.Warn(tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "invalid firebase id token [%s]", authToken)))
+			ctxLogger.Warn(tracer.WrapErrorSpan(span, stacktrace.Propagate(err, "invalid firebase id token")))
 			return c.Next()
 		}
 
