@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/NdoleStudio/stacktrace"
@@ -40,7 +41,7 @@ func (queue *emulatorPushQueue) Enqueue(ctx context.Context, task *PushQueueTask
 	ctx, span, ctxLogger := queue.tracer.StartWithLogger(ctx, queue.logger)
 	defer span.End()
 
-	queueID = uuid.New().String()
+	queueID = fmt.Sprintf("%s/tasks/%s", queue.config.Name, uuid.New().String())
 
 	time.AfterFunc(timeout, queue.push(*task, queueID))
 
@@ -72,6 +73,7 @@ func (queue *emulatorPushQueue) push(task PushQueueTask, queueID string) func() 
 
 		// add content type
 		request.Header("Content-Type", "application/json")
+		request.Header("X-CloudTasks-TaskName", path.Base(queueID))
 
 		if err := request.Fetch(ctx); err != nil {
 			queue.logger.Error(stacktrace.Propagatef(err, "cannot send http request to [%s] for queue task [%s]", task.URL, queueID))
