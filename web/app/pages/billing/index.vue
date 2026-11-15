@@ -15,6 +15,7 @@ import type {
 
 import { countries, getStateOptions } from '~/utils/countries'
 import { getApiErrorMessage } from '~/utils/api-error'
+import { getBlackFridayCheckoutUrl } from '~/utils/black-friday'
 
 type SubscriptionPayment =
   ResponsesUserSubscriptionPaymentsResponse['data'][number]
@@ -30,6 +31,7 @@ useHead({
 const config = useRuntimeConfig()
 const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
+const promotion = useBlackFridayStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
 const { formatDecimal, formatTimestamp } = useFilters()
@@ -127,6 +129,9 @@ const plan = computed<PaymentPlan>(() => {
 })
 
 const isOnFreePlan = computed(() => plan.value.id === 'free')
+const blackFridayDiscountAvailable = computed(
+  () => authStore.user?.subscription_name === 'free' && promotion.active,
+)
 const isOnLifetimePlan = computed(() => plan.value.id === 'pro-lifetime')
 const subscriptionIsCancelled = computed(
   () => authStore.user?.subscription_status === 'cancelled',
@@ -156,7 +161,11 @@ const checkoutURL = computed(() => {
       url.searchParams.append('checkout[name]', user.displayName)
     }
   }
-  return url.toString()
+  return getBlackFridayCheckoutUrl(
+    url,
+    authStore.user?.subscription_name,
+    promotion.now,
+  )
 })
 
 const enterpriseCheckoutURL = computed(() => {
@@ -171,7 +180,11 @@ const enterpriseCheckoutURL = computed(() => {
       url.searchParams.append('checkout[name]', user.displayName)
     }
   }
-  return url.toString()
+  return getBlackFridayCheckoutUrl(
+    url,
+    authStore.user?.subscription_name,
+    promotion.now,
+  )
 })
 
 async function loadData() {
@@ -421,7 +434,9 @@ onMounted(async () => {
 
             <!-- Upgrade Plan (only for free users) -->
             <template v-if="isOnFreePlan">
-              <h2 class="text-headline-large mt-4 mb-2">Upgrade Plan</h2>
+              <h2 id="upgrade-plan" class="text-headline-large mt-4 mb-2">
+                Upgrade Plan
+              </h2>
               <VRow>
                 <VCol cols="12" md="6">
                   <VCard :href="checkoutURL" link>
@@ -435,6 +450,13 @@ onMounted(async () => {
                           </h1>
                           <p class="text-medium-emphasis">
                             Send and receive 5,000 to 20,000 messages per month
+                          </p>
+                          <p
+                            v-if="blackFridayDiscountAvailable"
+                            class="mb-0 text-warning"
+                          >
+                            Or <strong>$60/year</strong> with code
+                            <strong>BF2026</strong>.
                           </p>
                         </VCol>
                         <VCol class="flex-grow-0 flex-shrink-0 text-center">

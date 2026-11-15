@@ -65,6 +65,7 @@ const planYearlyMonthlyPrice = computed(
 
 <template>
   <div>
+    <BlackFridayBanner />
     <VContainer>
       <VRow :class="{ 'py-4': lgAndUp }">
         <VCol
