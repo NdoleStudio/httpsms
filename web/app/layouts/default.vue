@@ -66,8 +66,9 @@ function startPoller() {
 
 <template>
   <v-app>
+    <BlackFridayBanner />
     <v-navigation-drawer v-if="lgAndUp && hasDrawer" :width="400" permanent>
-      <template #prepend>
+      <template #default>
         <div class="message-thread-sidebar d-flex flex-column">
           <div v-if="appStore.isLocal" class="py-2 bg-warning" />
           <MessageThreadHeader />
@@ -99,7 +100,7 @@ function startPoller() {
     }
   }
   .message-thread-sidebar {
-    height: 100dvh;
+    height: 100%;
   }
   .v-navigation-drawer__message-thread {
     flex: 1;
