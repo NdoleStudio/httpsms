@@ -1,25 +1,20 @@
 <script setup lang="ts">
 import { mdiChevronRight, mdiClose } from '@mdi/js'
-import {
-  BLACK_FRIDAY_END,
-  getBlackFridayCountdown,
-  isBlackFridayEligible,
-} from '~/utils/black-friday'
+import { BLACK_FRIDAY_END, isBlackFridayEligible } from '~/utils/black-friday'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const promotion = useBlackFridayStore()
 const dismissed = useCookie<boolean>('httpsms_bf2026_dismissed', {
   default: () => false,
   expires: new Date(BLACK_FRIDAY_END),
   sameSite: 'lax',
   path: '/',
 })
-const now = ref(Date.now())
-const countdown = computed(() => getBlackFridayCountdown(now.value))
 const visible = computed(
   () =>
     !dismissed.value &&
-    countdown.value !== null &&
+    promotion.active &&
     isBlackFridayEligible(
       String(route.name),
       authStore.authStateChanged,
@@ -47,7 +42,6 @@ const hasPagePadding = computed(() =>
   ['settings', 'messages'].includes(String(route.name)),
 )
 let resizeObserver: ResizeObserver | undefined
-let timer: ReturnType<typeof setInterval> | undefined
 
 watch(bannerElement, (element) => {
   resizeObserver?.disconnect()
@@ -61,22 +55,7 @@ watch(bannerElement, (element) => {
   resizeObserver.observe(element)
 })
 
-watch(
-  visible,
-  (show) => {
-    clearInterval(timer)
-    if (show) {
-      now.value = Date.now()
-      timer = setInterval(() => {
-        now.value = Date.now()
-      }, 1000)
-    }
-  },
-  { immediate: true },
-)
-
 onBeforeUnmount(() => {
-  clearInterval(timer)
   resizeObserver?.disconnect()
 })
 </script>
@@ -132,7 +111,7 @@ onBeforeUnmount(() => {
                       aria-label="Time remaining"
                       aria-live="off"
                     >
-                      {{ countdown }}
+                      {{ promotion.countdown }}
                     </strong>
                   </div>
                   <v-btn

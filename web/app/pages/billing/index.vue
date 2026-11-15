@@ -15,10 +15,7 @@ import type {
 
 import { countries, getStateOptions } from '~/utils/countries'
 import { getApiErrorMessage } from '~/utils/api-error'
-import {
-  BLACK_FRIDAY_END,
-  getBlackFridayCheckoutUrl,
-} from '~/utils/black-friday'
+import { getBlackFridayCheckoutUrl } from '~/utils/black-friday'
 
 type SubscriptionPayment =
   ResponsesUserSubscriptionPaymentsResponse['data'][number]
@@ -34,6 +31,7 @@ useHead({
 const config = useRuntimeConfig()
 const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
+const promotion = useBlackFridayStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
 const { formatDecimal, formatTimestamp } = useFilters()
@@ -132,9 +130,7 @@ const plan = computed<PaymentPlan>(() => {
 
 const isOnFreePlan = computed(() => plan.value.id === 'free')
 const blackFridayDiscountAvailable = computed(
-  () =>
-    authStore.user?.subscription_name === 'free' &&
-    Date.now() < BLACK_FRIDAY_END,
+  () => authStore.user?.subscription_name === 'free' && promotion.active,
 )
 const isOnLifetimePlan = computed(() => plan.value.id === 'pro-lifetime')
 const subscriptionIsCancelled = computed(
@@ -165,7 +161,11 @@ const checkoutURL = computed(() => {
       url.searchParams.append('checkout[name]', user.displayName)
     }
   }
-  return getBlackFridayCheckoutUrl(url, authStore.user?.subscription_name)
+  return getBlackFridayCheckoutUrl(
+    url,
+    authStore.user?.subscription_name,
+    promotion.now,
+  )
 })
 
 const enterpriseCheckoutURL = computed(() => {
@@ -180,7 +180,11 @@ const enterpriseCheckoutURL = computed(() => {
       url.searchParams.append('checkout[name]', user.displayName)
     }
   }
-  return getBlackFridayCheckoutUrl(url, authStore.user?.subscription_name)
+  return getBlackFridayCheckoutUrl(
+    url,
+    authStore.user?.subscription_name,
+    promotion.now,
+  )
 })
 
 async function loadData() {
