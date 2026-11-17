@@ -187,19 +187,14 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  deploy-web:
-    name: Deploy Web (${{ matrix.provider }})
+  deploy-web-cloudflare:
+    name: Deploy Web to Cloudflare
     needs: [deploy-api, build-web]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04
     permissions:
       contents: read
-      pull-requests: write
       deployments: write
-    strategy:
-      fail-fast: false
-      matrix:
-        provider: [Cloudflare, Firebase]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -216,7 +211,6 @@ jobs:
           path: web/.output/public
 
       - name: Deploy Web to Cloudflare
-        if: matrix.provider == 'Cloudflare'
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -224,8 +218,30 @@ jobs:
           command: pages deploy web/.output/public --project-name=httpsms
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
+  deploy-web-firebase:
+    name: Deploy Web to Firebase
+    needs: [deploy-api, build-web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.18"
+
+      - name: Download Web Build
+        uses: actions/download-artifact@v8
+        with:
+          name: web-build
+          path: web/.output/public
+
       - name: Deploy Web to Firebase
-        if: matrix.provider == 'Firebase'
         uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
