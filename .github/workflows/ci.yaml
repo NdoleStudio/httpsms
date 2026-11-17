@@ -129,7 +129,7 @@ jobs:
             --region=global \
             --project=httpsms-86c51 \
             --sha=${{ github.sha }} \
-            --substitutions=_VERSION=${{ github.run_number }} \
+            --substitutions=_VERSION=${{ github.run_id }} \
             --format="value(metadata.build.id)")
           echo -e "Cloud Build: \033[34mhttps://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=httpsms-86c51\033[0m"
           echo ""
