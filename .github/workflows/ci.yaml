@@ -80,7 +80,16 @@ jobs:
         working-directory: ./tests
         run: |
           echo "Waiting for seed container to finish..."
-          docker compose wait seed
+          SEED_CONTAINER_ID=$(docker compose ps --all --quiet seed)
+          if [ -z "$SEED_CONTAINER_ID" ]; then
+            echo "::error::Seed container not found"
+            exit 1
+          fi
+          SEED_EXIT_CODE=$(docker wait "$SEED_CONTAINER_ID")
+          if [ "$SEED_EXIT_CODE" != "0" ]; then
+            echo "::error::Database seeding failed with exit code $SEED_EXIT_CODE"
+            exit 1
+          fi
           sleep 2
 
       - name: Run Handler Integration Tests
