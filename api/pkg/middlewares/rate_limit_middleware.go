@@ -17,10 +17,10 @@ import (
 const rateLimitCostCap = 200
 
 type rateLimitCounter interface {
-	Increment(context.Context, entities.UserID, entities.SubscriptionName, int) (int64, bool, error)
+	Allow(context.Context, entities.UserID, entities.SubscriptionName, int) (bool, time.Duration, error)
 }
 
-// RateLimit tracks per-user API request counts without blocking requests.
+// RateLimit enforces hourly per-user budgets after authentication and before handlers.
 func RateLimit(
 	tracer telemetry.Tracer,
 	logger telemetry.Logger,
@@ -43,11 +43,9 @@ func RateLimit(
 		ctx, span, ctxLogger := tracer.StartFromFiberCtxWithLogger(c, logger, "middlewares.RateLimit")
 		defer span.End()
 
-		// Route-specific phone and integration authentication runs inside Next.
-		nextErr := c.Next()
 		authUser, ok := c.Locals(ContextKeyAuthUserID).(entities.AuthContext)
 		if !ok || authUser.IsNoop() {
-			return nextErr
+			return c.Next()
 		}
 		// Cache keys outlive Fiber's reusable request buffers.
 		userID := entities.UserID(strings.Clone(string(authUser.ID)))
@@ -76,13 +74,24 @@ func RateLimit(
 		})
 		if err != nil {
 			ctxLogger.Error(err)
-			return nextErr
+			return c.Next()
 		}
 
-		if _, _, err := service.Increment(ctx, userID, plan.(entities.SubscriptionName), cost); err != nil {
+		allowed, retryAfter, err := service.Allow(ctx, userID, plan.(entities.SubscriptionName), cost)
+		if err != nil {
 			ctxLogger.Error(err)
+			return c.Next()
+		}
+		if !allowed {
+			seconds := max(1, int((retryAfter+time.Second-1)/time.Second))
+			c.Set(fiber.HeaderRetryAfter, strconv.Itoa(seconds))
+			ctxLogger.WithString("user_id", string(userID)).WithString("plan", string(plan.(entities.SubscriptionName))).Info("hourly API rate limit exceeded")
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"status":  "error",
+				"message": "Hourly API rate limit exceeded. Try again after the time indicated by Retry-After.",
+			})
 		}
 
-		return nextErr
+		return c.Next()
 	}
 }

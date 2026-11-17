@@ -6,12 +6,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/repositories"
+	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/gofiber/fiber/v3"
 	"github.com/hirosassa/zerodriver"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 )
@@ -126,6 +130,69 @@ func TestRateLimitMiddleware_FailsOpenAndPreservesHandlerErrors(t *testing.T) {
 	}
 }
 
+func TestRateLimitMiddleware_RejectsBeforeHandler(t *testing.T) {
+	counter := &recordingRateLimitCounter{denied: true, retryAfter: 1500 * time.Millisecond}
+	app := rateLimitTestApp(&rateLimitUserRepository{}, counter, rateLimitTestAuth, nil)
+	response, err := app.Test(httptest.NewRequest(http.MethodPost, "/v1/messages/send", nil))
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusTooManyRequests, response.StatusCode)
+	require.Equal(t, "2", response.Header.Get("Retry-After"))
+	require.Empty(t, response.Header.Get("X-Handler-Ran"))
+}
+
+func TestRateLimitMiddleware_HourlyEnforcementAcrossRequests(t *testing.T) {
+	server := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: server.Addr(), ContextTimeoutEnabled: true, MaxRetries: -1})
+	t.Cleanup(func() { client.Close() })
+	logger, tracer := rateLimitTestTelemetry()
+	limiter := services.NewRateLimitService(tracer, logger, client)
+	app := fiber.New()
+	app.Use(rateLimitTestAuth)
+	app.Use(Authenticated(tracer, RateLimit(tracer, logger, limiter, &rateLimitUserRepository{}, []string{"/v1/events"})))
+	app.Use(func(c fiber.Ctx) error {
+		c.Set("X-Handler-Ran", "true")
+		return c.SendStatus(http.StatusOK)
+	})
+	for _, test := range []struct {
+		path   string
+		status int
+	}{
+		{"/v1/messages/search?limit=199", http.StatusOK},
+		{"/v1/messages/search?limit=2", http.StatusTooManyRequests},
+		{"/v1/messages/search?limit=1", http.StatusOK},
+		{"/v1/messages/search?limit=1", http.StatusTooManyRequests},
+		{"/v1/events", http.StatusOK},
+	} {
+		response, err := app.Test(httptest.NewRequest(http.MethodGet, test.path, nil))
+		require.NoError(t, err)
+		response.Body.Close()
+		require.Equal(t, test.status, response.StatusCode)
+		if test.status == http.StatusTooManyRequests {
+			require.Equal(t, "3600", response.Header.Get("Retry-After"))
+			require.Empty(t, response.Header.Get("X-Handler-Ran"))
+		}
+	}
+	server.FastForward(time.Hour)
+	response, err := app.Test(httptest.NewRequest(http.MethodGet, "/v1/messages/search?limit=200", nil))
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
+}
+
+func TestRateLimitMiddleware_AuthenticationPrecedesEnforcement(t *testing.T) {
+	logger, tracer := rateLimitTestTelemetry()
+	counter := &recordingRateLimitCounter{denied: true, retryAfter: time.Hour}
+	app := fiber.New()
+	app.Use(Authenticated(tracer, RateLimit(tracer, logger, counter, &rateLimitUserRepository{}, nil)))
+	app.Get("/", func(c fiber.Ctx) error { return c.SendStatus(http.StatusOK) })
+	response, err := app.Test(httptest.NewRequest(http.MethodGet, "/", nil))
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusUnauthorized, response.StatusCode)
+	require.Empty(t, counter.costs)
+}
+
 type rateLimitUserRepository struct {
 	repositories.UserRepository
 	loads int
@@ -150,15 +217,17 @@ func (*rateLimitPhoneRepository) LoadAuthContext(context.Context, string) (entit
 }
 
 type recordingRateLimitCounter struct {
-	costs []int
-	users []entities.UserID
-	err   error
+	costs      []int
+	users      []entities.UserID
+	err        error
+	denied     bool
+	retryAfter time.Duration
 }
 
-func (counter *recordingRateLimitCounter) Increment(_ context.Context, user entities.UserID, _ entities.SubscriptionName, cost int) (int64, bool, error) {
+func (counter *recordingRateLimitCounter) Allow(_ context.Context, user entities.UserID, _ entities.SubscriptionName, cost int) (bool, time.Duration, error) {
 	counter.costs = append(counter.costs, cost)
 	counter.users = append(counter.users, user)
-	return 0, false, counter.err
+	return !counter.denied, counter.retryAfter, counter.err
 }
 
 func rateLimitTestTelemetry() (telemetry.Logger, telemetry.Tracer) {
@@ -176,9 +245,10 @@ func rateLimitTestAuth(c fiber.Ctx) error {
 func rateLimitTestApp(repo repositories.UserRepository, counter rateLimitCounter, auth fiber.Handler, handlerError error) *fiber.App {
 	logger, tracer := rateLimitTestTelemetry()
 	app := fiber.New()
-	app.Use(RateLimit(tracer, logger, counter, repo, []string{"/v1/events"}))
 	app.Use(auth)
+	app.Use(RateLimit(tracer, logger, counter, repo, []string{"/v1/events"}))
 	app.Use(func(c fiber.Ctx) error {
+		c.Set("X-Handler-Ran", "true")
 		if handlerError != nil {
 			return handlerError
 		}

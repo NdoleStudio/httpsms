@@ -100,6 +100,7 @@ type Container struct {
 	contactRistrettoCache *ristretto.Cache[string, services.ContactCacheEntry]
 	inMemoryCache         cache.Cache
 	rateLimitService      *services.RateLimitService
+	rateLimitMiddleware   fiber.Handler
 	redisClient           *redis.Client
 	rateLimitRedisClient  *redis.Client
 	closeOnce             sync.Once
@@ -115,13 +116,13 @@ func NewLiteContainer() (container *Container) {
 // Close gracefully shuts down container resources
 func (container *Container) Close() {
 	container.closeOnce.Do(func() {
-		if container.rateLimitService != nil {
-			container.rateLimitService.Close()
-		}
 		if container.rateLimitRedisClient != nil {
+			container.logger.Info("closing rate limit Redis client after HTTP shutdown")
 			if err := container.rateLimitRedisClient.Close(); err != nil {
 				container.logger.Error(stacktrace.Propagatef(err, "cannot close rate limit Redis client"))
+				return
 			}
+			container.logger.Info("rate limit Redis client shutdown complete")
 		}
 	})
 }
@@ -229,13 +230,6 @@ func (container *Container) App() (app *fiber.App) {
 	app.Use(middlewares.APIKeyAuth(container.Logger(), container.Tracer(), container.UserRepository()))
 
 	if os.Getenv("RATE_LIMIT_ENABLED") == "true" {
-		app.Use(middlewares.RateLimit(
-			container.Tracer(),
-			container.Logger(),
-			container.RateLimitService(),
-			container.UserRepository(),
-			[]string{"/v1/events"},
-		))
 		app.Hooks().OnPreShutdown(func() error {
 			container.logger.Info("rate limit shutdown waiting for HTTP requests to drain")
 			return nil
@@ -268,7 +262,17 @@ func (container *Container) PhoneAPIKeyMiddleware() fiber.Handler {
 // AuthenticatedMiddleware creates a new instance of middlewares.Authenticated
 func (container *Container) AuthenticatedMiddleware() fiber.Handler {
 	container.logger.Debug("creating middlewares.Authenticated")
-	return middlewares.Authenticated(container.Tracer())
+	var limiter fiber.Handler
+	if os.Getenv("RATE_LIMIT_ENABLED") == "true" {
+		if container.rateLimitMiddleware == nil {
+			container.rateLimitMiddleware = middlewares.RateLimit(
+				container.Tracer(), container.Logger(), container.RateLimitService(),
+				container.UserRepository(), []string{"/v1/events"},
+			)
+		}
+		limiter = container.rateLimitMiddleware
+	}
+	return middlewares.Authenticated(container.Tracer(), limiter)
 }
 
 // Logger creates a new instance of telemetry.Logger
@@ -551,7 +555,6 @@ func (container *Container) RateLimitService() *services.RateLimitService {
 		container.Tracer(),
 		container.Logger(),
 		container.rateLimitRedisClient,
-		container.EventDispatcher(),
 	)
 	return container.rateLimitService
 }

@@ -3,15 +3,39 @@ package di
 import (
 	"context"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
+	"github.com/NdoleStudio/httpsms/pkg/middlewares"
 	"github.com/NdoleStudio/httpsms/pkg/services"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRateLimitDisabledDoesNotInitializeResources(t *testing.T) {
+	t.Setenv("ENV", "local")
+	t.Setenv("RATE_LIMIT_ENABLED", "false")
+	container := NewLiteContainer()
+	app := fiber.New()
+	app.Use(func(c fiber.Ctx) error {
+		c.Locals(middlewares.ContextKeyAuthUserID, entities.AuthContext{ID: "user", Email: "user@example.com"})
+		return c.Next()
+	})
+	app.Use(container.AuthenticatedMiddleware())
+	app.Get("/", func(c fiber.Ctx) error { return c.SendStatus(http.StatusOK) })
+	response, err := app.Test(httptest.NewRequest(http.MethodGet, "/", nil))
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	require.Nil(t, container.rateLimitService)
+	require.Nil(t, container.rateLimitMiddleware)
+	require.Nil(t, container.rateLimitRedisClient)
+}
 
 func TestRateLimitRedisClientBoundsStalledConnections(t *testing.T) {
 	t.Setenv("ENV", "local")
@@ -34,7 +58,6 @@ func TestRateLimitRedisClientBoundsStalledConnections(t *testing.T) {
 	})
 	t.Setenv("REDIS_URL", "redis://"+listener.Addr().String())
 	container := NewLiteContainer()
-	container.eventDispatcher = &services.EventDispatcher{}
 	container.RateLimitService()
 	t.Cleanup(container.Close)
 	t.Cleanup(func() { container.redisClient.Close() })
