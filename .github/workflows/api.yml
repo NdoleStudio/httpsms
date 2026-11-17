@@ -119,6 +119,7 @@ jobs:
             --region=global \
             --project=httpsms-86c51 \
             --sha=${{ github.sha }} \
+            --substitutions=_VERSION=${{ github.run_number }} \
             --format="value(metadata.build.id)")
           echo -e "Cloud Build: \033[34mhttps://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=httpsms-86c51\033[0m"
           echo ""
@@ -133,3 +134,13 @@ jobs:
             esac
             sleep 30
           done
+
+  deploy-web:
+    name: Deploy Web
+    needs: deploy
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
+    uses: ./.github/workflows/web.yml
+    secrets: inherit
