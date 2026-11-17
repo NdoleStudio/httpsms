@@ -1,6 +1,6 @@
 steps:
   - name: "gcr.io/kaniko-project/executor:v1.23.2"
-    id: "Build image and push"
+    id: "Build and Push API Image"
     dir: "api"
     args:
       - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_VERSION"
@@ -10,7 +10,7 @@ steps:
       - "--build-arg=VERSION=$_VERSION"
       - "--snapshot-mode=time"
 
-  - id: "Deploy to cloud run"
+  - id: "Deploy API"
     name: "gcr.io/cloud-builders/gcloud"
     entrypoint: "bash"
     args:

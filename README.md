@@ -1,7 +1,6 @@
 # httpSMS
 
-[![Web](https://github.com/NdoleStudio/httpsms/actions/workflows/web.yml/badge.svg)](https://github.com/NdoleStudio/httpsms/actions/workflows/web.yml)
-[![API](https://github.com/NdoleStudio/httpsms/actions/workflows/api.yml/badge.svg)](https://github.com/NdoleStudio/httpsms/actions/workflows/api.yml)
+[![CI/CD](https://github.com/NdoleStudio/httpsms/actions/workflows/ci.yaml/badge.svg)](https://github.com/NdoleStudio/httpsms/actions/workflows/ci.yaml)
 [![GitHub contributors](https://img.shields.io/github/contributors/NdoleStudio/httpsms)](https://github.com/NdoleStudio/httpsms/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/NdoleStudio/httpsms?color=brightgreen)](https://github.com/NdoleStudio/httpsms/blob/master/LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
