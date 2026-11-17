@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -98,8 +99,10 @@ type Container struct {
 	phoneRistrettoCache   *ristretto.Cache[string, *entities.Phone]
 	contactRistrettoCache *ristretto.Cache[string, services.ContactCacheEntry]
 	inMemoryCache         cache.Cache
-	rateLimitService     *services.RateLimitService
-	redisClient          *redis.Client
+	rateLimitService      *services.RateLimitService
+	redisClient           *redis.Client
+	rateLimitRedisClient  *redis.Client
+	closeOnce             sync.Once
 }
 
 // NewLiteContainer creates a Container without any routes or listeners
@@ -111,9 +114,16 @@ func NewLiteContainer() (container *Container) {
 
 // Close gracefully shuts down container resources
 func (container *Container) Close() {
-	if container.rateLimitService != nil {
-		container.rateLimitService.Close()
-	}
+	container.closeOnce.Do(func() {
+		if container.rateLimitService != nil {
+			container.rateLimitService.Close()
+		}
+		if container.rateLimitRedisClient != nil {
+			if err := container.rateLimitRedisClient.Close(); err != nil {
+				container.logger.Error(stacktrace.Propagatef(err, "cannot close rate limit Redis client"))
+			}
+		}
+	})
 }
 
 // NewContainer creates a new dependency injection container
@@ -227,7 +237,14 @@ func (container *Container) App() (app *fiber.App) {
 			[]string{"/v1/events"},
 		))
 		app.Hooks().OnPreShutdown(func() error {
-			container.RateLimitService().Close()
+			container.logger.Info("rate limit shutdown waiting for HTTP requests to drain")
+			return nil
+		})
+		app.Hooks().OnPostShutdown(func(err error) error {
+			if err != nil {
+				container.logger.Error(stacktrace.Propagatef(err, "HTTP shutdown did not finish draining requests"))
+			}
+			container.Close()
 			return nil
 		})
 	}
@@ -516,10 +533,24 @@ func (container *Container) RateLimitService() *services.RateLimitService {
 	}
 
 	container.logger.Debug("creating services.RateLimitService")
+	options := *container.RedisClient().Options()
+	options.ContextTimeoutEnabled = true
+	options.DialTimeout = time.Second
+	options.ReadTimeout = time.Second
+	options.WriteTimeout = time.Second
+	options.PoolTimeout = time.Second
+	options.MaxRetries = -1
+	container.rateLimitRedisClient = redis.NewClient(&options)
+	if err := redisotel.InstrumentTracing(container.rateLimitRedisClient); err != nil {
+		container.logger.Error(stacktrace.Propagatef(err, "cannot instrument rate limit Redis tracing"))
+	}
+	if err := redisotel.InstrumentMetrics(container.rateLimitRedisClient); err != nil {
+		container.logger.Error(stacktrace.Propagatef(err, "cannot instrument rate limit Redis metrics"))
+	}
 	container.rateLimitService = services.NewRateLimitService(
 		container.Tracer(),
 		container.Logger(),
-		container.RedisClient(),
+		container.rateLimitRedisClient,
 		container.EventDispatcher(),
 	)
 	return container.rateLimitService

@@ -1,14 +1,51 @@
 package di
 
 import (
+	"context"
+	"net"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/pkg/entities"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRateLimitRedisClientBoundsStalledConnections(t *testing.T) {
+	t.Setenv("ENV", "local")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { listener.Close() })
+	accepted := make(chan net.Conn, 1)
+	go func() {
+		connection, err := listener.Accept()
+		if err == nil {
+			accepted <- connection
+		}
+	}()
+	t.Cleanup(func() {
+		select {
+		case connection := <-accepted:
+			connection.Close()
+		case <-time.After(time.Second):
+		}
+	})
+	t.Setenv("REDIS_URL", "redis://"+listener.Addr().String())
+	container := NewLiteContainer()
+	container.eventDispatcher = &services.EventDispatcher{}
+	container.RateLimitService()
+	t.Cleanup(container.Close)
+	t.Cleanup(func() { container.redisClient.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	start := time.Now()
+	err = container.rateLimitRedisClient.Ping(ctx).Err()
+	require.Error(t, err)
+	require.Less(t, time.Since(start), 1500*time.Millisecond)
+}
 
 func TestNotificationHTTPClientUsesOTelRoundTripperWithoutRetries(t *testing.T) {
 	t.Setenv("ENV", "local")
