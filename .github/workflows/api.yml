@@ -1,4 +1,4 @@
-name: api
+name: CI/CD
 
 on:
   push:
@@ -10,34 +10,40 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  test:
-    name: Integration Tests
-    runs-on: ubuntu-latest
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Set up Go
+      - name: Set Up Go
         uses: actions/setup-go@v7
         with:
           go-version: stable
+          cache-dependency-path: |
+            api/go.sum
+            tests/go.sum
 
-      - name: Generate Firebase credentials
+      - name: Generate Firebase Credentials
         run: |
           bash tests/generate-firebase-credentials.sh tests/firebase-credentials.json
           echo "FIREBASE_CREDENTIALS=$(jq -c . tests/firebase-credentials.json)" >> $GITHUB_ENV
 
-      - name: Generate adapter certificates
+      - name: Generate Adapter Certificates
         run: bash tests/generate-adapter-certificates.sh tests/certs
 
       - name: Start Services
         working-directory: ./tests
         run: docker compose up -d --build
 
-      - name: Wait for services to be healthy
+      - name: Wait for Healthy Services
         working-directory: ./tests
         run: |
           echo "Waiting for MongoDB to be healthy..."
@@ -74,7 +80,7 @@ jobs:
         working-directory: ./tests
         run: |
           echo "Waiting for seed container to finish..."
-          docker compose wait seed || true
+          docker compose wait seed
           sleep 2
 
       - name: Run Handler Integration Tests
@@ -83,11 +89,11 @@ jobs:
           USER_API_KEY: test-user-api-key
         run: go test -tags integration -v -timeout 60s ./pkg/handlers
 
-      - name: Run Integration Tests
+      - name: Run End-to-End Integration Tests
         working-directory: ./tests
         run: go test -v -timeout 300s ./...
 
-      - name: Collect Logs on Failure
+      - name: Collect Service Logs on Failure
         if: failure()
         working-directory: ./tests
         run: |
@@ -98,11 +104,15 @@ jobs:
         working-directory: ./tests
         run: docker compose down -v
 
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    needs: test
+  deploy-api:
+    name: Deploy API
+    runs-on: ubuntu-24.04
+    needs: integration-tests
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -110,10 +120,10 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Set up Cloud SDK
+      - name: Set Up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Trigger Cloud Build Deploy
+      - name: Build and Deploy API
         run: |
           BUILD_ID=$(gcloud builds triggers run api-httpsms-com \
             --region=global \
@@ -135,12 +145,91 @@ jobs:
             sleep 30
           done
 
+  build-web:
+    name: Build Web
+    needs: integration-tests
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.18"
+
+      - name: Set Up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.11.0
+
+      - name: Install Web Dependencies
+        run: pnpm install --trust-lockfile
+
+      - name: Lint Web
+        run: pnpm lint
+
+      - name: Run Web Tests
+        run: pnpm test
+
+      - name: Build Web
+        run: mv .env.production .env && pnpm run generate
+
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-build
+          path: web/.output/public
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
   deploy-web:
-    name: Deploy Web
-    needs: deploy
+    name: Deploy Web (${{ matrix.provider }})
+    needs: [deploy-api, build-web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: write
       deployments: write
-    uses: ./.github/workflows/web.yml
-    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [Cloudflare, Firebase]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.18"
+
+      - name: Download Web Build
+        uses: actions/download-artifact@v8
+        with:
+          name: web-build
+          path: web/.output/public
+
+      - name: Deploy Web to Cloudflare
+        if: matrix.provider == 'Cloudflare'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web/.output/public --project-name=httpsms
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy Web to Firebase
+        if: matrix.provider == 'Firebase'
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          channelId: live
+          entryPoint: "./web"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_HTTPSMS_86C51 }}"
+          projectId: httpsms-86c51

@@ -140,6 +140,12 @@ the adapter CA/server certificate before building the Compose stack. The
 workflow runs API handler integration tests and this complete host-side suite,
 collects service logs on failure, and always tears the stack down.
 
+After integration tests pass, the CI/CD workflow builds the web frontend and
+deploys the API in parallel. On pushes to `main`, the web build is deployed to
+Cloudflare and Firebase in parallel only after both jobs succeed. Pull requests
+run integration tests and web validation/build without deploying. Both the API
+and web use the workflow run number as their version.
+
 ## Test Data
 
 | Entity | Value |
