@@ -18,7 +18,7 @@ concurrency:
 jobs:
   integration-tests:
     name: Run Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -106,7 +106,7 @@ jobs:
 
   deploy-api:
     name: Deploy API
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: integration-tests
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     timeout-minutes: 60
@@ -148,7 +148,7 @@ jobs:
   build-web:
     name: Build Web
     needs: integration-tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     defaults:
       run:
         working-directory: ./web
@@ -191,7 +191,7 @@ jobs:
     name: Deploy Web (${{ matrix.provider }})
     needs: [deploy-api, build-web]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: write
