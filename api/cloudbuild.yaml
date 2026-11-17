@@ -3,11 +3,11 @@ steps:
     id: "Build image and push"
     dir: "api"
     args:
-      - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA"
+      - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_VERSION"
       - "--destination=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest"
       - "--dockerfile=Dockerfile"
       - "--context=."
-      - "--build-arg=GIT_COMMIT=$SHORT_SHA"
+      - "--build-arg=VERSION=$_VERSION"
       - "--snapshot-mode=time"
 
   - id: "Deploy to cloud run"
@@ -17,7 +17,7 @@ steps:
       - "-c"
       - |
         gcloud run deploy $_SERVICE_NAME \
-        --image=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA \
+        --image=us.gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_VERSION \
         --region=$_REGION --platform managed --allow-unauthenticated \
         --port=8000
 options:
@@ -26,3 +26,4 @@ options:
 substitutions:
   _SERVICE_NAME: http-sms-api
   _REGION: us-east1
+  _VERSION: dev
