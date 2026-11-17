@@ -13,6 +13,7 @@ require (
 	github.com/NdoleStudio/lemonsqueezy-go v1.3.2
 	github.com/NdoleStudio/plunk-go v0.0.2
 	github.com/NdoleStudio/stacktrace v1.1.0
+	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/avast/retry-go/v5 v5.0.0
 	github.com/axiomhq/axiom-go v0.38.0
 	github.com/carlmjohnson/requests v0.26.2
@@ -179,6 +180,7 @@ require (
 	github.com/xuri/efp v0.0.3-0.20260924042702-217b81952dec // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.45.0 // indirect

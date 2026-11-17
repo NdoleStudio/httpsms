@@ -31,6 +31,10 @@ jobs:
             api/go.sum
             tests/go.sum
 
+      - name: Run Rate Limit Regression Tests
+        working-directory: ./api
+        run: go test -race ./pkg/services ./pkg/middlewares ./pkg/di -run TestRateLimit -count=1
+
       - name: Generate Firebase Credentials
         run: |
           bash tests/generate-firebase-credentials.sh tests/firebase-credentials.json
