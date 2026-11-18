@@ -283,6 +283,7 @@ type HeartbeatMonitorParams struct {
 	PhoneID   uuid.UUID
 	UserID    entities.UserID
 	Source    string
+	QueueID   string
 }
 
 // Monitor the heartbeats of an owner and phone number
@@ -290,14 +291,24 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
 	defer span.End()
 
+	if params.QueueID == "" {
+		ctxLogger.Info(fmt.Sprintf("ignoring heartbeat check without a queue ID for owner [%s] and user [%s]", params.Owner, params.UserID))
+		return nil
+	}
+
 	monitor, err := service.monitorRepository.Load(ctx, params.UserID, params.Owner)
 	if err != nil && stacktrace.GetCode(err) == repositories.ErrCodeNotFound {
 		ctxLogger.Info(fmt.Sprintf("heartbeat monitor does not exist for owner [%s] and user [%s]", params.Owner, params.UserID))
 		return nil
 	}
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot check if monitor exists with userID [%s] and owner [%s]", params.UserID, params.Owner)))
 		return service.scheduleHeartbeatCheck(ctx, time.Now().UTC(), params)
+	}
+
+	if params.QueueID != monitor.QueueID {
+		ctxLogger.Info(fmt.Sprintf("ignoring heartbeat check with queue ID [%s] for monitor [%s] with current queue ID [%s]", params.QueueID, monitor.ID, monitor.QueueID))
+		return nil
 	}
 
 	// Update params in case of ID duplicate
@@ -310,19 +321,25 @@ func (service *HeartbeatService) Monitor(ctx context.Context, params *HeartbeatM
 		return nil
 	}
 	if err != nil {
-		ctxLogger.Error(stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s] removing check", params.UserID, params.Owner, params.MonitorID))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot fetch last heartbeat for userID [%s] and owner [%s] and ID [%s]", params.UserID, params.Owner, params.MonitorID)))
 		return nil
 	}
 
-	// send urgent FCM message if the last heartbeat is late
-	if time.Now().UTC().Sub(heartbeat.Timestamp) > heartbeatCheckInterval && time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) {
+	return service.checkLastHeartbeat(ctx, heartbeat, monitor, params)
+}
+
+func (service *HeartbeatService) checkLastHeartbeat(ctx context.Context, heartbeat *entities.Heartbeat, monitor *entities.HeartbeatMonitor, params *HeartbeatMonitorParams) error {
+	ctx, span, ctxLogger := service.tracer.StartWithLogger(ctx, service.logger)
+	defer span.End()
+
+	heartbeatAge := time.Now().UTC().Sub(heartbeat.Timestamp)
+	if heartbeatAge > heartbeatCheckInterval && heartbeatAge < heartbeatCheckInterval*5 {
 		ctxLogger.Info(fmt.Sprintf("sending missed heartbeat notification for userID [%s] and owner [%s] and monitor ID [%s]", params.UserID, params.Owner, params.MonitorID))
 		service.handleMissedMonitor(ctx, heartbeat.Timestamp, params)
-	}
 
-	if time.Now().UTC().Sub(heartbeat.Timestamp) > (heartbeatCheckInterval*4) &&
-		time.Now().UTC().Sub(heartbeat.Timestamp) < (heartbeatCheckInterval*5) && monitor.PhoneOnline {
-		return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
+		if heartbeatAge > heartbeatCheckInterval*4 && monitor.PhoneOnline {
+			return service.handleFailedMonitor(ctx, heartbeat.Timestamp, params)
+		}
 	}
 
 	return service.scheduleHeartbeatCheck(ctx, heartbeat.Timestamp, params)
@@ -400,7 +417,7 @@ func (service *HeartbeatService) scheduleHeartbeatCheck(ctx context.Context, las
 	}
 
 	if err = service.monitorRepository.UpdateQueueID(ctx, params.MonitorID, queueID); err != nil {
-		service.logger.Error(stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID))
+		ctxLogger.Error(service.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot update monitor with id [%s] with queue with ID [%s]", params.MonitorID, queueID)))
 	}
 
 	ctxLogger.Info(fmt.Sprintf("heartbeat check scheduled for monitor with id [%s] and phone id [%s] and queue id [%s] for user [%s]", params.MonitorID, params.PhoneID, queueID, params.UserID))

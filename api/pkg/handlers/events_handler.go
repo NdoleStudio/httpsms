@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
+	"github.com/NdoleStudio/httpsms/pkg/events"
 	"github.com/NdoleStudio/httpsms/pkg/services"
 	"github.com/NdoleStudio/httpsms/pkg/telemetry"
 	"github.com/NdoleStudio/stacktrace"
@@ -63,6 +65,8 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 		return h.responseForbidden(c)
 	}
 
+	ctx = h.withQueueTaskID(ctx, c.Get("X-CloudTasks-TaskName"))
+
 	ctxLogger.Info(fmt.Sprintf("handling [%s] event with ID [%s]", request.Type(), request.ID()))
 	err := h.service.DispatchSync(ctx, request)
 	if err != nil {
@@ -71,4 +75,12 @@ func (h *EventsHandler) Dispatch(c fiber.Ctx) error {
 	}
 
 	return h.responseNoContent(c, "event dispatched successfully")
+}
+
+func (h *EventsHandler) withQueueTaskID(ctx context.Context, taskName string) context.Context {
+	queueID := ""
+	if taskName != "" {
+		queueID = fmt.Sprintf("%s/tasks/%s", h.queueConfig.Name, taskName)
+	}
+	return context.WithValue(ctx, events.QueueIDKey, queueID)
 }
