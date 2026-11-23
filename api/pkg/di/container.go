@@ -1412,6 +1412,7 @@ func (container *Container) DiscordClient() (client *discord.Client) {
 func (container *Container) PlunkClient() (client *plunk.Client) {
 	container.logger.Debug(fmt.Sprintf("creating %T", client))
 	return plunk.New(
+		plunk.WithBaseURL(os.Getenv("PLUNK_BASE_URL")),
 		plunk.WithHTTPClient(container.HTTPClient("plunk")),
 		plunk.WithSecretKey(os.Getenv("PLUNK_SECRET_KEY")),
 		plunk.WithPublicKey(os.Getenv("PLUNK_PUBLIC_KEY")),
