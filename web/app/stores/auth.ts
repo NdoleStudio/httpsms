@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<EntitiesUser | null>(null)
   const { apiFetch } = useApi()
   let sessionVersion = 0
+  let userLoadVersion = 0
 
   function clearCredentials() {
     sessionVersion++
@@ -53,10 +54,19 @@ export const useAuthStore = defineStore('auth', () => {
     await onAuthStateChanged(firebaseUser)
   }
 
-  async function loadUser() {
+  async function loadUser(signal?: AbortSignal) {
     const session = sessionVersion
-    const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me')
-    if (session !== sessionVersion) return
+    const version = ++userLoadVersion
+    const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me', {
+      signal,
+    })
+    if (
+      signal?.aborted ||
+      session !== sessionVersion ||
+      version !== userLoadVersion
+    ) {
+      return
+    }
     setApiKey(response.data.api_key)
     user.value = response.data
   }

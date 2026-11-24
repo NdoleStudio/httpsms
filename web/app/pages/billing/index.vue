@@ -42,9 +42,11 @@ const dialog = ref(false)
 const cancellationPending = ref(false)
 let billingPageActive = true
 let stopCancellationWait: (() => void) | undefined
+let cancellationRefresh: AbortController | undefined
 
 onBeforeUnmount(() => {
   billingPageActive = false
+  cancellationRefresh?.abort()
   stopCancellationWait?.()
 })
 const subscriptionInvoiceDialog = ref(false)
@@ -250,14 +252,16 @@ async function cancelPlan() {
   }
 
   cancellationPending.value = true
+  cancellationRefresh = new AbortController()
+  const signal = cancellationRefresh.signal
   const deadline = Date.now() + 10000
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
     await Promise.race([
       (async () => {
-        while (billingPageActive && Date.now() < deadline) {
-          await authStore.loadUser()
-          if (!billingPageActive) return
+        while (billingPageActive && !signal.aborted && Date.now() < deadline) {
+          await authStore.loadUser(signal)
+          if (!billingPageActive || signal.aborted) return
           if (
             authStore.user?.subscription_status === 'cancelled' ||
             authStore.user?.subscription_name === 'free'
@@ -298,6 +302,8 @@ async function cancelPlan() {
     })
   } finally {
     clearTimeout(timeout)
+    cancellationRefresh.abort()
+    cancellationRefresh = undefined
     stopCancellationWait = undefined
     dialog.value = false
     loading.value = false

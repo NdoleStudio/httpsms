@@ -7,7 +7,7 @@ import { useApi, setAuthHeader, setApiKey } from '../composables/useApi'
 import { useAuthStore } from './auth'
 
 interface UserResponse {
-  data: { id: string; api_key: string }
+  data: { id: string; api_key: string; subscription_status?: string }
 }
 
 function deferred<T>() {
@@ -85,6 +85,50 @@ test('loading a user sends its API key alongside bearer auth on shared requests'
   await store.loadUser()
   await client('/v1/messages')
   assert.equal(calls.at(-1)?.get('x-api-key'), 'new-key-a')
+})
+
+test('an older account refresh cannot overwrite newer subscription state or API keys', async () => {
+  const { store, calls, respondWith } = setupStore()
+  const stale = deferred<UserResponse>()
+  respondWith(stale.promise)
+  const oldLoad = store.loadUser()
+  respondWith(
+    Promise.resolve({
+      data: {
+        id: 'account-a',
+        api_key: 'new-key',
+        subscription_status: 'cancelled',
+      },
+    }),
+  )
+  await store.loadUser()
+  stale.resolve({
+    data: {
+      id: 'account-a',
+      api_key: 'old-key',
+      subscription_status: 'active',
+    },
+  })
+  await oldLoad
+  await useApi().apiFetch('/v1/messages')
+
+  assert.equal(store.user?.subscription_status, 'cancelled')
+  assert.equal(calls.at(-1)?.get('x-api-key'), 'new-key')
+})
+
+test('an aborted account refresh cannot publish its response even if the request completes', async () => {
+  const { store, calls, respondWith } = setupStore()
+  const controller = new AbortController()
+  const stale = deferred<UserResponse>()
+  respondWith(stale.promise)
+  const oldLoad = store.loadUser(controller.signal)
+  controller.abort()
+  stale.resolve({ data: { id: 'account-a', api_key: 'old-key' } })
+  await oldLoad
+  await useApi().apiFetch('/v1/messages')
+
+  assert.equal(store.user, null)
+  assert.equal(calls.at(-1)?.has('x-api-key'), false)
 })
 
 for (const logout of ['reset', 'auth callback', 'token callback'] as const) {

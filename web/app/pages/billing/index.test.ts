@@ -43,6 +43,7 @@ function setupCancellation(
   let elapsed = 0
   let deadlineCallback: (() => void) | undefined
   let unmount = () => {}
+  let refreshSignal: AbortSignal | undefined
   const waitingStates: { dialog: boolean; notifications: number }[] = []
   const navigations: string[] = []
   const notifications: { message: string; type: string }[] = []
@@ -51,7 +52,8 @@ function setupCancellation(
   const cancellationPending = { value: false }
   const authStore = {
     user: { subscription_status: 'active' },
-    loadUser: async () => {
+    loadUser: async (signal?: AbortSignal) => {
+      refreshSignal = signal
       if (refreshError) throw refreshError
       authStore.user = {
         subscription_status:
@@ -65,6 +67,8 @@ function setupCancellation(
     cancellationPending,
     billingPageActive: true,
     stopCancellationWait: undefined,
+    cancellationRefresh: undefined,
+    AbortController,
     onBeforeUnmount: (callback: () => void) => {
       unmount = callback
     },
@@ -108,6 +112,7 @@ function setupCancellation(
     navigations,
     reloads: () => reloads,
     refreshes: () => refreshes,
+    refreshSignal: () => refreshSignal,
     elapsed: () => elapsed,
     expireDeadline: () => {
       elapsed = 10000
@@ -205,7 +210,11 @@ test('a delayed webhook leaves a visible pending state after bounded polling', a
 
 test('the dialog closes at ten seconds even if the account refresh is still in flight', async () => {
   const pending = setupCancellation(async () => {})
-  pending.authStore.loadUser = () => new Promise<void>(() => {})
+  let signal: AbortSignal | undefined
+  pending.authStore.loadUser = (refreshSignal) => {
+    signal = refreshSignal
+    return new Promise<void>(() => {})
+  }
   const cancellation = pending.cancel()
   await setImmediate()
 
@@ -218,6 +227,7 @@ test('the dialog closes at ten seconds even if the account refresh is still in f
   assert.equal(pending.loading.value, false)
   assert.equal(pending.notifications.length, 1)
   assert.equal(pending.notifications[0]?.type, 'info')
+  assert.equal(signal?.aborted, true)
 })
 
 test('leaving billing stops polling and prevents a notification on the next page', async () => {
