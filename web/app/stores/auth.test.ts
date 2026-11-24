@@ -131,6 +131,42 @@ test('an aborted account refresh cannot publish its response even if the request
   assert.equal(calls.at(-1)?.has('x-api-key'), false)
 })
 
+for (const replacement of ['aborted', 'failed'] as const) {
+  test(`a successful account load still publishes when its newer replacement is ${replacement}`, async () => {
+    const { store, calls, respondWith } = setupStore()
+    const original = deferred<UserResponse>()
+    respondWith(original.promise)
+    const originalLoad = store.loadUser()
+
+    if (replacement === 'aborted') {
+      const controller = new AbortController()
+      const newer = deferred<UserResponse>()
+      respondWith(newer.promise)
+      const newerLoad = store.loadUser(controller.signal)
+      controller.abort()
+      newer.resolve({ data: { id: 'account-a', api_key: 'aborted-key' } })
+      await newerLoad
+    } else {
+      const error = new Error('Account fetch failed')
+      respondWith(Promise.reject(error))
+      await assert.rejects(
+        () => store.loadUser(),
+        (caught) => caught === error,
+      )
+    }
+
+    original.resolve({ data: { id: 'account-a', api_key: 'original-key' } })
+    await originalLoad
+    respondWith(
+      Promise.resolve({ data: { id: 'account-a', api_key: 'original-key' } }),
+    )
+    await useApi().apiFetch('/v1/messages')
+
+    assert.equal(store.user?.id, 'account-a')
+    assert.equal(calls.at(-1)?.get('x-api-key'), 'original-key')
+  })
+}
+
 for (const logout of ['reset', 'auth callback', 'token callback'] as const) {
   test(`a pending user load cannot restore credentials after ${logout}`, async () => {
     const { store, calls, respondWith } = setupStore()

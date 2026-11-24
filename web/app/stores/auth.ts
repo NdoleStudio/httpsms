@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   const { apiFetch } = useApi()
   let sessionVersion = 0
   let userLoadVersion = 0
+  let publishedUserLoadVersion = 0
 
   function clearCredentials() {
     sessionVersion++
@@ -63,10 +64,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (
       signal?.aborted ||
       session !== sessionVersion ||
-      version !== userLoadVersion
+      version < publishedUserLoadVersion
     ) {
       return
     }
+    publishedUserLoadVersion = version
     setApiKey(response.data.api_key)
     user.value = response.data
   }
