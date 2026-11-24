@@ -43,14 +43,10 @@ export const useBillingStore = defineStore('billing', () => {
     return response.data
   }
 
-  async function cancelSubscription(): Promise<string> {
-    const response = await apiFetch<{ message: string }>(
-      '/v1/users/subscription',
-      {
-        method: 'DELETE',
-      },
-    )
-    return response.message
+  async function cancelSubscription(): Promise<void> {
+    await apiFetch('/v1/users/subscription', {
+      method: 'DELETE',
+    })
   }
 
   async function indexSubscriptionPayments(): Promise<ResponsesUserSubscriptionPaymentsResponse> {
