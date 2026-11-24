@@ -308,7 +308,22 @@ test('confirmed cancellation updates the mounted billing card without modifying 
     assert.equal(notifications.length, 1)
     assert.equal(notifications[0]?.type, 'success')
 
-    authStore.user.id = 'account-b'
+    authStore.user = {
+      ...authStore.user,
+      subscription_name: 'free',
+      subscription_status: 'expired',
+    }
+    await vue.nextTick()
+    assert.doesNotMatch(text(root), /You will be downgraded/)
+    assert.equal(buttons(root, 'Cancel Plan').length, 0)
+    assert.ok(buttons(root, 'Upgrade Plan').length > 0)
+
+    authStore.user = {
+      ...authStore.user,
+      id: 'account-b',
+      subscription_name: 'pro-monthly',
+      subscription_status: 'active',
+    }
     await vue.nextTick()
     assert.doesNotMatch(text(root), /You will be downgraded/)
     assert.ok(buttons(root, 'Cancel Plan').length > 0)

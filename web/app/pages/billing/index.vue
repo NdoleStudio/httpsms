@@ -39,6 +39,12 @@ const billingAccount = computed(() =>
     ? billingUser.value
     : authStore.user,
 )
+watch(
+  () => authStore.user,
+  () => {
+    billingUser.value = null
+  },
+)
 const promotion = useBlackFridayStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
