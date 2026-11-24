@@ -39,6 +39,7 @@ const { formatDecimal, formatTimestamp } = useFilters()
 const loading = ref(true)
 const loadingSubscriptionPayments = ref(false)
 const dialog = ref(false)
+const cancellationPending = ref(false)
 const subscriptionInvoiceDialog = ref(false)
 const payments = ref<ResponsesUserSubscriptionPaymentsResponse | null>(null)
 const selectedPayment = ref<SubscriptionPayment | null>(null)
@@ -240,18 +241,35 @@ async function cancelPlan() {
   }
 
   dialog.value = false
+  cancellationPending.value = true
   notificationsStore.addNotification({
     message: 'Subscription cancelled successfully',
     type: 'success',
   })
   try {
-    await authStore.loadUser()
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await authStore.loadUser()
+      if (
+        authStore.user?.subscription_status === 'cancelled' ||
+        authStore.user?.subscription_name === 'free'
+      ) {
+        cancellationPending.value = false
+        break
+      }
+      if (attempt < 9) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    }
+    if (cancellationPending.value) {
+      notificationsStore.addNotification({
+        message:
+          'Your subscription was cancelled. Your billing details are still updating; please check back shortly.',
+        type: 'info',
+      })
+    }
   } catch (error: unknown) {
     notificationsStore.addNotification({
-      message: getApiErrorMessage(
-        error,
-        'Your subscription was cancelled, but we could not refresh your billing details.',
-      ),
+      message: `Your subscription was cancelled, but we could not refresh your billing details. ${getApiErrorMessage(error, 'Please try again later.')}`,
       type: 'error',
     })
   } finally {
@@ -318,7 +336,27 @@ onMounted(async () => {
             <h4 class="text-headline-large mb-3 mt-0">Current Plan</h4>
             <VRow v-if="authStore.user">
               <VCol md="6">
-                <VAlert type="info" :icon="false" variant="tonal" prominent>
+                <VAlert
+                  v-if="cancellationPending"
+                  type="info"
+                  :icon="false"
+                  variant="tonal"
+                  prominent
+                >
+                  <h1 class="text-title-large mt-0 mb-0 font-weight-bold">
+                    Subscription cancelled
+                  </h1>
+                  <p class="text-medium-emphasis mt-1 mb-0">
+                    Your billing details are still updating.
+                  </p>
+                </VAlert>
+                <VAlert
+                  v-else
+                  type="info"
+                  :icon="false"
+                  variant="tonal"
+                  prominent
+                >
                   <div>
                     <h1
                       class="text-title-large mt-0 mb-0 font-weight-bold text-uppercase"

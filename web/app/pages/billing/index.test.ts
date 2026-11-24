@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { parse } from 'vue/compiler-sfc'
+import { getApiErrorMessage } from '../../utils/api-error'
 
 const { descriptor } = parse(
   readFileSync(new URL('./index.vue', import.meta.url), 'utf8'),
@@ -26,23 +27,30 @@ const { outputText } = ts.transpileModule(cancelPlan.getText(script), {
 
 function setupCancellation(
   cancelSubscription: () => Promise<void>,
-  refreshError?: Error,
+  refreshError?: unknown,
+  statuses = ['cancelled'],
 ) {
   let reloads = 0
+  let refreshes = 0
   const navigations: string[] = []
   const notifications: { message: string; type: string }[] = []
   const loading = { value: false }
   const dialog = { value: true }
+  const cancellationPending = { value: false }
   const authStore = {
     user: { subscription_status: 'active' },
     loadUser: async () => {
       if (refreshError) throw refreshError
-      authStore.user = { subscription_status: 'cancelled' }
+      authStore.user = {
+        subscription_status:
+          statuses[Math.min(refreshes++, statuses.length - 1)]!,
+      }
     },
   }
   const cancel = runInNewContext(`${outputText}\ncancelPlan`, {
     loading,
     dialog,
+    cancellationPending,
     authStore,
     billingStore: { cancelSubscription },
     notificationsStore: {
@@ -52,17 +60,20 @@ function setupCancellation(
     },
     window: { location: { reload: () => reloads++ } },
     navigateTo: (path: string) => navigations.push(path),
-    getApiErrorMessage: (_error: unknown, fallback: string) => fallback,
+    getApiErrorMessage,
+    setTimeout: (callback: () => void) => callback(),
   }) as () => Promise<void>
 
   return {
     cancel,
     loading,
     dialog,
+    cancellationPending,
     authStore,
     notifications,
     navigations,
     reloads: () => reloads,
+    refreshes: () => refreshes,
   }
 }
 
@@ -76,6 +87,7 @@ test('successful cancellation updates billing status in place without a browser 
   assert.equal(pending.authStore.user.subscription_status, 'cancelled')
   assert.equal(pending.dialog.value, false)
   assert.equal(pending.loading.value, false)
+  assert.equal(pending.cancellationPending.value, false)
   assert.equal(pending.notifications.at(-1)?.type, 'success')
 })
 
@@ -95,10 +107,9 @@ test('failed cancellation stays on the page without refreshing and displays an e
 })
 
 test('a refresh failure after cancellation reports the refresh error rather than a cancellation failure', async () => {
-  const pending = setupCancellation(
-    async () => {},
-    new Error('Account fetch failed'),
-  )
+  const pending = setupCancellation(async () => {}, {
+    data: { message: 'Account fetch failed' },
+  })
 
   await pending.cancel()
 
@@ -108,4 +119,32 @@ test('a refresh failure after cancellation reports the refresh error rather than
   assert.equal(pending.loading.value, false)
   assert.equal(pending.notifications.at(-1)?.type, 'error')
   assert.match(pending.notifications.at(-1)!.message, /cancelled.*refresh/)
+  assert.match(pending.notifications.at(-1)!.message, /Account fetch failed/)
+})
+
+test('cancellation waits for the webhook when the first account response is stale', async () => {
+  const pending = setupCancellation(async () => {}, undefined, [
+    'active',
+    'cancelled',
+  ])
+
+  await pending.cancel()
+
+  assert.equal(pending.authStore.user.subscription_status, 'cancelled')
+  assert.equal(pending.cancellationPending.value, false)
+  assert.ok(pending.refreshes() > 1)
+  assert.equal(pending.loading.value, false)
+  assert.equal(pending.reloads(), 0)
+})
+
+test('a delayed webhook leaves a visible pending state after bounded polling', async () => {
+  const pending = setupCancellation(async () => {}, undefined, ['active'])
+
+  await pending.cancel()
+
+  assert.equal(pending.cancellationPending.value, true)
+  assert.ok(pending.refreshes() > 1 && pending.refreshes() <= 20)
+  assert.equal(pending.loading.value, false)
+  assert.equal(pending.notifications.at(-1)?.type, 'info')
+  assert.match(pending.notifications.at(-1)!.message, /cancelled.*updating/)
 })
