@@ -65,6 +65,7 @@ function setupCancellation(
     loading,
     dialog,
     cancellationPending,
+    cancellingSubscription: { value: false },
     billingPageActive: true,
     stopCancellationWait: undefined,
     cancellationRefresh: undefined,

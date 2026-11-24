@@ -167,6 +167,30 @@ for (const replacement of ['aborted', 'failed'] as const) {
   })
 }
 
+for (const mutation of ['update', 'rotate'] as const) {
+  test(`an earlier account refresh cannot restore an old API key after ${mutation}`, async () => {
+    const { store, calls, respondWith } = setupStore()
+    const stale = deferred<UserResponse>()
+    respondWith(stale.promise)
+    const refresh = store.loadUser()
+    respondWith(
+      Promise.resolve({ data: { id: 'account-a', api_key: 'new-key' } }),
+    )
+
+    if (mutation === 'update') {
+      await store.updateUser({ timezone: 'UTC' })
+    } else {
+      await store.rotateApiKey('account-a')
+    }
+    stale.resolve({ data: { id: 'account-a', api_key: 'old-key' } })
+    await refresh
+    await useApi().apiFetch('/v1/messages')
+
+    assert.equal(store.user?.api_key, 'new-key')
+    assert.equal(calls.at(-1)?.get('x-api-key'), 'new-key')
+  })
+}
+
 for (const logout of ['reset', 'auth callback', 'token callback'] as const) {
   test(`a pending user load cannot restore credentials after ${logout}`, async () => {
     const { store, calls, respondWith } = setupStore()

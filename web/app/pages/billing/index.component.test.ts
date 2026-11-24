@@ -86,7 +86,7 @@ function find(
   ]
 }
 
-function mountBilling() {
+function mountBilling(holdInitialLoad = false) {
   const notifications: { message: string; type: string }[] = []
   const authStore = vue.reactive({
     user: {
@@ -101,7 +101,9 @@ function mountBilling() {
   const billingStore = {
     billingUsage: null,
     billingUsageHistory: [],
-    loadBillingUsage: async () => {},
+    loadBillingUsage: async () => {
+      if (holdInitialLoad) await new Promise<void>(() => {})
+    },
     loadBillingUsageHistory: async () => {},
     cancelSubscription: async () => {},
   }
@@ -245,5 +247,24 @@ test('the mounted billing page keeps the dialog persistent, then renders pending
   } finally {
     app.unmount()
     context.mock.timers.reset()
+  }
+})
+
+test('unrelated billing loading does not lock the cancellation dialog', async () => {
+  const { app, root } = mountBilling(true)
+  try {
+    await setImmediate()
+    await click(buttons(root, 'Cancel Plan')[0]!)
+    await vue.nextTick()
+
+    const dialog = find(
+      root,
+      (element) =>
+        element.type === 'VDialog' && element.props.modelValue === true,
+    )[0]!
+    assert.equal(dialog.props.persistent, false)
+    assert.equal(buttons(root, 'Keep Subscription')[0]?.props.disabled, false)
+  } finally {
+    app.unmount()
   }
 })

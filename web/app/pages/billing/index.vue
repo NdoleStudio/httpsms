@@ -40,6 +40,7 @@ const loading = ref(true)
 const loadingSubscriptionPayments = ref(false)
 const dialog = ref(false)
 const cancellationPending = ref(false)
+const cancellingSubscription = ref(false)
 let billingPageActive = true
 let stopCancellationWait: (() => void) | undefined
 let cancellationRefresh: AbortController | undefined
@@ -235,6 +236,7 @@ async function updateDetails() {
 
 async function cancelPlan() {
   loading.value = true
+  cancellingSubscription.value = true
   try {
     await billingStore.cancelSubscription()
     if (!billingPageActive) return
@@ -248,6 +250,7 @@ async function cancelPlan() {
       type: 'error',
     })
     loading.value = false
+    cancellingSubscription.value = false
     return
   }
 
@@ -307,6 +310,7 @@ async function cancelPlan() {
     stopCancellationWait = undefined
     dialog.value = false
     loading.value = false
+    cancellingSubscription.value = false
   }
 }
 
@@ -471,7 +475,7 @@ onMounted(async () => {
                           !isOnLifetimePlan)
                       "
                       v-model="dialog"
-                      :persistent="loading"
+                      :persistent="cancellingSubscription"
                       max-width="590"
                       opacity="0.9"
                     >
@@ -503,7 +507,7 @@ onMounted(async () => {
                           <VBtn
                             color="primary"
                             variant="flat"
-                            :disabled="loading"
+                            :disabled="cancellingSubscription"
                             @click="dialog = false"
                           >
                             Keep Subscription

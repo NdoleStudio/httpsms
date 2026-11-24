@@ -92,6 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
     })
 
     if (session !== sessionVersion) return
+    publishedUserLoadVersion = ++userLoadVersion
     setApiKey(response.data.api_key)
     user.value = response.data
   }
@@ -112,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
       },
     )
     if (session === sessionVersion) {
+      publishedUserLoadVersion = ++userLoadVersion
       user.value = response.data
       setApiKey(response.data.api_key)
     }
