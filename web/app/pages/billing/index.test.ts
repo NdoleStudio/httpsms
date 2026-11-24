@@ -25,6 +25,13 @@ const cancelPlan = script.statements.find(
 const { outputText } = ts.transpileModule(cancelPlan.getText(script), {
   compilerOptions: { target: ts.ScriptTarget.ESNext },
 })
+const unmountHook = script.statements.find(
+  (statement) =>
+    ts.isExpressionStatement(statement) &&
+    ts.isCallExpression(statement.expression) &&
+    statement.expression.expression.getText(script) === 'onBeforeUnmount',
+)
+const unmountCode = unmountHook?.getText(script) ?? ''
 
 function setupCancellation(
   cancelSubscription: () => Promise<void>,
@@ -35,6 +42,7 @@ function setupCancellation(
   let refreshes = 0
   let elapsed = 0
   let deadlineCallback: (() => void) | undefined
+  let unmount = () => {}
   const waitingStates: { dialog: boolean; notifications: number }[] = []
   const navigations: string[] = []
   const notifications: { message: string; type: string }[] = []
@@ -51,10 +59,15 @@ function setupCancellation(
       }
     },
   }
-  const cancel = runInNewContext(`${outputText}\ncancelPlan`, {
+  const cancel = runInNewContext(`${unmountCode}\n${outputText}\ncancelPlan`, {
     loading,
     dialog,
     cancellationPending,
+    billingPageActive: true,
+    stopCancellationWait: undefined,
+    onBeforeUnmount: (callback: () => void) => {
+      unmount = callback
+    },
     authStore,
     billingStore: { cancelSubscription },
     notificationsStore: {
@@ -101,6 +114,7 @@ function setupCancellation(
       deadlineCallback?.()
     },
     waitingStates,
+    unmount: () => unmount(),
   }
 }
 
@@ -204,4 +218,27 @@ test('the dialog closes at ten seconds even if the account refresh is still in f
   assert.equal(pending.loading.value, false)
   assert.equal(pending.notifications.length, 1)
   assert.equal(pending.notifications[0]?.type, 'info')
+})
+
+test('leaving billing stops polling and prevents a notification on the next page', async () => {
+  const pending = setupCancellation(async () => {})
+  let resolveRefresh!: () => void
+  let refreshes = 0
+  pending.authStore.loadUser = async () => {
+    refreshes++
+    await new Promise<void>((resolve) => {
+      resolveRefresh = resolve
+    })
+  }
+  const cancellation = pending.cancel()
+  await setImmediate()
+
+  pending.unmount()
+  pending.expireDeadline()
+  await cancellation
+  resolveRefresh()
+  await setImmediate()
+
+  assert.equal(pending.notifications.length, 0)
+  assert.equal(refreshes, 1)
 })

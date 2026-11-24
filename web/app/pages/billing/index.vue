@@ -40,6 +40,13 @@ const loading = ref(true)
 const loadingSubscriptionPayments = ref(false)
 const dialog = ref(false)
 const cancellationPending = ref(false)
+let billingPageActive = true
+let stopCancellationWait: (() => void) | undefined
+
+onBeforeUnmount(() => {
+  billingPageActive = false
+  stopCancellationWait?.()
+})
 const subscriptionInvoiceDialog = ref(false)
 const payments = ref<ResponsesUserSubscriptionPaymentsResponse | null>(null)
 const selectedPayment = ref<SubscriptionPayment | null>(null)
@@ -228,7 +235,9 @@ async function cancelPlan() {
   loading.value = true
   try {
     await billingStore.cancelSubscription()
+    if (!billingPageActive) return
   } catch (error: unknown) {
+    if (!billingPageActive) return
     notificationsStore.addNotification({
       message: getApiErrorMessage(
         error,
@@ -246,8 +255,9 @@ async function cancelPlan() {
   try {
     await Promise.race([
       (async () => {
-        while (Date.now() < deadline) {
+        while (billingPageActive && Date.now() < deadline) {
           await authStore.loadUser()
+          if (!billingPageActive) return
           if (
             authStore.user?.subscription_status === 'cancelled' ||
             authStore.user?.subscription_name === 'free'
@@ -263,9 +273,11 @@ async function cancelPlan() {
         }
       })(),
       new Promise<void>((resolve) => {
+        stopCancellationWait = resolve
         timeout = setTimeout(resolve, 10000)
       }),
     ])
+    if (!billingPageActive) return
     if (cancellationPending.value) {
       notificationsStore.addNotification({
         message:
@@ -279,12 +291,14 @@ async function cancelPlan() {
       })
     }
   } catch (error: unknown) {
+    if (!billingPageActive) return
     notificationsStore.addNotification({
       message: `Your subscription was cancelled, but we could not refresh your billing details. ${getApiErrorMessage(error, 'Please try again later.')}`,
       type: 'error',
     })
   } finally {
     clearTimeout(timeout)
+    stopCancellationWait = undefined
     dialog.value = false
     loading.value = false
   }
@@ -350,7 +364,12 @@ onMounted(async () => {
             <VRow v-if="authStore.user">
               <VCol md="6">
                 <VAlert
-                  v-if="cancellationPending && !dialog"
+                  v-if="
+                    cancellationPending &&
+                    !dialog &&
+                    !subscriptionIsCancelled &&
+                    !isOnFreePlan
+                  "
                   type="info"
                   :icon="false"
                   variant="tonal"
