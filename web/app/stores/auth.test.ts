@@ -191,6 +191,54 @@ for (const mutation of ['update', 'rotate'] as const) {
   })
 }
 
+for (const mutation of ['update', 'rotate'] as const) {
+  for (const responseOrder of ['mutation first', 'refresh first'] as const) {
+    test(`a delayed ${mutation} preserves newer billing data with ${responseOrder}`, async () => {
+      const { store, calls, respondWith } = setupStore()
+      const mutationResponse = deferred<UserResponse>()
+      respondWith(mutationResponse.promise)
+      const change =
+        mutation === 'update'
+          ? store.updateUser({ timezone: 'UTC' })
+          : store.rotateApiKey('account-a')
+      const refreshResponse = deferred<UserResponse>()
+      respondWith(refreshResponse.promise)
+      const refresh = store.loadUser()
+      const updated = {
+        data: {
+          id: 'account-a',
+          api_key: 'new-key',
+          subscription_status: 'active',
+        },
+      }
+      const latest = {
+        data: {
+          id: 'account-a',
+          api_key: 'old-key',
+          subscription_status: 'cancelled',
+        },
+      }
+
+      if (responseOrder === 'mutation first') {
+        mutationResponse.resolve(updated)
+        await change
+        refreshResponse.resolve(latest)
+        await refresh
+      } else {
+        refreshResponse.resolve(latest)
+        await refresh
+        mutationResponse.resolve(updated)
+        await change
+      }
+      await useApi().apiFetch('/v1/messages')
+
+      assert.equal(store.user?.subscription_status, 'cancelled')
+      assert.equal(store.user?.api_key, 'new-key')
+      assert.equal(calls.at(-1)?.get('x-api-key'), 'new-key')
+    })
+  }
+}
+
 for (const logout of ['reset', 'auth callback', 'token callback'] as const) {
   test(`a pending user load cannot restore credentials after ${logout}`, async () => {
     const { store, calls, respondWith } = setupStore()
