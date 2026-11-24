@@ -231,7 +231,7 @@ async function cancelPlan() {
       message: 'Subscription cancelled successfully',
       type: 'success',
     })
-    navigateTo('/')
+    window.location.reload()
   } catch (error: unknown) {
     notificationsStore.addNotification({
       message: getApiErrorMessage(
