@@ -15,37 +15,6 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<EntitiesUser | null>(null)
   const { apiFetch } = useApi()
   let sessionVersion = 0
-  let userRequestVersion = 0
-  let publishedUserVersion = 0
-  let publishedMutationVersion = 0
-
-  function publishLoadedUser(
-    loadedUser: EntitiesUser,
-    version: number,
-    mutationVersion: number,
-  ) {
-    if (version < publishedUserVersion) return
-    publishedUserVersion = version
-    const nextUser =
-      mutationVersion !== publishedMutationVersion && user.value
-        ? { ...loadedUser, api_key: user.value.api_key }
-        : loadedUser
-    setApiKey(nextUser.api_key)
-    user.value = nextUser
-  }
-
-  function publishMutatedUser(updatedUser: EntitiesUser, version: number) {
-    if (version < publishedMutationVersion) return
-    publishedMutationVersion = version
-    // Preserve later billing reads while applying the mutation's API key.
-    const nextUser =
-      version < publishedUserVersion && user.value
-        ? { ...user.value, api_key: updatedUser.api_key }
-        : updatedUser
-    publishedUserVersion = Math.max(publishedUserVersion, version)
-    setApiKey(nextUser.api_key)
-    user.value = nextUser
-  }
 
   function clearCredentials() {
     sessionVersion++
@@ -84,17 +53,12 @@ export const useAuthStore = defineStore('auth', () => {
     await onAuthStateChanged(firebaseUser)
   }
 
-  async function loadUser(signal?: AbortSignal) {
+  async function loadUser() {
     const session = sessionVersion
-    const version = ++userRequestVersion
-    const mutationVersion = publishedMutationVersion
-    const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me', {
-      signal,
-    })
-    if (signal?.aborted || session !== sessionVersion) {
-      return
-    }
-    publishLoadedUser(response.data, version, mutationVersion)
+    const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me')
+    if (session !== sessionVersion) return
+    setApiKey(response.data.api_key)
+    user.value = response.data
   }
 
   async function updateUser(payload: { owner?: string; timezone?: string }) {
@@ -107,7 +71,6 @@ export const useAuthStore = defineStore('auth', () => {
     const activePhone = phonesStore.activePhone
     if (!activePhone) return
 
-    const version = ++userRequestVersion
     const response = await apiFetch<{ data: EntitiesUser }>('/v1/users/me', {
       method: 'PUT',
       body: {
@@ -117,7 +80,8 @@ export const useAuthStore = defineStore('auth', () => {
     })
 
     if (session !== sessionVersion) return
-    publishMutatedUser(response.data, version)
+    setApiKey(response.data.api_key)
+    user.value = response.data
   }
 
   async function deleteUserAccount(): Promise<string> {
@@ -129,7 +93,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function rotateApiKey(userId: string): Promise<EntitiesUser> {
     const session = sessionVersion
-    const version = ++userRequestVersion
     const response = await apiFetch<{ data: EntitiesUser }>(
       `/v1/users/${userId}/api-keys`,
       {
@@ -137,7 +100,8 @@ export const useAuthStore = defineStore('auth', () => {
       },
     )
     if (session === sessionVersion) {
-      publishMutatedUser(response.data, version)
+      user.value = response.data
+      setApiKey(response.data.api_key)
     }
     return response.data
   }

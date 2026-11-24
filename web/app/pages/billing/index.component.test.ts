@@ -88,10 +88,12 @@ function find(
 
 function mountBilling(holdInitialLoad = false) {
   const notifications: { message: string; type: string }[] = []
+  let responseStatus = 'active'
   const authStore = vue.reactive({
     user: {
       subscription_name: 'pro-monthly',
       subscription_status: 'active',
+      api_key: 'original-key',
       subscription_renews_at: '2027-01-01T00:00:00Z',
       subscription_ends_at: '2027-01-01T00:00:00Z',
     },
@@ -135,6 +137,15 @@ function mountBilling(holdInitialLoad = false) {
     useVDisplay: () => ({ lgAndUp: false }),
     useAuthStore: () => authStore,
     useBillingStore: () => billingStore,
+    useApi: () => ({
+      apiFetch: async () => ({
+        data: {
+          ...authStore.user,
+          subscription_status: responseStatus,
+          api_key: 'response-key',
+        },
+      }),
+    }),
     useBlackFridayStore: () => ({ active: false, now: 0 }),
     useNotificationsStore: () => ({
       addNotification: (notification: { message: string; type: string }) =>
@@ -188,7 +199,15 @@ function mountBilling(holdInitialLoad = false) {
   )
   const root = node('root')
   app.mount(root)
-  return { app, root, authStore, notifications }
+  return {
+    app,
+    root,
+    authStore,
+    notifications,
+    confirmCancellation: () => {
+      responseStatus = 'cancelled'
+    },
+  }
 }
 
 function buttons(root: RenderNode, label: string) {
@@ -227,7 +246,7 @@ test('the mounted billing page keeps the dialog persistent, then renders pending
     await cancellation
     await vue.nextTick()
 
-    assert.match(text(root), /Subscription cancelled.*still updating/)
+    assert.match(text(root), /Cancellation in progress.*still updating/)
     assert.equal(buttons(root, 'Cancel Plan').length, 0)
     assert.equal(buttons(root, 'Update Plan').length, 0)
     assert.equal(notifications.length, 1)
@@ -264,6 +283,28 @@ test('unrelated billing loading does not lock the cancellation dialog', async ()
     )[0]!
     assert.equal(dialog.props.persistent, false)
     assert.equal(buttons(root, 'Keep Subscription')[0]?.props.disabled, false)
+  } finally {
+    app.unmount()
+  }
+})
+
+test('confirmed cancellation updates the mounted billing card without modifying auth state', async () => {
+  const { app, root, authStore, notifications, confirmCancellation } =
+    mountBilling()
+  try {
+    await setImmediate()
+    await click(buttons(root, 'Cancel Plan')[0]!)
+    await vue.nextTick()
+    confirmCancellation()
+    await click(buttons(root, 'Cancel Plan').at(-1)!)
+    await vue.nextTick()
+
+    assert.match(text(root), /You will be downgraded/)
+    assert.equal(buttons(root, 'Cancel Plan').length, 0)
+    assert.equal(authStore.user.subscription_status, 'active')
+    assert.equal(authStore.user.api_key, 'original-key')
+    assert.equal(notifications.length, 1)
+    assert.equal(notifications[0]?.type, 'success')
   } finally {
     app.unmount()
   }

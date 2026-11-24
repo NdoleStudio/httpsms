@@ -9,6 +9,7 @@ import {
   mdiInvoice,
 } from '@mdi/js'
 import type {
+  EntitiesUser,
   RequestsUserPaymentInvoice,
   ResponsesUserSubscriptionPaymentsResponse,
 } from '~~/shared/types/api'
@@ -31,6 +32,9 @@ useHead({
 const config = useRuntimeConfig()
 const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
+const { apiFetch } = useApi()
+const billingUser = ref<EntitiesUser | null>(null)
+const billingAccount = computed(() => billingUser.value ?? authStore.user)
 const promotion = useBlackFridayStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
@@ -135,17 +139,17 @@ const plans: PaymentPlan[] = [
 
 const plan = computed<PaymentPlan>(() => {
   return (plans.find(
-    (x) => x.id === (authStore.user?.subscription_name || 'free'),
+    (x) => x.id === (billingAccount.value?.subscription_name || 'free'),
   ) ?? plans[0])!
 })
 
 const isOnFreePlan = computed(() => plan.value.id === 'free')
 const blackFridayDiscountAvailable = computed(
-  () => authStore.user?.subscription_name === 'free' && promotion.active,
+  () => billingAccount.value?.subscription_name === 'free' && promotion.active,
 )
 const isOnLifetimePlan = computed(() => plan.value.id === 'pro-lifetime')
 const subscriptionIsCancelled = computed(
-  () => authStore.user?.subscription_status === 'cancelled',
+  () => billingAccount.value?.subscription_status === 'cancelled',
 )
 
 const invoiceStateOptions = computed(() =>
@@ -174,7 +178,7 @@ const checkoutURL = computed(() => {
   }
   return getBlackFridayCheckoutUrl(
     url,
-    authStore.user?.subscription_name,
+    billingAccount.value?.subscription_name,
     promotion.now,
   )
 })
@@ -193,7 +197,7 @@ const enterpriseCheckoutURL = computed(() => {
   }
   return getBlackFridayCheckoutUrl(
     url,
-    authStore.user?.subscription_name,
+    billingAccount.value?.subscription_name,
     promotion.now,
   )
 })
@@ -209,7 +213,7 @@ async function loadData() {
 }
 
 async function loadSubscriptionInvoices() {
-  if (!authStore.user?.subscription_id) return
+  if (!billingAccount.value?.subscription_id) return
   loadingSubscriptionPayments.value = true
   try {
     payments.value = await billingStore.indexSubscriptionPayments()
@@ -237,38 +241,31 @@ async function updateDetails() {
 async function cancelPlan() {
   loading.value = true
   cancellingSubscription.value = true
-  try {
-    await billingStore.cancelSubscription()
-    if (!billingPageActive) return
-  } catch (error: unknown) {
-    if (!billingPageActive) return
-    notificationsStore.addNotification({
-      message: getApiErrorMessage(
-        error,
-        'We could not cancel your subscription.',
-      ),
-      type: 'error',
-    })
-    loading.value = false
-    cancellingSubscription.value = false
-    return
-  }
-
   cancellationPending.value = true
   cancellationRefresh = new AbortController()
   const signal = cancellationRefresh.signal
   const deadline = Date.now() + 10000
   let timeout: ReturnType<typeof setTimeout> | undefined
+  let cancellationRequested = false
   try {
     await Promise.race([
       (async () => {
+        await billingStore.cancelSubscription()
+        if (!billingPageActive || signal.aborted) return
+        cancellationRequested = true
         while (billingPageActive && !signal.aborted && Date.now() < deadline) {
-          await authStore.loadUser(signal)
+          const response = await apiFetch<{ data: EntitiesUser }>(
+            '/v1/users/me',
+            {
+              signal,
+            },
+          )
           if (!billingPageActive || signal.aborted) return
           if (
-            authStore.user?.subscription_status === 'cancelled' ||
-            authStore.user?.subscription_name === 'free'
+            response.data.subscription_status === 'cancelled' ||
+            response.data.subscription_name === 'free'
           ) {
+            billingUser.value = response.data
             cancellationPending.value = false
             return
           }
@@ -288,7 +285,7 @@ async function cancelPlan() {
     if (cancellationPending.value) {
       notificationsStore.addNotification({
         message:
-          'Your subscription was cancelled. Your billing details are still updating; please check back shortly.',
+          'Cancellation is in progress. Please check your billing status shortly.',
         type: 'info',
       })
     } else {
@@ -299,8 +296,11 @@ async function cancelPlan() {
     }
   } catch (error: unknown) {
     if (!billingPageActive) return
+    if (!cancellationRequested) cancellationPending.value = false
     notificationsStore.addNotification({
-      message: `Your subscription was cancelled, but we could not refresh your billing details. ${getApiErrorMessage(error, 'Please try again later.')}`,
+      message: cancellationRequested
+        ? `Your subscription was cancelled, but we could not refresh your billing details. ${getApiErrorMessage(error, 'Please try again later.')}`
+        : getApiErrorMessage(error, 'We could not cancel your subscription.'),
       type: 'error',
     })
   } finally {
@@ -371,7 +371,7 @@ onMounted(async () => {
           <VCol cols="12" md="9" offset-md="1" xl="8" offset-xl="2">
             <!-- Current Plan -->
             <h4 class="text-headline-large mb-3 mt-0">Current Plan</h4>
-            <VRow v-if="authStore.user">
+            <VRow v-if="billingAccount">
               <VCol md="6">
                 <VAlert
                   v-if="
@@ -386,7 +386,7 @@ onMounted(async () => {
                   prominent
                 >
                   <h1 class="text-title-large mt-0 mb-0 font-weight-bold">
-                    Subscription cancelled
+                    Cancellation in progress
                   </h1>
                   <p class="text-medium-emphasis mt-1 mb-0">
                     Your billing details are still updating.
@@ -420,7 +420,7 @@ onMounted(async () => {
                       Your next bill is for <b>${{ plan.price }}</b> on
                       <b>{{
                         new Date(
-                          authStore.user.subscription_renews_at!,
+                          billingAccount.subscription_renews_at!,
                         ).toLocaleDateString()
                       }}</b>
                     </p>
@@ -435,7 +435,7 @@ onMounted(async () => {
                       You will be downgraded to the <b>FREE</b> plan on
                       <b>{{
                         new Date(
-                          authStore.user.subscription_ends_at!,
+                          billingAccount.subscription_ends_at!,
                         ).toLocaleDateString()
                       }}</b>
                     </p>
@@ -498,7 +498,7 @@ onMounted(async () => {
                             of the current billing period on
                             <b>{{
                               new Date(
-                                authStore.user.subscription_renews_at!,
+                                billingAccount.subscription_renews_at!,
                               ).toLocaleDateString()
                             }}</b>
                           </p>
@@ -516,7 +516,7 @@ onMounted(async () => {
                           <VBtn
                             v-if="!isOnFreePlan"
                             variant="text"
-                            :loading="loading"
+                            :loading="cancellingSubscription"
                             color="error"
                             @click="cancelPlan"
                           >
@@ -638,7 +638,7 @@ onMounted(async () => {
             </VRow>
 
             <!-- Subscription Payments -->
-            <template v-if="authStore.user?.subscription_id != null">
+            <template v-if="billingAccount?.subscription_id != null">
               <h4 class="text-headline-large mb-3 mt-8">
                 Subscription Payments
               </h4>

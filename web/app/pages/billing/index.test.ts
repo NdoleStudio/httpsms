@@ -50,14 +50,22 @@ function setupCancellation(
   const loading = { value: false }
   const dialog = { value: true }
   const cancellationPending = { value: false }
+  const billingUser: {
+    value: { subscription_status: string; api_key: string } | null
+  } = { value: null }
   const authStore = {
-    user: { subscription_status: 'active' },
-    loadUser: async (signal?: AbortSignal) => {
-      refreshSignal = signal
+    user: { subscription_status: 'active', api_key: 'original-key' },
+  }
+  const api = {
+    apiFetch: async (_path: string, options: { signal?: AbortSignal }) => {
+      refreshSignal = options.signal
       if (refreshError) throw refreshError
-      authStore.user = {
-        subscription_status:
-          statuses[Math.min(refreshes++, statuses.length - 1)]!,
+      return {
+        data: {
+          subscription_status:
+            statuses[Math.min(refreshes++, statuses.length - 1)]!,
+          api_key: 'response-key',
+        },
       }
     },
   }
@@ -74,6 +82,9 @@ function setupCancellation(
       unmount = callback
     },
     authStore,
+    billingUser,
+    apiFetch: (path: string, options: { signal?: AbortSignal }) =>
+      api.apiFetch(path, options),
     billingStore: { cancelSubscription },
     notificationsStore: {
       addNotification: (notification: { message: string; type: string }) => {
@@ -109,6 +120,8 @@ function setupCancellation(
     dialog,
     cancellationPending,
     authStore,
+    billingUser,
+    api,
     notifications,
     navigations,
     reloads: () => reloads,
@@ -131,7 +144,9 @@ test('successful cancellation updates billing status in place without a browser 
 
   assert.equal(pending.reloads(), 0)
   assert.deepEqual(pending.navigations, [])
-  assert.equal(pending.authStore.user.subscription_status, 'cancelled')
+  assert.equal(pending.billingUser.value?.subscription_status, 'cancelled')
+  assert.equal(pending.authStore.user.subscription_status, 'active')
+  assert.equal(pending.authStore.user.api_key, 'original-key')
   assert.equal(pending.dialog.value, false)
   assert.equal(pending.loading.value, false)
   assert.equal(pending.cancellationPending.value, false)
@@ -151,7 +166,7 @@ test('failed cancellation stays on the page without refreshing and displays an e
   assert.equal(pending.notifications.at(-1)?.type, 'error')
   assert.equal(pending.loading.value, false)
   assert.equal(pending.authStore.user.subscription_status, 'active')
-  assert.equal(pending.dialog.value, true)
+  assert.equal(pending.dialog.value, false)
 })
 
 test('a refresh failure after cancellation reports the refresh error rather than a cancellation failure', async () => {
@@ -179,7 +194,7 @@ test('cancellation waits for the webhook when the first account response is stal
 
   await pending.cancel()
 
-  assert.equal(pending.authStore.user.subscription_status, 'cancelled')
+  assert.equal(pending.billingUser.value?.subscription_status, 'cancelled')
   assert.equal(pending.cancellationPending.value, false)
   assert.ok(pending.refreshes() > 1)
   assert.equal(pending.loading.value, false)
@@ -198,7 +213,7 @@ test('a delayed webhook leaves a visible pending state after bounded polling', a
   assert.ok(pending.refreshes() > 1 && pending.refreshes() <= 20)
   assert.equal(pending.loading.value, false)
   assert.equal(pending.notifications.at(-1)?.type, 'info')
-  assert.match(pending.notifications.at(-1)!.message, /cancelled.*updating/)
+  assert.match(pending.notifications.at(-1)!.message, /cancellation.*progress/i)
   assert.equal(pending.elapsed(), 10000)
   assert.ok(
     pending.waitingStates.every(
@@ -212,9 +227,9 @@ test('a delayed webhook leaves a visible pending state after bounded polling', a
 test('the dialog closes at ten seconds even if the account refresh is still in flight', async () => {
   const pending = setupCancellation(async () => {})
   let signal: AbortSignal | undefined
-  pending.authStore.loadUser = (refreshSignal) => {
-    signal = refreshSignal
-    return new Promise<void>(() => {})
+  pending.api.apiFetch = (_path, options) => {
+    signal = options.signal
+    return new Promise(() => {})
   }
   const cancellation = pending.cancel()
   await setImmediate()
@@ -235,11 +250,15 @@ test('leaving billing stops polling and prevents a notification on the next page
   const pending = setupCancellation(async () => {})
   let resolveRefresh!: () => void
   let refreshes = 0
-  pending.authStore.loadUser = async () => {
+  pending.api.apiFetch = async () => {
     refreshes++
     await new Promise<void>((resolve) => {
       resolveRefresh = resolve
     })
+
+    return {
+      data: { subscription_status: 'cancelled', api_key: 'response-key' },
+    }
   }
   const cancellation = pending.cancel()
   await setImmediate()
@@ -252,4 +271,34 @@ test('leaving billing stops polling and prevents a notification on the next page
 
   assert.equal(pending.notifications.length, 0)
   assert.equal(refreshes, 1)
+  assert.equal(pending.billingUser.value, null)
+  assert.equal(pending.authStore.user.api_key, 'original-key')
+})
+
+test('the total deadline includes a cancellation request that is still in progress', async () => {
+  let resolveCancellation!: () => void
+  const pending = setupCancellation(
+    () =>
+      new Promise<void>((resolve) => {
+        resolveCancellation = resolve
+      }),
+  )
+  const cancellation = pending.cancel()
+  await setImmediate()
+
+  assert.equal(pending.dialog.value, true)
+  assert.equal(pending.loading.value, true)
+  assert.equal(pending.notifications.length, 0)
+  pending.expireDeadline()
+  await cancellation
+
+  assert.equal(pending.dialog.value, false)
+  assert.equal(pending.loading.value, false)
+  assert.equal(pending.notifications.length, 1)
+  assert.match(pending.notifications[0]!.message, /cancellation.*progress/i)
+  resolveCancellation()
+  await setImmediate()
+  assert.equal(pending.billingUser.value, null)
+  assert.equal(pending.refreshes(), 0)
+  assert.equal(pending.notifications.length, 1)
 })
