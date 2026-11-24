@@ -18,7 +18,7 @@ const (
 )
 
 // Authenticated checks if the request is authenticated
-func Authenticated(tracer telemetry.Tracer) fiber.Handler {
+func Authenticated(tracer telemetry.Tracer, afterAuth fiber.Handler) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		_, span := tracer.StartFromFiberCtx(c, "middlewares.Authenticated")
 		defer span.End()
@@ -31,6 +31,9 @@ func Authenticated(tracer telemetry.Tracer) fiber.Handler {
 			})
 		}
 
+		if afterAuth != nil {
+			return afterAuth(c)
+		}
 		return c.Next()
 	}
 }

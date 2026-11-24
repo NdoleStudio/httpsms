@@ -1,12 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/NdoleStudio/httpsms/docs"
 	"github.com/NdoleStudio/httpsms/pkg/di"
+	"github.com/NdoleStudio/stacktrace"
+	"github.com/gofiber/fiber/v3"
 )
 
 // Version is injected at runtime
@@ -42,5 +48,13 @@ func main() {
 	}
 
 	container := di.NewContainer(os.Getenv("GCP_PROJECT_ID"), Version)
-	container.Logger().Info(container.App().Listen(fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT"))).Error())
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := container.App().Listen(
+		fmt.Sprintf("%s:%s", os.Getenv("APP_HOST"), os.Getenv("APP_PORT")),
+		fiber.ListenConfig{GracefulContext: ctx, ShutdownTimeout: 5 * time.Second},
+	); err != nil {
+		container.Logger().Fatal(stacktrace.Propagatef(err, "cannot listen for HTTP requests"))
+	}
 }
