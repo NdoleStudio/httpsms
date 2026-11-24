@@ -24,13 +24,26 @@ const { outputText } = ts.transpileModule(cancelPlan.getText(script), {
   compilerOptions: { target: ts.ScriptTarget.ESNext },
 })
 
-function setupCancellation(cancelSubscription: () => Promise<void>) {
+function setupCancellation(
+  cancelSubscription: () => Promise<void>,
+  refreshError?: Error,
+) {
   let reloads = 0
   const navigations: string[] = []
   const notifications: { message: string; type: string }[] = []
   const loading = { value: false }
+  const dialog = { value: true }
+  const authStore = {
+    user: { subscription_status: 'active' },
+    loadUser: async () => {
+      if (refreshError) throw refreshError
+      authStore.user = { subscription_status: 'cancelled' }
+    },
+  }
   const cancel = runInNewContext(`${outputText}\ncancelPlan`, {
     loading,
+    dialog,
+    authStore,
     billingStore: { cancelSubscription },
     notificationsStore: {
       addNotification: (notification: { message: string; type: string }) => {
@@ -42,16 +55,27 @@ function setupCancellation(cancelSubscription: () => Promise<void>) {
     getApiErrorMessage: (_error: unknown, fallback: string) => fallback,
   }) as () => Promise<void>
 
-  return { cancel, loading, notifications, navigations, reloads: () => reloads }
+  return {
+    cancel,
+    loading,
+    dialog,
+    authStore,
+    notifications,
+    navigations,
+    reloads: () => reloads,
+  }
 }
 
-test('successful cancellation refreshes the billing page without navigating away', async () => {
+test('successful cancellation updates billing status in place without a browser reload', async () => {
   const pending = setupCancellation(async () => {})
 
   await pending.cancel()
 
-  assert.equal(pending.reloads(), 1)
+  assert.equal(pending.reloads(), 0)
   assert.deepEqual(pending.navigations, [])
+  assert.equal(pending.authStore.user.subscription_status, 'cancelled')
+  assert.equal(pending.dialog.value, false)
+  assert.equal(pending.loading.value, false)
   assert.equal(pending.notifications.at(-1)?.type, 'success')
 })
 
@@ -66,4 +90,22 @@ test('failed cancellation stays on the page without refreshing and displays an e
   assert.deepEqual(pending.navigations, [])
   assert.equal(pending.notifications.at(-1)?.type, 'error')
   assert.equal(pending.loading.value, false)
+  assert.equal(pending.authStore.user.subscription_status, 'active')
+  assert.equal(pending.dialog.value, true)
+})
+
+test('a refresh failure after cancellation reports the refresh error rather than a cancellation failure', async () => {
+  const pending = setupCancellation(
+    async () => {},
+    new Error('Account fetch failed'),
+  )
+
+  await pending.cancel()
+
+  assert.equal(pending.reloads(), 0)
+  assert.deepEqual(pending.navigations, [])
+  assert.equal(pending.dialog.value, false)
+  assert.equal(pending.loading.value, false)
+  assert.equal(pending.notifications.at(-1)?.type, 'error')
+  assert.match(pending.notifications.at(-1)!.message, /cancelled.*refresh/)
 })

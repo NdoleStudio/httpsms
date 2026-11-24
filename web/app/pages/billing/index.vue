@@ -227,11 +227,6 @@ async function cancelPlan() {
   loading.value = true
   try {
     await billingStore.cancelSubscription()
-    notificationsStore.addNotification({
-      message: 'Subscription cancelled successfully',
-      type: 'success',
-    })
-    window.location.reload()
   } catch (error: unknown) {
     notificationsStore.addNotification({
       message: getApiErrorMessage(
@@ -240,6 +235,26 @@ async function cancelPlan() {
       ),
       type: 'error',
     })
+    loading.value = false
+    return
+  }
+
+  dialog.value = false
+  notificationsStore.addNotification({
+    message: 'Subscription cancelled successfully',
+    type: 'success',
+  })
+  try {
+    await authStore.loadUser()
+  } catch (error: unknown) {
+    notificationsStore.addNotification({
+      message: getApiErrorMessage(
+        error,
+        'Your subscription was cancelled, but we could not refresh your billing details.',
+      ),
+      type: 'error',
+    })
+  } finally {
     loading.value = false
   }
 }
