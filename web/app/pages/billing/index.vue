@@ -240,31 +240,42 @@ async function cancelPlan() {
     return
   }
 
-  dialog.value = false
   cancellationPending.value = true
-  notificationsStore.addNotification({
-    message: 'Subscription cancelled successfully',
-    type: 'success',
-  })
+  const deadline = Date.now() + 10000
+  let timeout: ReturnType<typeof setTimeout> | undefined
   try {
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await authStore.loadUser()
-      if (
-        authStore.user?.subscription_status === 'cancelled' ||
-        authStore.user?.subscription_name === 'free'
-      ) {
-        cancellationPending.value = false
-        break
-      }
-      if (attempt < 9) {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-      }
-    }
+    await Promise.race([
+      (async () => {
+        while (Date.now() < deadline) {
+          await authStore.loadUser()
+          if (
+            authStore.user?.subscription_status === 'cancelled' ||
+            authStore.user?.subscription_name === 'free'
+          ) {
+            cancellationPending.value = false
+            return
+          }
+          const remaining = deadline - Date.now()
+          if (remaining <= 0) return
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.min(1000, remaining)),
+          )
+        }
+      })(),
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(resolve, 10000)
+      }),
+    ])
     if (cancellationPending.value) {
       notificationsStore.addNotification({
         message:
           'Your subscription was cancelled. Your billing details are still updating; please check back shortly.',
         type: 'info',
+      })
+    } else {
+      notificationsStore.addNotification({
+        message: 'Subscription cancelled successfully',
+        type: 'success',
       })
     }
   } catch (error: unknown) {
@@ -273,6 +284,8 @@ async function cancelPlan() {
       type: 'error',
     })
   } finally {
+    clearTimeout(timeout)
+    dialog.value = false
     loading.value = false
   }
 }
@@ -337,7 +350,7 @@ onMounted(async () => {
             <VRow v-if="authStore.user">
               <VCol md="6">
                 <VAlert
-                  v-if="cancellationPending"
+                  v-if="cancellationPending && !dialog"
                   type="info"
                   :icon="false"
                   variant="tonal"
@@ -427,11 +440,13 @@ onMounted(async () => {
                     <VSpacer />
                     <VDialog
                       v-if="
-                        !subscriptionIsCancelled &&
-                        !isOnFreePlan &&
-                        !isOnLifetimePlan
+                        dialog ||
+                        (!subscriptionIsCancelled &&
+                          !isOnFreePlan &&
+                          !isOnLifetimePlan)
                       "
                       v-model="dialog"
+                      :persistent="loading"
                       max-width="590"
                       opacity="0.9"
                     >
@@ -463,6 +478,7 @@ onMounted(async () => {
                           <VBtn
                             color="primary"
                             variant="flat"
+                            :disabled="loading"
                             @click="dialog = false"
                           >
                             Keep Subscription
