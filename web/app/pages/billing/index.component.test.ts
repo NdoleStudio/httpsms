@@ -91,6 +91,7 @@ function mountBilling(holdInitialLoad = false) {
   let responseStatus = 'active'
   const authStore = vue.reactive({
     user: {
+      id: 'account-a',
       subscription_name: 'pro-monthly',
       subscription_status: 'active',
       api_key: 'original-key',
@@ -124,6 +125,7 @@ function mountBilling(holdInitialLoad = false) {
     },
     ref: vue.ref,
     computed: vue.computed,
+    watch: vue.watch,
     onMounted: vue.onMounted,
     onBeforeUnmount: vue.onBeforeUnmount,
     definePageMeta: () => {},
@@ -305,6 +307,11 @@ test('confirmed cancellation updates the mounted billing card without modifying 
     assert.equal(authStore.user.api_key, 'original-key')
     assert.equal(notifications.length, 1)
     assert.equal(notifications[0]?.type, 'success')
+
+    authStore.user.id = 'account-b'
+    await vue.nextTick()
+    assert.doesNotMatch(text(root), /You will be downgraded/)
+    assert.ok(buttons(root, 'Cancel Plan').length > 0)
   } finally {
     app.unmount()
   }

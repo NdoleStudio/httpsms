@@ -34,7 +34,11 @@ const { lgAndUp } = useVDisplay()
 const authStore = useAuthStore()
 const { apiFetch } = useApi()
 const billingUser = ref<EntitiesUser | null>(null)
-const billingAccount = computed(() => billingUser.value ?? authStore.user)
+const billingAccount = computed(() =>
+  authStore.user && billingUser.value?.id === authStore.user.id
+    ? billingUser.value
+    : authStore.user,
+)
 const promotion = useBlackFridayStore()
 const billingStore = useBillingStore()
 const notificationsStore = useNotificationsStore()
@@ -54,6 +58,16 @@ onBeforeUnmount(() => {
   cancellationRefresh?.abort()
   stopCancellationWait?.()
 })
+
+watch(
+  () => authStore.user?.id,
+  () => {
+    billingUser.value = null
+    cancellationPending.value = false
+    cancellationRefresh?.abort()
+    stopCancellationWait?.()
+  },
+)
 const subscriptionInvoiceDialog = ref(false)
 const payments = ref<ResponsesUserSubscriptionPaymentsResponse | null>(null)
 const selectedPayment = ref<SubscriptionPayment | null>(null)
@@ -244,6 +258,9 @@ async function cancelPlan() {
   cancellationPending.value = true
   cancellationRefresh = new AbortController()
   const signal = cancellationRefresh.signal
+  const accountId = authStore.user?.id
+  const accountActive = () =>
+    billingPageActive && !signal.aborted && authStore.user?.id === accountId
   const deadline = Date.now() + 10000
   let timeout: ReturnType<typeof setTimeout> | undefined
   let cancellationRequested = false
@@ -251,16 +268,16 @@ async function cancelPlan() {
     await Promise.race([
       (async () => {
         await billingStore.cancelSubscription()
-        if (!billingPageActive || signal.aborted) return
+        if (!accountActive()) return
         cancellationRequested = true
-        while (billingPageActive && !signal.aborted && Date.now() < deadline) {
+        while (accountActive() && Date.now() < deadline) {
           const response = await apiFetch<{ data: EntitiesUser }>(
             '/v1/users/me',
             {
               signal,
             },
           )
-          if (!billingPageActive || signal.aborted) return
+          if (!accountActive()) return
           if (
             response.data.subscription_status === 'cancelled' ||
             response.data.subscription_name === 'free'
@@ -281,7 +298,7 @@ async function cancelPlan() {
         timeout = setTimeout(resolve, 10000)
       }),
     ])
-    if (!billingPageActive) return
+    if (!accountActive()) return
     if (cancellationPending.value) {
       notificationsStore.addNotification({
         message:
@@ -295,7 +312,7 @@ async function cancelPlan() {
       })
     }
   } catch (error: unknown) {
-    if (!billingPageActive) return
+    if (!accountActive()) return
     if (!cancellationRequested) cancellationPending.value = false
     notificationsStore.addNotification({
       message: cancellationRequested

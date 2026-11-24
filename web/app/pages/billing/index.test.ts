@@ -51,10 +51,14 @@ function setupCancellation(
   const dialog = { value: true }
   const cancellationPending = { value: false }
   const billingUser: {
-    value: { subscription_status: string; api_key: string } | null
+    value: { id: string; subscription_status: string; api_key: string } | null
   } = { value: null }
   const authStore = {
-    user: { subscription_status: 'active', api_key: 'original-key' },
+    user: {
+      id: 'account-a',
+      subscription_status: 'active',
+      api_key: 'original-key',
+    },
   }
   const api = {
     apiFetch: async (_path: string, options: { signal?: AbortSignal }) => {
@@ -62,6 +66,7 @@ function setupCancellation(
       if (refreshError) throw refreshError
       return {
         data: {
+          id: 'account-a',
           subscription_status:
             statuses[Math.min(refreshes++, statuses.length - 1)]!,
           api_key: 'response-key',
@@ -257,7 +262,11 @@ test('leaving billing stops polling and prevents a notification on the next page
     })
 
     return {
-      data: { subscription_status: 'cancelled', api_key: 'response-key' },
+      data: {
+        id: 'account-a',
+        subscription_status: 'cancelled',
+        api_key: 'response-key',
+      },
     }
   }
   const cancellation = pending.cancel()
@@ -301,4 +310,33 @@ test('the total deadline includes a cancellation request that is still in progre
   assert.equal(pending.billingUser.value, null)
   assert.equal(pending.refreshes(), 0)
   assert.equal(pending.notifications.length, 1)
+})
+
+test('an old cancellation response cannot update billing or notify after the account changes', async () => {
+  const pending = setupCancellation(async () => {})
+  let resolveRefresh!: () => void
+  pending.api.apiFetch = async () => {
+    await new Promise<void>((resolve) => {
+      resolveRefresh = resolve
+    })
+    return {
+      data: {
+        id: 'account-a',
+        subscription_status: 'cancelled',
+        api_key: 'response-key',
+      },
+    }
+  }
+  const cancellation = pending.cancel()
+  await setImmediate()
+  pending.authStore.user.id = 'account-b'
+  pending.expireDeadline()
+  await cancellation
+  resolveRefresh()
+  await setImmediate()
+
+  assert.equal(pending.billingUser.value, null)
+  assert.equal(pending.notifications.length, 0)
+  assert.equal(pending.authStore.user.id, 'account-b')
+  assert.equal(pending.authStore.user.api_key, 'original-key')
 })
