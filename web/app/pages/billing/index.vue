@@ -41,8 +41,13 @@ const billingAccount = computed(() =>
 )
 watch(
   () => authStore.user,
-  () => {
-    billingUser.value = null
+  (account) => {
+    if (
+      account?.subscription_status === 'cancelled' ||
+      account?.subscription_name === 'free'
+    ) {
+      billingUser.value = null
+    }
   },
 )
 const promotion = useBlackFridayStore()

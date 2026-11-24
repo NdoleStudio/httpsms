@@ -310,6 +310,14 @@ test('confirmed cancellation updates the mounted billing card without modifying 
 
     authStore.user = {
       ...authStore.user,
+      subscription_status: 'active',
+    }
+    await vue.nextTick()
+    assert.match(text(root), /You will be downgraded/)
+    assert.equal(buttons(root, 'Cancel Plan').length, 0)
+
+    authStore.user = {
+      ...authStore.user,
       subscription_name: 'free',
       subscription_status: 'expired',
     }
