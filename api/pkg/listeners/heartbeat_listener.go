@@ -92,12 +92,14 @@ func (listener *HeartbeatListener) onPhoneHeartbeatCheck(ctx context.Context, ev
 		return listener.tracer.WrapErrorSpan(span, stacktrace.Propagatef(err, "cannot decode [%s] into [%T]", event.Data(), payload))
 	}
 
+	queueID, _ := ctx.Value(events.QueueIDKey).(string)
 	monitorParams := &services.HeartbeatMonitorParams{
 		Owner:     payload.Owner,
 		PhoneID:   payload.PhoneID,
 		MonitorID: payload.MonitorID,
 		UserID:    payload.UserID,
 		Source:    event.Source(),
+		QueueID:   queueID,
 	}
 
 	if err := listener.service.Monitor(ctx, monitorParams); err != nil {

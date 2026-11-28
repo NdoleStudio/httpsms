@@ -89,6 +89,7 @@ func (dispatcher *EventDispatcher) enqueue(ctx context.Context, event cloudevent
 	if errors.Is(err, context.DeadlineExceeded) {
 		ctxLogger.Warn(stacktrace.Propagatef(err, "cannot enqueue event with ID [%s] and type [%s] to [%T]", event.ID(), event.Type(), dispatcher.queue))
 		queueID, err = fmt.Sprintf("local-%s", event.ID()), nil
+		ctx = context.WithValue(ctx, events.QueueIDKey, queueID)
 		time.AfterFunc(timeout, func() {
 			dispatcher.Publish(ctx, event)
 		})
