@@ -172,7 +172,6 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
         :key="thread.id"
         color="primary"
         :to="{ name: 'threads-id', params: { id: thread.id } }"
-        :active="threadsStore.threadId === thread.id"
       >
         <template #prepend>
           <v-avatar
