@@ -41,11 +41,25 @@ export const useThreadsStore = defineStore('threads', () => {
     )
   })
 
-  const visibleThreads = computed(() =>
-    unreadOnly.value
-      ? threads.value.filter((thread) => thread.unread_count > 0)
-      : threads.value,
-  )
+  const visibleThreads = computed(() => {
+    if (unreadOnly.value) {
+      return threads.value.filter((thread) => thread.unread_count > 0)
+    }
+
+    const selected = currentThread.value
+    if (
+      hasMoreThreads.value &&
+      selected &&
+      selected.is_archived === archivedThreads.value &&
+      !threads.value.some((thread) => thread.id === selected.id)
+    ) {
+      const phones = usePhonesStore()
+      if (selected.owner === (phones.owner ?? phones.phones[0]?.phone_number)) {
+        return [...threads.value, selected]
+      }
+    }
+    return threads.value
+  })
 
   const hasThread = computed(
     () => currentThread.value !== null && !loadingThreads.value,
