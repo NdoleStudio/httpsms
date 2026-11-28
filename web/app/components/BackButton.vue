@@ -22,11 +22,12 @@ function goBack() {
     router.push(props.route)
     return
   }
-  if (window.history.length > 1) {
+  const { position } = router.options.history.state
+  if (typeof position === 'number' ? position > 0 : window.history.length > 1) {
     router.back()
     return
   }
-  router.push({ name: 'index' })
+  router.replace({ name: 'index' })
 }
 </script>
 
