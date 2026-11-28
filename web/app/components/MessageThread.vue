@@ -170,6 +170,7 @@ function threadAvatarInitial(thread: EntitiesMessageThread): string {
       <v-list-item
         v-for="thread in threadsStore.visibleThreads"
         :key="thread.id"
+        active-class="border-s-lg border-primary border-opacity-100"
         color="primary"
         :to="{ name: 'threads-id', params: { id: thread.id } }"
       >

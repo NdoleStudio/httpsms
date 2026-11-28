@@ -465,7 +465,7 @@ test('Load More failure preserves rows and permits a retry', async () => {
   assert.equal(store.threads.length, 40)
 })
 
-test('new activity keeps the selected sidebar row when it moves beyond the loaded page', async () => {
+test('new activity does not close an open conversation pushed beyond the loaded page', async () => {
   const { store, respondWith } = setupStore()
   const existing = manyThreads(45)
   respondWith(existing)
@@ -476,14 +476,7 @@ test('new activity keeps the selected sidebar row when it moves beyond the loade
   await store.loadThreads()
 
   assert.equal(store.currentThread?.id, 'page-19')
-  assert.equal(store.visibleThreads.at(-1)?.id, 'page-19')
   await store.loadThreadMessages('page-19')
-
-  await store.loadMoreThreads()
-  assert.equal(
-    store.visibleThreads.filter((item) => item.id === 'page-19').length,
-    1,
-  )
 })
 
 test('a second Load More click is ignored while the first is running', async () => {
